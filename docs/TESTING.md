@@ -1,5 +1,8 @@
 # Testing
 
+**Test authorship:** Dev workers implement application code but **never author, edit, move or delete test files**. All test cases, fixtures, browser automation and suite consolidation belong to the dedicated testing workstream on its branch. Tests integrated into `dev` are the last accepted baseline; further test changes return only through an explicitly reviewed transfer. Dev may inspect or safely execute existing checks without altering them, and hands required scenarios to the test owner.
+
+
 This is the current durable test strategy for `moeller-lars`. The suite protects observable product/domain/security behavior, persistence, publication and selected browser interaction. It must not preserve obsolete test taxonomies, source spellings or repair-round history.
 
 ## Layers and ownership
@@ -13,7 +16,7 @@ This is the current durable test strategy for `moeller-lars`. The suite protects
 | JavaScript | `tests/js` | Node-based production frontend logic |
 | Browser | `tests/browser/component`, `e2e`, `profiling` | Chromium components, seeded Laravel E2E and representative performance evidence |
 
-The former separate Architecture suite is retired. Structural contracts belong in the narrowest meaningful behavior test; source-string matching is not a substitute for working software. `tests/Pest.php` and `phpunit.xml` own PHP discovery; `playwright.config.mjs` owns the Playwright projects. There is one test structure on `dev`.
+The former separate Architecture suite is retired. Structural contracts belong in the narrowest meaningful behavior test; source-string matching is not a substitute for working software. `tests/Pest.php` and `phpunit.xml` own PHP discovery; `playwright.config.mjs` owns the Playwright projects. The integrated `dev` suite is a baseline; the test workstream maintains its next version separately.
 
 ## Running and discovering tests
 

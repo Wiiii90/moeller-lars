@@ -12,10 +12,7 @@ If the expansion is unknown, verify it before using the abbreviation, or avoid t
 
 Literal identifiers in source code, paths, commands, configuration keys and existing product labels must remain unchanged; explain their meaning in the surrounding text rather than renaming them merely to satisfy this communication rule.
 
-Two companion files are part of this contract:
-
-- [`ui-skills.md`](ui-skills.md) — canonical artist-admin UI grammar and browser-review conventions;
-- [`followup-skill.md`](followup-skill.md) — how to create a lossless continuation prompt when a long orchestration chat is handed to a fresh chat.
+**Canonical Admin references:** [Admin UI](docs/ADMIN-UI.md), [Responsive](docs/ADMIN-RESPONSIVE-CONTRACT.md), [Dialogs](docs/ADMIN-DIALOG-CONTRACT.md) and [Browser review](docs/ADMIN-BROWSER-WORKFLOW.md). They own the rules directly; no separate root UI or handoff skill exists.
 
 ## Browser-accepted dialog scroll-lock contract — do not regress
 
@@ -47,7 +44,7 @@ The admin dialog behavior accepted in browser review on 2026-10-11 is a
   does **not** imply browser acceptance. Retain the last accepted behavior unless
   the user explicitly changes this contract.
 
-See `docs/ADMIN-DIALOG-CONTRACT.md` and `ui-skills.md` for shared UI geometry.
+See `docs/ADMIN-DIALOG-CONTRACT.md` and `docs/ADMIN-UI.md` for shared UI geometry.
 
 ## Active public-rights implementation workstream (temporary)
 
@@ -173,7 +170,7 @@ Before changing a shared owner or a previously browser-reviewed interaction:
    change its parent. Custom Page Image-child ordering/placement is a
    distinct consumer: do not change Pages while refactoring Custom Page,
    or vice versa, without explicit cross-feature scope and verification.
-   The concrete interaction contract is in `ui-skills.md` section 9.
+   The concrete interaction contract is in `docs/ADMIN-UI.md` section 9.
 4. Verify the actual combined browser gestures in the affected editor(s),
    using the current candidate, before asserting a working replacement. A
    domain test that calls the sort method does not establish which drop zone
@@ -191,9 +188,17 @@ When fixing a rejected candidate, first isolate and remove that candidate's
 unverified change without rolling back unrelated concurrent work; do not add
 a compensating drag/drop runtime in a new file by default.
 
+## Test ownership and documentation hygiene — mandatory
+
+**Dev workers must not create, edit, move, delete, refactor or consolidate test code, fixtures or browser-test sources.** Development implements production application code on `dev`. The dedicated test workstream owns new tests, modifications, suite restructuring and isolated test execution on its separate branch. Accepted tests are returned to `dev` only through an expressly authorized, reviewed integration; this is not a routine Dev-worker task.
+
+Dev may inspect the existing integrated test suite and, where an independently verified isolated environment is available, run already-existing focused checks without changing their source. Report the exact code revision, observed behavior, what was source-reviewed versus genuinely executed, current browser/user acceptance, and concrete regression cases required for the testing owner. **Do not author "a quick regression test" on `dev`.** No test result from an older source revision certifies the latest code.
+
+**No documentation aliases or accumulation:** A superseded document/skill must be removed outright in the same change that migrates any still-accepted unique content and updates all inbound links. Do not leave compatibility gateway files, renamed stubs, parallel skill documents or dated audit dumps in the active tree merely for continuity. Retired content remains in Git history.
+
 ## Direct-`dev` collaboration
 
-Current implementation is direct on `dev` across public, admin and shared Domain code. Multiple chats can operate on disjoint scopes but must reconcile concurrent commits and shared contracts.
+Application implementation is direct on `dev` across public, admin and shared Domain code; test authorship belongs exclusively to the separate testing workstream. Multiple chats can operate on disjoint scopes but must reconcile concurrent commits and shared contracts.
 If multiple chats resume concurrently, each must establish explicit file
 ownership and reconcile shared changes. Never assume the branch remained
 unchanged between work sessions.
@@ -249,7 +254,7 @@ The user may authorize the current chat to inspect and implement directly on dev
 
 Routine browser fixes and other small bounded changes must be investigated from the concrete symptom inward, not by re-auditing the repository.
 
-Treat `AGENTS.md`, `ui-skills.md` and the current orchestration/handoff context as already-established working context. Do not repeatedly re-read them in full during the same task unless they changed or a concrete conflict requires it.
+Treat `AGENTS.md`, `docs/ADMIN-UI.md` and the current orchestration/handoff context as already-established working context. Do not repeatedly re-read them in full during the same task unless they changed or a concrete conflict requires it.
 
 When the canonical local checkout is available, use `P:\moeller-lars` for normal source inspection, grep/search, diffs, status and history. Remote GitHub reads are for facts that are genuinely remote — for example branch heads, worker branches, PRs, CI state or final push verification — or when the required source is not available locally. Do not substitute repeated remote reads for cheap local inspection.
 
@@ -306,7 +311,7 @@ Do not encode rejected or unreviewed presentation details into durable tests or 
 
 ## Admin theme enforcement
 
-[`ui-skills.md`](ui-skills.md) owns the admin presentation contract, accepted references,
+[`docs/ADMIN-UI.md`](ui-skills.md) owns the admin presentation contract, accepted references,
 shared primitives, CSS ownership and visual review checklist. Read it before UI work.
 Prompts must identify the exact reference files and workers must enumerate reused primitives
 and justify feature-local CSS. Review actual Blade/CSS changes for bypasses before reconciliation.
@@ -318,7 +323,7 @@ For standard admin geometry, the durable contracts are an implementation gate. B
 - preserve the terminal Selection count/select-all/row-checkbox axis exactly;
 - do not add page-local standard-toolbar grids, Selection offsets or duplicate shared-stage geometry;
 - if the shared owner cannot represent the requested composition, stop and extend the shared owner deliberately instead of bypassing it locally;
-- where practical, architecture/source tests must reject new page-local ownership of these canonical geometries.
+- identify missing architectural coverage in the testing handoff; Dev workers must not add source-string or markup tests.
 
 A user restating an existing contract is not permission to invent a second implementation. Re-read the owning contract and repair the shared/consumer boundary.
 
@@ -337,7 +342,7 @@ Unless a concrete risk requires more, browser-polish workers should not automati
 
 Static review, `git diff --check`, tiny syntax checks and focused contract checks are appropriate. CI workflow source may be prepared on `dev`, but CI runs and logs remain prohibited during direct development; `docs/RELEASE.md` owns separately authorized release qualification. Local Feature/Pest suites are forbidden against the persistent browser database. Source-string tests are scaffolding unless they protect a durable invariant.
 
-Tests added during browser work should encode durable product/domain behavior, not temporary orchestration states. Avoid durable test names tied to repair rounds, browser passes, branch choreography or candidate labels when a stable behavior-based name is available. Do not add a broad “acceptance” test merely to memorialize an intermediate browser candidate.
+Dev workers do not add or edit tests during browser work. They hand specific stable domain/browser regression scenarios to the test-owning worker; an unaccepted presentation cannot become a regression contract.
 
 The user's repeated request to inspect a change quickly is not an invitation to reinstall dependencies or recreate infrastructure.
 
@@ -438,7 +443,7 @@ The admin is still under browser acceptance. Existing work is a starting point, 
 - prefer an existing shared primitive over page-local CSS/interaction forks;
 - when a genuinely shared defect is discovered, fix the shared authority intentionally;
 - do not introduce a second Rich Text, media-selection, table, modal or drag/drop technology to unblock one page;
-- consult `ui-skills.md` before changing admin workspace geometry;
+- consult `docs/ADMIN-UI.md` and `docs/ADMIN-RESPONSIVE-CONTRACT.md` before changing admin workspace geometry;
 - when the user explicitly rejects the current presentation or asks for a reset, do not preserve that rejected structure merely to minimize the diff.
 
 ## Responsive system
@@ -461,7 +466,7 @@ Responsive behavior is content-driven, not device-name driven. Issue #15 owns th
 - shared Position/Drag rails and hierarchy ordering cells must never clip their square position badge or drag control; Pages/Custom Page/Journal consume that shared geometry rather than page-local offset hacks;
 - Pages, Custom Page and Journal toolbars remain one row with elastic Search and compact right-side controls; Gallery follows the same principle in its custom toolbar; Analytics, Storage and Activity also remain one row, with Storage/Activity preserving all four filters and compacting Clear/View/Selection before any wrap;
 - burger/sidebar collapse is monotonic across Dashboard, General, Pages, Gallery, Custom Page, Journal, Analytics, Storage and Activity; freed workspace may not reintroduce wider metrics, hidden stage panes, table columns, labels or denser grids;
-- metrics reduce deliberately by feature semantics; Dashboard, General, Pages/Gallery/Custom Page/Journal and Analytics/Storage/Activity use 6 / 6 / 3 / 2 with their feature-specific priorities recorded in ui-skills.md; every two-metric Minimal strip is exactly 50/50 and no metric strip becomes a one-column list;
+- metrics reduce deliberately by feature semantics; Dashboard, General, Pages/Gallery/Custom Page/Journal and Analytics/Storage/Activity use 6 / 6 / 3 / 2 with their feature-specific priorities recorded in `docs/ADMIN-RESPONSIVE-CONTRACT.md`; every two-metric Minimal strip is exactly 50/50 and no metric strip becomes a one-column list;
 - responsive metric geometry is centralized in `.admin-metrics`: Narrow = three equal tracks with container-owned dividers at 1/3 and 2/3; Minimal = two equal tracks with one divider at 1/2. Feature rules may only choose visibility/priority and must not assign responsive metric spans or their own vertical dividers;
 - Analytics/Storage/Activity Narrow metrics explicitly own columns 1/2/3 with full-cell stretch and both dividers; Minimal explicitly owns columns 1/2 with one centered divider, so source order or prior grid spans cannot produce 1/3–2/3 geometry;
 - shared Visual Stage desktop geometry does not imply generic mobile stacking. Analytics/Storage/Activity keep their desktop multi-cell stage axes through Narrow and collapse only at Minimal: Analytics -> full-width Map, Storage -> full-width Upload + compact capacity/actions, Activity -> full-width Next Publication with Review/Reset/Commit preserved; the shared fixed stage height remains unchanged across these transitions;
@@ -588,7 +593,7 @@ The orchestrator then reviews the code independently. Long implementation diarie
 
 ## Continuation handoffs
 
-When the orchestration chat itself is becoming too large, follow [`followup-skill.md`](followup-skill.md). The new chat should be able to continue from exact Git/browser/runtime state without asking the user to reconstruct it manually.
+When a chat reaches its context limit, update the active numbered worker task record when one exists; otherwise provide a compact task-specific handoff containing exact checked HEAD, accepted behavior, owned source, actual verification, remaining work and safety boundaries. Do not create another root handoff-skill file.
 
 ## Completion gates
 

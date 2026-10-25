@@ -18,6 +18,8 @@ These describe the durable current application architecture and behavior. Browse
 - [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md) — admin performance budget and investigation rules
 - [ADMIN-PROFILING.md](ADMIN-PROFILING.md) — canonical local Debugbar/DevTools/request-classification and on-demand callgraph workflow
 - [PULSE-REPORT.md](PULSE-REPORT.md) — read-only Markdown/JSON export of retained Laravel Pulse aggregates, including schema, interpretation, privacy, retention and Validation usage
+- [ADMIN-UI.md](ADMIN-UI.md) — canonical Admin workspace and interaction grammar
+- [ADMIN-RESPONSIVE-CONTRACT.md](ADMIN-RESPONSIVE-CONTRACT.md) — responsive Admin composition
 - [ADMIN-CONTROL-CONTRACT.md](ADMIN-CONTROL-CONTRACT.md) — canonical admin form/control rendering and persistence semantics
 - [ADMIN-DIALOG-CONTRACT.md](ADMIN-DIALOG-CONTRACT.md) — shared native Filament dialog types, chrome, lifecycle and edit/command semantics
 - [ADMIN-TABLE-CONTRACT.md](ADMIN-TABLE-CONTRACT.md) — canonical ordinary-table role order, alignment, typography, actions and trailing Selection
@@ -29,16 +31,11 @@ These describe the durable current application architecture and behavior. Browse
 
 These documents state current durable contracts. They are not chronological PR/worker diaries and should not encode every temporary reconciliation SHA.
 
-## Admin workflow skills
+## Admin and agent workflow
 
-Repository-root workflow documents are intentionally kept close to `AGENTS.md` because they govern coding/review behavior rather than public architecture:
+[AGENTS.md](../AGENTS.md) owns development scope and working rules. Admin design belongs to [UI](ADMIN-UI.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md), [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md) and [Browser review](ADMIN-BROWSER-WORKFLOW.md); no root copy of those contracts is retained.
 
-- [AGENTS.md](../AGENTS.md) — direct-dev scope/reconciliation contract and central technology rules
-- [ui-skills.md](../ui-skills.md) — admin-only UI grammar for heading/action rows, metrics, filters, selection, tables, grids, DnD, dialogs and browser acceptance
-- [followup-skill.md](../followup-skill.md) — lossless continuation-prompt contract for handing a long orchestration chat to a new chat
-- [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — use for live browser acceptance directly on `dev`
-
-Development currently happens directly on `dev`, including independent scoped chats. Handoffs must preserve that constraint and reconcile newer shared commits.
+Dev workers implement application changes; all test creation and maintenance belong to the separate testing workstream. When a change lacks a regression test, Dev reports the specific needed scenario rather than writing test source.
 
 ## Live work and acceptance status
 
