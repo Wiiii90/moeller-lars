@@ -5,6 +5,8 @@ description: Apply canonical Filament admin workspace, controls, tables, dialogs
 
 # Admin UI workstream
 
+This is the short role-specific entry, not a competing copy of UI rules. The repository-root [`ui-skills.md`](../../../ui-skills.md) is a compatibility gateway to the same owners.
+
 ## Choose the exact authority
 
 - **Primary visual grammar:** [Admin UI](../../../docs/ADMIN-UI.md) (admin only). Read the relevant sections for the task, not the full contract for every small edit. The active code may already implement newer user-reviewed decisions.

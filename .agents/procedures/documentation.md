@@ -17,6 +17,12 @@ This is the Docs branch's reusable working method. The [Docs roster](../areas/do
 
    The checker refuses newly introduced merge/root history, commits that touch branch-local worker/coordination/topics or `AGENTS.md`, and a candidate tree containing another branch's roster/worker files. Use `--target=main` for a separately prepared Main release candidate; `main` must not contain **any** worker/area/topic files. A passing check is **necessary, not sufficient**: a human still reviews documentation ownership and tests, checks that the candidate is based on the latest destination HEAD and authorizes promotion. This tool is presently only on `docs`; it is not an installed enforcement hook on `dev` or `main`.
 
+## Agent-readable source of truth
+
+The shortest useful read path is [the documentation index](../../docs/README.md#fast-path-for-agents-and-maintainers) → one canonical contract → actual code and adjacent consumers. Legacy entrypoints such as `ui-skills.md` remain **links**, not second normative copies. Before shrinking a legacy contract, compare every feature-specific rule against the destination: Home-routing row actions belong to Tables, Gallery file ownership belongs to Media, modal persistence to Dialogs and responsive geometry to Responsive. If a rule cannot be verified as present and consistent, transfer it or flag it explicitly for source review **before** removing the old text.
+
+Check local Markdown destinations and heading fragments, not merely filenames. For a large structural move, preserve old fragment IDs by redirecting or explicitly updating inbound links. Keep exact historical evidence under its source-pinned owner; a current contract should answer the reader's present question without first parsing old dated audits.
+
 ## Coherent documents instead of accumulated notes
 
 Start from the **purpose of the whole document**: audience, questions answered, canonical owner, related concepts, reader's navigation and suitable evidence. Explain architecture through meaningful domain/composition, state, persistence, publication, failure/recovery and trust boundaries. UML/sequence/component/flow diagrams should clarify **orchestration across boundaries**; trivial one-function class pictures do not add value. A clear narrative connects design decisions and lower-level references.

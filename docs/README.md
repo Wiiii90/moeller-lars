@@ -2,6 +2,18 @@
 
 This is the human entry to the **Lars Möller website application**. The public site, artist administration and publication system are a single Laravel application; `server-platform` supplies deployment/host operations. Start with the system architecture, then follow the question or change you are investigating. The goal is **comprehensive but layered explanation**, not a flat library of unrelated source excerpts.
 
+## Fast path for agents and maintainers
+
+Start from **the current task**, not a full-document reading marathon.
+
+1. **Establish scope:** current branch and exact `dev` source revision; the user's most recent accepted behavior; the entrypoint/component/domain actually affected. Use the branch's own root `AGENTS.md` and worker registration where applicable.
+2. **Locate one canonical owner:** use the table below for the relevant product contract, then inspect its concrete implementation and consumers. UI adapters, domain services, publication, database migrations and server infrastructure have different owners; a similarly named component is not automatically authoritative.
+3. **Make a small, coherent change:** preserve unchanged cross-feature invariants; prefer the existing central primitive or service over local duplication. No task-log prose, source-SHA chronology or copied test report in a normative contract.
+4. **Verify the right claim:** distinguish inspected code, authored assertions, an executed isolated test, a rebuilt browser candidate, user acceptance and release qualification. Record exact evidence and outstanding checks where it belongs.
+5. **Close the loop:** update the **existing** affected contract, reconcile links/anchors and remove proven obsolete text. Record still-open tasks only in the active worker/task owner, never in multiple knowledge files.
+
+For shared Admin work, [the short `ui-skills.md` entry](../ui-skills.md) routes to canonical [UI](ADMIN-UI.md), [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md), [Notifications](ADMIN-NOTIFICATION-CONTRACT.md) and [Browser review](ADMIN-BROWSER-WORKFLOW.md). It no longer reproduces their detailed rules.
+
 ## Choose a starting point
 
 | You want to understand… | Start here | Follow into |

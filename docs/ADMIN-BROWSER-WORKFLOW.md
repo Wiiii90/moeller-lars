@@ -59,6 +59,11 @@ Feature-specific icons are allowed when no shared semantic exists, but shared na
 
 ## Visual change review
 
+**Precise implementation brief:** When the user has already specified a layout, describe the actual control/action/content order, what shares a row/table/stage, what must disappear rather than merely change style, the existing primitives and accepted reference, the breakpoint or content-pressure condition, and neighboring behavior that must remain unchanged. Do not ask a worker to redesign already settled visual feedback.
+
+**Source-review gate:** Before accepting the change, list inspected reference files, shared Blade/CSS primitives or tokens reused, every new shared-looking selector/class and why it is genuinely feature-specific. Reject an otherwise functional page that replicates a shared control or workspace geometry locally. An accepted browser candidate still requires reference-proven dead presentation paths and obsolete implementation-specific UI tests to be removed, without deleting persisted compatibility or domain behavior. Source inspection, browser review and user acceptance are separate claims.
+
+
 The browser review is evidence against **one current built candidate**. Begin with the actual reference page when the user names an accepted Gallery, Storage or other design. Describe the control/content/action composition concretely; identify same-row groupings, shared tokens, responsive collapse conditions and neighboring surfaces that must remain unchanged. Do not convert unaccepted proposals, arbitrary pixel measurements or a previous repair attempt into normative UI requirements.
 
 At representative Wide, Compact, Narrow and Minimal content widths, inspect the workspace header, metric strip, search/filter/Selection baseline, count badge, table/grid roles and alignment, drag/Position rails, stable action order, nested parent/child geometry, empty states, dialogs/popovers, scroll/focus, and apparent first-click/navigation latency. Compare to the accepted reference **only for shared dimensions**, preserving each feature's distinct task model. Check responsive content pressure and whether page-local CSS bypasses an existing shared primitive.
