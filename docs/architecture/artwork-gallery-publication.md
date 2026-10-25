@@ -1,6 +1,6 @@
 # Gallery / Artwork: Veröffentlichung, öffentliche Eligibility und Undo-Inverse
 
-**Quellstand:** `dev@470f2daa900f2d68db9c7e5fe2b227db20e44bc7` (bereits in `docs`). Diese Architekturanalyse ist **deskriptiv**; die normative Artist-Gallery-/Viewer-Regel steht im [Public-Vertrag](../PUBLIC-IMPLEMENTATION-CONTRACT.md), Admin-Dialogaktion im [Dialog-Vertrag](../ADMIN-DIALOG-CONTRACT.md). Die genaue alternative Publish-Guard-Fallmatrix besitzt [`import-boundaries.md`](import-boundaries.md) und wird hier **nicht** dupliziert. Keine hier ausgeführten PHP-/DB-/Browser-/Viewer-Tests.
+**Quellstand:** `dev@470f2daa900f2d68db9c7e5fe2b227db20e44bc7` (bereits in `docs`). Diese Architekturanalyse ist **deskriptiv**; die normative Artist-Gallery-/Viewer-Regel steht im [Public-Vertrag](../public/site.md), Admin-Dialogaktion im [Dialog-Vertrag](../admin/dialogs.md). Die genaue alternative Publish-Guard-Fallmatrix besitzt [`import-boundaries.md`](import-boundaries.md) und wird hier **nicht** dupliziert. Keine hier ausgeführten PHP-/DB-/Browser-/Viewer-Tests.
 
 ## 1. Admin-Einstieg → Readiness → Domain-Mutation
 

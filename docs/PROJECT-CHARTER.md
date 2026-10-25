@@ -56,7 +56,7 @@ Persistent Preview / future logical Commit / Settings utilities may exist at she
 
 ## Admin interaction principles
 
-The detailed admin UI grammar is maintained in [Admin UI](ADMIN-UI.md).
+The detailed admin UI grammar is maintained in [Admin UI](admin/ui.md).
 
 Durable principles:
 
@@ -159,6 +159,6 @@ Production deployment remains an explicit authorized platform action.
 
 ## Documentation ownership
 
-Current authoritative feature and architecture documents are indexed by [Project documentation](README.md). Reusable Admin presentation rules are in [Admin UI](ADMIN-UI.md). Repository-specific agent operation is separate from this product charter.
+Current authoritative feature and architecture documents are indexed by [Project documentation](README.md). Reusable Admin presentation rules are in [Admin UI](admin/ui.md). Repository-specific agent operation is separate from this product charter.
 
 GitHub Issues/current browser review track unfinished work/acceptance. Legacy evidence is kept separate and retired only after explicit legacy retirement.

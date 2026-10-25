@@ -45,7 +45,7 @@ sequenceDiagram
 
 **Do not merge these boundaries:** inserting an image never uploads or deletes a second file; an Edit save never equals Publication Commit; Audit is not a browser toast; an authored Test is not a runtime check. A current Media reference is not automatically eligible for public delivery. Correctness depends on accepted product/working state, source eligibility and actual preview/commit context. The transaction and notification calls in the diagram are conceptual; inspect the **concrete** current owner's callback before claiming precise call order or a same-transaction guarantee.
 
-Normative owners: [Editorial Rich Text](../EDITORIAL-RICH-TEXT.md), [Admin dialog](../ADMIN-DIALOG-CONTRACT.md), [Media](../MEDIA.md), [Publication/Activity](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Notification](../ADMIN-NOTIFICATION-CONTRACT.md), [Public](../PUBLIC-IMPLEMENTATION-CONTRACT.md). Detailed historical traces: [Editorial mutations](editorial-mutation-paths.md), [Publication](publication.md), [Media references](media-reference-and-cleanup.md).
+Normative owners: [Editorial Rich Text](../content/rich-text.md), [Admin dialog](../admin/dialogs.md), [Media](../media.md), [Publication/Activity](../admin/activity-publication.md), [Notification](../admin/notifications.md), [Public](../public/site.md). Detailed historical traces: [Editorial mutations](editorial-mutation-paths.md), [Publication](publication.md), [Media references](media-reference-and-cleanup.md).
 
 ## 2. Exhibition/Journal composition and editorial visibility
 
@@ -67,7 +67,7 @@ flowchart LR
 
 The Exhibition has **three distinct identities**: Organizer attribution, physical Venue and geocoded address. Each opted-out field remains in editable Working data. Hiding a textual address does not automatically disable the OpenStreetMap dialog; public map exposure must be reviewed separately. Opening/vernissage display is controlled by both an editorial flag and date, whereas Exhibition chronology uses start/end dates. The locale of the authenticated editor is **not** the public regional format and never translates saved artist text.
 
-Owners: [Exhibition Editorial](../EXHIBITION-EDITORIAL-CONTRACT.md), [Journal read/preview](journal-content-lifecycle.md), [Admin localization](../ADMIN-LOCALIZATION-CONTRACT.md), [Public](../PUBLIC-IMPLEMENTATION-CONTRACT.md), [Public rights](../PUBLIC-RIGHTS-AND-PRIVACY.md).
+Owners: [Exhibition Editorial](../content/exhibitions.md), [Journal read/preview](journal-content-lifecycle.md), [Admin localization](../admin/ui.md), [Public](../public/site.md), [Public rights](../public/rights-privacy.md).
 
 ## 3. Public document and shared presentation owners
 
@@ -86,7 +86,7 @@ flowchart LR
 
 The shared source owners establish a **fan-out risk**: `PublicAppearance` and General color controls influence Header, divider, frame, menu, Page and responsive preview; `AdminRichText` changes influence Journal, Home and Custom Pages; `MediaAssetSelect` affects all media consumers. A CSS change that fixes a divider on one template may break another. In source from this audit the Public paper is intrinsic **CSS geometry**, not the retired observer-driven `public-paper-frame.js`. Gallery initial image loading, SPA disposal, Content Security Policy nonces and viewer scopes remain separate invariants.
 
-Owners: [Public implementation](../PUBLIC-IMPLEMENTATION-CONTRACT.md), [Public SPA lifecycle](public-spa-lifecycle.md), [UI source composition](ui-surfaces.md), [Public security](public-security-privacy-boundaries.md).
+Owners: [Public implementation](../public/site.md), [Public SPA lifecycle](public-spa-lifecycle.md), [UI source composition](ui-surfaces.md), [Public security](public-security-privacy-boundaries.md).
 
 ## 4. Regression-risk seams and evidence
 

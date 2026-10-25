@@ -176,7 +176,7 @@ Canonical original uploaded or migrated asset.
 
 Durable technical identity includes generated storage key, content-derived MIME type, bytes, SHA-256, lifecycle state and media metadata including canonical asset-level ALT.
 
-Available originals are reusable across consumers. A referenced asset is **not** automatically immune to deletion: an explicitly authorized `MediaAssetEditorialService::delete()` transaction removes supported canonical usages and dependent editorial references before marking the asset deleted. Its physical bytes remain governed by Working/LIVE/retained-history cleanup eligibility. See [MEDIA.md](MEDIA.md#deletion-and-cleanup).
+Available originals are reusable across consumers. A referenced asset is **not** automatically immune to deletion: an explicitly authorized `MediaAssetEditorialService::delete()` transaction removes supported canonical usages and dependent editorial references before marking the asset deleted. Its physical bytes remain governed by Working/LIVE/retained-history cleanup eligibility. See [MEDIA.md](media.md#deletion-and-cleanup).
 
 ### `media_variants`
 
@@ -192,7 +192,7 @@ Rich Text references use Markdown `media:<id>` and are discovered by `RichTextMe
 
 `PublicMedia` is a separate policy layer deciding whether a reference is currently public.
 
-See [MEDIA.md](MEDIA.md).
+See [MEDIA.md](media.md).
 
 ## Admin notifications
 
@@ -204,7 +204,7 @@ The durable identity is `(user_id, source_id)`: the recipient and the server-ori
 
 Persistent notifications are created by the central server-side admin notifier. Rendered Filament DOM/classes are not a persistence source.
 
-See [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
+See [ADMIN-NOTIFICATION-CONTRACT.md](admin/notifications.md).
 
 ## Audit, Undo and editorial checkpoints
 
@@ -250,4 +250,4 @@ Gallery `artwork_categories` now carries Source migrations for `landscape_detail
 
 Legacy artwork/Vita/Journal/media structures are migration inputs only.
 
-Existing protected canonical state evolves through forward Laravel migrations. Source import is not rerun destructively against non-empty canonical data. Current forward canonicalization includes Journal Rich Text media normalization and Exhibition presentation/restore normalization; see [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
+Existing protected canonical state evolves through forward Laravel migrations. Source import is not rerun destructively against non-empty canonical data. Current forward canonicalization includes Journal Rich Text media normalization and Exhibition presentation/restore normalization; see [MIGRATION-INVARIANTS.md](migration/invariants.md).

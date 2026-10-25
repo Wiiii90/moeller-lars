@@ -1,6 +1,6 @@
 # Klassen-Importdiagramme nach Modulen
 
-Die **20** [Mermaid-Detaildiagramme](generated/class-imports/) umfassen insgesamt alle **248** unter `app/` deklarierten Klassen, Traits und Enums als Ausgangsobjekte sowie die **900** intern aufgelösten PHP-Importdeklarationen. Ein Modul zeigt alle eigenen Typen und zusätzlich die durch `use App\\...` importierten Typen anderer Module.
+Die **20** [Mermaid-Detaildiagramme](generated/class-imports) umfassen insgesamt alle **248** unter `app/` deklarierten Klassen, Traits und Enums als Ausgangsobjekte sowie die **900** intern aufgelösten PHP-Importdeklarationen. Ein Modul zeigt alle eigenen Typen und zusätzlich die durch `use App\\...` importierten Typen anderer Module.
 
 **Eindeutige Semantik:** Ein Pfeil `A -->|import| B` bedeutet nur, dass die Quell-PHP-Datei A einen Import von B **deklariert**. Er beweist nicht, dass A B instanziiert, eine Methode aufruft, die Container-Bindung auflöst oder die Klassendatei zur Laufzeit lädt. [Der Gesamtmodulgraph](generated/app-module-imports.mmd) fasst dieselben Kanten zusammen; [Call-Sites](admin-publication-calls.md) und [UI-Traits](ui-surfaces.md) besitzen separate, stärkere Evidenz.
 

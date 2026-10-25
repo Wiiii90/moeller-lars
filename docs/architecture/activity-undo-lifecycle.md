@@ -1,6 +1,6 @@
 # Activity, Undo-Receipts und Ordering-Projektionen
 
-**Quellstand:** `dev@f69e0e7e3d857e717e9ed86102b0ee830ed9ebb0` (Merge in `docs`). Dieses Dokument rekonstruiert **einzelne Admin-Undo-Aktionen und Activity-Projektionen**, nicht das Stage-Restore/-Revert einer Publication-Version. Normative Regeln: [Activity-/Publication-Vertrag](../ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Audit und Notification](../ADMIN-NOTIFICATION-CONTRACT.md); separate [Stage-/Commit-Flows](publication-working-operations.md). Testdateien wurden **gelesen, nicht ausgeführt**.
+**Quellstand:** `dev@f69e0e7e3d857e717e9ed86102b0ee830ed9ebb0` (Merge in `docs`). Dieses Dokument rekonstruiert **einzelne Admin-Undo-Aktionen und Activity-Projektionen**, nicht das Stage-Restore/-Revert einer Publication-Version. Normative Regeln: [Activity-/Publication-Vertrag](../admin/activity-publication.md), [Audit und Notification](../admin/notifications.md); separate [Stage-/Commit-Flows](publication-working-operations.md). Testdateien wurden **gelesen, nicht ausgeführt**.
 
 ## Drei Speicherebenen, vier reversible Familien
 

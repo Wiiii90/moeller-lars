@@ -12,7 +12,7 @@ Start from **the current task**, not a full-document reading marathon.
 4. **Verify the right claim:** distinguish inspected code, authored assertions, an executed isolated test, a rebuilt browser candidate, user acceptance and release qualification. Record exact evidence and outstanding checks where it belongs.
 5. **Close the loop:** update the **existing** affected contract, reconcile links/anchors and remove proven obsolete text. Record still-open tasks only in the active worker/task owner, never in multiple knowledge files.
 
-For shared Admin work, use the canonical [UI](ADMIN-UI.md), [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md), [Notifications](ADMIN-NOTIFICATION-CONTRACT.md) and [Browser review](ADMIN-BROWSER-WORKFLOW.md) owners directly. Do not add a second overview or root skill.
+For shared Admin work, use the canonical [UI](admin/ui.md), [Controls](admin/controls.md), [Dialogs](admin/dialogs.md), [Tables](admin/tables.md), [Responsive](admin/responsive.md), [Notifications](admin/notifications.md) and [Browser review](admin/browser-review.md) owners directly. Do not add a second overview or root skill.
 
 **User authority and branch coordination:** The user determines the accepted design and integration order. Current `dev` code is the descriptive baseline; routine Dev work maintains application code and active task/workstream notes, while the Test/Docs/Refactor workstreams may prepare in parallel. General documents are maintained here on `docs` and transferred only after reviewed reconciliation. The ordinary gated sequence is `dev → testing → docs → refactor → main`, but the user may vary it. See the existing [worker and integration protocol](../.agents/README.md#continuous-work-and-integration-gates), not a separate duplicated workflow file.
 
@@ -21,12 +21,12 @@ For shared Admin work, use the canonical [UI](ADMIN-UI.md), [Controls](ADMIN-CON
 | You want to understand… | Start here | Follow into |
 | --- | --- | --- |
 | **How the entire application fits together** | [System architecture](ARCHITECTURE.md) | [Cross-feature source traces](architecture/README.md) |
-| **What the website and artist administration must do** | [Project charter](PROJECT-CHARTER.md) | [Public presentation](PUBLIC-IMPLEMENTATION-CONTRACT.md), [Admin interaction design](ADMIN-UI.md) |
-| **How editing, publishing, recovery and permissions work** | [System edit-to-public model](ARCHITECTURE.md#3-the-central-transaction-edit--audit--publication--read) | [Activity / Publication](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Media](MEDIA.md), [History/concurrency evidence](architecture/publication-working-operations.md) |
-| **Where data and media live** | [Data model](DATA-MODEL.md) | [Media lifecycle](MEDIA.md), [component structure](architecture/structured-components.md), [schema evidence](architecture/schema-evolution.md) |
-| **How the public pages and shared frontend behave** | [Public implementation](PUBLIC-IMPLEMENTATION-CONTRACT.md) | [Exhibition editorial](EXHIBITION-EDITORIAL-CONTRACT.md), [Journal lifecycle](architecture/journal-content-lifecycle.md), [document navigation](architecture/public-spa-lifecycle.md) |
-| **How Admin controls, dialogs, tables and editors are shared** | [Admin UI design and interaction](ADMIN-UI.md) | [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md), [Rich Text](EDITORIAL-RICH-TEXT.md) |
-| **What was actually verified or still requires a check** | [Test architecture](TESTING.md) | [Concise architecture evidence map](architecture/completion-criteria.md), [migration/cutover](MIGRATION-PLAN.md) |
+| **What the website and artist administration must do** | [Project charter](PROJECT-CHARTER.md) | [Public presentation](public/site.md), [Admin interaction design](admin/ui.md) |
+| **How editing, publishing, recovery and permissions work** | [System edit-to-public model](ARCHITECTURE.md#3-the-central-transaction-edit--audit--publication--read) | [Activity / Publication](admin/activity-publication.md), [Media](media.md), [History/concurrency evidence](architecture/publication-working-operations.md) |
+| **Where data and media live** | [Data model](DATA-MODEL.md) | [Media lifecycle](media.md), [component structure](architecture/structured-components.md), [schema evidence](architecture/schema-evolution.md) |
+| **How the public pages and shared frontend behave** | [Public implementation](public/site.md) | [Exhibition editorial](content/exhibitions.md), [Journal lifecycle](architecture/journal-content-lifecycle.md), [document navigation](architecture/public-spa-lifecycle.md) |
+| **How Admin controls, dialogs, tables and editors are shared** | [Admin UI design and interaction](admin/ui.md) | [Controls](admin/controls.md), [Dialogs](admin/dialogs.md), [Tables](admin/tables.md), [Rich Text](content/rich-text.md) |
+| **What was actually verified or still requires a check** | [Test architecture](operations/testing.md) | [Concise architecture evidence map](architecture/completion-criteria.md), [migration/cutover](migration/plan.md) |
 
 ## Architecture, reference and historical evidence
 
@@ -44,19 +44,19 @@ There is one authoritative home for each requirement. A feature may participate 
 
 | Authority | Owns |
 | --- | --- |
-| [Public implementation](PUBLIC-IMPLEMENTATION-CONTRACT.md) and [Exhibition editorial](EXHIBITION-EDITORIAL-CONTRACT.md) | Public routing, viewer/navigation, Home/Gallery/Journal presentation; Exhibition-only venue, organizer, map and opening rules |
-| [Admin design](ADMIN-UI.md), [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md) | Shared admin design grammar and its canonical component implementations; page-specific forms should reuse them |
-| [Rich Text](EDITORIAL-RICH-TEXT.md) | Editor/render/picker, safe formatting and reusable media references across Home, Journal, Custom Page |
-| [Publication/Activity](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md), [Notification](ADMIN-NOTIFICATION-CONTRACT.md) | Working versus committed, versioning, Undo, audit versus actor-scoped messaging |
-| [Media](MEDIA.md), [Rights/privacy](PUBLIC-RIGHTS-AND-PRIVACY.md), [Analytics](ANALYTICS.md) | Asset identity, ingest, eligibility, file lifetime, rights/consent versus tracking/reporting |
-| [Data model](DATA-MODEL.md), [Migration](MIGRATION-INVARIANTS.md) | Meaning of persistent identities/relations and forward-compatible migration |
-| [Testing](TESTING.md), [Release](RELEASE.md), [server operations boundary](SERVER-OPERATIONS-BASELINE.md) | Safe validation, qualification and application/platform responsibilities |
+| [Public implementation](public/site.md) and [Exhibition editorial](content/exhibitions.md) | Public routing, viewer/navigation, Home/Gallery/Journal presentation; Exhibition-only venue, organizer, map and opening rules |
+| [Admin design](admin/ui.md), [Controls](admin/controls.md), [Dialogs](admin/dialogs.md), [Tables](admin/tables.md), [Responsive](admin/responsive.md) | Shared admin design grammar and its canonical component implementations; page-specific forms should reuse them |
+| [Rich Text](content/rich-text.md) | Editor/render/picker, safe formatting and reusable media references across Home, Journal, Custom Page |
+| [Publication/Activity](admin/activity-publication.md), [Notification](admin/notifications.md) | Working versus committed, versioning, Undo, audit versus actor-scoped messaging |
+| [Media](media.md), [Rights/privacy](public/rights-privacy.md), [Analytics](operations/analytics.md) | Asset identity, ingest, eligibility, file lifetime, rights/consent versus tracking/reporting |
+| [Data model](DATA-MODEL.md), [Migration](migration/invariants.md) | Meaning of persistent identities/relations and forward-compatible migration |
+| [Testing](operations/testing.md), [Release](operations/release.md), [server operations boundary](operations/server-boundary.md) | Safe validation, qualification and application/platform responsibilities |
 
 Additional specialized Admin contracts cover authentication, localization, password policy, performance, notifications and browser review. Their unique requirements remain valid until checked against current owners and consolidated; no independent page contract may redefine a shared primitive.
 
 ## Migration and cutover evidence
 
-The following are deliberately **cutover-specific**, not the permanent application architecture: [migration plan](MIGRATION-PLAN.md), [migration invariants](MIGRATION-INVARIANTS.md), [source inventory](SOURCE-INVENTORY.md), [legacy public behavior](LEGACY-PUBLIC-CONTRACT.md). Keep unique migration/recovery facts until legacy retirement is actually approved, then archive or consolidate them in a deliberate cleanup.
+The following are deliberately **cutover-specific**, not the permanent application architecture: [migration plan](migration/plan.md), [migration invariants](migration/invariants.md), [source inventory](migration/source-inventory.md), [legacy public behavior](migration/legacy-public.md). Keep unique migration/recovery facts until legacy retirement is actually approved, then archive or consolidate them in a deliberate cleanup.
 
 Architecture and product decisions are maintained only in the owning current [system architecture](ARCHITECTURE.md) and feature contracts; do not store server tariffs, prices, account details, access instructions or private infrastructure decisions in this public repository.
 
