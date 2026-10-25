@@ -15,6 +15,9 @@ Make project documentation and agent procedures **fast to navigate, coherent, cu
 - Rights/consent text aligned with the artist's **deferred** consent-UI decision. Current source implementation, legal review and authorized tracking activation remain distinct checks.
 - Canonical human/agent fast path added to `docs/README.md`, browser brief/source-review gates to `docs/ADMIN-BROWSER-WORKFLOW.md`; no application change or runtime/product acceptance claimed.
 
+- User explicitly required deletion rather than alias retention. `docs` removed the three obsolete root skills, the new dated audit dump and two copied temporary rights handoffs; references were updated. `dev` independently received the same root-file deletions, direct canonical Admin UI/Responsive contracts, and effective **Dev-no-test-authorship** policy at `dev@12c0efe4e7a331045d00bbe69f10c26ad9853bca` without touching application code or test source.
+- Repository-wide remote Markdown **path** scans covered all 79 files on `docs` and 45 on `dev`; stale relative paths found after deletion were corrected in the affected documents. This does not claim the native PHP heading validator was executed.
+
 ## Still open / next actions
 
 1. Review remaining Admin/Public/Media/Rights prose **only when a concrete rule has competing owners**. A six-gram comparison of all 26 Admin UI sections against Table/Dialog/Control/Responsive/Browser found predominantly unique material; no destructive mass deletion is justified. Preserve accepted requirements.
