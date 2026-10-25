@@ -36,7 +36,7 @@ Sensitive authentication fields must never use per-keystroke or reactive server 
 
 `App\Support\AdminPasswordPolicy` is the single password-rule authority for administrator provisioning, account changes and password reset.
 
-## Environment behavior
+### Environment behavior
 
 - Validation, Production and every environment other than `local`/`testing`: 15 to 128 characters.
 - `local` and `testing`: 8 to 128 characters and no external breach lookup.
@@ -46,7 +46,7 @@ Sensitive authentication fields must never use per-keystroke or reactive server 
 
 The relaxed local/testing rule exists only for developer convenience. It is not a production recommendation.
 
-## Generator
+### Generator
 
 `AdminPasswordField` exposes Generate and Copy actions in the Account dialog and password-reset form.
 
@@ -56,7 +56,7 @@ The generator does not use mouse movement, timing entropy or `Math.random()`. Ge
 
 A password manager is the preferred storage location for generated credentials.
 
-## Provisioning
+### Provisioning
 
 `php artisan admin:provision` uses Laravel's configured default password rule, so it cannot drift from Account/reset behavior.
 

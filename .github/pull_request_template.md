@@ -19,7 +19,7 @@ Targeted/manual/Validation notes:
 
 ## Admin UI / browser acceptance
 
-<!-- For admin UI changes, review against docs/ADMIN-UI.md and current browser feedback. A page booting successfully is not browser/product acceptance. -->
+<!-- For admin UI changes, review against docs/admin/ui.md and current browser feedback. A page booting successfully is not browser/product acceptance. -->
 
 - [ ] Not an admin UI change
 - [ ] Shared admin primitives/geometry were reused where applicable

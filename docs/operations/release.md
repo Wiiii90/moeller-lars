@@ -174,7 +174,7 @@ The current `dev@434975e1bd09` sources introduce optional rights artifact regist
 
 Data migrations may be intentionally forward-only. Rollback can require restoring the matching recoverable database/media state rather than `migrate:rollback`.
 
-Current pre-cutover reconciliation includes forward canonicalization of Journal Rich Text media and Exhibition presentation/restore state. Admin authentication also requires the forward user-table migration that provides Filament app-authentication secret/recovery-code storage. See [MIGRATION-INVARIANTS.md](../migration/invariants.md) for migration/reconciliation rules and [ADMIN-AUTHENTICATION.md](../admin/authentication.md) for the auth contract.
+Current pre-cutover reconciliation includes forward canonicalization of Journal Rich Text media and Exhibition presentation/restore state. Admin authentication also requires the forward user-table migration that provides Filament app-authentication secret/recovery-code storage. See [MIGRATION-INVARIANTS.md](../migration/invariants.md) for migration/reconciliation rules and [Admin authentication](../admin/authentication.md) for the auth contract.
 
 ## Persistent state
 
@@ -219,7 +219,7 @@ No legacy admin credential is migrated/seeded and public admin registration is n
 php artisan admin:provision
 ```
 
-Password input remains interactive/hidden and is not accepted as a command-line argument. Newly provisioned administrators can use the panel without MFA enrollment and may enable TOTP/recovery codes later from the Account dialog. Provisioning, account password changes and password reset share the canonical policy in [ADMIN-PASSWORD-POLICY.md](../admin/authentication.md). Password recovery is email-based and sends a reset link, never an existing password.
+Password input remains interactive/hidden and is not accepted as a command-line argument. Newly provisioned administrators can use the panel without MFA enrollment and may enable TOTP/recovery codes later from the Account dialog. Provisioning, account password changes and password reset share the canonical policy in [Admin authentication](../admin/authentication.md). Password recovery is email-based and sends a reset link, never an existing password.
 
 ## Workers and scheduling
 

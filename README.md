@@ -51,7 +51,7 @@ Stop the local stack without discarding its database container:
 docker compose stop
 ```
 
-Browser-polish/reconciliation uses the `local-preview` target in the root [`Dockerfile`](Dockerfile) through the opt-in Compose `preview` service. On Windows, the canonical local rebuild command from any PowerShell location is `& 'P:\moeller-lars\scripts\local-preview.ps1'`. The preview and production image now share one build graph, so frontend/runtime stages are not rebuilt through a second Dockerfile. Branch/review rules are owned by [AGENTS.md](AGENTS.md); the browser-reconciliation loop is summarized in [docs/ADMIN-BROWSER-WORKFLOW.md](docs/admin/browser-review.md); CI, release-image and Validation contracts are owned by [docs/RELEASE.md](docs/operations/release.md).
+Browser-polish/reconciliation uses the `local-preview` target in the root [`Dockerfile`](Dockerfile) through the opt-in Compose `preview` service. On Windows, the canonical local rebuild command from any PowerShell location is `& 'P:\moeller-lars\scripts\local-preview.ps1'`. The preview and production image now share one build graph, so frontend/runtime stages are not rebuilt through a second Dockerfile. Branch/review rules are owned by [AGENTS.md](AGENTS.md); the browser-reconciliation loop is summarized in [Admin: browser-review.md](docs/admin/browser-review.md); CI, release-image and Validation contracts are owned by [docs/RELEASE.md](docs/operations/release.md).
 
 ## Site structure
 
@@ -72,10 +72,10 @@ The artist admin is browser-reviewed as an editorial product, not accepted merel
 Start with:
 
 - [AGENTS.md](AGENTS.md) — direct-`dev` workflow and central technology rules
-- [docs/ADMIN-UI.md](docs/admin/ui.md) — canonical admin workspace, interaction and shared visual grammar
-- [docs/ADMIN-RESPONSIVE-CONTRACT.md](docs/admin/responsive.md) — responsive composition
-- [docs/ADMIN-AUTHENTICATION.md](docs/admin/authentication.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and mail boundary
-- [docs/ADMIN-BROWSER-WORKFLOW.md](docs/admin/browser-review.md) — direct-`dev` browser workflow, shared Visual Stage ownership and local preview loop
+- [Admin: ui.md](docs/admin/ui.md) — canonical admin workspace, interaction and shared visual grammar
+- [Admin: responsive.md](docs/admin/responsive.md) — responsive composition
+- [Admin: authentication.md](docs/admin/authentication.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and mail boundary
+- [Admin: browser-review.md](docs/admin/browser-review.md) — direct-`dev` browser workflow, shared Visual Stage ownership and local preview loop
 
 Normal source work happens directly on `dev`, including separate chats with clearly scoped ownership. During this mode there is no CI/Actions interaction, branch-worker choreography or release without separate authorization.
 
@@ -91,7 +91,7 @@ Start with [docs/README.md](docs/README.md). It separates current application co
 
 ## Security
 
-Never commit secrets or private production data. Use environment/platform secret storage for credentials and tokens. The admin authentication, MFA and password-recovery contract is documented in [docs/ADMIN-AUTHENTICATION.md](docs/admin/authentication.md). Report security-sensitive findings according to [SECURITY.md](SECURITY.md), not through public issues containing exploit details or secret material.
+Never commit secrets or private production data. Use environment/platform secret storage for credentials and tokens. The admin authentication, MFA and password-recovery contract is documented in [Admin: authentication.md](docs/admin/authentication.md). Report security-sensitive findings according to [SECURITY.md](SECURITY.md), not through public issues containing exploit details or secret material.
 
 ## License and contributions
 

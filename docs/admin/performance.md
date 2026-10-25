@@ -131,7 +131,7 @@ During local browser-polish cycles, do not launch a performance test suite simpl
 
 This runbook is the canonical workflow for diagnosing admin interactions that feel slow. It complements the durable budget in `docs/admin/performance.md`; it is not a replacement for browser/product acceptance.
 
-#### Diagnostic layers
+### Diagnostic layers
 
 Keep these questions separate:
 
@@ -145,7 +145,7 @@ Keep these questions separate:
 
 Do not add page-local `microtime()` logging or speculative caches as the primary diagnostic method.
 
-#### Local Debugbar
+### Local Debugbar
 
 Laravel Debugbar is a development-only Composer dependency. The Production image installs Composer dependencies with `--no-dev`, so Debugbar is absent from the normal Production runtime.
 
@@ -176,7 +176,7 @@ For one suspicious request inspect at least:
 
 Debugbar itself adds overhead. Compare structure and relative hotspots first; do not treat a Debugbar-enabled millisecond number as the Production latency baseline.
 
-#### Playwright interaction profiling
+### Playwright interaction profiling
 
 The repository contains a direct Playwright profiling suite in `tests/browser`. It runs separately from Pest because the performance contract needs browser traces, request classification, transfer/payload evidence and machine-readable per-flow metrics.
 
@@ -220,7 +220,7 @@ The payload limits are intentionally selective. Pages → Add page, Home → Set
 
 Wall-clock durations remain diagnostic output only. Do not turn the repository's product-level response targets into shared-runner microbenchmarks. Existing focused Pest performance tests continue to protect stable query-count/duplicate-query invariants independently from the browser suite.
 
-#### Chrome DevTools interaction capture
+### Chrome DevTools interaction capture
 
 Use a warmed local admin candidate and perform exactly one deliberate interaction at a time.
 
@@ -260,7 +260,7 @@ After the page is fully settled:
 
 A feature that intentionally polls must own and document that behavior; otherwise repeated idle requests are a regression candidate.
 
-#### Request-level classification
+### Request-level classification
 
 Correlate the browser request with Debugbar:
 
@@ -272,7 +272,7 @@ Correlate the browser request with Debugbar:
 
 For Pages/Home specifically, large public Livewire arrays remain a hypothesis until request/snapshot evidence shows that serialization or payload size is material.
 
-#### Targeted PHP callgraph profiling
+### Targeted PHP callgraph profiling
 
 Use a callgraph only when one PHP request is demonstrably slow and Debugbar/Network do not explain the time through SQL or external I/O. Xdebug must be installed only in the local/profiling runtime, never added to the normal Production image.
 
@@ -291,7 +291,7 @@ Trigger only the request being investigated with `XDEBUG_TRIGGER=1` (query param
 
 Look for service/resolver/listener/rendering call stacks that account for meaningful inclusive time. Do not optimize functions merely because they appear in the callgraph; optimize the path that explains the measured slow request.
 
-#### Laravel Pulse deployed telemetry
+### Laravel Pulse deployed telemetry
 
 Laravel Pulse is the aggregate deployed-observability layer, not the per-request profiler. It is a runtime dependency because Validation/Production may record telemetry, but recording is **off by default** through `PULSE_ENABLED=false`.
 
@@ -312,7 +312,7 @@ The application repository owns Pulse dependency/configuration, schema and autho
 
 For a copy/paste or machine-readable snapshot of retained aggregate telemetry, use the application-owned `php artisan pulse:report --hours=24` command. On Validation, the platform wrapper is `server-platform-moeller-lars-validation pulse-report --hours=24`. See [PULSE-REPORT.md](../operations/pulse.md) for supported options, schema, aggregate semantics, privacy limits and read-only guarantees.
 
-#### Evidence record
+### Evidence record
 
 For a meaningful investigation, keep a compact record containing:
 
@@ -328,7 +328,7 @@ For a meaningful investigation, keep a compact record containing:
 
 Do not publish credentials, auth/session tokens, Contact-form contents or private visitor data in traces, Pulse grouping keys or screenshots.
 
-#### How the profiling layers fit together
+### How the profiling layers fit together
 
 - **Local Debugbar + DevTools + optional callgraph** decompose one suspicious interaction/request.
 - **Playwright interaction tracing** reproduces representative browser actions in CI and preserves request/trace evidence.
