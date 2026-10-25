@@ -25,6 +25,24 @@ Each branch-local roster owns its independent **next lease token**. A new alloca
 
 **Every substantive worker report starts with its exact registered identity** (e.g., “Docs Worker 1”). A named role or saved next step does not itself authorize code changes, tests, merges or automatic task execution.
 
+## Branch-local roster initialization and cross-branch exclusion
+
+**Every working branch should retain one tracked, branch-local `.agents/roster.md`**, even before its first worker is activated. If a branch has no real registry yet, initialize an **empty** one with a branch-specific heading, `**Next lease token:** 1`, the columns `Worker | Lease | State | Claimed work | Own task record` and no worker rows. Do not pre-create any `.agents/workers/<role>-N.md`: an individual file means that numbered chat was actually activated. Each branch maintains its independent monotonically increasing lease sequence. When all workers sign out, the empty roster remains.
+
+**For the future approved Docs-to-Dev publication:** bring the reviewed shared protocol/skills across, but **never** bring Docs' active worker rows, lease counter or individual Docs records. Retain a verified existing Dev roster if present; otherwise initialize **one empty Dev roster**, not both a Docs copy and a Dev copy. Testing and Refactor likewise receive their own empty roster during their authorized method synchronization if missing. No unfiltered branch history merge and no transfer of another branch's `.agents/workers/` directory. This is an explicit transfer gate, not a promise that other branch trees were already changed.
+
+## Durable corrections, user authority and technical disagreement
+
+The user has the last word over desired features, product decisions, architectural exceptions, freeze and transfers. A user's diagnosis, proposed implementation, attribution of fault or assumptions about a programming language can still be mistaken. **Do not automatically agree or flatter.** Identify the concrete evidence and owner, explain when an approach would contradict existing design or technical facts, suggest the smallest sound alternative, and let the user decide a real conflict. Never implement a workaround silently just to avoid disagreement.
+
+**A repeated correction must survive this chat.** Determine its actual owner:
+- Cross-role onboarding, worker identity, branch isolation, finite investigation and feedback handling -> amend **this protocol**.
+- Role-specific method (central implementation, meaningful testing, refactoring discipline) -> amend the relevant **existing role skill**.
+- Accepted feature, UI or architectural invariant -> amend the one relevant **permanent product/architecture contract** through the Docs publication boundary.
+- Temporary assignment/incident/progress -> update **only this branch's current worker record**.
+
+A worker may propose or make an authorized same-branch correction to its own role method while doing the relevant feature or test work; reusable knowledge need not wait until its worker file is deleted. First inspect the existing section so the new lesson is a **precise amendment**, not another contradictory appendix or redundant skill. In other-branch/shared ownership cases, record a concise proposed change and route it through the reviewed Docs/Dev transfer; do not mutate another branch's private worker data or spin up a parallel policy file. If the user requests a rule contrary to an earlier accepted one, explain the conflict and request the user's choice. Not every individual complaint merits a new universal prohibition.
+
 ## Cross-worker responsibilities
 
 - **Dev workers:** implement and source-review application changes on `dev`. **Do not create, modify, refactor or delete tests or routine general documentation.** Update active scoped living workstream records instead; report exact source commit, affected behavior/consumers, verification actually performed, changed contract semantics and the test/documentation follow-up. Explicitly requested targeted documentation work is distinct.

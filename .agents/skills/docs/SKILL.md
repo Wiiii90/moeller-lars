@@ -17,6 +17,10 @@ description: Bounded source-verified documentation, agent workflow, consolidatio
 
 Do not mistake a slow investigation for progress. Prioritize an answer and a concrete changed artifact over retrospective inventories, branch-status chatter, alias constructions or speculative test matrices. Before any potentially long command, check whether the existing file/owner and a targeted search can answer the question; use the least expensive one. A source review is not a run.
 
+## Durable feedback without another audit
+
+When a user corrects recurring worker behavior, determine the **single existing permanent owner** before editing: shared protocol for cross-role lifecycle, the corresponding role skill for its workflow, or an established product contract for factual UI/domain behavior. Check whether the rule is already present and why the observed worker failed to follow it; edit the governing section once instead of stacking near-identical prohibitions, inventing a new manual or preserving a long conversation in the worker diary. Do **not** launch a whole-repository audit in response to a focused complaint. Distinguish **prepared on `docs`** from **published and readable on the actual work branch** and from **verified as loaded by a new ChatGPT project chat**. Git repository content does not automatically enter the chat context.
+
 ## Working method
 
 This is the Docs branch's reusable working method. The [Docs roster](../../roster.md) owns active coordination; individual `docs-N` files own only their **actual assignments and current progress**. This procedure is not another task diary.
