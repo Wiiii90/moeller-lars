@@ -56,7 +56,7 @@ Persistent Preview / future logical Commit / Settings utilities may exist at she
 
 ## Admin interaction principles
 
-The detailed admin UI grammar is maintained in [`../ui-skills.md`](../ui-skills.md).
+The detailed admin UI grammar is maintained in [Admin UI](ADMIN-UI.md).
 
 Durable principles:
 
@@ -159,6 +159,6 @@ Production deployment remains an explicit authorized platform action.
 
 ## Documentation ownership
 
-Current contracts live under `docs/` and are indexed by `docs/README.md`. Workflow rules live in root `AGENTS.md`; reusable admin UI rules in `ui-skills.md`; continuation-handoff rules in `followup-skill.md`.
+Current contracts live under `docs/` and are indexed by `docs/README.md`. Workflow rules live in root `AGENTS.md`; reusable admin UI rules in [Admin UI](ADMIN-UI.md); agent startup/continuity rules in [agent entry](agents/README.md) and [continuation](agents/CONTINUITY.md).
 
 GitHub Issues/current browser review track unfinished work/acceptance. Legacy evidence is kept separate and retired only after explicit legacy retirement.
