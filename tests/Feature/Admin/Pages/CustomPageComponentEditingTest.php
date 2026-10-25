@@ -136,7 +136,7 @@ it('rolls back component edits when auditing fails and allows a clean retry', fu
         ->and(AdminNotification::query()->count())->toBe(1);
 });
 
-require_once __DIR__.'/CustomPageFixtures.php';
+
 
 it('edits and reorders List entries only through the owning component dialog', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('CV list order', 'cv-list-order');
