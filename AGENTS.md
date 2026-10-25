@@ -2,6 +2,12 @@
 
 This file is the default working contract for coding agents, review/orchestration chats and parallel workers in `Wiiii90/moeller-lars`.
 
+## Refactor branch — operational scope
+
+This branch was created from `dev@0200407133ce4696817271d2141fceaca82f8aff` on 25 October 2026 for **behavior-preserving structural improvements**, not new product features. For a Refactor task read [the Refactoring skill](.agents/skills/refactoring/SKILL.md) as well as this inherited direct-development contract. Confirm current `dev` versus `refactor` HEADs before starting or reconciling work; a new Dev change does **not** automatically reach this branch.
+
+Worker identities are opened **only when explicitly activated**, and the **canonical numbered-worker coordination** is located on the separate `docs` branch at [worker protocol](https://github.com/Wiiii90/moeller-lars/blob/docs/.agents/README.md) and [Refactor area](https://github.com/Wiiii90/moeller-lars/blob/docs/.agents/areas/refactor.md). Do not create independent competing roster copies on this branch, and do not continue a previous worker task merely from a role greeting. For Refactor workers, this newer worker protocol supersedes the old chat-handoff mechanism mentioned in the inherited `followup-skill.md`; other concrete application safety requirements below remain in effect.
+
 ## Abbreviations in user-facing communication — mandatory
 
 **On first use in each user-facing reply, report, handoff, explanation or standalone document, write out every abbreviation in full and immediately explain what it means in plain language.** This applies to technical initialisms, acronyms, file formats, protocols, systems and project-specific shorthand, even if they are familiar to developers or were explained in an earlier chat. Format: **full term (abbreviation)**, followed by a short explanation of its purpose when the term is not self-explanatory.
