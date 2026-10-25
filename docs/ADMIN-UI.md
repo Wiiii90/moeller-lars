@@ -1,6 +1,6 @@
 # Admin UI — accepted shared presentation and interaction contract
 
-**Ownership:** This document consolidates the *current dev* Admin interface grammar at source `dev@671d8214`, preserving detailed previously accepted interactions. It is a **normative, replace-in-place contract**, not a worker diary or an invitation to append repair notes. Topic details remain owned by [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md) and [Worker impact review](agents/README.md). On future consolidation, move a rule to its unique contract before deleting its last copy. Historical changes are in Git.
+**Ownership:** This document consolidates the *current dev* Admin interface grammar at source `dev@671d8214`, preserving detailed previously accepted interactions. It is a **normative, replace-in-place contract**, not a worker diary or an invitation to append repair notes. Topic details remain owned by [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md) and [Worker impact review](../.agents/README.md). On future consolidation, move a rule to its unique contract before deleting its last copy. Historical changes are in Git.
 This file is the reusable UI reference for the authenticated artist administration in `Wiiii90/moeller-lars`.
 
 It deliberately covers **admin UI only**. It does not define the public artist-site frontend.

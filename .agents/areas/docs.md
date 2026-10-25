@@ -8,7 +8,7 @@
 | --- | ---: | --- | --- | --- |
 | Docs Worker 1 | 1 | active | Agent/worker structure and current source-based documentation alignment | [docs-1](../workers/docs-1.md) |
 
-**Shared coordination:** Divide overlapping documentation contracts by owning file/subject before parallel edits; update this table with claims and current blockers only. The [documentation method](../DOCUMENTATION.md) owns source-review and verification rules. [Docs index](../../README.md) identifies canonical feature owners. Do not recreate those contracts here.
+**Shared coordination:** Divide overlapping documentation contracts by owning file/subject before parallel edits; update this table with claims and current blockers only. The [documentation method](../procedures/documentation.md) owns source-review and verification rules. [Docs index](../../docs/README.md) identifies canonical feature owners. Do not recreate those contracts here.
 
 **Other areas:** `dev` contains ongoing implementation, while [Testing](testing.md) maintains a live curated branch. A future `refactor` branch remains [unapproved](refactor.md). Direct-dev and Testing chats will not automatically use this docs-only agent prototype until an explicitly planned rollout; preserve their existing live workflows when integrating.
 

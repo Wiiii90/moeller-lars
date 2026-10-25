@@ -159,6 +159,6 @@ Production deployment remains an explicit authorized platform action.
 
 ## Documentation ownership
 
-Current contracts live under `docs/` and are indexed by `docs/README.md`. Root `AGENTS.md` links to the single [worker protocol](agents/README.md), its shared area coordination and numbered worker records; reusable Admin presentation rules are in [Admin UI](ADMIN-UI.md). There is no separate handoff/continuation document.
+Current contracts live under `docs/` and are indexed by `docs/README.md`. Root `AGENTS.md` links to the single [worker protocol](../.agents/README.md), its shared area coordination and numbered worker records; reusable Admin presentation rules are in [Admin UI](ADMIN-UI.md). There is no separate handoff/continuation document.
 
 GitHub Issues/current browser review track unfinished work/acceptance. Legacy evidence is kept separate and retired only after explicit legacy retirement.

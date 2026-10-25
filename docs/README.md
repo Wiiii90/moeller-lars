@@ -1,6 +1,6 @@
 # Documentation
 
-This repository's documentation is organized around **one normative owner per feature**, end-to-end architectures and short replace-in-place agent work records. Start with [agent entry](agents/README.md) for a fresh worker; Dev, Docs, Testing and planned Refactor each have one [shared coordination file](agents/areas/dev.md), and each numbered worker has its own temporary living record. The **current user message controls the conversation**: a question is not an instruction to execute unfinished work, and a worker may discuss plans before implementing anything.
+This repository's documentation is organized around **one normative owner per feature**, end-to-end architectures and short replace-in-place agent work records. Start with [agent entry](../.agents/README.md) for a fresh worker; Dev, Docs, Testing and planned Refactor each have one [shared coordination file](../.agents/areas/dev.md), and each numbered worker has its own temporary living record. The **current user message controls the conversation**: a question is not an instruction to execute unfinished work, and a worker may discuss plans before implementing anything.
 
 ## Current source and architecture
 
@@ -10,7 +10,7 @@ This repository's documentation is organized around **one normative owner per fe
 - [Cross-feature compositions](architecture/cross-feature-compositions.md) — artist Edit → Working → Commit → Public, Journal/Exhibition and shared public runtime owners.
 - [Normative application contracts](#current-application-contracts) — precise Admin, Public, Media, Rights, schema and product requirements.
 - [Current Admin UI](ADMIN-UI.md) — accepted shared presentation/interaction grammar, with topic owners for Controls, Dialogs, Tables and Responsive.
-- [Agent protocol](agents/README.md), [area coordination](agents/areas/docs.md), [Documentation method](agents/DOCUMENTATION.md) and [Tests and isolation](agents/TESTING.md). Numbered, bounded worker records replace separate chat handoffs.
+- [Agent protocol](../.agents/README.md), [area coordination](../.agents/areas/docs.md), [Documentation method](../.agents/procedures/documentation.md) and [Tests and isolation](../.agents/procedures/testing.md). Numbered, bounded worker records replace separate chat handoffs.
 
 ## Verification boundary
 
@@ -72,9 +72,9 @@ These documents state current durable contracts. They are not chronological PR/w
 
 ## Agent work areas and living knowledge
 
-[Agent entry](agents/README.md) resolves a numbered worker through its one shared [Dev](agents/areas/dev.md), [Docs](agents/areas/docs.md), [Testing](agents/areas/testing.md) or [Refactor](agents/areas/refactor.md) area file, then reads that worker's bounded live record. The current user request governs the conversation; only an **explicit replacement-and-continue request** resumes the old worker's persisted task. No separate handoff prompts or growing chat diaries are needed. Worker records are retired and removed after durable knowledge is preserved in its proper contract or shared area. [Documentation procedure](agents/DOCUMENTATION.md), [Testing safety](agents/TESTING.md), and the complete [current Admin UI contract](ADMIN-UI.md) are task-specific stable references. Retired root handoff/skill documents are preserved in Git history, not kept as competing working policies.
+[Agent entry](../.agents/README.md) resolves a numbered worker through its one shared [Dev](../.agents/areas/dev.md), [Docs](../.agents/areas/docs.md), [Testing](../.agents/areas/testing.md) or [Refactor](../.agents/areas/refactor.md) area file, then reads that worker's bounded live record. The current user request governs the conversation; only an **explicit replacement-and-continue request** resumes the old worker's persisted task. No separate handoff prompts or growing chat diaries are needed. Worker records are retired and removed after durable knowledge is preserved in its proper contract or shared area. [Documentation procedure](../.agents/procedures/documentation.md), [Testing safety](../.agents/procedures/testing.md), and the complete [current Admin UI contract](ADMIN-UI.md) are task-specific stable references. Retired root handoff/skill documents are preserved in Git history, not kept as competing working policies.
 
-For the later controlled integration to `dev`, [integration boundary](agents/DOCUMENTATION.md#integration-boundary) explicitly protects the newer direct-`dev` root agent policy and existing active worker state. No automatic merge, CI or local Codex batch follows a routine Docs update.
+For the later controlled integration to `dev`, [integration boundary](../.agents/procedures/documentation.md#integration-boundary) explicitly protects the newer direct-`dev` root agent policy and existing active worker state. No automatic merge, CI or local Codex batch follows a routine Docs update.
 
 ## Live work and acceptance status
 

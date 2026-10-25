@@ -7,8 +7,8 @@ description: Apply canonical Filament admin workspace, controls, tables, dialogs
 
 ## Choose the exact authority
 
-- **Primary visual grammar:** [Admin UI](../../../docs/ADMIN-UI.md) (admin only). Read the relevant sections for the task, not its full 788-line contract for every small edit. The active code may already implement newer user-reviewed decisions.
-- **Controls:** [ADMIN-CONTROL-CONTRACT](../../../docs/ADMIN-CONTROL-CONTRACT.md); implementation in `app/Filament/Support/AdminControl.php`, reusable `resources/views/components/admin/` controls and `resources/css/admin/`.
+- **Primary visual grammar:** [Admin UI](../../../docs/ADMIN-UI.md) (admin only). Read the relevant sections for the task, not the full contract for every small edit. The active code may already implement newer user-reviewed decisions.
+- **Controls:** [ADMIN-CONTROL-CONTRACT](../../../docs/ADMIN-CONTROL-CONTRACT.md); implementation in `app/Filament/Support/Controls/AdminControl.php`, reusable `resources/views/components/admin/` controls and `resources/css/admin/`.
 - **Tables:** [ADMIN-TABLE-CONTRACT](../../../docs/ADMIN-TABLE-CONTRACT.md); fixed role/order geometry, shared selection and row-actions. Page-local styling must not shadow the shared owner.
 - **Responsive task composition:** [ADMIN-RESPONSIVE-CONTRACT](../../../docs/ADMIN-RESPONSIVE-CONTRACT.md), with separate shell, metrics, toolbars, tables and Visual Stages references. Shared primitive implementation stays with the Control/Table/Dialog contracts.
 - **Dialogs:** [ADMIN-DIALOG-CONTRACT](../../../docs/ADMIN-DIALOG-CONTRACT.md); native Filament modal lifecycle, shared sizes/controls, explicit autosave and notifications. Never introduce a second scroll-lock runtime.

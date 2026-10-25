@@ -4,7 +4,7 @@ This is the **one** agent/worker operating protocol. A work-area label (Dev, Doc
 
 ## Start or replace a worker
 
-1. Read root [AGENTS](../../AGENTS.md), then the relevant **shared area file**: [Dev](areas/dev.md), [Docs](areas/docs.md), [Testing](areas/testing.md) or [Refactor](areas/refactor.md). Do not load every worker or every contract.
+1. Read root [AGENTS](../AGENTS.md), then the relevant **shared area file**: [Dev](areas/dev.md), [Docs](areas/docs.md), [Testing](areas/testing.md) or [Refactor](areas/refactor.md). Do not load every worker or every contract.
 2. **Explicit numbered slot:** `Du bist Dev Worker 2` selects `dev-2`; similarly `Docs Worker 1`, `Testing Worker 1`. Read its numbered [worker record](workers/) and the area's current claims. If no record exists, allocate it with epoch 1 and an empty subject; do not invent an old task. If the slot is already active in another chat, selecting its name alone does not revoke the current owner.
 3. **New unspecified worker:** `Du bist ein Dev Worker` creates the next unused Dev number (from the area's `Next new worker number`), initializes a separate worker record and adds a row to that area. Generic names do not silently inherit someone else's state. A mere question about workers does not allocate a slot.
 4. **Explicit replacement:** `Ersetze Dev Worker 2 und mach da weiter, wo er aufgehört hat` retains `dev-2` and its file, increments its **epoch** in both files, and treats the old chat as superseded. Read the persisted discussion/task and resume *only because the user explicitly requested continuation*. If the earlier state was never saved, say exactly which parts are missing; don't fabricate it.
@@ -37,10 +37,10 @@ Mark a completed slot **available** (no active claim) if its identity should rem
 ## Work areas, methods and rollout boundary
 
 - **Dev:** `dev` application implementation; current `dev/AGENTS.md` remains authoritative for live development. [Dev area](areas/dev.md).
-- **Docs:** `docs` documentation and this prototype. [Docs area](areas/docs.md); [documentation procedure](DOCUMENTATION.md).
-- **Testing:** active `testing` curation with future controlled reintegration into `dev`. [Testing area](areas/testing.md); [safe testing procedure](TESTING.md).
+- **Docs:** `docs` documentation and this prototype. [Docs area](areas/docs.md); [documentation procedure](procedures/documentation.md).
+- **Testing:** active `testing` curation with future controlled reintegration into `dev`. [Testing area](areas/testing.md); [safe testing procedure](procedures/testing.md).
 - **Refactor:** planned area only; no Git branch, no code write until authorized. [Refactor area](areas/refactor.md).
 
 **Currently only `docs` has this new entrypoint and these living files.** Existing Dev and Testing chats do not magically follow it. A later authorized rollout must arrange for them to read and update the **same canonical coordination files on `docs`**, not create independently diverging copies on `dev` and `testing`, and must preserve their active work, existing worktrees, Codex workflows and branch-specific safety rules.
 
-Read [feature owners](../README.md) and [cross-feature compositions](../architecture/cross-feature-compositions.md) as needed. Never replace concrete user/browser acceptance with an agent's speculative simplification.
+Read [feature owners](../docs/README.md) and [cross-feature compositions](../docs/architecture/cross-feature-compositions.md) as needed. Never replace concrete user/browser acceptance with an agent's speculative simplification.

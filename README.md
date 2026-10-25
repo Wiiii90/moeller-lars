@@ -75,7 +75,7 @@ Start with:
 - [Admin UI](docs/ADMIN-UI.md) — shared admin UI grammar for headings, metrics, control rows, tables, grids, selection, ordering and dialogs
 - [docs/ADMIN-AUTHENTICATION.md](docs/ADMIN-AUTHENTICATION.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and mail boundary
 - [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md) — direct-vs-worker browser workflow, shared Visual Stage ownership and local preview loop
-- [Numbered workers and shared coordination](docs/agents/README.md) — one worker record per numbered conversation plus one common coordination file for each Dev, Docs, Testing or Refactor work area
+- [Numbered workers and shared coordination](.agents/README.md) — one worker record per numbered conversation plus one common coordination file for each Dev, Docs, Testing or Refactor work area
 
 Small browser defects may be fixed directly on `dev` when the user explicitly chooses that mode. Larger independent source passes may use workers. The active collaboration mode is part of the shared work-area state; do not silently change a worker's ownership or an accepted review decision.
 

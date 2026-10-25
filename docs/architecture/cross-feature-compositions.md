@@ -99,4 +99,4 @@ Owners: [Public implementation](../PUBLIC-IMPLEMENTATION-CONTRACT.md), [Public S
 | `PublicMedia` / `MediaPreviewVariant` / `PublicationService` | Working/LIVE, Gallery/Artwork, Journal, Home, History/Undo, immutable rights | Reference/readiness/rollback/byte protection in isolated tests and independent publication review |
 | `AdminNotifier` / Dashboard feed | Admin mutation, no-op, Activity audit, Release notes, localized header | One logical message per actual action; stored English activity never translated in place |
 
-This is a **review index** rather than a second product specification. Product invariants are owned by linked contracts. [Worker startup and preservation gate](../agents/README.md) describes how an agent uses these seams before editing code.
+This is a **review index** rather than a second product specification. Product invariants are owned by linked contracts. [Worker startup and preservation gate](../../.agents/README.md) describes how an agent uses these seams before editing code.

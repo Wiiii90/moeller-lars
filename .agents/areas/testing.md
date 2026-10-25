@@ -10,4 +10,4 @@
 
 **Shared coordination:** When the current Testing Worker adopts this structure, update its actual scope, test ownership, latest verified branch references and completed checks here. Do not infer today's task or test success from a merge commit. Additional Testing Workers must claim disjoint test files or explicitly serialize edits. Compare both current `testing` and `dev` refs and flag overlaps before integration.
 
-Stable safety/test methods: [Testing agent guidance](../TESTING.md) and [canonical test strategy](../../TESTING.md). Coordination and replacement lifecycle: [agent entry](../README.md). No separate invented test architecture and no unattended merge to `dev`.
+Stable safety/test methods: [Testing agent guidance](../procedures/testing.md) and [canonical test strategy](../../docs/TESTING.md). Coordination and replacement lifecycle: [agent entry](../README.md). No separate invented test architecture and no unattended merge to `dev`.

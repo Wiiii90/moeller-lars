@@ -254,7 +254,7 @@ Do not freeze temporary CSS class names or current markup through brittle snapsh
 
 ## End-to-end ownership map
 
-For practical change planning, start with the [three cross-feature compositions](architecture/cross-feature-compositions.md): artist Edit→Working→Publication→Public, Exhibition/Journal visibility/media/viewer, and Livewire Public page/SPA ownership. These diagrams link existing contractual owners and historical detailed traces; they are not more individual class-import diagrams. The [Worker Protocol](agents/README.md) uses this architecture to enumerate all shared consumers before an implementation change, including previously accepted behaviors and isolation/verification boundaries.
+For practical change planning, start with the [three cross-feature compositions](architecture/cross-feature-compositions.md): artist Edit→Working→Publication→Public, Exhibition/Journal visibility/media/viewer, and Livewire Public page/SPA ownership. These diagrams link existing contractual owners and historical detailed traces; they are not more individual class-import diagrams. The [Worker Protocol](../.agents/README.md) uses this architecture to enumerate all shared consumers before an implementation change, including previously accepted behaviors and isolation/verification boundaries.
 
 ## Current public and media architecture (source delta dev@434975e1bd09)
 
