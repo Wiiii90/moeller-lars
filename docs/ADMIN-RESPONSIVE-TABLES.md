@@ -1,6 +1,6 @@
 # Admin responsive: Tables and Selection
 
-This contract preserves the corresponding task-specific responsive requirements from the former `ui-skills.md` section 21. [Responsive ownership/index](ADMIN-RESPONSIVE-CONTRACT.md) separates shared primitive rules from page-specific acceptance. This is a **documentation move**, not evidence of a fresh browser-acceptance run.
+This contract preserves the corresponding task-specific responsive requirements from the previous Admin UI source contract, now [Admin UI](ADMIN-UI.md), section 21. [Responsive ownership/index](ADMIN-RESPONSIVE-CONTRACT.md) separates shared primitive rules from page-specific acceptance. This is a **documentation move**, not evidence of a fresh browser-acceptance run.
 
 ## Tables and Selection
 

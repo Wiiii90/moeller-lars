@@ -1,6 +1,6 @@
 # Cross-feature compositions and ownership boundaries
 
-**Source basis:** selected PHP, Blade and JavaScript owners inspected at `dev@74e629274ac28828d9ce9e9c881ab87e7490f2d3` on 22 October 2026. These are **logical end-to-end compositions**, not a runtime-call profiler or proof of an executed browser/database transaction. Normative requirements stay in the linked owner contracts. The 20 older import/class diagrams are intentionally a versioned **structural inventory**, not the primary explanation of how the website works.
+**Source basis:** selected PHP, Blade and JavaScript owners inspected at `dev@b289a9102a3b91c15ad2e182372d074fb64ce239` reviewed through 25 October 2026. These are **logical end-to-end compositions**, not a runtime-call profiler or proof of an executed browser/database transaction. Normative requirements stay in the linked owner contracts. The 20 older import/class diagrams are intentionally a versioned **structural inventory**, not the primary explanation of how the website works.
 
 ## 1. Artist edit -> Working -> Publication -> Public
 
@@ -99,4 +99,4 @@ Owners: [Public implementation](../PUBLIC-IMPLEMENTATION-CONTRACT.md), [Public S
 | `PublicMedia` / `MediaPreviewVariant` / `PublicationService` | Working/LIVE, Gallery/Artwork, Journal, Home, History/Undo, immutable rights | Reference/readiness/rollback/byte protection in isolated tests and independent publication review |
 | `AdminNotifier` / Dashboard feed | Admin mutation, no-op, Activity audit, Release notes, localized header | One logical message per actual action; stored English activity never translated in place |
 
-This is a **review index** rather than a second product specification. Product invariants are owned by linked contracts. [Worker startup and preservation gate](../WORKER-PROTOCOL.md) describes how an agent uses these seams before editing code.
+This is a **review index** rather than a second product specification. Product invariants are owned by linked contracts. [Worker startup and preservation gate](../agents/README.md) describes how an agent uses these seams before editing code.

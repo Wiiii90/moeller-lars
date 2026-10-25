@@ -2,7 +2,7 @@
 
 This is the direct-`dev` implementation/browser workflow. Documentation-only verification on `docs` is a separate source-audit process; the artist's Validation data must never be reset or seeded for convenience.
 
-This document records the durable working rules that emerged from the current admin browser-reconciliation work. It complements `AGENTS.md` and `ui-skills.md`; it does not replace either one.
+This document records the durable working rules that emerged from the current admin browser-reconciliation work. It complements `AGENTS.md` and `docs/ADMIN-UI.md`; it does not replace either one.
 
 ## Direct-dev browser collaboration
 

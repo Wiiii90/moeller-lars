@@ -1,7 +1,6 @@
-# Admin UI skills and consistency contract
+# Admin UI — accepted shared presentation and interaction contract
 
-**Docs-branch historical snapshot:** The corresponding `dev/ui-skills.md` is now newer and is the **current accepted Admin visual contract for direct-dev workers**. Do not replace or merge that file blindly with this older Docs text. For new documentation and integration decisions compare the active dev copy, user browser acceptance and the central shared implementation owners. See [Worker Protocol](docs/WORKER-PROTOCOL.md).
-
+**Ownership:** This document consolidates the *current dev* Admin interface grammar at source `dev@671d8214`, preserving detailed previously accepted interactions. It is a **normative, replace-in-place contract**, not a worker diary or an invitation to append repair notes. Topic details remain owned by [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md) and [Worker impact review](agents/README.md). On future consolidation, move a rule to its unique contract before deleting its last copy. Historical changes are in Git.
 This file is the reusable UI reference for the authenticated artist administration in `Wiiii90/moeller-lars`.
 
 It deliberately covers **admin UI only**. It does not define the public artist-site frontend.
@@ -123,9 +122,27 @@ For toolbars, geometry is **real content minimum + ruler subdivision**: derive t
 
 For tables, preserve canonical role order and the terminal Selection rail; supportive columns and action labels yield before Selection drifts or horizontal scrolling appears.
 
-For Visual Stages, reuse the shared stage height, pane/divider geometry and semantic Wide/Narrow/Minimal composition before adding feature-local dimensions. A page must not recreate an already-owned stage axis or breakpoint.
+For Visual Stages, reuse the shared stage height, pane/divider geometry and semantic Wide/Narrow/Minimal composition before adding feature-local dimensions. A page must not recreate an already-owned stage axis or breakpoint. General's two-pane desktop/mobile split uses the shared `admin-visual-stage--split` divider with a metric-aligned `--admin-stage-divider-axis` and the shared `admin-visual-stage__heading` vertical rail, rather than its own pseudo-divider or top-offset. Its live preview scales the complete device inside the stage viewport, so a small bottom inset is intentional.
 
 A screenshot-specific span, page-local Selection offset, page-local standard-toolbar grid or duplicate shared-stage geometry is a contract violation unless the shared primitive demonstrably cannot represent the task.
+
+### General Appearance: compact controls, dialogs for additions
+
+The global Background/Menu/Page and Title controls retain a concise two-column
+line-based grammar with the shared ColorPicker and numeric field. Do not
+surface a Filament Repeater's card chrome, default rounded Add button,
+red per-row trash icons or explanatory helper paragraphs inside the Stage.
+Solid paints use one inline shared ColorPicker beside their mode Select.
+Gradients use the **actual shared** x-admin.table, never Filament's separately
+styled table repeater. The shared AdminTableRepeater adapts Filament's
+field/action lifecycle to that canonical table, with 2–12 Color/Position rows.
+Use the existing AdminColorControl in the cells and x-admin.add-row below.
+Never recreate the table with local radius/border/row chrome, native browser
+color inputs, card repeaters, edit dialogs, helper prose or red trash actions.
+The global angle control has an inline editable degree value and opens
+the shared rotary picker on interaction; it does not show a persistent
+dial beside the number. Do not duplicate this component within General.
+
 
 
 Examples of useful facts:
@@ -234,29 +251,88 @@ Journal already uses visible Position and is the current reference for the conve
 ## 9. Drag and ordering
 
 
-For hierarchical editors (Pages and Custom Pages), root and child
-sortable lists share ONE native `wire:sort:group` name per editor, with
-different `wire:sort:group-id` values for each parent and for root.
-This restores the older working Pages behavior. Both sibling sorting
-and root/child transfer are handled by the native Livewire Sortable
-lifecycle, with no shadow Alpine/JS gesture handler or synthetic
-drop targets. Each Image child is a FULL independent six-cell component
-row rendered by the same partial as its root siblings: numbered position,
-normal drag grip, editable component type, at most two content lines,
-Move Up/Down, Edit, Publish/Unpublish, Delete and Selection.
-There is no "Move out" action, arrow glyph, redundant decorative hint,
-child-count metadata or Image-owned child editing. Parent is editable in
-the child's own Edit dialog. Backend mutations are transactional.
+**Behavior is authoritative; sortable group names are an implementation
+detail.** The claim that putting every root and child list into one
+`wire:sort:group` restores previously accepted Pages behavior was not
+established by browser acceptance and must not be treated as a contract.
+In particular, nested empty child sortables can compete with root drop
+placement. Do not preserve, reinstate, or remove an implementation solely
+because it is described as more native or simpler.
 
-Use native Livewire sorting only:
+**Browser-accepted Pages drag-and-drop (21 October 2026):** The user
+confirmed that both root ordering and deliberate child placement work with
+the correction introduced by `f7b79d49112b80ac2385377e934a9c1579785548`.
+The user subsequently also accepted the simple root-insertion separator
+presentation introduced by `5b53e9fe9aa0f71dc25806aaaea13141dfeb4e8d`
+as **good enough in the real browser**. Preserve this combined behavior and
+appearance as the accepted baseline; do not redesign it during cleanup.
+The repair uses the existing Livewire/Alpine Sortable owner and the existing
+shared `wire:sort:group="site-pages"` with parent-specific group IDs.
+For **empty** children only, `site-pages.blade.php` sets
+`wire:sort:config="{ emptyInsertThreshold: 0 }"` because SortableJS
+otherwise gives invisible empty lists a five-pixel proximity capture zone
+that can steal root-to-root drops. The corresponding
+`.admin-pages__empty-child-rows` in `table-contract.css` is an actual
+0.75rem-high, bounded child destination inside its root row. Its negative
+block-start margin compensates for its own height, so root sibling geometry
+does not jump; the leading Position/Drag region is outside the child target.
+`body.sorting` enables pointer hits only during a native drag.
+**Do not replace this with separate visible right-side drop surfaces,
+global pointer handlers, a second drag controller, or unrestricted empty
+sortable proximity detection.** Before changing this structure, reproduce
+root-before/middle/last and nest-under-last behavior in the real browser.
+The accepted drop preview uses **only the existing horizontal separator
+style** to indicate a root-level insertion. When a page is nested under a
+parent, no additional line separates that parent from its child. The visual
+signal follows the native `.sortable-ghost` placeholder among direct root
+siblings; it does not change hit geometry, sortable membership, placement
+or row size. **No colored side rail, visible target surface, label, added
+spacing, or custom pointer handler.** The user explicitly accepted this
+minimal presentation on 21 October 2026; neither it nor the functioning
+drag gestures should be replaced without a new explicit request.
 
-```text
-wire:sort
-wire:sort:item
-wire:sort:handle
-```
+Pages and Custom Pages both support hierarchy, but they have **different
+domain owners**: Pages nests site sections under pages; Custom Page nests
+eligible components under an Image. Reusing table/drag styling must not
+silently change either editor's drop semantics.
 
-Do not build custom HTML5 `draggable`/dragstart/drop state machines.
+Required Pages behavior when ordering is enabled and unfiltered:
+
+- Root pages can be moved before, between and after other root pages, **not
+  merely after the final root**. Dropping for root ordering never silently
+  reparents the page, even when the destination root has an empty child list.
+- Eligible pages can be deliberately nested under the first, an intermediate
+  **or the last** eligible root. The target for nesting must not compete
+  ambiguously with a normal root-reorder drop.
+- A child can be returned to root level; children can be reordered within
+  their parent and moved between eligible parents as supported by the
+  canonical two-level hierarchy.
+- Home stays the first non-draggable root. Filtering and incomplete
+  pagination still disable ambiguous ordering, not other page controls.
+- Persistence, Sidebar refresh, Activity/audit and exactly-once success
+  feedback remain owned by the existing editor/domain mutation path.
+
+Custom Page's Image children are independent full component rows using
+the same row grammar as root components: Position, Drag, editable type,
+Content, Move Up/Down, Edit, publication, Delete and Selection. Eligible
+Text, List (without media), Contact details and Legal Disclaimer children
+can be placed under Image components and returned/moved according to the
+existing domain rules. Image Edit does not subsume child editing.
+
+Native `wire:sort`, `wire:sort:item`, and `wire:sort:handle` remain the
+existing preferred sibling-order controls. No new custom HTML5 drag state
+machine or second parallel sorting engine is authorized by this document.
+If the native primitive cannot unambiguously express both reorder and
+parent-change intent, **stop and establish the owner and real browser
+behavior** before changing the architecture. In particular, do not alter
+Pages sorting while simplifying Custom Page nesting, or vice versa, without
+explicit cross-feature authorization and a complete gesture review.
+
+Browser acceptance must exercise root-to-root before/middle/last,
+root-to-child including the last parent, child-to-root, child-to-child,
+and Custom Page Image-child placement when shared code is touched.
+Testing only the backend sort action, or a single end-of-list drag, is not
+evidence that the competing drop targets behave correctly.
 
 Rules:
 
@@ -265,13 +341,13 @@ Rules:
 - use `.admin-drag-handle` as the current shared drag-handle authority for the Custom/Home component-table family;
 - ordering is persisted by the canonical domain ordering service;
 - drag is disabled when Search/filters/pagination make canonical order ambiguous;
-- in Custom Page, both root components and decorative Image child components use full sortable rows with their own drag handles, Actions and Selection; List entries and Contact options remain editor-owned details instead of independent component rows; native child groups stay available for cross-level drops even when empty;
+- Custom Page Image children are independent draggable/actionable rows; List entries and Contact options inside their parent forms are **not** independent rows; a single non-reorderable parent does not expose an inert drag handle;
 - ↑/↓ actions remain as a keyboard/explicit fallback where the workspace already uses them;
 - filtered reorder must not pretend that a filtered projection is the complete canonical sequence.
 
 ## 10. Custom Page component table and Home child hierarchy
 
-Custom Page has a **root component sequence and independently editable decorative Image child rows**:
+Custom Page is a **flat sequence of components**:
 
 ```text
 [Position + Drag] [Component dropdown] [Content] [Actions] [Selection]
@@ -281,11 +357,11 @@ The Component selector is essential and remains editable at all supported widths
 
 Custom Page Contact Content shows only two lines: the authored heading (default `Contact`) and one ellipsized summary of enabled options. Legal Disclaimer Content shows `General legal disclaimer` followed by one ellipsized line of the actual General legal text, without redundant third-line metadata. The same semantic layout applies at every responsive width.
 
-Public Image nesting belongs to a decorative Image's ordered `children`, displayed as ordinary independently editable child rows using the SAME full component row template as top-level components. Image Edit contains Image properties ONLY. Child Edit, type, order, publication and deletion stay on the child row. Only Text, List without its own image, Divider, Contact *details* (email/social, no form), and Legal Disclaimer may be nested. Image alignment is an independent Left/Right field for **all** Image components: nondecorative Images align via their own margin; decorative Images with children float to the authored side and prose/Divider flows beside or below them. Historical left alignment stays implicit in JSON; nested Divider is not a second image or a page-local layout mode. Public text follows a native float around its owning Image and then beneath it—no two-column grid or viewport breakpoint. A following top-level Contact Form is full width, with Name, Email and Message stacked at every size. All Custom Page component headings reuse one serif typographic grammar aligned to the public page heading's family; prose, list titles and contact/disclaimer body use one body scale.
+Public Image nesting belongs to a decorative Image's ordered `children`, displayed as ordinary independently editable child rows using the SAME full component row template as top-level components. Image Edit contains Image properties ONLY. Child Edit, type, order, publication and deletion stay on the child row. Only Text, List without media, Contact *details* (email/social, no form), and Legal Disclaimer may be nested. Public text follows a native float around its owning Image and then beneath it—no two-column grid or viewport breakpoint. A following top-level Contact Form is full width, with Name, Email and Message stacked at every size. All Custom Page component headings reuse one serif typographic grammar aligned to the public page heading's family; prose, list titles and contact/disclaimer body use one body scale.
 
 Pages is the canonical page-level editor for Name, public route/slug, Parent, Position and optional page heading. Both Add and Edit expose the same heading vocabulary; the actual SiteSection owns the persisted heading. Home Edit shows its editable Name alongside the fixed root path, top-level parent and first position, plus the same Heading fields. These fixed root invariants must be shown rather than silently pretending that Home can have a custom slug or parent. Gallery/Journal/Custom Page may later surface the same settings in their own workspaces without duplicating data owners.
 
-List entries have `Entry`, one `Context` field (date, year, organisation or other free context), `Published`, and `Details`. No separate Date, Organisation, Location, URL or Insert image controls in the List entry editor. Old Date/Organisation/Location values fold into Context and old links into Details through the model's normalizer without silent content loss. Existing Home List components use the same List editor. Selection and publication are available for both root and Image child components. List items and Contact options remain editable within their owning parent component.
+List entries have `Entry`, one `Context` field (date, year, organisation or other free context), `Published`, and `Details`. No separate Date, Organisation, Location, URL or Insert image controls in the List entry editor. Old Date/Organisation/Location values fold into Context and old links into Details through the model's normalizer without silent content loss. Existing Home List components use the same List editor. Parent selections and publication actions apply only to parent components.
 
 Home's existing distinct Contact-child hierarchy is a separate workflow; keep its shared column geometry and selection semantics. Do not change Home when simplifying Custom Page.
 
@@ -435,7 +511,7 @@ If the theme or shared primitive cannot express a needed shared pattern, fix or 
 
 For visual/admin work:
 
-1. read `ui-skills.md`;
+1. read `docs/ADMIN-UI.md`;
 2. inspect the exact accepted Gallery/Storage reference code relevant to the requested geometry;
 3. inspect existing shared Blade primitives and theme tokens;
 4. compose the target page from those authorities;
@@ -503,15 +579,9 @@ Large editorial dialogs should order content according to the actual editorial t
 
 ## 17. Rich Text editor UI
 
-There is one central Rich Text technology: `AdminRichText` backed by Filament `MarkdownEditor`.
+There is one central Rich Text technology: `AdminRichText` backed by Filament `RichEditor` (Tiptap). Text, inline links, text color, paragraph spacing and image layout share that editor, its normal history and the current Edit dialog's persistence.
 
-Canonical embedded image reference:
-
-```markdown
-![](media:123)
-```
-
-Media insertion belongs with the editor controls/action area and uses the lazy Storage picker. Do not add a second free-standing media-upload subsystem, arbitrary external image URLs, TipTap/RichEditor or a parallel parser.
+Canonical embedded images are visual-editor nodes referencing existing Storage assets via `data-id`. Historical Markdown `media:<id>` references remain supported and convert when an editor is opened. The central `MediaAssetSelect` handles all media selection; no separate uploader, nested text-color/link action modal, editor or renderer is permitted.
 
 Canonical asset ALT should be reused unless a product surface explicitly supports a true occurrence-level override. Journal structured Cover/Gallery currently use Storage ALT exclusively at runtime.
 
@@ -521,7 +591,19 @@ Use the central lazy `MediaAssetSelect` pattern.
 
 Do not eagerly `pluck()` hundreds of MediaAsset options merely because a normal Select supports preload.
 
-The picker should narrow by allowed media kind and query lazily. This is both a UI consistency and performance rule.
+All `MediaAssetSelect` instances use the same visual Storage contact-sheet
+presentation by default: Gallery, Journal, Home, Custom Pages, rich text and
+site icon. The established Select remains the sole value/focus/keyboard owner.
+The initial set is bounded to 24 recent assets (relationship Selects use
+Filament's bounded preload), and filtered queries remain lazy (up to 30).
+Do not introduce page-specific appearance flags for the same media choice.
+
+A Rich Text toolbar-anchored Storage panel wraps this shared Select without
+replacing it. Its visible Close control, outside click, Escape, toolbar toggle
+and completed insertion close the panel and the Select together. Click-away
+is owned by the popup, not its enclosing editor shell. All options must
+retain available-asset and media-kind constraints, escape metadata, and stay
+inside the actual dialog.
 
 ## 19. Performance as UI quality
 
@@ -654,7 +736,9 @@ Shared desktop stage geometry does not imply shared narrow composition.
 - Analytics/Storage/Activity burger/sidebar collapse is monotonic as well: it must not reintroduce Geography, the Storage triptych, Activity Clock, wider table columns or denser Storage cards.
 - General keeps the parallel Live Preview in Wide/Compact. Narrow/Minimal omit it and expand the single Appearance controls pane across the full stage. Page width and Content padding are ordinary General Appearance fields in that same parent form/persistence path; they must not live in a nested Livewire bridge or a detached pseudo-footer. The bounded Appearance pane scrolls when necessary but keeps its scrollbar chrome hidden. General has one container-owned Narrow composition (up to 64rem workspace) rather than a second viewport/Burger copy; the preview therefore cannot reappear or partially revert when the sidebar collapses. Live Preview fitting responds immediately to its ResizeObserver and must not animate width/height between observer ticks.
 - General status metrics and the Appearance Stage share the same schema-backed stage block so only the canonical stage margin separates them; Filament schema gaps must not add a second vertical offset.
+- General Appearance's four small tabs reuse `x-admin.stage-switcher` / shared `admin-stage-tabs` without Filament chips. Tab selection is Alpine-only and must not issue Livewire requests or refresh the iframe. The icon-only More space / Less space action is an optional tool slot inside the shared stage switcher, separated from tabs by the same canonical toolbar separator used by Live Preview. Its label is a tooltip/accessible name only. The down-arrow icon rotates up when expanded. The tabbar is the fixed first row above the sole scrolling field pane. The single scroll container owns the four-tab CSS Grid, with scoped display:contents only on intervening Filament wrappers so all four panels occupy grid-area 1/1. Inactive panels are out of flow when collapsed; when expanded they remain hidden and inert but share one Grid track whose intrinsic height is the maximum of all four panels. This prevents cumulative rows or hidden-panel gaps. The action uses CSS max-content sizing with the shared normal Stage height as minimum; no ResizeObserver, JavaScript pixel heights or timer. The Preview may expand into the newly available space subject to a viewport-relative cap and its existing fit/aspect logic, but the iframe URL and DOM lifecycle stay unchanged by More space. Direct preview frame URLs remain stable across ordinary General component renders; persisted Appearance changes own explicit refresh. The left Stage tabs and the right Live Preview icons use one shared control grammar: the full-height, container-stretched `admin-control-separator` reaching the common lower border, `admin-action` icon surfaces and the same shared line-color token. Never shorten the separator by reserving padding beneath the toolbar's content row. The Live Preview heading is a separate row above `x-admin.stage-tool-row`; that row contains only right-aligned device, zoom and action icons. The zoom percentage remains a specialised inline control between its Zoom Out/In icons; no device-dimensions label appears in the tool row. Do not duplicate General-only toolbar CSS or place icons alongside the heading.
 - General Site icon reserves a stable field footprint whether empty or selected; media thumbnail appearance must not move the controls below it.
+- General → Appearance → Global owns one Frame style selector: Layered paper, Layered paper · continuous contours, Contours only, Backing only and Plain. The common `public-paper-frame` decorative child owns joined Menu+Content paper lines as one physical element; independent sheets retain their own backing/contours. There is no page-specific fake line-matching CSS. Both left and right horizontal outsets share the one Public folio-edge token. The Menu divider options are No divider, Menu divider, Full-width divider, Separate surfaces, and Full-width divider and separate surfaces; gaps are sticky-header-owned. The joint frame is **intrinsically sized by its Header and Content** (`flex: 0 0 auto` on the frame); the body alone fills the viewport background. The contour return is anchored to the real Content-sheet end via existing padding and one shared CSS return inset, never to empty viewport space. Do not introduce DOM-measurement-to-layout feedback, Public CSS transitions, a secondary scroll owner or ambient animation. Header placement observes window resizing/font completion only, not its own mutated layout.
 - Analytics preserves its desktop Map (2 cells) + Geography (1 cell) composition through Narrow. Only Minimal removes Geography and lets Map occupy the full shared stage.
 - Storage preserves Upload + Capacity + Distribution as three equal stage cells through Narrow. Only Minimal becomes the compact full-width Upload + Used/Remaining/Allowance + Refresh/Reclaim composition; donut and Distribution disappear there.
 - Activity preserves Calendar + Clock + Next Publication as three stage cells through Narrow. Only Minimal becomes publication-first: Next Publication owns the full shared stage while Calendar + Clock yield; Pending/Preflight/current-live context and Review/Reset/Commit remain visible/reachable.
@@ -775,10 +859,26 @@ If a browser pass shows one stage or separator at a different vertical position,
 
 Shared admin navigation/action semantics use `App\Filament\Support\AdminIcon`. Prefer semantic catalog entries over scattered Heroicon literals for meanings already represented by the catalog, and keep distinct meanings visually distinguishable rather than reusing one glyph for unrelated concepts.
 
-See `docs/ADMIN-BROWSER-WORKFLOW.md` for the direct/worker browser-reconciliation loop around these contracts.
+See [Admin browser workflow](ADMIN-BROWSER-WORKFLOW.md) for the direct/worker browser-reconciliation loop around these contracts.
 
 - **Minimal:** retain exactly two semantic metrics. The split is exact 50/50; hidden source siblings or original DOM position must never create a 1/3–2/3 layout.
 - Metric geometry is owned centrally by the shared `.admin-metrics` primitive: Narrow uses three equal tracks and container-owned dividers at 1/3 + 2/3; Minimal uses two equal tracks and one divider at 1/2. Feature CSS chooses which metrics remain visible but must not assign responsive `grid-column` spans or draw its own vertical metric dividers.
 - Analytics/Storage/Activity metric cells explicitly own their Narrow/Minimal columns and stretch to the full cell. Narrow is exact thirds with two dividers; Minimal is exact halves with one centered divider.
 
 - Stage collapse for Analytics/Storage/Activity happens only at Minimal (<= 38rem workspace, with the matching shell fallback). Wide/Compact/Narrow retain their multi-cell stage axes and the shared fixed `--admin-visual-stage-height`; switching state must not introduce extra divider axes.
+
+### Gradient tables and dynamic Appearance Stage height
+
+Every global paint — Background, Title, Menu, Page and Menu-to-page
+Divider color — must share the same paint domain and ColorPicker. Solid uses
+one inline field beside the mode selector; only gradients use the actual
+`x-admin.table` representation. Use `x-admin.row-action` for table Delete,
+including its canonical trash icon, label and state. Do not hand-author
+a lookalike action or reuse the X-shaped Remove action.
+
+General's More Space toggles a content-sized Stage for **only the current
+tab**, not the tallest of all tabs. The inactive panels stay absolutely
+positioned and excluded from intrinsic sizing. Tab changes must resize
+the Stage automatically with CSS, while the preview retains its
+existing responsive fitting. Never calculate this by timers, panel-wide
+height constants or duplicate measuring subsystems.

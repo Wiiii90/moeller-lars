@@ -249,6 +249,12 @@ presentation or an eligible published Custom Page. Home and Custom media
 references (including List media and child Rich Text) use the canonical
 MediaAsset reference/publication contracts.
 
+## First-paint Artwork image readiness and shared viewer (source `dev@671d8214e060`)
+
+The canonical Artwork image is hidden until the real thumbnail has successfully decoded; only then is its media frame revealed. This covers eager Gallery images, deferred Gallery images, Artwork detail and Home/other Artwork cards consistently rather than relying on a late scroll listener or briefly rendering broken intrinsic-width ALT text. `public-gallery-loading.js` owns page-scoped `data-gallery-image-state` and Artwork-detail decode/error transitions and is disposed at Livewire navigation. Deliberate image load errors retain visible failure/ALT feedback; image hiding is **not** permission to mask missing-media integrity failures. `public-spa.js` reconciles the saved Appearance presentation before showing initialized navigation; no default-style flash or second observer/polling engine should be added.
+
+`PublicImageViewer` is the **single public image-to-viewer adapter** for permitted Home and Journal image occurrences. It safely renders Rich Text through the canonical `SafeRichTextRenderer` *before* decorating images with scoped viewer attributes. Journal structured Cover/Gallery and Rich Text use the same content viewer scope; image-only navigation is limited to that content context. Videos stay inline and a Journal image viewer must not expose Gallery Artwork detail-action links. The main Gallery Artwork Viewer retains its existing distinct Artwork/navigation context. Each content consumer has an explicit opt-in for enlargement; never globally make all images clickable merely because a viewer exists.
+
 ## Gallery delivery and loading
 
 Gallery index markup retains the **complete canonical Artwork and Viewer

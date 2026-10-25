@@ -210,6 +210,10 @@ Contextual actions are native Filament Actions lifted into the shared header rai
 - never use local SVGs or emoji;
 - never add a redundant bottom action row.
 
+## Shared mounted-action persistence boundary (current dev)
+
+The ordinary Edit action, eligible custom Selects and non-native date picker changes now share the **same** `AdminDialog::edit()` mounted-action persistence boundary. The shared `AdminControl` adapter bridges only controls that need it; Filament Select's native change/close lifecycle is otherwise untouched. This eliminates page-local second save actions and preserves the mounted modal while the transaction succeeds. No-op, failed validation and closing via X or click-away must never produce duplicate success/audit/Notification records. Exhibition media table edits and visibility icons use their own canonical domain change detection and the same audited editorial transaction policy. These are source-reviewed at `dev@671d8214e060`, not a new browser pass.
+
 ## Edit persistence and Undo
 
 Edit autosave must follow `ADMIN-CONTROL-CONTRACT.md`: discrete semantic changes only, never timer/debounce persistence.

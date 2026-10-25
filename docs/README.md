@@ -1,32 +1,20 @@
 # Documentation
 
-The documents in this directory are split by purpose so current application contracts are not mixed with legacy investigation notes or unfinished-work diaries.
+This repository's documentation is organized around **one normative owner per feature**, end-to-end architectures and short replace-in-place agent work records. Start with [Agent entry](agents/README.md) for a fresh worker; a short role message resolves to the [worker registry](agents/WORKERS.md) and its current record. The user need not restate implementation rules or manually provide a chat transcript after a role has been assigned and its state persisted.
 
-## Architecture inventory
+## Current source and architecture
 
-**Current source boundary (22 October 2026):** The latest selective owner review covers **96 `dev` commits / 146 changed paths** from `dev@2ad31502` through `dev@74e629274ac2`. New [Rich Text](EDITORIAL-RICH-TEXT.md), [Admin Localization](ADMIN-LOCALIZATION-CONTRACT.md), Exhibition field-visibility, Journal viewer, shared picker/controls and Public/SPA updates were reconciled by owner; this is **not** an all-method audit, app-code merge, executed test or refreshed native generator. The verified `docs@317d255e` native baseline remains historical. The user's Docs worktree is reserved for **rare, agreed Codex batches only**.
+**Source review (25 October 2026):** the latest selective batch covers 23 new `dev` commits through `dev@b289a910`. Common rich-text colors, paragraph spacing, tables/links, Journal/Home shared viewer, Exhibition media table, Admin Stage and Livewire native session preferences, native Edit selection/save events and public first-paint image readiness are reconciled in the topic contracts. This is **source review**, not a new application/browser/native-generator test. The native documentation baseline remains `docs@317d255e` and is historically versioned.
 
-- [Architecture source inventory and models](architecture/README.md) — source-versioned architecture with native source-only checks and generators technically closed out on 19 October 2026; historical inventories and remaining product/runtime/DB checks are explicit. Contracts retain their canonical owners.
+- [Architecture index](architecture/README.md) — composed Publication, editorial, Public, media and frontend lifecycles, alongside clearly older generated structural inventories.
+- [Cross-feature compositions](architecture/cross-feature-compositions.md) — artist Edit → Working → Commit → Public, Journal/Exhibition and shared public runtime owners.
+- [Normative application contracts](#current-application-contracts) — precise Admin, Public, Media, Rights, schema and product requirements.
+- [Current Admin UI](ADMIN-UI.md) — accepted shared presentation/interaction grammar, with topic owners for Controls, Dialogs, Tables and Responsive.
+- [Agent entry and worker state](agents/README.md), [Documentation method](agents/DOCUMENTATION.md), [Tests and isolation](agents/TESTING.md), [Continuity](agents/CONTINUITY.md).
 
-## Task-specific UI entrypoints
+## Verification boundary
 
-- [Admin UI skill](../.agents/skills/admin-ui/SKILL.md) — Filament page composition, shared controls, tables, dialogs and responsive rules (normative details remain in `ui-skills.md` and the dedicated admin contracts).
-- [Public UI skill](../.agents/skills/public-ui/SKILL.md) — public routes, navigation, Home, journals, media and presentation (normative details remain in the public contract and live source).
-
-## Local documentation link verification
-
-Run `php scripts/check-documentation-links.php --check` from the repository root to check relative Markdown file links and heading fragments without Laravel, a database, CI or network access. `--summary` reports counts without failing and `--self-test` runs isolated parser fixtures. The scanner covers simple inline Markdown links and reference definitions, ignoring fenced/inline code and non-local URI schemes; HTML anchors, dynamic MDX, multiline destinations and arbitrary complex CommonMark are **outside its contract**.
-
-The [technical completion report](architecture/completion-criteria.md#technischer-source-only-abschluss-19102026) records the actual PHP 8.3.33 checkout run on `docs@8c9bd0a0`: the initial native scan found 77 Markdown files, 1,183 local destinations, 198 heading references and two obsolete anchors. Those links were corrected; the final native `--check` passes on the updated documentation. Earlier GitHub-tree counts remain historical evidence, not current measurements. External URLs, HTML/MDX and unsupported CommonMark forms remain outside this checker.
-
-## Documentation method
-
-- [Documentation skill](../.agents/skills/documentation/SKILL.md) — maintain versioned architecture against `dev`, including its **single active test structure**; distinguish authored assertions from executed verification and consolidate source evidence before safe bundled generator checks.
-- [Current test strategy](TESTING.md#layers-and-ownership) — four current Pest layers, Node JS, three Playwright projects and separate real-process PostgreSQL concurrency; [nine selected authored `dev` assertion families](architecture/completion-criteria.md#testabdeckung-eine-dev-testsuite-authored-assertions), **no claims of executed tests**.
-
-## Living documentation work state
-
-- [DOCS_SKILL.md](../DOCS_SKILL.md) — persistent root-level working memory for the long-lived `docs` workstream. Resume here in a new chat; update after meaningful architecture/doc changes, newly merged `dev` work and verification results. This is a handoff/checkpoint, not a duplicate normative product contract.
+The previous full source-only run on `docs@317d255e` checked 77 Markdown files, 1,221 local links, 199 heading references, five parser self-tests and eight generator checks using PHP 8.3.33; [technical evidence](architecture/completion-criteria.md#technischer-source-only-abschluss-19102026) owns exact provenance. Subsequent GitHub-only edits are not native-run proof. **Do not request a local Docs command for every change**: `P:\moeller-lars-docs` is reserved for rare, expressly authorized Codex batches. The artist-curated Validation data is not a test fixture and Continuous Integration must not be accessed.
 
 ## Branch ownership for documentation
 
@@ -38,7 +26,7 @@ Each behavior has **one normative owner**. `ARCHITECTURE.md` is the overview; `a
 
 | Responsibility | Contract owner | Scope boundary |
 | --- | --- | --- |
-| Admin controls, dialogs, table roles, responsiveness | [Control](ADMIN-CONTROL-CONTRACT.md), [Dialog](ADMIN-DIALOG-CONTRACT.md), [Table](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md), [admin UI grammar](../ui-skills.md) | [Editorial Rich Text](EDITORIAL-RICH-TEXT.md) owns the visual editor/picker and [Admin Localization](ADMIN-LOCALIZATION-CONTRACT.md) owns user language/regions; features do not restate shared behavior |
+| Admin controls, dialogs, table roles, responsiveness | [Control](ADMIN-CONTROL-CONTRACT.md), [Dialog](ADMIN-DIALOG-CONTRACT.md), [Table](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md), [admin UI grammar](ADMIN-UI.md) | [Editorial Rich Text](EDITORIAL-RICH-TEXT.md) owns the visual editor/picker and [Admin Localization](ADMIN-LOCALIZATION-CONTRACT.md) owns user language/regions; features do not restate shared behavior |
 | Admin messages and recipient-specific inbox | [Notification](ADMIN-NOTIFICATION-CONTRACT.md) | [Activity/Publication](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) owns audit, Undo and Commit state—not message delivery |
 | Working, LIVE, Commit, Restore and Revert | [Activity/Publication](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) | Publication protects history recovery roots; [Media](MEDIA.md) owns reference eligibility and physical deletion |
 | Media ingest, reference discovery and physical cleanup | [Media](MEDIA.md) | [Public](PUBLIC-IMPLEMENTATION-CONTRACT.md) defines user-facing eligibility/presentation; [Rights](PUBLIC-RIGHTS-AND-PRIVACY.md) owns incomplete rights/privacy requirements |
@@ -47,7 +35,7 @@ Each behavior has **one normative owner**. `ARCHITECTURE.md` is the overview; `a
 | Static Dashboard announcements/changelog and release gates | [Release](RELEASE.md) | Code-owned Markdown is not a per-user Notification record |
 | Test layers/discovery/safe isolated DB and cutover | [Testing](TESTING.md), [Migration invariants](MIGRATION-INVARIANTS.md), [Migration plan](MIGRATION-PLAN.md), [Release](RELEASE.md), [platform boundary](SERVER-OPERATIONS-BASELINE.md) | [Completion matrix](architecture/completion-criteria.md) records evidence, not a second test/release contract |
 
-**Known unresolved norm/source differences:** The historical Gallery 1-vs-2-eager conflict is superseded by the current [Gallery contract](PUBLIC-IMPLEMENTATION-CONTRACT.md#gallery-delivery-and-loading): two images are eager, only the first high priority. That supersedes the older `dev@11f7e101` source trace. Editor-valid external HTTPS images may violate strict [Public CSP `img-src`](architecture/public-security-privacy-boundaries.md#4-rich-text-url-validierung-vs-csp-ladefreigabe). Invalid *enabled* Matomo URL is distinct from an analytics network outage and has a [source-identified Contact-response risk](architecture/public-security-privacy-boundaries.md#7-fachlicher-source-abschluss-public-read-csp-und-auslieferungsgrenzen). These require product/test decisions, **not** silent documentation redefinition.
+**Historical norm/source differences:** The former Gallery 1-vs-2-eager conflict is superseded by the current [Gallery contract](PUBLIC-IMPLEMENTATION-CONTRACT.md#gallery-delivery-and-loading): two images are eager, only the first high priority. That supersedes the older `dev@11f7e101` source trace. Editor-valid external HTTPS images may violate strict [Public CSP `img-src`](architecture/public-security-privacy-boundaries.md#4-rich-text-url-validierung-vs-csp-ladefreigabe). Invalid *enabled* Matomo URL is distinct from an analytics network outage and has a [source-identified Contact-response risk](architecture/public-security-privacy-boundaries.md#7-fachlicher-source-abschluss-public-read-csp-und-auslieferungsgrenzen). These require product/test decisions, **not** silent documentation redefinition.
 
 [Normative consolidation and derived-artifact classification](architecture/completion-criteria.md#normative-konsolidierung-konfliktstand-und-artefaktentscheidung) records the reconciliation, not a second normative contract.
 
@@ -82,19 +70,11 @@ These describe the durable current application architecture and behavior. Browse
 
 These documents state current durable contracts. They are not chronological PR/worker diaries and should not encode every temporary reconciliation SHA.
 
-## Admin workflow skills
+## Agent entry and continuity
 
-Repository-root workflow documents are intentionally kept close to `AGENTS.md` because they govern coding/review behavior rather than public architecture:
+[Agent entry](agents/README.md) resolves a short role message through the [worker registry](agents/WORKERS.md) and its **bounded, replace-in-place** state. The [continuity procedure](agents/CONTINUITY.md) makes handoffs persistent without requiring the user to repeat prompts. [Documentation procedure](agents/DOCUMENTATION.md), [Testing safety](agents/TESTING.md), and the complete [current Admin UI contract](ADMIN-UI.md) are task-specific stable references. Retired root handoff/skill documents are preserved in Git history, not kept as competing working policies.
 
-- [AGENTS.md](../AGENTS.md) — branch/orchestration/worker/reconciliation contract and central technology rules
-- [ui-skills.md](../ui-skills.md) — admin-only UI grammar for heading/action rows, metrics, filters, selection, tables, grids, DnD, dialogs and browser acceptance
-- [Handoff skill](../.agents/skills/handoff/SKILL.md) — concise current-branch continuation and implementation-report workflow, respecting direct-`dev` / `docs` / `testing` and no CI
-- [Worker protocol](WORKER-PROTOCOL.md) — short role-based start, cross-feature regression review, living-file ownership and controlled docs-to-dev integration
-- [Architecture compositions](architecture/cross-feature-compositions.md) — linked end-to-end change/read/publish paths and cross-consumer impact map
-- [followup-skill.md](../followup-skill.md) — continuation skill; use current `dev` version for future implementation workers, not the older Docs snapshot
-- [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — use when the user is doing live browser acceptance and may intentionally choose direct work on `dev` rather than worker-only orchestration
-
-The active collaboration mode is part of the handoff state. A continuation chat should not silently replace a successful direct browser-repair loop with worker delegation, or vice versa.
+For the later controlled integration to `dev`, [integration plan](agents/README.md#future-docs-to-dev-integration) explicitly protects the newer direct-`dev` root agent policy and existing active worker state. No automatic merge, CI or local Codex batch follows a routine Docs update.
 
 ## Live work and acceptance status
 

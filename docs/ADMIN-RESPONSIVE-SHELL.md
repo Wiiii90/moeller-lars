@@ -1,6 +1,6 @@
 # Admin responsive: Shell and native select
 
-This contract preserves the corresponding task-specific responsive requirements from the former `ui-skills.md` section 21. [Responsive ownership/index](ADMIN-RESPONSIVE-CONTRACT.md) separates shared primitive rules from page-specific acceptance. This is a **documentation move**, not evidence of a fresh browser-acceptance run.
+This contract preserves the corresponding task-specific responsive requirements from the previous Admin UI source contract, now [Admin UI](ADMIN-UI.md), section 21. [Responsive ownership/index](ADMIN-RESPONSIVE-CONTRACT.md) separates shared primitive rules from page-specific acceptance. This is a **documentation move**, not evidence of a fresh browser-acceptance run.
 
 Responsive behavior is content-driven and follows semantic width states rather than device labels: **Wide**, **Compact**, **Narrow** and **Minimal**. Exact thresholds come from browser fit/acceptance; admin task components should prefer available container/workspace width, while shell-level sidebar/topbar changes may remain viewport-driven.
 

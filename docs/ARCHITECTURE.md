@@ -87,7 +87,7 @@ Navigation-only nodes do not get fake editors. Persistence Resource/model names 
 
 The canonical theme entrypoint is `resources/css/admin.css`, importing feature/shared modules from `resources/css/admin/`.
 
-The detailed admin-only UI grammar is maintained in [`../ui-skills.md`](../ui-skills.md). Durable shared principles include:
+The detailed admin-only UI grammar is maintained in [`../ui-skills.md`](ADMIN-UI.md). Durable shared principles include:
 
 - one visible page heading per normal workspace;
 - no decorative kicker/eyebrow layer above that heading;
@@ -103,25 +103,18 @@ A technically running browser candidate is not UI acceptance. Current browser fe
 
 ## Rich Text architecture
 
-All current rich editorial surfaces share one stack:
+One visual editor and public renderer serve Journal, Home, Custom Pages and the artist's CV content:
 
 ```text
-AdminRichText / Filament MarkdownEditor
-  -> Markdown
-  -> RichTextMediaReference
-  -> SafeRichTextRenderer
-  -> public HTML
+AdminRichText / Filament RichEditor + RichTextEditorPlugin
+  -> canonical existing Storage MediaAsset IDs (MediaAssetSelect)
+  -> RichTextDocument (legacy Markdown to visual editor on edit)
+  -> ArtistImageLayout + ArtistTextSpacing + validated text color
+  -> SafeRichTextRenderer (shared server-side validation/sanitization)
+  -> public HTML (optionally decorated by PublicImageViewer)
 ```
 
-Canonical embedded Storage media images use:
-
-```markdown
-![](media:<id>)
-```
-
-`RichTextMediaReference` owns parsing/formatting. `SafeRichTextRenderer` owns safe public rendering. `CanonicalMediaImageRenderer` resolves canonical media images. Validated HTTP(S) image URLs are an explicit `AdminRichText` option, checked by `SafeRichTextRenderer`/`SafeLinkPolicy`; they are **not** another `MediaAsset` identity or Storage-managed media reference.
-
-This stack is used by Blog body, Exhibition description, Custom Page Text/List rich text and Home rich text. A separate historical CV-body row is not a current runtime consumer. The legacy Journal TipTap/RichEditor/custom-block runtime is not part of the architecture.
+The editor has one owning Edit-dialog change/blur boundary, with inline image/link/color/spacing popovers and Tiptap tables. The original MediaAsset and alternate text remain canonical; no separate direct RichEditor upload store, autosave timer, runtime Markdown-only renderer or wholesale historical backfill. `PublicImageViewer` adds content-scoped image viewer attributes **after** sanitization for opted-in Home/Journal uses. Normal Artwork Gallery navigation and video players remain distinct consumer modes. Details and acceptance limits: [Editorial Rich Text](EDITORIAL-RICH-TEXT.md), [Media](MEDIA.md), [Public](PUBLIC-IMPLEMENTATION-CONTRACT.md), [Journal](architecture/journal-content-lifecycle.md).
 
 ## Media architecture
 
@@ -192,7 +185,7 @@ Ordered editorial records persist explicit position. Native Livewire sorting (`w
 
 Ordering Activity uses `AdminAuditService::recordOrdering()` with a stable domain scope and exact canonical before/after identity sequences. `AdminActivityOrderingProjector` groups a state-continuous sequence into one visible forensic Activity so routine sorting does not create hundreds of rows. The group remains visible regardless of whether its final order equals its starting order; identity only means there is no meaningful inverse to offer as Undo. Composition is publication-bounded and never timer-, debounce- or burst-based.
 
-Filtered/search projections do not silently become canonical reorder sequences. Ranked tables may expose a 1-based Position column as described in `ui-skills.md`.
+Filtered/search projections do not silently become canonical reorder sequences. Ranked tables may expose a 1-based Position column as described in `docs/ADMIN-UI.md`.
 
 ## Custom Pages and Contact
 
@@ -261,7 +254,7 @@ Do not freeze temporary CSS class names or current markup through brittle snapsh
 
 ## End-to-end ownership map
 
-For practical change planning, start with the [three cross-feature compositions](architecture/cross-feature-compositions.md): artist Edit→Working→Publication→Public, Exhibition/Journal visibility/media/viewer, and Livewire Public page/SPA ownership. These diagrams link existing contractual owners and historical detailed traces; they are not more individual class-import diagrams. The [Worker Protocol](WORKER-PROTOCOL.md) uses this architecture to enumerate all shared consumers before an implementation change, including previously accepted behaviors and isolation/verification boundaries.
+For practical change planning, start with the [three cross-feature compositions](architecture/cross-feature-compositions.md): artist Edit→Working→Publication→Public, Exhibition/Journal visibility/media/viewer, and Livewire Public page/SPA ownership. These diagrams link existing contractual owners and historical detailed traces; they are not more individual class-import diagrams. The [Worker Protocol](agents/README.md) uses this architecture to enumerate all shared consumers before an implementation change, including previously accepted behaviors and isolation/verification boundaries.
 
 ## Current public and media architecture (source delta dev@434975e1bd09)
 

@@ -10,7 +10,7 @@ description: Produce concrete, copyable handoff prompts or implementation summar
 1. Verify the exact `dev` / `docs` / `testing` HEAD only for branches relevant to the task. Do not assume the last known SHA remains current. `main` is not an ordinary implementation target.
 2. Name the **authorized working branch** and affected files/owners. `docs` owns documentation and source-only generators, `testing` is separately owned, and regular application changes go directly to `dev`. **No worker/feature branches, worktrees, force pushes or CI interaction.**
 3. Identify user-accepted requirements, source-verified facts and evidence that is still missing. Distinguish inspected tests from tests actually executed, source reasoning from browser-tested results, and Draft/Working changes from a LIVE publication commit.
-4. Check the current canonical docs: [AGENTS](../../../AGENTS.md), [docs index](../../../docs/README.md) and the relevant [Admin](../admin-ui/SKILL.md), [Public](../public-ui/SKILL.md) or [Documentation](../documentation/SKILL.md) owner. For the docs branch **read [DOCS_SKILL.md](../../../DOCS_SKILL.md) first** to resume without re-auditing.
+4. Check the current canonical docs: [AGENTS](../../../AGENTS.md), [docs index](../../../docs/README.md) and the relevant [Admin](../admin-ui/SKILL.md), [Public](../public-ui/SKILL.md) or [Documentation](../documentation/SKILL.md) owner. For the docs branch **read [Docsworker state](../../../docs/agents/workers/docsworker.md) first** to resume without re-auditing.
 
 ## Write a prompt only when one is needed
 
@@ -48,4 +48,4 @@ Browser acceptance follows user feedback: collect one complete review slice befo
 
 A completion report identifies the commit SHA, actual changed files, source behavior, checks **actually** run, conflicts resolved, what remains untested and any out-of-scope finding. Visual work must name the accepted source reference and shared presentation primitives reused; no worker or assistant may declare a candidate browser-approved without user evidence.
 
-For `docs`, update [DOCS_SKILL.md](../../../DOCS_SKILL.md) by **replacing the last checkpoint and next actions**, not appending an infinite chronological diary. Keep branch history in Git and normative contracts at one documented owner. The new chat continues the next actionable task directly.
+For `docs`, update [Docsworker state](../../../docs/agents/workers/docsworker.md) by **replacing the last checkpoint and next actions**, not appending an infinite chronological diary. Keep branch history in Git and normative contracts at one documented owner. The new chat continues the next actionable task directly.

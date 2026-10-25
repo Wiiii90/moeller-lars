@@ -72,10 +72,10 @@ The artist admin is browser-reviewed as an editorial product, not accepted merel
 Start with:
 
 - [AGENTS.md](AGENTS.md) — branch/reconciliation/worker workflow and central technology rules
-- [ui-skills.md](ui-skills.md) — shared admin UI grammar for headings, metrics, control rows, tables, grids, selection, ordering and dialogs
+- [Admin UI](docs/ADMIN-UI.md) — shared admin UI grammar for headings, metrics, control rows, tables, grids, selection, ordering and dialogs
 - [docs/ADMIN-AUTHENTICATION.md](docs/ADMIN-AUTHENTICATION.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and mail boundary
 - [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md) — direct-vs-worker browser workflow, shared Visual Stage ownership and local preview loop
-- [followup-skill.md](followup-skill.md) — how to hand a long orchestration session to a new chat without losing exact Git/runtime/review state
+- [Chat continuity](docs/agents/CONTINUITY.md) — how to hand a long orchestration session to a new chat without losing exact Git/runtime/review state
 
 Small browser defects may be fixed directly on `dev` when the user explicitly chooses that mode. Larger independent source passes may use workers. The active collaboration mode is part of the review state; do not silently switch modes during a continuation handoff.
 
