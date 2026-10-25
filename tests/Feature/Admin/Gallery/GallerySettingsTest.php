@@ -239,6 +239,7 @@ it('persists per-Gallery landscape and edge settings through one audited action'
     $notificationBefore = AdminNotification::query()->count();
 
     expect((bool) $gallery->getAttribute('landscape_detail_enabled'))->toBeFalse()
+        ->and((bool) $gallery->getAttribute('portrait_detail_enabled'))->toBeFalse()
         ->and($gallery->getAttribute('edge_navigation_mode'))->toBe('disabled')
         ->and($gallery->getAttribute('artwork_divider'))->toBe('none');
 
@@ -248,6 +249,7 @@ it('persists per-Gallery landscape and edge settings through one audited action'
         'description' => null,
         'show_on_home' => false,
         'landscape_detail_enabled' => true,
+        'portrait_detail_enabled' => true,
         'edge_navigation_mode' => 'cyclic',
         'artwork_divider' => 'dotted',
     ];
@@ -261,6 +263,7 @@ it('persists per-Gallery landscape and edge settings through one audited action'
 
     $saved = $gallery->fresh();
     expect((bool) $saved->landscape_detail_enabled)->toBeTrue()
+        ->and((bool) $saved->portrait_detail_enabled)->toBeTrue()
         ->and($saved->edge_navigation_mode)->toBe('cyclic')
         ->and($saved->artwork_divider)->toBe('dotted')
         ->and(AuditEvent::query()->count())->toBe($auditBefore + 1)
@@ -284,8 +287,9 @@ it('persists per-Gallery landscape and edge settings through one audited action'
     expect(app(PublicationService::class)->commit(auth()->user()))->not->toBeNull();
     $committed = \Illuminate\Support\Facades\DB::table('committed.artwork_categories')
         ->where('id', $gallery->getKey())
-        ->first(['landscape_detail_enabled', 'edge_navigation_mode', 'artwork_divider']);
+        ->first(['landscape_detail_enabled', 'portrait_detail_enabled', 'edge_navigation_mode', 'artwork_divider']);
     expect((bool) $committed->landscape_detail_enabled)->toBeTrue()
+        ->and((bool) $committed->portrait_detail_enabled)->toBeTrue()
         ->and($committed->edge_navigation_mode)->toBe('cyclic')
         ->and($committed->artwork_divider)->toBe('dotted');
 });

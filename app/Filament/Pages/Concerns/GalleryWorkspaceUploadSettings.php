@@ -37,6 +37,7 @@ trait GalleryWorkspaceUploadSettings
                     'description' => $gallery->getAttribute('description'),
                     'show_on_home' => (bool) $gallery->getAttribute('show_on_home'),
                     'landscape_detail_enabled' => GalleryPresentation::enabled($gallery),
+                    'portrait_detail_enabled' => GalleryPresentation::portraitEnabled($gallery),
                     'edge_navigation_mode' => GalleryPresentation::edgeMode($gallery),
                     'artwork_divider' => GalleryPresentation::divider($gallery),
                     'sort_mode' => GalleryPresentation::sortMode($gallery),
@@ -85,6 +86,9 @@ trait GalleryWorkspaceUploadSettings
                         Toggle::make('landscape_detail_enabled')
                             ->label('Expand landscape Artwork pages')
                             ->columnSpanFull(),
+                        Toggle::make('portrait_detail_enabled')
+                            ->label('Fit portrait Artwork pages to screen height')
+                            ->columnSpanFull(),
                         Select::make('artwork_divider')
                             ->label('Between Artworks')
                             ->options(GalleryPresentation::DIVIDER_OPTIONS)
@@ -117,6 +121,7 @@ trait GalleryWorkspaceUploadSettings
                             'description' => $data['description'] ?? null,
                             'show_on_home' => (bool) ($data['show_on_home'] ?? false),
                             'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? false,
+                            'portrait_detail_enabled' => $data['portrait_detail_enabled'] ?? false,
                             'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
                             'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
                             'sort_mode' => $data['sort_mode'] ?? GalleryPresentation::SORT_MANUAL,

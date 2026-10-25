@@ -123,6 +123,13 @@ final class GalleryPresentation
             }
             $values['sort_mode'] = $data['sort_mode'];
         }
+        if (array_key_exists('portrait_detail_enabled', $data)) {
+            $enabled = $data['portrait_detail_enabled'];
+            if (! is_bool($enabled) && ! in_array($enabled, [0, 1, '0', '1'], true)) {
+                throw ValidationException::withMessages(['portrait_detail_enabled' => 'Choose whether portrait Artwork pages use viewport height.']);
+            }
+            $values['portrait_detail_enabled'] = (bool) $enabled;
+        }
         if (array_key_exists('landscape_detail_enabled', $data)) {
             $enabled = $data['landscape_detail_enabled'];
             if (! is_bool($enabled) && ! in_array($enabled, [0, 1, '0', '1'], true)) {
@@ -149,6 +156,11 @@ final class GalleryPresentation
     public static function enabled(ArtworkCategory $gallery): bool
     {
         return (bool) $gallery->getAttribute('landscape_detail_enabled');
+    }
+
+    public static function portraitEnabled(ArtworkCategory $gallery): bool
+    {
+        return (bool) $gallery->getAttribute('portrait_detail_enabled');
     }
 
     public static function divider(ArtworkCategory $gallery): string

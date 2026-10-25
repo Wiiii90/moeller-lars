@@ -680,6 +680,22 @@ body {
     min-width: 100%;
 }
 
+.site-content--portrait-artwork .artwork-detail__media {
+    width: fit-content;
+    max-width: 100%;
+    margin-inline: auto;
+}
+.site-content--portrait-artwork .artwork-detail__image {
+    width: auto;
+    max-width: 100%;
+    max-height: max(12rem, calc(100dvh - 14rem));
+    object-fit: contain;
+}
+.site-content--portrait-artwork .artwork-detail__footer {
+    width: 0;
+    min-width: 100%;
+}
+
 /* Artwork arrows remain on the original centered General-width track,
    independent of the landscape media's own size. */
 .artwork-detail .artwork-folio {

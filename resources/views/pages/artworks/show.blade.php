@@ -33,7 +33,9 @@
      before image decoding, without any client-side layout measurement. --}}
 @section('content_class', ! $isVideo && $thumbnailWidth > $thumbnailHeight && $presentation::enabled($category)
     ? 'site-content--landscape-artwork'
-    : '')
+    : (! $isVideo && $thumbnailHeight > $thumbnailWidth && $presentation::portraitEnabled($category)
+        ? 'site-content--portrait-artwork'
+        : ''))
 
 @section('title', $artwork->title.' — Lars Möller')
 @section('meta_description', $artwork->description ?: $artwork->title.' — Lars Möller')
