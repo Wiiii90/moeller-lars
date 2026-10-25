@@ -1,7 +1,7 @@
 # PUBLIC RIGHTS WORKSTREAM — living handoff (temporary)
 
 **ACTIVE · 2026-10-17 · `Wiiii90/moeller-lars` · `dev` only · slice B2.**
-This is a **consolidated operational state**, not an append-only log. Durable contracts: `AGENTS.md`, `ui-skills.md`, `followup-skill.md`, `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`, `docs/PUBLIC-IMPLEMENTATION-CONTRACT.md`. Accepted newer decisions below supersede stale proposed wording in older plans; reconcile durable docs at completion.
+This is a **consolidated operational state**, not an append-only log. Durable contracts: `AGENTS.md`, `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`, `docs/PUBLIC-IMPLEMENTATION-CONTRACT.md`. Accepted newer decisions below supersede stale proposed wording in older plans; reconcile durable docs at completion.
 
 ## 1. Working protocol and hard constraints
 

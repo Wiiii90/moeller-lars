@@ -1,5 +1,7 @@
 # Testing
 
+**Ownership:** Dev workers implement application changes and report required scenarios; they **do not author, modify, remove or reorganize tests on `dev`**. All new tests, fixtures, browser suites and test-suite maintenance belong to the separate testing workstream on its test branch. Importing curated, reviewed tests back into `dev` is a distinct authorized integration step. Source inspection or running existing safely isolated checks does not transfer test authorship to Dev. This replaces older descriptions of test editing as ordinary direct-development work.
+
 This is the current durable test strategy for `moeller-lars`. The suite protects observable product/domain/security behavior, persistence, publication and selected browser interaction. It must not preserve obsolete test taxonomies, source spellings or repair-round history.
 
 ## Layers and ownership

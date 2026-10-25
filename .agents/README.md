@@ -25,6 +25,13 @@ Each area owns its independent **next lease token**. A new allocation or replace
 
 **Every substantive worker report starts with its exact registered identity** (e.g., “Docs Worker 1”). A named role or saved next step does not itself authorize code changes, tests, merges or automatic task execution.
 
+## Cross-worker responsibilities
+
+- **Dev workers:** implement and source-review application changes on `dev`. **Do not create, modify, refactor or delete test source.** Report changed behaviors, exact source commit, affected consumers, verification actually performed and specific test scenarios required; testing workers own test changes.
+- **Test workers:** own test design, fixtures, regression cleanup, browser automation and isolated test execution on their designated test branch, following its own `AGENTS.md`. Later integration of verified tests into `dev` is a separately reviewed transfer.
+- **Docs workers:** maintain one authoritative document per subject, current navigation and concise shared method. **Delete obsolete files and update every inbound link in the same correction**; no historical `-skill.md` roots, redirect/alias stubs or new appendix archives to compensate for deletion. Git history stores retired texts. Worker progress belongs only in active numbered records.
+- **Other workers:** work strictly within their assigned area; they do not compensate for missing ownership by adding a parallel implementation, documentation entry or test suite.
+
 ## Knowledge and ownership
 
 - Personal record: **this worker's actual assignments and progress**. Keep it short and replace superseded text at milestones.

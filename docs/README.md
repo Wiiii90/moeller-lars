@@ -12,7 +12,7 @@ Start from **the current task**, not a full-document reading marathon.
 4. **Verify the right claim:** distinguish inspected code, authored assertions, an executed isolated test, a rebuilt browser candidate, user acceptance and release qualification. Record exact evidence and outstanding checks where it belongs.
 5. **Close the loop:** update the **existing** affected contract, reconcile links/anchors and remove proven obsolete text. Record still-open tasks only in the active worker/task owner, never in multiple knowledge files.
 
-For shared Admin work, [the short `ui-skills.md` entry](../ui-skills.md) routes to canonical [UI](ADMIN-UI.md), [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md), [Notifications](ADMIN-NOTIFICATION-CONTRACT.md) and [Browser review](ADMIN-BROWSER-WORKFLOW.md). It no longer reproduces their detailed rules.
+For shared Admin work, use the canonical [UI](ADMIN-UI.md), [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md), [Notifications](ADMIN-NOTIFICATION-CONTRACT.md) and [Browser review](ADMIN-BROWSER-WORKFLOW.md) owners directly. Do not add a second overview or root skill.
 
 ## Choose a starting point
 

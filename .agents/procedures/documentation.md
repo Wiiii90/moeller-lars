@@ -19,9 +19,9 @@ This is the Docs branch's reusable working method. The [Docs roster](../areas/do
 
 ## Agent-readable source of truth
 
-The shortest useful read path is [the documentation index](../../docs/README.md#fast-path-for-agents-and-maintainers) → one canonical contract → actual code and adjacent consumers. Legacy entrypoints such as `ui-skills.md` remain **links**, not second normative copies. Before shrinking a legacy contract, compare every feature-specific rule against the destination: Home-routing row actions belong to Tables, Gallery file ownership belongs to Media, modal persistence to Dialogs and responsive geometry to Responsive. If a rule cannot be verified as present and consistent, transfer it or flag it explicitly for source review **before** removing the old text.
+The shortest useful read path is [the documentation index](../../docs/README.md#fast-path-for-agents-and-maintainers) → one canonical contract → actual code and adjacent consumers. Obsolete entrypoints and duplicated manuals must be **deleted outright** after their unique current substance reaches its owner. Do not keep redirect stubs, rename-only aliases, compatibility gateways, dated source-audit dump files or second skill manuals. Update incoming paths, labels and links atomically with the deletion; historical versions are available in Git. Before shrinking a legacy contract, compare every feature-specific rule against the destination: Home-routing row actions belong to Tables, Gallery file ownership belongs to Media, modal persistence to Dialogs and responsive geometry to Responsive. If a rule cannot be verified as present and consistent, transfer it or flag it explicitly for source review **before** removing the old text.
 
-Check local Markdown destinations and heading fragments, not merely filenames. For a large structural move, preserve old fragment IDs by redirecting or explicitly updating inbound links. Keep exact historical evidence under its source-pinned owner; a current contract should answer the reader's present question without first parsing old dated audits.
+Check local Markdown destinations and heading fragments, not merely filenames. For a large structural move, **update all inbound links**; do not retain retired fragments as aliases. Keep exact historical evidence under its source-pinned owner; a current contract should answer the reader's present question without first parsing old dated audits.
 
 ## Coherent documents instead of accumulated notes
 
@@ -45,7 +45,7 @@ For any structural or link-affecting documentation commit:
    ```
 
    Run these **only in an authorized isolated worktree** with PHP/Git and a coherent checkout. A remote GitHub inventory can inspect tracked paths and selected anchors, but it is not a native PHP run: report the exact remote coverage and missing blind spots rather than claiming `--check` passed.
-3. If moving historical evidence, retain the **original source revision and verification classification**. Update historical deep-link targets, or preserve old headings as navigation aliases; don't replace an old testfile link with a new test merely because the name is similar.
+3. When updating a reference to historical evidence, retain its exact source revision and verification classification; if its old destination was deleted, point directly to that Git revision or remove an obsolete link. **Do not** create redirect documents or fake renamed test equivalents.
 4. Before a guarded commit, re-read the latest `docs` head and worker lease; create one linear commit on the checked tree and move the ref with an expected-head lease, never force. Afterward verify the actual branch head and affected files.
 
 Documentation structure is accepted only when a newcomer can find the owner without reading obsolete parallel versions **and** the reader can still find any unique evidence that was moved.

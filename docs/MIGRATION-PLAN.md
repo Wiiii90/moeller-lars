@@ -134,7 +134,7 @@ For the release-candidate line:
 
 Continue browser/editorial reconciliation while v0.4 acceptance remains open. A technically running candidate, green automated check or accepted earlier milestone does **not** establish acceptance of this candidate; the user explicitly decides when the product pass is complete.
 
-Detailed admin UI expectations are in [`../ui-skills.md`](ADMIN-UI.md).
+Detailed admin UI expectations are in [Admin UI contract](ADMIN-UI.md).
 
 ## 8. Release-candidate validation
 

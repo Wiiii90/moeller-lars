@@ -5,7 +5,7 @@ description: Apply canonical Filament admin workspace, controls, tables, dialogs
 
 # Admin UI workstream
 
-This is the short role-specific entry, not a competing copy of UI rules. The repository-root [`ui-skills.md`](../../../ui-skills.md) is a compatibility gateway to the same owners.
+The canonical UI behavior lives in the contracts below. No additional root UI skill or compatibility entry is permitted.
 
 ## Choose the exact authority
 

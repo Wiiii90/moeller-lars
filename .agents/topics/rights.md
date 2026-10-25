@@ -5,7 +5,7 @@
 **Provenance:** copied from active `dev@671d8214` on 25 October 2026. This Docs copy is **not the authoritative active implementation state** until controlled integration; the live dev worker owns updates and unresolved acceptance. Never use this snapshot to execute a deployment.
 
 **ACTIVE · 2026-10-17 · `Wiiii90/moeller-lars` · `dev` only · slice B2.**
-This is a **consolidated operational state**, not an append-only log. Durable contracts: `AGENTS.md`, `ui-skills.md`, `followup-skill.md`, `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`, `docs/PUBLIC-IMPLEMENTATION-CONTRACT.md`. Accepted newer decisions below supersede stale proposed wording in older plans; reconcile durable docs at completion.
+This is a **consolidated operational state**, not an append-only log. Durable contracts: `AGENTS.md`, `docs/PUBLIC-RIGHTS-AND-PRIVACY.md`, `docs/PUBLIC-IMPLEMENTATION-CONTRACT.md`. Accepted newer decisions below supersede stale proposed wording in older plans; reconcile durable docs at completion.
 
 ## 1. Working protocol and hard constraints
 

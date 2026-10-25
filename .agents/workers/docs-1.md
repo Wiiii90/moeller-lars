@@ -4,13 +4,13 @@
 
 ## Mission
 
-Make the project documentation and agent procedures **fast to navigate, coherent, current, nonduplicative and source-verifiable**, while preserving accepted behavior and historical provenance. Work exclusively on `docs`; transfer into another branch requires separate authorization.
+Make project documentation and agent procedures **fast to navigate, coherent, current and source-verifiable**, and remove superseded files, alias bridges and stale archives instead of retaining them for compatibility. Source-versioned older material survives in Git history. Work exclusively on `docs`; transfer into another branch requires separate authorization.
 
 ## Verified baseline and completed work
 
 - Application baseline imported from `dev@0200407133ce4696817271d2141fceaca82f8aff`; at the last direct check, `docs` was not behind `dev`. **Recheck both heads before new writes**.
 - Architecture overview and index reorganized; overlapping Admin/Public/Responsive rules consolidated. General Appearance active-tab-only height reconciled against actual `dev` CSS; public SPA, navigation, title and folio composition separated.
-- Root `ui-skills.md` (~84 KB duplication) replaced with a short canonical-owner gateway after checking the feature-specific rules against Admin UI, Dialog, Table, Responsive, Notification, Media and Browser contracts.
+- Root `ui-skills.md` and `followup-skill.md` removed rather than retained as compatibility aliases; accepted material remains in current canonical docs and numbered worker handoff after checking the feature-specific rules against Admin UI, Dialog, Table, Responsive, Notification, Media and Browser contracts.
 - `docs/architecture/completion-criteria.md` replaced with a concise ten-boundary evidence map; original full October matrix/audit preserved in `docs/architecture/source-audit-archive-2026-10.md`, with original source/test provenance.
 - Rights/consent text aligned with the artist's **deferred** consent-UI decision. Current source implementation, legal review and authorized tracking activation remain distinct checks.
 - Canonical human/agent fast path added to `docs/README.md`, browser brief/source-review gates to `docs/ADMIN-BROWSER-WORKFLOW.md`; no application change or runtime/product acceptance claimed.
