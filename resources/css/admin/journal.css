@@ -226,17 +226,4 @@
     color: var(--admin-text);
 }
 
-.admin-media-table .general-color-table__table th:first-child {
-    width: 66%;
-}
-.admin-media-table .general-color-table__table th.admin-table__actions {
-    width: 34%;
-}
-.admin-media-table .general-color-table__table td:first-child .fi-select-input-value-label img {
-    max-width: 3.25rem;
-    max-height: 3.25rem;
-    object-fit: contain;
-}
-.admin-media-table .general-color-table__table td.admin-table__actions {
-    white-space: nowrap;
-}
+

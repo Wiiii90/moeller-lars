@@ -17,8 +17,8 @@
     $isMediaTable = $repeater->getName() === 'gallery_images';
 @endphp
 
-<div class="general-color-table @if ($isMediaTable) admin-media-table @endif" role="group" aria-label="{{ $repeater->getLabel() }}">
-    <x-admin.table class="admin-table--data general-color-table__table" aria-label="{{ $repeater->getLabel() }}">
+<div class="admin-repeater-table @if ($isMediaTable) admin-repeater-table--media @endif" role="group" aria-label="{{ $repeater->getLabel() }}">
+    <x-admin.table class="admin-table--data admin-repeater-table__table" aria-label="{{ $repeater->getLabel() }}">
         <table>
             <thead>
                 <tr>

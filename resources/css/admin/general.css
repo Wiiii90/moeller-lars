@@ -613,25 +613,4 @@
 
 
 
-/* Gradient rows span the single parent track. Table chrome, text, cells,
- * separators and Add-row belong to the shared admin primitives. */
-.general-color-table,
-.general-color-table__table { min-width: 0; width: 100%; }
-.general-color-table__table > table {
-    width: 100%;
-    min-width: 0;
-    table-layout: fixed;
-}
-.general-color-table__table th:first-child { width: 55%; }
-.general-color-table__table th:nth-child(2):not(:last-child) { width: 26%; }
-.general-color-table__table th.admin-table__actions { width: 19%; }
-.general-color-table__table td {
-    min-width: 0;
-    overflow: visible;
-}
-.general-color-table__table td .fi-fo-field-wrp { min-width: 0; }
-.general-color-table__table td .fi-input-wrp { min-width: 0; }
-.general-color-table__table .admin-table__actions {
-    text-align: right;
-    padding-inline-end: var(--admin-table-edge-inset) !important;
-}
+
