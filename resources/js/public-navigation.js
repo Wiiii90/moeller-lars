@@ -417,6 +417,7 @@ export function initializePublicNavigation() {
         windows.push(main);
         main.refresh();
         initializeNavigationLevels(container, mainSurface, main, restoredWindows, windows);
+        container.dataset.navigationReady = 'true';
 
         // Content-to-content links also preserve the current menu window.
         const clickRoot = document.body;

@@ -3,6 +3,7 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\ArtistImageLayout;
+use App\Domain\Content\ArtistTextSpacing;
 use Filament\Forms\Components\RichEditor\FileAttachmentProviders\Contracts\FileAttachmentProvider;
 use Filament\Forms\Components\RichEditor\Plugins\Contracts\HasFileAttachmentProvider;
 use Filament\Forms\Components\RichEditor\Plugins\Contracts\RichContentPlugin;
@@ -11,6 +12,20 @@ use Illuminate\Support\Facades\Vite;
 
 final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachmentProvider
 {
+    private const TABLE_COMMANDS = [
+        'table' => '$getEditor()?.commands.insertTable({ rows: 2, cols: 3, withHeaderRow: true })',
+        'tableAddColumnBefore' => '$getEditor()?.chain().focus().addColumnBefore().run()',
+        'tableAddColumnAfter' => '$getEditor()?.chain().focus().addColumnAfter().run()',
+        'tableDeleteColumn' => '$getEditor()?.chain().focus().deleteColumn().run()',
+        'tableAddRowBefore' => '$getEditor()?.chain().focus().addRowBefore().run()',
+        'tableAddRowAfter' => '$getEditor()?.chain().focus().addRowAfter().run()',
+        'tableDeleteRow' => '$getEditor()?.chain().focus().deleteRow().run()',
+        'tableMergeCells' => '$getEditor()?.chain().focus().mergeCells().run()',
+        'tableSplitCell' => '$getEditor()?.chain().focus().splitCell().run()',
+        'tableToggleHeaderRow' => '$getEditor()?.chain().focus().toggleHeaderRow().run()',
+        'tableToggleHeaderCell' => '$getEditor()?.chain().focus().toggleHeaderCell().run()',
+        'tableDelete' => '$getEditor()?.chain().focus().deleteTable().run()',
+    ];
     public static function make(): static
     {
         return new static;
@@ -23,12 +38,15 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
 
     public function getTipTapPhpExtensions(): array
     {
-        return [new ArtistImageLayout];
+        return [new ArtistImageLayout, new ArtistTextSpacing];
     }
 
     public function getTipTapJsExtensions(): array
     {
-        return [Vite::asset('resources/js/artist-rich-image.js')];
+        return [
+            Vite::asset('resources/js/artist-rich-image.js'),
+            Vite::asset('resources/js/artist-rich-spacing.js'),
+        ];
     }
 
     public function getEditorTools(): array
@@ -41,6 +59,26 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                 ->icon('heroicon-o-link')
                 ->toggle()
                 ->jsHandler("\$dispatch('artist-rich-link-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+            RichEditorTool::make('textColor')
+                ->label(__('Text color'))
+                ->icon('heroicon-o-swatch')
+                ->jsHandler("\$dispatch('artist-rich-color-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+            RichEditorTool::make('lineSpacing')
+                ->label(__('Line spacing'))
+                ->icon('heroicon-o-bars-3-bottom-left')
+                ->jsHandler("\$dispatch('artist-rich-spacing-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+            ...array_map(
+                static function (string $name, string $command): RichEditorTool {
+                    $suffix = \Illuminate\Support\Str::snake($name);
+
+                    return RichEditorTool::make($name)
+                        ->label(__('filament-forms::components.rich_editor.tools.'.$suffix))
+                        ->icon('fi-o-'.\Illuminate\Support\Str::kebab($name))
+                        ->jsHandler("if ({$command}) \$dispatch('artist-rich-content-changed')");
+                },
+                array_keys(self::TABLE_COMMANDS),
+                array_values(self::TABLE_COMMANDS),
+            ),
             RichEditorTool::make('insertStorageImage')
                 ->label(__('Insert image from Storage'))
                 ->icon(AdminIcon::Storage->value)
@@ -66,7 +104,7 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                         })
                         ->activeStyling()
                         ->activeJsExpression("window.ArtistRichImage?.hasPlacement(\$getEditor(), '{$placement}') ?? false")
-                        ->jsHandler("window.ArtistRichImage?.setPlacement(\$getEditor(), '{$placement}')"),
+                        ->jsHandler("if (window.ArtistRichImage?.setPlacement(\$getEditor(), '{$placement}')) \$dispatch('artist-rich-image-changed')"),
                 ArtistImageLayout::PLACEMENTS,
             ),
             RichEditorTool::make('imageCaption')

@@ -11,3 +11,63 @@
     overflow-x: clip !important;
     scrollbar-gutter: auto !important;
 }
+
+.admin-repeater-table,
+.admin-repeater-table__table {
+    min-width: 0;
+    width: 100%;
+}
+
+.admin-repeater-table__table > table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+}
+
+.admin-repeater-table__table th:first-child { width: 55%; }
+.admin-repeater-table__table th:nth-child(2):not(:last-child) { width: 26%; }
+.admin-repeater-table__table th.admin-table__actions { width: 19%; }
+
+.admin-repeater-table__table td {
+    min-width: 0;
+    overflow: visible;
+}
+
+.admin-repeater-table__table td .fi-fo-field-wrp,
+.admin-repeater-table__table td .fi-input-wrp {
+    min-width: 0;
+}
+
+.admin-repeater-table__table .admin-table__actions {
+    text-align: right;
+    padding-inline-end: var(--admin-table-edge-inset) !important;
+}
+
+.admin-repeater-table--media .admin-repeater-table__table th:first-child {
+    width: 66%;
+}
+
+.admin-repeater-table--media .admin-repeater-table__table th.admin-table__actions {
+    width: 34%;
+}
+
+.admin-repeater-table--media .admin-repeater-table__table td:first-child .fi-select-input-value-label img {
+    max-width: 3.25rem;
+    max-height: 3.25rem;
+    object-fit: contain;
+}
+
+.admin-repeater-table--media .admin-repeater-table__table td.admin-table__actions {
+    white-space: nowrap;
+}
+
+@container admin-table (max-width: 38rem) {
+    .admin-repeater-table--media .admin-repeater-table__table td.admin-table__actions .admin-action__label {
+        display: none;
+    }
+
+    .admin-repeater-table--media .admin-repeater-table__table td.admin-table__actions .admin-action {
+        min-width: 1.5rem;
+        padding-inline: .25rem;
+    }
+}

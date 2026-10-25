@@ -135,10 +135,7 @@ final class ExhibitionEditorialService
 
             $fresh->setAttribute($column, $visible);
             $fresh->save();
-            $this->audit->record($actor, 'exhibition.visibility_updated', 'exhibition', $fresh->getKey(), [
-                'field' => $field,
-                'visible' => $visible,
-            ]);
+            $this->audit->record($actor, 'exhibition.updated', 'exhibition', $fresh->getKey());
 
             return true;
         });

@@ -69,6 +69,7 @@
         @else
             <img
                 class="artwork-image artwork-card__image"
+                data-gallery-image-state="{{ $galleryBuffered ? 'deferred' : 'pending' }}"
                 @if ($galleryBuffered)
                     data-gallery-src="{{ $imageUrl }}"
                     hidden

@@ -21,10 +21,7 @@
                 $map = $exhibition->shouldShowPublicMap() ? $exhibition->mapPresentation() : null;
                 $mapDialogId = 'exhibition-map-'.$exhibition->getKey();
                 $attribution = $exhibition->summaryAttribution();
-                $physicalVenue = $exhibition->publicFieldVisible('organizer') && $exhibition->publicFieldVisible('venue')
-                    && filled($exhibition->organizer) && filled($exhibition->venue)
-                    ? trim((string) $exhibition->venue)
-                    : null;
+                $physicalVenue = $exhibition->publicVenue();
                 $location = $exhibition->mapLocationLabel();
                 $hasDescription = trim((string) ($exhibition->description ?? '')) !== ''
                     && trim((string) $exhibition->description) !== trim((string) $exhibition->location_text);

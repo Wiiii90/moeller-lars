@@ -482,14 +482,14 @@ Responsive behavior is content-driven, not device-name driven. Issue #15 owns th
 The canonical stack is:
 
 ```text
-AdminRichText / Filament MarkdownEditor
-  -> Markdown
-  -> RichTextMediaReference
-  -> SafeRichTextRenderer
+AdminRichText / Filament RichEditor (Tiptap)
+  -> visual editor document -> validated visual HTML
+  -> RichTextMediaReference (canonical Storage image IDs, legacy Markdown compatibility)
+  -> SafeRichTextRenderer (with ArtistImageLayout and ArtistTextSpacing)
   -> public HTML
 ```
 
-Canonical embedded Storage media images use `media:<id>`. Do not resurrect TipTap/RichEditor, legacy `[[journal-image:...]]` runtime syntax, arbitrary external-image embeds or a second parser/editor.
+Embedded visual-editor images reference available canonical Storage assets by `data-id`; legacy Markdown `media:<id>` references remain readable and are converted only on editing. Do not reintroduce a separate editor, external-image uploads, legacy `[[journal-image:...]]` syntax, or an alternate public renderer. See `docs/EDITORIAL-RICH-TEXT.md`.
 
 ### Media
 

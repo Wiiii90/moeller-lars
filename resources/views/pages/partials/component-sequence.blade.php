@@ -1,8 +1,9 @@
     @php
         $isEmbedded = (bool) ($isEmbedded ?? false);
         $imageBlockPrefix = $imageBlockPrefix ?? 'page';
+        $homeImageViewerEnabled = (bool) (($isHome ?? false) && ($enableImageViewer ?? false));
     @endphp
-    <div class="custom-page{{ $isHome ? ' home-components' : '' }}{{ $isEmbedded ? ' custom-page--embedded' : '' }}" @unless($isEmbedded)aria-label="{{ $label }}"@endunless>
+    <div class="custom-page{{ $isHome ? ' home-components' : '' }}{{ $isEmbedded ? ' custom-page--embedded' : '' }}" @unless($isEmbedded)aria-label="{{ $label }}"@endunless @if ($homeImageViewerEnabled && ! $isEmbedded) data-artwork-viewer-sequence @endif>
         @foreach ($blocks as $blockIndex => $block)
             @php
                 $type = is_array($block) ? ($block['type'] ?? null) : null;
@@ -59,7 +60,7 @@
                                 @if ($decorative) aria-hidden="true" @else aria-label="{{ $imageAlt }}" controls @endif
                                 muted loop playsinline preload="metadata" data-public-loop-video></video>
                         @else
-                            <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async">
+                            <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async" @if ($homeImageViewerEnabled && ! $decorative) {!! $imageViewer->attributes('home-image-'.$imageBlockPrefix.'-'.$blockIndex, $media->originalUrlForAsset($asset), $imageAlt) !!} @endif>
                         @endif
                     </figure>
                     @if ($imageChildren !== [])
@@ -81,7 +82,7 @@
                             @if ($isHome)<h2>{{ $block['title'] }}</h2>@else<h3>{{ $block['title'] }}</h3>@endif
                         @endif
                         @if (filled($block['body'] ?? null))
-                            <div class="rich-text">{!! $richText->render((string) $block['body']) !!}</div>
+                            <div class="rich-text">{!! $homeImageViewerEnabled ? $imageViewer->renderRichText((string) $block['body'], 'home-rich-'.$imageBlockPrefix.'-'.$blockIndex) : $richText->render((string) $block['body']) !!}</div>
                         @endif
                     </div>
                 </section>
@@ -102,7 +103,7 @@
                                 @if ($isHome)<h2>{{ $block['title'] }}</h2>@else<h3>{{ $block['title'] }}</h3>@endif
                             @endif
                             <div class="custom-page__list">
-                                @foreach (($block['items'] ?? []) as $item)
+                                @foreach (($block['items'] ?? []) as $itemIndex => $item)
                                     @continue(! is_array($item) || (! $isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item)))
                                     <article class="custom-page__list-item">
                                         <div class="custom-page__list-line">
@@ -112,7 +113,7 @@
                                             @endif
                                         </div>
                                         @if (filled(\App\Models\CustomPageSetting::listItemDetails($item)))
-                                            <div class="rich-text">{!! $richText->render((string) \App\Models\CustomPageSetting::listItemDetails($item)) !!}</div>
+                                            <div class="rich-text">{!! $homeImageViewerEnabled ? $imageViewer->renderRichText((string) \App\Models\CustomPageSetting::listItemDetails($item), 'home-list-rich-'.$imageBlockPrefix.'-'.$blockIndex.'-'.$itemIndex) : $richText->render((string) \App\Models\CustomPageSetting::listItemDetails($item)) !!}</div>
                                         @endif
                                     </article>
                                 @endforeach
@@ -125,6 +126,7 @@
                                 alt="{{ $media->altTextForAsset($listAsset) }}"
                                 loading="lazy"
                                 decoding="async"
+                                @if ($homeImageViewerEnabled) {!! $imageViewer->attributes('home-list-image-'.$imageBlockPrefix.'-'.$blockIndex, $media->originalUrlForAsset($listAsset), $media->altTextForAsset($listAsset)) !!} @endif
                             >
                         @endif
                     </div>

@@ -81,14 +81,14 @@ Browser acceptance may reject a technically functioning implementation for poor/
 Current Rich Text surfaces share:
 
 ```text
-AdminRichText / Filament MarkdownEditor
-  -> Markdown
-  -> RichTextMediaReference
-  -> SafeRichTextRenderer
+AdminRichText / Filament RichEditor (Tiptap)
+  -> visual editor document -> validated visual HTML
+  -> RichTextMediaReference (canonical Storage image IDs, legacy Markdown compatibility)
+  -> SafeRichTextRenderer (with ArtistImageLayout and ArtistTextSpacing)
   -> public HTML
 ```
 
-Canonical embedded Storage media image references use `media:<id>`. Do not create editor-specific parallel upload/image syntax or resurrect legacy Journal RichEditor/TipTap runtime behavior.
+Visual Rich Text images reference canonical Storage assets by `data-id`, while historical Markdown `media:<id>` references remain readable. `SafeRichTextRenderer` is the sole public content renderer; the optional image viewer decorates only its already validated output. Do not create a parallel media uploader, editor, image reference scheme or rendering pipeline.
 
 ## Media
 

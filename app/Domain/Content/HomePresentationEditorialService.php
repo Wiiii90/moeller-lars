@@ -34,6 +34,7 @@ final class HomePresentationEditorialService
             ],
             HomeTemplate::UnderConstruction->value => [
                 'public_site_gate' => false,
+                'image_viewer_enabled' => false,
                 'components' => [
                     [
                         'type' => 'image',
@@ -48,6 +49,7 @@ final class HomePresentationEditorialService
                 ],
             ],
             HomeTemplate::Custom->value => [
+                'image_viewer_enabled' => false,
                 'components' => [],
             ],
         ];
@@ -111,6 +113,13 @@ final class HomePresentationEditorialService
             if (array_key_exists('manual_include_ids', $input)) {
                 $configuration[HomeTemplate::Artwork->value]['manual_include_ids'] = $this->positiveIntList($input['manual_include_ids']);
                 $artworkSettingsChanged = true;
+            }
+            if (in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)
+                && array_key_exists('image_viewer_enabled', $input)) {
+                if (! is_bool($input['image_viewer_enabled'])) {
+                    throw ValidationException::withMessages(['image_viewer_enabled' => 'Choose whether Home images can be enlarged.']);
+                }
+                $configuration[$template->value]['image_viewer_enabled'] = $input['image_viewer_enabled'];
             }
             if (array_key_exists('public_site_gate', $input) && $input['public_site_gate'] !== null) {
                 $configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] = (bool) $input['public_site_gate'];
@@ -589,7 +598,9 @@ final class HomePresentationEditorialService
             || ! is_array($manualIds)
             || ! array_is_list($manualIds)
             || ! $this->isPositiveIntList($manualIds)
-            || ! is_bool($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? null)) {
+            || ! is_bool($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? null)
+            || ! is_bool($configuration[HomeTemplate::UnderConstruction->value]['image_viewer_enabled'] ?? null)
+            || ! is_bool($configuration[HomeTemplate::Custom->value]['image_viewer_enabled'] ?? null)) {
             throw ValidationException::withMessages([
                 'configuration' => 'Home presentation settings are invalid.',
             ]);

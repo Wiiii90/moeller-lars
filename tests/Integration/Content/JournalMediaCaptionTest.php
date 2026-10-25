@@ -76,14 +76,15 @@ it('enables the Journal image viewer for opted-in media and Rich Text', function
     $interactive = $renderer->render($usage, enableViewer: true)->toHtml();
     expect($plain)->not->toContain('data-artwork-viewer-trigger')
         ->and($interactive)->toContain('data-artwork-viewer-trigger')
-        ->toContain('data-viewer-scope="journal"')
+        ->toContain('data-viewer-scope="content"')
         ->toContain('data-viewer-kind="image"')
         ->toContain('aria-label="Enlarge image: An authored image"');
 
+    PublicContentSetting::general()->update(['favicon_media_asset_id' => $asset->getKey()]);
     $body = '<p>Studio notes</p><p><img data-id="'.$asset->getKey().'" alt="Detail view"></p>';
     $rich = $renderer->renderRichText($body)->toHtml();
     expect($rich)->toContain('Studio notes')
         ->toContain('data-artwork-viewer-trigger')
-        ->toContain('data-viewer-scope="journal"')
+        ->toContain('data-viewer-scope="content"')
         ->toContain('data-viewer-alt="Detail view"');
 });

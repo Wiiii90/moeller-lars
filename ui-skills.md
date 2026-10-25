@@ -578,15 +578,9 @@ Large editorial dialogs should order content according to the actual editorial t
 
 ## 17. Rich Text editor UI
 
-There is one central Rich Text technology: `AdminRichText` backed by Filament `MarkdownEditor`.
+There is one central Rich Text technology: `AdminRichText` backed by Filament `RichEditor` (Tiptap). Text, inline links, text color, paragraph spacing and image layout share that editor, its normal history and the current Edit dialog's persistence.
 
-Canonical embedded image reference:
-
-```markdown
-![](media:123)
-```
-
-Media insertion belongs with the editor controls/action area and uses the lazy Storage picker. Do not add a second free-standing media-upload subsystem, arbitrary external image URLs, TipTap/RichEditor or a parallel parser.
+Canonical embedded images are visual-editor nodes referencing existing Storage assets via `data-id`. Historical Markdown `media:<id>` references remain supported and convert when an editor is opened. The central `MediaAssetSelect` handles all media selection; no separate uploader, nested text-color/link action modal, editor or renderer is permitted.
 
 Canonical asset ALT should be reused unless a product surface explicitly supports a true occurrence-level override. Journal structured Cover/Gallery currently use Storage ALT exclusively at runtime.
 

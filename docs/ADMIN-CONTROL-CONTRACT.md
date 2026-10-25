@@ -62,6 +62,22 @@ These are intentionally specialized and remain canonical:
 
 Do not create alternative media pickers, rich-text editors, material selectors or color controls for one page.
 
+## Session-scoped presentation state
+
+The shared `x-admin.stage-switcher` owns session storage for both its internally
+managed `activePane` and an optional parent-owned `external-state`. The latter
+is still an Alpine-only selection: restore and change must not involve Livewire
+or replace an embedded Preview iframe. The shared `storage-key` scopes both
+pane selection and optional `remembered-state` values, each with an explicit
+allowlist of valid string or boolean values. For General, these additional
+presentation values are `previewDevice` (desktop/mobile) and `moreSpace`
+(on/off). They are restored when the Stage mounts and saved on actual changes,
+using the same `sessionStorage` lifecycle as Activity's Stage switcher.
+This is per-browser-tab session state, not editorial database configuration.
+Do not persist temporary selection, filters, open menus, scroll offsets, or
+unsaved form input indiscriminately. Only opt in a specific reversible
+presentation choice with a defined owner and supported value set.
+
 ## Native/Blade adapter
 
 Workspace searches, filters, pager controls and compact inline controls may remain native HTML where Filament state is not useful. They must use the shared admin field classes owned by `resources/css/admin/data-workspace.css`, `resources/css/admin/forms.css` and `resources/css/admin/task-surfaces.css` rather than page-local control styling. Table-level direct editors use the shared `admin-inline-select` / `admin-inline-input` geometry; static values aligned with those controls use `admin-inline-control-value`.

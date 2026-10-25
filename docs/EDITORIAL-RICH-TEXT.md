@@ -44,7 +44,9 @@ actions remain enabled on an image selection and use the existing Tiptap
 image node. The floating toolbar uses Filament's Floating UI boundary,
 constrained to the visible native dialog scrollport, with native flip,
 shift and size handling. Caption entry is inside the same editor dialog,
-not a nested Filament Action. The existing Edit change boundary is reused.
+not a nested Filament Action. The existing Edit change boundary is reused. Table creation and structural
+table operations also notify the same change boundary; ordinary typing
+retains the shared blur-to-change lifecycle.
 
 The shared `MediaAssetSelect` is the selection and query owner for all
 Storage media choices, including Gallery, Journal, Home, Custom Pages and
@@ -63,13 +65,25 @@ editor-shell click-away listener. No alternative media model, catalog,
 upload or autosave flow is added. `MediaAsset` has no separate title field.
 Popup geometry and selection remain subject to browser acceptance.
 
-## Clipboard and PDF
+## Text color and spacing
 
-Normal rich clipboard paste is handled by Tiptap. The experimental
-`Clean PDF Text` action and its unused cleaner have been removed pending
-the artist's explicit decision about paragraph/line-wrap semantics.
-There is no PDF-file importer and no automatic destructive cleanup of text
-copied from PDFs.
+Text color is set from an inline native color input in the existing edit dialog.
+The built-in nested TextColorAction is not mounted. The single existing editor
+document stores the sanitized text-color mark; public rendering uses Filament's
+registered color extension.
+
+Paragraphs and headings support default, no spacing, compact, and relaxed
+spacing via one shared Tiptap attribute. The PHP and JavaScript extensions
+use the same fixed preset names; editorial and public styles match.
+
+## Editor transport
+
+Filament edits the same structured Tiptap document for links, nested lists and
+tables. Livewire's standard maximum dot-path depth of 10 rejects legitimate
+nested editor updates. `config/livewire.php` permits 24 levels while retaining
+the vendor's request-size, call-count and component-count limits. The
+editor continues to store validated rendered content; this is not an
+independent synchronization or persistence path.
 
 ## Acceptance
 

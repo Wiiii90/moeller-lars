@@ -73,7 +73,10 @@ a second geocoding or publication system. Their changes are Working changes
 subject to the usual site Commit; they are not instantly deployed to Public.
 
 Public summary attribution, venue facts, website links, address composition and
-map-dialog text honor these settings. The map's independently controlled
+map-dialog text honor these settings. A hidden Organizer never silently falls
+back to Venue when an Organizer value exists: an independently visible Venue
+appears as the detail fact instead. Historical entries without an Organizer
+keep their Venue summary fallback without a duplicate Venue fact. The map's independently controlled
 `map_enabled` option is **not** silently changed by hiding an address label:
 an enabled map can still reveal coordinates through OpenStreetMap. Turn off
 the map separately if the location itself should be hidden.
@@ -88,3 +91,21 @@ snapshot for their own flag and record timestamp, retaining edit-dialog
 autosave and detection of unrelated concurrent changes. The historic rule
 that entries lacking a genuine street address do not render an Address fact
 is preserved; hiding an existing street can still show opted-in locality.
+
+## Exhibition editor layout and audit
+
+Exhibition Create and Edit use the same flat Filament schema with the shared
+admin dialog spacing. There are no Basics, Organizer & location, Text, Dates,
+Gallery or Map section wrappers. Organizer, Venue, Exhibition website and
+Street address each occupy a full row; City and Postal code share a row;
+Country occupies the next full row. Start/End dates, the date override,
+and Vernissage controls follow the cover field. Gallery presentation spans the full form width. Gallery media uses
+the existing AdminTableRepeater table with visual Storage selection and native
+add/delete/order actions. Select changes and media list actions trigger the
+normal shared Edit autosave. Validation and publication behavior are unchanged;
+Blog retains its existing field order.
+
+Per-field visibility changes use the canonical `exhibition.updated` audit
+action and mutation snapshot, without unsupported audit metadata or a
+separate action catalog entry. No-op visibility changes do not create audit
+or notification records.

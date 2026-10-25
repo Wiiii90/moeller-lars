@@ -16,6 +16,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -40,28 +41,33 @@ final class JournalEntryEditorSchema
 
     private static function entry(Schema $schema, JournalTemplate $template, ?Exhibition $exhibition = null): Schema
     {
-        $components = [self::basicsSection($template)];
-
         if ($template === JournalTemplate::Exhibitions) {
-            $components[] = self::venueSection($exhibition);
+            return $schema
+                ->components([
+                    ...self::basicsFields($template),
+                    ...self::dateFields(),
+                    self::imageViewerField(),
+                    ...self::venueFields($exhibition),
+                    ...AdminRichText::schema('description', __('Text'), 50000, allowEmbeddedMedia: true),
+                    ...self::exhibitionGalleryFields(),
+                    ...self::mapFields(),
+                ])
+                ->columns(['md' => 2]);
         }
 
-        $components[] = self::textSection($template === JournalTemplate::Blog ? 'body' : 'description');
-
-        if ($template === JournalTemplate::Exhibitions) {
-            $components[] = self::datesSection();
-        }
-
-        $components[] = self::gallerySection($template);
-
-        if ($template === JournalTemplate::Exhibitions) {
-            $components[] = self::mapSection();
-        }
-
-        return $schema->components($components);
+        return $schema->components([
+            self::basicsSection($template),
+            self::textSection('body'),
+            self::gallerySection(),
+        ]);
     }
 
     private static function basicsSection(JournalTemplate $template): mixed
+    {
+        return AdminForm::section(__('Basics'))->schema(self::basicsFields($template))->columns(['md' => 2]);
+    }
+
+    private static function basicsFields(JournalTemplate $template): array
     {
         $schema = [
             self::title(),
@@ -82,63 +88,71 @@ final class JournalEntryEditorSchema
                 ->placeholder(__('No cover image'));
 
         $schema[] = $cover->nullable()->columnSpanFull();
-        $schema[] = Toggle::make('image_viewer_enabled')
+
+        if ($template === JournalTemplate::Blog) {
+            $schema[] = self::imageViewerField();
+        }
+
+        return $schema;
+    }
+
+    private static function imageViewerField(): Toggle
+    {
+        return Toggle::make('image_viewer_enabled')
             ->label(__('Enlarge images on click'))
             ->default(false)
             ->columnSpanFull();
-
-        return AdminForm::section(__('Basics'))->schema($schema)->columns(['md' => 2]);
     }
 
-    private static function venueSection(?Exhibition $exhibition): mixed
+    private static function venueFields(?Exhibition $exhibition): array
     {
-        return AdminForm::section(__('Organizer & location'))->schema([
-            self::publicLocationField('organizer', 'Organizer / gallery', 240, $exhibition)->columnSpan(['default' => 1, 'md' => 3]),
-            self::publicLocationField('venue', 'Exhibition venue (actual location)', 240, $exhibition)->columnSpan(['default' => 1, 'md' => 3]),
-            self::publicLocationField('external_url', 'Exhibition website', 2048, $exhibition)->url()->columnSpan(['default' => 1, 'md' => 3]),
-            self::publicLocationField('location_text', 'Street address', 500, $exhibition)->columnSpan(['default' => 1, 'md' => 2]),
+        return [
+            self::publicLocationField('organizer', 'Organizer', 240, $exhibition)->columnSpanFull(),
+            self::publicLocationField('venue', 'Venue', 240, $exhibition)->columnSpanFull(),
+            self::publicLocationField('external_url', 'Exhibition website', 2048, $exhibition)->url()->columnSpanFull(),
+            self::publicLocationField('location_text', 'Street address', 500, $exhibition)->columnSpanFull(),
+            self::publicLocationField('city', 'City', 160, $exhibition),
             self::publicLocationField('postal_code', 'Postal code', 16, $exhibition),
-            self::publicLocationField('city', 'City', 160, $exhibition)->columnSpan(['default' => 1, 'md' => 2]),
-            self::publicLocationField('country', 'Country', 160, $exhibition),
-        ])->columns(['md' => 6]);
+            self::publicLocationField('country', 'Country', 160, $exhibition)->columnSpanFull(),
+        ];
     }
 
-    private static function datesSection(): mixed
+    private static function dateFields(): array
     {
-        return AdminForm::section(__('Dates'))->schema([
+        return [
             DatePicker::make('starts_on')->label(__('Starts'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->nullable(),
             DatePicker::make('ends_on')->label(__('Ends'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->afterOrEqual('starts_on')->nullable(),
             TextInput::make('date_text')->label(__('Display date override'))->maxLength(160)->nullable()->columnSpanFull(),
             Toggle::make('show_vernissage')->label(__('Show vernissage until it begins'))->default(false)->columnSpanFull(),
             DateTimePicker::make('vernissage_at')->label(__('Vernissage'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateTimeFormat())->seconds(false)->default(null)->nullable()->columnSpanFull(),
-        ])->columns(['md' => 2]);
+        ];
     }
 
-    private static function gallerySection(JournalTemplate $template): mixed
+    private static function gallerySection(): mixed
     {
-        $images = self::galleryImages();
+        return AdminForm::section(__('Gallery'))->schema([
+            Select::make('gallery_presentation')
+                ->label(__('Gallery presentation'))
+                ->options([
+                    'sequence' => __('Media sequence'),
+                    'grid' => __('Grid'),
+                    'mosaic' => __('Mosaic'),
+                    'slideshow' => __('Slideshow'),
+                ])
+                ->default('sequence')
+                ->required(),
+            self::galleryImages(),
+        ]);
+    }
 
-        if ($template === JournalTemplate::Blog) {
-            return AdminForm::section(__('Gallery'))->schema([
-                Select::make('gallery_presentation')
-                    ->label(__('Gallery presentation'))
-                    ->options([
-                        'sequence' => __('Media sequence'),
-                        'grid' => __('Grid'),
-                        'mosaic' => __('Mosaic'),
-                        'slideshow' => __('Slideshow'),
-                    ])
-                    ->default('sequence')
-                    ->required(),
-                $images,
-            ]);
-        }
-
+    private static function exhibitionGalleryFields(): array
+    {
+        $images = self::galleryImages(table: true);
         $images
             ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
             ->dehydrated(fn (Get $get): bool => (bool) $get('gallery_enabled'));
 
-        return AdminForm::section(__('Gallery'))->schema([
+        return [
             Toggle::make('gallery_enabled')
                 ->label(__('Gallery enabled'))
                 ->live()
@@ -152,14 +166,15 @@ final class JournalEntryEditorSchema
                 ])
                 ->default('grid')
                 ->required()
-                ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled')),
+                ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
+                ->columnSpanFull(),
             $images,
-        ]);
+        ];
     }
 
-    private static function mapSection(): mixed
+    private static function mapFields(): array
     {
-        return AdminForm::section(__('Map'))->schema([
+        return [
             Toggle::make('map_enabled')
                 ->label(__('Map enabled'))
                 // The central Edit change event is the only persistence request.
@@ -183,7 +198,7 @@ final class JournalEntryEditorSchema
                 ->content(fn (Get $get): HtmlString => self::mapPreview($get))
                 ->visible(fn (Get $get): bool => (bool) $get('map_enabled'))
                 ->columnSpanFull(),
-        ])->columns(['md' => 2]);
+        ];
     }
 
     private static function title(): TextInput
@@ -215,20 +230,48 @@ final class JournalEntryEditorSchema
         ]);
     }
 
-    private static function galleryImages(): Repeater
+    private static function galleryImages(bool $table = false): Repeater
     {
-        return Repeater::make('gallery_images')
+        if (! $table) {
+            return Repeater::make('gallery_images')
+                ->label(__('Gallery media'))
+                ->schema([
+                    MediaAssetSelect::makeId(
+                        'media_asset_id',
+                        __('Image or video'),
+                        allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
+                    )->required(),
+                ])
+                ->addActionLabel(__('Add media'))
+                ->reorderableWithButtons()
+                ->reorderableWithDragAndDrop(false)
+                ->columnSpanFull();
+        }
+
+        return AdminTableRepeater::make('gallery_images')
             ->label(__('Gallery media'))
+            ->hiddenLabel()
+            ->table([TableColumn::make(__('Image or video'))])
+            ->compact()
             ->schema([
                 MediaAssetSelect::makeId(
                     'media_asset_id',
                     __('Image or video'),
                     allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
-                )->required(),
+                )->hiddenLabel()->required(),
             ])
             ->addActionLabel(__('Add media'))
             ->reorderableWithButtons()
             ->reorderableWithDragAndDrop(false)
+            ->deleteAction(fn (Action $action): Action => $action->after(
+                static fn (Component $livewire) => $livewire->dispatch('admin-edit-list-updated'),
+            ))
+            ->moveUpAction(fn (Action $action): Action => $action->after(
+                static fn (Component $livewire) => $livewire->dispatch('admin-edit-list-updated'),
+            ))
+            ->moveDownAction(fn (Action $action): Action => $action->after(
+                static fn (Component $livewire) => $livewire->dispatch('admin-edit-list-updated'),
+            ))
             ->columnSpanFull();
     }
 

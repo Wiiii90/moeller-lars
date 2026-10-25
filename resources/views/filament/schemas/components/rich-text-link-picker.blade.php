@@ -1,4 +1,5 @@
 <div
+    x-ref="richLinkPanel"
     class="admin-rich-text-link-dropdown"
     x-show="linkOpen"
     x-cloak

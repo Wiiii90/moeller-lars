@@ -9,6 +9,7 @@ use App\Domain\Content\HomeHeroResolver;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeTemplate;
+use App\Domain\Content\PublicImageViewer;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SitePageHeading;
 use App\Filament\Support\Controls\AdminControl;
@@ -50,6 +51,8 @@ final class HomeSettingsDialog
             'show_navigation' => $hero['show_navigation'],
             'video_sound_enabled' => $hero['video_sound_enabled'],
             'enable_viewer' => $hero['enable_viewer'],
+            'custom_image_viewer_enabled' => (bool) $configuration[HomeTemplate::Custom->value]['image_viewer_enabled'],
+            'construction_image_viewer_enabled' => (bool) $configuration[HomeTemplate::UnderConstruction->value]['image_viewer_enabled'],
             'group_source' => $hero['group_source'],
             'display_strategy' => $hero['display_strategy'],
             'newest_by' => $hero['newest_by'],
@@ -145,7 +148,11 @@ final class HomeSettingsDialog
                     $this->heroDisplayToggle('show_gallery_link', 'Show Gallery link for single Hero', $persistHeroToggle),
                     $this->heroDisplayToggle('show_navigation', 'Navigate Hero group', $persistHeroToggle),
                     $this->heroDisplayToggle('video_sound_enabled', 'Allow visitors to unmute looping Home videos', $persistHeroToggle),
-                    $this->heroDisplayToggle('enable_viewer', 'Open artwork viewer', $persistHeroToggle),
+                    $this->heroDisplayToggle('enable_viewer', PublicImageViewer::TOGGLE_LABEL, $persistHeroToggle),
+                    AdminControl::toggle('custom_image_viewer_enabled', PublicImageViewer::TOGGLE_LABEL)
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Custom->value),
+                    AdminControl::toggle('construction_image_viewer_enabled', PublicImageViewer::TOGGLE_LABEL)
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
                     Toggle::make('public_site_gate')
                         ->label('Temporarily gate the public site')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
@@ -207,7 +214,9 @@ final class HomeSettingsDialog
 
             $changed = $this->heroConfiguration->updateArtworkSettings($settings, $input);
         } else {
-            $input = [];
+            $current = $this->editorial->configuration($settings)[$template->value];
+            $field = $template === HomeTemplate::Custom ? 'custom_image_viewer_enabled' : 'construction_image_viewer_enabled';
+            $input = ['image_viewer_enabled' => (bool) ($data[$field] ?? $current['image_viewer_enabled'])];
             if ($template === HomeTemplate::UnderConstruction) {
                 $input['public_site_gate'] = (bool) ($data['public_site_gate'] ?? false);
             }

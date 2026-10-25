@@ -68,9 +68,24 @@ entrypoint (foundation, content, presentation, custom pages and journal);
 the Public layout no longer requests individual CSS entrypoints or their
 preloads. The Admin Vite entrypoints and Filament bundle stay unchanged.
 General
-layout CSS variables are reapplied from server-rendered metadata at the swap
-boundary, so new nonces cannot invalidate the artist's configured background
-or widths. The static contour presentation is independent of the SPA transport.
+layout CSS variables, including Menu/Page surfaces and Title paint, are
+reconciled from destination metadata at the swap boundary and absent
+values are cleared, so a previous page cannot leak its appearance through
+the reused stylesheet. The static contour presentation is independent of
+the document-swap transport. While scripting is active, the server-rendered
+Menu paper is visible only after the existing Header and cyclic-navigation
+initializers have resolved the destination layout. Without scripting the
+ordinary server-rendered navigation remains visible.
+
+Gallery-card images and individual Artwork images share one image-ready
+lifecycle. Initial and deferred Gallery images carry their pending state
+in the Blade response, so there is no first-paint native ALT placeholder
+while scripting is active. Intrinsic dimensions reserve the artwork geometry;
+the image is revealed after successful decoding, while a failed media request
+retains an accessible native alternative. The listeners are disposed during
+Livewire navigation, and without scripting the native Gallery fallback and
+Artwork images remain visible. This does not add a global page loader,
+a second image-fetcher, animation or a timer.
 
 Navigation is generated from the canonical Site Node tree and persisted order/publication status, not hard-coded page arrays, legacy category assumptions or a separate menu-visibility toggle. Published nodes appear automatically; unpublished nodes remain publicly unavailable. Published children of an unpublished parent are promoted to public root navigation entries. The configured Skip Home routing option remains an explicit exception.
 
@@ -397,6 +412,27 @@ Gallery presentation uses persisted Artwork `position` as authoritative order.
 - published Artwork cannot remain public through invalid/missing/unpublished Gallery relation.
 
 Viewer previous/next follows the same public Gallery order.
+
+**Context-scoped image viewer:** The same modal, zoom controls and keyboard
+interaction are reused across Artwork, Journal and Home; each public content
+context owns its own sequence and actions. Gallery and Artwork detail continue
+to navigate eligible Artwork and may link to the individual Artwork page.
+Home Artwork keeps its saved `enable_viewer` behavior and navigates only the
+currently rendered Hero group. Blog and Exhibition enable the viewer per
+entry with `image_viewer_enabled`: Cover, gallery and embedded Rich Text
+images navigate **inside that single post or exhibition**, never across other
+posts or exhibitions on the same Journal page. Journal has no Artwork detail
+link or Artwork-specific analytics; video playback is unchanged. Home Custom
+and Under Construction each persist their own `image_viewer_enabled` in
+the existing template configuration; when enabled, all non-decorative component
+images, list images and embedded Rich Text images share the current Home
+component sequence. Decorative images do not open. Their viewer has no Artwork
+detail link or Artwork-specific analytics. All supported editor switches use
+the exact visible label **Enlarge images on click**. The Gallery viewer is
+already active by default; Gallery's separate landscape detail expansion
+option is not a viewer enable/disable toggle. Existing saved Home Artwork
+viewer defaults stay enabled and Journal/Home component opt-ins stay disabled
+unless the artist enables them.
 
 ## Artwork presentation/media/viewer
 

@@ -106,22 +106,16 @@ A technically running browser candidate is not UI acceptance. Current browser fe
 All current rich editorial surfaces share one stack:
 
 ```text
-AdminRichText / Filament MarkdownEditor
-  -> Markdown
-  -> RichTextMediaReference
-  -> SafeRichTextRenderer
+AdminRichText / Filament RichEditor (Tiptap)
+  -> visual editor document -> validated visual HTML
+  -> RichTextMediaReference (canonical Storage image IDs, legacy Markdown compatibility)
+  -> SafeRichTextRenderer (with ArtistImageLayout and ArtistTextSpacing)
   -> public HTML
 ```
 
-Canonical embedded Storage media images use:
+Visual editor images use canonical Storage IDs in `<img data-id="...">`. Historical Markdown `media:<id>` references are supported without destructive backfills and are converted for editing. `RichTextMediaReference` recognizes both forms; `SafeRichTextRenderer` validates and renders the current visual HTML or legacy Markdown using canonical image assets. `ArtistImageLayout` owns public image layout/caption decoration; `ArtistTextSpacing` owns the fixed paragraph-spacing attributes.
 
-```markdown
-![](media:<id>)
-```
-
-`RichTextMediaReference` owns parsing/formatting. `SafeRichTextRenderer` owns safe public rendering. `CanonicalMediaImageRenderer` resolves canonical media images. Arbitrary external image URLs are not a second supported embedded-media system.
-
-This stack is used by Blog body, Exhibition description, Custom Page Text/List rich text, CV body and Home rich text. The legacy Journal TipTap/RichEditor/custom-block runtime is not part of the architecture.
+This stack is shared by Blog, Exhibitions, Custom Pages, CV and Home. Optional enlargement of public Rich Text images passes through `PublicImageViewer`, which first calls `SafeRichTextRenderer` and only then adds viewer attributes. No legacy second editor, arbitrary external images or alternate public parser is authorized.
 
 ## Media architecture
 
