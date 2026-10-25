@@ -117,7 +117,3 @@ and an invalid value: no success feedback. Check nested Home List/Contact,
 mixed selection and other representative edit surfaces. Test execution
 and browser acceptance must be reported separately; source-only work must
 not claim either.
-
-## Worker task checkpoints
-
-The currently active Dev worker's **own temporary task file**, when the branch-local system is available, records the actual user assignment and remaining actions, confirmed current source SHA, observed preview/browser acceptance and verification limitations. File ownership shared with parallel Dev workers belongs in their **Dev area coordination**, not in another worker's private task note. No separate chat-handoff prompt/document is needed; the branch-local worker lifecycle, once integrated into `dev`, governs registration and retirement.

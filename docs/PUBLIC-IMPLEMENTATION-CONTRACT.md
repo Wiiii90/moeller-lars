@@ -284,23 +284,7 @@ part of the global General editor. Menu remains globally owned by General.
 
 ## Appearance editor control presentation
 
-The artist-facing General Stage retains its concise two-column appearance
-grammar: Background/Menu/Page selection beside Primary color, and Linear/Conic
-angle beside Secondary color. The shared AdminAngleControl exposes one inline
-numeric degree value and opens a rotary dial only on focus/click, analogous to
-the shared ColorPicker. Both input methods commit through the same validated
-General appearance field. The dial is teleported outside the scrollable Stage
-to avoid clipping.
-
-All global paint surfaces use the shared Solid ColorPicker inline beside
-their mode Select. Linear, Radial and Conic use one canonical x-admin.table
-with 2–12 Color/Position rows. The
-central AdminTableRepeater replaces only Filament 5.7's embedded table
-presentation, retaining its item schemas, ColorPicker, validation and
-add/delete actions. The markup reuses the same table and Add-row components
-as Social Media; no parallel table chrome or duplicate color picker. Numeric
-positions determine stop order, including coincident stops for hard edges.
-Opening General never writes the legacy two-color values as JSON.
+General's editor controls follow the [shared Admin control and table grammar](ADMIN-CONTROL-CONTRACT.md#public-appearance-controls-source-to-dev2ad31502ea4e); the public rendering and committed/Preview boundaries remain specified here.
 
 ## Public artist title gradient
 
@@ -333,12 +317,6 @@ within the existing nonce-protected public style. Menu-width dividers
 paint the existing navigation border; full-width dividers use their
 existing single pseudo-element line. No additional DOM separator or
 alternate public styling pipeline may be introduced.
-
-General's More Space state is owned by the shared Stage grid and must
-size solely to the **active** appearance panel's intrinsic content; no hidden tab may increase the active scroll range.
-Inactive panels remain out of flow. The preview retains its grid pane
-and adjusts to available space with the existing resize observer,
-including when switching tabs or desktop/mobile preview.
 
 ## Responsive/artistic presentation
 
@@ -734,16 +712,3 @@ The target does not preserve insecure HTTP behavior, blanket legacy query dispat
 ## Acceptance
 
 Public acceptance requires durable publication/routing/data verification, media integrity, viewer interaction checks, isolated Validation, representative browser comparison and explicit editorial/artist review before Production cutover.
-
-
-
-The admin hierarchy uses ONE native Livewire Sortable group per editor for both
-root and child levels. Its receiving `wire:sort:group-id` determines the parent:
-`root` or the persisted Image/Page index. Pages restores the original
-`site-pages` group shared between both levels. Custom Pages uses one
-`custom-components` group with a single transactional
-`CustomPageEditorialService::placeComponent` owner. Do not reintroduce a
-parallel JavaScript drag engine, hover overlay, floating "Move out" button,
-nested content repeater in Image Edit, redundant child counter or special
-child-row design. Existing Image children remain independently editable
-and selected, and are shown with the canonical full six-column row.

@@ -8,7 +8,14 @@ This is the Docs branch's reusable working method. The [Docs roster](../areas/do
 2. On meaningful `dev` changes, find the affected persistent behavior, components, domain boundaries and all consumers. Revise the **existing authoritative product/architecture/operations document** and remove outdated or conflicting wording. Source synchronization is not documentation completion.
 3. **Testing and Refactor are independent workstreams.** Normally do not inspect their active branches or treat their provisional state as normative. After the user reports a Testing/Refactor integration into `dev`, or explicitly requests a separate audit, first synchronize the latest `dev` onto `docs`, then review the incorporated source/test changes. Update test strategy, coverage/evidence matrices, architectural composition, and affected contracts when needed. Never infer executed tests from authored tests.
 4. When instructed to review other workers' task files, inspect them **on their own branches**. Transfer verified, generally useful findings into the appropriate durable owner. Leave their private assignments and status in their own files, and do not modify another area's roster.
-5. Docs-to-dev publishing is **separate and authorized**: construct a filtered, reviewable integration commit containing only permanent documentation/shared workflows valid for `dev`. Preserve `dev` application/source and its own branch-local worker records, and do not import Docs worker commits/history. Before any later dev-to-main promotion enforce the equivalent exclusion of all temporary worker/coordination data. This cannot be implemented safely merely by deleting files ahead of a regular history merge.
+5. Docs-to-dev publishing is **separate and authorized**: build a reviewable **new linear commit on current `dev`** that contains only approved permanent documentation and shared workflows valid for `dev`. Do not take `docs` as a merge parent or import its worker history. Keep the target branch's own `AGENTS.md`, worker roster, application and tests.
+6. For each proposed integration, first review `git diff --stat <base> <candidate>` and `git diff --name-status <base> <candidate>`, then run the repository's [transfer boundary guard](../../scripts/check-branch-transfer.php) from a checkout containing both fetched Git commits:
+
+   ```sh
+   php scripts/check-branch-transfer.php --base=<full-target-HEAD> --candidate=<full-proposed-commit> --target=dev
+   ```
+
+   The checker refuses newly introduced merge/root history, commits that touch branch-local worker/coordination/topics or `AGENTS.md`, and a candidate tree containing another branch's roster/worker files. Use `--target=main` for a separately prepared Main release candidate; `main` must not contain **any** worker/area/topic files. A passing check is **necessary, not sufficient**: a human still reviews documentation ownership and tests, checks that the candidate is based on the latest destination HEAD and authorizes promotion. This tool is presently only on `docs`; it is not an installed enforcement hook on `dev` or `main`.
 
 ## Coherent documents instead of accumulated notes
 

@@ -1,6 +1,6 @@
 # Vollständigkeits- und Qualitätskriterien der Architekturarbeit
 
-**Historische Inventarbasis:** `docs@d88bd8f4` / `dev@f69e0e7e`; die ursprünglich abgeschlossenen **Fachverträge** wurden source-seitig bis zum zuletzt integrierten `dev@e72976af` abgeglichen, danach wurden ausgewählte weiterentwickelte Owner auf `dev@434975e1bd09` gesichtet. Die älteren Generator-/Diagrammzähler sind bewusst **nicht** neu etikettiert. Dieses Dokument ist eine **inhaltliche Abschluss- und Abdeckungsmatrix**, nicht ein neuer normativer Produktvertrag. Jeder Punkt braucht im Abschluss eine konkrete Source-/Test-/DB-Grenze. Künftige Dev-Änderungen werden regelmäßig nachgezogen, dürfen aber einen bereits fachlich vollständigen Abschluss nicht logisch unmöglich machen.
+**Historische Inventarbasis:** `docs@d88bd8f4` / `dev@f69e0e7e`; die ursprünglich abgeschlossenen **Fachverträge** wurden source-seitig bis zum zuletzt integrierten `dev@e72976af` abgeglichen, danach wurden ausgewählte weiterentwickelte Owner auf `dev@434975e1bd09` gesichtet. Die älteren Generator-/Diagrammzähler sind bewusst **nicht** neu etikettiert. Dieses Dokument hält **fachliche Abdeckung, offene Nachweise und historische Prüfprotokolle getrennt**; es ist kein zweiter normativer Produktvertrag. Jeder Punkt braucht im Abschluss eine konkrete Source-/Test-/DB-Grenze. Künftige Dev-Änderungen werden regelmäßig nachgezogen, dürfen aber einen bereits fachlich vollständigen Abschluss nicht logisch unmöglich machen.
 
 ## Warum die vorhandene Menge allein nicht genügt
 
@@ -111,7 +111,13 @@ Gezählt am 19.10.2026: **43 Dateien = 33 externe Mermaid + zehn JSON** unter `d
 
 **Dokumentreferenzen – quellbasierter Abschluss auf `docs@8b3bc15b`:** Der gesamte dortige Git-Tree mit **77 Markdown-Dateien** wurde durch einen isolierten, lesenden Abgleich der vom bestehenden Linkprüfer erfassten Inline-/Referenz-Links durchsucht: **1.008 lokale Dateiverweise, kein fehlendes Dateiziel**. Zusätzlich wurden **107 Markdown-Heading-Verweise** auf **52 verschiedene Datei-/Fragmentziele** zurückgeführt und gegen die Heading-Slugs der jeweiligen Zieltexte geprüft. Zwei veraltete Fragmentziele befanden sich ausschließlich in [der Medienarchitektur](media-reference-and-cleanup.md) (Home-List- und Public-Security-Heading) und wurden auf die bestehenden kanonischen Überschriften korrigiert. **Diese Abdeckung ist ein read-only Quellnachbau, nicht die Ausführung von `php scripts/check-documentation-links.php --check`:** Parser-Unterschiede, nicht unterstützte HTML-/MDX-Links, ungetestete externe URLs und neue Links nach dieser Sourcebasis bleiben ausdrücklich getrennt. Die echte native Checkout-Prüfung ist nun separat im folgenden technischen Abschluss belegt; historische Zählungen werden nicht als neue Messung ausgegeben.
 
-## Technischer source-only Abschluss (19.10.2026)
+## Bekannte bereits belegte Lücken sind keine leeren Diagrammkästen
+
+Die aktuelle Liste enthält u. a. Pages-Edit-Titel/Navigationlabel-Mutation, Index+Typ-Stale-Targets nach gleichartigem Reorder, fehlende Home-List-Referenzen in Storage, divergierende Gallery-/Undo-Readiness, Revert-HEAD vor Lock, unmittelbare Cleanup-Retry-Asymmetrie, historische Folio-WAAPI-Lifetimes (Engine inzwischen entfernt) und die ebenfalls historisch aufgelöste 1-vs-2-eager-Gallery-Regel. Für jeden Punkt existiert der genannte konkrete Quellpfad; ob der Laufzeitfehler tatsächlich auftritt, bleibt abhängig vom jeweiligen Negativtest. Diese Fälle sollen nicht durch neue Architekturschichten oder Umbenennung der Generatoroutputs „gelöst“ werden.
+
+## Historische Prüfprotokolle und Quellabgleiche
+
+### Technischer source-only Abschluss (19.10.2026)
 
 **Umgebung:** dedizierter sauber gestarteter Worktree `P:\moeller-lars-docs`, Branch `docs`, Ausgangs-HEAD **`8c9bd0a0f0fca46b1aa5637049372726d6970c4c`**. Lokaler und Remote-`dev`-HEAD zu Beginn **`29e79a0b050776e9f088c654a0f699fbd6341076`**; kein Merge/Import. PHP CLI **8.3.33**. Keine Installation oder zusätzliche Infrastruktur erforderlich.
 
@@ -136,7 +142,7 @@ Zusätzlich tatsächlich ausgeführt: JSON-Parsing aller zehn Inventare, read-on
 
 **Bewusst nicht ausgeführt:** `export-architecture-postgres.php` und physische Schema-Abnahme (keine nachgewiesene vollständig migrierte Wegwerf-DB); Laravel/Livewire/Pest/Playwright, dynamisches Routing, Browser-/Produktabnahme, CI, Preview-Start, Production/Validation/Deployment. Diese offenen Prüfungen blockieren nicht den begrenzten Source-Dokumentationsabschluss. Zu ihrer späteren Ausführung müssen die in den Fach-Ownern genannten konkreten Negativfälle separat autorisiert und isoliert geprüft werden.
 
-## Selektiver Quellabgleich und Integrationsvorbereitung (22.10.2026)
+### Selektiver Quellabgleich und Integrationsvorbereitung (22.10.2026)
 
 **Provenienz:** GitHub-Vergleich `dev@2ad31502ea4eb352da2c9da4f8334a0d614f1b71` → `dev@74e629274ac28828d9ce9e9c881ab87e7490f2d3`: **96 Commits / 146 geänderte Pfade**. Neue normative dev-Verträge und die tatsächlichen Editor-, Public-, Migration- und Media-Owner wurden für die benannten Themen mit dem Docs-Bestand konsolidiert. **Keine** Behauptung eines vollständigen 96-Commit-Methodenaudits oder einer neuen Native-/DB-/Browser-Prüfung.
 
@@ -155,12 +161,8 @@ Zusätzlich tatsächlich ausgeführt: JSON-Parsing aller zehn Inventare, read-on
 
 **Historischer Integrationsbefund:** Diese auf `docs` erstellte Dokumentation war zum dokumentierten Zeitpunkt noch nicht in `dev` integriert; der fachliche Eigentümervergleich und die Trennung von laufenden Branches bleiben bei jeder tatsächlichen Übernahme erforderlich. Kein Nachweis einer späteren Freigabe oder Runtimeprüfung.
 
-## Neuer Quellabgleich (25.10.2026)
+### Neuer Quellabgleich (25.10.2026)
 
 **Quelle:** `dev@74e629274a` → `dev@671d8214e0`, **25 Commits** (inklusive Workspace-Session-Nachträgen und gemeinsamem Rich-Text-Spacing-Stylesheet) und die zugehörigen geänderten Pfade; gezielte Quellenprüfung, kein kompletter Methoden- oder Runtime-Audit. Rich Text ergänzt Inline-Farben, gemeinsames Paragraph-Spacing, Tabellen-/Link-Erhalt und eine höhere Livewire-Strukturtiefe; Journal/Exhibitions nutzt zentralen visuellen Medien-Repeater und Native-Edit-Save-Bridge; Home/Journal teilen nun `PublicImageViewer`; Gallery/Artwork zeigt erst dekodierte Bilder. General Stage persistiert allowlist-basiert Tab, Device und More Space im Browser-Tab; acht Livewire-Workspaces verwenden ergänzend das native `#[Session]` für kleine View-/Filterpräferenzen, ausdrücklich **nicht** für Selections oder Suchtexte. Präzise Normen stehen in [Rich Text](../EDITORIAL-RICH-TEXT.md), [Exhibitions](../EXHIBITION-EDITORIAL-CONTRACT.md), [Public](../PUBLIC-IMPLEMENTATION-CONTRACT.md), [Control](../ADMIN-CONTROL-CONTRACT.md) und [Journal](journal-content-lifecycle.md).
 
 Die früheren 43 Artefakt- und nativen PHP/Markdown-Prüfergebnisse gehören weiterhin zu `docs@317d255e`; die neue Dokumentation wurde nicht lokal generiert oder über die gesamte Anwendung getestet. Validation bleibt geschützt, CI/Deployment unberührt.
-
-## Bekannte bereits belegte Lücken sind keine leeren Diagrammkästen
-
-Die aktuelle Liste enthält u. a. Pages-Edit-Titel/Navigationlabel-Mutation, Index+Typ-Stale-Targets nach gleichartigem Reorder, fehlende Home-List-Referenzen in Storage, divergierende Gallery-/Undo-Readiness, Revert-HEAD vor Lock, unmittelbare Cleanup-Retry-Asymmetrie, historische Folio-WAAPI-Lifetimes (Engine inzwischen entfernt) und die ebenfalls historisch aufgelöste 1-vs-2-eager-Gallery-Regel. Für jeden Punkt existiert der genannte konkrete Quellpfad; ob der Laufzeitfehler tatsächlich auftritt, bleibt abhängig vom jeweiligen Negativtest. Diese Fälle sollen nicht durch neue Architekturschichten oder Umbenennung der Generatoroutputs „gelöst“ werden.
