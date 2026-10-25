@@ -259,7 +259,7 @@ These examples apply the existing shared Create/Edit Action lifecycle; they do n
 
 Blog- und Exhibition-Create-Actions bleiben `Large`-Create-Tasks mit genau einem expliziten Commit. Schedule und Delete wechseln zu den vorhandenen Command-/Confirm-Dialogen, statt direkt im offenen Edit-Formular eine zweite Persistenzroute aufzubauen.
 
-Die [`JournalEntryEditorSchema`](../../app/Filament/Support/JournalEntryEditorSchema.php) gruppiert Basics, Venue, Dates und Map per responsiver `md`-Spaltenkonfiguration (einspaltig unterhalb), ohne separaten mobil-definierten Edit-Schema-Pfad. Eine redundante Gallery-Layout-Helper-Beschreibung ist entfernt. Diese Angaben beruhen auf dem Quellvergleich des gemergten `dev@f9afd7aa3b31f9a5c012c2032554ecb1336cc89d`, **nicht** auf einem hier ausgeführten Dialog-Browserlauf. Ergänzende [Journal-Featuretests](../../tests/Feature/Admin/Journal/JournalSettingsAutosaveTest.php) und [Gallery-Featuretests](https://github.com/Wiiii90/moeller-lars/blob/1a6cbe45cfa81df0ba2d224bbed2eb9ffc377528/tests/Feature/Admin/Gallery/GalleryWorkspaceTest.php) sind auf `dev@1a6cbe45cfa81df0ba2d224bbed2eb9ffc377528` hinzugekommen: Sie prüfen das **Mounten** der Create-/Edit-Actions mit gemeinsamen Schemas sowie, bei Gallery Materials, dass Repeater-Felder zunächst nicht gespeichert und erst durch `callMountedAction()` committed werden. Sie decken keine vollständige Header-Action-/Close-/No-op-/zwei-Fenster-Browsersequenz ab und wurden hier **nicht ausgeführt**.
+**Aktuelle Schema-Zuständigkeit (Quellabgleich `dev@dee05e4d`):** [`JournalEntryEditorSchema::entry()`](../../app/Filament/Support/JournalEntryEditorSchema.php) baut **Blog** mit bestehenden Basics-/Text-/Gallery-Sektionen auf, **Exhibitions** dagegen als **flaches** responsives Formular: Identität, Beginn/Ende, Cover, Viewer, Organizer/Ort, Rich Text, Gallery und Map. Es gibt **keine** zusätzlichen Basics-/Venue-/Dates-/Map-Section-Wrapper für Exhibitions. Beide benutzen dieselben nativen Filament-Create/Edit-Action-Lebenszyklen; fachliche Sichtbarkeitsfelder, Reihenfolge und Gallery-Tabelle gehören in [Exhibition Editorial](../content/exhibitions.md). Ein Quellvergleich belegt keine abgeschlossene Browser- oder konkurrierende Zwei-Fenster-Prüfung.
 
 ## Gallery Artwork edit/create und Material-Presets
 
@@ -267,25 +267,11 @@ Die Gallery verwendet [`ArtworkEditDialog::schema()`](../../app/Filament/Support
 
 Der Gallery-Edit-Header verwendet [`artworkEditHeaderActions()`](../../app/Filament/Pages/Concerns/GalleryWorkspaceArtworkDialogs.php): Move up/down remountet gegen die persistierte Artwork-ID, Publish/Unpublish benutzt denselben fachlichen Publication-Pfad wie die Row-Actions (Unpublish über die bestehende Bestätigung), und **Remove bedeutet Detach aus der Gallery**, nicht Löschen des Artwork-Datensatzes oder seiner Mediendateien. Remove ist bei veröffentlichtem Artwork deaktiviert. Erfolgsmeldung/Refresh werden am existierenden Mutation-Owner veranlasst; rein statisches Lesen ist **keine** Bestätigung des vollständigen Livewire-Header-Action-Flows.
 
-Die Materials-Settings-`presets` sind eine **Repeater-Collection**. [`materialPresetsAction()`](../../app/Filament/Pages/Concerns/GalleryWorkspaceUploadSettings.php) verwendet deshalb `AdminDialog::command(..., 'Apply changes', Default)`: Reorder/Add/Delete innerhalb dieser Liste sind Entwurfszustand bis zum expliziten Commit, **nicht** einzelne Edit-`wire:change`-Persistenzen. `X` verwirft den noch nicht committed Repeater-Entwurf. No-op und Validierungsfehler dürfen keine unzutreffende Erfolgsbenachrichtigung erhalten. Ein hier ausgeführter Gallery-Browser-/Featuretest liegt nicht vor. Auf `dev@7a5bf344` schützt zusätzlich der [deklarative Architekturtest](https://github.com/Wiiii90/moeller-lars/blob/7a5bf344/tests/Architecture/Admin/AdminEditorialDialogArchitectureTest.php) die zentrale Feldschema-/Dialog-Aktionsstruktur vor Rückfall in duplizierte Gallery-/Journal-Formulare. Auch dieser Test wurde hier **nicht** ausgeführt.
+Die Materials-Settings-`presets` sind eine **Repeater-Collection**. [`materialPresetsAction()`](../../app/Filament/Pages/Concerns/GalleryWorkspaceUploadSettings.php) verwendet deshalb `AdminDialog::command(..., 'Apply changes', Default)`: Reorder/Add/Delete innerhalb dieser Liste sind Entwurfszustand bis zum expliziten Commit, **nicht** einzelne Edit-`wire:change`-Persistenzen. `X` verwirft den noch nicht committed Repeater-Entwurf. No-op und Validierungsfehler dürfen keine unzutreffende Erfolgsbenachrichtigung erhalten. Für diesen Docs-Abgleich wurde kein Gallery-Browser- oder Featuretest ausgeführt. Die frühere separate Architecture-Testsuite ist kein aktueller Test-Owner auf `dev`; die [Testing-Strategie](../operations/testing.md) besitzt die weitere Verifikation.
 
 ## Exhibition map autosave
 
-The Exhibition Map uses the ordinary Edit dialog and its semantic `change`
-commit, not a separate confirmation or save path. The global Toggle bridge
-is owned by `AdminControl`; its `map_enabled` instance is the same standard
-field as `gallery_enabled`. `ExhibitionMapAddress` defines the single
-eligibility rule for UI and domain: **Country plus City or Postal code**.
-A map that is already on can always be switched off. The editorial service
-geocodes only when the saved address changes or coordinates are missing and
-rejects invalid or unavailable locations atomically.
-
-Map preview coordinates are read-only form state: the Exhibition Edit Action
-writes committed latitude/longitude/geocoded_at back to the mounted schema
-after the domain returns, without replacing other editor fields. Do not
-reintroduce Alpine `stale` flags, global events, extra Save buttons or
-asynchronous geocoding timers. A partial address and a temporarily
-unavailable geocoder must not publish an incorrect map.
+Die Exhibition-Karte verwendet denselben `AdminDialog::edit()`-Änderungspfad wie andere Felder, ohne zweite Save-Action, Timer oder konkurrierenden `->live()`-Transport. Das Ein- und Ausschalten, atomare Geocoding-Fehler, Koordinaten-Projektion und die Rücksetzung eines abgelehnten Toggles werden in der **einzigen** [Exhibition-Map-Architektur](../architecture/exhibition-map.md) erläutert. Dieses Dialogdokument besitzt nur den gemeinsamen Formular-/Modal-Lifecycle.
 
 ## Controls
 

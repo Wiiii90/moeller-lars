@@ -517,62 +517,17 @@ Likewise avoid eyebrow/kicker labels on every row/card. Information hierarchy sh
 
 ## 16. Dialogs and overlays
 
-Dialogs are a shared primitive. Read-only text/detail content uses the shared `admin-detail-dialog` grammar from the dialog contract; do not park shared dialog content geometry in a page-specific stylesheet.
+**[Admin Dialogs](dialogs.md)** owns the shared Filament Action modal lifecycle: native backdrop, focus/Escape/X, confirmation semantics, header-action rail, Edit change/save path, widths and responsive content frame. The **framework alone** owns the document scroll lock; the accepted long-/short-page behavior is preserved through the existing version-guarded build patch, never a page-local JavaScript lock. Do not create second dialogs, page-specific transforms, native `wire:confirm` prompts or fixed-width compensations.
 
-Confirmation dialogs use one shared `Small` width. Feature code does not override confirmation width, action spacing or header-action geometry. Confirmation submit actions use the same header rail as every other dialog action, immediately left of the native Filament `X`. `AdminDialog::confirm()` is a normal Filament Action modal with application-level confirmation semantics; do not call Filament `requiresConfirmation()`, because that introduces separate framework defaults for modal chrome and layout.
-
-Required behavior:
-
-- the blocking backdrop covers the complete application viewport, including Topbar and Sidebar. Light and Dark may use different scrim opacity, but never different geometry. The dialog window itself is independently bounded to the current admin content frame below the topbar and stays inside that frame's canonical inline padding;
-- desktop workspace centering must never use a transformed `.fi-main` or viewport-width (`vw`) arithmetic. It is derived from the actual post-sidebar Main/scrollport width so adding or removing a classic vertical scrollbar cannot alter the content midpoint or create asymmetric inline spacing; transformed ancestors would also trap Filament's fixed modal layer and make dialog position depend on document scroll;
-- Filament alone owns blocking-dialog document scroll lock, Open/Close/Focus/Escape/Destroy and lock cleanup. Its **one** Support JS implementation is adjusted by the version-locked build-time patch `scripts/patch-filament-scroll-lock.php`: long pages retain their visible native scrollbar and a frozen body/scroll position; **short pages keep the body in normal flow** and lock only root overflow, never adding a scrollbar, right gutter or even a one-frame scrollbar flash on close. Nested modals share Filament's lock counter. No second application-level scroll-lock runtime, global wheel/touch/key interception or independent counter is permitted. Project JavaScript may measure dialog placement and reset dialog-internal scroll only;
-- each actual Filament `x-modal-opened` transition measures the current Main frame once and stores geometry variables on the persistent document root; modal CSS is declarative and must survive Livewire replacement of a mounted Action. The native backdrop stops wheel/touch scroll chaining. Repeated `open-modal` signals for an already-mounted Action must never remeasure or move it;
-- horizontally centered, viewport-bounded modal with a stable top position within the admin content frame. Changing conditional fields may change dialog height, never its top position;
-- internal scrolling for long content;
-- reachable header/footer/actions;
-- Escape/close;
-- focus trap and restoration;
-- nested popovers/selects above the modal;
-- responsive sizing;
-- originating workspace state retained after close/save.
-
-Do not fix one broken dialog by creating a page-local fake modal. Do not use Livewire `wire:confirm` or browser-native confirm prompts for admin actions; route confirmations through `AdminDialog::confirm()`.
-
-The first dialog row is one shared axis: concise heading on the left, contextual icon actions immediately before the native X on the right. Header reserve follows the actual number of actions; never hard-code a large empty title gutter. Ordinary task headings are normally one or two words. Descriptions are used only for a real consequence/safety distinction and must not restate the heading or obvious form behavior.
-
-Dialog forms use the same globally registered `AdminControl` grammar as route forms. Checkbox/Toggle labels align on the shared field axis. Edit dialogs keep validation semantics but hide red required-star decoration, and required Select fields do not expose a selectable neutral placeholder. Optional semantic null choices remain explicit only where the domain actually supports them.
-
-Dialog width follows task density through the existing `Small` / `Default` / `Large` formats. Small is for compact utilities, Default for bounded medium forms, and Large for genuinely wide editorial forms/viewers. The shared adapter preserves the explicit size; do not stretch a medium form to Large or emulate a fourth size with feature CSS.
-
-Large editorial dialogs should order content according to the actual editorial task, not persistence schema order.
+The UI-level invariant is **one coherent dialog language** across workspaces: same compact title/action row, measured frame, accessible controls and stable position while conditional fields change. Choose `Small`, `Default` or `Large` by actual task content, not by the owning page. The detailed layout, animation, lifecycle and verification gates belong exclusively to the [Dialog owner](dialogs.md), while fields keep the [Control contract](controls.md).
 
 ## 17. Rich Text editor UI
 
-There is one central Rich Text technology: `AdminRichText` backed by Filament `RichEditor` (Tiptap). Text, inline links, text color, paragraph spacing and image layout share that editor, its normal history and the current Edit dialog's persistence.
-
-Canonical embedded images are visual-editor nodes referencing existing Storage assets via `data-id`. Historical Markdown `media:<id>` references remain supported and convert when an editor is opened. The central `MediaAssetSelect` handles all media selection; no separate uploader, nested text-color/link action modal, editor or renderer is permitted.
-
-Canonical asset ALT should be reused unless a product surface explicitly supports a true occurrence-level override. Journal structured Cover/Gallery currently use Storage ALT exclusively at runtime.
+The shared `AdminRichText` uses one editor and the existing Edit mutation boundary across Journal, Home and Custom Pages. Image positioning, captions, inline links, color/spacing, safe output and legacy Markdown conversion are specified **once** in [Editorial Rich Text](../content/rich-text.md). Dialog placement belongs to [Dialogs](dialogs.md); canonical media identity and ALT rules belong to [Media](../media.md). No page-specific editor, nested Action popup or second save path.
 
 ## 18. Media picker behavior
 
-Use the central lazy `MediaAssetSelect` pattern.
-
-Do not eagerly `pluck()` hundreds of MediaAsset options merely because a normal Select supports preload.
-
-All `MediaAssetSelect` instances use the same visual Storage contact-sheet
-presentation by default: Gallery, Journal, Home, Custom Pages, rich text and
-site icon. The established Select remains the sole value/focus/keyboard owner.
-The initial set is bounded to 24 recent assets (relationship Selects use
-Filament's bounded preload), and filtered queries remain lazy (up to 30).
-Do not introduce page-specific appearance flags for the same media choice.
-
-A Rich Text toolbar-anchored Storage panel wraps this shared Select without
-replacing it. Its visible Close control, outside click, Escape, toolbar toggle
-and completed insertion close the panel and the Select together. Click-away
-is owned by the popup, not its enclosing editor shell. All options must
-retain available-asset and media-kind constraints, escape metadata, and stay
-inside the actual dialog.
+Use the shared `MediaAssetSelect` for media selection across Admin consumers. The accepted Storage contact-sheet presentation, bounded default/search results and native Filament keyboard/selection lifecycle are owned by [Controls](controls.md#rich-text-and-reusable-media-selection). For an editor popup, [Rich Text](../content/rich-text.md#image-media-and-layout) specifies panel close/escape/click-away and the single underlying asset reference. Never preload an unbounded media catalog or introduce a second picker solely for one page.
 
 ## 19. Performance as UI quality
 
