@@ -5,6 +5,12 @@
 
 This is the current durable test strategy for `moeller-lars`. The suite protects observable product/domain/security behavior, persistence, publication and selected browser interaction. It must not preserve obsolete test taxonomies, source spellings or repair-round history.
 
+## Cumulative Dev changes and controlled final verification
+
+Testing's next suite is based on the **complete accumulated change** since the last tested/integrated `dev` source revision, not on Dev workers authoring per-fix regressions. Test workers inspect current entrypoints, consumers, migrations and changed dependencies; decide whether the correct test architecture needs reorganization (including fixtures, frameworks and naming) **before** adding cases. Retire obsolete coverage and avoid parallel test systems.
+
+Test work can proceed in advance while Dev continues changing. Only after the **user freezes Dev** should Testing reconcile an exact immutable source target and confirm that non-test source matches the frozen Dev revision. Then use authorized Codex/native execution in verified isolated database/filesystem environments for the **final pre-integration test pass**; repair test defects on Testing and repeat affected verification. Application defects return to Dev, which requires a new source-parity check and potentially a new freeze. Transfer completed tests only after the user's explicit review/authorization. No routine full-suite testing after each Dev commit.
+
 ## Layers and ownership
 
 | Layer | Location | Purpose |

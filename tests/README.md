@@ -1,6 +1,6 @@
 # Test suites — current dev workflow
 
-Tests protect observable domain/product behavior and durable invariants, not repair history or implementation spellings. Application code is authored on `dev`. Test cases, fixtures, browser automation and suite maintenance are authored on the dedicated testing workstream's branch and then reviewed before integration into `dev`.
+Tests protect observable domain/product behavior and durable invariants, not repair history or implementation spellings. Testing workers periodically inspect the cumulative Dev diff, restructure existing tests/fixtures when justified, and run the final isolated Codex/native verification **after user-declared Dev freeze and before reviewed integration**; Dev workers do not author test sources. Application code is authored on `dev`. Test cases, fixtures, browser automation and suite maintenance are authored on the dedicated testing workstream's branch and then reviewed before integration into `dev`.
 
 ## Layers
 

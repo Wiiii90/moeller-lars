@@ -120,6 +120,10 @@ must not unconditionally create UI messages.
 See `docs/ADMIN-NOTIFICATION-CONTRACT.md`,
 `docs/ADMIN-DIALOG-CONTRACT.md`, and `docs/TESTING.md`.
 
+## User authority and architectural disagreement
+
+**The user has the final word on product behavior, architecture, technical direction, approved exceptions, stage freezes and acceptance.** Source and current contracts are the strongest evidence of what has been implemented; they do not outrank a newer, explicit user decision. If a requested implementation appears to contradict the current architecture, report the exact conflict, affected owners and simplest clean options, then ask the user to choose **before** breaking the established design. Do not silently implement a parallel workaround, but do not treat past architectural decisions as unchangeable without the user's consent.
+
 ## Source of truth
 
 Use, in this order:
@@ -190,11 +194,11 @@ a compensating drag/drop runtime in a new file by default.
 
 ## Test ownership and documentation hygiene — mandatory
 
-**Dev workers must not create, edit, move, delete, refactor or consolidate test code, fixtures or browser-test sources.** Development implements production application code on `dev`. The dedicated test workstream owns new tests, modifications, suite restructuring and isolated test execution on its separate branch. Accepted tests are returned to `dev` only through an expressly authorized, reviewed integration; this is not a routine Dev-worker task.
+**Dev workers must not create, edit, move, delete, refactor or consolidate test code, fixtures or browser-test sources.** Nor may routine Dev workers edit general `docs/` contracts, generate architecture inventories or reorganize general agent manuals. **Active living workstream files, current issue/task notes and the worker's own progress must be kept synchronized** with implementation in the same scope; report relevant durable contract changes for Docs to reconcile later. An explicitly user-requested, narrow documentation correction is an exception, not routine feature work. Development implements production application code on `dev`. The dedicated testing workstream owns new tests, modifications, suite restructuring and isolated test execution on its separate branch. Accepted tests are returned to `dev` only through an expressly authorized, reviewed integration; this is not a routine Dev-worker task.
 
 Dev may inspect the existing integrated test suite and, where an independently verified isolated environment is available, run already-existing focused checks without changing their source. Report the exact code revision, observed behavior, what was source-reviewed versus genuinely executed, current browser/user acceptance, and concrete regression cases required for the testing owner. **Do not author "a quick regression test" on `dev`.** No test result from an older source revision certifies the latest code.
 
-**No documentation aliases or accumulation:** A superseded document/skill must be removed outright in the same change that migrates any still-accepted unique content and updates all inbound links. Do not leave compatibility gateway files, renamed stubs, parallel skill documents or dated audit dumps in the active tree merely for continuity. Retired content remains in Git history.
+**Deletion-first design for every worker:** Before adding *any* module, document, test grouping, UI pattern, helper, workflow or generated artifact, reconsider the existing structure and whether a previous owner should be renamed, consolidated or **deleted**. Do not accumulate wrappers, compatibility gateways, parallel implementations, alias paths, transitional shims or duplicate files in unreleased code merely to avoid updating callers. Proven persisted database/migration/snapshot/history compatibility must be preserved; any other actual compatibility requirement needs the user's explicit decision. Remove superseded paths and references as part of the same scoped correction. Keep private host configuration, pricing, access paths, credentials and personal data out of the public repository.
 
 ## Direct-`dev` collaboration
 
@@ -231,6 +235,17 @@ Hard restrictions for all direct-`dev` work:
   the root-cause stop rule above; do not weaken tests to force passing results.
 
 `dev` is the normal development branch and `main` is protected. Running CI and promoting a release require separate user authorization; source edits to CI configuration do not authorize runs.
+
+## Cross-branch workflow and integration
+
+The normal *user-directed* progression is `dev → testing → docs → refactor → main`, but Test, Docs and Refactor workers may prepare **in parallel** with many Dev implementation commits, and the user can alter this order. They reconcile full accepted source changes into their own working branches without making Dev workers maintain tests or general docs. Development branches and worker records are **not** to be merged wholesale across ownership boundaries.
+
+- **During Dev activity:** scoped Dev workers implement, reconcile concurrent changes and update only relevant active workstream/task state. No routine test or general documentation edits and no routine full-suite/Codex generation.
+- **When the user freezes Dev:** Testing must be source-equivalent to the **exact frozen Dev code tree** (apart from Testing-owned tests), accounting for the complete diff since its last accepted baseline. Testing workers rethink grouping/fixtures/framework placement, remove obsolete tests and run/correct the suite with Codex/native isolated tools **as their last pre-integration verification step**; test coverage must be behavior-based, not one new regression per Dev commit. If a real product defect is found, Dev fixes it, the target freeze/source parity must be renewed, and affected tests rerun.
+- **Docs gate:** after accepted code/testing changes, Docs reconciles against the exact integrated source; authoritative docs and necessary retained generated documentation are reconciled/checked, using Codex/native generators **only in the final pre-transfer batch if needed**, not continuously. General docs are then imported as reviewed durable content, not as worker-branch history or rosters.
+- **Refactor/release gate:** any Refactor work is reconciled against the integrated baseline and checked for preserved behavior before user-approved transfer. Promotion to protected `main`, release tooling and Production remain independently authorized.
+
+**No integration is automatic:** check latest head and exact source parity, review imported paths/conflicts, record actual verification and ask for the user's approval at the declared gate. An unexecuted test, a Docs source review or parallel preparation is not a completed stage.
 
 ## Current orchestration model
 
