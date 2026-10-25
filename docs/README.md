@@ -1,12 +1,13 @@
 # Documentation
 
-This repository's documentation is organized around **one normative owner per feature**, end-to-end architectures and short replace-in-place agent work records. Start with [agent entry](../.agents/README.md) for a fresh worker; Dev, Docs, Testing and planned Refactor each have one [shared coordination file](../.agents/areas/dev.md), and each numbered worker has its own temporary living record. The **current user message controls the conversation**: a question is not an instruction to execute unfinished work, and a worker may discuss plans before implementing anything.
+This repository's documentation distinguishes the architectural design, authoritative feature contracts, operational procedures, versioned evidence and temporary agent state. Each behavior has **one normative owner**; obsolete and redundant descriptions must be consolidated. Start with [agent entry](../.agents/README.md) for a fresh worker; Dev, Docs, Testing and planned Refactor each have one [shared coordination file](../.agents/areas/dev.md), and each numbered worker has its own temporary living record. The **current user message controls the conversation**: a question is not an instruction to execute unfinished work, and a worker may discuss plans before implementing anything.
 
 ## Current source and architecture
 
 **Source review (25 October 2026):** the latest selective batch covers 25 new `dev` commits through `dev@35163591`. Common rich-text colors, paragraph spacing, tables/links, Journal/Home shared viewer, Exhibition media table, Admin Stage and Livewire native session preferences, native Edit selection/save events and public first-paint image readiness are reconciled in the topic contracts. This is **source review**, not a new application/browser/native-generator test. The native documentation baseline remains `docs@317d255e` and is historically versioned.
 
-- [Architecture index](architecture/README.md) — composed Publication, editorial, Public, media and frontend lifecycles, alongside clearly older generated structural inventories.
+- [Application architecture](ARCHITECTURE.md#system-overview-and-architectural-decisions) — top-level runtime, data flow, boundaries and design decisions.
+- [Architecture evidence index](architecture/README.md) — deeper lifecycles and versioned (sometimes historical) source inventories, not a second design authority.
 - [Cross-feature compositions](architecture/cross-feature-compositions.md) — artist Edit → Working → Commit → Public, Journal/Exhibition and shared public runtime owners.
 - [Normative application contracts](#current-application-contracts) — precise Admin, Public, Media, Rights, schema and product requirements.
 - [Current Admin UI](ADMIN-UI.md) — accepted shared presentation/interaction grammar, with topic owners for Controls, Dialogs, Tables and Responsive.

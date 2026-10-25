@@ -1,16 +1,24 @@
 # Documentation maintenance and source evidence
 
-This is the stable procedure for the `docs` documentation workstream. **Current subject/discussion state** is in the numbered [Docs Worker 1](../workers/docs-1.md), coordinated via the [shared Docs area](../areas/docs.md), not in this procedure. Root `AGENTS.md` supplies branch and safety rules.
+This is the stable procedure for the `docs` documentation workstream. **Live coordination and cross-worker work** belong in the [shared Docs area](../areas/docs.md); an individual worker record exists only after that worker is activated. Stable documentation methods belong here, not in worker memory. Root `AGENTS.md` supplies branch and safety rules.
 
 ## Routine source reconciliation
 
 1. Resolve fresh `docs` and `dev` HEADs from GitHub and check `testing` when making test-suite claims. `dev` owns application implementation and interim tests; the **active `testing` workstream curates the intended canonical suite** for a controlled return to `dev` before cutover. A Testing Worker is a role, not automatically a branch authorization; a possible `refactor` branch requires explicit approval and concrete scope. No competing root policy.
-2. Compare new `dev` commits to the last source-reviewed SHA in the bounded active Docs worker record. Triage affected files by existing [normative owner](../../docs/README.md) and [composed flows](../../docs/architecture/cross-feature-compositions.md); don't rebuild the full architecture after each commit.
+2. Compare new `dev` commits with the latest source-reviewed baseline identified in the owning contract/evidence index or [shared Docs area](../areas/docs.md). Only use an individual worker record if that worker was actually opened. Triage affected files by existing [normative owner](../../docs/README.md) and [composed flows](../../docs/architecture/cross-feature-compositions.md); don't rebuild the full architecture after each commit.
 3. Prefer current source/accepted product behavior over stale documentation, but separate **code present**, **authored assertion**, **actually executed test**, **browser reviewed** and **artist accepted**. Pin SHA of relevant source. Preserve historical inventory provenance; a regenerated image doesn't prove a live system.
 4. Update the **one canonical owner** of each affected rule; retire contradictory old wording instead of appending a new changelog section. Link across subjects. Use lifecycle/end-to-end diagrams for meaningful transaction, read, render, failure and rollback boundaries; class/import diagrams are structural inventories only.
-5. Keep the [architecture index](../../docs/architecture/README.md), [coverage/evidence matrix](../../docs/architecture/completion-criteria.md), and the current [Docs Worker 1 record](../workers/docs-1.md) in sync. The latter is a short changing checkpoint, not a historic diary.
+5. Keep the [architecture index](../../docs/architecture/README.md), [coverage/evidence matrix](../../docs/architecture/completion-criteria.md) and [shared Docs area](../areas/docs.md) consistent; any active worker updates only its own temporary record.
 6. GitHub-only source/relative-reference checks are normal. Native PHP link checks/generator writes **only in a rare, expressly authorized Codex batch** in the existing `docs` worktree. No routine instructions asking the user to run local Docs commands.
 7. Confirm HEAD again before a docs-only commit. If it moved, compare and reconcile, then write to existing `docs` using a normal fast-forward expected-SHA update. `dev` remains read-only unless the user separately authorizes integration.
+
+## Documentation structure and continuous consolidation
+
+- Docs reviews noteworthy incoming implementation and testing changes for documentation impact, then updates the **existing authoritative owner** instead of appending a dated source-delta section.
+- The [architecture design overview](../../docs/ARCHITECTURE.md) must explain system context, deployable parts, domain boundaries, principal flows, persistence/publication, trust boundaries, decisions and tradeoffs. Feature-specific controls and exhaustive source inventories belong elsewhere.
+- Classify every file as normative product behavior, architectural explanation, operational/test method, versioned source evidence or temporary working state. Labels and index must make these differences visible.
+- Historic generators, diagrams and test inventories retain their actual source/verification version; do not imply current runtime coverage from old output. Defer destructive removal until all unique facts and incoming links have been checked and moved to the proper owner.
+- Regularly remove overwritten rules, duplicate descriptions, old chat/process references and unnecessary temporary files. Use Git for history; do not create a new audit diary for the cleanup. Area-wide documentation debt stays in [Docs coordination](../areas/docs.md).
 
 ## Source and environment boundaries
 

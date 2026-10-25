@@ -1,15 +1,15 @@
-# Dev — shared worker coordination
+# Dev — shared coordination
 
-**Working code branch:** `dev` (already active). **Coordination source:** this file on `docs`. Do not interpret the work-area label as permission to write a branch. For implementation follow the current `dev/AGENTS.md`.
+**Normal implementation branch:** `dev`. **Canonical coordination:** this file on `docs`; implementation policy remains in current `dev/AGENTS.md`. The branch head moves continuously: verify a new source head before each task or commit.
 
-**Next new worker number:** 2. Number 1 is reserved by the previously created placeholder; assign new numbers monotonically and never reuse a retired identity.
+**Next lease token:** 1
 
-| Slot | Epoch | State | Scope / claim | Worker record |
-| --- | ---: | --- | --- | --- |
-| Dev Worker 1 | 1 | available | No recoverable task or exclusive file ownership assigned | [dev-1](../workers/dev-1.md) |
+| Worker | Lease | State | Current owned scope | Individual record |
+| --- | --- | --- | --- | --- |
+| *(none activated under this prototype)* | | | | |
 
-**Shared coordination:** Each active worker adds a brief owned feature/file scope here before touching overlapping code, then refreshes it as the work changes. Distinct Dev Workers may work concurrently on `dev`; compare current `dev` HEAD and the other slots' claims before editing and before committing. An overlap requires explicit division of responsibility or serialized editing, not competing edits. Any cross-area dependency with Testing, Docs or future Refactor is summarized here with a link, not a copy of their task notes.
+An activation allocates the **lowest available positive worker number**, creates its individual record and registers its fresh lease in this table in one expected-head commit. Current pre-existing Dev chats are **not** silently mapped onto numbered identities.
 
-**Current cross-area boundary:** [Testing area](testing.md) curates tests on a different active branch; [Docs area](docs.md) maintains documentation. These have independent commits and must be integrated deliberately. Current verified `dev` reference: `35163591efb98eb51770a9c3061dda260fe25aba` (25 October 2026), not a pinned future working HEAD.
+For parallel work, claim an explicit feature/file area and check others' claims before shared changes. Overlap requires a negotiated split or serialized updates; refresh the actual `dev` head again before committing. Shared dependencies with [Testing](testing.md), [Docs](docs.md) or proposed [Refactor](refactor.md) belong here with pointers to their own areas, **not** copies of their workers' temporary states.
 
-Remove completed scopes and retired slots rather than appending a task diary. Lifecycle, replacement epochs and atomic coordination rules are owned by [agent entry](../README.md).
+Allocation, replacement, consolidation, reuse and deletion: [single worker protocol](../README.md).

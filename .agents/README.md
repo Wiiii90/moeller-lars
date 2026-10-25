@@ -1,46 +1,45 @@
-# Worker identities, coordination and living knowledge
+# Worker coordination
 
-This is the **one** agent/worker operating protocol. A work-area label (Dev, Docs, Testing or proposed Refactor) names a coordination lane and its normal Git branch; a **numbered worker slot** identifies one continuing conversation/work context. Neither a greeting nor a slot is an automatic job queue. Current user instructions govern what happens.
+The root [AGENTS.md](../AGENTS.md) is the always-on entry. This file owns **only** worker lifecycle and shared coordination. Stable domain/architecture requirements belong in [docs](../docs/README.md); task-specific procedures belong in [skills](skills/) and [procedures](procedures/). There are no chat handoffs or automatic backlog actions.
 
-## Start or replace a worker
+## Open a worker
 
-1. Read root [AGENTS](../AGENTS.md), then the relevant **shared area file**: [Dev](areas/dev.md), [Docs](areas/docs.md), [Testing](areas/testing.md) or [Refactor](areas/refactor.md). Do not load every worker or every contract.
-2. **Explicit numbered slot:** `Du bist Dev Worker 2` selects `dev-2`; similarly `Docs Worker 1`, `Testing Worker 1`. Read its numbered [worker record](workers/) and the area's current claims. If no record exists, allocate it with epoch 1 and an empty subject; do not invent an old task. If the slot is already active in another chat, selecting its name alone does not revoke the current owner.
-3. **New unspecified worker:** `Du bist ein Dev Worker` creates the next unused Dev number (from the area's `Next new worker number`), initializes a separate worker record and adds a row to that area. Generic names do not silently inherit someone else's state. A mere question about workers does not allocate a slot.
-4. **Explicit replacement:** `Ersetze Dev Worker 2 und mach da weiter, wo er aufgehört hat` retains `dev-2` and its file, increments its **epoch** in both files, and treats the old chat as superseded. Read the persisted discussion/task and resume *only because the user explicitly requested continuation*. If the earlier state was never saved, say exactly which parts are missing; don't fabricate it.
-5. **Ordinary opening or discussion:** `Du bist Docs Worker 1`, a question, or a fresh task may supersede a previous focus; do **not** automatically execute a recorded action. For a new assignment, clarify only essential missing scope, then act as requested.
-6. Check the actual target Git branch and current code/contract owners before claiming progress or writing. Do not treat an area name as permission to create a branch, deploy, run unsafe tests or merge.
+Read the relevant shared [Dev](areas/dev.md), [Docs](areas/docs.md), [Testing](areas/testing.md) or proposed [Refactor](areas/refactor.md) area file. Resolve the user message as follows:
 
-## What is stored where
+| Request | Action |
+| --- | --- |
+| `Du bist ein Dev Worker` | Allocate the **lowest positive free** `dev-N` slot: a number is free if there is no live `.agents/workers/dev-N.md` on canonical `docs`. Analogously for other areas. |
+| `Du bist Dev Worker 2` | Select that identity; create its file only if absent. Do not execute an old task merely from the greeting. If another chat already owns it, do not silently replace it. |
+| `Ersetze Dev Worker 2` | Keep that numbered file and its documented context, but issue a **new lease token** and supersede the previous chat. Continue old work only when explicitly requested (for example, `... und mach weiter`). |
+| A conversation about the worker system | Discuss normally. Do **not** allocate an identity or invent a task. |
+| `Dev Worker 2 kann weg` | Follow the retirement procedure below; the number becomes free only when its file is actually deleted. |
 
-| Owner | Stores | Does not store |
-| --- | --- | --- |
-| **Area file** `areas/<lane>.md` | Number allocator, active/available/paused slots with epoch and file link, *current shared ownership/overlap* and cross-worker dependencies | Full task history, repeated global rules or every commit |
-| **Worker file** `workers/<lane>-<number>.md` | Current subject (or none), explicit decisions, verified source state, owned scope, test/browser evidence, current blockers/questions, optional next task | Long chat transcripts, copies of product contracts, unrelated team-wide status |
-| **Permanent contracts** under `docs/` | Accepted behavior, domain ownership, cross-feature architecture, long-lived verification method | Ephemeral slot IDs or every temporary attempt |
-| **Git history** | Prior revisions, retired worker notes and old evidence | The current plan or a substitute for reading live state |
+**Allocate only on actual activation.** Do not pre-register placeholder worker files for old chats, hypothetical workers or an area with no workers. The shared area file always exists, even if its active-worker table is empty.
 
-Each newly allocated worker receives its **own** file, even before a first concrete task. Multiple workers may share a branch; their area file is the common coordination surface. Separate areas have separate allocator/ownership files. Numbering is monotonically increasing per area; never recycle a retired slot number, because it would make old conversations ambiguous.
+Each area maintains a **Next lease token**: a monotonically increasing number independent of the reusable worker ID. On **every** allocation and replacement, consume that token for the worker record and area row, then increment the counter. Thus deleting `dev-1` and later reusing number 1 cannot make an old chat with a former lease appear current. Never reset the lease counter merely because the area is empty.
 
-## Updates, parallel workers and replacement safety
+**Allocation/replacement must be one concurrency-checked commit on canonical `docs`**, updating the shared area and the individual file together. Read the current remote `docs` head and available worker paths immediately before creating the commit; use an expected-head, non-forced ref update. If a competing writer advances the branch, reread and reconcile; do not create the same identity twice. No other branch's stale copy determines occupancy.
 
-- Before concurrent work, register a short feature/file claim in the shared area. If a proposed change touches another claim or a shared primitive, agree on a split, serialize the change, or stop and surface the conflict. Do not claim a text table can physically lock code.
-- At meaningful changes to scope, decisions, verified results or blockers, **replace** the relevant worker paragraphs and update the area's claim in the same coordination commit on `docs`. Do not append a per-turn diary; closed decisions move into their one normative owner. Not every conversational reply requires a commit.
-- A chat adopts the slot's `epoch` when it starts. **Before each write**, reread the current slot/area epoch and both the coordination and code branch heads. If the epoch changed, this chat is superseded: do not write as that worker. An explicit takeover increments the epoch and updates the two files together. Use an expected-head, fast-forward commit to prevent lost coordination updates; independently recheck the implementation branch before its code commit. These are optimistic protections, not atomic locks across Git branches.
-- A worker that reaches the context limit may be replaced by a new chat with the *same* numbered identity; the surviving facts are exactly the ones saved in the living files and Git, not hidden reasoning or an uncommitted browser session. Do not create a separate handoff document, copied start prompt, or continuation log.
-- Keep only source-grounded decisions. A present worker can discuss alternatives without a scheduled next action, and a later chat may choose a different task.
+## Live ownership and writing
 
-## Cleanup and retirement
+- **Individual** `.agents/workers/<area>-N.md`: one worker's live question/task, scope, approved decisions, evidence and limitations, open issues and optional next action. It may contain a discussion without an action. Never put another worker's private task state into this file.
+- **Shared** `.agents/areas/<area>.md`: current area-wide file/feature claims, worker number + lease token + lifecycle state, cross-worker dependencies and conflicts. No chat transcripts or repeated stable rules.
+- **Durable** `docs/`: accepted product design, canonical architecture and ownership, current system behavior, persistent workflows and reusable verification conclusions.
+- **Git history**: former states and retired worker files. Historical commits are not an automatically executable task queue.
 
-Mark a completed slot **available** (no active claim) if its identity should remain reusable for a later discussion; keep only the bounded context needed for intentional resumption. **Retire** a no-longer-needed worker only after transferring durable decisions and still-relevant unresolved issues to their normative owners or the area file. Remove the slot row and **delete its temporary worker file** in the same commit. Git history retains its old version. Do not retire a slot claimed by another live chat or erase its only surviving unresolved information. The area's next-number counter never decreases. Remove completed ownership rows and stale coordination notes continuously, not merely at chat end.
+Before changing either code or coordination, the chat must recheck its worker lease token **in the canonical shared area and its own record**. If missing or changed, the chat is superseded: stop writing under that identity. Before an application-branch commit also recheck its current branch head and other workers' current scopes. Reconcile shared owners and overlapping edits; the area table is **not** a real cross-branch mutex.
 
-## Work areas, methods and rollout boundary
+Write meaningful state changes at milestones and before a likely context limit, replacing superseded text. A new chat can recover only what was saved. An uncommitted conversation, external browser session or hidden reasoning cannot be recovered from the worker name.
 
-- **Dev:** `dev` application implementation; current `dev/AGENTS.md` remains authoritative for live development. [Dev area](areas/dev.md).
-- **Docs:** `docs` documentation and this prototype. [Docs area](areas/docs.md); [documentation procedure](procedures/documentation.md).
-- **Testing:** active `testing` curation with future controlled reintegration into `dev`. [Testing area](areas/testing.md); [safe testing procedure](procedures/testing.md).
-- **Refactor:** planned area only; no Git branch, no code write until authorized. [Refactor area](areas/refactor.md).
+## Consolidate and retire
 
-**Currently only `docs` has this new entrypoint and these living files.** Existing Dev and Testing chats do not magically follow it. A later authorized rollout must arrange for them to read and update the **same canonical coordination files on `docs`**, not create independently diverging copies on `dev` and `testing`, and must preserve their active work, existing worktrees, Codex workflows and branch-specific safety rules.
+1. Resolve a worker's completed or durable **decisions and facts into their own record first** while work continues; propagate the stable results into their **one owning contract or procedure** when confirmed. Transfer genuinely shared dependencies into the area's coordination file. Move unresolved work into the proper active owner or a deliberately maintained topic; do not drop it or copy it into another worker's private file.
+2. At retirement, verify there is no ongoing chat/writer relying on that identity, no unresolved information existing solely in its temporary record and no current file ownership claims. A paused worker **retains** its file and still occupies its number.
+3. In one expected-head commit remove the area row/claims and **delete** its individual file from `docs`. The lowest now-unused positive number is available for the next allocation; the area's lease counter only increases.
+4. Remove outdated references and obsolete topic/procedure fragments at the same consolidation boundary. Git retains the old file version; no separate archive or handoff file is created.
 
-Read [feature owners](../docs/README.md) and [cross-feature compositions](../docs/architecture/cross-feature-compositions.md) as needed. Never replace concrete user/browser acceptance with an agent's speculative simplification.
+Periodic cleanup should replace/update the canonical documents rather than append dated source-diff sections. Do not delete historical migrations, accepted behavior or unique open evidence solely for cosmetic tidiness.
+
+## Scope and rollout
+
+This version exists **only on `docs`**. `dev` is active implementation; `testing` is an active curated suite; `refactor` is still only a proposed branch. A worker role does not automatically create or authorize any Git branch. On a later approved rollout, every worker must reference the **same** shared coordination on `docs` rather than diverging copies in separate working branches. Keep existing live agents, worktrees, test isolation and implementation policy intact until rollout is verified.

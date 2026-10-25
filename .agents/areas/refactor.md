@@ -1,11 +1,15 @@
-# Refactor — proposed worker area
+# Refactor — proposed coordination area
 
-**Branch:** `refactor` has not been created or authorized. This coordination area supports discussion/planning only until the user expressly approves the branch and concrete integration boundaries.
+**Git branch:** `refactor` does not yet exist. If the user authorizes its creation, base the new branch on the **then-current, verified `dev` head**, not on `docs`, `testing` or a stale remembered source commit. No code branch is created by opening a Refactor Worker.
 
-**Next new worker number:** 1.
+**Next lease token:** 1
 
-No worker slots have been allocated. On first explicit Refactor Worker activation, allocate `refactor-1` (epoch 1), create its bounded record, update the next number and this table atomically on `docs`. This does not itself create a Git branch or authorize code changes.
+| Worker | Lease | State | Current owned scope | Individual record |
+| --- | --- | --- | --- | --- |
+| *(none activated)* | | | | |
 
-If refactoring touches shared Admin/Public/Publication/Media owners, coordinate file claims with [Dev](dev.md), [Testing](testing.md) and [Docs](docs.md). Preserve existing accepted behavior across all consumers. The [cross-feature architecture](../../docs/architecture/cross-feature-compositions.md) and the actual owning contract remain authoritative.
+**Intended purpose:** parallel behavior-preserving cleanup, simplification, dead-code removal, obsolete paths and structural weaknesses. No user-visible feature redesign, unrelated data migrations, destructive history cleanup or broad changes to accepted interactions. Before a removal, establish actual callers, framework-discovered entrypoints, runtime/feature gates, compatibility/undo/publication consumers and evidence that the code is unreachable or obsolete. Review tests and source together.
 
-Worker and cleanup rules: [agent entry](../README.md).
+**Synchronization:** `refactor` does not automatically receive new `dev` commits. Periodically reconcile incoming `dev` changes with reviewed conflicts; integrate coherent, separately verified refactor changes back to `dev` only after explicit agreement. Parallel Dev/Refactor workers must coordinate shared file ownership and avoid treating passing source-level checks as browser acceptance.
+
+Other areas: [Dev](dev.md), [Testing](testing.md), [Docs](docs.md). Worker lifecycle: [single protocol](../README.md).

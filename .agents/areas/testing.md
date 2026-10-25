@@ -1,13 +1,15 @@
-# Testing — shared worker coordination
+# Testing — shared coordination
 
-**Working branch:** `testing` is active, curating the eventual common regression suite. The earlier test iteration was merged into `dev`, but curation continued on `testing`. Do not call it a historical/inactive branch. Current verified reference: `testing@b7eee549b86ac35eaa6a064ac78ef226182c170e` (25 October 2026).
+**Working branch:** `testing` is active and separately curated toward a later controlled integration into `dev`. The previous integration of a Testing iteration did **not** retire this branch. Before work, verify current `testing` and `dev` heads and protect the actual Testing worker's existing changes.
 
-**Next new worker number:** 2.
+**Next lease token:** 1
 
-| Slot | Epoch | State | Scope / claim | Worker record |
-| --- | ---: | --- | --- | --- |
-| Testing Worker 1 | 1 | reserved | Existing Testing conversation is active outside this not-yet-integrated workflow; exact in-chat task not persisted here | [testing-1](../workers/testing-1.md) |
+| Worker | Lease | State | Current owned scope | Individual record |
+| --- | --- | --- | --- | --- |
+| *(none activated under this prototype)* | | | | |
 
-**Shared coordination:** When the current Testing Worker adopts this structure, update its actual scope, test ownership, latest verified branch references and completed checks here. Do not infer today's task or test success from a merge commit. Additional Testing Workers must claim disjoint test files or explicitly serialize edits. Compare both current `testing` and `dev` refs and flag overlaps before integration.
+The existing Testing chat is running **outside the new numbered-worker system**; it has not yet been assigned a numbered identity. Do not invent its private task state or reserve a number for it. After the user activates a Testing Worker, allocate the lowest free positive ID and read that worker's real conversation/task where available.
 
-Stable safety/test methods: [Testing agent guidance](../procedures/testing.md) and [canonical test strategy](../../docs/TESTING.md). Coordination and replacement lifecycle: [agent entry](../README.md). No separate invented test architecture and no unattended merge to `dev`.
+Maintain the canonical, consolidated tests on `testing` while newer `dev` changes are reconciled; remove redundant transient tests, preserve real behavioral coverage and verify any execution only in approved disposable environments. Parallel workers register disjoint files or serialize shared edits. Long-term rules: [Testing procedure](../procedures/testing.md), [test strategy](../../docs/TESTING.md).
+
+Worker allocation and retirement: [single protocol](../README.md).
