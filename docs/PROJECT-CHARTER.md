@@ -56,7 +56,7 @@ Persistent Preview / future logical Commit / Settings utilities may exist at she
 
 ## Admin interaction principles
 
-The detailed admin UI grammar is maintained in [`../ui-skills.md`](../ui-skills.md).
+The detailed admin UI grammar is maintained in [the Admin UI contract](ADMIN-UI.md).
 
 Durable principles:
 
