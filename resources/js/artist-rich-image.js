@@ -43,14 +43,12 @@ export default () => {
     const updateSelectedImage = (editor, attrs) => {
         const selected = selectedImage(editor);
         if (!selected) return false;
-        const transaction = editor.state.tr.setNodeMarkup(
-            selected.pos, undefined, { ...selected.node.attrs, ...attrs },
-        );
-        transaction.setSelection(NodeSelection.create(transaction.doc, selected.pos));
-        editor.view.dispatch(transaction);
-        selectedImages.set(editor, selected.pos);
-        editor.view.focus();
-        return true;
+        const changed = editor.chain().focus()
+            .setNodeSelection(selected.pos)
+            .updateAttributes('image', attrs)
+            .run();
+        if (changed) selectedImages.set(editor, selected.pos);
+        return changed;
     };
 
     window.ArtistRichImage = {

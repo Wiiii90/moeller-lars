@@ -174,8 +174,9 @@ final class AdminRichText
                                 return surface ? window.Alpine?.$data(surface)?.getEditor?.() : null
                             },
                             openLinkEditor(event) {
-                                const editor = this.getRichEditor()
+                                const editor = event.detail?.editor ?? this.getRichEditor()
                                 if (!editor || editor.isDestroyed) return
+                                this.$refs.richLinkPanel.__artistEditor = editor
                                 if (this.linkOpen) {
                                     this.linkOpen = false
                                     return
@@ -228,7 +229,7 @@ final class AdminRichText
                                 }
                             },
                             applyLink() {
-                                const editor = this.getRichEditor()
+                                const editor = this.$refs.richLinkPanel.__artistEditor
                                 if (!editor || editor.isDestroyed || !this.linkSelection) return
 
                                 const url = this.normalizedLinkUrl()
@@ -259,7 +260,7 @@ final class AdminRichText
                                 if (result) this.finishLinkEdit()
                             },
                             removeLink() {
-                                const editor = this.getRichEditor()
+                                const editor = this.$refs.richLinkPanel.__artistEditor
                                 if (!editor || editor.isDestroyed || !this.linkSelection) return
                                 const result = editor.chain().focus()
                                     .setTextSelection(this.linkSelection)
@@ -278,9 +279,10 @@ final class AdminRichText
                             captionLeft: 0,
                             captionTop: 0,
                             openCaptionEditor(event) {
-                                const editor = this.getRichEditor()
+                                const editor = event.detail?.editor ?? this.getRichEditor()
                                 const image = window.ArtistRichImage?.selected(editor)
                                 if (!image) return
+                                this.$refs.richCaptionPanel.__artistEditor = editor
                                 if (this.captionOpen) {
                                     this.captionOpen = false
                                     return
@@ -298,7 +300,7 @@ final class AdminRichText
                                 })
                             },
                             applyCaption() {
-                                const editor = this.getRichEditor()
+                                const editor = this.$refs.richCaptionPanel.__artistEditor
                                 if (!window.ArtistRichImage?.setCaption(editor, this.captionText)) return
                                 this.captionOpen = false
                                 this.commitEditorChange()
@@ -337,8 +339,9 @@ final class AdminRichText
                                 this[prefix + 'Top'] = top - shell.top
                             },
                             openColorEditor(event) {
-                                const editor = this.getRichEditor()
+                                const editor = event.detail?.editor ?? this.getRichEditor()
                                 if (!editor || editor.isDestroyed) return
+                                this.$refs.richColorPanel.__artistEditor = editor
                                 if (this.colorOpen) { this.colorOpen = false; return }
                                 const selection = editor.state.selection
                                 const current = editor.getAttributes('textColor')['data-color']
@@ -355,7 +358,7 @@ final class AdminRichText
                                 })
                             },
                             applyTextColor(clear = false) {
-                                const editor = this.getRichEditor()
+                                const editor = this.$refs.richColorPanel.__artistEditor
                                 if (!editor || editor.isDestroyed || !this.colorSelection) return
                                 let chain = editor.chain().focus().setTextSelection(this.colorSelection)
                                 if (this.colorSelection.from === this.colorSelection.to) {
@@ -369,8 +372,9 @@ final class AdminRichText
                                 }
                             },
                             openSpacingEditor(event) {
-                                const editor = this.getRichEditor()
+                                const editor = event.detail?.editor ?? this.getRichEditor()
                                 if (!editor || editor.isDestroyed) return
+                                this.$refs.richSpacingPanel.__artistEditor = editor
                                 if (this.spacingOpen) { this.spacingOpen = false; return }
                                 this.spacingNodeType = editor.isActive('heading') ? 'heading' : 'paragraph'
                                 this.spacingSelection = {
@@ -389,7 +393,7 @@ final class AdminRichText
                                 })
                             },
                             applySpacing() {
-                                const editor = this.getRichEditor()
+                                const editor = this.$refs.richSpacingPanel.__artistEditor
                                 if (!editor || editor.isDestroyed || !this.spacingSelection) return
                                 const { from, to } = this.spacingSelection
                                 const changed = editor.chain().focus()
