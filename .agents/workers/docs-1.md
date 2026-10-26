@@ -13,6 +13,8 @@
 - Old `DOCS_SKILL.md` from `docs@8c9bd0a0` and `TESTING_SKILL.md` from `dev@020040713` were compared to today's owning documentation/skills. The old claim that Testing is retired is **not valid** and must never be reintroduced.
 - Bounded remote Markdown validation: **16 touched canonical files**, 169 local `docs/` or `.agents/` links resolved; 19 direct changed-target heading fragments verified. One syntactically link-like `media:ID` example is a media token, not a missing local file. This is **not** the native PHP link checker. No isolated PHP checker, generated-inventory regeneration, browser run, Codex run, CI, release or cross-branch write was performed.
 
+**CI workflow/source conflict:** Current `dev/.github/workflows/release.yml` contains `push: branches: [main, dev]`. Normal Dev pushes automatically start verification, even when a worker follows the accepted rule not to dispatch or inspect CI without explicit request. Do not claim the automatic trigger is disabled. A separate user decision/source change is necessary if truly every CI execution is to be request-only; no workflow source was changed on Docs.
+
 ## Transfer prerequisites, not accomplished
 
 1. **Source and approval:** Re-read Dev head; if it advanced beyond `dee05e4d`, reconcile its precise later accepted changes before qualification. User must explicitly authorize the Docs-to-Dev transfer and any native isolated checkout/checker/retained generator; Dev freeze alone does not grant promotion. Keep current intentionally historical generated inventories source-pinned unless a retained output truly requires final regeneration.

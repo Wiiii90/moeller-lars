@@ -10,7 +10,7 @@ Canonical verification/release workflow:
 .github/workflows/release.yml
 ```
 
-It runs for direct pushes to `dev` and `main`, pull requests targeting `dev` or `main`, and explicit `workflow_dispatch` runs. Those events run the verification job. Release-image publication remains restricted to verified non-PR runs on `main`; pushes to `dev` and pull-request checks never publish release images. The disposable PostgreSQL service is marked with `MOELLER_LARS_DISPOSABLE_TEST_DATABASE=1` inside GitHub Actions.
+It **currently runs automatically** for direct pushes to `dev` and `main`, pull requests targeting `dev` or `main`, and explicit `workflow_dispatch` runs. Those events run the verification job. **This is a workflow trigger, not a worker-initiated CI invocation.** The worker policy forbids an unrequested agent from dispatching, monitoring, polling or reading CI results; it does **not** itself disable GitHub's pre-existing automatic `dev` push trigger. The user's stated goal to use CI only when explicitly asked would also require a **separately authorized source edit** to `.github/workflows/release.yml` (and suitable release-gate preservation) if it includes eliminating automatic triggers. Docs may surface this policy/source contradiction, but must not claim CI has been disabled. Release-image publication remains restricted to verified non-PR runs on `main`; pushes to `dev` and pull-request checks never publish release images. The disposable PostgreSQL service is marked with `MOELLER_LARS_DISPOSABLE_TEST_DATABASE=1` inside GitHub Actions.
 
 Rapid protected-Validation browser workflow:
 
