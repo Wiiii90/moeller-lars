@@ -19,7 +19,6 @@ class MediaIngestService
     // All newly ingested images use bounded libvips. GD is retained only in
     // MediaVariantRegenerationService for historical immutable thumbnails.
     public const MAX_PIXELS = 120_000_000;
-    public const LEGACY_MAX_PIXELS = 16_000_000;
     public const LARGE_IMAGE_TRANSFORM_PROFILE = 'public-v2';
     public const VIDEO_POSTER_KIND = 'poster';
     public const VIDEO_POSTER_PROFILE = 'video-poster-v1';
