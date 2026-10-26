@@ -144,7 +144,7 @@ Historical archived rows that predate `archived_from_state` are forward-reconcil
 
 Canonical structured usage relation for Blog/Exhibition Cover/Gallery media.
 
-Each row belongs to exactly one supported Journal entry, references one `MediaAsset`, stores role/position and may retain historical compatibility columns.
+Each row belongs to exactly one supported Journal entry, references one `MediaAsset`, stores role/position and may retain historical compatibility columns. The forward migration `2026_10_26_020000_add_journal_media_video_playback_controls.php` adds a non-null boolean `video_controls_enabled` (default **true**) in both Working and `committed.journal_entry_media`; the historical boolean fallback in `JournalEntryMedia::videoControlsEnabled()` treats a missing value as enabled. The flag is owned by each Cover/Gallery **usage**, not the globally reusable `MediaAsset` or one Journal-wide setting. It controls the inline native video toolbar only; it does not alter media eligibility, autoplay or the separate image viewer. The change's actual migration/run state is not proven by this document.
 
 Runtime Journal ALT semantics are canonical `MediaAsset.alt_text`. Legacy `alt_text_override` values are not runtime authority; newly synchronized rows store the override as null.
 
