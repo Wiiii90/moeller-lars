@@ -29,7 +29,7 @@ Security-sensitive application areas include:
 - secret/configuration handling;
 - migration/import processing of untrusted legacy input.
 
-The durable application contract for admin login, MFA and account recovery is [docs/ADMIN-AUTHENTICATION.md](docs/ADMIN-AUTHENTICATION.md). Passwords are never recoverable plaintext and password recovery must not disclose whether an arbitrary address is an administrator account.
+The durable application contract for admin login, MFA and account recovery is [docs/admin/authentication.md](docs/admin/authentication.md). Passwords are never recoverable plaintext and password recovery must not disclose whether an arbitrary address is an administrator account.
 
 Concrete SMTP credentials, relay policy, TLS, ingress and mail-server operations are platform concerns and must remain outside this repository. Host/network/backup/runtime findings that belong to the deployment platform should be reported against `Wiiii90/server-platform` through an appropriate private channel rather than documented with exploitable detail here.
 

@@ -27,7 +27,6 @@ use Filament\Resources\Pages\Page;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Session;
 use Livewire\Attributes\On;
@@ -46,10 +45,6 @@ final class ListMediaAssets extends Page
     private const VIEW_MODES = ['list', 'grid', 'dense'];
 
     private const DEFAULT_PAGE_SIZE = 50;
-
-    private const VIEW_COOKIE = 'admin_storage_view';
-
-    private const VIEW_COOKIE_MINUTES = 60 * 24 * 365;
 
     protected static string $resource = MediaAssetResource::class;
 
@@ -88,6 +83,7 @@ final class ListMediaAssets extends Page
     #[Session]
     public string $state = 'available';
 
+    #[Session]
     public string $viewMode = 'list';
 
     public string $search = '';
@@ -115,9 +111,8 @@ final class ListMediaAssets extends Page
         $this->pageSize = $this->normalizePageSize($this->pageSize);
         $this->size = in_array($this->size, ['all', 'under-1-mb', '1-5-mb', '5-20-mb', '20-mb-plus'], true) ? $this->size : 'all';
         $this->state = in_array($this->state, ['available', 'all', 'quarantined', 'deleted'], true) ? $this->state : 'available';
-        $storedView = request()->cookie(self::VIEW_COOKIE);
-        $this->viewMode = is_string($storedView) && in_array($storedView, self::VIEW_MODES, true)
-            ? $storedView
+        $this->viewMode = in_array($this->viewMode, self::VIEW_MODES, true)
+            ? $this->viewMode
             : 'list';
         $this->loadStorageOverview();
         $this->loadLibrary();
@@ -179,8 +174,8 @@ final class ListMediaAssets extends Page
         $this->loadStorageOverview();
     }
 
-    /** @return array{summary:string,added:int,duplicates:int,failed:int} */
-    public function processDirectMedia(): array
+    /** @return array{summary:string,added:int,duplicates:int,failed:int,errors:list<string>} */
+    public function processDirectMedia(bool $notify = true): array
     {
         $uploads = $this->directMedia;
         $this->resetErrorBag('directMedia');
@@ -193,6 +188,7 @@ final class ListMediaAssets extends Page
                 'added' => 0,
                 'duplicates' => 0,
                 'failed' => 1,
+                'errors' => ['No uploaded file was received.'],
             ];
         }
 
@@ -236,7 +232,7 @@ final class ListMediaAssets extends Page
             $this->refreshStorageOverviewAfterMutation();
         }
 
-        if ($failures !== []) {
+        if ($notify && $failures !== []) {
             $details = array_map(
                 static fn (array $failure): string => $failure['filename'].' — '.$failure['message'],
                 array_slice($failures, 0, 4),
@@ -250,13 +246,13 @@ final class ListMediaAssets extends Page
                 body: implode("\n", $details),
                 status: ($added + $duplicates) > 0 ? 'warning' : 'danger',
             );
-        } elseif ($added > 0) {
+        } elseif ($notify && $added > 0) {
             app(AdminNotifier::class)->notification(
                 title: $total === 1 ? 'File uploaded' : 'Files uploaded',
                 body: $this->directUploadSummary($total, $added, $duplicates, 0),
                 status: 'success',
             );
-        } elseif ($duplicates > 0) {
+        } elseif ($notify && $duplicates > 0) {
             app(AdminNotifier::class)->notification(
                 title: 'Already in Storage',
                 body: $total === 1 ? null : $duplicates.' files already exist in Storage',
@@ -269,6 +265,10 @@ final class ListMediaAssets extends Page
             'added' => $added,
             'duplicates' => $duplicates,
             'failed' => $failed,
+            'errors' => array_map(
+                static fn (array $failure): string => $failure['filename'].' — '.$failure['message'],
+                $failures,
+            ),
         ];
     }
 
@@ -280,17 +280,6 @@ final class ListMediaAssets extends Page
 
         $this->normalizeSelection();
         $this->viewMode = $mode;
-        Cookie::queue(
-            self::VIEW_COOKIE,
-            $mode,
-            self::VIEW_COOKIE_MINUTES,
-            '/admin',
-            null,
-            null,
-            true,
-            false,
-            'lax',
-        );
     }
 
     public function toggleAssetSelection(int $assetId): void

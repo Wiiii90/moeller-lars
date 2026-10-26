@@ -161,7 +161,6 @@ final class AdminRichText
                     'x-data' => <<<'JS'
                         {
                             linkOpen: false,
-                            linkEditor: null,
                             linkSelection: null,
                             linkUrl: '',
                             linkText: '',
@@ -170,8 +169,12 @@ final class AdminRichText
                             linkInvalid: false,
                             linkLeft: 0,
                             linkTop: 0,
+                            getRichEditor() {
+                                const surface = this.$el.querySelector('.fi-fo-rich-editor')
+                                return surface ? window.Alpine?.$data(surface)?.getEditor?.() : null
+                            },
                             openLinkEditor(event) {
-                                const editor = event.detail?.editor
+                                const editor = this.getRichEditor()
                                 if (!editor || editor.isDestroyed) return
                                 if (this.linkOpen) {
                                     this.linkOpen = false
@@ -181,7 +184,6 @@ final class AdminRichText
                                 this.closeImagePicker()
                                 const selection = editor.state.selection
                                 const attrs = editor.getAttributes('link')
-                                this.linkEditor = editor
                                 this.linkSelection = { from: selection.from, to: selection.to }
                                 this.linkIsExisting = editor.isActive('link') && Boolean(attrs?.href)
                                 this.linkUrl = this.linkIsExisting ? (attrs.href ?? '') : ''
@@ -226,7 +228,7 @@ final class AdminRichText
                                 }
                             },
                             applyLink() {
-                                const editor = window.Alpine?.raw?.(this.linkEditor) ?? this.linkEditor
+                                const editor = this.getRichEditor()
                                 if (!editor || editor.isDestroyed || !this.linkSelection) return
 
                                 const url = this.normalizedLinkUrl()
@@ -257,7 +259,7 @@ final class AdminRichText
                                 if (result) this.finishLinkEdit()
                             },
                             removeLink() {
-                                const editor = window.Alpine?.raw?.(this.linkEditor) ?? this.linkEditor
+                                const editor = this.getRichEditor()
                                 if (!editor || editor.isDestroyed || !this.linkSelection) return
                                 const result = editor.chain().focus()
                                     .setTextSelection(this.linkSelection)
@@ -268,17 +270,15 @@ final class AdminRichText
                             },
                             finishLinkEdit() {
                                 this.linkOpen = false
-                                this.linkEditor = null
                                 this.linkSelection = null
                                 this.commitEditorChange()
                             },
                             captionOpen: false,
-                            captionEditor: null,
                             captionText: '',
                             captionLeft: 0,
                             captionTop: 0,
                             openCaptionEditor(event) {
-                                const editor = window.Alpine?.raw?.(event.detail?.editor) ?? event.detail?.editor
+                                const editor = this.getRichEditor()
                                 const image = window.ArtistRichImage?.selected(editor)
                                 if (!image) return
                                 if (this.captionOpen) {
@@ -286,7 +286,6 @@ final class AdminRichText
                                     return
                                 }
 
-                                this.captionEditor = editor
                                 this.captionText = image.caption ?? ''
                                 this.closeImagePicker()
                                 this.linkOpen = false
@@ -299,10 +298,9 @@ final class AdminRichText
                                 })
                             },
                             applyCaption() {
-                                const editor = window.Alpine?.raw?.(this.captionEditor) ?? this.captionEditor
+                                const editor = this.getRichEditor()
                                 if (!window.ArtistRichImage?.setCaption(editor, this.captionText)) return
                                 this.captionOpen = false
-                                this.captionEditor = null
                                 this.commitEditorChange()
                             },
                             commitEditorChange() {
@@ -314,14 +312,14 @@ final class AdminRichText
                                 })
                             },
                             colorOpen: false,
-                            colorEditor: null,
                             colorSelection: null,
                             colorValue: '#333333',
                             colorLeft: 0,
                             colorTop: 0,
                             spacingOpen: false,
-                            spacingEditor: null,
-                            spacingValue: 'default',
+                            spacingValue: '1.5',
+                            spacingNodeType: 'paragraph',
+                            spacingSelection: null,
                             spacingLeft: 0,
                             spacingTop: 0,
                             positionInlinePanel(panel, anchor, prefix) {
@@ -339,12 +337,11 @@ final class AdminRichText
                                 this[prefix + 'Top'] = top - shell.top
                             },
                             openColorEditor(event) {
-                                const editor = window.Alpine?.raw?.(event.detail?.editor) ?? event.detail?.editor
+                                const editor = this.getRichEditor()
                                 if (!editor || editor.isDestroyed) return
                                 if (this.colorOpen) { this.colorOpen = false; return }
                                 const selection = editor.state.selection
                                 const current = editor.getAttributes('textColor')['data-color']
-                                window.Alpine.raw(this).colorEditor = editor
                                 this.colorSelection = { from: selection.from, to: selection.to }
                                 this.colorValue = /^#[0-9a-f]{6}$/i.test(current ?? '') ? current : '#333333'
                                 this.colorOpen = true
@@ -358,7 +355,7 @@ final class AdminRichText
                                 })
                             },
                             applyTextColor(clear = false) {
-                                const editor = window.Alpine.raw(this).colorEditor
+                                const editor = this.getRichEditor()
                                 if (!editor || editor.isDestroyed || !this.colorSelection) return
                                 let chain = editor.chain().focus().setTextSelection(this.colorSelection)
                                 if (this.colorSelection.from === this.colorSelection.to) {
@@ -368,18 +365,19 @@ final class AdminRichText
                                     : chain.setTextColor({ color: this.colorValue }).run()
                                 if (changed) {
                                     this.colorOpen = false
-                                    window.Alpine.raw(this).colorEditor = null
                                     this.commitEditorChange()
                                 }
                             },
                             openSpacingEditor(event) {
-                                const editor = window.Alpine?.raw?.(event.detail?.editor) ?? event.detail?.editor
+                                const editor = this.getRichEditor()
                                 if (!editor || editor.isDestroyed) return
                                 if (this.spacingOpen) { this.spacingOpen = false; return }
-                                window.Alpine.raw(this).spacingEditor = editor
-                                this.spacingValue = editor.getAttributes(
-                                    editor.isActive('heading') ? 'heading' : 'paragraph'
-                                ).artistSpacing ?? 'default'
+                                this.spacingNodeType = editor.isActive('heading') ? 'heading' : 'paragraph'
+                                this.spacingSelection = {
+                                    from: editor.state.selection.from,
+                                    to: editor.state.selection.to,
+                                }
+                                this.spacingValue = editor.getAttributes(this.spacingNodeType).artistSpacing ?? '1.5'
                                 this.spacingOpen = true
                                 this.colorOpen = false
                                 this.linkOpen = false
@@ -391,14 +389,17 @@ final class AdminRichText
                                 })
                             },
                             applySpacing() {
-                                const editor = window.Alpine.raw(this).spacingEditor
-                                if (!editor || editor.isDestroyed) return
-                                const node = editor.isActive('heading') ? 'heading' : 'paragraph'
-                                if (editor.chain().focus().updateAttributes(node, {
-                                    artistSpacing: this.spacingValue
-                                }).run()) {
+                                const editor = this.getRichEditor()
+                                if (!editor || editor.isDestroyed || !this.spacingSelection) return
+                                const { from, to } = this.spacingSelection
+                                const changed = editor.chain().focus()
+                                    .setTextSelection({ from, to })
+                                    .updateAttributes(this.spacingNodeType, {
+                                        artistSpacing: this.spacingValue,
+                                    }).run()
+                                if (changed) {
                                     this.spacingOpen = false
-                                    window.Alpine.raw(this).spacingEditor = null
+                                    this.spacingSelection = null
                                     this.commitEditorChange()
                                 }
                             },

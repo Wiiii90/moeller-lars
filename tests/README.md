@@ -52,7 +52,7 @@ These runners are **not** executed by ordinary `composer test:integration` or th
 
 The number of passing tests or PHPUnit assertions is **not a code-coverage percentage**. For a PHP `app/` line-coverage measurement use Pest with an enabled PCOV/Xdebug coverage driver and an isolated database. The canonical `release.yml` workflow measures and reports a combined PHP line-coverage baseline on pull requests to `main` and on `main`; there is currently **no percentage threshold**. JavaScript and browser tests are not included in that PHP number.
 
-In the current direct-`dev` mode, CI/Actions must not be run, inspected or monitored by development agents. Preparing workflow source on `dev` is separate from authorizing release qualification. Future promotion to `main` is a separately authorized operation.
+During preparatory Testing work, source and test code can be reconciled without triggering GitHub Actions or a final qualification run. The user separately authorizes an isolated final test campaign after freezing `dev`; only the curated tests and permitted support are later transferred into `dev` with explicit approval. `main` promotion is independent.
 
 ## Regression policy
 
@@ -63,4 +63,4 @@ In the current direct-`dev` mode, CI/Actions must not be run, inspected or monit
 5. Do not silently skip required fixtures or weaken assertions to obtain green results.
 6. Distinguish source review, actual test runs, browser review and user acceptance.
 
-Canonical strategy: [docs/TESTING.md](../docs/TESTING.md).
+Canonical strategy: [docs/operations/testing.md](../docs/operations/testing.md).

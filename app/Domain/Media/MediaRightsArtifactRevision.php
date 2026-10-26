@@ -38,9 +38,7 @@ final class MediaRightsArtifactRevision
         $isVariant = $source instanceof MediaVariant;
         if ($isVariant && (
             (int) $source->getAttribute('media_asset_id') !== (int) $assetId
-            || $source->getAttribute('variant_kind') !== PublicMedia::THUMBNAIL_KIND
-            || $source->getAttribute('transform_profile') !== PublicMedia::PUBLIC_TRANSFORM_PROFILE
-            || $mime !== 'image/webp'
+            || ! MediaPreviewVariant::isImageThumbnail($source)
         )) {
             throw new InvalidArgumentException('The rights-bearing thumbnail must match its image and canonical transform.');
         }
@@ -49,7 +47,7 @@ final class MediaRightsArtifactRevision
             'contract' => self::CONTRACT,
             'asset_id' => (int) $assetId,
             'role' => $isVariant ? 'thumbnail' : 'original',
-            'transform' => $isVariant ? PublicMedia::PUBLIC_TRANSFORM_PROFILE : null,
+            'transform' => $isVariant ? (string) $source->getAttribute('transform_profile') : null,
             'source_sha256' => $sha,
             'source_mime' => $mime,
             'tags' => $this->writer->tagsForAsset($asset, $mayReserveDataMining),

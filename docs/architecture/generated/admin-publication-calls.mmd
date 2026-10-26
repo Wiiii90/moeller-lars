@@ -1,0 +1,37 @@
+%% Curated, checked PHP call sites; not an exhaustive runtime call graph
+flowchart LR
+    N1["AdminActionReceiptService"]
+    N2["AdminActivityNotificationContext"]
+    N3["AdminActivityOrderingProjector"]
+    N4["AdminAuditService"]
+    N5["AdminLifecycleRegistry"]
+    N6["AdminNotifier"]
+    N7["AdminOrderingState"]
+    N8["AdminSnapshotReceiptService"]
+    N9["AdminUndoContext"]
+    N10["AdminUndoService"]
+    N11["PublicationMediaCleanupService"]
+    N12["PublicationSchemaGuard"]
+    N13["PublicationService"]
+    N14["PublicationVersionService"]
+    N4 -->|discardPendingSnapshotForEvent| N1
+    N4 -->|recordForAuditEvent| N1
+    N4 -->|push| N2
+    N4 -->|record| N3
+    N6 -->|consumeRecorded| N2
+    N6 -->|discard| N2
+    N10 -->|record| N4
+    N10 -->|recordOrdering| N4
+    N10 -->|applyInverse| N5
+    N10 -->|restore| N7
+    N10 -->|restore| N8
+    N10 -->|withoutReceipts| N9
+    N13 -->|drain| N11
+    N13 -->|assertParity| N12
+    N13 -->|capture| N14
+    N13 -->|clearWorkingContext| N14
+    N13 -->|workingContext| N14
+    N14 -->|record| N4
+    N14 -->|drain| N11
+    N14 -->|queueAbandonedWorkingMedia| N11
+    N14 -->|assertParity| N12

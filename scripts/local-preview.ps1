@@ -38,8 +38,8 @@ if ($LASTEXITCODE) { throw 'Lokaler Preview-Build fehlgeschlagen. Alter Preview-
 docker volume create moeller-lars_postgres_data | Out-Null
 if ($LASTEXITCODE) { throw 'Lokales PostgreSQL-Volume konnte nicht bereitgestellt werden.' }
 
-Write-Host '[3/3] Preview starten und Analytics laden'
-docker compose up -d --no-build --wait preview
+Write-Host '[3/3] Preview und Bildrechte-Verarbeitung starten, Analytics laden'
+docker compose up -d --no-build --wait preview media-rights-worker
 if ($LASTEXITCODE) { throw 'Lokaler Preview-Container konnte nicht gestartet werden.' }
 
 docker cp $AnalyticsDemo moeller-lars-local-web:/var/www/html/storage/app/analytics-demo.php

@@ -89,6 +89,10 @@ final class JournalEntryEditorSchema
 
         $schema[] = $cover->nullable()->columnSpanFull();
 
+        if ($template === JournalTemplate::Exhibitions) {
+            $schema[] = self::videoControlsToggle('cover_video_controls_enabled')->columnSpanFull();
+        }
+
         if ($template === JournalTemplate::Blog) {
             $schema[] = self::imageViewerField();
         }
@@ -230,6 +234,13 @@ final class JournalEntryEditorSchema
         ]);
     }
 
+    private static function videoControlsToggle(string $name): Toggle
+    {
+        return Toggle::make($name)
+            ->label(__('Show video playback controls'))
+            ->default(true);
+    }
+
     private static function galleryImages(bool $table = false): Repeater
     {
         if (! $table) {
@@ -241,6 +252,7 @@ final class JournalEntryEditorSchema
                         __('Image or video'),
                         allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
                     )->required(),
+                    self::videoControlsToggle('video_controls_enabled'),
                 ])
                 ->addActionLabel(__('Add media'))
                 ->reorderableWithButtons()
@@ -251,7 +263,7 @@ final class JournalEntryEditorSchema
         return AdminTableRepeater::make('gallery_images')
             ->label(__('Gallery media'))
             ->hiddenLabel()
-            ->table([TableColumn::make(__('Image or video'))])
+            ->table([TableColumn::make(__('Image or video')), TableColumn::make(__('Playback controls'))])
             ->compact()
             ->schema([
                 MediaAssetSelect::makeId(
@@ -259,6 +271,7 @@ final class JournalEntryEditorSchema
                     __('Image or video'),
                     allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
                 )->hiddenLabel()->required(),
+                self::videoControlsToggle('video_controls_enabled')->hiddenLabel(),
             ])
             ->addActionLabel(__('Add media'))
             ->reorderableWithButtons()

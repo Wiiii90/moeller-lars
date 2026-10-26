@@ -5,6 +5,7 @@ namespace App\Domain\Admin;
 use App\Domain\Content\ContactSocialProfileCascade;
 use App\Domain\Content\PublicAppearance;
 use App\Domain\Content\SocialLinks;
+use App\Jobs\PrepareMediaRightsBatch;
 use App\Models\JournalSetting;
 use App\Models\PublicContentSetting;
 use Illuminate\Database\Eloquent\Model;
@@ -152,8 +153,13 @@ final class AdminSettingsService
             $fresh->fill($data);
 
             if ($fresh->isDirty()) {
+                $inheritedRightsChanged = $entityType === 'public_content_setting'
+                    && $fresh->isDirty('default_media_copyright_notice');
                 $fresh->save();
                 $this->audit->record($actor, $action, $entityType, (int) $fresh->getKey());
+                if ($inheritedRightsChanged && config('media.rights_preparation_enabled', false) === true) {
+                    PrepareMediaRightsBatch::dispatch(0)->afterCommit();
+                }
             }
 
             return $fresh;

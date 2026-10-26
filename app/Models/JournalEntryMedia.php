@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['blog_post_id', 'exhibition_id', 'media_asset_id', 'role', 'position', 'alt_text_override'])]
+#[Fillable(['blog_post_id', 'exhibition_id', 'media_asset_id', 'role', 'position', 'alt_text_override', 'video_controls_enabled'])]
 #[Guarded(['id'])]
 final class JournalEntryMedia extends Model
 {
@@ -18,6 +18,16 @@ final class JournalEntryMedia extends Model
     public const ROLES = [self::ROLE_COVER, self::ROLE_GALLERY];
 
     protected $table = 'journal_entry_media';
+
+    protected function casts(): array
+    {
+        return ['video_controls_enabled' => 'boolean'];
+    }
+
+    public function videoControlsEnabled(): bool
+    {
+        return $this->getAttribute('video_controls_enabled') !== false;
+    }
 
     public function blogPost(): BelongsTo
     {

@@ -1,0 +1,26 @@
+%% Import declarations only. No implied runtime calls, object instances or method invocations.
+flowchart LR
+    T1["Domain/Analytics/AnalyticsReportAvailability"]
+    T2["Domain/Analytics/AnalyticsWorldMap"]
+    T3["Domain/Analytics/ArtistReportingService"]
+    T4["Domain/Analytics/ArtworkAttentionReport"]
+    T5["Domain/Analytics/MatomoConfiguration"]
+    T6["Domain/Analytics/MatomoReportingClient"]
+    T7["Domain/Analytics/OperationalMetricRecorder"]
+    T8["Domain/Analytics/OperationalMetricsQuery"]
+    T9["Domain/Media/MediaIngestService"]
+    T10["Models/Artwork"]
+    T11["Models/ArtworkCategory"]
+    T12["Models/ArtworkMedia"]
+    T13["Models/DailyMetric"]
+    T14["Models/MediaAsset"]
+    T15["Models/MediaVariant"]
+    T16["Models/SiteSection"]
+    T4 -->|import| T9
+    T4 -->|import| T10
+    T4 -->|import| T11
+    T4 -->|import| T12
+    T4 -->|import| T14
+    T4 -->|import| T15
+    T4 -->|import| T16
+    T8 -->|import| T13

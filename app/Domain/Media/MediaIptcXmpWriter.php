@@ -185,11 +185,8 @@ final class MediaIptcXmpWriter
     ): array {
         if (! is_numeric($asset->getKey())
             || (int) $variant->getAttribute('media_asset_id') !== (int) $asset->getKey()
-            || $variant->getAttribute('variant_kind') !== PublicMedia::THUMBNAIL_KIND
-            || $variant->getAttribute('transform_profile') !== PublicMedia::PUBLIC_TRANSFORM_PROFILE
-            || $variant->getAttribute('state') !== 'available'
-            || $variant->getAttribute('mime_type') !== 'image/webp') {
-            throw new RuntimeException('Only a matching available public-v1 WebP thumbnail may be staged.');
+            || ! MediaPreviewVariant::isImageThumbnail($variant)) {
+            throw new RuntimeException('Only the matching canonical WebP image thumbnail may be staged.');
         }
 
         return $this->stageSource(

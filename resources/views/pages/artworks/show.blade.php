@@ -32,9 +32,9 @@
 {{-- Orientation comes from the authoritative public thumbnail dimensions,
      before image decoding, without any client-side layout measurement. --}}
 @section('content_class', ! $isVideo && $thumbnailWidth > $thumbnailHeight && $presentation::enabled($category)
-    ? 'site-content--landscape-artwork'
+    ? 'site-content--landscape-artwork site-content--fitted-artwork'
     : (! $isVideo && $thumbnailHeight > $thumbnailWidth && $presentation::portraitEnabled($category)
-        ? 'site-content--portrait-artwork'
+        ? 'site-content--portrait-artwork site-content--fitted-artwork'
         : ''))
 
 @section('artwork_header_divider', $presentation::artworkPageDividerOverride($category) ?? '')

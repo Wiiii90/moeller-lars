@@ -13,6 +13,7 @@ use App\Domain\Content\JournalEntryMediaService;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Publication\PublicationMediaCleanupService;
 use App\Domain\Publication\PublicationSnapshot;
+use App\Jobs\PrepareMediaRightsImage;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\CustomPageSetting;
@@ -96,8 +97,15 @@ class MediaAssetEditorialService
         return DB::transaction(function () use ($fresh, $values, $actor): MediaAsset {
             $fresh->fill($values);
             if ($fresh->isDirty()) {
+                $rightsChanged = array_intersect(array_keys($fresh->getDirty()), [
+                    'credit', 'copyright_notice', 'copyright_notice_mode', 'file_creator',
+                    'file_rights_holder', 'rights_usage_terms', 'license_inquiry_url',
+                ]) !== [];
                 $fresh->save();
                 $this->adminAuditService->record($actor, 'media.metadata_updated', 'media_asset', $fresh->getKey());
+                if ($rightsChanged && config('media.rights_preparation_enabled', false) === true) {
+                    PrepareMediaRightsImage::dispatch((int) $fresh->getKey())->afterCommit();
+                }
             }
 
             return $fresh;

@@ -1,0 +1,1994 @@
+{
+    "format": "filament-livewire-source-inventory-v1",
+    "limitations": "Source-only declarations; no dynamically registered routes or actions, inherited methods, runtime listeners, view composition, JavaScript events or executing code.",
+    "counts": {
+        "pages": 9,
+        "concerns": 23,
+        "livewire": 2,
+        "trait_uses": 23,
+        "literal_actions": 73
+    },
+    "units": [
+        {
+            "name": "Activity",
+            "kind": "page",
+            "path": "app/Filament/Pages/Activity.php",
+            "slug": null,
+            "view": "filament.pages.activity",
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "mount",
+                    "line": 99
+                },
+                {
+                    "name": "updatedSearch",
+                    "line": 117
+                },
+                {
+                    "name": "updatedAreaFilter",
+                    "line": 124
+                },
+                {
+                    "name": "updatedFamilyFilter",
+                    "line": 134
+                },
+                {
+                    "name": "updatedDateFilter",
+                    "line": 144
+                },
+                {
+                    "name": "updatedHourFilter",
+                    "line": 157
+                },
+                {
+                    "name": "updatedPerPage",
+                    "line": 179
+                },
+                {
+                    "name": "previousActivityPage",
+                    "line": 188
+                },
+                {
+                    "name": "nextActivityPage",
+                    "line": 194
+                },
+                {
+                    "name": "previousCommitPage",
+                    "line": 200
+                },
+                {
+                    "name": "nextCommitPage",
+                    "line": 206
+                },
+                {
+                    "name": "setViewMode",
+                    "line": 212
+                },
+                {
+                    "name": "toggleActivitySelection",
+                    "line": 226
+                },
+                {
+                    "name": "toggleCommitSelection",
+                    "line": 231
+                },
+                {
+                    "name": "toggleVisibleActivitySelection",
+                    "line": 237
+                },
+                {
+                    "name": "toggleVisibleCommitSelection",
+                    "line": 243
+                },
+                {
+                    "name": "clearSelection",
+                    "line": 248
+                },
+                {
+                    "name": "openSelectedDetails",
+                    "line": 254
+                },
+                {
+                    "name": "refreshWorkspaceSnapshot",
+                    "line": 364
+                },
+                {
+                    "name": "openActivityDetails",
+                    "line": 468
+                },
+                {
+                    "name": "openPublicationReview",
+                    "line": 475
+                },
+                {
+                    "name": "openCommitDetails",
+                    "line": 480
+                },
+                {
+                    "name": "resetStagedChangesAction",
+                    "line": 487
+                },
+                {
+                    "name": "undoSelectedActivityAction",
+                    "line": 502
+                },
+                {
+                    "name": "restoreSelectedCommitAction",
+                    "line": 517
+                },
+                {
+                    "name": "revertSelectedCommitAction",
+                    "line": 532
+                },
+                {
+                    "name": "undoActivityAction",
+                    "line": 547
+                },
+                {
+                    "name": "restoreVersionAction",
+                    "line": 579
+                },
+                {
+                    "name": "revertCurrentCommitAction",
+                    "line": 601
+                },
+                {
+                    "name": "activityDetailsAction",
+                    "line": 623
+                },
+                {
+                    "name": "publicationReviewAction",
+                    "line": 638
+                },
+                {
+                    "name": "commitDetailsAction",
+                    "line": 652
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "resetStagedChanges",
+                    "line": 490
+                },
+                {
+                    "name": "undoSelectedActivity",
+                    "line": 505
+                },
+                {
+                    "name": "restoreSelectedCommit",
+                    "line": 520
+                },
+                {
+                    "name": "revertSelectedCommit",
+                    "line": 535
+                },
+                {
+                    "name": "undoActivity",
+                    "line": 550
+                },
+                {
+                    "name": "restoreVersion",
+                    "line": 582
+                },
+                {
+                    "name": "revertCurrentCommit",
+                    "line": 604
+                },
+                {
+                    "name": "activityDetails",
+                    "line": 626
+                },
+                {
+                    "name": "publicationReview",
+                    "line": 641
+                },
+                {
+                    "name": "commitDetails",
+                    "line": 655
+                },
+                {
+                    "name": "undoActivityEvent",
+                    "line": 1092
+                }
+            ]
+        },
+        {
+            "name": "Analytics",
+            "kind": "page",
+            "path": "app/Filament/Pages/Analytics.php",
+            "slug": null,
+            "view": "filament.pages.analytics",
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "mount",
+                    "line": 69
+                },
+                {
+                    "name": "setRange",
+                    "line": 74
+                },
+                {
+                    "name": "setDetailReport",
+                    "line": 85
+                },
+                {
+                    "name": "updatedDetailReport",
+                    "line": 96
+                },
+                {
+                    "name": "updatedSearch",
+                    "line": 106
+                },
+                {
+                    "name": "updatedDetailPageSize",
+                    "line": 111
+                },
+                {
+                    "name": "previousDetailPage",
+                    "line": 120
+                },
+                {
+                    "name": "nextDetailPage",
+                    "line": 125
+                },
+                {
+                    "name": "detailReportOptions",
+                    "line": 132
+                },
+                {
+                    "name": "detailTableLayout",
+                    "line": 147
+                },
+                {
+                    "name": "detailTable",
+                    "line": 234
+                }
+            ],
+            "literal_actions": []
+        },
+        {
+            "name": "CustomPageWorkspace",
+            "kind": "page",
+            "path": "app/Filament/Pages/CustomPageWorkspace.php",
+            "slug": "pages/custom/{section}",
+            "view": "filament.pages.custom-page-workspace",
+            "traits": [
+                {
+                    "name": "CustomPageWorkspaceComponentActions",
+                    "line": 17
+                },
+                {
+                    "name": "CustomPageWorkspaceForms",
+                    "line": 18
+                },
+                {
+                    "name": "CustomPageWorkspaceLifecycle",
+                    "line": 19
+                },
+                {
+                    "name": "CustomPageWorkspacePresentationHelpers",
+                    "line": 20
+                },
+                {
+                    "name": "CustomPageWorkspaceProjectionState",
+                    "line": 21
+                },
+                {
+                    "name": "CustomPageWorkspaceSecondaryForms",
+                    "line": 22
+                },
+                {
+                    "name": "CustomPageWorkspaceTargetHelpers",
+                    "line": 23
+                }
+            ],
+            "public_methods": [
+                {
+                    "name": "getTitle",
+                    "line": 102
+                }
+            ],
+            "literal_actions": []
+        },
+        {
+            "name": "Dashboard",
+            "kind": "page",
+            "path": "app/Filament/Pages/Dashboard.php",
+            "slug": "",
+            "view": "filament.pages.dashboard",
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "mount",
+                    "line": 67
+                },
+                {
+                    "name": "updatedFeedSearch",
+                    "line": 75
+                },
+                {
+                    "name": "updatedFeedType",
+                    "line": 80
+                },
+                {
+                    "name": "updatedFeedPageSize",
+                    "line": 89
+                },
+                {
+                    "name": "updatedNotificationFilter",
+                    "line": 96
+                },
+                {
+                    "name": "resetFeed",
+                    "line": 110
+                },
+                {
+                    "name": "previousFeedPage",
+                    "line": 117
+                },
+                {
+                    "name": "nextFeedPage",
+                    "line": 125
+                },
+                {
+                    "name": "openFeedEntry",
+                    "line": 134
+                },
+                {
+                    "name": "openRelatedFeedEntry",
+                    "line": 143
+                },
+                {
+                    "name": "toggleFeedPin",
+                    "line": 152
+                },
+                {
+                    "name": "reorderPinnedFeed",
+                    "line": 157
+                },
+                {
+                    "name": "bulkPin",
+                    "line": 166
+                },
+                {
+                    "name": "bulkUnpin",
+                    "line": 172
+                },
+                {
+                    "name": "markFeedRead",
+                    "line": 178
+                },
+                {
+                    "name": "markFeedUnread",
+                    "line": 185
+                },
+                {
+                    "name": "deleteFeedEntry",
+                    "line": 200
+                },
+                {
+                    "name": "toggleSelectAll",
+                    "line": 212
+                },
+                {
+                    "name": "bulkMarkRead",
+                    "line": 227
+                },
+                {
+                    "name": "bulkMarkUnread",
+                    "line": 240
+                },
+                {
+                    "name": "bulkDelete",
+                    "line": 253
+                },
+                {
+                    "name": "markContactUnread",
+                    "line": 270
+                },
+                {
+                    "name": "deleteContactMessage",
+                    "line": 280
+                },
+                {
+                    "name": "markNotificationUnread",
+                    "line": 293
+                },
+                {
+                    "name": "deleteNotification",
+                    "line": 298
+                },
+                {
+                    "name": "dashboardSettingsAction",
+                    "line": 305
+                },
+                {
+                    "name": "deleteFeedEntryAction",
+                    "line": 374
+                },
+                {
+                    "name": "deleteSelectedAction",
+                    "line": 387
+                },
+                {
+                    "name": "feedEntryAction",
+                    "line": 400
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "dashboardSettings",
+                    "line": 338
+                },
+                {
+                    "name": "deleteFeedEntry",
+                    "line": 377
+                },
+                {
+                    "name": "deleteSelected",
+                    "line": 390
+                },
+                {
+                    "name": "feedEntry",
+                    "line": 403
+                },
+                {
+                    "name": "deleteDialogEntry",
+                    "line": 629
+                }
+            ]
+        },
+        {
+            "name": "GalleryWorkspace",
+            "kind": "page",
+            "path": "app/Filament/Pages/GalleryWorkspace.php",
+            "slug": "pages/gallery/{gallery}",
+            "view": "filament.resources.artworks.pages.manage-gallery-artworks",
+            "traits": [
+                {
+                    "name": "GalleryWorkspaceArtworkActions",
+                    "line": 25
+                },
+                {
+                    "name": "GalleryWorkspaceArtworkDialogs",
+                    "line": 26
+                },
+                {
+                    "name": "GalleryWorkspaceBatchActions",
+                    "line": 27
+                },
+                {
+                    "name": "GalleryWorkspaceDataProjection",
+                    "line": 28
+                },
+                {
+                    "name": "GalleryWorkspaceDirectUpload",
+                    "line": 29
+                },
+                {
+                    "name": "GalleryWorkspaceFormSupport",
+                    "line": 30
+                },
+                {
+                    "name": "GalleryWorkspaceMoveActions",
+                    "line": 31
+                },
+                {
+                    "name": "GalleryWorkspaceReadinessSupport",
+                    "line": 32
+                },
+                {
+                    "name": "GalleryWorkspaceSelectionSupport",
+                    "line": 33
+                },
+                {
+                    "name": "GalleryWorkspaceUploadSettings",
+                    "line": 34
+                },
+                {
+                    "name": "WithFileUploads",
+                    "line": 35
+                }
+            ],
+            "public_methods": [
+                {
+                    "name": "mount",
+                    "line": 82
+                },
+                {
+                    "name": "getTitle",
+                    "line": 92
+                },
+                {
+                    "name": "updatedSearch",
+                    "line": 99
+                },
+                {
+                    "name": "updatedStatusFilter",
+                    "line": 104
+                },
+                {
+                    "name": "updatedReadinessFilter",
+                    "line": 113
+                },
+                {
+                    "name": "resetFilters",
+                    "line": 122
+                },
+                {
+                    "name": "renameArtwork",
+                    "line": 130
+                }
+            ],
+            "literal_actions": []
+        },
+        {
+            "name": "General",
+            "kind": "page",
+            "path": "app/Filament/Pages/General.php",
+            "slug": "general",
+            "view": "filament.pages.general",
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "mount",
+                    "line": 83
+                },
+                {
+                    "name": "getBreadcrumbs",
+                    "line": 100
+                },
+                {
+                    "name": "setPreviewDevice",
+                    "line": 105
+                },
+                {
+                    "name": "form",
+                    "line": 114
+                },
+                {
+                    "name": "removeFavicon",
+                    "line": 376
+                },
+                {
+                    "name": "persistAppearanceColor",
+                    "line": 386
+                },
+                {
+                    "name": "syncAppearanceControlState",
+                    "line": 419
+                },
+                {
+                    "name": "addSocialLinkAction",
+                    "line": 432
+                },
+                {
+                    "name": "editSocialLinkAction",
+                    "line": 491
+                },
+                {
+                    "name": "addSocialLink",
+                    "line": 602
+                },
+                {
+                    "name": "updateSocialLink",
+                    "line": 613
+                },
+                {
+                    "name": "moveSocialLink",
+                    "line": 623
+                },
+                {
+                    "name": "sortSocialLink",
+                    "line": 637
+                },
+                {
+                    "name": "deleteSocialLink",
+                    "line": 656
+                },
+                {
+                    "name": "persistChangedField",
+                    "line": 668
+                },
+                {
+                    "name": "socialRows",
+                    "line": 730
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "removeFavicon",
+                    "line": 144
+                },
+                {
+                    "name": "addSocialLink",
+                    "line": 435
+                },
+                {
+                    "name": "editSocialLink",
+                    "line": 494
+                }
+            ]
+        },
+        {
+            "name": "HomePresentation",
+            "kind": "page",
+            "path": "app/Filament/Pages/HomePresentation.php",
+            "slug": "pages/home",
+            "view": "filament.pages.home-presentation",
+            "traits": [
+                {
+                    "name": "WithFileUploads",
+                    "line": 54
+                },
+                {
+                    "name": "HomePresentationChildren",
+                    "line": 55
+                }
+            ],
+            "public_methods": [
+                {
+                    "name": "mount",
+                    "line": 207
+                },
+                {
+                    "name": "loadHomeAnalytics",
+                    "line": 213
+                },
+                {
+                    "name": "updatedSourceSearch",
+                    "line": 227
+                },
+                {
+                    "name": "updatedSourceStatusFilter",
+                    "line": 233
+                },
+                {
+                    "name": "updatedSourceHomeFilter",
+                    "line": 242
+                },
+                {
+                    "name": "updatedSourcePerPage",
+                    "line": 251
+                },
+                {
+                    "name": "resetSourceFilters",
+                    "line": 260
+                },
+                {
+                    "name": "goToSourcePage",
+                    "line": 269
+                },
+                {
+                    "name": "updatedComponentSearch",
+                    "line": 275
+                },
+                {
+                    "name": "updatedComponentType",
+                    "line": 281
+                },
+                {
+                    "name": "resetComponentFilters",
+                    "line": 290
+                },
+                {
+                    "name": "toggleVisibleComponentSelection",
+                    "line": 298
+                },
+                {
+                    "name": "settingsAction",
+                    "line": 317
+                },
+                {
+                    "name": "addHeroArtworkAction",
+                    "line": 363
+                },
+                {
+                    "name": "removeHeroArtwork",
+                    "line": 382
+                },
+                {
+                    "name": "sortHeroArtwork",
+                    "line": 392
+                },
+                {
+                    "name": "moveHeroArtwork",
+                    "line": 414
+                },
+                {
+                    "name": "setHeroPercentage",
+                    "line": 436
+                },
+                {
+                    "name": "addComponentAction",
+                    "line": 456
+                },
+                {
+                    "name": "editComponentAction",
+                    "line": 516
+                },
+                {
+                    "name": "editListComponentAction",
+                    "line": 521
+                },
+                {
+                    "name": "setComponentPublished",
+                    "line": 669
+                },
+                {
+                    "name": "changeComponentTypeAction",
+                    "line": 683
+                },
+                {
+                    "name": "removeComponentAction",
+                    "line": 729
+                },
+                {
+                    "name": "deleteSelectedComponentsAction",
+                    "line": 750
+                },
+                {
+                    "name": "publishSelectedHomeItems",
+                    "line": 776
+                },
+                {
+                    "name": "moveComponent",
+                    "line": 795
+                },
+                {
+                    "name": "sortComponent",
+                    "line": 812
+                },
+                {
+                    "name": "moveSelectedComponents",
+                    "line": 839
+                },
+                {
+                    "name": "toggleGalleryEligibility",
+                    "line": 862
+                },
+                {
+                    "name": "toggleVisibleSourceSelection",
+                    "line": 879
+                },
+                {
+                    "name": "setSelectedGalleryEligibility",
+                    "line": 894
+                },
+                {
+                    "name": "sourceRows",
+                    "line": 927
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "settings",
+                    "line": 320
+                },
+                {
+                    "name": "addHeroArtwork",
+                    "line": 366
+                },
+                {
+                    "name": "addComponent",
+                    "line": 459
+                },
+                {
+                    "name": "changeComponentType",
+                    "line": 699
+                },
+                {
+                    "name": "removeComponent",
+                    "line": 732
+                },
+                {
+                    "name": "deleteSelectedComponents",
+                    "line": 753
+                }
+            ]
+        },
+        {
+            "name": "JournalWorkspace",
+            "kind": "page",
+            "path": "app/Filament/Pages/JournalWorkspace.php",
+            "slug": "pages/journal/{section}",
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "mount",
+                    "line": 93
+                },
+                {
+                    "name": "getView",
+                    "line": 104
+                },
+                {
+                    "name": "getTitle",
+                    "line": 112
+                },
+                {
+                    "name": "updatedSearch",
+                    "line": 119
+                },
+                {
+                    "name": "updatedStatusFilter",
+                    "line": 124
+                },
+                {
+                    "name": "updatedTimingFilter",
+                    "line": 135
+                },
+                {
+                    "name": "updatedPageSize",
+                    "line": 143
+                },
+                {
+                    "name": "resetFilters",
+                    "line": 149
+                },
+                {
+                    "name": "previousPage",
+                    "line": 157
+                },
+                {
+                    "name": "nextPage",
+                    "line": 165
+                },
+                {
+                    "name": "canDragSort",
+                    "line": 173
+                },
+                {
+                    "name": "sortPost",
+                    "line": 182
+                },
+                {
+                    "name": "sortExhibition",
+                    "line": 197
+                },
+                {
+                    "name": "togglePostSelection",
+                    "line": 212
+                },
+                {
+                    "name": "toggleExhibitionSelection",
+                    "line": 217
+                },
+                {
+                    "name": "toggleVisibleSelection",
+                    "line": 222
+                },
+                {
+                    "name": "movePost",
+                    "line": 234
+                },
+                {
+                    "name": "moveExhibition",
+                    "line": 245
+                },
+                {
+                    "name": "publishPost",
+                    "line": 256
+                },
+                {
+                    "name": "unpublishPost",
+                    "line": 262
+                },
+                {
+                    "name": "archivePost",
+                    "line": 268
+                },
+                {
+                    "name": "restorePostDraft",
+                    "line": 274
+                },
+                {
+                    "name": "publishExhibition",
+                    "line": 280
+                },
+                {
+                    "name": "unpublishExhibition",
+                    "line": 286
+                },
+                {
+                    "name": "moveSelectedEntries",
+                    "line": 292
+                },
+                {
+                    "name": "publishSelectedPosts",
+                    "line": 317
+                },
+                {
+                    "name": "archiveSelectedPosts",
+                    "line": 329
+                },
+                {
+                    "name": "unpublishSelectedPosts",
+                    "line": 341
+                },
+                {
+                    "name": "restoreSelectedPosts",
+                    "line": 353
+                },
+                {
+                    "name": "journalSettingsAction",
+                    "line": 365
+                },
+                {
+                    "name": "addPostAction",
+                    "line": 418
+                },
+                {
+                    "name": "editPostAction",
+                    "line": 443
+                },
+                {
+                    "name": "schedulePostAction",
+                    "line": 479
+                },
+                {
+                    "name": "addExhibitionAction",
+                    "line": 503
+                },
+                {
+                    "name": "editExhibitionAction",
+                    "line": 528
+                },
+                {
+                    "name": "deletePostAction",
+                    "line": 685
+                },
+                {
+                    "name": "deleteExhibitionAction",
+                    "line": 690
+                },
+                {
+                    "name": "deleteSelectedPostsAction",
+                    "line": 731
+                },
+                {
+                    "name": "deleteSelectedExhibitionsAction",
+                    "line": 750
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "journalSettings",
+                    "line": 367
+                },
+                {
+                    "name": "addPost",
+                    "line": 420
+                },
+                {
+                    "name": "editPost",
+                    "line": 445
+                },
+                {
+                    "name": "schedulePost",
+                    "line": 481
+                },
+                {
+                    "name": "addExhibition",
+                    "line": 505
+                },
+                {
+                    "name": "editExhibition",
+                    "line": 530
+                },
+                {
+                    "name": "deleteSelectedPosts",
+                    "line": 733
+                },
+                {
+                    "name": "deleteSelectedExhibitions",
+                    "line": 752
+                }
+            ]
+        },
+        {
+            "name": "SitePages",
+            "kind": "page",
+            "path": "app/Filament/Pages/SitePages.php",
+            "slug": "pages",
+            "view": "filament.pages.site-pages",
+            "traits": [
+                {
+                    "name": "ManagesSitePageDialogs",
+                    "line": 32
+                }
+            ],
+            "public_methods": [
+                {
+                    "name": "mount",
+                    "line": 109
+                },
+                {
+                    "name": "updatedSearch",
+                    "line": 114
+                },
+                {
+                    "name": "updatedTypeFilter",
+                    "line": 120
+                },
+                {
+                    "name": "updatedStatusFilter",
+                    "line": 126
+                },
+                {
+                    "name": "updatedPerPage",
+                    "line": 132
+                },
+                {
+                    "name": "resetFilters",
+                    "line": 142
+                },
+                {
+                    "name": "previousPage",
+                    "line": 151
+                },
+                {
+                    "name": "nextPage",
+                    "line": 161
+                },
+                {
+                    "name": "toggleSelectAll",
+                    "line": 171
+                },
+                {
+                    "name": "sortSection",
+                    "line": 186
+                },
+                {
+                    "name": "moveSection",
+                    "line": 233
+                },
+                {
+                    "name": "editPlacementAction",
+                    "line": 260
+                },
+                {
+                    "name": "toggleSectionState",
+                    "line": 314
+                },
+                {
+                    "name": "deletePageAction",
+                    "line": 326
+                },
+                {
+                    "name": "deleteSelectedPagesAction",
+                    "line": 342
+                },
+                {
+                    "name": "bulkPublish",
+                    "line": 385
+                },
+                {
+                    "name": "bulkUnpublish",
+                    "line": 390
+                },
+                {
+                    "name": "convertSectionType",
+                    "line": 422
+                },
+                {
+                    "name": "changeJournalTemplate",
+                    "line": 443
+                },
+                {
+                    "name": "startAddingPage",
+                    "line": 464
+                },
+                {
+                    "name": "cancelAddingPage",
+                    "line": 472
+                },
+                {
+                    "name": "createPage",
+                    "line": 480
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "editPlacement",
+                    "line": 263
+                },
+                {
+                    "name": "deletePage",
+                    "line": 329
+                },
+                {
+                    "name": "deleteSelectedPages",
+                    "line": 345
+                }
+            ]
+        },
+        {
+            "name": "CustomPageWorkspaceComponentActions",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/CustomPageWorkspaceComponentActions.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "moveComponent",
+                    "line": 17
+                },
+                {
+                    "name": "reorderComponents",
+                    "line": 36
+                },
+                {
+                    "name": "sortComponent",
+                    "line": 83
+                },
+                {
+                    "name": "moveSelected",
+                    "line": 88
+                },
+                {
+                    "name": "moveSelectedComponents",
+                    "line": 129
+                },
+                {
+                    "name": "setComponentPublished",
+                    "line": 134
+                },
+                {
+                    "name": "publishSelected",
+                    "line": 148
+                },
+                {
+                    "name": "unpublishSelected",
+                    "line": 153
+                },
+                {
+                    "name": "addComponentAction",
+                    "line": 192
+                },
+                {
+                    "name": "nestComponent",
+                    "line": 221
+                },
+                {
+                    "name": "moveImageChild",
+                    "line": 240
+                },
+                {
+                    "name": "unnestImageChild",
+                    "line": 264
+                },
+                {
+                    "name": "sortImageChild",
+                    "line": 276
+                },
+                {
+                    "name": "editImageChildAction",
+                    "line": 283
+                },
+                {
+                    "name": "setImageChildPublished",
+                    "line": 367
+                },
+                {
+                    "name": "moveImageChildSibling",
+                    "line": 382
+                },
+                {
+                    "name": "deleteImageChildAction",
+                    "line": 393
+                },
+                {
+                    "name": "changeImageChildTypeAction",
+                    "line": 410
+                },
+                {
+                    "name": "editComponentAction",
+                    "line": 431
+                },
+                {
+                    "name": "editListComponentAction",
+                    "line": 436
+                },
+                {
+                    "name": "changeComponentTypeAction",
+                    "line": 577
+                },
+                {
+                    "name": "deleteComponentAction",
+                    "line": 614
+                },
+                {
+                    "name": "deleteSelectedAction",
+                    "line": 633
+                },
+                {
+                    "name": "deleteSelectedComponentsAction",
+                    "line": 668
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "addComponent",
+                    "line": 194
+                },
+                {
+                    "name": "editImageChild",
+                    "line": 285
+                },
+                {
+                    "name": "deleteImageChild",
+                    "line": 395
+                },
+                {
+                    "name": "changeImageChildType",
+                    "line": 412
+                },
+                {
+                    "name": "changeComponentType",
+                    "line": 588
+                },
+                {
+                    "name": "deleteComponent",
+                    "line": 616
+                },
+                {
+                    "name": "deleteSelected",
+                    "line": 635
+                }
+            ]
+        },
+        {
+            "name": "CustomPageWorkspaceForms",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/CustomPageWorkspaceForms.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [],
+            "literal_actions": []
+        },
+        {
+            "name": "CustomPageWorkspaceLifecycle",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/CustomPageWorkspaceLifecycle.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "mount",
+                    "line": 22
+                },
+                {
+                    "name": "hydrate",
+                    "line": 50
+                },
+                {
+                    "name": "getBreadcrumbs",
+                    "line": 85
+                },
+                {
+                    "name": "getHeading",
+                    "line": 90
+                },
+                {
+                    "name": "updatedComponentSearch",
+                    "line": 95
+                },
+                {
+                    "name": "updatedComponentType",
+                    "line": 100
+                },
+                {
+                    "name": "updatedPageSize",
+                    "line": 109
+                },
+                {
+                    "name": "resetComponentFilters",
+                    "line": 115
+                },
+                {
+                    "name": "previousPage",
+                    "line": 122
+                },
+                {
+                    "name": "nextPage",
+                    "line": 133
+                },
+                {
+                    "name": "selectAllVisible",
+                    "line": 144
+                },
+                {
+                    "name": "pageSettingsAction",
+                    "line": 161
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "pageSettings",
+                    "line": 163
+                }
+            ]
+        },
+        {
+            "name": "CustomPageWorkspacePresentationHelpers",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/CustomPageWorkspacePresentationHelpers.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [],
+            "literal_actions": []
+        },
+        {
+            "name": "CustomPageWorkspaceProjectionState",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/CustomPageWorkspaceProjectionState.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [],
+            "literal_actions": []
+        },
+        {
+            "name": "CustomPageWorkspaceSecondaryForms",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/CustomPageWorkspaceSecondaryForms.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [],
+            "literal_actions": []
+        },
+        {
+            "name": "CustomPageWorkspaceTargetHelpers",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/CustomPageWorkspaceTargetHelpers.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [],
+            "literal_actions": []
+        },
+        {
+            "name": "GalleryWorkspaceArtworkActions",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/GalleryWorkspaceArtworkActions.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "removeArtworkAction",
+                    "line": 28
+                },
+                {
+                    "name": "previewArtworkAction",
+                    "line": 57
+                },
+                {
+                    "name": "deletePrimaryMediaAction",
+                    "line": 71
+                },
+                {
+                    "name": "publishArtworkAction",
+                    "line": 147
+                },
+                {
+                    "name": "unpublishArtworkAction",
+                    "line": 180
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "removeArtwork",
+                    "line": 30
+                },
+                {
+                    "name": "previewArtwork",
+                    "line": 59
+                },
+                {
+                    "name": "deletePrimaryMedia",
+                    "line": 73
+                },
+                {
+                    "name": "publishArtwork",
+                    "line": 149
+                },
+                {
+                    "name": "unpublishArtwork",
+                    "line": 182
+                },
+                {
+                    "name": "previewViewPublic",
+                    "line": 285
+                },
+                {
+                    "name": "previewEditArtwork",
+                    "line": 295
+                },
+                {
+                    "name": "previewLifecycle",
+                    "line": 306
+                },
+                {
+                    "name": "previewDeletePrimaryMedia",
+                    "line": 320
+                }
+            ]
+        },
+        {
+            "name": "GalleryWorkspaceArtworkDialogs",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/GalleryWorkspaceArtworkDialogs.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "addArtworkAction",
+                    "line": 24
+                },
+                {
+                    "name": "editArtworkAction",
+                    "line": 93
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "addArtwork",
+                    "line": 26
+                },
+                {
+                    "name": "editArtwork",
+                    "line": 96
+                },
+                {
+                    "name": "dialogRemoveArtwork",
+                    "line": 157
+                }
+            ]
+        },
+        {
+            "name": "GalleryWorkspaceBatchActions",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/GalleryWorkspaceBatchActions.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "removeSelectedArtworksAction",
+                    "line": 17
+                },
+                {
+                    "name": "deleteSelectedArtworksAction",
+                    "line": 53
+                },
+                {
+                    "name": "publishSelectedArtworksAction",
+                    "line": 90
+                },
+                {
+                    "name": "unpublishSelectedArtworksAction",
+                    "line": 125
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "removeSelectedArtworks",
+                    "line": 19
+                },
+                {
+                    "name": "deleteSelectedArtworks",
+                    "line": 55
+                },
+                {
+                    "name": "publishSelectedArtworks",
+                    "line": 92
+                },
+                {
+                    "name": "unpublishSelectedArtworks",
+                    "line": 127
+                }
+            ]
+        },
+        {
+            "name": "GalleryWorkspaceDataProjection",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/GalleryWorkspaceDataProjection.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [],
+            "literal_actions": []
+        },
+        {
+            "name": "GalleryWorkspaceDirectUpload",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/GalleryWorkspaceDirectUpload.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "processDirectPrimaryMedia",
+                    "line": 31
+                },
+                {
+                    "name": "batchAddArtworksAction",
+                    "line": 123
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "batchAddArtworks",
+                    "line": 126
+                }
+            ]
+        },
+        {
+            "name": "GalleryWorkspaceFormSupport",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/GalleryWorkspaceFormSupport.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [],
+            "literal_actions": []
+        },
+        {
+            "name": "GalleryWorkspaceMoveActions",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/GalleryWorkspaceMoveActions.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "moveArtwork",
+                    "line": 19
+                },
+                {
+                    "name": "sortArtwork",
+                    "line": 54
+                },
+                {
+                    "name": "moveSelectedArtworks",
+                    "line": 95
+                },
+                {
+                    "name": "moveArtworkToGalleryAction",
+                    "line": 134
+                },
+                {
+                    "name": "moveSelectedToGalleryAction",
+                    "line": 152
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "moveArtworkToGallery",
+                    "line": 136
+                },
+                {
+                    "name": "moveSelectedToGallery",
+                    "line": 154
+                }
+            ]
+        },
+        {
+            "name": "GalleryWorkspaceReadinessSupport",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/GalleryWorkspaceReadinessSupport.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [],
+            "literal_actions": []
+        },
+        {
+            "name": "GalleryWorkspaceSelectionSupport",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/GalleryWorkspaceSelectionSupport.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [],
+            "literal_actions": []
+        },
+        {
+            "name": "GalleryWorkspaceUploadSettings",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/GalleryWorkspaceUploadSettings.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "gallerySettingsAction",
+                    "line": 23
+                },
+                {
+                    "name": "materialPresetsAction",
+                    "line": 90
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "gallerySettings",
+                    "line": 25
+                },
+                {
+                    "name": "materialPresets",
+                    "line": 92
+                }
+            ]
+        },
+        {
+            "name": "HomePresentationChildren",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/HomePresentationChildren.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "addHomeChildAction",
+                    "line": 116
+                },
+                {
+                    "name": "editHomeChildAction",
+                    "line": 135
+                },
+                {
+                    "name": "deleteHomeChildAction",
+                    "line": 190
+                },
+                {
+                    "name": "sortHomeChild",
+                    "line": 199
+                },
+                {
+                    "name": "moveHomeChild",
+                    "line": 213
+                },
+                {
+                    "name": "publishHomeChild",
+                    "line": 222
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "addHomeChild",
+                    "line": 118
+                },
+                {
+                    "name": "editHomeChild",
+                    "line": 137
+                },
+                {
+                    "name": "deleteHomeChild",
+                    "line": 192
+                }
+            ]
+        },
+        {
+            "name": "ManagesHomePagePresentation",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/ManagesHomePagePresentation.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "changeHomeTemplate",
+                    "line": 16
+                },
+                {
+                    "name": "toggleSkipHome",
+                    "line": 43
+                },
+                {
+                    "name": "changeSkipHomeTarget",
+                    "line": 74
+                }
+            ],
+            "literal_actions": []
+        },
+        {
+            "name": "ManagesSitePageCreateDialog",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/ManagesSitePageCreateDialog.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "addPageAction",
+                    "line": 29
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "addPage",
+                    "line": 31
+                }
+            ]
+        },
+        {
+            "name": "ManagesSitePageDialogs",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/ManagesSitePageDialogs.php",
+            "slug": null,
+            "view": null,
+            "traits": [
+                {
+                    "name": "ManagesHomePagePresentation",
+                    "line": 7
+                },
+                {
+                    "name": "ManagesSitePageCreateDialog",
+                    "line": 8
+                },
+                {
+                    "name": "ManagesSitePageEditDialog",
+                    "line": 9
+                },
+                {
+                    "name": "ManagesSitePagesSettings",
+                    "line": 10
+                }
+            ],
+            "public_methods": [],
+            "literal_actions": []
+        },
+        {
+            "name": "ManagesSitePageEditDialog",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/ManagesSitePageEditDialog.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "editPageAction",
+                    "line": 33
+                },
+                {
+                    "name": "editHomeAction",
+                    "line": 115
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "editPage",
+                    "line": 35
+                },
+                {
+                    "name": "editHome",
+                    "line": 118
+                }
+            ]
+        },
+        {
+            "name": "ManagesSitePagesSettings",
+            "kind": "concern",
+            "path": "app/Filament/Pages/Concerns/ManagesSitePagesSettings.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "pagesSettingsAction",
+                    "line": 13
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "pagesSettings",
+                    "line": 29
+                }
+            ]
+        },
+        {
+            "name": "PublicationStateControl",
+            "kind": "livewire",
+            "path": "app/Livewire/Admin/PublicationStateControl.php",
+            "slug": null,
+            "view": null,
+            "traits": [],
+            "public_methods": [
+                {
+                    "name": "commitPublication",
+                    "line": 15
+                },
+                {
+                    "name": "render",
+                    "line": 61
+                }
+            ],
+            "literal_actions": []
+        },
+        {
+            "name": "SiteStorageReclaimControl",
+            "kind": "livewire",
+            "path": "app/Livewire/Admin/SiteStorageReclaimControl.php",
+            "slug": null,
+            "view": null,
+            "traits": [
+                {
+                    "name": "InteractsWithActions",
+                    "line": 18
+                },
+                {
+                    "name": "InteractsWithSchemas",
+                    "line": 19
+                }
+            ],
+            "public_methods": [
+                {
+                    "name": "freeStorageAction",
+                    "line": 21
+                },
+                {
+                    "name": "render",
+                    "line": 52
+                }
+            ],
+            "literal_actions": [
+                {
+                    "name": "freeStorage",
+                    "line": 23
+                }
+            ]
+        }
+    ],
+    "trait_composition_edges": [
+        {
+            "from": "CustomPageWorkspace",
+            "to": "CustomPageWorkspaceComponentActions",
+            "path": "app/Filament/Pages/CustomPageWorkspace.php",
+            "line": 17
+        },
+        {
+            "from": "CustomPageWorkspace",
+            "to": "CustomPageWorkspaceForms",
+            "path": "app/Filament/Pages/CustomPageWorkspace.php",
+            "line": 18
+        },
+        {
+            "from": "CustomPageWorkspace",
+            "to": "CustomPageWorkspaceLifecycle",
+            "path": "app/Filament/Pages/CustomPageWorkspace.php",
+            "line": 19
+        },
+        {
+            "from": "CustomPageWorkspace",
+            "to": "CustomPageWorkspacePresentationHelpers",
+            "path": "app/Filament/Pages/CustomPageWorkspace.php",
+            "line": 20
+        },
+        {
+            "from": "CustomPageWorkspace",
+            "to": "CustomPageWorkspaceProjectionState",
+            "path": "app/Filament/Pages/CustomPageWorkspace.php",
+            "line": 21
+        },
+        {
+            "from": "CustomPageWorkspace",
+            "to": "CustomPageWorkspaceSecondaryForms",
+            "path": "app/Filament/Pages/CustomPageWorkspace.php",
+            "line": 22
+        },
+        {
+            "from": "CustomPageWorkspace",
+            "to": "CustomPageWorkspaceTargetHelpers",
+            "path": "app/Filament/Pages/CustomPageWorkspace.php",
+            "line": 23
+        },
+        {
+            "from": "GalleryWorkspace",
+            "to": "GalleryWorkspaceArtworkActions",
+            "path": "app/Filament/Pages/GalleryWorkspace.php",
+            "line": 25
+        },
+        {
+            "from": "GalleryWorkspace",
+            "to": "GalleryWorkspaceArtworkDialogs",
+            "path": "app/Filament/Pages/GalleryWorkspace.php",
+            "line": 26
+        },
+        {
+            "from": "GalleryWorkspace",
+            "to": "GalleryWorkspaceBatchActions",
+            "path": "app/Filament/Pages/GalleryWorkspace.php",
+            "line": 27
+        },
+        {
+            "from": "GalleryWorkspace",
+            "to": "GalleryWorkspaceDataProjection",
+            "path": "app/Filament/Pages/GalleryWorkspace.php",
+            "line": 28
+        },
+        {
+            "from": "GalleryWorkspace",
+            "to": "GalleryWorkspaceDirectUpload",
+            "path": "app/Filament/Pages/GalleryWorkspace.php",
+            "line": 29
+        },
+        {
+            "from": "GalleryWorkspace",
+            "to": "GalleryWorkspaceFormSupport",
+            "path": "app/Filament/Pages/GalleryWorkspace.php",
+            "line": 30
+        },
+        {
+            "from": "GalleryWorkspace",
+            "to": "GalleryWorkspaceMoveActions",
+            "path": "app/Filament/Pages/GalleryWorkspace.php",
+            "line": 31
+        },
+        {
+            "from": "GalleryWorkspace",
+            "to": "GalleryWorkspaceReadinessSupport",
+            "path": "app/Filament/Pages/GalleryWorkspace.php",
+            "line": 32
+        },
+        {
+            "from": "GalleryWorkspace",
+            "to": "GalleryWorkspaceSelectionSupport",
+            "path": "app/Filament/Pages/GalleryWorkspace.php",
+            "line": 33
+        },
+        {
+            "from": "GalleryWorkspace",
+            "to": "GalleryWorkspaceUploadSettings",
+            "path": "app/Filament/Pages/GalleryWorkspace.php",
+            "line": 34
+        },
+        {
+            "from": "HomePresentation",
+            "to": "HomePresentationChildren",
+            "path": "app/Filament/Pages/HomePresentation.php",
+            "line": 55
+        },
+        {
+            "from": "ManagesSitePageDialogs",
+            "to": "ManagesHomePagePresentation",
+            "path": "app/Filament/Pages/Concerns/ManagesSitePageDialogs.php",
+            "line": 7
+        },
+        {
+            "from": "ManagesSitePageDialogs",
+            "to": "ManagesSitePageCreateDialog",
+            "path": "app/Filament/Pages/Concerns/ManagesSitePageDialogs.php",
+            "line": 8
+        },
+        {
+            "from": "ManagesSitePageDialogs",
+            "to": "ManagesSitePageEditDialog",
+            "path": "app/Filament/Pages/Concerns/ManagesSitePageDialogs.php",
+            "line": 9
+        },
+        {
+            "from": "ManagesSitePageDialogs",
+            "to": "ManagesSitePagesSettings",
+            "path": "app/Filament/Pages/Concerns/ManagesSitePageDialogs.php",
+            "line": 10
+        },
+        {
+            "from": "SitePages",
+            "to": "ManagesSitePageDialogs",
+            "path": "app/Filament/Pages/SitePages.php",
+            "line": 32
+        }
+    ]
+}

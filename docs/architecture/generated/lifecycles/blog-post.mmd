@@ -1,0 +1,20 @@
+%% Curated; source anchors checked; semantic correctness requires review
+stateDiagram-v2
+    [*] --> draft: createDraft
+    draft --> published: publish
+    scheduled --> published: publish
+    unpublished --> published: publish
+    draft --> scheduled: schedule
+    unpublished --> scheduled: schedule
+    scheduled --> scheduled: reschedule
+    published --> unpublished: unpublish
+    draft --> archived: archive
+    scheduled --> archived: archive
+    published --> archived: archive
+    unpublished --> archived: archive
+    scheduled --> draft: restoreDraft
+    unpublished --> draft: restoreDraft
+    archived --> draft: restoreDraft
+    draft --> removed: delete
+    unpublished --> removed: delete
+    archived --> removed: delete

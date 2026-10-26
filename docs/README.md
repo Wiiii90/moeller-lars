@@ -1,75 +1,67 @@
 # Documentation
 
-The documents in this directory are split by purpose so current application contracts are not mixed with legacy investigation notes or unfinished-work diaries.
+The Lars Möller website is one Laravel application with a public site, an editorial administration and a publication/history system. This guide is for **reading and understanding the application**. It is not a log of coding sessions or a list of every class.
 
-## Current application contracts
+## Understand the project
 
-These describe the durable current application architecture and behavior. Browser/product milestone acceptance, release-candidate promotion and environment-specific evidence are tracked separately through the current review/release workflow:
+Start with three complementary views:
 
-- [PROJECT-CHARTER.md](PROJECT-CHARTER.md) — product scope and public/admin principles
-- [ARCHITECTURE.md](ARCHITECTURE.md) — application boundaries, typed site structure and ownership
-- [DATA-MODEL.md](DATA-MODEL.md) — durable persistence/domain relationships
-- [TESTING.md](TESTING.md) — test layers, placement, discovery, naming, database safety and browser-testing direction
-- [PUBLIC-IMPLEMENTATION-CONTRACT.md](PUBLIC-IMPLEMENTATION-CONTRACT.md) — public routing/publication/Home/Journal/media behavior
-- [MEDIA.md](MEDIA.md) — media ingest/references, whole-site Storage allowance, capacity/distribution UI and guarded/reclaimable storage behavior
-- [ANALYTICS.md](ANALYTICS.md) — Matomo/reporting and operational-metrics boundary
-- [ADMIN-AUTHENTICATION.md](ADMIN-AUTHENTICATION.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and transactional-mail boundary
-- [ADMIN-PASSWORD-POLICY.md](ADMIN-PASSWORD-POLICY.md) — shared environment-aware password policy and browser-local generator contract
-- [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md) — admin performance budget and investigation rules
-- [ADMIN-PROFILING.md](ADMIN-PROFILING.md) — canonical local Debugbar/DevTools/request-classification and on-demand callgraph workflow
-- [PULSE-REPORT.md](PULSE-REPORT.md) — read-only Markdown/JSON export of retained Laravel Pulse aggregates, including schema, interpretation, privacy, retention and Validation usage
-- [ADMIN-UI.md](ADMIN-UI.md) — Admin workspace and interaction grammar
-- [ADMIN-RESPONSIVE-CONTRACT.md](ADMIN-RESPONSIVE-CONTRACT.md) — responsive Admin composition
-- [ADMIN-CONTROL-CONTRACT.md](ADMIN-CONTROL-CONTRACT.md) — canonical admin form/control rendering and persistence semantics
-- [ADMIN-DIALOG-CONTRACT.md](ADMIN-DIALOG-CONTRACT.md) — shared native Filament dialog types, chrome, lifecycle and edit/command semantics
-- [ADMIN-TABLE-CONTRACT.md](ADMIN-TABLE-CONTRACT.md) — canonical ordinary-table role order, alignment, typography, actions and trailing Selection
-- [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md) — explicit Ticker feedback/Notification/Activity/Publication semantics, persistent inbox ownership and server-side delivery contract
-- [ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) — append-only Activity, bounded Undo recovery, shared content-addressed history payloads, Working/LIVE Commit history and reset/restore/revert semantics
-- [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — direct-dev browser review, shared Visual Stage ownership, icon semantics and local preview loop
-- [RELEASE.md](RELEASE.md) — immutable image, preview, runtime, persistence and release contract
-- [SERVER-OPERATIONS-BASELINE.md](SERVER-OPERATIONS-BASELINE.md) — application/platform ownership boundary; mutable operational implementation lives in `server-platform`
+1. **[Project charter](PROJECT-CHARTER.md)** — what the artist-facing website is for, editorial priorities and product boundaries.
+2. **[System architecture](ARCHITECTURE.md)** — how Public, Admin, Media, Publication and the database interact; the most useful first technical read.
+3. **[Data model](DATA-MODEL.md)** — the meaning of persistent records and the Working/Committed boundary.
 
-These documents state current durable contracts. They are not chronological PR/worker diaries and should not encode every temporary reconciliation SHA.
+For a concrete change, follow the topic below to **one owning document**, then inspect the implementation. Some detailed references describe older source snapshots; they do not override current `dev` or the user's latest decision.
 
-## Admin and agent ownership
+## Product and editorial behavior
 
-[Testing branch instructions](../AGENTS.md) and the current [test method](TESTING.md) own this branch's work. Admin visual behavior belongs in [UI](ADMIN-UI.md), [Responsive](ADMIN-RESPONSIVE-CONTRACT.md), [Controls](ADMIN-CONTROL-CONTRACT.md), [Dialogs](ADMIN-DIALOG-CONTRACT.md), [Tables](ADMIN-TABLE-CONTRACT.md) and [Browser review](ADMIN-BROWSER-WORKFLOW.md). No extra root skill or handoff file.
+| Question | Read |
+| --- | --- |
+| How do navigation, Home, Galleries, Artworks, Journals and pages appear publicly? | [Public website](public/site.md) |
+| What may become publicly visible? What about image rights, legal text and privacy? | [Rights and privacy](public/rights-privacy.md) |
+| How are reusable images, videos, audio, references, variants and deletion handled? | [Media](media.md) |
+| How are exhibition venues, organizers, dates, visibility and maps edited? | [Exhibition editorial](content/exhibitions.md) |
+| How do the shared editor, embedded images, formatting and safe rendering work? | [Rich Text](content/rich-text.md) |
 
-## Live work and acceptance status
+## Artist administration
 
-GitHub Issues and the current browser/orchestration review are the source of truth for **unfinished work, browser acceptance and current blockers**.
+Start with **[Admin workspace design](admin/ui.md)** for the overall interaction vocabulary. Then choose the component or responsibility being changed:
 
-A source-reviewed or technically running reconciliation candidate is not automatically product accepted. A durable contract is implemented on `dev` before a separately authorized release; documentation must not mistake technical source review for browser acceptance.
+| Responsibility | Owner |
+| --- | --- |
+| Inputs, picker controls and shared styling | [Controls](admin/controls.md) |
+| Tabular views, actions, selection, ordering and pagination | [Tables](admin/tables.md) |
+| Form dialogs, focus, edit lifecycle and scroll behavior | [Dialogs](admin/dialogs.md) |
+| Shell sizing, toolbars, grids, compact states and responsive geometry | [Responsive composition](admin/responsive.md) |
+| Working changes, Activity, Undo, audit and publication | [Activity and publication](admin/activity-publication.md) |
+| Notification delivery, messaging and Dashboard inbox | [Notifications](admin/notifications.md) |
+| Authentication, passwords, account recovery and account security | [Authentication](admin/authentication.md) |
+| Responsiveness and performance budgets; diagnosing slow interactions | [Performance and profiling](admin/performance.md) |
+| Browser-based interaction review, source cleanup and acceptance | [Browser review](admin/browser-review.md) |
 
-Browser feedback from the exact current candidate overrides stale acceptance wording. Once an exact `dev` candidate is browser/product accepted, stale issue history must not be treated as proof that already-resolved UI defects still exist; update/close the affected acceptance issues and promote that exact candidate through the `main`/release gates. Transient candidate SHAs and local container state belong in continuation handoffs, not durable architecture documents.
+A page may depend on several of these contracts, but each **shared rule** has only one implementation owner. The Admin rules do not control the independent visual design of the public site.
 
-## Migration and cutover evidence
+## Running, measuring and releasing
 
-These remain relevant until the legacy site is explicitly retired:
+| Topic | Read |
+| --- | --- |
+| Application tests and safe isolated validation | [Testing](operations/testing.md) |
+| Release qualification, snapshots, migrations and cutover | [Release](operations/release.md) |
+| Application versus external infrastructure responsibilities | [Server boundary](operations/server-boundary.md) |
+| Privacy-conscious analytics and reporting | [Analytics](operations/analytics.md) |
+| Internal Laravel Pulse metrics and report export | [Pulse](operations/pulse.md) |
 
-- [MIGRATION-PLAN.md](MIGRATION-PLAN.md) — remaining reconciliation, browser/editorial acceptance, Validation and cutover sequence
-- [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md) — source-to-target reconciliation guarantees, historical-migration self-containment and forward canonicalization rules
-- [SOURCE-INVENTORY.md](SOURCE-INVENTORY.md) — reviewed source systems/migration inputs
-- [LEGACY-PUBLIC-CONTRACT.md](LEGACY-PUBLIC-CONTRACT.md) — detailed legacy behavior evidence for browser/cutover comparison
+**Migration and pre-release history:** [Plan](migration/plan.md), [invariants](migration/invariants.md), [source inventory](migration/source-inventory.md) and [legacy public behavior](migration/legacy-public.md) exist for concrete cutover questions. They are **not** a second description of today's application.
 
-After successful cutover and explicit legacy retirement, legacy-only evidence can be archived/removed in a dedicated cleanup rather than kept indefinitely as active architecture.
+## Technical reference and source evidence
 
-## Repository policies
+The [engineering evidence index](architecture/README.md) is for tracing a specific implementation boundary: Admin mutation paths, Public navigation, media cleanup, database relations, generated source inventories and historical investigations. Read it **when you have a technical question**, not as a prerequisite to understanding the product. [Coverage and evidence classification](architecture/completion-criteria.md) distinguishes extracted source, written tests, executed checks and unverified runtime/artist acceptance.
 
-- [Security policy](../SECURITY.md) — private vulnerability-reporting guidance and supported security scope
-- [Contribution policy](../CONTRIBUTING.md) — current external-contribution policy
-- [Pull request template](../.github/pull_request_template.md) — verification, browser acceptance, migration impact and release/Validation claims
+Generated inventories may reflect an older pinned revision. Regenerate retained artifacts **only at the authorized final Docs integration gate** after reconciling the frozen source. Do not interpret diagrams or declarations as executed runtime evidence.
 
-## Documentation rules
+## Contributing to documentation
 
-- prefer present-tense contracts over implementation diaries;
-- do not duplicate `server-platform` topology, host paths, credentials or mutable runbooks here;
-- exact transient browser-candidate SHAs/ports belong in continuation prompts, not architecture docs, except where a temporary evidence record is explicitly required;
-- do not turn closed issue/PR numbers into permanent architecture dependencies;
-- migration evidence may describe legacy names, but runtime docs use current domain language: **Gallery**, **Site Node**, **Journal**, **Custom Page**, **Navigation Node**, **Storage** and reusable **Contact component**;
-- database/model names may retain historical persistence terminology where renaming adds migration risk; document that boundary explicitly rather than exposing the old name as product language;
-- distinguish `MediaAsset` being referenced from it being publicly deliverable;
-- keep the central Rich Text/media stack singular rather than documenting editor-specific parallel implementations;
-- shared admin geometry belongs to shared tokens/primitives; do not document page-local compensations as architecture;
-- security/account-recovery details belong in `ADMIN-AUTHENTICATION.md`; concrete SMTP topology/credentials remain platform-owned;
-- never include secret values, production dumps, private media or access tokens.
+A good document answers a reader's question, describes how parts fit together and links to the code where necessary. Prefer updating, consolidating, renaming or **removing** a document over accumulating adjacent manuals. Do not preserve aliases for deleted pre-release documents. Never put private hosting configuration, access details, prices or credentials in this public repository.
+
+The active working branch's [AGENTS entry](../AGENTS.md), the [Docs maintenance method](../.agents/skills/docs/SKILL.md) and the [shared worker protocol](../.agents/README.md) describe how workers identify the right owner, verify current code and make reviewable changes. When these permanent documents are published to `dev`, the **destination's own** `AGENTS.md` and role skills apply; Docs' active roster/worker records remain exclusively on `docs`. These procedures do **not** replace the product documentation above. General Docs and Test ownership is separate from everyday `dev` implementation.
+
+[Security policy](../SECURITY.md) and [contribution guidelines](../CONTRIBUTING.md) remain the repository policy sources. Decisions about release and repository-history cleanup are owned by the [release contract](operations/release.md), not hidden in temporary worker records.

@@ -1,0 +1,117 @@
+%% Import declarations only. No implied runtime calls, object instances or method invocations.
+flowchart LR
+    T1["Domain/Admin/AdminMutationSnapshotBuffer"]
+    T2["Domain/Analytics/MatomoConfiguration"]
+    T3["Domain/Analytics/OperationalMetricRecorder"]
+    T4["Domain/Artwork/PublicArtworkQuery"]
+    T5["Domain/Contact/ContactDeliveryReadiness"]
+    T6["Domain/Content/BlogEditorialService"]
+    T7["Domain/Content/CanonicalUrl"]
+    T8["Domain/Content/HomePresentationResolver"]
+    T9["Domain/Content/HomeTemplate"]
+    T10["Domain/Content/JournalMediaRenderer"]
+    T11["Domain/Content/JournalTemplate"]
+    T12["Domain/Content/SafeRichTextRenderer"]
+    T13["Domain/Content/SitePreviewContext"]
+    T14["Domain/Content/SiteSectionPathPolicy"]
+    T15["Domain/Content/SiteSectionType"]
+    T16["Domain/Media/MediaVariantRegenerationService"]
+    T17["Domain/Media/PublicMedia"]
+    T18["Domain/Publication/CommittedRead"]
+    T19["Domain/Publication/PublicationService"]
+    T20["Http/Controllers/AdminMediaController"]
+    T21["Http/Controllers/Controller"]
+    T22["Http/Controllers/PublicArtworkController"]
+    T23["Http/Controllers/PublicContactController"]
+    T24["Http/Controllers/PublicHomeController"]
+    T25["Http/Controllers/PublicMediaController"]
+    T26["Http/Controllers/PublicSeoController"]
+    T27["Http/Controllers/PublicSiteSectionController"]
+    T28["Http/Middleware/AttachPublicationState"]
+    T29["Http/Middleware/DeferMatomoReporting"]
+    T30["Http/Middleware/EnforceHomePresentationGate"]
+    T31["Http/Middleware/EnsureMediaVariantFile"]
+    T32["Http/Middleware/ProtectArtistPreview"]
+    T33["Http/Middleware/RecordOperationalMetrics"]
+    T34["Http/Middleware/SecurityHeaders"]
+    T35["Http/Middleware/UseCommittedPublicState"]
+    T36["Jobs/RefreshMatomoReporting"]
+    T37["Mail/WebsiteContactMessage"]
+    T38["Models/Artwork"]
+    T39["Models/ArtworkCategory"]
+    T40["Models/BlogPost"]
+    T41["Models/ContactMessage"]
+    T42["Models/CustomPageSetting"]
+    T43["Models/Exhibition"]
+    T44["Models/HomePresentationSetting"]
+    T45["Models/JournalSetting"]
+    T46["Models/MediaAsset"]
+    T47["Models/MediaVariant"]
+    T48["Models/PublicContentSetting"]
+    T49["Models/Redirect"]
+    T50["Models/SiteSection"]
+    T51["Models/User"]
+    T52["Routing/SiteNodeRoute"]
+    T20 -->|import| T46
+    T20 -->|import| T47
+    T20 -->|import| T51
+    T22 -->|import| T4
+    T22 -->|import| T13
+    T22 -->|import| T14
+    T22 -->|import| T15
+    T22 -->|import| T17
+    T22 -->|import| T39
+    T22 -->|import| T49
+    T22 -->|import| T50
+    T23 -->|import| T5
+    T23 -->|import| T9
+    T23 -->|import| T15
+    T23 -->|import| T18
+    T23 -->|import| T37
+    T23 -->|import| T41
+    T23 -->|import| T42
+    T23 -->|import| T44
+    T23 -->|import| T48
+    T24 -->|import| T8
+    T25 -->|import| T17
+    T25 -->|import| T46
+    T25 -->|import| T47
+    T26 -->|import| T6
+    T26 -->|import| T7
+    T26 -->|import| T8
+    T26 -->|import| T11
+    T26 -->|import| T15
+    T26 -->|import| T38
+    T26 -->|import| T40
+    T26 -->|import| T50
+    T26 -->|import| T52
+    T27 -->|import| T6
+    T27 -->|import| T10
+    T27 -->|import| T11
+    T27 -->|import| T12
+    T27 -->|import| T13
+    T27 -->|import| T14
+    T27 -->|import| T15
+    T27 -->|import| T17
+    T27 -->|import| T40
+    T27 -->|import| T42
+    T27 -->|import| T43
+    T27 -->|import| T45
+    T27 -->|import| T46
+    T27 -->|import| T48
+    T27 -->|import| T49
+    T27 -->|import| T50
+    T27 -->|import| T52
+    T28 -->|import| T1
+    T28 -->|import| T19
+    T29 -->|import| T2
+    T29 -->|import| T36
+    T30 -->|import| T8
+    T31 -->|import| T16
+    T31 -->|import| T17
+    T31 -->|import| T47
+    T31 -->|import| T51
+    T32 -->|import| T13
+    T32 -->|import| T51
+    T33 -->|import| T3
+    T35 -->|import| T18

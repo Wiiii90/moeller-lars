@@ -10,19 +10,18 @@ use RuntimeException;
 
 /**
  * Prepares one Working image through the canonical writer and publication
- * lock. An explicit offline caller owns batching; HTTP never calls this.
+ * lock. Invoked by offline commands or the existing application queue.
  */
 final class MediaRightsWorkingPreparation
 {
     public function __construct(
-        private readonly PublicMedia $publicMedia,
         private readonly MediaRightsArtifactService $artifacts,
         private readonly MediaRightsPublicationSelections $selections,
     ) {}
 
     public function prepare(int $assetId): bool
     {
-        if ($assetId <= 0 || ! $this->selections->enabled() || $this->selections->deliveryEnabled()) {
+        if ($assetId <= 0 || ! $this->selections->enabled()) {
             throw new RuntimeException('Offline rights preparation must be authorized separately from public delivery.');
         }
 
@@ -32,12 +31,14 @@ final class MediaRightsWorkingPreparation
 
             if (! $asset instanceof MediaAsset
                 || $asset->getAttribute('state') !== 'available'
-                || ! MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))
-                || ! $this->publicMedia->isPublicAsset($asset)) {
+                || ! MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))) {
                 return false;
             }
 
-            $thumbnail = $this->publicMedia->thumbnailVariantForAsset($asset);
+            $thumbnail = MediaPreviewVariant::imageThumbnail($asset);
+            if ($thumbnail === null) {
+                return false;
+            }
             $originalArtifact = $this->artifacts->prepareOriginal($asset);
             $thumbnailArtifact = $this->artifacts->prepareThumbnail($asset, $thumbnail);
 
