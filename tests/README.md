@@ -57,4 +57,4 @@ In the current direct-`dev` mode, CI/Actions must not be run, inspected or monit
 5. Do not silently skip required fixtures or weaken assertions to obtain green results.
 6. Distinguish source review, actual test runs, browser review and user acceptance.
 
-Canonical strategy: [docs/TESTING.md](../docs/TESTING.md).
+Canonical strategy: [docs/operations/testing.md](../docs/operations/testing.md).

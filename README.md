@@ -51,7 +51,7 @@ Stop the local stack without discarding its database container:
 docker compose stop
 ```
 
-Browser-polish/reconciliation uses the `local-preview` target in the root [`Dockerfile`](Dockerfile) through the opt-in Compose `preview` service. On Windows, the canonical local rebuild command from any PowerShell location is `& 'P:\moeller-lars\scripts\local-preview.ps1'`. The preview and production image now share one build graph, so frontend/runtime stages are not rebuilt through a second Dockerfile. Branch/review rules are owned by [AGENTS.md](AGENTS.md); the browser-reconciliation loop is summarized in [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md); CI, release-image and Validation contracts are owned by [docs/RELEASE.md](docs/RELEASE.md).
+Browser-polish/reconciliation uses the `local-preview` target in the root [`Dockerfile`](Dockerfile) through the opt-in Compose `preview` service. On Windows, the canonical local rebuild command from any PowerShell location is `& 'P:\moeller-lars\scripts\local-preview.ps1'`. The preview and production image now share one build graph, so frontend/runtime stages are not rebuilt through a second Dockerfile. Branch/review rules are owned by [AGENTS.md](AGENTS.md); the browser-reconciliation loop is summarized in [docs/admin/browser-review.md](docs/admin/browser-review.md); CI, release-image and Validation contracts are owned by [docs/operations/release.md](docs/operations/release.md).
 
 ## Site structure
 
@@ -72,16 +72,16 @@ The artist admin is browser-reviewed as an editorial product, not accepted merel
 Start with:
 
 - [AGENTS.md](AGENTS.md) — direct-`dev` workflow and central technology rules
-- [docs/ADMIN-UI.md](docs/ADMIN-UI.md) — canonical Admin UI grammar
-- [docs/ADMIN-RESPONSIVE-CONTRACT.md](docs/ADMIN-RESPONSIVE-CONTRACT.md) — canonical responsive composition
-- [docs/ADMIN-AUTHENTICATION.md](docs/ADMIN-AUTHENTICATION.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and mail boundary
-- [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md) — direct-`dev` browser workflow, shared Visual Stage ownership and local preview loop
+- [docs/admin/ui.md](docs/admin/ui.md) — canonical Admin UI grammar
+- [docs/admin/responsive.md](docs/admin/responsive.md) — canonical responsive composition
+- [docs/admin/authentication.md](docs/admin/authentication.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and mail boundary
+- [docs/admin/browser-review.md](docs/admin/browser-review.md) — direct-`dev` browser workflow, shared Visual Stage ownership and local preview loop
 
-Application development happens directly on `dev`, while test authorship and suite maintenance are owned by the separate test workstream. During this mode there is no CI/Actions interaction, branch-worker choreography or release without separate authorization.
+Application development happens directly on `dev`, while test authorship and suite maintenance are owned by the separate test workstream. No worker-initiated CI/Actions interaction, branch transfer or release occurs without explicit user authorization. Existing GitHub push-triggered workflows are a separate repository setting.
 
 ## Releases
 
-Daily integration happens on `dev`. Once a coherent browser/product milestone is accepted, the exact accepted `dev` head is promoted to protected `main` through the normal integration/release gates. `main` is the canonical source for release-image publication and release-candidate Validation; branch/SHA preview images remain pre-release evidence only. See [docs/RELEASE.md](docs/RELEASE.md) for the canonical CI, image publication and Validation contract.
+Daily integration happens on `dev`. Once a coherent browser/product milestone is accepted, the exact accepted `dev` head is promoted to protected `main` through the normal integration/release gates. `main` is the canonical source for release-image publication and release-candidate Validation; branch/SHA preview images remain pre-release evidence only. See [docs/operations/release.md](docs/operations/release.md) for the canonical CI, image publication and Validation contract.
 
 A green CI run, a local browser candidate, a published preview image or a successful Validation deployment does not itself authorize a Production deployment.
 
@@ -91,7 +91,7 @@ Start with [docs/README.md](docs/README.md). It separates current application co
 
 ## Security
 
-Never commit secrets or private production data. Use environment/platform secret storage for credentials and tokens. The admin authentication, MFA and password-recovery contract is documented in [docs/ADMIN-AUTHENTICATION.md](docs/ADMIN-AUTHENTICATION.md). Report security-sensitive findings according to [SECURITY.md](SECURITY.md), not through public issues containing exploit details or secret material.
+Never commit secrets or private production data. Use environment/platform secret storage for credentials and tokens. The admin authentication, MFA and password-recovery contract is documented in [docs/admin/authentication.md](docs/admin/authentication.md). Report security-sensitive findings according to [SECURITY.md](SECURITY.md), not through public issues containing exploit details or secret material.
 
 ## License and contributions
 

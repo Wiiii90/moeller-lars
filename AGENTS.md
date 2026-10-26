@@ -2,7 +2,7 @@
 
 ## Immediate numbered-worker bootstrap and non-negotiable method
 
-A new chat assigned **“Du bist Dev Worker N, mach …”** must read **this branch's `AGENTS.md` and the single [dev worker skill](https://github.com/Wiiii90/moeller-lars/blob/docs/.agents/skills/dev/SKILL.md)** before modifying source, and the [shared lifecycle/registration rules](https://github.com/Wiiii90/moeller-lars/blob/docs/.agents/README.md) before registering. That skill is maintained centrally on the `docs` branch: load its current text (GitHub connector or `git show origin/docs:.agents/skills/dev/SKILL.md` after fetching). **No copy, alias, alternate procedure or duplicate local skill file** on this branch. When assigned a numbered slot, create/update a branch-local worker roster and own active record only if the slot was really activated; observe lease and concurrent HEAD checks. Then perform the assigned task; do not demand an additional long user prompt explaining basic code quality.
+A new chat assigned **“Du bist Dev Worker N, mach …”** must first read **this branch's `AGENTS.md`**, the [same-branch Dev skill](.agents/skills/dev/SKILL.md), the [shared worker protocol](.agents/README.md), and the [Dev-only roster](.agents/roster.md). It must register or explicitly take over its numbered slot with a checked lease **before** investigating or changing the assigned feature. The user's one-line assignment activates the durable architecture/quality rules without requiring another long prompt. Only that worker's own branch-local progress file belongs in `.agents/workers/dev-N.md`; do not create compatibility aliases, parallel skills, or import Docs' worker records.
 
 **Never patch around an architectural defect.** Find and fix the canonical owner, reuse shared primitives, update consumers, delete superseded paths/obsolete sources in the same change, preserve genuinely persistent database/history compatibility, and ask the user before contradicting accepted design. **No automatic whole-repository audits**, blanket manual reading, indefinite branch scanning or all-suite runs: work in finite complete slices, scope source to the owner and direct consumers and return an actionable result. This is required even if a lower-priority document suggests doing more. The user always has the final architectural decision.
 
@@ -19,7 +19,7 @@ If the expansion is unknown, verify it before using the abbreviation, or avoid t
 
 Literal identifiers in source code, paths, commands, configuration keys and existing product labels must remain unchanged; explain their meaning in the surrounding text rather than renaming them merely to satisfy this communication rule.
 
-**Canonical Admin references:** [Admin UI](docs/ADMIN-UI.md), [Responsive](docs/ADMIN-RESPONSIVE-CONTRACT.md), [Dialogs](docs/ADMIN-DIALOG-CONTRACT.md) and [Browser review](docs/ADMIN-BROWSER-WORKFLOW.md). They own the rules directly; no separate root UI or handoff skill exists.
+**Canonical Admin references:** [Admin UI](docs/admin/ui.md), [Responsive](docs/admin/responsive.md), [Dialogs](docs/admin/dialogs.md) and [Browser review](docs/admin/browser-review.md). They own the rules directly; no separate root UI or handoff skill exists.
 
 ## Browser-accepted dialog scroll-lock contract — do not regress
 
@@ -51,7 +51,7 @@ The admin dialog behavior accepted in browser review on 2026-10-11 is a
   does **not** imply browser acceptance. Retain the last accepted behavior unless
   the user explicitly changes this contract.
 
-See `docs/ADMIN-DIALOG-CONTRACT.md` and `docs/ADMIN-UI.md` for shared UI geometry.
+See `docs/admin/dialogs.md` and `docs/admin/ui.md` for shared UI geometry.
 
 ## Active public-rights implementation workstream (temporary)
 
@@ -59,7 +59,7 @@ The agreed cross-cutting public-rights/privacy/media/SEO implementation is
 tracked in root [`PUBLIC_RIGHTS_WORKSTREAM.md`](PUBLIC_RIGHTS_WORKSTREAM.md).
 **Before any relevant code change or continuation prompt, read and update that
 living workstream**, then consult the durable
-[`docs/PUBLIC-RIGHTS-AND-PRIVACY.md`](docs/PUBLIC-RIGHTS-AND-PRIVACY.md).
+[`docs/public/rights-privacy.md`](docs/public/rights-privacy.md).
 It records the accepted scope, current slice, completion evidence and
 cross-chat handoff. Update it in the **same commit** as implementation changes;
 reconcile concurrent `dev` commits before editing. It is temporary: when the
@@ -79,7 +79,7 @@ Preserve the public HTML/media TDM rights reservation and its
 opt-outs. Neither TDM nor robots.txt protects against downloads. Full-quality
 public Artwork Viewer originals are a deliberate product requirement.
 Matomo tracking must not operate without legally sufficient prior consent.
-Read `docs/PUBLIC-RIGHTS-AND-PRIVACY.md` before new public privacy work.
+Read `docs/public/rights-privacy.md` before new public privacy work.
 
 ## No workarounds — mandatory stop rule
 
@@ -124,8 +124,8 @@ must not unconditionally create UI messages.
    proof of functional correctness. Include a reproducible acceptance
    checklist in the handoff.
 
-See `docs/ADMIN-NOTIFICATION-CONTRACT.md`,
-`docs/ADMIN-DIALOG-CONTRACT.md`, and `docs/TESTING.md`.
+See `docs/admin/notifications.md`,
+`docs/admin/dialogs.md`, and `docs/operations/testing.md`.
 
 ## User authority and architectural disagreement
 
@@ -181,7 +181,7 @@ Before changing a shared owner or a previously browser-reviewed interaction:
    change its parent. Custom Page Image-child ordering/placement is a
    distinct consumer: do not change Pages while refactoring Custom Page,
    or vice versa, without explicit cross-feature scope and verification.
-   The concrete interaction contract is in `docs/ADMIN-UI.md` section 9.
+   The concrete interaction contract is in `docs/admin/ui.md` section 9.
 4. Verify the actual combined browser gestures in the affected editor(s),
    using the current candidate, before asserting a working replacement. A
    domain test that calls the sort method does not establish which drop zone
@@ -219,11 +219,7 @@ Hard restrictions for all direct-`dev` work:
 - **Commit directly to `dev` only.** Never create side/worker/integration/review
   branches, worktrees or duplicate local checkouts. Never merge/push to `main`,
   start a release or deploy unless the user expressly authorizes a separate task.
-- **No CI interaction whatsoever:** do not run, dispatch, monitor, read status,
-  inspect jobs, fetch logs, retry, cancel or troubleshoot GitHub Actions/CI.
-  Local targeted tests and source checks are distinct from CI and may be run
-  only where an appropriate isolated environment exists; never claim tests or
-  browser review ran when they did not.
+- **No unsolicited Continuous Integration (CI) interaction:** An agent may dispatch, inspect or troubleshoot GitHub Actions only after the user explicitly requests it, using bounded summaries and relevant failed-step excerpts. Never start indefinite polling or consume entire multi-minute logs. Local targeted tests and source checks are distinct from CI and may run only with verified safe isolation; never claim tests or browser review ran when they did not.
 - **Every write is concurrency-aware.** Read `dev` and record its exact HEAD
   at the start. Immediately before building a commit, read HEAD again. If
   another chat advanced it, compare old HEAD -> new HEAD, inspect changed paths,
@@ -265,7 +261,7 @@ without verifying the impact. The user can supply screenshots and feedback in
 either session; a passing source check is not browser acceptance.
 
 When an actual release to `main` is later requested, follow the protected
-promotion contract in `docs/RELEASE.md` under a **new, explicit authorization**.
+promotion contract in `docs/operations/release.md` under a **new, explicit authorization**.
 Until then there is no branch choreography, CI handoff or deployment step.
 
 ## Source responsibility
@@ -276,7 +272,7 @@ The user may authorize the current chat to inspect and implement directly on dev
 
 Routine browser fixes and other small bounded changes must be investigated from the concrete symptom inward, not by re-auditing the repository.
 
-Treat `AGENTS.md`, `docs/ADMIN-UI.md` and the current orchestration/handoff context as already-established working context. Do not repeatedly re-read them in full during the same task unless they changed or a concrete conflict requires it.
+Treat `AGENTS.md`, `docs/admin/ui.md` and the current orchestration/handoff context as already-established working context. Do not repeatedly re-read them in full during the same task unless they changed or a concrete conflict requires it.
 
 When the canonical local checkout is available, use `P:\moeller-lars` for normal source inspection, grep/search, diffs, status and history. Remote GitHub reads are for facts that are genuinely remote — for example branch heads, worker branches, PRs, CI state or final push verification — or when the required source is not available locally. Do not substitute repeated remote reads for cheap local inspection.
 
@@ -333,7 +329,7 @@ Do not encode rejected or unreviewed presentation details into durable tests or 
 
 ## Admin theme enforcement
 
-[`docs/ADMIN-UI.md`](docs/ADMIN-UI.md) owns the admin presentation contract, accepted references,
+[`docs/admin/ui.md`](docs/admin/ui.md) owns the admin presentation contract, accepted references,
 shared primitives, CSS ownership and visual review checklist. Read it before UI work.
 Prompts must identify the exact reference files and workers must enumerate reused primitives
 and justify feature-local CSS. Review actual Blade/CSS changes for bypasses before reconciliation.
@@ -362,7 +358,7 @@ Unless a concrete risk requires more, browser-polish workers should not automati
 - CI waits;
 - Validation deployments.
 
-Static review, `git diff --check`, tiny syntax checks and focused contract checks are appropriate. CI workflow source may be prepared on `dev`, but CI runs and logs remain prohibited during direct development; `docs/RELEASE.md` owns separately authorized release qualification. Local Feature/Pest suites are forbidden against the persistent browser database. Source-string tests are scaffolding unless they protect a durable invariant.
+Static review, `git diff --check`, tiny syntax checks and focused contract checks are appropriate. CI workflow source may be prepared on `dev`, but CI runs and logs may only be requested or inspected with explicit user authorization and bounded results; `docs/operations/release.md` owns separately authorized release qualification. Local Feature/Pest suites are forbidden against the persistent browser database. Source-string tests are scaffolding unless they protect a durable invariant.
 
 Dev workers do not add or edit tests during browser work. They hand specific stable domain/browser regression scenarios to the test-owning worker; an unaccepted presentation cannot become a regression contract.
 
@@ -438,7 +434,7 @@ Exact transient branch SHAs, mount source paths and commands belong in the curre
 
 ## Fast Validation preview
 
-When protected Validation is actually needed, use the established preview/release workflow in `docs/RELEASE.md`. Do not invent server commands, hostnames or topology.
+When protected Validation is actually needed, use the established preview/release workflow in `docs/operations/release.md`. Do not invent server commands, hostnames or topology.
 
 Local browser acceptance and protected Validation are different environments. Do not deploy Validation merely because local source review is ready.
 
@@ -465,7 +461,7 @@ The admin is still under browser acceptance. Existing work is a starting point, 
 - prefer an existing shared primitive over page-local CSS/interaction forks;
 - when a genuinely shared defect is discovered, fix the shared authority intentionally;
 - do not introduce a second Rich Text, media-selection, table, modal or drag/drop technology to unblock one page;
-- consult `docs/ADMIN-UI.md` and `docs/ADMIN-RESPONSIVE-CONTRACT.md` before changing admin workspace geometry;
+- consult `docs/admin/ui.md` and `docs/admin/responsive.md` before changing admin workspace geometry;
 - when the user explicitly rejects the current presentation or asks for a reset, do not preserve that rejected structure merely to minimize the diff.
 
 ## Responsive system
@@ -488,7 +484,7 @@ Responsive behavior is content-driven, not device-name driven. Issue #15 owns th
 - shared Position/Drag rails and hierarchy ordering cells must never clip their square position badge or drag control; Pages/Custom Page/Journal consume that shared geometry rather than page-local offset hacks;
 - Pages, Custom Page and Journal toolbars remain one row with elastic Search and compact right-side controls; Gallery follows the same principle in its custom toolbar; Analytics, Storage and Activity also remain one row, with Storage/Activity preserving all four filters and compacting Clear/View/Selection before any wrap;
 - burger/sidebar collapse is monotonic across Dashboard, General, Pages, Gallery, Custom Page, Journal, Analytics, Storage and Activity; freed workspace may not reintroduce wider metrics, hidden stage panes, table columns, labels or denser grids;
-- metrics reduce deliberately by feature semantics; Dashboard, General, Pages/Gallery/Custom Page/Journal and Analytics/Storage/Activity use 6 / 6 / 3 / 2 with their feature-specific priorities recorded in `docs/ADMIN-RESPONSIVE-CONTRACT.md`; every two-metric Minimal strip is exactly 50/50 and no metric strip becomes a one-column list;
+- metrics reduce deliberately by feature semantics; Dashboard, General, Pages/Gallery/Custom Page/Journal and Analytics/Storage/Activity use 6 / 6 / 3 / 2 with their feature-specific priorities recorded in `docs/admin/responsive.md`; every two-metric Minimal strip is exactly 50/50 and no metric strip becomes a one-column list;
 - responsive metric geometry is centralized in `.admin-metrics`: Narrow = three equal tracks with container-owned dividers at 1/3 and 2/3; Minimal = two equal tracks with one divider at 1/2. Feature rules may only choose visibility/priority and must not assign responsive metric spans or their own vertical dividers;
 - Analytics/Storage/Activity Narrow metrics explicitly own columns 1/2/3 with full-cell stretch and both dividers; Minimal explicitly owns columns 1/2 with one centered divider, so source order or prior grid spans cannot produce 1/3–2/3 geometry;
 - shared Visual Stage desktop geometry does not imply generic mobile stacking. Analytics/Storage/Activity keep their desktop multi-cell stage axes through Narrow and collapse only at Minimal: Analytics -> full-width Map, Storage -> full-width Upload + compact capacity/actions, Activity -> full-width Next Publication with Review/Reset/Commit preserved; the shared fixed stage height remains unchanged across these transitions;
@@ -516,7 +512,7 @@ AdminRichText / Filament RichEditor (Tiptap)
   -> public HTML
 ```
 
-Embedded visual-editor images reference available canonical Storage assets by `data-id`; legacy Markdown `media:<id>` references remain readable and are converted only on editing. Do not reintroduce a separate editor, external-image uploads, legacy `[[journal-image:...]]` syntax, or an alternate public renderer. See `docs/EDITORIAL-RICH-TEXT.md`.
+Embedded visual-editor images reference available canonical Storage assets by `data-id`; legacy Markdown `media:<id>` references remain readable and are converted only on editing. Do not reintroduce a separate editor, external-image uploads, legacy `[[journal-image:...]]` syntax, or an alternate public renderer. See `docs/content/rich-text.md`.
 
 ### Media
 
@@ -625,8 +621,8 @@ After browser/product acceptance, audit the accepted change for source it create
 
 Preserve still-required compatibility and domain behavior. Audit references, call sites, routes and tests before deletion; never delete from naming alone. This cleanup scope covers only artifacts made obsolete by the accepted change; unrelated cleanup remains out of scope.
 
-Run authorized final verification against the cleaned final state, not a pre-cleanup candidate. Browser/product acceptance and source cleanup are separate gates: passing one does not imply the other. In the current direct-`dev` mode **CI is prohibited**, including reads and dispatches; a later release qualification is a separate user-authorized workflow.
+Run authorized final verification against the cleaned final state, not a pre-cleanup candidate. Browser/product acceptance and source cleanup are separate gates: passing one does not imply the other. Routine direct-`dev` work must not dispatch or inspect CI without explicit user authorization; a final qualification is separately authorized and uses bounded run summaries rather than long polling.
 
 ## CI and release authorization
 
-Direct-dev agents must not run, dispatch, inspect status/logs, monitor or troubleshoot GitHub Actions. The CI workflow files can be maintained as source when requested; the user separately authorizes any qualification run or promotion to main. The current PHP test structure is Unit, Integration, Feature and Migration, plus JS and browser suites. The special concurrent PostgreSQL runners have their own isolated execution contract. See `tests/README.md`, `docs/TESTING.md` and `docs/RELEASE.md`.
+Direct-dev agents may dispatch, inspect or troubleshoot GitHub Actions **only when specifically authorized**; use bounded summaries and the relevant failure excerpt, without long polling or complete job logs. The CI workflow files can be maintained as source when requested. The current release workflow also automatically verifies `dev` pushes independently of an agent dispatch; changing that trigger requires a separate explicit decision. Promotion to main is always independently authorized. The current PHP test structure is Unit, Integration, Feature and Migration, plus JS and browser suites. The special concurrent PostgreSQL runners have their own isolated execution contract. See `tests/README.md`, `docs/operations/testing.md` and `docs/operations/release.md`.
