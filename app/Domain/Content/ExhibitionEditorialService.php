@@ -447,6 +447,8 @@ final class ExhibitionEditorialService
 
     private function hasStructuredMediaInput(array $data): bool
     {
-        return array_key_exists('cover_media_asset_id', $data) || array_key_exists('gallery_images', $data);
+        return array_key_exists('cover_media_asset_id', $data)
+            || array_key_exists('cover_video_controls_enabled', $data)
+            || array_key_exists('gallery_images', $data);
     }
 }
