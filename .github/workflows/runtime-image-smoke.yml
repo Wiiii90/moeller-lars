@@ -1,28 +1,6 @@
 name: Runtime image smoke
 
 on:
-  push:
-    branches: [dev]
-    paths:
-      - Dockerfile
-      - docker/**
-      - composer.json
-      - composer.lock
-      - bootstrap/providers.php
-      - app/Providers/**
-      - config/**
-      - resources/svg/**
-  pull_request:
-    branches: [main, dev]
-    paths:
-      - Dockerfile
-      - docker/**
-      - composer.json
-      - composer.lock
-      - bootstrap/providers.php
-      - app/Providers/**
-      - config/**
-      - resources/svg/**
   workflow_dispatch:
 
 permissions:
