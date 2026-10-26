@@ -39,8 +39,16 @@ docker volume create moeller-lars_postgres_data | Out-Null
 if ($LASTEXITCODE) { throw 'Lokales PostgreSQL-Volume konnte nicht bereitgestellt werden.' }
 
 Write-Host '[3/3] Preview und Bildrechte-Verarbeitung starten, Analytics laden'
-docker compose up -d --no-build --wait preview media-rights-worker
+docker compose up -d --no-build --wait preview
 if ($LASTEXITCODE) { throw 'Lokaler Preview-Container konnte nicht gestartet werden.' }
+
+docker compose up -d --no-build media-rights-worker
+if ($LASTEXITCODE) { throw 'Lokaler Bildrechte-Worker konnte nicht gestartet werden.' }
+
+$WorkerStatus = docker inspect --format '{{.State.Status}}' moeller-lars-local-rights-worker
+if ($LASTEXITCODE -ne 0 -or $WorkerStatus -ne 'running') {
+    throw 'Lokaler Bildrechte-Worker laeuft nicht. Docker-Logs pruefen.'
+}
 
 docker cp $AnalyticsDemo moeller-lars-local-web:/var/www/html/storage/app/analytics-demo.php
 if ($LASTEXITCODE) { throw 'Lokale Analytics-Demo konnte nicht in den Preview-Container kopiert werden.' }
