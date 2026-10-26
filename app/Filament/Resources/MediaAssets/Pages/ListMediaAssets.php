@@ -174,8 +174,8 @@ final class ListMediaAssets extends Page
         $this->loadStorageOverview();
     }
 
-    /** @return array{summary:string,added:int,duplicates:int,failed:int} */
-    public function processDirectMedia(): array
+    /** @return array{summary:string,added:int,duplicates:int,failed:int,errors:list<string>} */
+    public function processDirectMedia(bool $notify = true): array
     {
         $uploads = $this->directMedia;
         $this->resetErrorBag('directMedia');
@@ -188,6 +188,7 @@ final class ListMediaAssets extends Page
                 'added' => 0,
                 'duplicates' => 0,
                 'failed' => 1,
+                'errors' => ['No uploaded file was received.'],
             ];
         }
 
@@ -231,7 +232,7 @@ final class ListMediaAssets extends Page
             $this->refreshStorageOverviewAfterMutation();
         }
 
-        if ($failures !== []) {
+        if ($notify && $failures !== []) {
             $details = array_map(
                 static fn (array $failure): string => $failure['filename'].' — '.$failure['message'],
                 array_slice($failures, 0, 4),
@@ -245,13 +246,13 @@ final class ListMediaAssets extends Page
                 body: implode("\n", $details),
                 status: ($added + $duplicates) > 0 ? 'warning' : 'danger',
             );
-        } elseif ($added > 0) {
+        } elseif ($notify && $added > 0) {
             app(AdminNotifier::class)->notification(
                 title: $total === 1 ? 'File uploaded' : 'Files uploaded',
                 body: $this->directUploadSummary($total, $added, $duplicates, 0),
                 status: 'success',
             );
-        } elseif ($duplicates > 0) {
+        } elseif ($notify && $duplicates > 0) {
             app(AdminNotifier::class)->notification(
                 title: 'Already in Storage',
                 body: $total === 1 ? null : $duplicates.' files already exist in Storage',
@@ -264,6 +265,10 @@ final class ListMediaAssets extends Page
             'added' => $added,
             'duplicates' => $duplicates,
             'failed' => $failed,
+            'errors' => array_map(
+                static fn (array $failure): string => $failure['filename'].' — '.$failure['message'],
+                $failures,
+            ),
         ];
     }
 

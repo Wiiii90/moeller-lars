@@ -124,30 +124,77 @@
                 phase: 'idle',
                 progress: 0,
                 fileCount: 0,
+                completed: 0,
                 result: '',
-                showResult(message) {
-                    this.result = message
+                async uploadFiles(input) {
+                    if (this.phase === 'uploading' || this.phase === 'processing') return
+
+                    const files = Array.from(input.files ?? [])
+                    if (files.length === 0) return
+
+                    this.fileCount = files.length
+                    this.completed = 0
+                    this.progress = 0
+                    this.result = ''
+                    let added = 0
+                    let duplicates = 0
+                    let failed = 0
+                    const errors = []
+
+                    for (const file of files) {
+                        this.phase = 'uploading'
+
+                        const transferred = await new Promise((resolve) => {
+                            $wire.uploadMultiple(
+                                'directMedia',
+                                [file],
+                                () => resolve(true),
+                                () => resolve(false),
+                                (event) => {
+                                    const percent = Number(event?.detail?.progress ?? 0)
+                                    this.progress = Math.round(
+                                        (this.completed + percent / 100) * 100 / this.fileCount
+                                    )
+                                },
+                            )
+                        })
+
+                        if (!transferred) {
+                            failed++
+                            errors.push(file.name + ' — Transfer failed. Check the file size and connection.')
+                        } else {
+                            this.phase = 'processing'
+                            try {
+                                const outcome = await $wire.processDirectMedia(false)
+                                added += Number(outcome?.added ?? 0)
+                                duplicates += Number(outcome?.duplicates ?? 0)
+                                failed += Number(outcome?.failed ?? 0)
+                                for (const error of outcome?.errors ?? []) errors.push(error)
+                            } catch (error) {
+                                failed++
+                                errors.push(file.name + ' — Processing failed.')
+                                await $wire.set('directMedia', [])
+                            }
+                        }
+
+                        this.completed++
+                        this.progress = Math.round(this.completed * 100 / this.fileCount)
+                    }
+
+                    input.value = ''
+                    const summary = added + ' uploaded, ' + duplicates + ' already in Storage, ' +
+                        failed + ' failed (' + this.fileCount + ' selected)'
+                    this.result = errors.length ? summary + ' · ' + errors.slice(0, 2).join('; ') : summary
                     this.phase = 'result'
                 },
             }"
             x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
-            x-on:livewire-upload-start="phase = 'uploading'; progress = 0; result = ''"
-            x-on:livewire-upload-progress="progress = $event.detail.progress"
-            x-on:livewire-upload-finish="
-                progress = 100
-                phase = 'processing'
-                $wire.processDirectMedia()
-                    .then((response) => showResult(response?.summary ?? 'Upload complete'))
-                    .catch(() => showResult('Upload failed'))
-            "
-            x-on:livewire-upload-error="$wire.set('directMedia', []); showResult('Upload failed')"
         >
             <input
                 class="media-workspace__file-input"
                 id="storage-upload"
                 type="file"
-                wire:model="directMedia"
-                x-on:change="fileCount = $event.target.files.length"
+                x-on:change="uploadFiles($el)"
                 x-bind:disabled="phase === 'uploading' || phase === 'processing'"
                 accept="{{ implode(',', \App\Domain\Media\MediaTypePolicy::uploadAcceptedMimeTypes()) }}"
                 aria-label="Upload media files"
@@ -157,9 +204,9 @@
                 <strong
                     x-text="
                         phase === 'uploading'
-                            ? `Uploading ${fileCount} ${fileCount === 1 ? 'file' : 'files'} · ${progress}%`
+                            ? `Uploading file ${completed + 1} of ${fileCount} · ${progress}%`
                             : phase === 'processing'
-                                ? `Processing ${fileCount} ${fileCount === 1 ? 'file' : 'files'}…`
+                                ? `Processing file ${completed + 1} of ${fileCount}…`
                                 : phase === 'result'
                                     ? result
                                     : 'Drop files here or choose from your device'
