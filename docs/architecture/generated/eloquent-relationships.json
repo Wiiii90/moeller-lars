@@ -1,0 +1,500 @@
+{
+    "format": "eloquent-relationships-v1",
+    "scope": "Exact Eloquent relations declared in app/Models/*.php; not database foreign-key evidence.",
+    "counts": {
+        "models": 26,
+        "relations": 48
+    },
+    "models": [
+        {
+            "name": "AdminActionReceipt",
+            "path": "app/Models/AdminActionReceipt.php"
+        },
+        {
+            "name": "AdminActivityOrderingEvent",
+            "path": "app/Models/AdminActivityOrderingEvent.php"
+        },
+        {
+            "name": "AdminActivityOrderingProjection",
+            "path": "app/Models/AdminActivityOrderingProjection.php"
+        },
+        {
+            "name": "AdminNotification",
+            "path": "app/Models/AdminNotification.php"
+        },
+        {
+            "name": "Artwork",
+            "path": "app/Models/Artwork.php"
+        },
+        {
+            "name": "ArtworkCategory",
+            "path": "app/Models/ArtworkCategory.php"
+        },
+        {
+            "name": "ArtworkMaterialPreset",
+            "path": "app/Models/ArtworkMaterialPreset.php"
+        },
+        {
+            "name": "ArtworkMedia",
+            "path": "app/Models/ArtworkMedia.php"
+        },
+        {
+            "name": "AuditEvent",
+            "path": "app/Models/AuditEvent.php"
+        },
+        {
+            "name": "BlogPost",
+            "path": "app/Models/BlogPost.php"
+        },
+        {
+            "name": "ContactMessage",
+            "path": "app/Models/ContactMessage.php"
+        },
+        {
+            "name": "CustomPageSetting",
+            "path": "app/Models/CustomPageSetting.php"
+        },
+        {
+            "name": "CvEntry",
+            "path": "app/Models/CvEntry.php"
+        },
+        {
+            "name": "DailyMetric",
+            "path": "app/Models/DailyMetric.php"
+        },
+        {
+            "name": "Exhibition",
+            "path": "app/Models/Exhibition.php"
+        },
+        {
+            "name": "HomePresentationSetting",
+            "path": "app/Models/HomePresentationSetting.php"
+        },
+        {
+            "name": "JournalEntryMedia",
+            "path": "app/Models/JournalEntryMedia.php"
+        },
+        {
+            "name": "JournalSetting",
+            "path": "app/Models/JournalSetting.php"
+        },
+        {
+            "name": "MediaAsset",
+            "path": "app/Models/MediaAsset.php"
+        },
+        {
+            "name": "MediaVariant",
+            "path": "app/Models/MediaVariant.php"
+        },
+        {
+            "name": "PublicContentSetting",
+            "path": "app/Models/PublicContentSetting.php"
+        },
+        {
+            "name": "PublicationCheckpoint",
+            "path": "app/Models/PublicationCheckpoint.php"
+        },
+        {
+            "name": "PublicationCheckpointEvent",
+            "path": "app/Models/PublicationCheckpointEvent.php"
+        },
+        {
+            "name": "Redirect",
+            "path": "app/Models/Redirect.php"
+        },
+        {
+            "name": "SiteSection",
+            "path": "app/Models/SiteSection.php"
+        },
+        {
+            "name": "User",
+            "path": "app/Models/User.php"
+        }
+    ],
+    "relations": [
+        {
+            "model": "AdminActionReceipt",
+            "method": "adminUser",
+            "kind": "belongsTo",
+            "target": "User",
+            "path": "app/Models/AdminActionReceipt.php",
+            "line": 66
+        },
+        {
+            "model": "AdminActionReceipt",
+            "method": "auditEvent",
+            "kind": "belongsTo",
+            "target": "AuditEvent",
+            "path": "app/Models/AdminActionReceipt.php",
+            "line": 61
+        },
+        {
+            "model": "AdminActivityOrderingEvent",
+            "method": "auditEvent",
+            "kind": "belongsTo",
+            "target": "AuditEvent",
+            "path": "app/Models/AdminActivityOrderingEvent.php",
+            "line": 22
+        },
+        {
+            "model": "AdminActivityOrderingEvent",
+            "method": "projection",
+            "kind": "belongsTo",
+            "target": "AdminActivityOrderingProjection",
+            "path": "app/Models/AdminActivityOrderingEvent.php",
+            "line": 27
+        },
+        {
+            "model": "AdminNotification",
+            "method": "auditEvent",
+            "kind": "belongsTo",
+            "target": "AuditEvent",
+            "path": "app/Models/AdminNotification.php",
+            "line": 53
+        },
+        {
+            "model": "AdminNotification",
+            "method": "publicationCheckpoint",
+            "kind": "belongsTo",
+            "target": "PublicationCheckpoint",
+            "path": "app/Models/AdminNotification.php",
+            "line": 58
+        },
+        {
+            "model": "AdminNotification",
+            "method": "user",
+            "kind": "belongsTo",
+            "target": "User",
+            "path": "app/Models/AdminNotification.php",
+            "line": 48
+        },
+        {
+            "model": "Artwork",
+            "method": "artworkMedia",
+            "kind": "hasMany",
+            "target": "ArtworkMedia",
+            "path": "app/Models/Artwork.php",
+            "line": 62
+        },
+        {
+            "model": "Artwork",
+            "method": "category",
+            "kind": "belongsTo",
+            "target": "ArtworkCategory",
+            "path": "app/Models/Artwork.php",
+            "line": 57
+        },
+        {
+            "model": "Artwork",
+            "method": "mediaAssets",
+            "kind": "belongsToMany",
+            "target": "MediaAsset",
+            "path": "app/Models/Artwork.php",
+            "line": 67
+        },
+        {
+            "model": "ArtworkCategory",
+            "method": "artworks",
+            "kind": "hasMany",
+            "target": "Artwork",
+            "path": "app/Models/ArtworkCategory.php",
+            "line": 32
+        },
+        {
+            "model": "ArtworkCategory",
+            "method": "siteSection",
+            "kind": "hasOne",
+            "target": "SiteSection",
+            "path": "app/Models/ArtworkCategory.php",
+            "line": 27
+        },
+        {
+            "model": "ArtworkMedia",
+            "method": "artwork",
+            "kind": "belongsTo",
+            "target": "Artwork",
+            "path": "app/Models/ArtworkMedia.php",
+            "line": 24
+        },
+        {
+            "model": "ArtworkMedia",
+            "method": "mediaAsset",
+            "kind": "belongsTo",
+            "target": "MediaAsset",
+            "path": "app/Models/ArtworkMedia.php",
+            "line": 29
+        },
+        {
+            "model": "AuditEvent",
+            "method": "activityOrderingEvent",
+            "kind": "hasOne",
+            "target": "AdminActivityOrderingEvent",
+            "path": "app/Models/AuditEvent.php",
+            "line": 43
+        },
+        {
+            "model": "AuditEvent",
+            "method": "adminUser",
+            "kind": "belongsTo",
+            "target": "User",
+            "path": "app/Models/AuditEvent.php",
+            "line": 38
+        },
+        {
+            "model": "AuditEvent",
+            "method": "publicationCheckpointEvent",
+            "kind": "hasOne",
+            "target": "PublicationCheckpointEvent",
+            "path": "app/Models/AuditEvent.php",
+            "line": 48
+        },
+        {
+            "model": "BlogPost",
+            "method": "mediaUsages",
+            "kind": "hasMany",
+            "target": "JournalEntryMedia",
+            "path": "app/Models/BlogPost.php",
+            "line": 42
+        },
+        {
+            "model": "BlogPost",
+            "method": "siteSection",
+            "kind": "belongsTo",
+            "target": "SiteSection",
+            "path": "app/Models/BlogPost.php",
+            "line": 37
+        },
+        {
+            "model": "CustomPageSetting",
+            "method": "siteSection",
+            "kind": "belongsTo",
+            "target": "SiteSection",
+            "path": "app/Models/CustomPageSetting.php",
+            "line": 62
+        },
+        {
+            "model": "CvEntry",
+            "method": "imageMediaAsset",
+            "kind": "belongsTo",
+            "target": "MediaAsset",
+            "path": "app/Models/CvEntry.php",
+            "line": 35
+        },
+        {
+            "model": "Exhibition",
+            "method": "mediaUsages",
+            "kind": "hasMany",
+            "target": "JournalEntryMedia",
+            "path": "app/Models/Exhibition.php",
+            "line": 46
+        },
+        {
+            "model": "Exhibition",
+            "method": "siteSection",
+            "kind": "belongsTo",
+            "target": "SiteSection",
+            "path": "app/Models/Exhibition.php",
+            "line": 41
+        },
+        {
+            "model": "HomePresentationSetting",
+            "method": "siteSection",
+            "kind": "belongsTo",
+            "target": "SiteSection",
+            "path": "app/Models/HomePresentationSetting.php",
+            "line": 27
+        },
+        {
+            "model": "HomePresentationSetting",
+            "method": "skipTargetSection",
+            "kind": "belongsTo",
+            "target": "SiteSection",
+            "path": "app/Models/HomePresentationSetting.php",
+            "line": 33
+        },
+        {
+            "model": "JournalEntryMedia",
+            "method": "blogPost",
+            "kind": "belongsTo",
+            "target": "BlogPost",
+            "path": "app/Models/JournalEntryMedia.php",
+            "line": 24
+        },
+        {
+            "model": "JournalEntryMedia",
+            "method": "exhibition",
+            "kind": "belongsTo",
+            "target": "Exhibition",
+            "path": "app/Models/JournalEntryMedia.php",
+            "line": 29
+        },
+        {
+            "model": "JournalEntryMedia",
+            "method": "mediaAsset",
+            "kind": "belongsTo",
+            "target": "MediaAsset",
+            "path": "app/Models/JournalEntryMedia.php",
+            "line": 34
+        },
+        {
+            "model": "JournalSetting",
+            "method": "siteSection",
+            "kind": "belongsTo",
+            "target": "SiteSection",
+            "path": "app/Models/JournalSetting.php",
+            "line": 17
+        },
+        {
+            "model": "MediaAsset",
+            "method": "artworks",
+            "kind": "belongsToMany",
+            "target": "Artwork",
+            "path": "app/Models/MediaAsset.php",
+            "line": 77
+        },
+        {
+            "model": "MediaAsset",
+            "method": "cvEntries",
+            "kind": "hasMany",
+            "target": "CvEntry",
+            "path": "app/Models/MediaAsset.php",
+            "line": 62
+        },
+        {
+            "model": "MediaAsset",
+            "method": "journalEntryMedia",
+            "kind": "hasMany",
+            "target": "JournalEntryMedia",
+            "path": "app/Models/MediaAsset.php",
+            "line": 72
+        },
+        {
+            "model": "MediaAsset",
+            "method": "siteIdentitySettings",
+            "kind": "hasMany",
+            "target": "PublicContentSetting",
+            "path": "app/Models/MediaAsset.php",
+            "line": 67
+        },
+        {
+            "model": "MediaAsset",
+            "method": "variants",
+            "kind": "hasMany",
+            "target": "MediaVariant",
+            "path": "app/Models/MediaAsset.php",
+            "line": 57
+        },
+        {
+            "model": "MediaVariant",
+            "method": "mediaAsset",
+            "kind": "belongsTo",
+            "target": "MediaAsset",
+            "path": "app/Models/MediaVariant.php",
+            "line": 19
+        },
+        {
+            "model": "PublicContentSetting",
+            "method": "faviconMediaAsset",
+            "kind": "belongsTo",
+            "target": "MediaAsset",
+            "path": "app/Models/PublicContentSetting.php",
+            "line": 114
+        },
+        {
+            "model": "PublicationCheckpoint",
+            "method": "adminUser",
+            "kind": "belongsTo",
+            "target": "User",
+            "path": "app/Models/PublicationCheckpoint.php",
+            "line": 40
+        },
+        {
+            "model": "PublicationCheckpoint",
+            "method": "auditEventLinks",
+            "kind": "hasMany",
+            "target": "PublicationCheckpointEvent",
+            "path": "app/Models/PublicationCheckpoint.php",
+            "line": 45
+        },
+        {
+            "model": "PublicationCheckpoint",
+            "method": "parent",
+            "kind": "belongsTo",
+            "target": "PublicationCheckpoint",
+            "path": "app/Models/PublicationCheckpoint.php",
+            "line": 50
+        },
+        {
+            "model": "PublicationCheckpoint",
+            "method": "source",
+            "kind": "belongsTo",
+            "target": "PublicationCheckpoint",
+            "path": "app/Models/PublicationCheckpoint.php",
+            "line": 55
+        },
+        {
+            "model": "PublicationCheckpointEvent",
+            "method": "auditEvent",
+            "kind": "belongsTo",
+            "target": "AuditEvent",
+            "path": "app/Models/PublicationCheckpointEvent.php",
+            "line": 28
+        },
+        {
+            "model": "PublicationCheckpointEvent",
+            "method": "checkpoint",
+            "kind": "belongsTo",
+            "target": "PublicationCheckpoint",
+            "path": "app/Models/PublicationCheckpointEvent.php",
+            "line": 23
+        },
+        {
+            "model": "SiteSection",
+            "method": "artworkCategory",
+            "kind": "belongsTo",
+            "target": "ArtworkCategory",
+            "path": "app/Models/SiteSection.php",
+            "line": 209
+        },
+        {
+            "model": "SiteSection",
+            "method": "children",
+            "kind": "hasMany",
+            "target": "SiteSection",
+            "path": "app/Models/SiteSection.php",
+            "line": 204
+        },
+        {
+            "model": "SiteSection",
+            "method": "customPageSetting",
+            "kind": "hasOne",
+            "target": "CustomPageSetting",
+            "path": "app/Models/SiteSection.php",
+            "line": 214
+        },
+        {
+            "model": "SiteSection",
+            "method": "journalSetting",
+            "kind": "hasOne",
+            "target": "JournalSetting",
+            "path": "app/Models/SiteSection.php",
+            "line": 219
+        },
+        {
+            "model": "SiteSection",
+            "method": "parent",
+            "kind": "belongsTo",
+            "target": "SiteSection",
+            "path": "app/Models/SiteSection.php",
+            "line": 199
+        },
+        {
+            "model": "User",
+            "method": "auditEvents",
+            "kind": "hasMany",
+            "target": "AuditEvent",
+            "path": "app/Models/User.php",
+            "line": 51
+        }
+    ]
+}

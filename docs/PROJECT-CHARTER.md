@@ -56,7 +56,7 @@ Persistent Preview / future logical Commit / Settings utilities may exist at she
 
 ## Admin interaction principles
 
-The detailed admin UI grammar is maintained in [the Admin UI contract](ADMIN-UI.md).
+The detailed admin UI grammar is maintained in [Admin UI](admin/ui.md).
 
 Durable principles:
 
@@ -81,14 +81,14 @@ Browser acceptance may reject a technically functioning implementation for poor/
 Current Rich Text surfaces share:
 
 ```text
-AdminRichText / Filament RichEditor (Tiptap)
-  -> visual editor document -> validated visual HTML
-  -> RichTextMediaReference (canonical Storage image IDs, legacy Markdown compatibility)
-  -> SafeRichTextRenderer (with ArtistImageLayout and ArtistTextSpacing)
+AdminRichText / Filament MarkdownEditor
+  -> Markdown
+  -> RichTextMediaReference
+  -> SafeRichTextRenderer
   -> public HTML
 ```
 
-Visual Rich Text images reference canonical Storage assets by `data-id`, while historical Markdown `media:<id>` references remain readable. `SafeRichTextRenderer` is the sole public content renderer; the optional image viewer decorates only its already validated output. Do not create a parallel media uploader, editor, image reference scheme or rendering pipeline.
+Canonical embedded Storage media image references use `media:<id>`. Do not create editor-specific parallel upload/image syntax or resurrect legacy Journal RichEditor/TipTap runtime behavior.
 
 ## Media
 
@@ -159,6 +159,6 @@ Production deployment remains an explicit authorized platform action.
 
 ## Documentation ownership
 
-Current contracts live under `docs/` and are indexed by `docs/README.md`. Development rules live in root `AGENTS.md`; Admin UI rules live in `docs/ADMIN-UI.md` and their specialized contracts. Numbered workers continue from their own current task records; ad hoc tasks use a concise handoff only when needed.
+Current authoritative feature and architecture documents are indexed by [Project documentation](README.md). Reusable Admin presentation rules are in [Admin UI](admin/ui.md). Repository-specific agent operation is separate from this product charter.
 
 GitHub Issues/current browser review track unfinished work/acceptance. Legacy evidence is kept separate and retired only after explicit legacy retirement.

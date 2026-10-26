@@ -1,0 +1,41 @@
+%% Import declarations only. No implied runtime calls, object instances or method invocations.
+flowchart LR
+    T1["Domain/Artwork/PublicArtworkQuery"]
+    T2["Domain/Media/MediaIngestService"]
+    T3["Domain/Media/MediaIntegrityService"]
+    T4["Domain/Migration/LegacyArtworkManifestImporter"]
+    T5["Domain/Migration/LegacyMigrationValidator"]
+    T6["Domain/Migration/LegacyProfileTargetResolver"]
+    T7["Domain/Migration/LegacyPublicCvImporter"]
+    T8["Domain/Migration/LegacyPublicProfileImporter"]
+    T9["Domain/Migration/LegacyPublicProfileMediaValidator"]
+    T10["Domain/Migration/SiteSectionMigrationValidator"]
+    T11["Models/Artwork"]
+    T12["Models/ArtworkCategory"]
+    T13["Models/ArtworkMedia"]
+    T14["Models/CvEntry"]
+    T15["Models/MediaAsset"]
+    T16["Models/PublicContentSetting"]
+    T17["Models/SiteSection"]
+    T4 -->|import| T2
+    T4 -->|import| T11
+    T4 -->|import| T12
+    T4 -->|import| T13
+    T4 -->|import| T17
+    T5 -->|import| T1
+    T5 -->|import| T2
+    T5 -->|import| T3
+    T5 -->|import| T11
+    T5 -->|import| T12
+    T5 -->|import| T15
+    T5 -->|import| T16
+    T6 -->|import| T14
+    T8 -->|import| T2
+    T8 -->|import| T14
+    T8 -->|import| T16
+    T9 -->|import| T2
+    T9 -->|import| T3
+    T9 -->|import| T14
+    T9 -->|import| T15
+    T10 -->|import| T12
+    T10 -->|import| T17

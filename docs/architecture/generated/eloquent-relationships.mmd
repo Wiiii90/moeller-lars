@@ -1,0 +1,76 @@
+%% Generated from explicit Eloquent relation methods, NOT pg_catalog foreign keys
+flowchart LR
+    M1["AdminActionReceipt"]
+    M2["AdminActivityOrderingEvent"]
+    M3["AdminActivityOrderingProjection"]
+    M4["AdminNotification"]
+    M5["Artwork"]
+    M6["ArtworkCategory"]
+    M7["ArtworkMaterialPreset"]
+    M8["ArtworkMedia"]
+    M9["AuditEvent"]
+    M10["BlogPost"]
+    M11["ContactMessage"]
+    M12["CustomPageSetting"]
+    M13["CvEntry"]
+    M14["DailyMetric"]
+    M15["Exhibition"]
+    M16["HomePresentationSetting"]
+    M17["JournalEntryMedia"]
+    M18["JournalSetting"]
+    M19["MediaAsset"]
+    M20["MediaVariant"]
+    M21["PublicContentSetting"]
+    M22["PublicationCheckpoint"]
+    M23["PublicationCheckpointEvent"]
+    M24["Redirect"]
+    M25["SiteSection"]
+    M26["User"]
+    M1 -->|adminUser| M26
+    M1 -->|auditEvent| M9
+    M2 -->|auditEvent| M9
+    M2 -->|projection| M3
+    M4 -->|auditEvent| M9
+    M4 -->|publicationCheckpoint| M22
+    M4 -->|user| M26
+    M5 -->|artworkMedia| M8
+    M5 -->|category| M6
+    M5 -->|mediaAssets| M19
+    M6 -->|artworks| M5
+    M6 -->|siteSection| M25
+    M8 -->|artwork| M5
+    M8 -->|mediaAsset| M19
+    M9 -->|activityOrderingEvent| M2
+    M9 -->|adminUser| M26
+    M9 -->|publicationCheckpointEvent| M23
+    M10 -->|mediaUsages| M17
+    M10 -->|siteSection| M25
+    M12 -->|siteSection| M25
+    M13 -->|imageMediaAsset| M19
+    M15 -->|mediaUsages| M17
+    M15 -->|siteSection| M25
+    M16 -->|siteSection| M25
+    M16 -->|skipTargetSection| M25
+    M17 -->|blogPost| M10
+    M17 -->|exhibition| M15
+    M17 -->|mediaAsset| M19
+    M18 -->|siteSection| M25
+    M19 -->|artworks| M5
+    M19 -->|cvEntries| M13
+    M19 -->|journalEntryMedia| M17
+    M19 -->|siteIdentitySettings| M21
+    M19 -->|variants| M20
+    M20 -->|mediaAsset| M19
+    M21 -->|faviconMediaAsset| M19
+    M22 -->|adminUser| M26
+    M22 -->|auditEventLinks| M23
+    M22 -->|parent| M22
+    M22 -->|source| M22
+    M23 -->|auditEvent| M9
+    M23 -->|checkpoint| M22
+    M25 -->|artworkCategory| M6
+    M25 -->|children| M25
+    M25 -->|customPageSetting| M12
+    M25 -->|journalSetting| M18
+    M25 -->|parent| M25
+    M26 -->|auditEvents| M9

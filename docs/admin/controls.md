@@ -1,0 +1,187 @@
+# Admin control contract
+
+This document defines the canonical control grammar for the artist admin. It applies to Filament forms, dialog schemas, workspace filters, table controls and specialized editor controls.
+
+## Core rule
+
+There is one visual control language. A field may be rendered by Filament or by Blade/native HTML, but equivalent controls must share the same geometry, typography, focus treatment, validation treatment and semantic commit behavior.
+
+Do not create page-local input/select/checkbox/toggle styling when the shared control contract fits.
+
+## Filament adapter
+
+Use `App\Filament\Support\Controls\AdminControl` for ordinary fields in admin schemas:
+
+- `AdminControl::text()`
+- `AdminControl::email()`
+- `AdminControl::url()`
+- `AdminControl::number()`
+- `AdminControl::textarea()`
+- `AdminControl::select()`
+- `AdminControl::checkbox()`
+- `AdminControl::toggle()`
+- `AdminControl::date()`
+- `AdminControl::dateTime()`
+- `AdminControl::file()`
+
+The factory returns native Filament fields. Filament continues to own state, validation, accessibility and popup behavior. The factory only applies the shared admin wrapper contract.
+
+`AdminControl::register()` is the panel-wide visual authority for ordinary Filament fields. TextInput, Textarea, Select, Checkbox, Toggle, Date/DateTime, FileUpload, MarkdownEditor, ColorPicker and OneTimeCodeInput therefore enter the same wrapper/control grammar even when a framework integration or an existing schema constructs the concrete Filament field directly.
+
+New project-owned schema code should prefer the factory helpers when they express the field clearly because ownership is explicit. Direct core Filament construction is not a second visual language and does not require a page-local styling path; use `AdminControl::decorate()` only for a field type that is outside the globally registered set.
+
+Boolean fields are part of the same grammar: Checkbox/Toggle and their labels share one vertical field axis; framework default top offsets must not create a second alignment system. Required Select fields keep validation semantics but do not allow their neutral placeholder as a selectable state. In an Edit dialog persisted required state is already populated, so the UI suppresses required-star decoration without weakening validation. Optional semantic null states such as a page parent of `Top level` remain available when the domain explicitly supports them.
+
+## Specialized canonical controls
+
+These are intentionally specialized and remain canonical:
+
+- `MediaAssetSelect` for reusable Storage media selection;
+- `ArtworkMaterialSelect` for material presets and creation;
+- `AdminRichText` for rich text plus canonical Storage media insertion;
+- `AdminColorControl` for the General appearance color workflow.
+
+Do not create alternative media pickers, rich-text editors, material selectors or color controls for one page.
+
+## Rich Text and reusable media selection
+
+The single editable visual surface is `AdminRichText`, using Filament's RichEditor/Tiptap and the shared `RichTextEditorPlugin` for Journal, Home, Custom Pages and nested text. **[Editorial Rich Text](../content/rich-text.md)** owns supported HTML/legacy Markdown, image placement, inline link editing, caption, safe rendering, toolbar behavior, and the existing Edit-dialog blur/save boundary; this control contract owns only shared field/control geometry. Do **not** reintroduce MarkdownEditor-specific insertion panels, a generic Attach Files upload, a nested LinkAction modal, another editor store, a special per-page image picker or a second autosave timer.
+
+`MediaAssetSelect` is the single reusable Storage query/selection owner for Gallery, Journal, Home, Custom Pages, Rich Text and site icon. `makeId()` initially offers up to 24 recent available assets and server-side filename/ALT search returns at most 30; `make()` may use native bounded relationship preload where appropriate. The optional visual option layout uses the accepted Storage contact-sheet grammar but preserves native Filament keyboard/select lifecycle. The Rich Text toolbar panel must close with that same Select on insertion, Cancel/X, Escape or click-away, without closing the owning Edit dialog. A media reference never grants separate filesystem ownership; **[Media](../media.md)** defines ingestion, eligibility and deletion. Real focus/popup/blur/browser acceptance is separate from the reviewed code.
+
+## Session-scoped Admin presentation state (source `dev@671d8214e060`)
+
+For small, explicit **Livewire-owned** workspace preferences, use its native `#[Session]` attribute: report mode, page size, stable status/type choices on Pages, Gallery, Home, Journal, Custom Page, Storage, Analytics and Dashboard. Restore must validate allowed values and must **never** retain record selections, free-text searches, unsaved editor data, pagination cursors or map targets. Keep the distinct owners: **Storage list/grid/dense view mode is now a validated native Livewire `#[Session]` property** (changed on `dev@9f56660c`, with the former `admin_storage_view` cookie and Cookie queue removed), Activity query-string state, Dashboard user notification preference and Sidebar presentation. This session behavior applies to view mode, not selection, free-text search or pending mutations. Earlier `dev@b289a9102a3b` contains authored `WorkspacePresentationSessionTest.php` coverage, **not executed** in this Docs pass; the new Storage change likewise has **not** been browser- or runtime-accepted here.
+
+The shared `x-admin.stage-switcher` stores only explicitly allowlisted reversible presentation choices in the **current browser tab's session storage**: its active pane and optional parent-managed state. General uses the same owner for selected Appearance tab, Preview desktop/mobile choice and More Space toggle; restore does not send a Livewire mutation or remount its preview frame. An inactive tab cannot determine the expanded pane's height. This is not a generic license to persist every search filter, transient popup, scroll position, unsaved form field or private session across devices. One shared owner eliminates page-local persistence implementations.
+
+**Edit field event boundary:** `AdminDialog::edit()` is the owner of the ordinary native semantic `change` path; selected Filament controls and date pickers that do not produce the expected parent event may bridge through the shared `AdminControl` adapter to the *same mounted Edit Action*, not install a second autosave executor. Native Select selection/closing semantics remain owned by Filament; do not force an ad hoc synthetic event into every Select or remount a picker on color change. `ExhibitionEditorialService` handles per-field audit/notification eligibility and the Gallery Media table uses the existing shared table/repeater. Verify changed/no-op/validation failure and close/reopen in real Livewire before claiming acceptance.
+
+## Native/Blade adapter
+
+Workspace searches, filters, pager controls and compact inline controls may remain native HTML where Filament state is not useful. They must use the shared admin field classes owned by `resources/css/admin/data-workspace.css`, `resources/css/admin/forms.css` and `resources/css/admin/task-surfaces.css` rather than page-local control styling. Table-level direct editors use the shared `admin-inline-select` / `admin-inline-input` geometry; static values aligned with those controls use `admin-inline-control-value`.
+
+A native control is not a separate design system. It is another renderer of this contract.
+
+### Toolbar interaction states
+
+`x-admin.controls` is the only ordinary editorial toolbar presentation owner.
+Its hover, focus, open and selected treatment is scoped to
+`.admin-data-controls` in `resources/css/admin/controls.css`; it must never
+change ordinary table row Actions, Selection popup actions or dialog buttons.
+
+- Search and inline filter input/select controls have one neutral baseline.
+  Hover emphasizes that baseline, while focus (including an opened native
+  dropdown) uses `--admin-control-border-focus`.
+- Toolbar actions (Settings, Add, Preview, Clear, View and the shared Filters
+  trigger) use the same **single 1px bottom border** as Search and native
+  filter fields: neutral on hover, accented for active View, focused actions
+  and expanded Filters. Never simulate a second or thicker underline using
+  box shadows, backgrounds or additional pseudo-elements.
+- Selection underlines the **whole group**, including Selected, count badge and
+  the final table-selection padding/rail, using exactly one 1px pseudo-element.
+  Its button must not draw another underline; the open/focus state changes
+  color, never thickness.
+- Disabled task actions do not gain a hover underline. The active/expanded
+  underline is presentation-only; state remains with the existing Livewire or
+  Alpine owner. No new click or persistence mechanism is allowed.
+- Storage View-specific hover/active fills are obsolete; its native
+  `aria-pressed` state participates in the shared toolbar grammar.
+
+Native single-selects and pager selects stay on one native render path. Shared CSS in `resources/css/admin/layouts.css`, `resources/css/admin/data-workspace.css` and `resources/css/admin/task-surfaces.css` owns their trigger, typography and popup theming; Chromium's customizable-select surface is progressive enhancement only. Do not add a JavaScript-generated replacement select, duplicate popup DOM or a second presentation path. Opening a dropdown must never add document height, change the page scrollbar, call window scrolling APIs or reserve layout space for the popup.
+
+## Persistence semantics
+
+Persistence must never be driven by a debounce timer. Read-only search is the one deliberate debounce use-case and is defined separately below. Animation, clocks and browser render scheduling are presentation concerns; they are not persistence timers.
+
+Use discrete semantic commits:
+
+- text / email / URL / numeric input: normal change or blur; Enter may explicitly commit where supported;
+- textarea: normal change or blur;
+- select / checkbox / toggle: discrete selection/state change;
+
+Filament 5's Toggle renders an Alpine-backed switch button, not a native
+input. `AdminControl::register()` gives Toggles a single post-click semantic
+`change` event **only inside** `AdminDialog::edit()` so its existing
+`wire:change` owner performs the one normal editorial save. This bridge
+does not call an Action, save directly, intercept Filament's click, or use
+timers. Live entanglement alone is state synchronization, not persistence.
+Gallery and Exhibition map switches use the same central control contract.
+- date / datetime: completed picker change;
+- Media File selection: completed asset selection/removal;
+- color: completed color value change, never each intermediate drag sample;
+- file upload: successful completed upload/attach;
+- reorder: completed move/drop;
+- rich text: semantic editor change/blur according to the canonical editor flow, not a timer.
+
+Always normalize and compare with the persisted value before writing. Activity/Audit records successful writes; it is not the persistence trigger.
+Nor is it the Notification trigger: after validating a changed persisted
+value, the owning admin Action/callback must call the canonical
+`AdminNotifier` to deliver the mailbox + immediate header projection.
+Keep that call in one owner. Duplicate modal `wire:change` and
+`afterStateUpdated` paths must never produce two writes/Notifications.
+Test changed, no-op and invalid values plus close/reopen in Livewire.
+
+`wire:model.live.debounce.*`, Filament `->debounce(...)`, `searchDebounce(...)`, `setTimeout`-based persistence and polling-based persistence are forbidden **when they trigger writes**. Changing a timer value does not make timer-driven persistence acceptable.
+
+### Search and remote typeahead
+
+Search is read-only and intentionally live. All ordinary admin workspace search inputs use the shared `x-admin.search-input` primitive with one canonical **300 ms** debounce. The debounce may only update search/filter projection state; it must never submit a normal form, navigate the page, write editorial data or trigger persistence.
+
+Remote searchable Filament selects use the same 300 ms transport throttle through `AdminControl::SEARCH_DEBOUNCE_MS`. Their search callback is read-only; choosing or clearing the final option is the semantic state change.
+
+Rules:
+
+- one canonical 300 ms search debounce, not page-specific values;
+- no `requestSubmit()`, browser navigation or full-page GET from a debounced search;
+- no debounce on persisted text, numeric, rich-text, color or settings fields;
+- text-like persisted controls commit on change/blur; Enter may explicitly commit where supported;
+- select/toggle/checkbox/media choices commit on their discrete change;
+- Storage measurements refresh from upload completion or an explicit refresh action, never from a timer or polling loop.
+
+`MediaAssetSelect` and Hero Artwork search are the canonical remote-typeahead examples.
+
+## Toolbar geometry contract
+
+Standard search/filter/action/selection rows use `x-admin.controls`. Metric-backed toolbars use its shared six-unit ruler through `metric-grid`; feature CSS must not recreate that geometry with page-local `grid-template-columns`, arbitrary span profiles or a second Selection layout.
+
+Toolbar sizing is always **content minimum + shared ruler**:
+
+1. derive each non-search control's minimum from its longest legitimate visible value/label plus icon, gap, padding and native control affordance;
+2. round that minimum **up** to the smallest shared ruler subdivision that fits. The six-unit ruler may be subdivided into 12/24 equivalent tracks when finer placement is required, but the outer ruler remains divisible by both 2 and 3;
+3. keep Search at the far left and elastic. When another control genuinely needs more room, Search yields whole ruler subdivisions first;
+4. keep filter/action groups compact inside their assigned region. Spare width is not permission to stretch one or two buttons across arbitrary bandwidth;
+5. keep Selection terminal at the far right. Its selected-count circle reserves `--admin-table-selection-width` and stays on the exact same horizontal axis as the table select-all and row checkboxes;
+6. preserve full dropdown values and action labels whenever their calculated minimum fits. Ellipsis is an emergency fallback, not normal sizing;
+7. when full utility labels no longer fit, use the shared complete-label → icon-only/overflow transition before clipping, adding a second toolbar row or introducing horizontal scrolling;
+8. toolbar group headings are structural anchors. Query/Filter headings remain visible through Minimal. Task/Selection headings may yield at Narrow together with their action/value labels when doing so creates one stable icon cluster instead of a later collision state;
+9. Clear belongs to Query/Filter, not Task actions. Its full label is retained through Minimal when the calculated Query/Filter region can still fit it;
+10. overlapping controls or headings are never a supported responsive state. Metric-grid toolbars use the six-cell ruler with 24 quarter-cell subtracks when needed; Search donates subdivisions only at named state boundaries, filters gain space before their legitimate values become unreadable, and intentional empty ruler tracks may separate Query/Filter from a compact task/Selection icon cluster.
+
+Responsive metric presentation does not replace the underlying ruler. A visible three- or two-metric state still uses a refinable ruler from which six-/three-/two-column alignment can be reconstructed.
+
+Before changing a toolbar, verify the longest content, its intrinsic minimum, the ruler subdivision chosen for it and the remaining Search allocation. Do not choose spans by screenshot appearance. If the shared primitive cannot represent the required composition, extend the shared primitive rather than bypassing it locally.
+
+## Dialog ownership
+
+Dialog content uses the same controls as route-backed forms. Dialog width, header actions and lifecycle are owned by `docs/admin/dialogs.md`; controls do not implement their own dialog chrome.
+
+## Accessibility and state
+
+The shared contract must preserve:
+
+- native labels and descriptions;
+- validation messages;
+- required/disabled/read-only state;
+- visible keyboard focus;
+- popup/listbox keyboard behavior;
+- native Filament modal focus trapping and Escape handling.
+
+Do not replace framework semantics merely to match presentation.
+
+## Public Appearance controls (source to dev@2ad31502ea4e)
+
+Reuse the established native shared Admin color/number controls. `AdminAngleControl` couples a text-editable degree value to an on-demand rotary popover without creating a second palette or overriding canonical dialog/keyboard interactions. `PublicAppearance` owns mode and stop validation for solid, linear, radial and conic paint, including repeating spans and up to twelve stops. General presents them through one shared `x-admin.table`/Add-row role; `AdminTableRepeater` is the narrow Filament-5.7 table adapter retaining native item schemas, ColorPicker, validation and add/delete actions. Gray canonical Add/Remove controls remain the only color-stop row actions; no second Dialog-only editor or hidden duplicate fields. The later `dev@0a7952e12b49` also removes the superseded dialog-only gradient view and hidden stop inputs; positions remain directly editable at supported boundaries, while invalid positions must be rejected by the single domain validator. The corresponding feature assertions are authored, not executed here. Product/browser approval of the rotary interaction and responsive Stage presentation is independent of source presence.
+
+General Stage uses the common two-column Appearance composition: Background/Menu/Page beside Primary color and Linear/Conic angle beside Secondary color. `AdminAngleControl` permits direct numeric editing and opens its rotary popover on click/focus, teleported outside the scrollable Stage to avoid clipping. Every paint's Solid ColorPicker remains inline next to its mode selector; gradient rows reuse the canonical `x-admin.table` and shared add/delete controls. Numeric stop positions determine order, including coincident stops for hard edges. Opening General must not eagerly persist legacy two-color values as JSON. These are Admin-editor behaviors, distinct from [public appearance rendering](../public/site.md#global-public-appearance-surfaces).
+

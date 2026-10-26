@@ -1,0 +1,18 @@
+%% Import declarations only. No implied runtime calls, object instances or method invocations.
+flowchart LR
+    T1["Domain/Admin/AdminAuditService"]
+    T2["Domain/Admin/AdminUndoContext"]
+    T3["Domain/Media/MediaCapacityService"]
+    T4["Domain/Media/MediaVariantRegenerationService"]
+    T5["Domain/Publication/PublicationMediaCleanupService"]
+    T6["Domain/Publication/PublicationSnapshot"]
+    T7["Domain/Storage/SiteStorageDatabaseUsageService"]
+    T8["Domain/Storage/SiteStorageReclaimService"]
+    T9["Models/AdminActionReceipt"]
+    T8 -->|import| T1
+    T8 -->|import| T2
+    T8 -->|import| T3
+    T8 -->|import| T4
+    T8 -->|import| T5
+    T8 -->|import| T6
+    T8 -->|import| T9

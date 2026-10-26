@@ -46,12 +46,13 @@ Contact is not a Site Node type. CV/Vita is composed through Custom Page content
 
 One canonical Home presentation record owns the active Home template and its configuration.
 
-Supported templates:
+Supported **content templates**:
 
 - Artwork;
 - Under Construction;
-- Skip Home;
 - Custom.
+
+`skip_home` and `skip_target_section_id` form a separate Home routing contract owned by `HomeRoutingSettingsService`. The legacy `HomeTemplate::SkipHome` enum case exists for migrating historical data; it is **not** a current selectable content template.
 
 Under Construction/Custom configuration stores ordered components following
 the shared Custom Page component contract, including List/Contact children,
@@ -143,7 +144,7 @@ Historical archived rows that predate `archived_from_state` are forward-reconcil
 
 Canonical structured usage relation for Blog/Exhibition Cover/Gallery media.
 
-Each row belongs to exactly one supported Journal entry, references one `MediaAsset`, stores role/position and may retain historical compatibility columns.
+Each row belongs to exactly one supported Journal entry, references one `MediaAsset`, stores role/position and may retain historical compatibility columns. The forward migration `2026_10_26_020000_add_journal_media_video_playback_controls.php` adds a non-null boolean `video_controls_enabled` (default **true**) in both Working and `committed.journal_entry_media`; the historical boolean fallback in `JournalEntryMedia::videoControlsEnabled()` treats a missing value as enabled. The flag is owned by each Cover/Gallery **usage**, not the globally reusable `MediaAsset` or one Journal-wide setting. It controls the inline native video toolbar only; it does not alter media eligibility, autoplay or the separate image viewer. The change's actual migration/run state is not proven by this document.
 
 Runtime Journal ALT semantics are canonical `MediaAsset.alt_text`. Legacy `alt_text_override` values are not runtime authority; newly synchronized rows store the override as null.
 
@@ -157,7 +158,7 @@ The historical `exhibition_media` table is no longer a runtime domain model or r
 
 CV/Vita and Contact are not fixed runtime SiteSection types.
 
-`CvEntry` remains first-class editorial/migration data used by CV List composition. It may reference a direct image MediaAsset and canonical Rich Text body media.
+Current CV/Vita composition is built from **Custom Page structured components** (including List and Rich Text), not active `CvEntry` rows. The `CvEntry` PHP model survives as a historical import/compatibility artifact; forward migration `2026_09_16_235901_finalize_legacy_cv_retirement.php` removed `cv_entries` from both `public` and `committed`. Its historical `imageMediaAsset()` relation must not be misread as a current SQL foreign key or an active CV editor. See [structured components](architecture/structured-components.md) and [schema evolution](architecture/schema-evolution.md).
 
 Contact is a reusable structured component with bounded child kinds such as public email, social links and Contact form. Global identity/recipient values remain owned by General/runtime contracts rather than duplicated per child row.
 
@@ -175,7 +176,7 @@ Canonical original uploaded or migrated asset.
 
 Durable technical identity includes generated storage key, content-derived MIME type, bytes, SHA-256, lifecycle state and media metadata including canonical asset-level ALT.
 
-Available originals are reusable across consumers. A referenced asset cannot be destructively deleted.
+Available originals are reusable across consumers. A referenced asset is **not** automatically immune to deletion: an explicitly authorized `MediaAssetEditorialService::delete()` transaction removes supported canonical usages and dependent editorial references before marking the asset deleted. Its physical bytes remain governed by Working/LIVE/retained-history cleanup eligibility. See [MEDIA.md](media.md#deletion-and-cleanup).
 
 ### `media_variants`
 
@@ -183,7 +184,7 @@ Generated derivative of one canonical original. Variants are rebuildable and nev
 
 ### Canonical reference model
 
-Structured references include Artwork, Journal Cover/Gallery, CV direct image, Custom/Home direct Image and site identity.
+Current structured references include Artwork, Journal Cover/Gallery, Custom/Home Image and List components, and site identity. The former CV direct-image relationship is a historical `CvEntry` artifact only, not a current active SQL reference.
 
 Rich Text references use Markdown `media:<id>` and are discovered by `RichTextMediaReference`/`MediaReferenceQuery`.
 
@@ -191,7 +192,7 @@ Rich Text references use Markdown `media:<id>` and are discovered by `RichTextMe
 
 `PublicMedia` is a separate policy layer deciding whether a reference is currently public.
 
-See [MEDIA.md](MEDIA.md).
+See [MEDIA.md](media.md).
 
 ## Admin notifications
 
@@ -203,7 +204,7 @@ The durable identity is `(user_id, source_id)`: the recipient and the server-ori
 
 Persistent notifications are created by the central server-side admin notifier. Rendered Filament DOM/classes are not a persistence source.
 
-See [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
+See [ADMIN-NOTIFICATION-CONTRACT.md](admin/notifications.md).
 
 ## Audit, Undo and editorial checkpoints
 
@@ -232,15 +233,21 @@ Laravel user/session/cache/job tables support authenticated administration/runti
 - Home cannot be deleted.
 - Parent Site Nodes cannot be deleted while descendants remain.
 - Journals cannot be deleted while owned entries remain.
-- Referenced MediaAssets cannot be destructively deleted.
+- Canonical MediaAsset deletion is reference-aware: the single Domain transaction must remove/update affected usages and editorial content, then defer physical cleanup while any Working/LIVE/retained snapshot requires those bytes. A reference is not an unconditional refusal to delete.
 - disabling a presentation feature does not silently detach/delete its retained data.
 - Gallery detach is Artwork unassignment, not Artwork/Media deletion.
 - destructive/publication operations are authorized/audited and go through canonical domain services.
 - deleting/pruning a notification never deletes related Activity/audit or Publication history;
 - explicit Storage reclamation may remove bounded Undo and older restore payload roots, but never Activity events or Publication checkpoint metadata.
 
+## Forward source delta (dev@434975e1bd09; not applied on Validation)
+
+The current `dev` migration set adds `media_rights_artifacts` (immutable bytes, revision, SHA-256, size, MIME, source MediaAsset) and `media_rights_artifact_selections` (scope, role, source and artifact identity). These optional rights files are not replacements for `media_assets` or `media_variants`, and their Working/Checkpoint selection is a separate Publication concern.
+
+Gallery `artwork_categories` now carries Source migrations for `landscape_detail_enabled`, `portrait_detail_enabled`, `artwork_page_surface_mode`, `edge_navigation_mode`, `artwork_divider`, `sort_mode`, `video_sound_enabled`, `show_artwork_information`, `show_media_credits`, `show_media_copyright` and `caption_layout` (plus inert legacy `landscape_detail_scale`). Public/Committed `public_content_settings` gain global paint surfaces with multi-stop gradients, responsive header/divider controls and `frame_style`. The relevant Gallery changes also extend `committed.artwork_categories` on PostgreSQL. The portrait opt-in defaults to off. The surface mode defaults to `inherit` (Follow General) and also allows `joined` (No gap) and `separate` (Separate Surface), scoped to individual Artwork detail pages of the Gallery; it does not replace General's saved setting or add a new Public surface mechanism. These are **forward code migrations**, not an observation of the artist's protected Validation schema. See the single [schema-evolution owner](architecture/schema-evolution.md).
+
 ## Migration boundary
 
 Legacy artwork/Vita/Journal/media structures are migration inputs only.
 
-Existing protected canonical state evolves through forward Laravel migrations. Source import is not rerun destructively against non-empty canonical data. Current forward canonicalization includes Journal Rich Text media normalization and Exhibition presentation/restore normalization; see [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
+Existing protected canonical state evolves through forward Laravel migrations. Source import is not rerun destructively against non-empty canonical data. Current forward canonicalization includes Journal Rich Text media normalization and Exhibition presentation/restore normalization; see [MIGRATION-INVARIANTS.md](migration/invariants.md).

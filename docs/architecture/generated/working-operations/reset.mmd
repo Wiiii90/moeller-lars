@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant UI as Activity / Filament
+    participant V as PublicationVersionService
+    participant DB as PostgreSQL
+    participant GC as PublicationMediaCleanupService
+    participant A as AdminAuditService
+    participant N as AdminNotifier
+    UI->>UI: Reset-Bestaetigungsdialog
+    UI->>V: resetStagedChanges(actor)
+    V->>DB: BEGIN + Advisory Lock + Schema-Paritaet
+    V->>DB: pendingCount(Working vs LIVE)
+    alt Kein fachlicher Diff
+        V->>DB: workingContext loeschen
+        DB-->>V: COMMIT; 0
+        UI->>N: Nothing staged (info)
+    else Diff vorhanden
+        V->>GC: queueAbandonedWorkingMedia
+        V->>DB: Working durch committed.* ersetzen
+        V->>DB: workingContext loeschen
+        V->>A: publication.stage_reset
+        DB-->>V: COMMIT
+        V->>GC: drain nach Commit
+        UI->>N: Staged changes reset (success)
+    end
+    Note over UI,DB: LIVE und vorhandene Audit-/Checkpoint-Historie bleiben bestehen
