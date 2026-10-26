@@ -651,7 +651,8 @@ body {
    The normal document scrolls if long editorial content needs more room. */
 body.public-site:has(#content.site-content--fitted-artwork) .public-paper-frame {
     flex: 1 0 auto;
-    min-height: 100dvh;
+    height: 100dvh;
+    min-height: min-content;
 }
 
 #content.site-content--fitted-artwork,
