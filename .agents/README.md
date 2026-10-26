@@ -78,6 +78,12 @@ Codex is a comparatively expensive execution capability: prefer scoped source in
 
 Continuous Integration (CI) and GitHub Actions are **not globally banned**. Trigger, inspect or use them **only when the user specifically asks or authorizes that workflow** (for example a final integration gate). Because long-running CI polling and oversized job-log responses have exhausted chats, **never start indefinite status polling or stream entire logs into conversation**. Prefer a bounded check of the final run summary, failed job/step and narrowly relevant error excerpt; report that results are pending/unavailable when no bounded result exists. User approval for a merge does not automatically authorize unrelated CI, infrastructure or deployment actions.
 
+## Worker prompt and handoff integrity
+
+When a worker prepares a **copy-and-paste instruction for another worker or an explicitly authorized Codex task**, deliver that instruction as one self-contained fenced Markdown block. Include the exact branch and verified source baseline, bounded ownership, accepted requirement and browser reference where applicable, prohibited neighboring changes, central primitives, failure/stop conditions, allowed checks, commit rules and expected handoff. Distinguish already confirmed facts from implementation choices and explicitly out-of-scope work; do not make a worker rediscover decisions already made. Keep instructions operational and link permanent contracts rather than pasting entire manuals.
+
+A completed task handoff reports the **working branch, checked base/head commits, changed files, concrete requirements achieved or not achieved, actual verification performed, unresolved blocker and out-of-scope findings**. For visual work, additionally distinguish source consistency, executed browser review and user acceptance, naming the exact shared reference implementation and any genuinely new local styles. Record this compact state in the worker's own branch-local file so another chat can continue; not a long incident diary, inflated test claim or ephemeral-only conclusion. Worker retirement must promote generally reusable rules to permanent owners first.
+
 ## Knowledge and ownership
 
 - Personal record: **this worker's actual assignments and progress**. Keep it short and replace superseded text at milestones.
