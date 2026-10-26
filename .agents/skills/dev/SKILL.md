@@ -69,4 +69,6 @@ A recurring user correction that reveals a reusable implementation rule belongs 
 
 ## Finish and handoff
 
+For multi-step assignments with an explicit completion goal, do not treat a successful first patch or intermediate report as the end. Continue through the authorized remaining work and targeted checks without waiting for repeated "weiter" messages, stopping only for a real approval/blocker or completed outcome. See the [shared continuous-work rule](../../README.md#continuous-work-and-integration-gates).
+
 Re-read fresh `dev` HEAD and claimed worker scope before writing; use safe non-force expected-head commit and reconcile parallel Dev workers. Record the exact source change and verification class (**inspected**, **executed**, **browser reviewed**, **user accepted**), checked base/head revision, affected files, a compact mapping of each user requirement to implemented/not implemented, justified deviations, unresolved risks and specifically out-of-scope findings in your **own active worker record**, replacing stale notes rather than appending a diary. For visual work state which accepted reference implementations and shared Blade/CSS primitives were reused; list any justified new feature styles. Do not claim tests or browser acceptance that were not performed. User-authorized freezes and selective transfers to other branches are separate.
