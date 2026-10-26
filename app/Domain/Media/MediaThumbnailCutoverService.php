@@ -156,10 +156,16 @@ final class MediaThumbnailCutoverService
                             ->update($columns);
 
                         DB::update(
-                            "UPDATE publication_version_rows SET payload = payload || ?::jsonb
-                             WHERE table_name = 'media_variants'
-                               AND row_key = ?
-                               AND payload->>'transform_profile' = ?",
+                            "UPDATE publication_version_row_manifests AS manifest
+                             SET payload_id = resolve_history_payload(stored.payload || ?::jsonb)
+                             FROM history_payloads AS stored,
+                                  publication_checkpoints AS checkpoint
+                             WHERE manifest.payload_id = stored.id
+                               AND checkpoint.id = manifest.publication_checkpoint_id
+                               AND checkpoint.snapshot_available = true
+                               AND manifest.table_name = 'media_variants'
+                               AND manifest.row_key = ?
+                               AND stored.payload->>'transform_profile' = ?",
                             [
                                 json_encode($columns, JSON_THROW_ON_ERROR),
                                 (string) $id,
