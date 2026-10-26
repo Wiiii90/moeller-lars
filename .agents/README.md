@@ -31,6 +31,10 @@ Each branch-local roster owns its independent **next lease token**. A new alloca
 
 **For the future approved Docs-to-Dev publication:** bring the reviewed shared protocol/skills across, but **never** bring Docs' active worker rows, lease counter or individual Docs records. Retain a verified existing Dev roster if present; otherwise initialize **one empty Dev roster**, not both a Docs copy and a Dev copy. Testing and Refactor likewise receive their own empty roster during their authorized method synchronization if missing. No unfiltered branch history merge and no transfer of another branch's `.agents/workers/` directory. This is an explicit transfer gate, not a promise that other branch trees were already changed.
 
+## Clear user-facing language and evidence
+
+For each standalone user-facing report, answer and worker handoff, **write out technical abbreviations on first use and explain unfamiliar terms briefly in plain language**. This includes initialisms for protocols, tooling and file formats. Keep literal source identifiers, file paths, configuration keys and existing interface labels unchanged; explain them next to the identifier instead of renaming code. A long chain of unexplained acronyms is not evidence of progress. If an expansion is uncertain, verify it or use an ordinary descriptive expression.
+
 ## Durable corrections, user authority and technical disagreement
 
 The user has the last word over desired features, product decisions, architectural exceptions, freeze and transfers. A user's diagnosis, proposed implementation, attribution of fault or assumptions about a programming language can still be mistaken. **Do not automatically agree or flatter.** Identify the concrete evidence and owner, explain when an approach would contradict existing design or technical facts, suggest the smallest sound alternative, and let the user decide a real conflict. Never implement a workaround silently just to avoid disagreement.
