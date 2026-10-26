@@ -30,6 +30,8 @@ Actively notice architecture gaps while working in the **bounded relevant area**
 
 ## One canonical owner; no compatibility facades for new code
 
+**Root-cause stop gate:** A Refactor correction that needs a new temporary shim, fallback, repeated state mirror or parallel behavior is not an architecture improvement. Stop and identify the existing owner and its violated invariant first; if no behavior-preserving repair can be established from the relevant source, report the blocker instead of shipping an unowned workaround. An explicitly approved exception needs a named removal condition and does not exempt actual persisted data/history compatibility.
+
 If `foo` already owns an operation, consider a cohesive extension of its parameters or composition, updating its callers, rather than inventing `fooWithThat`, `fooWithThis`, `fooV2` or a wrapper alias. PHP has no ordinary signature-based overloads; use a clear unified contract or a truly separate responsibility instead. Also avoid opposite overengineering: giant functions with unrelated boolean switches. Change the true owner; delete superseded classes, call sites, imports, styles, hooks and dead references **in the same bounded correction**.
 
 Never build a shadow persistence store, alternate renderer, second event bus, ad hoc CSS offset, extra listener/polling loop or transition shim to compensate for structural mistakes. **Real compatibility** remains mandatory for stored artist data, PostgreSQL schema/migrations, immutable public media, committed snapshots, append-only audit/Undo and proven external contracts. Inspect the relevant consumers before changing them; never treat “pre-release” as license to destroy actual persisted history.
