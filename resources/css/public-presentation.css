@@ -645,55 +645,66 @@ body {
     overflow-wrap: break-word;
 }
 
-/* Landscape Artwork details use the originally reviewed envelope:
-   up to 1000px paper and 960px image. General's global artwork width
-   also limits expansion; viewport geometry is always the final bound. */
+/* Opted-in Artwork detail pages use the actual remaining viewport space.
+   Header, navigation, caption, narrative and credits keep their natural
+   heights; the image receives the flexible remainder without distortion.
+   The normal document scrolls if long editorial content needs more room. */
+body.public-site:has(#content.site-content--fitted-artwork) .public-paper-frame {
+    flex: 1 0 auto;
+    min-height: 100dvh;
+}
+
+#content.site-content--fitted-artwork,
+.site-content--fitted-artwork > .public-content-reveal,
+.site-content--fitted-artwork .artwork-detail {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: column;
+}
+
+.site-content--fitted-artwork .artwork-detail__media {
+    display: flex;
+    flex: 1 1 0;
+    min-height: min(30dvh, var(--public-short-page-min-height));
+    width: fit-content;
+    max-width: 100%;
+    margin-inline: auto;
+    flex-direction: column;
+}
+
+.site-content--fitted-artwork .artwork-detail__viewer-trigger {
+    display: flex;
+    flex: 1 1 0;
+    min-height: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+.site-content--fitted-artwork .artwork-detail__image {
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.site-content--fitted-artwork .artwork-detail__footer {
+    flex: 0 0 auto;
+    width: 0;
+    min-width: 100%;
+}
+
+/* Landscape Artwork detail paper may use the available viewport width,
+   independently of General's usual reading width. The menu itself
+   retains its configured width and its chosen surface gap. */
 #content.site-content--landscape-artwork {
-    width: min(
-        calc(100% - 2 * var(--public-gutter)),
-        max(var(--public-shell-max), min(1000px, calc(var(--public-art-max) * 1.5 + 3.5rem)))
-    );
+    width: calc(100% - 2 * var(--public-gutter));
     padding-inline: clamp(var(--public-mobile-inset), 2.5vw, 2rem);
 }
 
 .site-content--landscape-artwork .artwork-detail {
-    width: min(100%, max(var(--public-art-max), min(960px, calc(var(--public-art-max) * 1.5))));
-}
-
-/* The image determines the width of the landscape media group. A block
-   with min-content collapses the responsive img to almost zero when its
-   max-width is percentage-based. fit-content preserves the image's natural
-   width (up to available space) and never enlarges a small thumbnail.
-   Excluding the caption from intrinsic sizing prevents long titles from
-   expanding that group beyond the actual image. */
-.site-content--landscape-artwork .artwork-detail__media {
-    width: fit-content;
-    max-width: 100%;
-    margin-inline: auto;
-}
-.site-content--landscape-artwork .artwork-detail__image {
-    width: auto;
-    max-width: 100%;
-}
-.site-content--landscape-artwork .artwork-detail__footer {
-    width: 0;
-    min-width: 100%;
-}
-
-.site-content--portrait-artwork .artwork-detail__media {
-    width: fit-content;
-    max-width: 100%;
-    margin-inline: auto;
-}
-.site-content--portrait-artwork .artwork-detail__image {
-    width: auto;
-    max-width: 100%;
-    max-height: max(12rem, calc(100dvh - 14rem));
-    object-fit: contain;
-}
-.site-content--portrait-artwork .artwork-detail__footer {
-    width: 0;
-    min-width: 100%;
+    width: 100%;
 }
 
 /* Artwork arrows remain on the original centered General-width track,
