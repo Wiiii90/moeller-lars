@@ -55,6 +55,31 @@ services:
       postgres:
         condition: service_healthy
 
+  media-rights-worker:
+    profiles: ["preview"]
+    image: moeller-lars-local-preview
+    container_name: moeller-lars-local-rights-worker
+    working_dir: /var/www/html
+    env_file:
+      - .env
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: moeller_lars_testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: moeller_lars_local
+      DB_QUEUE_RETRY_AFTER: "240"
+      MOELLER_LARS_PERSISTENT_PREVIEW: "1"
+    volumes:
+      - ./storage/app/private:/var/www/html/storage/app/private
+    depends_on:
+      preview:
+        condition: service_healthy
+    command: php artisan queue:work database --queue=media-rights --sleep=2 --tries=3 --timeout=180
+    restart: unless-stopped
+
   postgres:
     image: postgres:17-alpine
     environment:
