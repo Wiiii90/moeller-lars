@@ -215,55 +215,13 @@ Pages site-tree reordering, Custom Page Image-child placement and Home component
 
 ## 10. Custom Page component table and Home child hierarchy
 
-Custom Page is an **ordered root sequence of components**; only eligible component rows may be nested under a decorative Image:
+The [Table/Hierarchy contract](tables.md#component-sequences) owns the shared six-column grammar, native ordering, selectable independent Image children, Home's separately scoped Contact/List children, component selection at narrow widths, Domain-owned publication and atomically applied mixed actions. Custom Page Contact/List options are edited **within their parent**, not as independently rendered child rows; Home retains its distinct visible child presentation. These are two consumers of shared tables, not interchangeable editorial data models.
 
-```text
-[Position + Drag] [Component dropdown] [Content] [Actions] [Selection]
-```
-
-The Component selector is essential and remains editable at all supported widths. Content is separate from Component, never a duplicate type label. Blog-style child rows are not part of Custom Page: List entries use the owning List `Apply changes` Repeater dialog; Contact is a single component with editable Heading, Public Email, Social Media Links and Contact Form switches, platform selection, form presentation, and status text. All three Contact switches default on when creating. No Add/Edit/Sort/Publish/Delete Contact child actions or child-selection axes are emitted by Custom Page.
-
-Custom Page Contact Content shows only two lines: the authored heading (default `Contact`) and one ellipsized summary of enabled options. Legal Disclaimer Content shows `General legal disclaimer` followed by one ellipsized line of the actual General legal text, without redundant third-line metadata. The same semantic layout applies at every responsive width.
-
-Public Image nesting belongs to a decorative Image's ordered `children`, displayed as ordinary independently editable child rows using the SAME full component row template as top-level components. Image Edit contains Image properties ONLY. Child Edit, type, order, publication and deletion stay on the child row. The centrally allowed Image-child types are **Text, List without media, Divider, Contact details (email/social, no form), and Legal Disclaimer**. They derive from `CustomPageSetting::IMAGE_CHILD_TYPES`, not an independent UI allowlist. Public text follows a native float around its owning Image and then beneath it—no two-column grid or viewport breakpoint. A following top-level Contact Form is full width, with Name, Email and Message stacked at every size. All Custom Page component headings reuse one serif typographic grammar aligned to the public page heading's family; prose, list titles and contact/disclaimer body use one body scale.
-
-Pages is the canonical page-level editor for Name, public route/slug, Parent, Position and optional page heading. Both Add and Edit expose the same heading vocabulary; the actual SiteSection owns the persisted heading. Home Edit shows its editable Name alongside the fixed root path, top-level parent and first position, plus the same Heading fields. These fixed root invariants must be shown rather than silently pretending that Home can have a custom slug or parent. Gallery/Journal/Custom Page may later surface the same settings in their own workspaces without duplicating data owners.
-
-List entries have `Entry`, one `Context` field (date, year, organisation or other free context), `Published`, and `Details`. No separate Date, Organisation, Location, URL or Insert image controls in the List entry editor. Old Date/Organisation/Location values fold into Context and old links into Details through the model's normalizer without silent content loss. Existing Home List components use the same List editor. Parent selections and publication actions apply only to parent components.
-
-Home's existing distinct Contact-child hierarchy is a separate workflow; keep its shared column geometry and selection semantics. Do not change Home when simplifying Custom Page.
+[Public Custom Page presentation](../public/site.md) owns Image float/wrap, Contact Form width, headings, spacing and rendered content; the [central structured-component model](../architecture/structured-components.md) owns types and stored value normalization. A source-level structure or shared table is not itself user acceptance.
 
 ## 11. Home component table
 
-Home Custom and Under Construction share the accepted Custom Page hierarchy:
-
-```text
-[Position] [Drag] [Component] [Content] [Actions] [Selection]
-```
-
-The permanent Component selector exposes Image, Heading, Rich Text, Divider,
-List, Contact and Legal Disclaimer. Divider subtype (Thin/Subtle/Strong/Dotted)
-belongs to its Add/Edit schema. Content must not repeat the component type.
-The five action roles are Move up, Move down, Edit,
-Publish/Unpublish and Delete. Published state belongs to each component and
-its List/Contact children, not an artificial Status column. All available
-Actions in nested Edit dialogs mirror the corresponding row semantics.
-
-List and Contact children share the canonical parent/child hierarchy,
-stable selection targets, explicit ordering, and publication semantics.
-Mixed parent/child selection must be applied through the transactional
-Home editorial owner, not separate partial writes. Type selection remains
-interactive at narrow widths even when drag/reorder is disabled.
-Search/Type filters disable reordered projections, never the type selector.
-The bottom shared Add component row remains available.
-
-**Mutation feedback:** Home parent and child mutations use the canonical
-domain change result and exactly one `AdminNotifier` success notification
-per real change, visible in the header and durable mailbox. This includes
-nested editing, sorting, publishing and deleting, plus selected-item actions.
-No-op/invalid mutations create no success Notification. Review source,
-Livewire tests and browser behavior rather than inferring delivery from an
-audit event.
+Home Custom and Under Construction use the same shared table primitives as Custom Page, **not an identical set of child rows**. [Component sequences](tables.md#component-sequences) defines the current Home child/parent selection, action, ordering, disabled-state and Add Row behavior; [Notifications](notifications.md#admin-mutation-feedback-integration) defines exactly one successful message per real committed mutation and none for no-op/invalid actions. Do not convert Home's existing child workflows merely to make its DOM resemble Custom Page.
 
 ## 12. Journal table references
 
