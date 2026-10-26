@@ -34,11 +34,13 @@ final class JournalEntryMediaService
             ->values()
             ->map(fn (JournalEntryMedia $usage): array => [
                 'media_asset_id' => (int) $usage->getAttribute('media_asset_id'),
+                'video_controls_enabled' => $usage->videoControlsEnabled(),
             ])
             ->all();
 
         return [
             'cover_media_asset_id' => $cover instanceof JournalEntryMedia ? (int) $cover->getAttribute('media_asset_id') : null,
+            'cover_video_controls_enabled' => $cover instanceof JournalEntryMedia ? $cover->videoControlsEnabled() : true,
             'gallery_images' => $gallery,
         ];
     }
@@ -48,7 +50,8 @@ final class JournalEntryMediaService
     {
         $changed = false;
 
-        if (array_key_exists('cover_media_asset_id', $data) && $this->syncCover($entry, $data['cover_media_asset_id'])) {
+        if ((array_key_exists('cover_media_asset_id', $data) || array_key_exists('cover_video_controls_enabled', $data))
+            && $this->syncCover($entry, $data)) {
             $changed = true;
         }
         if (array_key_exists('gallery_images', $data) && $this->syncGallery($entry, $data['gallery_images'])) {
@@ -230,7 +233,7 @@ final class JournalEntryMediaService
         return true;
     }
 
-    private function syncCover(BlogPost|Exhibition $entry, mixed $value): bool
+    private function syncCover(BlogPost|Exhibition $entry, array $data): bool
     {
         /** @var EloquentCollection<int, JournalEntryMedia> $current */
         $current = $entry->mediaUsages()
@@ -238,6 +241,11 @@ final class JournalEntryMediaService
             ->orderBy('id')
             ->lockForUpdate()
             ->get();
+
+        $existing = $current->first();
+        $value = array_key_exists('cover_media_asset_id', $data)
+            ? $data['cover_media_asset_id']
+            : ($existing?->getAttribute('media_asset_id'));
 
         if ($value === null || $value === '') {
             if ($current->isEmpty()) {
@@ -253,16 +261,27 @@ final class JournalEntryMediaService
 
         $mediaAssetId = $this->mediaId($value, 'cover_media_asset_id');
         $this->assertMediaReady($mediaAssetId, 'cover_media_asset_id');
+        $controls = array_key_exists('cover_video_controls_enabled', $data)
+            ? $this->validatedVideoControls($data['cover_video_controls_enabled'], 'cover_video_controls_enabled')
+            : ($existing?->videoControlsEnabled() ?? true);
+
         if ($current->count() === 1
-            && (int) $current->first()->getAttribute('media_asset_id') === $mediaAssetId
-            && (int) $current->first()->getAttribute('position') === 0) {
-            return false;
+            && (int) $existing->getAttribute('media_asset_id') === $mediaAssetId
+            && (int) $existing->getAttribute('position') === 0) {
+            if ($existing->videoControlsEnabled() === $controls) {
+                return false;
+            }
+
+            $existing->setAttribute('video_controls_enabled', $controls);
+            $existing->save();
+
+            return true;
         }
 
         foreach ($current as $usage) {
             $usage->delete();
         }
-        $this->createUsage($entry, $mediaAssetId, JournalEntryMedia::ROLE_COVER, 0);
+        $this->createUsage($entry, $mediaAssetId, JournalEntryMedia::ROLE_COVER, 0, $controls);
 
         return true;
     }
@@ -273,16 +292,6 @@ final class JournalEntryMediaService
             throw ValidationException::withMessages(['gallery_images' => 'Gallery images are invalid.']);
         }
 
-        $desired = [];
-        foreach (array_values($value) as $row) {
-            if (! is_array($row)) {
-                throw ValidationException::withMessages(['gallery_images' => 'Gallery images are invalid.']);
-            }
-            $mediaAssetId = $this->mediaId($row['media_asset_id'] ?? null, 'gallery_images');
-            $this->assertMediaReady($mediaAssetId, 'gallery_images');
-            $desired[] = $mediaAssetId;
-        }
-
         /** @var EloquentCollection<int, JournalEntryMedia> $current */
         $current = $entry->mediaUsages()
             ->where('role', JournalEntryMedia::ROLE_GALLERY)
@@ -290,29 +299,83 @@ final class JournalEntryMediaService
             ->orderBy('id')
             ->lockForUpdate()
             ->get();
+
+        $availableByMedia = [];
+        foreach ($current as $usage) {
+            $availableByMedia[(int) $usage->getAttribute('media_asset_id')][] = $usage;
+        }
+
+        $desired = [];
+        foreach (array_values($value) as $row) {
+            if (! is_array($row)) {
+                throw ValidationException::withMessages(['gallery_images' => 'Gallery images are invalid.']);
+            }
+            $mediaAssetId = $this->mediaId($row['media_asset_id'] ?? null, 'gallery_images');
+            $this->assertMediaReady($mediaAssetId, 'gallery_images');
+            $previous = isset($availableByMedia[$mediaAssetId]) && $availableByMedia[$mediaAssetId] !== []
+                ? array_shift($availableByMedia[$mediaAssetId])
+                : null;
+            $controls = array_key_exists('video_controls_enabled', $row)
+                ? $this->validatedVideoControls($row['video_controls_enabled'], 'gallery_images')
+                : ($previous?->videoControlsEnabled() ?? true);
+
+            $desired[] = [
+                'media_asset_id' => $mediaAssetId,
+                'video_controls_enabled' => $controls,
+            ];
+        }
+
         $currentIds = $current
             ->map(static fn (JournalEntryMedia $usage): int => (int) $usage->getAttribute('media_asset_id'))
             ->values()
             ->all();
+        $desiredIds = array_column($desired, 'media_asset_id');
         $positionsAreCanonical = $current->values()->every(
             static fn (JournalEntryMedia $usage, int $index): bool => (int) $usage->getAttribute('position') === $index + 1,
         );
 
-        if ($currentIds === $desired && $positionsAreCanonical) {
-            return false;
+        if ($currentIds === $desiredIds && $positionsAreCanonical) {
+            $changed = false;
+            foreach ($current->values() as $index => $usage) {
+                $controls = $desired[$index]['video_controls_enabled'];
+                if ($usage->videoControlsEnabled() === $controls) {
+                    continue;
+                }
+
+                $usage->setAttribute('video_controls_enabled', $controls);
+                $usage->save();
+                $changed = true;
+            }
+
+            return $changed;
         }
 
         foreach ($current as $usage) {
             $usage->delete();
         }
-        foreach ($desired as $index => $mediaAssetId) {
-            $this->createUsage($entry, $mediaAssetId, JournalEntryMedia::ROLE_GALLERY, $index + 1);
+        foreach ($desired as $index => $row) {
+            $this->createUsage(
+                $entry,
+                $row['media_asset_id'],
+                JournalEntryMedia::ROLE_GALLERY,
+                $index + 1,
+                $row['video_controls_enabled'],
+            );
         }
 
         return true;
     }
 
-    private function createUsage(BlogPost|Exhibition $entry, int $mediaAssetId, string $role, int $position): void
+    private function validatedVideoControls(mixed $value, string $field): bool
+    {
+        if (! is_bool($value)) {
+            throw ValidationException::withMessages([$field => 'Choose whether video playback controls are shown.']);
+        }
+
+        return $value;
+    }
+
+    private function createUsage(BlogPost|Exhibition $entry, int $mediaAssetId, string $role, int $position, bool $controls = true): void
     {
         $usage = new JournalEntryMedia;
         $usage->fill([
@@ -321,6 +384,7 @@ final class JournalEntryMediaService
             'role' => $role,
             'position' => $position,
             'alt_text_override' => null,
+            'video_controls_enabled' => $controls,
         ]);
         $usage->save();
     }

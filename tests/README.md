@@ -1,6 +1,6 @@
 # Test suites — current dev workflow
 
-Tests protect observable domain/product behavior and durable invariants, not repair history or implementation spellings. All source changes are made on `dev`; the former `testing` branch/worktree is not part of the current workflow.
+Tests protect observable domain/product behavior and durable invariants, not repair history or implementation spellings. Testing workers periodically inspect the cumulative Dev diff, restructure existing tests/fixtures when justified, and run the final isolated Codex/native verification **after user-declared Dev freeze and before reviewed integration**; Dev workers do not author test sources. Application code is authored on `dev`. Test cases, fixtures, browser automation and suite maintenance are authored on the dedicated testing workstream's branch and then reviewed before integration into `dev`.
 
 ## Layers
 
@@ -57,4 +57,4 @@ In the current direct-`dev` mode, CI/Actions must not be run, inspected or monit
 5. Do not silently skip required fixtures or weaken assertions to obtain green results.
 6. Distinguish source review, actual test runs, browser review and user acceptance.
 
-Canonical strategy: [Testing](../docs/operations/testing.md).
+Canonical strategy: [docs/TESTING.md](../docs/TESTING.md).

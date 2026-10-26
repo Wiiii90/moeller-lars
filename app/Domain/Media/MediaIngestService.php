@@ -2,6 +2,7 @@
 
 namespace App\Domain\Media;
 
+use App\Jobs\PrepareMediaRightsImage;
 use App\Models\MediaAsset;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -39,6 +40,9 @@ class MediaIngestService
 
         try {
             $asset = $this->ingestLocked($upload);
+            if (config('media.rights_preparation_enabled', false) === true) {
+                PrepareMediaRightsImage::dispatch((int) $asset->getKey())->afterCommit();
+            }
             $this->refreshCapacitySnapshot();
 
             return $asset;
@@ -60,6 +64,9 @@ class MediaIngestService
 
             $prepared = $this->prepareForIngest($upload);
             $asset = $this->storePreparedLocked($upload, $prepared);
+            if (config('media.rights_preparation_enabled', false) === true) {
+                PrepareMediaRightsImage::dispatch((int) $asset->getKey())->afterCommit();
+            }
             $this->refreshCapacitySnapshot();
 
             return [

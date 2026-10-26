@@ -58,15 +58,15 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                 ->label(__('Link'))
                 ->icon('heroicon-o-link')
                 ->toggle()
-                ->jsHandler("\$dispatch('artist-rich-link-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+                ->jsHandler("\$dispatch('artist-rich-link-toggle', { anchor: \$event.currentTarget })"),
             RichEditorTool::make('textColor')
                 ->label(__('Text color'))
                 ->icon('heroicon-o-swatch')
-                ->jsHandler("\$dispatch('artist-rich-color-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+                ->jsHandler("\$dispatch('artist-rich-color-toggle', { anchor: \$event.currentTarget })"),
             RichEditorTool::make('lineSpacing')
                 ->label(__('Line spacing'))
                 ->icon('heroicon-o-bars-3-bottom-left')
-                ->jsHandler("\$dispatch('artist-rich-spacing-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+                ->jsHandler("\$dispatch('artist-rich-spacing-toggle', { anchor: \$event.currentTarget })"),
             ...array_map(
                 static function (string $name, string $command): RichEditorTool {
                     $suffix = \Illuminate\Support\Str::snake($name);
@@ -110,7 +110,7 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
             RichEditorTool::make('imageCaption')
                 ->label(__('Image caption'))
                 ->icon(AdminIcon::Details->value)
-                ->jsHandler("const editor = \$getEditor(); if (editor) editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-caption-toggle', { detail: { editor, anchor: \$event.currentTarget }, bubbles: true }))"),
+                ->jsHandler("const editor = \$getEditor(); if (editor) editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-caption-toggle', { detail: { anchor: \$event.currentTarget }, bubbles: true }))"),
 
         ];
     }
