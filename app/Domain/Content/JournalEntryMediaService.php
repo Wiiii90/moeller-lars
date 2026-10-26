@@ -233,7 +233,6 @@ final class JournalEntryMediaService
         return true;
     }
 
-    /** @param array<string,mixed> $data */
     private function syncCover(BlogPost|Exhibition $entry, array $data): bool
     {
         /** @var EloquentCollection<int, JournalEntryMedia> $current */
@@ -313,7 +312,9 @@ final class JournalEntryMediaService
             }
             $mediaAssetId = $this->mediaId($row['media_asset_id'] ?? null, 'gallery_images');
             $this->assertMediaReady($mediaAssetId, 'gallery_images');
-            $previous = array_shift($availableByMedia[$mediaAssetId]);
+            $previous = isset($availableByMedia[$mediaAssetId]) && $availableByMedia[$mediaAssetId] !== []
+                ? array_shift($availableByMedia[$mediaAssetId])
+                : null;
             $controls = array_key_exists('video_controls_enabled', $row)
                 ? $this->validatedVideoControls($row['video_controls_enabled'], 'gallery_images')
                 : ($previous?->videoControlsEnabled() ?? true);
