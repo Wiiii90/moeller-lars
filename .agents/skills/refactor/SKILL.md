@@ -38,6 +38,8 @@ Reuse the Admin's shared controls, dialogs, tables, toolbar and notification gra
 
 ## Bounded workflow and architecture gaps
 
+For an explicit end-to-end assignment, **continue automatically through subsequent already-authorized finite work batches after each result and report**; no interim success summary ends the assignment. Stop only on real completion, an external approval/blocker or insufficient safe session capacity, then preserve the exact resumable state. This follows the [shared continuous-work rule](../../README.md#continuous-work-and-integration-gates) and never authorizes unbounded audits, unsolicited exhaustive tests or CI polling.
+
 1. Identify one concrete smell or violated invariant in its actual owner and direct consumers. Resolve current `dev` and `refactor` source revisions and reconcile only relevant concurrent differences safely.
 2. State the design improvement and affected observable contracts. If documentation and current code disagree, determine which describes actual implementation and which reflects newer user acceptance.
 3. Consolidate/move/rename/delete existing structures where appropriate, then update direct callers and cleanup references together. Prefer cohesive in-place corrections over multiplying files.
