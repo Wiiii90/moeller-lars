@@ -4,7 +4,7 @@
 
 ## Verified preparation on docs
 
-**Application source baseline:** `dev@b06f33833bf8f5341df2b51d37da5577f205df56` (two source commits beyond the original `dee05e4d` freeze), read only. The two changes are Storage view cookie → native Livewire `#[Session]` (`9f56660c`) and media-rights thumbnail preparation accepting both canonical `public-v1` and `public-v2` (`b06f3383`). They have been reconciled in Controls and Rights on Docs; no app/test files changed by Docs.
+**Application source baseline:** `dev@e3d0b507f0ef3e8d144a6f504ed61ce1a683f2ba` (three narrowly reviewed Dev commits beyond earlier `dee05e4d`). The changes are Storage view state via native Livewire session (`9f56660c`), rights-preparation compatibility with old/current thumbnail versions (`b06f3383`), and one-request-per-file Storage multi-upload (`e3d0b507`). All three received a bounded relevant Docs contract correction. No application/test code changed from Docs. Actual browser/runtime acceptance remains external.
 
 - Reader-oriented `docs/README.md`; canonical owners under `docs/admin/`, `docs/public/`, `docs/content/`, `docs/operations/`; source-pinned `docs/architecture/` evidence kept distinct from executed tests or browser acceptance. Retired root-only aliases, redundant audit notes and abandoned topical skill files were removed in earlier Docs work; Git history retains the past.
 - Current source reconciliation: Rich Text, Exhibition Map and Journal lifecycle/media read contracts (`91cf0932`, `7b056cea`); Admin Dialog/UI, Tables/Responsive, accepted Pages root/child drag and Home/Custom Page component hierarchy (`950f1c6d`, `7875c2b9`, `0ab2838e`, `a28c52ad`); Stage CSS token ownership (`bd782b76`); authorized Image-child Divider type (`081131c2`).
@@ -16,6 +16,8 @@
 **CI workflow/source conflict (documented on Docs in `f708ed34`):** Current `dev/.github/workflows/release.yml` contains `push: branches: [main, dev]`. Normal Dev pushes automatically start verification, even when a worker follows the accepted rule not to dispatch or inspect CI without explicit request. Do not claim the automatic trigger is disabled. A separate user decision/source change is necessary if truly every CI execution is to be request-only; no workflow source was changed on Docs.
 
 **Detached, unpublished transfer candidate status:** Git objects `983d3d67` (empty Dev roster), `9efe40ce` (Docs import) and `404e4ebc` (Dev-local root links) were prepared without advancing `dev`, but they are **obsolete** because Dev moved. The first candidate also missed the Admin authentication link in root `README.md`/`SECURITY.md`; this was found by checking the detached tree and must be corrected in the regenerated candidate. Do not update Dev from that stale commit chain. No CI or deployment was triggered by creating those detached Git objects.
+
+**Latest detached unpublished candidate:** Built on `dev@e3d0b507` and Docs source `6d27d80b` (before the final Storage media documentation correction): empty Dev roster `623d43af`, canonical Docs/skills import `49a57aea`, and target-local README/SECURITY/tests/AGENTS replacements `a33c0843`. The current Docs content **now includes this additional Storage contract correction**, so rebuild that detached candidate against the then-current Docs tree before publishing. No ref updates, releases or CI dispatches were performed.
 
 ## Transfer prerequisites, not accomplished
 

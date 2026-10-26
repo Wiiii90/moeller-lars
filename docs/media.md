@@ -192,7 +192,7 @@ Canonical behavior:
 - the persistent `Add Media File` row and the Stage dropzone both invoke the same native file input and canonical direct-ingest path;
 - the shared data-table surface contains wide list tables inside their own horizontal overflow boundary rather than allowing table min-content to widen the admin shell;
 - a newly accepted upload reloads the library on page one under newest-first ordering; active filters may intentionally keep a new file out of view;
-- direct upload uses the canonical ingest/quota policy;
+- direct upload uses the canonical ingest/quota policy. **For multi-file selections (source `dev@e3d0b507`)**, the existing dropzone transfers and ingests each selected file through a separate Livewire upload request **in order**, rather than sending the entire selection as one request above the per-request transport ceiling. The same `processDirectMedia()`/`MediaIngestService::ingestUnique()` owner handles validation, duplicate/usage/quota decisions and derivative creation. The UI aggregates file progress, genuine server-side failures and one overall result; there is no second upload pipeline, background job or timer-based ingestion. The authored code has **not** been browser-tested here with representative large multi-file batches, failed transfers and duplicate/quota conditions;
 - authenticated image/video/audio preview/player behavior remains available;
 - thumbnails/variants remain bounded and expensive original access stays on demand;
 - technical hashes/storage paths are not primary artist-facing UI;
