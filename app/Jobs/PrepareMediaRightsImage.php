@@ -16,7 +16,7 @@ final class PrepareMediaRightsImage implements ShouldQueue
 
     public function __construct(public readonly int $mediaAssetId)
     {
-        $this->onQueue('media-rights');
+        $this->onConnection('database')->onQueue('media-rights');
     }
 
     public function handle(MediaRightsWorkingPreparation $preparation): void

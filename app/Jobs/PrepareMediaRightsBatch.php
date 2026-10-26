@@ -15,7 +15,7 @@ final class PrepareMediaRightsBatch implements ShouldQueue
 
     public function __construct(public readonly int $afterId = 0)
     {
-        $this->onQueue('media-rights');
+        $this->onConnection('database')->onQueue('media-rights');
     }
 
     public function handle(): void

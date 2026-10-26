@@ -173,7 +173,7 @@
                             } catch (error) {
                                 failed++
                                 errors.push(file.name + ' — Processing failed.')
-                                await $wire.set('directMedia', [])
+                                try { await $wire.set('directMedia', []) } catch {}
                             }
                         }
 
