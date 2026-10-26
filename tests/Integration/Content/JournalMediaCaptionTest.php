@@ -66,6 +66,12 @@ it('keeps authored image credits visible when Blog copyright captions are suppre
     $hiddenCopyright = $renderer->render($usage, includeInheritedCopyright: false, includeCopyrightNotice: false)->toHtml();
     expect($hiddenCopyright)->toContain('Photograph by Studio')
         ->not->toContain('Artwork-specific copyright');
+
+    $asset->update(['copyright_notice_mode' => MediaAsset::COPYRIGHT_NONE]);
+    $noNotice = $renderer->render($usage)->toHtml();
+    expect($noNotice)->toContain('Photograph by Studio')
+        ->not->toContain('Inherited studio copyright')
+        ->not->toContain('Artwork-specific copyright');
 });
 
 it('enables the Journal image viewer for opted-in media and Rich Text', function (): void {
@@ -87,4 +93,35 @@ it('enables the Journal image viewer for opted-in media and Rich Text', function
         ->toContain('data-artwork-viewer-trigger')
         ->toContain('data-viewer-scope="content"')
         ->toContain('data-viewer-alt="Detail view"');
+});
+
+it('respects per-media video playback controls while keeping the existing default', function (): void {
+    $asset = MediaAsset::query()->create([
+        'storage_key' => 'originals/journal-video.mp4',
+        'original_filename' => 'journal-video.mp4',
+        'mime_type' => 'video/mp4',
+        'byte_size' => 16,
+        'sha256' => hash('sha256', 'journal-video'),
+        'state' => 'available',
+        'alt_text' => 'Studio motion',
+    ]);
+    $usage = new JournalEntryMedia;
+    $usage->setRelation('mediaAsset', $asset);
+    $renderer = app(JournalMediaRenderer::class);
+
+    $default = $renderer->render($usage, enableViewer: true)->toHtml();
+    expect($usage->videoControlsEnabled())->toBeTrue()
+        ->and($default)->toContain('<video ')
+        ->toContain(' controls muted loop playsinline')
+        ->not->toContain('data-artwork-viewer-trigger');
+
+    $usage->setAttribute('video_controls_enabled', false);
+    $disabled = $renderer->render($usage, enableViewer: true)->toHtml();
+    expect($usage->videoControlsEnabled())->toBeFalse()
+        ->and($disabled)->toContain('<video ')
+        ->toContain(' muted loop playsinline')
+        ->not->toContain(' controls');
+
+    $usage->setAttribute('video_controls_enabled', true);
+    expect($renderer->render($usage)->toHtml())->toContain(' controls muted loop playsinline');
 });
