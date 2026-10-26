@@ -148,12 +148,14 @@ uses narrow static checks and browser review instead.
 
 Current application media ceilings:
 
-- `MEDIA_IMAGE_MAX_BYTES` — default 20 MiB;
-- `MEDIA_VIDEO_MAX_BYTES` — default 100 MiB;
+- `MEDIA_IMAGE_MAX_BYTES` — default **64 MiB**;
+- `MEDIA_VIDEO_MAX_BYTES` — default **150 MiB**;
 - `MEDIA_AUDIO_MAX_BYTES` — default 100 MiB;
 - `MEDIA_STORAGE_QUOTA_BYTES` — operator/platform-injected whole-site logical allowance when configured; admission accounts for canonical originals, generated variants and logical persistent application/database data rather than raw PostgreSQL physical-file size.
 
 The canonical media policy supports validated image/video/audio content. Consumer support remains narrower where appropriate.
+
+**Rights delivery is a separately authorized rollout**, not an automatic consequence of an application build. `MEDIA_RIGHTS_PREPARATION_ENABLED` and `MEDIA_RIGHTS_DELIVERY_ENABLED` default to false. Before enabling delivery, verify the optional schema migration, queued/offline preparation and worker isolation, both historical/current canonical image thumbnails, full-quality rights artifact integrity, and `MediaRightsPublicationSelections` readiness for **every** publicly eligible Working image under the existing Publication preflight. Review history/Undo retention, operator backups, image rights/metadata and public HTTP/cache behavior with isolated execution before Validation or Production. This is a release gate, not a new second media or publication subsystem. See [canonical rights implementation](../public/rights-privacy.md#b-rights-metadata-across-storage-public-files-and-seo).
 
 ## Release notes and Dashboard announcements
 

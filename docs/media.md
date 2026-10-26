@@ -29,8 +29,8 @@ Upload aliases are normalized through the ingest policy; persisted canonical MIM
 
 Format/safety ceilings are configured in bytes:
 
-- `MEDIA_IMAGE_MAX_BYTES` — default 20 MiB
-- `MEDIA_VIDEO_MAX_BYTES` — default 100 MiB
+- `MEDIA_IMAGE_MAX_BYTES` — default **64 MiB**
+- `MEDIA_VIDEO_MAX_BYTES` — default **150 MiB**
 - `MEDIA_AUDIO_MAX_BYTES` — default 100 MiB
 
 `MEDIA_STORAGE_QUOTA_BYTES` is the operator/platform-injected **whole-site** admission ceiling. Quota usage includes canonical media originals, generated variants and logical persistent application/database data. Logical database usage includes live editorial data, append-only Activity, bounded Undo receipts, retained Publication restore data/shared history payloads and other persistent application rows. PostgreSQL's physical database-file footprint is operational overhead and is not the quota value. Cached display values are not authoritative for upload admission.
@@ -136,7 +136,7 @@ Usage-specific overrides exist only where an explicit consumer contract supports
 
 Required public ALT is never manufactured from filenames/IDs at render time.
 
-Credit/copyright and the optional `file_creator`, `file_rights_holder`, `rights_usage_terms`, `license_inquiry_url` fields are editorial metadata; they do not alter immutable technical identity or determine authorship automatically. `MediaRightsProjection` feeds an opt-in immutable rights-artifact preparation system, which can select separate Working/Committed revisions under the Publication lock. Changing editorial text does not automatically prepare or publicly deliver new bytes. Delivery requires explicit configuration, migration and rights selection; see [rights and privacy](public/rights-privacy.md#b-rights-metadata-across-storage-public-files-and-seo).
+Credit/copyright and the optional `file_creator`, `file_rights_holder`, `rights_usage_terms`, `license_inquiry_url` fields are editorial metadata; they do not alter immutable technical identity or determine authorship automatically. `MediaRightsProjection` feeds an opt-in immutable rights-artifact preparation system, which can select separate Working/Committed revisions under the Publication lock. With preparation explicitly enabled, **genuine changes to stored rights fields or General's inherited default now dispatch background preparation after commit**, and newly ingested images do likewise; no work is dispatched for unchanged values or while preparation is disabled. These jobs share the existing database queue and single rights-artifact writer, not a second ingestion pipeline. Prepared bytes are **not automatically publicly delivered**: delivery requires independently enabled configuration, migration, current Working/checkpoint selections and publication readiness across all publicly eligible images. The [rights and privacy owner](public/rights-privacy.md#b-rights-metadata-across-storage-public-files-and-seo) defines the exact event sources and acceptance gates.
 
 ## Editor selection
 
