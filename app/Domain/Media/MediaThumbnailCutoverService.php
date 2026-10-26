@@ -224,12 +224,14 @@ final class MediaThumbnailCutoverService
             }
         }
 
-        $rows = DB::table('publication_version_rows')
-            ->where('table_name', 'media_variants')
-            ->whereRaw("payload->>'transform_profile' = ?", [MediaIngestService::TRANSFORM_PROFILE])
-            ->whereRaw("payload->>'variant_kind' = ?", [MediaIngestService::THUMBNAIL_KIND])
-            ->whereRaw("payload->>'state' = 'available'")
-            ->get(['payload']);
+        $rows = DB::table('publication_version_rows as rows')
+            ->join('publication_checkpoints as checkpoints', 'checkpoints.id', '=', 'rows.publication_checkpoint_id')
+            ->where('checkpoints.snapshot_available', true)
+            ->where('rows.table_name', 'media_variants')
+            ->whereRaw("rows.payload->>'transform_profile' = ?", [MediaIngestService::TRANSFORM_PROFILE])
+            ->whereRaw("rows.payload->>'variant_kind' = ?", [MediaIngestService::THUMBNAIL_KIND])
+            ->whereRaw("rows.payload->>'state' = 'available'")
+            ->get(['rows.payload']);
         foreach ($rows as $row) {
             $payload = is_string($row->payload) ? json_decode($row->payload, true, 512, JSON_THROW_ON_ERROR) : (array) $row->payload;
             $this->addCandidate($items, $payload);
@@ -311,9 +313,8 @@ final class MediaThumbnailCutoverService
     }
 
     /**
-     * Reclaim only generated old thumbnail keys that no longer appear in
-     * Working, Committed or any stored Publication version. This is
-     * repeatable after an interrupted post-commit filesystem cleanup.
+     * Reclaim generated old thumbnails that no current or restorable
+     * Publication state can use. Retired snapshots are not restore roots.
      */
     private function reclaimUnreferencedOldThumbnails(): int
     {
@@ -326,9 +327,11 @@ final class MediaThumbnailCutoverService
             }
             if (DB::table('media_variants')->where('storage_key', $key)->exists()
                 || DB::table('committed.media_variants')->where('storage_key', $key)->exists()
-                || DB::table('publication_version_rows')
-                    ->where('table_name', 'media_variants')
-                    ->whereRaw("payload->>'storage_key' = ?", [$key])
+                || DB::table('publication_version_rows as rows')
+                    ->join('publication_checkpoints as checkpoints', 'checkpoints.id', '=', 'rows.publication_checkpoint_id')
+                    ->where('checkpoints.snapshot_available', true)
+                    ->where('rows.table_name', 'media_variants')
+                    ->whereRaw("rows.payload->>'storage_key' = ?", [$key])
                     ->exists()) {
                 continue;
             }
