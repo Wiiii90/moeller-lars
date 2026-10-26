@@ -181,9 +181,9 @@ final class MediaRightsPublicationSelections
     }
 
     /**
-     * Non-destructive publication gate for explicitly prepared image sets.
-     * Existing legacy images without selections continue to work until the
-     * separately authorized public-delivery backfill has been completed.
+     * Partial offline preparation keeps legacy images usable.
+     * Once rights delivery is enabled, every currently public Working image
+     * must have both current immutable originals and thumbnails selected.
      */
     public function assertWorkingReady(): void
     {
@@ -197,19 +197,44 @@ final class MediaRightsPublicationSelections
             ->orderBy('media_asset_id')
             ->pluck('media_asset_id');
 
+        $checked = [];
         foreach ($assetIds as $id) {
             $asset = MediaAsset::query()->find((int) $id);
             if (! $asset instanceof MediaAsset || $asset->getAttribute('state') !== 'available') {
-                // Deleted Working media are denied by PublicMedia. Older
-                // checkpoint selections remain retained for historical Undo.
                 continue;
             }
-            $status = $this->workingAssetReadiness($asset);
-            if ($status['state'] !== 'ready') {
-                throw new RuntimeException(
-                    'Image #'.(int) $id.' cannot be published with its current file rights: '.$status['label'].'.'
-                );
-            }
+            $this->assertPreparedAsset($asset);
+            $checked[(int) $id] = true;
+        }
+
+        if (! $this->deliveryEnabled()) {
+            return;
+        }
+
+        $publicMedia = app(PublicMedia::class);
+        MediaAsset::query()
+            ->where('state', 'available')
+            ->whereIn('mime_type', MediaTypePolicy::IMAGE_MIME_TYPES)
+            ->orderBy('id')
+            ->chunkById(50, function ($assets) use ($checked, $publicMedia): void {
+                foreach ($assets as $asset) {
+                    if (isset($checked[(int) $asset->getKey()])
+                        || ! $publicMedia->isPublicAsset($asset)) {
+                        continue;
+                    }
+
+                    $this->assertPreparedAsset($asset);
+                }
+            });
+    }
+
+    private function assertPreparedAsset(MediaAsset $asset): void
+    {
+        $status = $this->workingAssetReadiness($asset);
+        if ($status['state'] !== 'ready') {
+            throw new RuntimeException(
+                'Image #'.(int) $asset->getKey().' cannot be published with its current file rights: '.$status['label'].'.'
+            );
         }
     }
 
