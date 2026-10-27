@@ -36,6 +36,30 @@ function initializeArtworkDetailImage(root) {
     if (! image) return () => {};
 
     const lifetime = new AbortController();
+    const media = image.closest('.artwork-detail__media');
+    const stage = media?.querySelector('.artwork-detail__image-stage');
+    const width = Number(image.getAttribute('width'));
+    const height = Number(image.getAttribute('height'));
+    let resizeObserver = null;
+    if (stage && width > 0 && height > 0) {
+        const fit = () => {
+            if (lifetime.signal.aborted) return;
+            const { width: availableWidth, height: availableHeight } = stage.getBoundingClientRect();
+            if (availableWidth <= 0 || availableHeight <= 0) return;
+            const fittedWidth = Math.min(availableWidth, availableHeight * width / height);
+            const value = Math.max(1, Math.floor(fittedWidth * 100) / 100) + 'px';
+            if (media.style.getPropertyValue('--public-fitted-image-width') !== value) {
+                media.style.setProperty('--public-fitted-image-width', value);
+            }
+        };
+        fit();
+        if (typeof ResizeObserver === 'function') {
+            resizeObserver = new ResizeObserver(fit);
+            resizeObserver.observe(stage);
+        } else {
+            window.addEventListener('resize', fit, { passive: true, signal: lifetime.signal });
+        }
+    }
     const ready = () => revealDecodedImage(image, 'artworkImageState', lifetime.signal);
     const failed = () => {
         // Keep broken-image ALT visible: a real media failure must not silently
@@ -48,7 +72,10 @@ function initializeArtworkDetailImage(root) {
     // The image may have completed before the SPA page initializer runs.
     if (image.complete) ready();
 
-    return () => lifetime.abort();
+    return () => {
+        lifetime.abort();
+        resizeObserver?.disconnect();
+    };
 }
 
 export function initializeGalleryImageLoading(root = document) {

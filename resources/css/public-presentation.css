@@ -645,10 +645,10 @@ body {
     overflow-wrap: break-word;
 }
 
-/* Opted-in Artwork detail pages use the actual remaining viewport space.
-   Header, navigation, caption, narrative and credits keep their natural
-   heights; the image receives the flexible remainder without distortion.
-   The normal document scrolls if long editorial content needs more room. */
+/* Expanded Artwork details share one viewport-sized image stage.
+   Its height comes from the natural Header/navigation/metadata flex layout;
+   the actual picture aspect ratio is fitted by the existing detail-image
+   lifecycle. Only that picture is clickable; its caption follows its width. */
 body.public-site:has(#content.site-content--fitted-artwork) .public-paper-frame {
     flex: 1 0 auto;
     height: 100dvh;
@@ -667,38 +667,49 @@ body.public-site:has(#content.site-content--fitted-artwork) .public-paper-frame 
 .site-content--fitted-artwork .artwork-detail__media {
     display: flex;
     flex: 1 1 0;
-    min-height: min(30dvh, var(--public-short-page-min-height));
-    width: fit-content;
+    min-height: 0;
+    width: 100%;
     max-width: 100%;
-    margin-inline: auto;
     flex-direction: column;
 }
 
-.site-content--fitted-artwork .artwork-detail__viewer-trigger {
-    display: flex;
+.site-content--fitted-artwork .artwork-detail__image-stage {
+    display: grid;
     flex: 1 1 0;
-    min-height: 0;
+    min-width: 0;
+    min-height: min(30dvh, 12rem);
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     align-items: center;
-    justify-content: center;
+    justify-items: center;
+}
+
+.site-content--fitted-artwork .artwork-detail__viewer-trigger {
+    display: block;
+    flex: none;
+    width: var(--public-fitted-image-width, auto);
+    max-width: 100%;
 }
 
 .site-content--fitted-artwork .artwork-detail__image {
-    width: auto;
+    width: 100%;
     max-width: 100%;
-    height: 100%;
-    max-height: 100%;
+    height: auto;
+    max-height: none;
     object-fit: contain;
 }
 
 .site-content--fitted-artwork .artwork-detail__footer {
     flex: 0 0 auto;
-    width: 0;
-    min-width: 100%;
+    width: var(--public-fitted-image-width, 100%);
+    max-width: 100%;
+    min-width: 0;
+    margin-inline: auto;
 }
 
-/* Landscape Artwork detail paper may use the available viewport width,
-   independently of General's usual reading width. The menu itself
-   retains its configured width and its chosen surface gap. */
+/* Only the Artwork detail sheet may expand horizontally. The menu and
+   its Gallery-specific surface separation retain their own geometry. */
 #content.site-content--landscape-artwork {
     width: calc(100% - 2 * var(--public-gutter));
     padding-inline: clamp(var(--public-mobile-inset), 2.5vw, 2rem);

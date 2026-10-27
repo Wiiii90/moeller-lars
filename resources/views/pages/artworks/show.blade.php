@@ -27,15 +27,15 @@
         $nextArtwork ??= $sequence->first();
     }
     $preview = app(\App\Domain\Content\SitePreviewContext::class);
+    $fitLandscape = ! $isVideo && $thumbnailWidth > $thumbnailHeight && $presentation::enabled($category);
+    $fitPortrait = ! $isVideo && $thumbnailHeight > $thumbnailWidth && $presentation::portraitEnabled($category);
+    $fitArtwork = $fitLandscape || $fitPortrait;
 @endphp
 
-{{-- Orientation comes from the authoritative public thumbnail dimensions,
-     before image decoding, without any client-side layout measurement. --}}
-@section('content_class', ! $isVideo && $thumbnailWidth > $thumbnailHeight && $presentation::enabled($category)
+{{-- Orientation is determined from the public image dimensions before decoding. --}}
+@section('content_class', $fitLandscape
     ? 'site-content--landscape-artwork site-content--fitted-artwork'
-    : (! $isVideo && $thumbnailHeight > $thumbnailWidth && $presentation::portraitEnabled($category)
-        ? 'site-content--portrait-artwork site-content--fitted-artwork'
-        : ''))
+    : ($fitPortrait ? 'site-content--portrait-artwork site-content--fitted-artwork' : ''))
 
 @section('artwork_header_divider', $presentation::artworkPageDividerOverride($category) ?? '')
 
@@ -57,6 +57,9 @@
             :empty-step-mode="$edgeMode"
         />
         <div class="artwork-detail__media">
+            @if ($fitArtwork)
+                <div class="artwork-detail__image-stage">
+            @endif
             <a
                 class="artwork-detail__viewer-trigger"
                 href="{{ $originalUrl }}"
@@ -103,6 +106,9 @@
                     >
                 @endif
             </a>
+            @if ($fitArtwork)
+                </div>
+            @endif
 
             @if ($isVideo && $presentation::allowVideoSound($category))
                 <div class="public-video__controls">
