@@ -220,6 +220,63 @@ final class PublicationVersionService
         ]);
     }
 
+    public function reconcilePreReleaseSnapshotDefaults(): void
+    {
+        if (! app()->environment(['local', 'testing'])
+            || DB::connection()->getDriverName() !== 'pgsql') {
+            throw new \RuntimeException('Historical snapshot alignment is restricted to local pre-release PostgreSQL.');
+        }
+
+        $columns = [
+            'artwork_categories' => [
+                'artwork_page_surface_mode' => "'inherit'::text",
+                'portrait_detail_enabled' => 'false',
+            ],
+            'blog_posts' => [
+                'image_viewer_enabled' => 'false',
+            ],
+            'exhibitions' => [
+                'image_viewer_enabled' => 'false',
+                'show_city' => 'true',
+                'show_country' => 'true',
+                'show_external_url' => 'true',
+                'show_location_text' => 'true',
+                'show_organizer' => 'true',
+                'show_postal_code' => 'true',
+                'show_venue' => 'true',
+            ],
+            'journal_entry_media' => [
+                'video_controls_enabled' => 'true',
+            ],
+            'public_content_settings' => [
+                'number_format' => "CASE WHEN stored.payload->>'regional_format' = 'de-DE' THEN 'de-DE' ELSE 'en-US' END",
+            ],
+        ];
+
+        foreach ($columns as $table => $defaults) {
+            $properties = [];
+            $missing = [];
+            foreach ($defaults as $column => $fallback) {
+                $properties[] = "'{$column}', CASE WHEN jsonb_exists(stored.payload, '{$column}') "
+                    ."THEN stored.payload->'{$column}' ELSE to_jsonb({$fallback}) END";
+                $missing[] = "NOT jsonb_exists(stored.payload, '{$column}')";
+            }
+
+            DB::update(
+                'UPDATE publication_version_row_manifests AS manifest '
+                .'SET payload_id = resolve_history_payload(stored.payload || jsonb_build_object('
+                .implode(', ', $properties).')) '
+                .'FROM history_payloads AS stored, publication_checkpoints AS checkpoint '
+                .'WHERE manifest.payload_id = stored.id '
+                .'AND manifest.publication_checkpoint_id = checkpoint.id '
+                .'AND checkpoint.snapshot_available = true '
+                .'AND manifest.table_name = ? '
+                .'AND ('.implode(' OR ', $missing).')',
+                [$table],
+            );
+        }
+    }
+
     public function schemaHash(): string
     {
         $rows = DB::table('information_schema.columns')
