@@ -280,7 +280,7 @@ final class AdminRichText
                             captionTop: 0,
                             openCaptionEditor(event) {
                                 const editor = event.detail?.editor ?? this.getRichEditor()
-                                const image = window.ArtistRichImage?.selected(editor)
+                                const image = editor?.storage?.artistImageLayout?.selected(editor)
                                 if (!image) return
                                 this.$refs.richCaptionPanel.__artistEditor = editor
                                 if (this.captionOpen) {
@@ -301,7 +301,7 @@ final class AdminRichText
                             },
                             applyCaption() {
                                 const editor = this.$refs.richCaptionPanel.__artistEditor
-                                if (!window.ArtistRichImage?.setCaption(editor, this.captionText)) return
+                                if (!editor?.storage?.artistImageLayout?.setCaption(editor, this.captionText)) return
                                 this.captionOpen = false
                                 this.commitEditorChange()
                             },

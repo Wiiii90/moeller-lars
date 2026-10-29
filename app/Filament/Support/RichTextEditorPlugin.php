@@ -58,15 +58,18 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                 ->label(__('Link'))
                 ->icon('heroicon-o-link')
                 ->toggle()
-                ->jsHandler("\$dispatch('artist-rich-link-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+                ->activeStyling(false)
+                ->jsHandler("const editor = \$getEditor(); if (editor) editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-link-toggle', { detail: { editor, anchor: \$event.currentTarget }, bubbles: true }))"),
             RichEditorTool::make('textColor')
                 ->label(__('Text color'))
                 ->icon('heroicon-o-swatch')
-                ->jsHandler("\$dispatch('artist-rich-color-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+                ->activeStyling(false)
+                ->jsHandler("const editor = \$getEditor(); if (editor) editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-color-toggle', { detail: { editor, anchor: \$event.currentTarget }, bubbles: true }))"),
             RichEditorTool::make('lineSpacing')
                 ->label(__('Line spacing'))
                 ->icon('heroicon-o-bars-3-bottom-left')
-                ->jsHandler("\$dispatch('artist-rich-spacing-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+                ->activeStyling(false)
+                ->jsHandler("const editor = \$getEditor(); if (editor) editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-spacing-toggle', { detail: { editor, anchor: \$event.currentTarget }, bubbles: true }))"),
             ...array_map(
                 static function (string $name, string $command): RichEditorTool {
                     $suffix = \Illuminate\Support\Str::snake($name);
@@ -82,6 +85,7 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
             RichEditorTool::make('insertStorageImage')
                 ->label(__('Insert image from Storage'))
                 ->icon(AdminIcon::Storage->value)
+                ->activeStyling(false)
                 ->jsHandler("\$dispatch('artist-rich-image-toggle')"),
             ...array_map(
                 static fn (string $placement): RichEditorTool =>
@@ -103,8 +107,8 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                             'float-right' => 'heroicon-o-bars-arrow-up',
                         })
                         ->activeStyling()
-                        ->activeJsExpression("window.ArtistRichImage?.hasPlacement(\$getEditor(), '{$placement}') ?? false")
-                        ->jsHandler("window.ArtistRichImage?.setPlacement(\$getEditor(), '{$placement}')"),
+                        ->activeJsExpression("\$getEditor()?.isActive('image', { artistPlacement: '{$placement}' }) ?? false")
+                        ->jsHandler("const editor = \$getEditor(); if (editor) { const pos = editor.storage.artistImageLayout.selectedPosition(editor); if (Number.isInteger(pos)) { const updated = editor.chain().focus().setNodeSelection(pos).updateAttributes('image', { artistPlacement: '{$placement}' }).run(); if (updated) editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-image-changed', { bubbles: true })); } }"),
                 ArtistImageLayout::PLACEMENTS,
             ),
             RichEditorTool::make('imageCaption')

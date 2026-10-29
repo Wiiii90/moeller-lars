@@ -605,6 +605,10 @@
 .admin-rich-text--visual .tiptap [data-resize-container][data-node="image"]:has(img[data-artist-placement="left"]) { margin-inline: 0 auto; }
 .admin-rich-text--visual .tiptap [data-resize-container][data-node="image"]:has(img[data-artist-placement="center"]) { margin-inline: auto; }
 .admin-rich-text--visual .tiptap [data-resize-container][data-node="image"]:has(img[data-artist-placement="right"]) { margin-inline: auto 0; }
+.admin-rich-text--visual .tiptap [data-resize-container][data-node="image"]:has(img[data-artist-placement="float-left"]),
+.admin-rich-text--visual .tiptap [data-resize-container][data-node="image"]:has(img[data-artist-placement="float-right"]) {
+    max-width: min(45%, 22rem);
+}
 .admin-rich-text--visual .tiptap [data-resize-container][data-node="image"]:has(img[data-artist-placement="float-left"]) { float: left; margin: 0 1rem .75rem 0; }
 .admin-rich-text--visual .tiptap [data-resize-container][data-node="image"]:has(img[data-artist-placement="float-right"]) { float: right; margin: 0 0 .75rem 1rem; }
 

@@ -51,31 +51,24 @@ export default () => {
         return changed;
     };
 
-    window.ArtistRichImage = {
-        selected: editor => {
-            const selected = selectedImage(editor);
-            return selected ? { caption: selected.node.attrs.artistCaption } : null;
-        },
-        hasPlacement: (editor, value) => selectedImage(editor)?.node.attrs.artistPlacement === value,
-        setCaption: (editor, value) => updateSelectedImage(
-            editor, { artistCaption: [...String(value).trim()].slice(0, 500).join('') || null },
-        ),
-        setPlacement: (editor, value) => {
-            const changed = updateSelectedImage(
-                editor, { artistPlacement: placements.has(value) ? value : 'inline' },
-            );
-            if (changed) {
-                editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-image-changed', { bubbles: true }));
-            }
-            return changed;
-        },
-    };
     const { Decoration, DecorationSet } = tiptap.pmView;
     const placements = new Set(['inline', 'left', 'center', 'right', 'float-left', 'float-right']);
     const placement = value => placements.has(value) ? value : 'inline';
 
     return Extension.create({
         name: 'artistImageLayout',
+        addStorage() {
+            return {
+                selectedPosition: editor => selectedImage(editor)?.pos ?? null,
+                selected: editor => {
+                    const image = selectedImage(editor);
+                    return image ? { caption: image.node.attrs.artistCaption } : null;
+                },
+                setCaption: (editor, value) => updateSelectedImage(
+                    editor, { artistCaption: [...String(value).trim()].slice(0, 500).join('') || null },
+                ),
+            };
+        },
         addGlobalAttributes() {
             return [{
                 types: ['image'],
