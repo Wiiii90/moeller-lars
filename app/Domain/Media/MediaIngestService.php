@@ -18,7 +18,10 @@ class MediaIngestService
 {
     // All newly ingested images use bounded libvips. GD is retained only in
     // MediaVariantRegenerationService for historical immutable thumbnails.
-    public const MAX_PIXELS = 120_000_000;
+    // A high-resolution artist JPEG at 9933 x 14043 (~139.5 MP) must be
+    // accepted without removing the decompression safety bound.
+    // libvips generates a bounded thumbnail without full-size GD decoding.
+    public const MAX_PIXELS = 160_000_000;
     public const LARGE_IMAGE_TRANSFORM_PROFILE = 'public-v2';
     public const VIDEO_POSTER_KIND = 'poster';
     public const VIDEO_POSTER_PROFILE = 'video-poster-v1';
@@ -325,7 +328,12 @@ class MediaIngestService
         $width = $dimensions[0];
         $height = $dimensions[1];
         if ($width <= 0 || $height <= 0 || ($width * $height) > self::MAX_PIXELS) {
-            throw $this->validationFailure('The uploaded image dimensions are not allowed.');
+            throw $this->validationFailure(sprintf(
+                'The uploaded image dimensions (%d x %d pixels) are not allowed (maximum %d megapixels).',
+                $width,
+                $height,
+                intdiv(self::MAX_PIXELS, 1_000_000),
+            ));
         }
 
         $preview = app(MediaDerivativeGenerator::class)->imageThumbnail($path);
