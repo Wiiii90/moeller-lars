@@ -33,63 +33,108 @@ function revealDecodedImage(image, key, signal) {
 
 function initializeArtworkDetailImage(root) {
     const image = root.querySelector?.('.artwork-detail__image[data-artwork-image-state="pending"]');
-    if (! image) return () => {};
+    if (!image) return () => {};
 
     const lifetime = new AbortController();
-    const media = image.closest('.artwork-detail__media');
-    const stage = media?.querySelector('.artwork-detail__image-stage');
-    const page = stage?.closest('#content');
-    const frame = page?.closest('.public-paper-frame');
-    const width = Number(image.getAttribute('width'));
-    const height = Number(image.getAttribute('height'));
-    let resizeObserver = null;
-    if (stage && width > 0 && height > 0) {
-        const fit = () => {
-            if (lifetime.signal.aborted) return;
-            const { width: availableWidth, height: availableHeight } = stage.getBoundingClientRect();
-            if (availableWidth <= 0 || availableHeight <= 0) return;
-            const standardWidth = Number.parseFloat(getComputedStyle(document.documentElement)
-                .getPropertyValue('--public-art-max')) || 0;
-            const fittedWidth = Math.min(availableWidth, Math.max(
-                availableHeight * width / height,
-                Math.min(availableWidth, standardWidth),
-            ));
-            const value = Math.max(1, Math.floor(fittedWidth * 100) / 100) + 'px';
-            if (media.style.getPropertyValue('--public-fitted-image-width') !== value) {
-                media.style.setProperty('--public-fitted-image-width', value);
-            }
-            if (page && frame) {
-                const style = getComputedStyle(page);
-                const horizontalPadding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-                const paperWidth = Math.ceil(fittedWidth + horizontalPadding) + 'px';
-                if (frame.style.getPropertyValue('--public-fitted-paper-width') !== paperWidth) {
-                    frame.style.setProperty('--public-fitted-paper-width', paperWidth);
-                }
-            }
-        };
-        fit();
-        if (typeof ResizeObserver === 'function') {
-            resizeObserver = new ResizeObserver(fit);
-            resizeObserver.observe(stage);
-        } else {
-            window.addEventListener('resize', fit, { passive: true, signal: lifetime.signal });
+    const page = image.closest('#content');
+    const detail = image.closest('.artwork-detail');
+    const sourceWidth = Number(image.getAttribute('width'));
+    const sourceHeight = Number(image.getAttribute('height'));
+    const stylesheet = [...document.querySelectorAll('style[data-public-layout-style]')].at(-1)?.sheet;
+    const rootRule = [...(stylesheet?.cssRules ?? [])].find((rule) => rule.selectorText === ':root');
+    const fitStyle = rootRule?.style;
+    let frameRequest = 0;
+
+    const clearFit = () => {
+        fitStyle?.removeProperty('--public-fitted-image-width');
+        fitStyle?.removeProperty('--public-fitted-paper-width');
+    };
+
+    const outerHeight = (element) => {
+        if (!element) return 0;
+        const style = getComputedStyle(element);
+        return element.getBoundingClientRect().height
+            + (Number.parseFloat(style.marginTop) || 0)
+            + (Number.parseFloat(style.marginBottom) || 0);
+    };
+
+    const fit = () => {
+        if (lifetime.signal.aborted || !fitStyle || !page || !detail
+            || sourceWidth <= 0 || sourceHeight <= 0) return;
+
+        // The small-screen presentation remains the existing native Artwork
+        // layout, even after repeated narrow/wide viewport transitions.
+        if (!window.matchMedia('(min-width: 64.001rem)').matches) {
+            clearFit();
+            return;
         }
+
+        // Only viewport and unrelated fixed-height siblings are measured.
+        // Never read the image stage, image, paper width or Menu surface:
+        // doing so fed our own previous writes back into the next resize.
+        const viewportWidth = document.documentElement.clientWidth;
+        const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+        const gutter = Math.min(1.5 * rem, Math.max(.65 * rem, .02 * viewportWidth));
+        const inset = gutter;
+        const availableWidth = Math.max(1, viewportWidth - 2 * gutter - 2 * inset);
+        const pageStyle = getComputedStyle(page);
+        const reserve = outerHeight(document.querySelector('.site-header'))
+            + outerHeight(detail.querySelector('.artwork-folio'))
+            + outerHeight(detail.querySelector('.artwork-detail__footer'))
+            + outerHeight(detail.querySelector('.artwork-detail__narrative'))
+            + outerHeight(detail.querySelector('.artwork-detail__credits'))
+            + (Number.parseFloat(pageStyle.paddingTop) || 0)
+            + (Number.parseFloat(pageStyle.paddingBottom) || 0)
+            + 1.5 * rem;
+        const heightForImage = Math.max(0, window.innerHeight - reserve);
+        const configuredWidth = Number.parseFloat(getComputedStyle(document.documentElement)
+            .getPropertyValue('--public-art-max')) || 0;
+        const fittedWidth = Math.min(availableWidth, Math.max(
+            heightForImage * sourceWidth / sourceHeight,
+            Math.min(availableWidth, configuredWidth),
+        ));
+
+        const generalShellWidth = Number.parseFloat(getComputedStyle(document.documentElement)
+            .getPropertyValue('--public-shell-max')) || 0;
+        const paperWidth = Math.max(
+            fittedWidth + 2 * inset,
+            Math.min(viewportWidth - 2 * gutter, generalShellWidth),
+        );
+        fitStyle.setProperty('--public-fitted-image-width', Math.floor(fittedWidth) + 'px');
+        fitStyle.setProperty('--public-fitted-paper-width', Math.ceil(paperWidth) + 'px');
+    };
+
+    const scheduleFit = () => {
+        if (frameRequest) cancelAnimationFrame(frameRequest);
+        frameRequest = requestAnimationFrame(() => {
+            frameRequest = 0;
+            fit();
+        });
+    };
+
+    if (page?.classList.contains('site-content--fitted-artwork') && fitStyle) {
+        fit();
+        window.addEventListener('resize', scheduleFit, { passive: true, signal: lifetime.signal });
+        // The navigation controller may settle its height after page setup.
+        scheduleFit();
+        document.fonts?.ready?.then(() => {
+            if (!lifetime.signal.aborted) scheduleFit();
+        });
     }
+
     const ready = () => revealDecodedImage(image, 'artworkImageState', lifetime.signal);
     const failed = () => {
-        // Keep broken-image ALT visible: a real media failure must not silently
-        // become a permanently blank artwork.
         image.dataset.artworkImageState = 'error';
     };
 
     image.addEventListener('load', ready, { signal: lifetime.signal });
     image.addEventListener('error', failed, { signal: lifetime.signal });
-    // The image may have completed before the SPA page initializer runs.
     if (image.complete) ready();
 
     return () => {
         lifetime.abort();
-        resizeObserver?.disconnect();
+        if (frameRequest) cancelAnimationFrame(frameRequest);
+        clearFit();
     };
 }
 

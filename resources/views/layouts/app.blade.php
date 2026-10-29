@@ -99,6 +99,7 @@
                 <x-public.artist-name :home-url="$homeUrl" :title="$publicHeaderText" />
             @endif
             @unless ($__env->hasSection('hide_navigation'))
+                <div class="site-navigation-surface">
                 @php
                     $selectedNavigationParent = collect($navigationItems)->first(fn ($item) => $item['active'] && $item['children'] !== []);
                 @endphp
@@ -194,6 +195,7 @@
                             </div>
                         @endif
                     @endforeach
+                </div>
                 </div>
             @endunless
         </header>

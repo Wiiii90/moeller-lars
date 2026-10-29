@@ -64,7 +64,6 @@ export function applyPublicLayoutFromMeta() {
     const dividerModes = ['fine', 'menu', 'full', 'separate', 'full_gap'];
     const header = document.querySelector('.site-header');
     header?.classList.toggle('site-header--artwork-wide-menu', config.dataset.publicLayoutArtworkWideMenu === '1');
-    document.querySelector('.public-paper-frame')?.style.removeProperty('--public-fitted-paper-width');
     const dividerMode = config.dataset.publicLayoutDividerMode;
     if (header && dividerModes.includes(dividerMode)) {
         for (const candidate of dividerModes) {
