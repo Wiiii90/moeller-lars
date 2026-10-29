@@ -101,7 +101,9 @@ body {
 }
 
 .site-navigation::before,
-.site-navigation::after {
+.site-navigation::after,
+.site-navigation-surface::before,
+.site-navigation-surface::after {
     position: absolute;
     box-sizing: border-box;
     content: "";
@@ -109,7 +111,8 @@ body {
 }
 /* Open at the top, with only a short bottom connection into the
    sheet. The white stroke never extends past the lower menu border. */
-.site-navigation::before {
+.site-navigation::before,
+.site-navigation-surface::before {
     top: 0;
     bottom: var(--public-menu-left-bottom, 40%);
     left: calc(-1 * var(--public-folio-edge-outset));
@@ -119,7 +122,8 @@ body {
 }
 /* The eastern line also has only its lower joined return, without
    an overshoot into the rear paper planes. */
-.site-navigation::after {
+.site-navigation::after,
+.site-navigation-surface::after {
     top: 0;
     bottom: var(--public-menu-right-bottom, 9%);
     right: calc(-1 * var(--public-folio-edge-outset));
@@ -699,27 +703,7 @@ body {
 
     .site-header--artwork-wide-menu .site-navigation-surface::before,
     .site-header--artwork-wide-menu .site-navigation-surface::after {
-        position: absolute;
-        box-sizing: border-box;
-        top: 0;
-        content: "";
-        pointer-events: none;
-    }
-
-    .site-header--artwork-wide-menu .site-navigation-surface::before {
-        bottom: var(--public-menu-left-bottom, 40%);
-        left: calc(-1 * var(--public-folio-edge-outset));
-        width: var(--public-folio-edge-outset);
-        border-left: 1px solid var(--public-folio-light);
-        border-bottom: 1px solid var(--public-folio-soft);
-    }
-
-    .site-header--artwork-wide-menu .site-navigation-surface::after {
-        bottom: var(--public-menu-right-bottom, 9%);
-        right: calc(-1 * var(--public-folio-edge-outset));
-        width: var(--public-folio-edge-outset);
-        border-right: 1px solid var(--public-folio-light);
-        border-bottom: 1px solid var(--public-folio-soft);
+        display: block;
     }
 
     .site-header--divider-menu.site-header--artwork-wide-menu .site-navigation {
@@ -732,6 +716,10 @@ body {
 
     .public-paper-frame--connected .site-navigation-surface::before,
     .public-paper-frame--connected .site-navigation-surface::after,
+    body.public-site--frame-continuous
+    .public-paper-frame--compatible:not(.public-paper-frame--connected) .site-navigation-surface::before,
+    body.public-site--frame-continuous
+    .public-paper-frame--compatible:not(.public-paper-frame--connected) .site-navigation-surface::after,
     body.public-site--frame-backing .site-navigation-surface::before,
     body.public-site--frame-backing .site-navigation-surface::after,
     body.public-site--frame-plain .site-navigation-surface::before,
@@ -748,6 +736,11 @@ body {
    the established header layout and its navigation rules are unchanged. */
 .site-navigation-surface {
     display: contents;
+}
+
+.site-navigation-surface::before,
+.site-navigation-surface::after {
+    display: none;
 }
 
 /* Artwork arrows remain on the original centered General-width track,
