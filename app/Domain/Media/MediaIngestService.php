@@ -18,10 +18,10 @@ class MediaIngestService
 {
     // All newly ingested images use bounded libvips. GD is retained only in
     // MediaVariantRegenerationService for historical immutable thumbnails.
-    // A high-resolution artist JPEG at 9933 x 14043 (~139.5 MP) must be
-    // accepted without removing the decompression safety bound.
-    // libvips generates a bounded thumbnail without full-size GD decoding.
-    public const MAX_PIXELS = 160_000_000;
+    // Allow native high-resolution camera images and approximately 400 MP
+    // multi-shot composites, with headroom, while retaining a finite
+    // decompression safety bound. Runtime resource limits still apply.
+    public const MAX_PIXELS = 500_000_000;
     public const LARGE_IMAGE_TRANSFORM_PROFILE = 'public-v2';
     public const VIDEO_POSTER_KIND = 'poster';
     public const VIDEO_POSTER_PROFILE = 'video-poster-v1';
