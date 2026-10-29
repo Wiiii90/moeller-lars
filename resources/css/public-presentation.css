@@ -655,6 +655,11 @@ body.public-site:has(#content.site-content--fitted-artwork) .public-paper-frame 
     min-height: min-content;
 }
 
+#content.site-content--fitted-artwork {
+    width: min(calc(100% - 2 * var(--public-gutter)), var(--public-fitted-paper-width, 100%));
+    padding-inline: clamp(var(--public-mobile-inset), 2vw, 1.5rem);
+}
+
 #content.site-content--fitted-artwork,
 .site-content--fitted-artwork > .public-content-reveal,
 .site-content--fitted-artwork .artwork-detail {
@@ -708,15 +713,18 @@ body.public-site:has(#content.site-content--fitted-artwork) .public-paper-frame 
     margin-inline: auto;
 }
 
-/* Only the Artwork detail sheet may expand horizontally. The menu and
-   its Gallery-specific surface separation retain their own geometry. */
-#content.site-content--landscape-artwork {
-    width: calc(100% - 2 * var(--public-gutter));
-    padding-inline: clamp(var(--public-mobile-inset), 2.5vw, 2rem);
+/* Both orientations may use the full available media width. The sheet
+   subsequently follows the real image rather than empty space. */
+.site-content--fitted-artwork .artwork-detail {
+    width: 100%;
 }
 
-.site-content--landscape-artwork .artwork-detail {
-    width: 100%;
+/* Optional Gallery-level Menu surface width leaves its title, controls
+   and navigation in General's original inner layout. */
+.site-header--artwork-wide-menu .site-navigation {
+    width: min(calc(100% - 2 * var(--public-gutter)),
+        var(--public-fitted-paper-width, var(--public-shell-max)));
+    padding-inline: max(0px, calc((100% - var(--public-shell-max)) / 2));
 }
 
 /* Artwork arrows remain on the original centered General-width track,
@@ -1855,8 +1863,13 @@ html:has(.artwork-viewer[open]) {
     pointer-events: none;
 }
 
-/* One static pair of contours: no observed layout measurements, no
- * frame-by-frame inline CSS writes and no self-triggering resize loops. */
+/* The connected frame retains one shared pair of contours. */
+/* Match the connected paper outline to the Artwork-specific Menu width. */
+.public-paper-frame:has(.site-header--artwork-wide-menu) > .public-paper-decoration {
+    width: min(calc(100% - 2 * var(--public-gutter)),
+        var(--public-fitted-paper-width, var(--public-shell-max)));
+}
+
 .public-paper-decoration::before,
 .public-paper-decoration::after {
     position: absolute;

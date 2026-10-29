@@ -113,6 +113,11 @@ final class GalleryPresentation
         };
     }
 
+    public static function wideArtworkMenu(ArtworkCategory $gallery): bool
+    {
+        return (bool) $gallery->getAttribute('artwork_menu_surface_wide');
+    }
+
     public const DIVIDER_NONE = 'none';
 
     public const DIVIDER_OPTIONS = [self::DIVIDER_NONE => 'None', ...DividerVariant::LABELS];
@@ -149,6 +154,13 @@ final class GalleryPresentation
                 throw ValidationException::withMessages(['sort_mode' => 'Choose a supported Gallery order.']);
             }
             $values['sort_mode'] = $data['sort_mode'];
+        }
+        if (array_key_exists('artwork_menu_surface_wide', $data)) {
+            $wide = $data['artwork_menu_surface_wide'];
+            if (! is_bool($wide) && ! in_array($wide, [0, 1, '0', '1'], true)) {
+                throw ValidationException::withMessages(['artwork_menu_surface_wide' => 'Choose whether the Menu surface matches the Artwork page width.']);
+            }
+            $values['artwork_menu_surface_wide'] = (bool) $wide;
         }
         if (array_key_exists('artwork_page_surface_mode', $data)) {
             $mode = $data['artwork_page_surface_mode'];

@@ -38,6 +38,8 @@ function initializeArtworkDetailImage(root) {
     const lifetime = new AbortController();
     const media = image.closest('.artwork-detail__media');
     const stage = media?.querySelector('.artwork-detail__image-stage');
+    const page = stage?.closest('#content');
+    const frame = page?.closest('.public-paper-frame');
     const width = Number(image.getAttribute('width'));
     const height = Number(image.getAttribute('height'));
     let resizeObserver = null;
@@ -46,10 +48,23 @@ function initializeArtworkDetailImage(root) {
             if (lifetime.signal.aborted) return;
             const { width: availableWidth, height: availableHeight } = stage.getBoundingClientRect();
             if (availableWidth <= 0 || availableHeight <= 0) return;
-            const fittedWidth = Math.min(availableWidth, availableHeight * width / height);
+            const standardWidth = Number.parseFloat(getComputedStyle(document.documentElement)
+                .getPropertyValue('--public-art-max')) || 0;
+            const fittedWidth = Math.min(availableWidth, Math.max(
+                availableHeight * width / height,
+                Math.min(availableWidth, standardWidth),
+            ));
             const value = Math.max(1, Math.floor(fittedWidth * 100) / 100) + 'px';
             if (media.style.getPropertyValue('--public-fitted-image-width') !== value) {
                 media.style.setProperty('--public-fitted-image-width', value);
+            }
+            if (page && frame) {
+                const style = getComputedStyle(page);
+                const horizontalPadding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+                const paperWidth = Math.ceil(fittedWidth + horizontalPadding) + 'px';
+                if (frame.style.getPropertyValue('--public-fitted-paper-width') !== paperWidth) {
+                    frame.style.setProperty('--public-fitted-paper-width', paperWidth);
+                }
             }
         };
         fit();

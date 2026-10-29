@@ -38,6 +38,7 @@
     : ($fitPortrait ? 'site-content--portrait-artwork site-content--fitted-artwork' : ''))
 
 @section('artwork_header_divider', $presentation::artworkPageDividerOverride($category) ?? '')
+@section('artwork_menu_surface_wide', $presentation::wideArtworkMenu($category) ? '1' : '')
 
 @section('title', $artwork->title.' — Lars Möller')
 @section('meta_description', $artwork->description ?: $artwork->title.' — Lars Möller')
