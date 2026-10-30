@@ -38,6 +38,7 @@ function initializeArtworkDetailImage(root) {
     const lifetime = new AbortController();
     const page = image.closest('#content');
     const detail = image.closest('.artwork-detail');
+    const stage = detail?.querySelector('.artwork-detail__image-stage');
     const sourceWidth = Number(image.getAttribute('width'));
     const sourceHeight = Number(image.getAttribute('height'));
     const stylesheet = [...document.querySelectorAll('style[data-public-layout-style]')].at(-1)?.sheet;
@@ -59,7 +60,7 @@ function initializeArtworkDetailImage(root) {
     };
 
     const fit = () => {
-        if (lifetime.signal.aborted || !fitStyle || !page || !detail
+        if (lifetime.signal.aborted || !fitStyle || !page || !detail || !stage
             || sourceWidth <= 0 || sourceHeight <= 0) return;
 
         // The small-screen presentation remains the existing native Artwork
@@ -69,30 +70,26 @@ function initializeArtworkDetailImage(root) {
             return;
         }
 
-        // Only viewport and unrelated fixed-height siblings are measured.
-        // Never read the image stage, image, paper width or Menu surface:
-        // doing so fed our own previous writes back into the next resize.
+        // The stage's document position is independent of its image height.
+        // Its top edge already includes the actual Menu height, optional
+        // Menu/Page gap, page top inset and Artwork navigation. Do not measure
+        // the stage's dimensions or any width derived from our own fit.
         const viewportWidth = document.documentElement.clientWidth;
         const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
         const gutter = Math.min(1.5 * rem, Math.max(.65 * rem, .02 * viewportWidth));
         const inset = gutter;
         const availableWidth = Math.max(1, viewportWidth - 2 * gutter - 2 * inset);
         const pageStyle = getComputedStyle(page);
-        const reserve = outerHeight(document.querySelector('.site-header'))
-            + outerHeight(detail.querySelector('.artwork-folio'))
-            + outerHeight(detail.querySelector('.artwork-detail__footer'))
+        const imageTop = stage.getBoundingClientRect().top + window.scrollY;
+        const reserveBelow = outerHeight(detail.querySelector('.artwork-detail__footer'))
             + outerHeight(detail.querySelector('.artwork-detail__narrative'))
             + outerHeight(detail.querySelector('.artwork-detail__credits'))
-            + (Number.parseFloat(pageStyle.paddingTop) || 0)
             + (Number.parseFloat(pageStyle.paddingBottom) || 0)
-            + 1.5 * rem;
-        const heightForImage = Math.max(0, window.innerHeight - reserve);
-        const configuredWidth = Number.parseFloat(getComputedStyle(document.documentElement)
-            .getPropertyValue('--public-art-max')) || 0;
-        const fittedWidth = Math.min(availableWidth, Math.max(
-            heightForImage * sourceWidth / sourceHeight,
-            Math.min(availableWidth, configuredWidth),
-        ));
+            + (Number.parseFloat(pageStyle.marginBottom) || 0);
+        const heightForImage = Math.max(0, window.innerHeight - imageTop - reserveBelow);
+        // The configured normal Artwork width is NOT a minimum: forcing it
+        // after height fitting made portrait images taller than the viewport.
+        const fittedWidth = Math.min(availableWidth, heightForImage * sourceWidth / sourceHeight);
 
         const generalShellWidth = Number.parseFloat(getComputedStyle(document.documentElement)
             .getPropertyValue('--public-shell-max')) || 0;
