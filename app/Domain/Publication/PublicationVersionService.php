@@ -257,7 +257,7 @@ final class PublicationVersionService
             foreach ($columns as $column) {
                 $name = (string) $column->column_name;
                 if (preg_match('/\\A[a-z_][a-z0-9_]*\\z/D', $name) !== 1) {
-                    throw new \\RuntimeException('Unsupported historical column identity.');
+                    throw new \RuntimeException('Unsupported historical column identity.');
                 }
 
                 $missing = DB::table('publication_version_row_manifests as manifest')
@@ -285,7 +285,7 @@ final class PublicationVersionService
                 } elseif (! (bool) $column->is_required && $column->default_expression === null) {
                     $fallback = 'NULL::text';
                 } else {
-                    throw new \\RuntimeException("Cannot safely reconstruct historical default for {$table}.{$name}.");
+                    throw new \RuntimeException("Cannot safely reconstruct historical default for {$table}.{$name}.");
                 }
 
                 DB::update(
