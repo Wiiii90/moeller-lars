@@ -88,7 +88,7 @@ A completed task handoff reports the **working branch, checked base/head commits
 
 ## Knowledge and ownership
 
-- Personal record: **this worker's actual assignments and progress**. Keep it short and replace superseded text at milestones.
+- Personal record: **this worker's actual assignments and verified progress**. Keep it short, preserve only durable project milestones and outstanding gates, and replace superseded text at milestones. Do not copy terminal errors, personal blame narratives, failed command sequences, private server locations, Internet Protocol (IP) addresses, Secure Shell (SSH) connection details, backup archive names or checksums, credentials or access paths into a public worker record, roster, commit message or progress file. Review every public commit diff for such content. A corrective commit fixes the current tree but does **not** erase older Git commits; any history sanitization requires a separately reviewed impact plan for concurrent workers, other branches, caches and local copies.
 - Roster: sign-in/sign-out, claimed file/feature scopes and coordination among workers **on this branch**. Do not copy entire assignments into a second file.
 - Durable `docs/` and project procedures: accepted design, system behavior, architectural decisions, testing method and reusable process. A worker promotes verified lasting findings to the existing owning document; it does not preserve useful knowledge only in disposable memory.
 - Git history: previous records are recoverable within the originating branch, but are **not** a substitute for current tasks or an automatically runnable handoff.
