@@ -30,14 +30,9 @@
     table-layout: fixed;
 }
 
-.admin-repeater-table__table th:first-child { width: auto; }
-.admin-repeater-table__table th:nth-child(2):not(:last-child) { width: 11rem; }
-.admin-repeater-table__table th.admin-table__actions {
-    width: calc(
-        var(--admin-row-action-slot-move-up-width) + var(--admin-row-action-slot-move-down-width)
-        + var(--admin-row-action-slot-delete-width) + .75rem
-    );
-}
+.admin-repeater-table__table th:first-child { width: 55%; }
+.admin-repeater-table__table th:nth-child(2):not(:last-child) { width: 26%; }
+.admin-repeater-table__table th.admin-table__actions { width: 19%; }
 
 .admin-repeater-table__table td {
     min-width: 0;
@@ -56,6 +51,17 @@
 
 .admin-repeater-table--media .admin-repeater-table__table th:first-child {
     width: auto;
+}
+
+.admin-repeater-table--media .admin-repeater-table__table th:nth-child(2):not(:last-child) {
+    width: 11rem;
+}
+
+.admin-repeater-table--media .admin-repeater-table__table th.admin-table__actions {
+    width: calc(
+        var(--admin-row-action-slot-move-up-width) + var(--admin-row-action-slot-move-down-width)
+        + var(--admin-row-action-slot-delete-width) + .75rem
+    );
 }
 
 .admin-repeater-table--media .admin-repeater-table__table td:first-child .fi-select-input-value-label img {
