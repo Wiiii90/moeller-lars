@@ -145,6 +145,8 @@ test('Artwork detail image displays only when loaded, and exposes a real media f
         image.complete = complete;
         image.naturalWidth = naturalWidth;
         image.dataset = { artworkImageState: 'pending' };
+        image.closest = () => null;
+        image.getAttribute = () => null;
         return image;
     };
     const setup = (image) => ({
@@ -152,28 +154,35 @@ test('Artwork detail image displays only when loaded, and exposes a real media f
         querySelectorAll: () => [],
     });
 
-    const loading = makeImage();
-    const stop = initializeGalleryImageLoading(setup(loading));
-    assert.equal(loading.dataset.artworkImageState, 'pending');
-    loading.naturalWidth = 960;
-    loading.dispatchEvent(new Event('load'));
-    assert.equal(loading.dataset.artworkImageState, 'ready');
-    stop();
+    const previousDocument = globalThis.document;
+    globalThis.document = { querySelectorAll: () => [] };
+    try {
+        const loading = makeImage();
+        const stop = initializeGalleryImageLoading(setup(loading));
+        assert.equal(loading.dataset.artworkImageState, 'pending');
+        loading.naturalWidth = 960;
+        loading.dispatchEvent(new Event('load'));
+        assert.equal(loading.dataset.artworkImageState, 'ready');
+        stop();
 
-    const broken = makeImage();
-    initializeGalleryImageLoading(setup(broken));
-    broken.dispatchEvent(new Event('error'));
-    assert.equal(broken.dataset.artworkImageState, 'error');
+        const broken = makeImage();
+        initializeGalleryImageLoading(setup(broken));
+        broken.dispatchEvent(new Event('error'));
+        assert.equal(broken.dataset.artworkImageState, 'error');
 
-    const cached = makeImage(true, 960);
-    initializeGalleryImageLoading(setup(cached));
-    assert.equal(cached.dataset.artworkImageState, 'ready');
+        const cached = makeImage(true, 960);
+        initializeGalleryImageLoading(setup(cached));
+        assert.equal(cached.dataset.artworkImageState, 'ready');
 
-    const disposed = makeImage();
-    initializeGalleryImageLoading(setup(disposed))();
-    disposed.naturalWidth = 960;
-    disposed.dispatchEvent(new Event('load'));
-    assert.equal(disposed.dataset.artworkImageState, 'pending');
+        const disposed = makeImage();
+        initializeGalleryImageLoading(setup(disposed))();
+        disposed.naturalWidth = 960;
+        disposed.dispatchEvent(new Event('load'));
+        assert.equal(disposed.dataset.artworkImageState, 'pending');
+    } finally {
+        if (previousDocument === undefined) delete globalThis.document;
+        else globalThis.document = previousDocument;
+    }
 });
 
 test('initial Gallery images report decode, cached readiness and failure', async () => {

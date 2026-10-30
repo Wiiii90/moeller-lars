@@ -112,6 +112,16 @@ it('ingests canonical media with durable checksums and a rebuildable public thum
         ->and($variant->state)->toBe('available')
         ->and($variant->byte_size)->toBe(strlen($thumbnailBytes))
         ->and($variant->sha256)->toBe(hash('sha256', $thumbnailBytes));
+
+    $removed = app(MediaVariantRegenerationService::class)->reclaimRebuildableFiles();
+    expect($removed['files'])->toBeGreaterThanOrEqual(1)
+        ->and($removed['bytes'])->toBeGreaterThanOrEqual(strlen($thumbnailBytes))
+        ->and($disk->exists($variant->storage_key))->toBeFalse()
+        ->and($disk->get($asset->storage_key))->toBe($originalBytes)
+        ->and($variant->fresh()->sha256)->toBe(hash('sha256', $thumbnailBytes));
+
+    expect(app(MediaVariantRegenerationService::class)->ensureFile($variant))->toBeTrue()
+        ->and($disk->get($variant->storage_key))->toBe($thumbnailBytes);
 });
 
 it('ingests an image above the legacy GD cap through bounded libvips and regenerates its exact variant', function (): void {
