@@ -234,6 +234,53 @@ final class PublicationVersionService
             throw new \RuntimeException('Historical snapshot alignment requires local/testing or authorized offline Validation.');
         }
 
+        // Reproduce the exact editorial data migrations from 2026-10-20.
+        // Only pre-migration history qualifies; newly authored exhibition
+        // values and checkpoints created after those migrations stay intact.
+        // Legacy Vita imported the organization name into "venue". Migration
+        // 2026_10_20_010000 moved it to "organizer" and cleared "venue".
+        DB::update(<<<'SQL'
+            UPDATE publication_version_row_manifests AS manifest
+            SET payload_id = resolve_history_payload(
+                stored.payload || jsonb_build_object(
+                    'organizer', stored.payload->'venue',
+                    'venue', NULL::text
+                )
+            )
+            FROM history_payloads AS stored, publication_checkpoints AS checkpoint
+            WHERE manifest.payload_id = stored.id
+              AND manifest.publication_checkpoint_id = checkpoint.id
+              AND checkpoint.snapshot_available = true
+              AND manifest.table_name = 'exhibitions'
+              AND stored.payload->>'legacy_source' = 'legacy-public-vita'
+              AND NOT jsonb_exists(stored.payload, 'organizer')
+              AND NULLIF(btrim(stored.payload->>'venue'), '') IS NOT NULL
+            SQL);
+
+        // Migration 2026_10_20_180000 reconstructed a documented two-venue
+        // address for one unedited legacy exhibition. Replay only that exact
+        // source identity and its original null/city-only field values.
+        DB::update(<<<'SQL'
+            UPDATE publication_version_row_manifests AS manifest
+            SET payload_id = resolve_history_payload(
+                stored.payload || jsonb_build_object(
+                    'location_text', 'Hans Albers Eck, Hans-Albers-Platz 20 & Hans-Albers-Klause, Friedrichstraße 19.',
+                    'city', 'Hamburg'
+                )
+            )
+            FROM history_payloads AS stored, publication_checkpoints AS checkpoint
+            WHERE manifest.payload_id = stored.id
+              AND manifest.publication_checkpoint_id = checkpoint.id
+              AND checkpoint.snapshot_available = true
+              AND manifest.table_name = 'exhibitions'
+              AND stored.payload->>'legacy_source' = 'legacy-public-vita'
+              AND stored.payload->>'title' = 'Der blonde Hans'
+              AND stored.payload->>'description' = 'Hans Albers Eck, Hans-Albers-Platz 20 & Hans-Albers-Klause, Friedrichstraße 19.'
+              AND (stored.payload->>'location_text' IS NULL OR stored.payload->>'location_text' = 'Hamburg')
+              AND (stored.payload->>'city' IS NULL OR stored.payload->>'city' = 'Hamburg')
+              AND stored.payload->>'map_enabled' = 'false'
+            SQL);
+
         // PostgreSQL migrations update Working and Committed columns, but
         // restorable historical payloads remain immutable old-schema rows.
         // Backfill only absent keys using the actual schema's static defaults.
@@ -274,7 +321,13 @@ final class PublicationVersionService
 
                 // The number-format migration derives its backfill from the
                 // then-current regional format, not its schema default.
-                if ($table === 'public_content_settings' && $name === 'number_format') {
+                if ($table === 'exhibitions' && $name === 'show_vernissage') {
+                    // 2026_10_20_010000 also enabled the opening flag for
+                    // legacy events with a date or non-empty opening text.
+                    $fallback = "CASE WHEN stored.payload->>'vernissage_at' IS NOT NULL "
+                        ."OR NULLIF(btrim(stored.payload->>'opening_text'), '') IS NOT NULL "
+                        ."THEN true ELSE false END";
+                } elseif ($table === 'public_content_settings' && $name === 'number_format') {
                     $fallback = "CASE WHEN COALESCE(stored.payload->>'regional_format', 'de-DE') = 'de-DE' THEN 'de-DE' ELSE 'en-US' END";
                 } elseif ($table === 'public_content_settings' && $name === 'header_divider_mode') {
                     // Historic joined/split headers were mapped to divider modes.
