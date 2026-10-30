@@ -6,6 +6,8 @@
 
 **Übernahme 30.10.2026:** Die letzte Server-Rückmeldung bestätigt `validation environment is healthy and authenticated ingress is enabled`; Off-Host-Kopie und isolierte Restore-Prüfung ausstehend. Der Benutzer führte PowerShell-Befehle irrtümlich in der Linux-Root-Shell aus (Set-Location und `$remote` nicht interpretierbar). Keine erfolgreichen Kopier-/Hashprüfungen, keine Serveränderung durch diese fehlerhaften Befehle. Nächster Schritt: klar getrennte Windows- versus Linux-Konsole, Übertragung ausschließlich von Windows mit der realen SSH-Verbindung, SHA-256-Abgleich; Original-Backup bleibt unverändert. Keine Cutover-Freigabe daraus ableiten.
 
+**Windows-Off-Host-Kopie — Folgebericht 30.10.2026:** Benutzer führte zuerst die interaktiven `Read-Host`-Abfragen jeweils ohne Eingabe aus. `$backupDir`/`$remote` waren leer, daher alle lokalen Pfad-/Kopier-/Prüfoperationen fehlgeschlagen; eine zuvor unabhängig ausgegebene Erfolgsmeldung war **bedingungslos und sachlich falsch**. Keine Kopie, kein Hashvergleich, kein Restore. Ersatzanleitung nutzt einen einzigen abbrechenden PowerShell-Skriptblock, validiert den vorhandenen verschlüsselten Backup-Zielordner und die tatsächliche SSH-Verbindung und meldet Erfolg ausschließlich nach vollständiger Übertragung und Hashvergleich. Weiterhin auf Nutzerergebnis warten, keine Änderung auf Validation; bei Teilkopie keinen stillen Override.
+
 ## 1. Verbindliche Nutzerziele und Einschränkungen
 
 - **Dringendster Produktblocker:** Der Künstler kann Bilder nicht zuverlässig hochladen und hat deshalb die Arbeit am Administrationsbereich eingestellt. Ein Quellcode-Commit gilt NICHT als nachgewiesene Reparatur. Wirkliche Browserprüfung mit den bisher fehlgeschlagenen Bildern priorisieren.
