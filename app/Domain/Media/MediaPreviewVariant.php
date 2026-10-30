@@ -7,7 +7,7 @@ use App\Models\MediaVariant;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
- * One source of truth for immutable public-v1/public-v2 image thumbnails
+ * One source of truth for current libvips image thumbnails
  * and optional video-poster-v1 variants across Publication, Admin and Public.
  */
 final class MediaPreviewVariant
@@ -16,10 +16,7 @@ final class MediaPreviewVariant
     {
         return $variant->getAttribute('state') === 'available'
             && $variant->getAttribute('variant_kind') === MediaIngestService::THUMBNAIL_KIND
-            && in_array((string) $variant->getAttribute('transform_profile'), [
-                MediaIngestService::TRANSFORM_PROFILE,
-                MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
-            ], true)
+            && $variant->getAttribute('transform_profile') === MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE
             && $variant->getAttribute('mime_type') === 'image/webp';
     }
 

@@ -18,6 +18,12 @@
     width: 100%;
 }
 
+.admin-repeater-table__table {
+    position: relative;
+    z-index: 1;
+    overflow: visible !important;
+}
+
 .admin-repeater-table__table > table {
     width: 100%;
     min-width: 0;
@@ -44,11 +50,18 @@
 }
 
 .admin-repeater-table--media .admin-repeater-table__table th:first-child {
-    width: 66%;
+    width: auto;
+}
+
+.admin-repeater-table--media .admin-repeater-table__table th:nth-child(2):not(:last-child) {
+    width: 11rem;
 }
 
 .admin-repeater-table--media .admin-repeater-table__table th.admin-table__actions {
-    width: 34%;
+    width: calc(
+        var(--admin-row-action-slot-move-up-width) + var(--admin-row-action-slot-move-down-width)
+        + var(--admin-row-action-slot-delete-width) + .75rem
+    );
 }
 
 .admin-repeater-table--media .admin-repeater-table__table td:first-child .fi-select-input-value-label img {
@@ -62,6 +75,11 @@
 }
 
 @container admin-table (max-width: 38rem) {
+    .admin-repeater-table--media .admin-repeater-table__table th:nth-child(2):not(:last-child),
+    .admin-repeater-table--media .admin-repeater-table__table th.admin-table__actions {
+        width: 6.5rem;
+    }
+
     .admin-repeater-table--media .admin-repeater-table__table td.admin-table__actions .admin-action__label {
         display: none;
     }

@@ -78,6 +78,8 @@ services:
       preview:
         condition: service_healthy
     command: php artisan queue:work database --queue=media-rights --sleep=2 --tries=3 --timeout=180
+    healthcheck:
+      disable: true
     restart: unless-stopped
 
   postgres:

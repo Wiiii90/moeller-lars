@@ -43,13 +43,38 @@ final class MediaThumbnailCutoverService
     }
 
     /**
+     * Validation may run this only inside the platform's explicit, offline
+     * maintenance container, never through the ordinary production runtime.
+     * Database, application identity and an ephemeral command-scoped flag must
+     * all agree; changing APP_ENV to "local" is not a supported escape hatch.
+     */
+    public function authorized(bool $validationOffline = false): bool
+    {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return false;
+        }
+
+        if (app()->environment(['local', 'testing'])) {
+            return ! $validationOffline;
+        }
+
+        return $validationOffline
+            && app()->environment('production')
+            && config('media.validation_offline_cutover') === true
+            && config('app.url') === 'https://validation.moeller-lars.de'
+            && DB::connection()->getDatabaseName() === 'moeller_lars_validation';
+    }
+
+    /**
      * @return array{converted:int,rebased:int,invalidated_rights:int,reclaimed:int}
      */
-    public function apply(bool $rebaselineCheckpoints = false, bool $invalidateThumbnailRights = false): array
-    {
-        if (! app()->environment(['local', 'testing'])
-            || DB::connection()->getDriverName() !== 'pgsql') {
-            throw new RuntimeException('Thumbnail cutover requires a local pre-release PostgreSQL database.');
+    public function apply(
+        bool $rebaselineCheckpoints = false,
+        bool $invalidateThumbnailRights = false,
+        bool $validationOffline = false,
+    ): array {
+        if (! $this->authorized($validationOffline)) {
+            throw new RuntimeException('Thumbnail cutover requires local/testing or explicit offline Validation maintenance.');
         }
 
         $lock = Cache::lock('media-ingest', 1800);
@@ -138,7 +163,7 @@ final class MediaThumbnailCutoverService
 
                 // All DB representations are updated together. Failure leaves
                 // the old originals and old variant registry intact.
-                $result = DB::transaction(function () use ($prepared, $checkpoints): array {
+                $result = DB::transaction(function () use ($prepared, $checkpoints, $validationOffline): array {
                     DB::statement(
                         'LOCK TABLE public.media_variants, committed.media_variants, publication_version_rows, '
                         .'publication_checkpoints IN SHARE ROW EXCLUSIVE MODE',
@@ -156,10 +181,16 @@ final class MediaThumbnailCutoverService
                             ->update($columns);
 
                         DB::update(
-                            "UPDATE publication_version_rows SET payload = payload || ?::jsonb
-                             WHERE table_name = 'media_variants'
-                               AND row_key = ?
-                               AND payload->>'transform_profile' = ?",
+                            "UPDATE publication_version_row_manifests AS manifest
+                             SET payload_id = resolve_history_payload(stored.payload || ?::jsonb)
+                             FROM history_payloads AS stored,
+                                  publication_checkpoints AS checkpoint
+                             WHERE manifest.payload_id = stored.id
+                               AND checkpoint.id = manifest.publication_checkpoint_id
+                               AND checkpoint.snapshot_available = true
+                               AND manifest.table_name = 'media_variants'
+                               AND manifest.row_key = ?
+                               AND stored.payload->>'transform_profile' = ?",
                             [
                                 json_encode($columns, JSON_THROW_ON_ERROR),
                                 (string) $id,
@@ -177,6 +208,7 @@ final class MediaThumbnailCutoverService
                     }
 
                     if ($checkpoints > 0) {
+                        app(PublicationVersionService::class)->reconcilePreReleaseSnapshotDefaults($validationOffline);
                         $this->rebaselineCheckpoints();
                     }
 
@@ -224,12 +256,14 @@ final class MediaThumbnailCutoverService
             }
         }
 
-        $rows = DB::table('publication_version_rows')
-            ->where('table_name', 'media_variants')
-            ->whereRaw("payload->>'transform_profile' = ?", [MediaIngestService::TRANSFORM_PROFILE])
-            ->whereRaw("payload->>'variant_kind' = ?", [MediaIngestService::THUMBNAIL_KIND])
-            ->whereRaw("payload->>'state' = 'available'")
-            ->get(['payload']);
+        $rows = DB::table('publication_version_rows as rows')
+            ->join('publication_checkpoints as checkpoints', 'checkpoints.id', '=', 'rows.publication_checkpoint_id')
+            ->where('checkpoints.snapshot_available', true)
+            ->where('rows.table_name', 'media_variants')
+            ->whereRaw("rows.payload->>'transform_profile' = ?", [MediaIngestService::TRANSFORM_PROFILE])
+            ->whereRaw("rows.payload->>'variant_kind' = ?", [MediaIngestService::THUMBNAIL_KIND])
+            ->whereRaw("rows.payload->>'state' = 'available'")
+            ->get(['rows.payload']);
         foreach ($rows as $row) {
             $payload = is_string($row->payload) ? json_decode($row->payload, true, 512, JSON_THROW_ON_ERROR) : (array) $row->payload;
             $this->addCandidate($items, $payload);
@@ -311,9 +345,8 @@ final class MediaThumbnailCutoverService
     }
 
     /**
-     * Reclaim only generated old thumbnail keys that no longer appear in
-     * Working, Committed or any stored Publication version. This is
-     * repeatable after an interrupted post-commit filesystem cleanup.
+     * Reclaim generated old thumbnails that no current or restorable
+     * Publication state can use. Retired snapshots are not restore roots.
      */
     private function reclaimUnreferencedOldThumbnails(): int
     {
@@ -326,9 +359,11 @@ final class MediaThumbnailCutoverService
             }
             if (DB::table('media_variants')->where('storage_key', $key)->exists()
                 || DB::table('committed.media_variants')->where('storage_key', $key)->exists()
-                || DB::table('publication_version_rows')
-                    ->where('table_name', 'media_variants')
-                    ->whereRaw("payload->>'storage_key' = ?", [$key])
+                || DB::table('publication_version_rows as rows')
+                    ->join('publication_checkpoints as checkpoints', 'checkpoints.id', '=', 'rows.publication_checkpoint_id')
+                    ->where('checkpoints.snapshot_available', true)
+                    ->where('rows.table_name', 'media_variants')
+                    ->whereRaw("rows.payload->>'storage_key' = ?", [$key])
                     ->exists()) {
                 continue;
             }

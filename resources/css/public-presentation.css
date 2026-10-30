@@ -101,7 +101,9 @@ body {
 }
 
 .site-navigation::before,
-.site-navigation::after {
+.site-navigation::after,
+.site-navigation-surface::before,
+.site-navigation-surface::after {
     position: absolute;
     box-sizing: border-box;
     content: "";
@@ -109,7 +111,8 @@ body {
 }
 /* Open at the top, with only a short bottom connection into the
    sheet. The white stroke never extends past the lower menu border. */
-.site-navigation::before {
+.site-navigation::before,
+.site-navigation-surface::before {
     top: 0;
     bottom: var(--public-menu-left-bottom, 40%);
     left: calc(-1 * var(--public-folio-edge-outset));
@@ -119,7 +122,8 @@ body {
 }
 /* The eastern line also has only its lower joined return, without
    an overshoot into the rear paper planes. */
-.site-navigation::after {
+.site-navigation::after,
+.site-navigation-surface::after {
     top: 0;
     bottom: var(--public-menu-right-bottom, 9%);
     right: calc(-1 * var(--public-folio-edge-outset));
@@ -645,67 +649,98 @@ body {
     overflow-wrap: break-word;
 }
 
-/* Opted-in Artwork detail pages use the actual remaining viewport space.
-   Header, navigation, caption, narrative and credits keep their natural
-   heights; the image receives the flexible remainder without distortion.
-   The normal document scrolls if long editorial content needs more room. */
-body.public-site:has(#content.site-content--fitted-artwork) .public-paper-frame {
-    flex: 1 0 auto;
-    height: 100dvh;
-    min-height: min-content;
+/* Expanded details have one viewport-derived size on wide screens.
+   On narrow screens the original Gallery layout is left untouched. The
+   image, caption and paper have no mutually measured dimensions. */
+@media (min-width: 64.001rem) {
+    #content.site-content--fitted-artwork {
+        width: min(calc(100% - 2 * var(--public-gutter)),
+            var(--public-fitted-paper-width, var(--public-shell-max)));
+        padding-inline: clamp(var(--public-mobile-inset), 2vw, 1.5rem);
+    }
+
+    .site-content--fitted-artwork .artwork-detail {
+        width: 100%;
+    }
+
+    .site-content--fitted-artwork .artwork-detail__media {
+        width: min(100%, var(--public-fitted-image-width, var(--public-art-max)));
+        margin-inline: auto;
+    }
+
+    .site-content--fitted-artwork .artwork-detail__viewer-trigger,
+    .site-content--fitted-artwork .artwork-detail__image,
+    .site-content--fitted-artwork .artwork-detail__footer {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* The Menu paper alone grows; its entire original title/navigation
+       composition remains at General's width without extra item spacing. */
+    .site-header--artwork-wide-menu .site-navigation-surface {
+        position: relative;
+        order: 1;
+        display: block;
+        width: min(calc(100% - 2 * var(--public-gutter)),
+            var(--public-fitted-paper-width, var(--public-shell-max)));
+        margin-inline: auto;
+        background: var(--public-menu-background);
+        box-shadow: var(--public-folio-sheet-x) var(--public-folio-sheet-y) 0 var(--public-folio-soft);
+    }
+
+    .site-header--artwork-wide-menu .site-navigation {
+        width: min(100%, var(--public-shell-max));
+        margin-inline: auto;
+    }
+
+    .site-header--artwork-wide-menu .site-navigation::before,
+    .site-header--artwork-wide-menu .site-navigation::after,
+    .site-header--artwork-wide-menu .site-navigation__rail::before,
+    .site-header--artwork-wide-menu .site-navigation__submenu::before {
+        display: none;
+    }
+
+    .site-header--artwork-wide-menu .site-navigation-surface::before,
+    .site-header--artwork-wide-menu .site-navigation-surface::after {
+        display: block;
+    }
+
+    .site-header--divider-menu.site-header--artwork-wide-menu .site-navigation {
+        border-bottom: 0;
+    }
+
+    .site-header--divider-menu.site-header--artwork-wide-menu .site-navigation-surface {
+        border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
+    }
+
+    .public-paper-frame--connected .site-navigation-surface::before,
+    .public-paper-frame--connected .site-navigation-surface::after,
+    body.public-site--frame-continuous
+    .public-paper-frame--compatible:not(.public-paper-frame--connected) .site-navigation-surface::before,
+    body.public-site--frame-continuous
+    .public-paper-frame--compatible:not(.public-paper-frame--connected) .site-navigation-surface::after,
+    body.public-site--frame-backing .site-navigation-surface::before,
+    body.public-site--frame-backing .site-navigation-surface::after,
+    body.public-site--frame-plain .site-navigation-surface::before,
+    body.public-site--frame-plain .site-navigation-surface::after {
+        display: none;
+    }
+
+    .public-paper-frame--connected .site-navigation-surface {
+        box-shadow: none;
+    }
 }
 
-#content.site-content--fitted-artwork,
-.site-content--fitted-artwork > .public-content-reveal,
-.site-content--fitted-artwork .artwork-detail {
-    display: flex;
-    flex: 1 1 auto;
-    min-height: 0;
-    flex-direction: column;
+/* With the option off (or on narrow screens) this wrapper has no box;
+   the established header layout and its navigation rules are unchanged. */
+.site-navigation-surface {
+    display: contents;
 }
 
-.site-content--fitted-artwork .artwork-detail__media {
-    display: flex;
-    flex: 1 1 0;
-    min-height: min(30dvh, var(--public-short-page-min-height));
-    width: fit-content;
-    max-width: 100%;
-    margin-inline: auto;
-    flex-direction: column;
-}
-
-.site-content--fitted-artwork .artwork-detail__viewer-trigger {
-    display: flex;
-    flex: 1 1 0;
-    min-height: 0;
-    align-items: center;
-    justify-content: center;
-}
-
-.site-content--fitted-artwork .artwork-detail__image {
-    width: auto;
-    max-width: 100%;
-    height: 100%;
-    max-height: 100%;
-    object-fit: contain;
-}
-
-.site-content--fitted-artwork .artwork-detail__footer {
-    flex: 0 0 auto;
-    width: 0;
-    min-width: 100%;
-}
-
-/* Landscape Artwork detail paper may use the available viewport width,
-   independently of General's usual reading width. The menu itself
-   retains its configured width and its chosen surface gap. */
-#content.site-content--landscape-artwork {
-    width: calc(100% - 2 * var(--public-gutter));
-    padding-inline: clamp(var(--public-mobile-inset), 2.5vw, 2rem);
-}
-
-.site-content--landscape-artwork .artwork-detail {
-    width: 100%;
+.site-navigation-surface::before,
+.site-navigation-surface::after {
+    display: none;
 }
 
 /* Artwork arrows remain on the original centered General-width track,
@@ -1844,8 +1879,13 @@ html:has(.artwork-viewer[open]) {
     pointer-events: none;
 }
 
-/* One static pair of contours: no observed layout measurements, no
- * frame-by-frame inline CSS writes and no self-triggering resize loops. */
+@media (min-width: 64.001rem) {
+    .public-paper-frame:has(.site-header--artwork-wide-menu) > .public-paper-decoration {
+        width: min(calc(100% - 2 * var(--public-gutter)),
+            var(--public-fitted-paper-width, var(--public-shell-max)));
+    }
+}
+
 .public-paper-decoration::before,
 .public-paper-decoration::after {
     position: absolute;

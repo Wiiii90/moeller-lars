@@ -33,22 +33,106 @@ function revealDecodedImage(image, key, signal) {
 
 function initializeArtworkDetailImage(root) {
     const image = root.querySelector?.('.artwork-detail__image[data-artwork-image-state="pending"]');
-    if (! image) return () => {};
+    if (!image) return () => {};
 
     const lifetime = new AbortController();
+    const page = image.closest('#content');
+    const detail = image.closest('.artwork-detail');
+    const stage = detail?.querySelector('.artwork-detail__image-stage');
+    const sourceWidth = Number(image.getAttribute('width'));
+    const sourceHeight = Number(image.getAttribute('height'));
+    const stylesheet = [...document.querySelectorAll('style[data-public-layout-style]')].at(-1)?.sheet;
+    const rootRule = [...(stylesheet?.cssRules ?? [])].find((rule) => rule.selectorText === ':root');
+    const fitStyle = rootRule?.style;
+    let frameRequest = 0;
+
+    const clearFit = () => {
+        fitStyle?.removeProperty('--public-fitted-image-width');
+        fitStyle?.removeProperty('--public-fitted-paper-width');
+    };
+
+    const outerHeight = (element) => {
+        if (!element) return 0;
+        const style = getComputedStyle(element);
+        return element.getBoundingClientRect().height
+            + (Number.parseFloat(style.marginTop) || 0)
+            + (Number.parseFloat(style.marginBottom) || 0);
+    };
+
+    const fit = () => {
+        if (lifetime.signal.aborted || !fitStyle || !page || !detail || !stage
+            || sourceWidth <= 0 || sourceHeight <= 0) return;
+
+        // The small-screen presentation remains the existing native Artwork
+        // layout, even after repeated narrow/wide viewport transitions.
+        if (!window.matchMedia('(min-width: 64.001rem)').matches) {
+            clearFit();
+            return;
+        }
+
+        // The stage's document position is independent of its image height.
+        // Its top edge already includes the actual Menu height, optional
+        // Menu/Page gap, page top inset and Artwork navigation. Do not measure
+        // the stage's dimensions or any width derived from our own fit.
+        const viewportWidth = document.documentElement.clientWidth;
+        const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+        const gutter = Math.min(1.5 * rem, Math.max(.65 * rem, .02 * viewportWidth));
+        const inset = gutter;
+        const availableWidth = Math.max(1, viewportWidth - 2 * gutter - 2 * inset);
+        const pageStyle = getComputedStyle(page);
+        const imageTop = stage.getBoundingClientRect().top + window.scrollY;
+        const reserveBelow = outerHeight(detail.querySelector('.artwork-detail__footer'))
+            + outerHeight(detail.querySelector('.artwork-detail__narrative'))
+            + outerHeight(detail.querySelector('.artwork-detail__credits'))
+            + (Number.parseFloat(pageStyle.paddingBottom) || 0)
+            + (Number.parseFloat(pageStyle.marginBottom) || 0);
+        const heightForImage = Math.max(0, window.innerHeight - imageTop - reserveBelow);
+        // The configured normal Artwork width is NOT a minimum: forcing it
+        // after height fitting made portrait images taller than the viewport.
+        const fittedWidth = Math.min(availableWidth, heightForImage * sourceWidth / sourceHeight);
+
+        const generalShellWidth = Number.parseFloat(getComputedStyle(document.documentElement)
+            .getPropertyValue('--public-shell-max')) || 0;
+        const paperWidth = Math.max(
+            fittedWidth + 2 * inset,
+            Math.min(viewportWidth - 2 * gutter, generalShellWidth),
+        );
+        fitStyle.setProperty('--public-fitted-image-width', Math.floor(fittedWidth) + 'px');
+        fitStyle.setProperty('--public-fitted-paper-width', Math.ceil(paperWidth) + 'px');
+    };
+
+    const scheduleFit = () => {
+        if (frameRequest) cancelAnimationFrame(frameRequest);
+        frameRequest = requestAnimationFrame(() => {
+            frameRequest = 0;
+            fit();
+        });
+    };
+
+    if (page?.classList.contains('site-content--fitted-artwork') && fitStyle) {
+        fit();
+        window.addEventListener('resize', scheduleFit, { passive: true, signal: lifetime.signal });
+        // The navigation controller may settle its height after page setup.
+        scheduleFit();
+        document.fonts?.ready?.then(() => {
+            if (!lifetime.signal.aborted) scheduleFit();
+        });
+    }
+
     const ready = () => revealDecodedImage(image, 'artworkImageState', lifetime.signal);
     const failed = () => {
-        // Keep broken-image ALT visible: a real media failure must not silently
-        // become a permanently blank artwork.
         image.dataset.artworkImageState = 'error';
     };
 
     image.addEventListener('load', ready, { signal: lifetime.signal });
     image.addEventListener('error', failed, { signal: lifetime.signal });
-    // The image may have completed before the SPA page initializer runs.
     if (image.complete) ready();
 
-    return () => lifetime.abort();
+    return () => {
+        lifetime.abort();
+        if (frameRequest) cancelAnimationFrame(frameRequest);
+        clearFit();
+    };
 }
 
 export function initializeGalleryImageLoading(root = document) {

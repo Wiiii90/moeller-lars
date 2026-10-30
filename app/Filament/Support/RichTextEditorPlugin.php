@@ -58,15 +58,18 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                 ->label(__('Link'))
                 ->icon('heroicon-o-link')
                 ->toggle()
-                ->jsHandler("\$dispatch('artist-rich-link-toggle', { anchor: \$event.currentTarget })"),
+                ->activeStyling(false)
+                ->jsHandler("\$dispatch('artist-rich-link-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
             RichEditorTool::make('textColor')
                 ->label(__('Text color'))
                 ->icon('heroicon-o-swatch')
-                ->jsHandler("\$dispatch('artist-rich-color-toggle', { anchor: \$event.currentTarget })"),
+                ->activeStyling(false)
+                ->jsHandler("\$dispatch('artist-rich-color-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
             RichEditorTool::make('lineSpacing')
                 ->label(__('Line spacing'))
                 ->icon('heroicon-o-bars-3-bottom-left')
-                ->jsHandler("\$dispatch('artist-rich-spacing-toggle', { anchor: \$event.currentTarget })"),
+                ->activeStyling(false)
+                ->jsHandler("\$dispatch('artist-rich-spacing-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
             ...array_map(
                 static function (string $name, string $command): RichEditorTool {
                     $suffix = \Illuminate\Support\Str::snake($name);
@@ -82,6 +85,7 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
             RichEditorTool::make('insertStorageImage')
                 ->label(__('Insert image from Storage'))
                 ->icon(AdminIcon::Storage->value)
+                ->activeStyling(false)
                 ->jsHandler("\$dispatch('artist-rich-image-toggle')"),
             ...array_map(
                 static fn (string $placement): RichEditorTool =>
@@ -103,14 +107,14 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                             'float-right' => 'heroicon-o-bars-arrow-up',
                         })
                         ->activeStyling()
-                        ->activeJsExpression("window.ArtistRichImage?.hasPlacement(\$getEditor(), '{$placement}') ?? false")
-                        ->jsHandler("window.ArtistRichImage?.setPlacement(\$getEditor(), '{$placement}')"),
+                        ->activeJsExpression("\$getEditor()?.isActive('image', { artistPlacement: '{$placement}' }) ?? false")
+                        ->jsHandler("\$getEditor()?.storage.artistImageLayout.setPlacement(\$getEditor(), '{$placement}')"),
                 ArtistImageLayout::PLACEMENTS,
             ),
             RichEditorTool::make('imageCaption')
                 ->label(__('Image caption'))
                 ->icon(AdminIcon::Details->value)
-                ->jsHandler("const editor = \$getEditor(); if (editor) editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-caption-toggle', { detail: { anchor: \$event.currentTarget }, bubbles: true }))"),
+                ->jsHandler("\$dispatch('artist-rich-caption-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
 
         ];
     }

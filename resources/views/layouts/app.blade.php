@@ -6,6 +6,8 @@
     $artworkHeaderDivider = trim($__env->yieldContent('artwork_header_divider', ''));
     $effectiveHeaderDivider = in_array($artworkHeaderDivider, ['fine', 'separate'], true)
         ? $artworkHeaderDivider : $publicHeaderDivider;
+    $artworkWideMenu = trim($__env->yieldContent('artwork_menu_surface_wide', '')) === '1';
+    $fittedArtwork = str_contains($__env->yieldContent('content_class'), 'site-content--fitted-artwork');
     $folioPlacement = [
         'leftTop' => (16 + (($folioSeed >> 1) % 11)).'px',
         'leftBottom' => (46 + (($folioSeed >> 5) % 19)).'px',
@@ -57,6 +59,7 @@
             data-public-layout-title-size="{{ $publicHeaderSize }}"
             data-public-layout-title-min-size="{{ $publicHeaderMinSize }}"
             data-public-layout-divider-mode="{{ $effectiveHeaderDivider }}"
+            data-public-layout-artwork-wide-menu="{{ $artworkWideMenu ? '1' : '0' }}"
             data-public-layout-divider-color="{{ $publicHeaderDividerColor ?? '' }}"
             data-public-layout-divider-gradient="{{ $publicHeaderDividerGradientCss ?? '' }}"
             data-folio-left-top="{{ $folioPlacement['leftTop'] }}"
@@ -86,16 +89,17 @@
         @php
             $paperCompatible = ! ($publicHeaderPosition === 'below' && $publicHeaderVisible)
                 && ! $publicPageTransparent
-                && ! str_contains($__env->yieldContent('content_class'), 'landscape-artwork');
+                && (! $fittedArtwork || ($artworkWideMenu && in_array($effectiveHeaderDivider, ['fine', 'menu', 'full'], true)));
             $paperConnected = $paperCompatible && in_array($effectiveHeaderDivider, ['fine', 'menu', 'full'], true);
         @endphp
         <div class="public-paper-frame @if ($paperCompatible) public-paper-frame--compatible @endif @if ($paperConnected) public-paper-frame--connected @endif">
             <div class="public-paper-decoration" aria-hidden="true"></div>
-        <header class="site-header site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--divider-{{ $effectiveHeaderDivider }} site-header--title-align-{{ $publicHeaderAlignment }} site-header--mobile-title-align-{{ $publicHeaderMobileAlignment }} @if ($publicHeaderGradientCss !== null) site-header--gradient-title @endif @unless ($publicHeaderVisible) site-header--title-hidden @endunless @if ($publicHeaderAutoScale) site-header--title-fluid @endif">
+        <header class="site-header @if ($artworkWideMenu) site-header--artwork-wide-menu @endif site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--divider-{{ $effectiveHeaderDivider }} site-header--title-align-{{ $publicHeaderAlignment }} site-header--mobile-title-align-{{ $publicHeaderMobileAlignment }} @if ($publicHeaderGradientCss !== null) site-header--gradient-title @endif @unless ($publicHeaderVisible) site-header--title-hidden @endunless @if ($publicHeaderAutoScale) site-header--title-fluid @endif">
             @if ($publicHeaderVisible && ($publicHeaderPosition === 'below' || $__env->hasSection('hide_navigation')))
                 <x-public.artist-name :home-url="$homeUrl" :title="$publicHeaderText" />
             @endif
             @unless ($__env->hasSection('hide_navigation'))
+                <div class="site-navigation-surface">
                 @php
                     $selectedNavigationParent = collect($navigationItems)->first(fn ($item) => $item['active'] && $item['children'] !== []);
                 @endphp
@@ -191,6 +195,7 @@
                             </div>
                         @endif
                     @endforeach
+                </div>
                 </div>
             @endunless
         </header>

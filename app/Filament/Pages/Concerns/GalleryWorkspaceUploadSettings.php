@@ -39,6 +39,7 @@ trait GalleryWorkspaceUploadSettings
                     'landscape_detail_enabled' => GalleryPresentation::enabled($gallery),
                     'portrait_detail_enabled' => GalleryPresentation::portraitEnabled($gallery),
                     'artwork_page_surface_mode' => GalleryPresentation::artworkPageSurfaceMode($gallery),
+                    'artwork_menu_surface_wide' => GalleryPresentation::wideArtworkMenu($gallery),
                     'edge_navigation_mode' => GalleryPresentation::edgeMode($gallery),
                     'artwork_divider' => GalleryPresentation::divider($gallery),
                     'sort_mode' => GalleryPresentation::sortMode($gallery),
@@ -88,13 +89,18 @@ trait GalleryWorkspaceUploadSettings
                             ->label('Expand landscape Artwork pages')
                             ->columnSpanFull(),
                         Toggle::make('portrait_detail_enabled')
-                            ->label('Fit portrait Artwork pages to screen height')
+                            ->label('Expand portrait Artwork pages')
                             ->columnSpanFull(),
                         Select::make('artwork_page_surface_mode')
                             ->label('Artwork page surface')
                             ->options(GalleryPresentation::ARTWORK_SURFACE_OPTIONS)
                             ->default(GalleryPresentation::ARTWORK_SURFACE_INHERIT)
                             ->required()
+                            ->columnSpanFull(),
+                        Toggle::make('artwork_menu_surface_wide')
+                            ->label('Match Menu surface to Artwork page width')
+                            ->helperText('Only the Menu background becomes wider. Navigation items keep their usual size and spacing.')
+                            ->default(false)
                             ->columnSpanFull(),
                         Select::make('artwork_divider')
                             ->label('Between Artworks')
@@ -130,6 +136,7 @@ trait GalleryWorkspaceUploadSettings
                             'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? false,
                             'portrait_detail_enabled' => $data['portrait_detail_enabled'] ?? false,
                             'artwork_page_surface_mode' => $data['artwork_page_surface_mode'] ?? GalleryPresentation::ARTWORK_SURFACE_INHERIT,
+                            'artwork_menu_surface_wide' => $data['artwork_menu_surface_wide'] ?? false,
                             'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
                             'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
                             'sort_mode' => $data['sort_mode'] ?? GalleryPresentation::SORT_MANUAL,

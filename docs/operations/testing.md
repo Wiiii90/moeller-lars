@@ -76,7 +76,7 @@ For performance, use request fan-out, idle behavior, payload budgets and console
 vendor/bin/pest --coverage --only-summary-for-coverage-text --coverage-clover=coverage.xml
 ```
 
-The existing `release.yml` workflow will report the combined PHP app/ line-coverage baseline for user-authorized pull requests to `main` and pushes to `main`. It prints covered/coverable statements and a percentage. No arbitrary coverage threshold is imposed before that first actual run. The calculation excludes JavaScript, Chromium and dedicated concurrent HTTP/database runners; it cannot be interpreted as end-to-end product coverage.
+The existing `release.yml` workflow reports the combined PHP `app/` line-coverage baseline only on a separately user-authorized **manual run on `main`**. It prints covered/coverable statements and a percentage. No arbitrary coverage threshold is imposed before that first actual run. The calculation excludes JavaScript, Chromium and dedicated concurrent HTTP/database runners; it cannot be interpreted as end-to-end product coverage.
 
 ## CI, gates and retirement
 

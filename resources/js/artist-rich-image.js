@@ -43,41 +43,79 @@ export default () => {
     const updateSelectedImage = (editor, attrs) => {
         const selected = selectedImage(editor);
         if (!selected) return false;
-        const transaction = editor.state.tr.setNodeMarkup(
-            selected.pos, undefined, { ...selected.node.attrs, ...attrs },
-        );
-        transaction.setSelection(NodeSelection.create(transaction.doc, selected.pos));
-        editor.view.dispatch(transaction);
-        selectedImages.set(editor, selected.pos);
-        editor.view.focus();
-        return true;
+        const changed = editor.chain().focus()
+            .setNodeSelection(selected.pos)
+            .updateAttributes('image', attrs)
+            .run();
+        if (changed) selectedImages.set(editor, selected.pos);
+        return changed;
     };
 
-    window.ArtistRichImage = {
-        selected: editor => {
-            const selected = selectedImage(editor);
-            return selected ? { caption: selected.node.attrs.artistCaption } : null;
-        },
-        hasPlacement: (editor, value) => selectedImage(editor)?.node.attrs.artistPlacement === value,
-        setCaption: (editor, value) => updateSelectedImage(
-            editor, { artistCaption: [...String(value).trim()].slice(0, 500).join('') || null },
-        ),
-        setPlacement: (editor, value) => {
-            const changed = updateSelectedImage(
-                editor, { artistPlacement: placements.has(value) ? value : 'inline' },
-            );
-            if (changed) {
-                editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-image-changed', { bubbles: true }));
-            }
-            return changed;
-        },
-    };
     const { Decoration, DecorationSet } = tiptap.pmView;
     const placements = new Set(['inline', 'left', 'center', 'right', 'float-left', 'float-right']);
     const placement = value => placements.has(value) ? value : 'inline';
 
     return Extension.create({
         name: 'artistImageLayout',
+        addStorage() {
+            return {
+                selectedPosition: editor => selectedImage(editor)?.pos ?? null,
+                setPlacement: (editor, value) => {
+                    const image = selectedImage(editor);
+                    if (!image) return false;
+                    const notify = changed => {
+                        if (changed) {
+                            editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-image-changed', { bubbles: true }));
+                        }
+                        return changed;
+                    };
+                    const nextPlacement = placement(value);
+
+                    if (nextPlacement === 'inline') {
+                        const $image = editor.state.doc.resolve(image.pos);
+                        const paragraph = $image.parent;
+                        if (paragraph.type.name === 'paragraph'
+                            && paragraph.childCount === 1
+                            && paragraph.firstChild === image.node) {
+                            const start = $image.before($image.depth);
+                            const end = $image.after($image.depth);
+                            const nextParagraph = editor.state.doc.nodeAt(end);
+                            const previousParagraph = editor.state.doc.resolve(start).nodeBefore;
+                            const nextHasText = nextParagraph?.type.name === 'paragraph'
+                                && nextParagraph.textContent.trim().length > 0;
+                            const previousHasText = previousParagraph?.type.name === 'paragraph'
+                                && previousParagraph.textContent.trim().length > 0;
+
+                            if (nextHasText || previousHasText) {
+                                const targetPos = nextHasText ? start + 1 : start - 1;
+                                const movedImage = image.node.type.create(
+                                    { ...image.node.attrs, artistPlacement: 'inline' },
+                                    null,
+                                    image.node.marks,
+                                );
+                                const changed = editor.chain().focus().command(({ tr }) => {
+                                    tr.delete(start, end);
+                                    tr.insert(targetPos, movedImage);
+                                    tr.setSelection(NodeSelection.create(tr.doc, targetPos));
+                                    return true;
+                                }).run();
+                                if (changed) selectedImages.set(editor, targetPos);
+                                return notify(changed);
+                            }
+                        }
+                    }
+
+                    return notify(updateSelectedImage(editor, { artistPlacement: nextPlacement }));
+                },
+                selected: editor => {
+                    const image = selectedImage(editor);
+                    return image ? { caption: image.node.attrs.artistCaption } : null;
+                },
+                setCaption: (editor, value) => updateSelectedImage(
+                    editor, { artistCaption: [...String(value).trim()].slice(0, 500).join('') || null },
+                ),
+            };
+        },
         addGlobalAttributes() {
             return [{
                 types: ['image'],

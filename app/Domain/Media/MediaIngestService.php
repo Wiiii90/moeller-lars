@@ -18,8 +18,10 @@ class MediaIngestService
 {
     // All newly ingested images use bounded libvips. GD is retained only in
     // MediaVariantRegenerationService for historical immutable thumbnails.
-    public const MAX_PIXELS = 120_000_000;
-    public const LEGACY_MAX_PIXELS = 16_000_000;
+    // Allow native high-resolution camera images and approximately 400 MP
+    // multi-shot composites, with headroom, while retaining a finite
+    // decompression safety bound. Runtime resource limits still apply.
+    public const MAX_PIXELS = 500_000_000;
     public const LARGE_IMAGE_TRANSFORM_PROFILE = 'public-v2';
     public const VIDEO_POSTER_KIND = 'poster';
     public const VIDEO_POSTER_PROFILE = 'video-poster-v1';
@@ -326,7 +328,12 @@ class MediaIngestService
         $width = $dimensions[0];
         $height = $dimensions[1];
         if ($width <= 0 || $height <= 0 || ($width * $height) > self::MAX_PIXELS) {
-            throw $this->validationFailure('The uploaded image dimensions are not allowed.');
+            throw $this->validationFailure(sprintf(
+                'The uploaded image dimensions (%d x %d pixels) are not allowed (maximum %d megapixels).',
+                $width,
+                $height,
+                intdiv(self::MAX_PIXELS, 1_000_000),
+            ));
         }
 
         $preview = app(MediaDerivativeGenerator::class)->imageThumbnail($path);

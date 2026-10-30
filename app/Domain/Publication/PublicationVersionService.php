@@ -4,6 +4,7 @@ namespace App\Domain\Publication;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Content\HistoricalCustomPageBlockCanonicalizer;
+use App\Domain\Media\MediaThumbnailCutoverService;
 use App\Models\PublicationCheckpoint;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -218,6 +219,88 @@ final class PublicationVersionService
             'source_publication_checkpoint_id' => null,
             'updated_at' => now(),
         ]);
+    }
+
+    public function reconcilePreReleaseSnapshotDefaults(bool $validationOffline = false): void
+    {
+        // Reuse the thumbnail cutover's exact restricted Validation identity
+        // check. The maintenance flag is only injected into the disposable
+        // offline container; the normal production runtime remains forbidden.
+        $authorized = $validationOffline
+            ? app(MediaThumbnailCutoverService::class)->authorized(true)
+            : app()->environment(['local', 'testing']);
+
+        if (! $authorized || DB::connection()->getDriverName() !== 'pgsql') {
+            throw new \RuntimeException('Historical snapshot alignment requires local/testing or authorized offline Validation.');
+        }
+
+        // PostgreSQL migrations update Working and Committed columns, but
+        // restorable historical payloads remain immutable old-schema rows.
+        // Backfill only absent keys using the actual schema's static defaults.
+        // Never overwrite an existing historical value with current content.
+        foreach (PublicationSnapshot::TABLES as $table) {
+            $columns = DB::select(
+                "SELECT a.attname AS column_name,
+                        CASE WHEN a.attnotnull THEN 1 ELSE 0 END AS is_required,
+                        pg_get_expr(d.adbin, d.adrelid) AS default_expression
+                 FROM pg_catalog.pg_attribute AS a
+                 JOIN pg_catalog.pg_class AS c ON c.oid = a.attrelid
+                 JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace
+                 LEFT JOIN pg_catalog.pg_attrdef AS d
+                    ON d.adrelid = a.attrelid AND d.adnum = a.attnum
+                 WHERE n.nspname = 'committed' AND c.relname = ?
+                   AND a.attnum > 0 AND NOT a.attisdropped
+                 ORDER BY a.attnum",
+                [$table],
+            );
+
+            foreach ($columns as $column) {
+                $name = (string) $column->column_name;
+                if (preg_match('/\\A[a-z_][a-z0-9_]*\\z/D', $name) !== 1) {
+                    throw new \RuntimeException('Unsupported historical column identity.');
+                }
+
+                $missing = DB::table('publication_version_row_manifests as manifest')
+                    ->join('history_payloads as stored', 'stored.id', '=', 'manifest.payload_id')
+                    ->join('publication_checkpoints as checkpoint', 'checkpoint.id', '=', 'manifest.publication_checkpoint_id')
+                    ->where('checkpoint.snapshot_available', true)
+                    ->where('manifest.table_name', $table)
+                    ->whereRaw('NOT jsonb_exists(stored.payload, ?)', [$name])
+                    ->exists();
+
+                if (! $missing) {
+                    continue;
+                }
+
+                // The number-format migration derives its backfill from the
+                // then-current regional format, not its schema default.
+                if ($table === 'public_content_settings' && $name === 'number_format') {
+                    $fallback = "CASE WHEN COALESCE(stored.payload->>'regional_format', 'de-DE') = 'de-DE' THEN 'de-DE' ELSE 'en-US' END";
+                } elseif ($table === 'public_content_settings' && $name === 'header_divider_mode') {
+                    // Historic joined/split headers were mapped to divider modes.
+                    $fallback = "CASE WHEN stored.payload->>'header_content_joined' = 'false' THEN 'separate' ELSE 'fine' END";
+                } elseif (is_string($column->default_expression)
+                    && preg_match("/\\A(?:true|false|-?[0-9]+(?:\\.[0-9]+)?|'(?:[^']|'')*'(?:::[a-z_][a-z_ ]*)?)\\z/iD", $column->default_expression) === 1) {
+                    $fallback = $column->default_expression;
+                } elseif (! (bool) $column->is_required && $column->default_expression === null) {
+                    $fallback = 'NULL::text';
+                } else {
+                    throw new \RuntimeException("Cannot safely reconstruct historical default for {$table}.{$name}.");
+                }
+
+                DB::update(
+                    'UPDATE publication_version_row_manifests AS manifest '
+                    .'SET payload_id = resolve_history_payload(stored.payload || jsonb_build_object(?, to_jsonb('.$fallback.'))) '
+                    .'FROM history_payloads AS stored, publication_checkpoints AS checkpoint '
+                    .'WHERE manifest.payload_id = stored.id '
+                    .'AND manifest.publication_checkpoint_id = checkpoint.id '
+                    .'AND checkpoint.snapshot_available = true '
+                    .'AND manifest.table_name = ? '
+                    .'AND NOT jsonb_exists(stored.payload, ?)',
+                    [$name, $table, $name],
+                );
+            }
+        }
     }
 
     public function schemaHash(): string

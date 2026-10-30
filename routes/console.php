@@ -23,10 +23,12 @@ use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
-// Offline and opt-in pre-release consolidation. Never invoked by HTTP or deploy.
-Artisan::command('media:thumbnails:consolidate {--apply : Convert GD thumbnails to libvips} {--rebaseline-checkpoints : Recompute pre-release checkpoint hashes while preserving their rows} {--invalidate-thumbnail-rights : Explicitly invalidate obsolete generated thumbnail rights selections}', function (MediaThumbnailCutoverService $cutover): int {
-    if (! app()->environment(['local', 'testing'])) {
-        $this->error('Thumbnail consolidation is only available on a local pre-release database.');
+// Explicit offline thumbnail consolidation. Validation is allowed exclusively
+// from the platform's maintenance container, before the new web image starts.
+Artisan::command('media:thumbnails:consolidate {--apply : Convert GD thumbnails to libvips} {--rebaseline-checkpoints : Recompute pre-release checkpoint hashes while preserving their rows} {--invalidate-thumbnail-rights : Explicitly invalidate obsolete generated thumbnail rights selections} {--validation-offline : Dedicated guarded Validation maintenance mode}', function (MediaThumbnailCutoverService $cutover): int {
+    $validationOffline = (bool) $this->option('validation-offline');
+    if (! $cutover->authorized($validationOffline)) {
+        $this->error('Thumbnail consolidation requires local/testing or dedicated offline Validation maintenance.');
         return 1;
     }
 
@@ -42,14 +44,18 @@ Artisan::command('media:thumbnails:consolidate {--apply : Convert GD thumbnails 
     }
 
     try {
-        $result = $cutover->apply((bool) $this->option('rebaseline-checkpoints'), (bool) $this->option('invalidate-thumbnail-rights'));
+        $result = $cutover->apply(
+            (bool) $this->option('rebaseline-checkpoints'),
+            (bool) $this->option('invalidate-thumbnail-rights'),
+            $validationOffline,
+        );
         $this->info("Converted {$result['converted']} thumbnails. Rebaselined {$result['rebased']} checkpoints; invalidated {$result['invalidated_rights']} thumbnail rights selections for offline re-preparation; reclaimed {$result['reclaimed']} unreferenced old derivative files.");
         return 0;
     } catch (\Throwable $exception) {
         $this->error($exception->getMessage());
         return 1;
     }
-})->purpose('Preview or execute the explicit local libvips thumbnail consolidation');
+})->purpose('Preview or execute guarded offline libvips thumbnail consolidation');
 
 // Contact messages are retained in this database for 180 days. The command
 // is preview-only unless --apply is explicit. Existing mailboxes and backup
