@@ -78,7 +78,7 @@ function galleryFixtureThumbnail(MediaAsset $asset): MediaVariant
         'mime_type' => 'image/webp',
         'byte_size' => 8,
         'sha256' => hash('sha256', 'gallery-thumbnail-fixture-'.$sequence),
-        'transform_profile' => 'public-v1',
+        'transform_profile' => \App\Domain\Media\MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
         'state' => 'available',
         'width' => 10,
         'height' => 5,
