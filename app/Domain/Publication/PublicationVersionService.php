@@ -4,6 +4,7 @@ namespace App\Domain\Publication;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Content\HistoricalCustomPageBlockCanonicalizer;
+use App\Domain\Media\MediaThumbnailCutoverService;
 use App\Models\PublicationCheckpoint;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -220,11 +221,17 @@ final class PublicationVersionService
         ]);
     }
 
-    public function reconcilePreReleaseSnapshotDefaults(): void
+    public function reconcilePreReleaseSnapshotDefaults(bool $validationOffline = false): void
     {
-        if (! app()->environment(['local', 'testing'])
-            || DB::connection()->getDriverName() !== 'pgsql') {
-            throw new \RuntimeException('Historical snapshot alignment is restricted to local pre-release PostgreSQL.');
+        // Reuse the thumbnail cutover's exact restricted Validation identity
+        // check. The maintenance flag is only injected into the disposable
+        // offline container; the normal production runtime remains forbidden.
+        $authorized = $validationOffline
+            ? app(MediaThumbnailCutoverService::class)->authorized(true)
+            : app()->environment(['local', 'testing']);
+
+        if (! $authorized || DB::connection()->getDriverName() !== 'pgsql') {
+            throw new \RuntimeException('Historical snapshot alignment requires local/testing or authorized offline Validation.');
         }
 
         $columns = [
