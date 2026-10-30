@@ -163,7 +163,7 @@ final class MediaThumbnailCutoverService
 
                 // All DB representations are updated together. Failure leaves
                 // the old originals and old variant registry intact.
-                $result = DB::transaction(function () use ($prepared, $checkpoints): array {
+                $result = DB::transaction(function () use ($prepared, $checkpoints, $validationOffline): array {
                     DB::statement(
                         'LOCK TABLE public.media_variants, committed.media_variants, publication_version_rows, '
                         .'publication_checkpoints IN SHARE ROW EXCLUSIVE MODE',
