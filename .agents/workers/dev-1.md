@@ -8,7 +8,7 @@
 - Für Bilder ist ausschließlich das neue libvips-`public-v2`-Vorschaubild vorgesehen (WebP, längste Seite maximal 960 Pixel). Galerie und Artwork-Detail verwenden die Vorschau, der Viewer das Original.
 - Der lokale Medienrechte-Worker ist in die Datenbankwarteschlange eingebunden; Vorbereitung und öffentliche Rechteauslieferung bleiben standardmäßig deaktiviert. Ein erfolgreicher realer Joblauf ist noch nicht belegt.
 - Validation vor Cutover: 143 alte und 18 neue Thumbnail-Kandidaten; keine bestätigten Varianten-ID-Kollisionen. Drei historische Publication-Checkpoints sind wiederherstellbar; keine pauschale Historienlöschung.
-- Am 30.10.2026 wurde eine konsistente Sicherung von Validation-Datenbank, Medien und erforderlicher Konfiguration bei gestoppten Diensten erstellt und auf dem Server geprüft. Anschließend wurde Validation mit unverändertem Image erfolgreich neu gestartet. Die Gesundheitsprüfung und der geschützte Zugang wurden bestätigt. Externe Kopie und isolierte Wiederherstellungsprüfung sind noch offen. Kein Validation-Cutover erfolgt.
+- Am 30.10.2026 wurde eine konsistente Sicherung von Validation-Datenbank, Medien und erforderlicher Konfiguration bei gestoppten Diensten erstellt, anschließend extern übertragen und per Prüfsummenvergleich bestätigt (Nutzerbericht). Validation wurde mit unverändertem Image erfolgreich neu gestartet. Die isolierte Wiederherstellungsprobe wurde vom Nutzer vorerst abgewählt. **Kein Validation-Cutover erfolgt.**
 
 ## Geltende Architektur und Grenzen
 - `MediaIngestService` für unveränderte Originale; `MediaDerivativeGenerator` für Vorschaubilder; `MediaRightsArtifactService` für optionale unveränderliche Rechtekopien.
@@ -17,10 +17,10 @@
 - `PUBLIC_RIGHTS_WORKSTREAM.md` und die bestehenden Medien-/Rechteverträge bei Quellcodeänderungen beachten. Tests gehören auf `testing`. Keine ungefragte Continuous Integration oder Deployment-Aktion.
 
 ## Ausstehend
-1. Externe, geschützte Kopie der bestehenden Sicherung verifizieren und isolierte Wiederherstellung nachweisen.
+1. Der spezifisch abgesicherte Offline-Validation-Cutover ist in `dev` und im `server-platform`-Quellcode implementiert, aber das neue Anwendungsimage und das Plattformrelease sind **noch nicht nachgewiesen gebaut oder auf dem Server installiert**. Vor Ausführung Quell-SHA und aktive Plattformrevision abgleichen. Eine isolierte Wiederherstellungsprobe bleibt auf ausdrücklichen Nutzerwunsch ausstehend.
 2. Gesonderte Validation-Wartungsfreigabe und kontrollierte Offline-Thumbnail-Konvertierung mit Medien-/Historienprüfung.
 3. Browserabnahme der Public Gallery, Artwork-Detailseite, Original-Viewer, Storage-Uploads und optionalen Rechteverarbeitung.
 
-**Nachweisgrenzen:** Lokal durch Nutzer ausgeführter Cutover und Upload; Sicherungs- und Neustartprüfung von Validation durch Nutzer bestätigt. Externer Restore, Validation-Cutover und alle weiteren Browser-/Queue-Abnahmen nicht bestätigt.
+**Nachweisgrenzen:** Localer Cutover und Künstlerupload durch Nutzer bestätigt; Cold-Backup, externe Prüfsumme und Validation-Neustart bestätigt. Isolierter Restore nicht durchgeführt. Neuer Validation-Cutover-Code nur auf GitHub, weder gebaute Images noch echte Installation/Ausführung bestätigt.
 
 **Datensparsamkeit:** Nur fachliche Meilensteine, geprüfte Ergebnisse und offene Freigaben. Keine persönlichen Verbindungsdaten, privaten Betriebspfade, Zugangsdaten, Sicherungsdateinamen, Konsolenmitschnitte oder Fehlversuchsprotokolle in dieser öffentlichen Datei.
