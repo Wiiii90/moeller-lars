@@ -63,6 +63,12 @@ export default () => {
                 setPlacement: (editor, value) => {
                     const image = selectedImage(editor);
                     if (!image) return false;
+                    const notify = changed => {
+                        if (changed) {
+                            editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-image-changed', { bubbles: true }));
+                        }
+                        return changed;
+                    };
                     const nextPlacement = placement(value);
 
                     if (nextPlacement === 'inline') {
@@ -94,12 +100,12 @@ export default () => {
                                     return true;
                                 }).run();
                                 if (changed) selectedImages.set(editor, targetPos);
-                                return changed;
+                                return notify(changed);
                             }
                         }
                     }
 
-                    return updateSelectedImage(editor, { artistPlacement: nextPlacement });
+                    return notify(updateSelectedImage(editor, { artistPlacement: nextPlacement }));
                 },
                 selected: editor => {
                     const image = selectedImage(editor);
