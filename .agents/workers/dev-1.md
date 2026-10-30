@@ -2,7 +2,7 @@
 
 **Arbeitsbranch:** `dev` · **Worker:** Dev Worker 1 · **Lease:** 1 · **Status:** laufende Validation-Cutover-Vorbereitung nach erfolgreichem lokalem Vorschaubild-Cutover; Quelle für aktuelle Fakten ist **Abschnitt 4**. Worker ist seit `cad813d` registriert; fortlaufende Fortschrittsdokumentation im selben Datensatz ist Pflicht. Neue Sitzung darf nur durch ausdrückliche Ersetzung nach `.agents/README.md` die Lease übernehmen. Vor GitHub-Schreibzugriff `dev`-HEAD und Lease neu prüfen.
 
-**Aktueller Nutzerauftrag (30.10.2026):** Den trotz erfolgreicher lokaler Historienkonvertierung noch scheiternden Upload einer realen Künstler-JPEG-Datei auf Local reparieren. **Validation-Cutover und History-/Activity-Cleanup bis zum erfolgreichen lokalen Uploadtest zurückstellen**. Keine Validation-Bereinigung oder neues Deployment ohne separate Freigabe. Die zuvor bestätigten Zahlen und sicheren Planungsregeln bleiben für die spätere Wiederaufnahme erhalten.
+**Aktueller Nutzerauftrag (30.10.2026):** Nutzer bestätigt, dass das zuvor scheiternde Künstler-JPEG nach 500-Megapixel-Anpassung auf Local erfolgreich hochgeladen wurde. Validation-Umstellung kann vorbereitet werden. Nächster Schritt: konsistente Sicherung von Validation-Daten und Medien, danach ausdrücklich abgesicherter Offline-Cutover vor Aktivierung des neuen Web-Images. Bislang kein Validation-Deploy, keine Validation-Sicherung, keine Activity-Bereinigung. Gallery-/Viewer-/Originalabnahme steht gesondert aus.
 
 ## 1. Verbindliche Nutzerziele und Einschränkungen
 
