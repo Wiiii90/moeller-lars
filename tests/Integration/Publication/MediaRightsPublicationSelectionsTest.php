@@ -110,7 +110,7 @@ it('publishes a complete rights-only revision through the canonical checkpoint',
     $thumbnail = \App\Models\MediaVariant::query()->create([
         'media_asset_id' => $asset->getKey(),
         'variant_kind' => 'thumbnail',
-        'transform_profile' => 'public-v1',
+        'transform_profile' => \App\Domain\Media\MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
         'state' => 'available',
         'storage_key' => 'variants/rights-publication.webp',
         'mime_type' => 'image/webp',

@@ -62,7 +62,7 @@ it('renders selected rights thumbnail URLs for public and preview artwork detail
     $variant = MediaVariant::query()->create([
         'media_asset_id' => $asset->getKey(),
         'variant_kind' => 'thumbnail',
-        'transform_profile' => 'public-v1',
+        'transform_profile' => \App\Domain\Media\MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
         'state' => 'available',
         'storage_key' => $thumbnailKey,
         'mime_type' => 'image/webp',
