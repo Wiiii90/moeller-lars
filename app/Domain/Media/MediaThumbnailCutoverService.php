@@ -208,7 +208,7 @@ final class MediaThumbnailCutoverService
                     }
 
                     if ($checkpoints > 0) {
-                        app(PublicationVersionService::class)->reconcilePreReleaseSnapshotDefaults();
+                        app(PublicationVersionService::class)->reconcilePreReleaseSnapshotDefaults($validationOffline);
                         $this->rebaselineCheckpoints();
                     }
 
