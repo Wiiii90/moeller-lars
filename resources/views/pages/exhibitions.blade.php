@@ -38,7 +38,6 @@
                 @else
                     <div class="exhibition-entry__summary exhibition-entry__summary--static">
                 @endif
-                    <span class="exhibition-entry__folio" aria-hidden="true">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
                     <span class="exhibition-entry__schedule">
                         @if ($displayDate !== null)
                             <span class="exhibition-entry__date">{{ $displayDate }}</span>

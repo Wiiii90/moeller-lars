@@ -1454,9 +1454,9 @@ body {
     }
 }
 
-/* EXHIBITIONS — EDITORIAL OFFSET / disposable visual concept trial.
-   The native details and existing Media/Publication owners are unchanged.
-   One coherent catalogue rhythm, not stacked cards or multiple rule owners. */
+/* EXHIBITIONS — AN EDITORIAL CATALOGUE
+   An exhibition name is the only pointer toggle; the date and venue remain
+   informational. Native details provide keyboard and disclosure semantics. */
 .exhibitions-page {
     width: 100%;
     min-width: 0;
@@ -1465,34 +1465,18 @@ body {
     --exhibition-media-track: 4.25rem;
     --exhibition-date-track: 6.5rem;
     --exhibition-column-gap: 1.2rem;
-    --exhibition-ink: #2d2722;
     --exhibition-paper: #f5f1e9;
-    --exhibition-accent: #995340;
-    --exhibition-rule: rgba(111, 89, 71, .23);
-    color: var(--exhibition-ink);
+    color: var(--public-ink);
 }
 .exhibition-entry {
     min-width: 0;
-    margin: 0;
-    border-inline-start: 3px solid transparent;
+    margin: 0 0 .7rem;
 }
-.exhibition-entry:not(:last-child) {
-    border-bottom: 1px solid var(--exhibition-rule);
-}
+.exhibition-entry:last-child { margin-bottom: 0; }
+/* No separators, numbering, ornament or empty-image stand-ins.
+   Only the expanded article uses a warm paper surface. */
 .exhibition-entry:has(> .exhibition-entry__disclosure[open]) {
-    border-inline-start-color: var(--exhibition-accent);
     background: var(--exhibition-paper);
-}
-.exhibition-entry__disclosure[open] {
-    padding: 0;
-}
-.exhibition-entry__disclosure:not([open]) > .exhibition-entry__summary:hover {
-    background: rgba(153, 83, 64, .035);
-}
-@media (prefers-reduced-motion: no-preference) {
-    .exhibition-entry {
-        transition: background-color 150ms ease, border-color 150ms ease;
-    }
 }
 .exhibition-entry__summary {
     display: grid;
@@ -1500,28 +1484,13 @@ body {
     grid-template-columns: var(--exhibition-media-track) var(--exhibition-date-track) minmax(0, 1fr);
     column-gap: var(--exhibition-column-gap);
     align-items: start;
-    padding: .92rem 1.05rem .96rem;
+    padding: 1.05rem 1.05rem 1.1rem;
     list-style: none;
     cursor: default;
     pointer-events: none;
 }
-/* Every record has a real editorial index. Where no cover is supplied, its
-   number alone occupies the media track: no dummy media, empty card or gap. */
-.exhibition-entry__folio {
-    grid-column: 1;
-    grid-row: 1;
-    align-self: end;
-    justify-self: start;
-    z-index: 1;
-    padding: .14rem .3rem .13rem;
-    border-top: 2px solid var(--exhibition-accent);
-    background: rgba(255, 253, 250, .9);
-    color: var(--exhibition-accent);
-    font: 600 .63rem/1.25 var(--public-typeface);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: .08em;
-    pointer-events: none;
-}
+/* Reserve the same discreet image track for every exhibition. No-cover
+   entries preserve the date and heading axes without a fake placeholder. */
 .exhibition-entry__schedule { grid-column: 2; grid-row: 1; }
 .exhibition-entry__heading { grid-column: 3; grid-row: 1; }
 .exhibition-entry__teaser {
@@ -1583,10 +1552,6 @@ body {
     visibility: hidden;
     pointer-events: none;
 }
-.exhibition-entry__disclosure[open] .exhibition-entry__folio {
-    border-top-color: var(--exhibition-accent);
-    background: transparent;
-}
 .exhibition-entry__summary::-webkit-details-marker { display: none; }
 .exhibition-entry__summary::marker { content: ""; }
 .exhibition-entry__summary--static { pointer-events: auto; }
@@ -1601,7 +1566,7 @@ body {
     gap: .35rem;
 }
 .exhibition-entry__date {
-    color: #675950;
+    color: #746d65;
     font-family: var(--public-index-typeface);
     font-size: var(--journal-date-font-size);
     font-variant-numeric: tabular-nums;
@@ -1625,11 +1590,11 @@ body {
     width: fit-content;
     max-width: 100%;
     margin: -.1rem 0 0;
-    color: var(--exhibition-ink);
+    color: #302b27;
     font-family: var(--public-index-typeface);
     font-size: var(--journal-exhibition-title-font-size);
-    font-weight: 400;
-    letter-spacing: .005em;
+    font-weight: 500;
+    letter-spacing: -.012em;
     line-height: 1.25;
     overflow-wrap: break-word;
     text-wrap: pretty;
@@ -1637,9 +1602,6 @@ body {
 .exhibition-entry__disclosure .exhibition-entry__title {
     pointer-events: auto;
     cursor: pointer;
-}
-.exhibition-entry__disclosure[open] .exhibition-entry__title {
-    color: var(--exhibition-accent);
 }
 .exhibition-entry__disclosure .exhibition-entry__title:hover,
 .exhibition-entry__disclosure > .exhibition-entry__summary:focus-visible .exhibition-entry__title {
@@ -1651,7 +1613,7 @@ body {
 .exhibition-entry__byline {
     display: block;
     min-width: 0;
-    margin-top: .48rem;
+    margin-top: .55rem;
 }
 .exhibition-entry__location {
     display: block;
@@ -1729,12 +1691,11 @@ body {
 }
 .exhibition-entry__fact dt {
     margin: 0;
-    color: var(--exhibition-accent);
+    color: #81776e;
     font-family: var(--public-index-typeface);
-    font-size: .72rem;
-    font-weight: 500;
+    font-size: .8rem;
+    font-weight: 400;
     line-height: 1.35;
-    letter-spacing: .045em;
 }
 .exhibition-entry__fact dd {
     min-width: 0;
@@ -1801,7 +1762,7 @@ body {
         --exhibition-date-track: 6.15rem;
         --exhibition-column-gap: .95rem;
     }
-    .exhibition-entry__summary { padding-inline: .8rem; }
+    .exhibition-entry__summary,
     .exhibition-entry__body { padding-inline: .8rem; }
     .exhibition-entry__teaser { height: 3.2rem; }
 }
@@ -1819,7 +1780,6 @@ body {
         grid-row: 1 / span 2;
         height: 3rem;
     }
-    .exhibition-entry__folio { grid-row: 1 / span 2; }
     .exhibition-entry__schedule {
         grid-column: 2;
         grid-row: 1;
