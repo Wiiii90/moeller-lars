@@ -28,4 +28,9 @@
 - Browserabnahme von Galerie, Artwork-Detail, Original-Viewer und Storage-Uploads; bei Aktivierung der Medienrechte deren Warteschlangen- und Auslieferungsverhalten.
 - Optional: praktische Wiederherstellung der drei erhaltenen Veröffentlichungs-Checkpoints und isolierte Backup-Restore-Probe. Beides noch **nicht nachgewiesen**, aber kein Anlass für erneuten Cutover.
 
+## Exhibitions — Bildunterschrift und Textumlauf (31.10.2026)
+- Nutzer-Browserbefund: Unter dem geöffneten Feature-Cover steht „Test“. Das kommt aus `JournalMediaRenderer::render()`: Das bisherige `showCaption: true` am Cover zeigt gespeicherten Credit/Copyright, nicht Exhibition-Beschreibung. Am **Cover allein** wird die visuelle Caption nun mit `showCaption: false` unterdrückt. Medienmetadaten, Viewer und Galerie-Beschriftungen bleiben unverändert.
+- Die neue starre Zwei-Spalten-Komposition wurde mitsamt der unnötigen `exhibition-entry__editorial`-Hülle entfernt. Der bestehende Flow-Root-Container setzt das Cover bei breiterem Inhaltsbereich wieder als Float (maximal 41 Prozent / 14 rem) und lässt Besuchsinformationen sowie ausführliche Beschreibung rechts beginnen und darunter weiterlaufen. Bei schmaleren Layouts wird gestapelt. Keine neue Animation, JavaScript-Schicht oder zusätzliche Medienausgabe.
+- Offene **Designentscheidung**: Die bisherige rein weiße Chronologie mit dünnen Linien und uneinheitlich vorhandenen Cover-Bildern überzeugt den Nutzer noch nicht. Vor großflächigen Farb-/Card-/Magazinänderungen einen geschlossenen Stilentwurf für Übersicht, geöffneten Eintrag, No-Cover-Zeilen und Video-Varianten abstimmen. Kein graues Kartenraster auf Verdacht. Browserabnahme des Textumlaufs/Cover-Credits ausstehend.
+
 **Nachweisgrenze:** Validation-Erfolg durch Nutzerausgabe des Plattformskripts bestätigt, nicht durch eine unabhängige Browserprüfung. Details früherer Fehler stehen bei Bedarf in Git; hier keine Versuchschronik.

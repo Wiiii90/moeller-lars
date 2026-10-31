@@ -4,7 +4,7 @@
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
-| Dev Worker 1 | 3 | Active — Exhibition-Kataloglayout konsolidiert, Videovorschau bedienbar; Browserabnahme offen | Public Exhibitions, Admin-Dialog-Autosave/Schließen; Medien-Folgeaufgaben | [dev-1.md](workers/dev-1.md) |
+| Dev Worker 1 | 3 | Active — Exhibition-Caption entfernt, natürlicher Textumlauf; Stilkonzept offen | Public Exhibitions, Admin-Dialog-Autosave/Schließen; Medien-Folgeaufgaben | [dev-1.md](workers/dev-1.md) |
 | Dev Worker 2 | 2 | Active — Gallery Edit controls/flat form/Rich Text source committed; browser acceptance pending | Gallery Artwork editor simplification, materials Select, direct Position and prior Admin action consistency | [dev-2.md](workers/dev-2.md) |
 | Dev Worker 3 | 4 | Active — inherited Rich-Text changes; awaiting local browser acceptance | Shared Admin Rich-Text editor link/color popovers and visual consistency; avoid unrelated editor changes | [dev-3.md](workers/dev-3.md) |
 

@@ -1644,29 +1644,23 @@ body {
     display: flow-root;
     min-width: 0;
 }
-/* On opening, the image is a genuine editorial column; venue, address and
-   prose share the title axis rather than floating alongside an unrelated
-   cover width. The gallery below remains an independent full-width section. */
-.exhibition-entry__feature--with-cover {
-    display: grid;
-    grid-template-columns:
-        minmax(0, calc(var(--exhibition-media-track) + var(--exhibition-column-gap) + var(--exhibition-date-track)))
-        minmax(0, 1fr);
-    column-gap: var(--exhibition-column-gap);
-    align-items: start;
-}
+/* Cover and editorial copy share one flow, not two rigid grid tracks.
+   Text begins next to the image and continues across the full reading width
+   after its bottom edge, as in a printed exhibition catalogue. */
 .exhibition-entry__feature--text {
-    margin-inline-start: calc(var(--exhibition-media-track) + var(--exhibition-date-track) + var(--exhibition-column-gap) + var(--exhibition-column-gap));
-}
-.exhibition-entry__feature--with-cover .exhibition-entry__editorial {
-    grid-column: 2;
-    min-width: 0;
+    margin-inline-start: calc(var(--exhibition-media-track) + var(--exhibition-date-track) + 2 * var(--exhibition-column-gap));
 }
 .exhibition-entry__cover {
-    width: 100%;
-    max-width: 14rem;
+    width: min(100%, 14rem);
     min-width: 0;
     margin: 0 0 1rem;
+}
+@container (min-width: 34.001rem) {
+    .exhibition-entry__feature--with-cover .exhibition-entry__cover {
+        float: left;
+        width: min(41%, 14rem);
+        margin: 0 clamp(1.1rem, 3cqw, 1.65rem) .85rem 0;
+    }
 }
 .exhibition-entry__cover img {
     display: block;
@@ -1731,9 +1725,6 @@ body {
     line-height: 1.7;
     overflow-wrap: anywhere;
 }
-.exhibition-entry__feature--with-cover .exhibition-entry__description {
-    max-width: none;
-}
 .exhibition-entry__links {
     display: flex;
     min-width: 0;
@@ -1783,12 +1774,6 @@ body {
         --exhibition-column-gap: 1rem;
     }
     .exhibition-entry__teaser { height: 3.65rem; }
-    .exhibition-entry__feature--with-cover {
-        grid-template-columns: minmax(0, 1fr);
-    }
-    .exhibition-entry__feature--with-cover .exhibition-entry__editorial {
-        grid-column: 1;
-    }
 }
 @container (max-width: 26.999rem) {
     .exhibition-entry {

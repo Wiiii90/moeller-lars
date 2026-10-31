@@ -83,10 +83,7 @@
                             @if ($hasCover || $hasFacts || $hasActions || $hasDescription)
                                 <div class="exhibition-entry__feature {{ $hasCover ? 'exhibition-entry__feature--with-cover' : 'exhibition-entry__feature--text' }}">
                                     @if ($hasCover)
-                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: true, enableViewer: (bool) $exhibition->image_viewer_enabled) !!}
-                                    @endif
-                                    @if ($hasFacts || $hasActions || $hasDescription)
-                                        <div class="exhibition-entry__editorial">
+                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: false, enableViewer: (bool) $exhibition->image_viewer_enabled) !!}
                                     @endif
                                     @if ($hasFacts || $hasActions)
                                         <div class="exhibition-entry__info">
@@ -134,9 +131,6 @@
                                     @endif
                                     @if ($hasDescription)
                                         <div class="rich-text journal-entry-content exhibition-entry__description">{!! $exhibition->image_viewer_enabled ? $journalMedia->renderRichText((string) $exhibition->description) : $richText->render((string) $exhibition->description) !!}</div>
-                                    @endif
-                                    @if ($hasFacts || $hasActions || $hasDescription)
-                                        </div>
                                     @endif
                                 </div>
                             @endif
