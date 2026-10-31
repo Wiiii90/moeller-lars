@@ -77,6 +77,40 @@ final class JournalMediaRenderer
         return new HtmlString($figure);
     }
 
+    /**
+     * Decorative catalogue cover preview. Never starts video playback, adds a
+     * second viewer, or exposes the original image where a variant exists.
+     * A legacy video without a poster shows an inert first-frame preview.
+     * The caller supplies the aria-hidden wrapper because the summary already
+     * names the exhibition and the expanded media retains its own accessible
+     * caption and viewer.
+     */
+    public function renderPreview(JournalEntryMedia $usage): HtmlString
+    {
+        $usage->loadMissing('mediaAsset.variants');
+        $asset = $usage->mediaAsset;
+        if (! $asset instanceof MediaAsset) {
+            throw new LogicException('Journal media usage requires a media asset.');
+        }
+
+        $variant = \App\Domain\Media\MediaPreviewVariant::preview($asset);
+        if ($variant !== null) {
+            $width = (int) $variant->getAttribute('width');
+            $height = (int) $variant->getAttribute('height');
+            $dimensions = $width > 0 && $height > 0 ? ' width="'.$width.'" height="'.$height.'"' : '';
+
+            return new HtmlString('<img src="'.e($this->media->variantUrl($variant)).'" alt=""'.$dimensions
+                .' loading="lazy" decoding="async">');
+        }
+
+        if (MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type'))) {
+            return new HtmlString('<video src="'.e($this->media->originalUrlForAsset($asset))
+                .'" muted playsinline preload="metadata" tabindex="-1"></video>');
+        }
+
+        throw new LogicException('Image cover preview requires an available thumbnail.');
+    }
+
     public function renderRichText(string $source): HtmlString
     {
         return $this->viewer->renderRichText($source, 'journal-rich');
