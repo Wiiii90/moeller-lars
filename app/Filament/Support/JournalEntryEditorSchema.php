@@ -274,6 +274,7 @@ final class JournalEntryEditorSchema
                     ->hiddenLabel()
                     ->required()
                     ->live()
+                    ->extraAlpineAttributes(['data-admin-edit-change-owner' => 'livewire'], merge: true)
                     ->skipRenderAfterStateUpdated()
                     ->afterStateUpdated(static function (mixed $state, Component $livewire): void {
                         if (filled($state) && $livewire instanceof \App\Filament\Pages\JournalWorkspace) {
