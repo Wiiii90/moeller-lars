@@ -924,6 +924,23 @@ final class HomePresentation extends Page
         $this->selectedSourceIds = $selected->merge($visibleIds)->unique()->values()->all();
     }
 
+    /** @return array{enable:bool,disable:bool} */
+    public function selectedSourceCapabilities(): array
+    {
+        $ids = collect($this->selectedSourceIds)->map(static fn (mixed $id): int => (int) $id)
+            ->filter(static fn (int $id): bool => $id > 0)->unique()->all();
+        if ($ids === []) {
+            return ['enable' => false, 'disable' => false];
+        }
+
+        $states = ArtworkCategory::query()->whereKey($ids)->pluck('show_on_home');
+
+        return [
+            'enable' => $states->contains(static fn (mixed $value): bool => ! (bool) $value),
+            'disable' => $states->contains(static fn (mixed $value): bool => (bool) $value),
+        ];
+    }
+
     public function setSelectedGalleryEligibility(bool $enabled): void
     {
         $ids = collect($this->selectedSourceIds)->map(static fn ($id): int => (int) $id)->filter()->unique()->values()->all();

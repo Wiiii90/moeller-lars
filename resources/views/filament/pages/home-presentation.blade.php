@@ -173,6 +173,7 @@
                 </x-slot:actions>
 
                 <x-slot:selection>
+                    @php($sourceCapabilities = $this->selectedSourceCapabilities())
                     <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
                         <span class="admin-data-control-label">{{ __('Selection') }}</span>
                         <div class="admin-selection__anchor">
@@ -180,11 +181,11 @@
                                 <x-admin.selection-trigger-label>{{ __('Selected') }}</x-admin.selection-trigger-label>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
-                                <button class="admin-action admin-action--with-icon admin-action--state" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(true)" x-on:click="open = false">
+                                <button class="admin-action admin-action--with-icon admin-action--state" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(true)" x-on:click="open = false" @disabled(! $sourceCapabilities['enable'])>
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Publish->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">{{ __('Enable') }}</span>
                                 </button>
-                                <button class="admin-action admin-action--with-icon admin-action--state" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(false)" x-on:click="open = false">
+                                <button class="admin-action admin-action--with-icon admin-action--state" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(false)" x-on:click="open = false" @disabled(! $sourceCapabilities['disable'])>
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">{{ __('Disable') }}</span>
                                 </button>
@@ -325,6 +326,12 @@
                 $visibleComponentTargets = collect($components)->pluck('target')->values()->all();
                 $visibleHomeChildTargets = collect($components)->flatMap(fn (array $component) => collect($component['children'] ?? [])->pluck('target'))->values()->all();
                 $homeSelectionCount = count($selectedComponentTargets) + count($selectedHomeChildTargets);
+                $selectedHomeTargets = array_merge($selectedComponentTargets, $selectedHomeChildTargets);
+                $selectedHomeRows = collect($componentDataset)
+                    ->flatMap(static fn (array $row): array => [$row, ...($row['children'] ?? [])])
+                    ->filter(static fn (array $row): bool => in_array($row['target'] ?? null, $selectedHomeTargets, true));
+                $canPublishHomeSelection = $selectedHomeRows->contains(static fn (array $row): bool => ! ($row['published'] ?? false));
+                $canUnpublishHomeSelection = $selectedHomeRows->contains(static fn (array $row): bool => ($row['published'] ?? false));
                 $componentFiltersActive = trim($componentSearch) !== '' || $componentType !== 'any';
             @endphp
 
@@ -383,9 +390,9 @@
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
                                 <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('up')" x-on:click="open = false" @disabled(! $reorderEnabled)>{{ __('Move selected up') }}</button>
                                 <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('down')" x-on:click="open = false" @disabled(! $reorderEnabled)>{{ __('Move selected down') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(true)" x-on:click="open = false">{{ __('Publish selected') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(false)" x-on:click="open = false">{{ __('Unpublish selected') }}</button>
-                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedComponents')" x-on:click="open = false">{{ __('Delete selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(true)" x-on:click="open = false" @disabled(! $canPublishHomeSelection)>{{ __('Publish selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(false)" x-on:click="open = false" @disabled(! $canUnpublishHomeSelection)>{{ __('Unpublish selected') }}</button>
+                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedComponents')" x-on:click="open = false" @disabled($homeSelectionCount === 0)>{{ __('Delete selected') }}</button>
                             </div>
                         </div>
                         <span class="admin-selection__count" aria-label="{{ $homeSelectionCount }} selected">{{ $homeSelectionCount }}</span>
