@@ -449,9 +449,13 @@ final class AdminRichText
                                     this.commitEditorChange()
                                 }
                             },
-                            onRichEditorFocusOut() {
+                            onRichEditorFocusOut(event) {
                                 const shell = this.richShell()
                                 if (!shell?.closest('.admin-dialog--edit')) return
+                                if (event.relatedTarget) {
+                                    if (!shell.contains(event.relatedTarget)) shell.dispatchEvent(new Event('change', { bubbles: true }))
+                                    return
+                                }
                                 this.$nextTick(() => {
                                     if (!shell.isConnected || shell.contains(document.activeElement)) return
                                     shell.dispatchEvent(new Event('change', { bubbles: true }))
@@ -508,7 +512,7 @@ final class AdminRichText
                     // A focus change inside the editor/picker never commits.
                     // The focus check runs after Alpine's state update without
                     // a timer, but only when the editor genuinely loses focus.
-                    'x-on:focusout' => 'onRichEditorFocusOut()',
+                    'x-on:focusout' => 'onRichEditorFocusOut($event)',
                     'x-on:artist-rich-link-toggle' => 'openLinkEditor($event)',
                     'x-on:artist-rich-color-toggle' => 'openColorEditor($event)',
                     'x-on:artist-rich-spacing-toggle' => 'openSpacingEditor($event)',
