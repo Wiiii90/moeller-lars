@@ -10,7 +10,7 @@ Canonical verification/release workflow:
 .github/workflows/release.yml
 ```
 
-It **currently runs automatically** for direct pushes to `dev` and `main`, pull requests targeting `dev` or `main`, and explicit `workflow_dispatch` runs. Those events run the verification job. **This is a workflow trigger, not a worker-initiated CI invocation.** The worker policy forbids an unrequested agent from dispatching, monitoring, polling or reading CI results; it does **not** itself disable GitHub's pre-existing automatic `dev` push trigger. The user's stated goal to use CI only when explicitly asked would also require a **separately authorized source edit** to `.github/workflows/release.yml` (and suitable release-gate preservation) if it includes eliminating automatic triggers. Docs may surface this policy/source contradiction, but must not claim CI has been disabled. Release-image publication remains restricted to verified non-PR runs on `main`; pushes to `dev` and pull-request checks never publish release images. The disposable PostgreSQL service is marked with `MOELLER_LARS_DISPOSABLE_TEST_DATABASE=1` inside GitHub Actions.
+**Manual execution only (user-approved, 2026-10-26):** `release.yml`, `browser-profile.yml`, and `runtime-image-smoke.yml` use only `workflow_dispatch`. Ordinary pushes to `dev` or `main` and pull requests no longer start their jobs. CI must be expressly requested by the user; a coding commit, merge approval, or documentation change does not authorize a workflow dispatch or run inspection. From the Actions interface, explicitly choose the intended branch or exact release source before starting a workflow. In `release.yml`, verification runs for the selected branch, while the immutable release image and associated status reporting remain additionally restricted to a **manual dispatch on `main`** and successful verification. This manual trigger change does not itself publish an image or promote to `main`. The disposable PostgreSQL service is marked with `MOELLER_LARS_DISPOSABLE_TEST_DATABASE=1` inside GitHub Actions.
 
 Rapid protected-Validation browser workflow:
 
@@ -42,7 +42,7 @@ That loop is deliberately separate from release qualification:
 
 A local container being healthy means only that the candidate boots. It is not browser acceptance, Validation acceptance or release qualification.
 
-Do not trigger extra/manual canonical verification runs merely to inspect a CSS/Blade/editorial-workspace iteration unless a concrete risk warrants it. Normal pushes to `dev` already invoke the configured verification workflow.
+Do not trigger verification merely to inspect a CSS/Blade/editorial-workspace iteration. No ordinary `dev` push starts the verification workflow: only a separate, explicit user request authorizes a manual run.
 
 ## Accepted candidate promotion to `main`
 
@@ -94,7 +94,7 @@ The canonical verification job covers, in order:
 - Pint formatting verification;
 - JavaScript tests through Node's built-in test runner.
 
-On authorized pull requests targeting `main` and pushes to `main`, combined PHP `app/` line coverage is measured with PCOV and reported as a percentage plus covered/coverable statements. There is no invented baseline or arbitrary threshold; this number excludes JS, Chromium and separate multi-process PostgreSQL/HTTP concurrency runs.
+For an expressly authorized **manual release verification on `main`**, combined PHP `app/` line coverage is measured with PCOV and reported as a percentage plus covered/coverable statements. There is no invented baseline or arbitrary threshold; this number excludes JS, Chromium and separate multi-process PostgreSQL/HTTP concurrency runs.
 
 All verification steps are blocking. PHPStan has no `continue-on-error` escape hatch, and the project does not use a broad PHPStan baseline or ignore set to hide application debt. Test warnings and static-analysis failures are repaired at their source rather than suppressed to obtain a green workflow.
 
@@ -155,7 +155,7 @@ Current application media ceilings:
 
 The canonical media policy supports validated image/video/audio content. Consumer support remains narrower where appropriate.
 
-**Rights delivery is a separately authorized rollout**, not an automatic consequence of an application build. `MEDIA_RIGHTS_PREPARATION_ENABLED` and `MEDIA_RIGHTS_DELIVERY_ENABLED` default to false. Before enabling delivery, verify the optional schema migration, queued/offline preparation and worker isolation, the **single current libvips `public-v2` image-thumbnail profile**, and evidence that any required legacy `public-v1` cutover ran safely in an authorized isolated/local environment before rights activation, full-quality rights artifact integrity, and `MediaRightsPublicationSelections` readiness for **every** publicly eligible Working image under the existing Publication preflight. Review history/Undo retention, operator backups, image rights/metadata and public HTTP/cache behavior with isolated execution before Validation or Production. This is a release gate, not a new second media or publication subsystem. See [canonical rights implementation](../public/rights-privacy.md#b-rights-metadata-across-storage-public-files-and-seo).
+**Rights delivery is a separately authorized rollout**, not an automatic consequence of an application build. `MEDIA_RIGHTS_PREPARATION_ENABLED` and `MEDIA_RIGHTS_DELIVERY_ENABLED` default to false. Before enabling delivery, verify the optional schema migration, queued/offline preparation and worker isolation, both historical/current canonical image thumbnails, full-quality rights artifact integrity, and `MediaRightsPublicationSelections` readiness for **every** publicly eligible Working image under the existing Publication preflight. Review history/Undo retention, operator backups, image rights/metadata and public HTTP/cache behavior with isolated execution before Validation or Production. This is a release gate, not a new second media or publication subsystem. See [canonical rights implementation](../public/rights-privacy.md#b-rights-metadata-across-storage-public-files-and-seo).
 
 ## Release notes and Dashboard announcements
 
