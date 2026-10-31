@@ -121,93 +121,10 @@
         <div
             class="media-workspace__dropzone admin-storage__dropzone"
             x-data="{
-                phase: 'idle',
-                progress: 0,
-                fileCount: 0,
-                completed: 0,
-                result: '',
+                phase: 'idle', progress: 0, fileCount: 0,
+                completed: 0, result: '',
                 async uploadFiles(input) {
-                    if (this.phase === 'uploading' || this.phase === 'processing') return
-
-                    const files = Array.from(input.files ?? [])
-                    if (files.length === 0) return
-
-                    this.fileCount = files.length
-                    this.completed = 0
-                    this.progress = 0
-                    this.result = ''
-                    let added = 0
-                    let duplicates = 0
-                    let failed = 0
-                    const errors = []
-
-                    for (const file of files) {
-                        const isVideo = file.type.startsWith('video/') || /\.(mp4|webm)$/i.test(file.name)
-                        const isAudio = file.type.startsWith('audio/') || /\.(mp3|m4a|wav|ogg)$/i.test(file.name)
-                        const sizeLimit = isVideo
-                            ? @js(\App\Domain\Media\MediaTypePolicy::videoMaxBytes())
-                            : isAudio
-                                ? @js(\App\Domain\Media\MediaTypePolicy::audioMaxBytes())
-                                : @js(\App\Domain\Media\MediaTypePolicy::imageMaxBytes())
-                        if (file.size > sizeLimit) {
-                            failed++
-                            errors.push(file.name + ' — File exceeds the ' + Math.round(sizeLimit / 1048576) + ' MiB limit.')
-                            this.completed++
-                            this.progress = Math.round(this.completed * 100 / this.fileCount)
-                            continue
-                        }
-
-                        this.phase = 'uploading'
-
-                        const transferred = await new Promise((resolve) => {
-                            $wire.uploadMultiple(
-                                'directMedia',
-                                [file],
-                                () => resolve(true),
-                                () => resolve(false),
-                                (event) => {
-                                    const percent = Number(event?.detail?.progress ?? 0)
-                                    this.progress = Math.round(
-                                        (this.completed + percent / 100) * 100 / this.fileCount
-                                    )
-                                },
-                            )
-                        })
-
-                        if (!transferred) {
-                            failed++
-                            errors.push(file.name + ' — Transfer failed. Check the file size and connection.')
-                        } else {
-                            this.phase = 'processing'
-                            try {
-                                const outcome = await $wire.processDirectMedia(false)
-                                added += Number(outcome?.added ?? 0)
-                                duplicates += Number(outcome?.duplicates ?? 0)
-                                failed += Number(outcome?.failed ?? 0)
-                                for (const error of outcome?.errors ?? []) errors.push(error)
-                            } catch (error) {
-                                failed++
-                                errors.push(file.name + ' — Processing failed.')
-                                try { await $wire.set('directMedia', []) } catch {}
-                            }
-                        }
-
-                        this.completed++
-                        this.progress = Math.round(this.completed * 100 / this.fileCount)
-                    }
-
-                    input.value = ''
-                    const summary = added + ' uploaded, ' + duplicates + ' already in Storage, ' +
-                        failed + ' failed (' + this.fileCount + ' selected)'
-                    this.result = errors.length ? summary + ' · ' + errors.slice(0, 2).join('; ') : summary
-                    this.phase = 'result'
-                    // One top-of-page notification for the entire batch, including
-                    // transport failures that never reached the ingestion service.
-                    try {
-                        await $wire.notifyDirectMediaBatch(added, duplicates, failed, errors.slice(0, 2).join('; '))
-                    } catch {
-                        // The status remains visible here if the server is unavailable.
-                    }
+                    await window.adminMediaUploader(this, input, $wire, 'storage')
                 },
             }"
             x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
@@ -234,7 +151,7 @@
                                     : 'Drop files here or choose from your device'
                     "
                 >{{ __('Drop files here or choose from your device') }}</strong>
-                <span x-show="phase === 'idle'">JPEG, PNG, WebP · {{ number_format(\App\Domain\Media\MediaTypePolicy::imageMaxBytes() / 1048576, 0) }} MiB / {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} MP; MP4, WebM · {{ number_format(\App\Domain\Media\MediaTypePolicy::videoMaxBytes() / 1048576, 0) }} MiB; MP3, M4A/AAC, Ogg, WAV · {{ number_format(\App\Domain\Media\MediaTypePolicy::audioMaxBytes() / 1048576, 0) }} MiB.</span>
+                <span x-show="phase === 'idle'">JPEG, PNG, WebP, MP4, WebM, MP3, M4A, Ogg, WAV. File size is limited by available site storage. Re-select an interrupted file to resume.</span>
             </div>
             <div
                 class="media-workspace__upload-progress"

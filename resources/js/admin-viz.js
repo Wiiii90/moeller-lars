@@ -1,4 +1,6 @@
 import './admin-notifications.js';
+import { adminMediaUploader } from './admin-media-upload.js';
+window.adminMediaUploader = adminMediaUploader;
 import './admin-action-titles.js';
 import './admin-dialog-geometry.js';
 

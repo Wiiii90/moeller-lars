@@ -5,7 +5,6 @@ namespace App\Filament\Resources\MediaAssets\Pages;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaCapacityService;
-use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminForm;
@@ -30,14 +29,10 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Session;
 use Livewire\Attributes\On;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-use Livewire\WithFileUploads;
 use Throwable;
 
 final class ListMediaAssets extends Page
 {
-    use WithFileUploads;
-
     /** @var list<int> */
     private const PAGE_SIZES = [25, 50, 100];
 
@@ -87,9 +82,6 @@ final class ListMediaAssets extends Page
     public string $viewMode = 'list';
 
     public string $search = '';
-
-    /** @var list<TemporaryUploadedFile> */
-    public array $directMedia = [];
 
     public int $page = 1;
 
@@ -190,101 +182,12 @@ final class ListMediaAssets extends Page
         );
     }
 
-    public function processDirectMedia(bool $notify = true): array
+    /** Refresh the existing Storage library after canonical resumable ingest. */
+    public function refreshAfterResumableMediaUpload(): void
     {
-        $uploads = $this->directMedia;
-        $this->resetErrorBag('directMedia');
-
-        if ($uploads === []) {
-            $this->reset('directMedia');
-
-            return [
-                'summary' => 'Upload failed',
-                'added' => 0,
-                'duplicates' => 0,
-                'failed' => 1,
-                'errors' => ['No uploaded file was received.'],
-            ];
-        }
-
-        $service = app(MediaIngestService::class);
-        $added = 0;
-        $duplicates = 0;
-        $failures = [];
-
-        foreach ($uploads as $upload) {
-            try {
-                $result = $service->ingestUnique($upload);
-                if ($result['duplicate']) {
-                    $duplicates++;
-                } else {
-                    $added++;
-                }
-            } catch (ValidationException $exception) {
-                $failures[] = [
-                    'filename' => $this->uploadFilename($upload),
-                    'message' => $this->uploadValidationMessage($exception),
-                ];
-            } catch (Throwable $exception) {
-                report($exception);
-                $failures[] = [
-                    'filename' => $this->uploadFilename($upload),
-                    'message' => 'The file could not be uploaded.',
-                ];
-            }
-        }
-
-        $failed = count($failures);
-        $total = count($uploads);
-        $this->reset('directMedia');
-
-        if ($added > 0) {
-            $this->page = 1;
-        }
-
+        $this->page = 1;
         $this->loadLibrary();
-        if ($added > 0) {
-            $this->refreshStorageOverviewAfterMutation();
-        }
-
-        if ($notify && $failures !== []) {
-            $details = array_map(
-                static fn (array $failure): string => $failure['filename'].' — '.$failure['message'],
-                array_slice($failures, 0, 4),
-            );
-            if ($failed > 4) {
-                $details[] = '+'.($failed - 4).' more';
-            }
-
-            app(AdminNotifier::class)->notification(
-                title: ($added + $duplicates) > 0 ? 'Upload completed with issues' : 'Upload failed',
-                body: implode("\n", $details),
-                status: ($added + $duplicates) > 0 ? 'warning' : 'danger',
-            );
-        } elseif ($notify && $added > 0) {
-            app(AdminNotifier::class)->notification(
-                title: $total === 1 ? 'File uploaded' : 'Files uploaded',
-                body: $this->directUploadSummary($total, $added, $duplicates, 0),
-                status: 'success',
-            );
-        } elseif ($notify && $duplicates > 0) {
-            app(AdminNotifier::class)->notification(
-                title: 'Already in Storage',
-                body: $total === 1 ? null : $duplicates.' files already exist in Storage',
-                status: 'info',
-            );
-        }
-
-        return [
-            'summary' => $this->directUploadSummary($total, $added, $duplicates, $failed),
-            'added' => $added,
-            'duplicates' => $duplicates,
-            'failed' => $failed,
-            'errors' => array_map(
-                static fn (array $failure): string => $failure['filename'].' — '.$failure['message'],
-                $failures,
-            ),
-        ];
+        $this->refreshStorageOverviewAfterMutation();
     }
 
     public function setViewMode(string $mode): void
@@ -818,18 +721,6 @@ final class ListMediaAssets extends Page
         $pageSize = is_numeric($value) ? (int) $value : self::DEFAULT_PAGE_SIZE;
 
         return in_array($pageSize, self::PAGE_SIZES, true) ? $pageSize : self::DEFAULT_PAGE_SIZE;
-    }
-
-    private function uploadFilename(TemporaryUploadedFile $upload): string
-    {
-        return basename(str_replace('\\', '/', $upload->getClientOriginalName()));
-    }
-
-    private function uploadValidationMessage(ValidationException $exception): string
-    {
-        $message = collect($exception->errors())->flatten()->first();
-
-        return is_string($message) ? $message : 'The file could not be uploaded.';
     }
 
     private function directUploadSummary(int $total, int $added, int $duplicates, int $failed): string

@@ -43,95 +43,14 @@
         <div class="admin-gallery-upload" aria-label="Add artwork from media">
             <div
                 class="admin-gallery-upload__dropzone"
-                x-data="{
-                    phase: 'idle',
-                    progress: 0,
-                    fileCount: 0,
-                    completed: 0,
-                    result: '',
+                    x-data="{
+                    phase: 'idle', progress: 0, fileCount: 0,
+                    completed: 0, result: '',
                     async uploadFiles(input) {
-                        if (this.phase === 'uploading' || this.phase === 'processing') return
-                        const files = Array.from(input.files ?? [])
-                        if (files.length === 0) return
-
-                        this.fileCount = files.length
-                        this.completed = 0
-                        this.progress = 0
-                        this.result = ''
-                        let failed = 0
-                        let duplicates = 0
-                        const errors = []
-
-                        try {
-                            await $wire.beginDirectPrimaryMediaBatch()
-                        } catch {
-                            this.phase = 'result'
-                            this.result = 'Unable to prepare the upload. Check your connection.'
-                            input.value = ''
-                            return
-                        }
-
-                        for (const file of files) {
-                            const isVideo = file.type.startsWith('video/') || /\.(mp4|webm)$/i.test(file.name)
-                            const limit = isVideo
-                                ? @js(\App\Domain\Media\MediaTypePolicy::videoMaxBytes())
-                                : @js(\App\Domain\Media\MediaTypePolicy::imageMaxBytes())
-
-                            if (file.size > limit) {
-                                failed++
-                                errors.push(file.name + ' — File exceeds the ' + Math.round(limit / 1048576) + ' MiB limit.')
-                            } else {
-                                this.phase = 'uploading'
-                                const transferred = await new Promise((resolve) => {
-                                    $wire.uploadMultiple(
-                                        'directPrimaryMedia',
-                                        [file],
-                                        () => resolve(true),
-                                        () => resolve(false),
-                                        (event) => {
-                                            const percent = Number(event?.detail?.progress ?? 0)
-                                            this.progress = Math.round((this.completed + percent / 100) * 100 / this.fileCount)
-                                        },
-                                    )
-                                })
-
-                                if (!transferred) {
-                                    failed++
-                                    errors.push(file.name + ' — Transfer failed. Check the file size and connection.')
-                                } else {
-                                    this.phase = 'processing'
-                                    try {
-                                        const outcome = await $wire.processDirectPrimaryMedia(true)
-                                        duplicates += Number(outcome?.duplicates ?? 0)
-                                        failed += Number(outcome?.failed ?? 0)
-                                        for (const error of outcome?.errors ?? []) errors.push(error)
-                                    } catch {
-                                        failed++
-                                        errors.push(file.name + ' — Processing failed.')
-                                        try { await $wire.set('directPrimaryMedia', []) } catch {}
-                                    }
-                                }
-                            }
-
-                            this.completed++
-                            this.progress = Math.round(this.completed * 100 / this.fileCount)
-                        }
-
-                        input.value = ''
-                        this.phase = 'processing'
-                        try {
-                            const response = await $wire.finishDirectPrimaryMediaBatch(failed, duplicates, errors)
-                            this.result = response?.summary ?? 'Upload completed'
-                        } catch {
-                            this.result = 'Upload finished, but the final summary could not be confirmed. Check Storage.'
-                            try {
-                                await $wire.notifyDirectPrimaryTransferFailure(this.result)
-                            } catch {}
-                        }
-                        this.phase = 'result'
+                        await window.adminMediaUploader(this, input, $wire, 'gallery')
                     },
                 }"
-                x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
+            x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
             >
                 <input
                     class="admin-gallery-upload__input"
@@ -154,7 +73,7 @@
                                         : 'Drop images or videos here or choose from your device'
                         "
                     >{{ __('Drop images or videos here or choose from your device') }}</strong>
-                    <span x-show="phase === 'idle'">JPEG, PNG, WebP · max {{ number_format(\App\Domain\Media\MediaTypePolicy::imageMaxBytes() / 1048576, 0) }} MiB · {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} MP; MP4, WebM · max {{ number_format(\App\Domain\Media\MediaTypePolicy::videoMaxBytes() / 1048576, 0) }} MiB.</span>
+                    <span x-show="phase === 'idle'">JPEG, PNG, WebP (max {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} megapixels); MP4, WebM. File size is limited by available site storage. Interrupted uploads can be resumed by selecting the same file.</span>
                 </div>
                 <div
                     class="admin-gallery-upload__progress"
