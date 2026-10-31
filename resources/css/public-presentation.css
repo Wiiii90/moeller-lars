@@ -1482,11 +1482,13 @@ body {
 .exhibitions-page__stage {
     display: none;
 }
-@container (min-width: 44rem) {
+/* A 640px public content surface must show the new design, not silently
+   fall back to the previous list. Keep a readable index beside the stage. */
+@container (min-width: 36rem) {
     .exhibitions-page__layout[data-stage-ready] {
         display: grid;
-        grid-template-columns: minmax(0, 39%) minmax(0, 1fr);
-        column-gap: clamp(1.6rem, 3.5cqw, 2.8rem);
+        grid-template-columns: minmax(0, 32%) minmax(0, 1fr);
+        column-gap: clamp(1rem, 2.5cqw, 1.8rem);
         align-items: start;
     }
     .exhibitions-page__layout[data-stage-ready] .exhibitions-page__stage {
