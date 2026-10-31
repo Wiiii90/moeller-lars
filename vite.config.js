@@ -15,6 +15,14 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    // Filament dynamically imports the Rich Text entry modules and expects
+    // their default exports. Vite's client-build default (false) may remove
+    // those exports even when the entry files themselves are emitted.
+    build: {
+        rolldownOptions: {
+            preserveEntrySignatures: 'exports-only',
+        },
+    },
     server: {
         watch: {
             ignored: ['**/storage/framework/views/**', '**/.worktrees/**'],
