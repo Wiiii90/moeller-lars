@@ -64,6 +64,10 @@
     );
 }
 
+.admin-repeater-table--media .fi-select-input .fi-dropdown-panel {
+    min-width: min(34rem, calc(100vw - 3rem));
+}
+
 .admin-repeater-table--media .admin-repeater-table__table td:first-child .fi-select-input-value-label img {
     max-width: 3.25rem;
     max-height: 3.25rem;

@@ -270,7 +270,16 @@ final class JournalEntryEditorSchema
                     'media_asset_id',
                     __('Image or video'),
                     allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
-                )->hiddenLabel()->required(),
+                )
+                    ->hiddenLabel()
+                    ->required()
+                    ->live()
+                    ->skipRenderAfterStateUpdated()
+                    ->afterStateUpdated(static function (mixed $state, Component $livewire): void {
+                        if (filled($state) && $livewire instanceof \App\Filament\Pages\JournalWorkspace) {
+                            $livewire->dispatch('admin-edit-list-updated');
+                        }
+                    }),
                 self::videoControlsToggle('video_controls_enabled')->hiddenLabel(),
             ])
             ->addActionLabel(__('Add media'))
