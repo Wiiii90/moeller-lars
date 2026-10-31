@@ -18,10 +18,22 @@
 @endphp
 
 <div class="admin-repeater-table @if ($isMediaTable) admin-repeater-table--media @endif" role="group" aria-label="{{ $repeater->getLabel() }}">
-    <x-admin.table class="admin-table--data admin-repeater-table__table" aria-label="{{ $repeater->getLabel() }}">
+    <x-admin.table class="admin-table--data admin-repeater-table__table @if ($isMediaTable) admin-table--ranked @endif" aria-label="{{ $repeater->getLabel() }}">
         <table>
+            @if ($isMediaTable)
+                <colgroup>
+                    <col class="admin-table__col-position">
+                    <col class="admin-table__col-drag">
+                    <col class="admin-repeater-table__col-media">
+                    <col class="admin-repeater-table__col-controls">
+                    <col class="admin-repeater-table__col-actions">
+                </colgroup>
+            @endif
             <thead>
                 <tr>
+                    @if ($isMediaTable)
+                        <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
+                    @endif
                     @foreach ($columns as $column)
                         <th scope="col">{{ $column->getLabel() }}</th>
                     @endforeach
@@ -30,9 +42,23 @@
                     @endif
                 </tr>
             </thead>
-            <tbody>
+            <tbody @if ($isMediaTable && $canReorder) wire:sort="sortExhibitionGalleryMedia" @endif>
                 @foreach ($items as $itemKey => $item)
-                    <tr wire:key="{{ $item->getLivewireKey() }}.item">
+                    <tr wire:key="{{ $item->getLivewireKey() }}.item" @if ($isMediaTable && $canReorder) wire:sort:item="{{ $itemKey }}" @endif>
+                        @if ($isMediaTable)
+                            <td class="admin-table__position">
+                                <span class="admin-position">{{ $loop->iteration }}</span>
+                            </td>
+                            <td class="admin-table__drag">
+                                <button
+                                    class="admin-drag-handle"
+                                    type="button"
+                                    @if ($canReorder) wire:sort:handle @else disabled @endif
+                                    aria-label="Drag gallery media {{ $loop->iteration }} to reorder"
+                                    title="Drag to reorder"
+                                >⋮⋮</button>
+                            </td>
+                        @endif
                         @foreach ($item->getComponents(withHidden: true) as $component)
                             @if ($component instanceof \Filament\Forms\Components\Hidden)
                                 {!! $component->toHtml() !!}
