@@ -57,7 +57,7 @@ class MediaIngestService
     }
 
     /** @return array{asset:MediaAsset,duplicate:bool} */
-    public function ingestUnique(UploadedFile $upload): array
+    public function ingestUnique(UploadedFile $upload, bool $fromPrivateStaging = false): array
     {
         $lock = $this->acquireIngestLock();
 
@@ -68,7 +68,7 @@ class MediaIngestService
             }
 
             $prepared = $this->prepareForIngest($upload);
-            $asset = $this->storePreparedLocked($upload, $prepared);
+            $asset = $this->storePreparedLocked($upload, $prepared, $fromPrivateStaging);
             if (config('media.rights_preparation_enabled', false) === true) {
                 PrepareMediaRightsImage::dispatch((int) $asset->getKey())->afterCommit();
             }
@@ -154,12 +154,13 @@ class MediaIngestService
     /**
      * @param  array{mime:string,width:?int,height:?int,path:string,size:int,sha256:string,thumbnail_bytes:?string,thumbnail_width:?int,thumbnail_height:?int}  $prepared
      */
-    private function storePreparedLocked(UploadedFile $upload, array $prepared): MediaAsset
+    private function storePreparedLocked(UploadedFile $upload, array $prepared, bool $fromPrivateStaging = false): MediaAsset
     {
         try {
             app(MediaCapacityService::class)->assertCanStoreOriginal(
                 $prepared['size'],
                 $prepared['thumbnail_bytes'] !== null ? strlen($prepared['thumbnail_bytes']) : 0,
+                originalAlreadyStaged: $fromPrivateStaging,
             );
         } catch (ValidationException $exception) {
             throw $exception;
@@ -194,8 +195,23 @@ class MediaIngestService
             }
         }
 
+        $movedStagedOriginal = false;
         try {
-            $originalStream = @fopen($prepared['path'], 'rb');
+            if ($fromPrivateStaging) {
+                // A multi-gigabyte original is moved in-place on the private
+                // media volume; copying it would temporarily violate quota.
+                $source = realpath($prepared['path']);
+                $stagingDir = realpath(storage_path('app/private/incoming-media'));
+                $destination = $disk->path($originalKey);
+                if (! is_string($source) || ! is_string($stagingDir)
+                    || dirname($source) !== $stagingDir
+                    || ! is_dir(dirname($destination))
+                    || ! @rename($source, $destination)) {
+                    throw new RuntimeException('The staged original could not be moved into Storage.');
+                }
+                $movedStagedOriginal = true;
+            } else {
+                $originalStream = @fopen($prepared['path'], 'rb');
             if (! is_resource($originalStream)) {
                 throw $this->validationFailure('The uploaded media could not be read completely.');
             }
@@ -206,6 +222,7 @@ class MediaIngestService
                 }
             } finally {
                 fclose($originalStream);
+            }
             }
 
             if ($thumbnailKey !== null && ! $disk->put($thumbnailKey, $prepared['thumbnail_bytes'])) {
@@ -245,6 +262,15 @@ class MediaIngestService
             });
         } catch (Throwable $exception) {
             $failed = [];
+            if ($movedStagedOriginal && $disk->exists($originalKey)
+                && ! @rename($disk->path($originalKey), $prepared['path'])) {
+                // Preserve the sole surviving copy for explicit recovery.
+                throw new RuntimeException(
+                    'Media ingest failed; its staged original could not be restored from '.$originalKey,
+                    0,
+                    $exception,
+                );
+            }
             foreach ($storageKeys as $key) {
                 try {
                     if ($disk->exists($key) && ! $disk->delete($key)) {

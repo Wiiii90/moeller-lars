@@ -25,6 +25,9 @@ final class MediaCapacityService
      *   quota_bytes:int|null,
      *   authoritative_bytes:int|null,
      *   generated_bytes:int|null,
+     *   staging_bytes:int|null,
+     *   staging_files:int|null,
+     *   reserved_upload_bytes:int|null,
      *   managed_bytes:int|null,
      *   database_bytes:int|null,
      *   site_used_bytes:int|null,
@@ -50,6 +53,8 @@ final class MediaCapacityService
         try {
             [$authoritativeBytes, $originalFiles, $authoritativeFiles] = $this->measurePrefix('originals', true);
             [$generatedBytes, $generatedFiles] = $this->measurePrefix('variants');
+            [$stagingBytes, $stagingFiles] = $this->measurePrefix('incoming-media');
+            $reservedUploadBytes = $this->measureUntransferredUploadReservations();
         } catch (Throwable) {
             return $this->unavailableSnapshot($quotaConfiguration['configured'], true, $quota);
         }
@@ -60,8 +65,8 @@ final class MediaCapacityService
         }
 
         $databaseBytes = max(0, (int) ($database['logical_bytes'] ?? 0));
-        $siteUsedBytes = $authoritativeBytes + $generatedBytes + $databaseBytes;
-        $remaining = $quota === null ? null : max(0, $quota - $siteUsedBytes);
+        $siteUsedBytes = $authoritativeBytes + $generatedBytes + $stagingBytes + $databaseBytes;
+        $remaining = $quota === null ? null : max(0, $quota - $siteUsedBytes - $reservedUploadBytes);
         $ratio = $quota === null ? null : $siteUsedBytes / $quota;
         $status = 'healthy';
 
@@ -81,7 +86,10 @@ final class MediaCapacityService
             'quota_bytes' => $quota,
             'authoritative_bytes' => $authoritativeBytes,
             'generated_bytes' => $generatedBytes,
-            'managed_bytes' => $authoritativeBytes + $generatedBytes,
+            'managed_bytes' => $authoritativeBytes + $generatedBytes + $stagingBytes,
+            'staging_bytes' => $stagingBytes,
+            'staging_files' => $stagingFiles,
+            'reserved_upload_bytes' => $reservedUploadBytes,
             'database_bytes' => $databaseBytes,
             'site_used_bytes' => $siteUsedBytes,
             'reclaimable_bytes' => $generatedBytes,
@@ -138,13 +146,15 @@ final class MediaCapacityService
      * derivatives already count toward measured usage and must not be
      * subtracted a second time.
      */
-    public function assertCanStoreOriginal(int $bytes, int $incomingPreviewBytes = 0): void
+    public function assertCanStoreOriginal(int $bytes, int $incomingPreviewBytes = 0, bool $originalAlreadyStaged = false): void
     {
         if ($bytes <= 0 || $incomingPreviewBytes < 0) {
             throw ValidationException::withMessages(['media' => 'The uploaded media has an invalid size.']);
         }
 
-        $this->assertCanStoreAdditionalBytes($bytes + $incomingPreviewBytes);
+        // A staged original already consumes site quota. Atomic rename from
+        // incoming-media/ to originals/ does not add its bytes again.
+        $this->assertCanStoreAdditionalBytes(($originalAlreadyStaged ? 0 : $bytes) + $incomingPreviewBytes);
     }
 
     /**
@@ -175,6 +185,8 @@ final class MediaCapacityService
         try {
             [$authoritativeBytes] = $this->measurePrefix('originals');
             [$storedGeneratedBytes] = $this->measurePrefix('variants');
+            [$stagingBytes] = $this->measurePrefix('incoming-media');
+            $reservedUploadBytes = $this->measureUntransferredUploadReservations();
         } catch (Throwable) {
             throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified. Try the upload again later.']);
         }
@@ -186,9 +198,12 @@ final class MediaCapacityService
 
         $siteUsedBytes = $authoritativeBytes
             + $storedGeneratedBytes
+            + $stagingBytes
             + max(0, (int) ($database['logical_bytes'] ?? 0));
 
-        if ($siteUsedBytes >= $quota || $additionalBytes > ($quota - $siteUsedBytes)) {
+        // Reserved untransferred bytes protect concurrent resumable sessions
+        // against ordinary media ingest or unrelated generated variants.
+        if ($additionalBytes > $quota - $siteUsedBytes - $reservedUploadBytes) {
             throw ValidationException::withMessages(['media' => 'The site storage allowance is full. Remove reclaimable storage or ask the operator to increase the allowance before uploading.']);
         }
     }
@@ -246,6 +261,9 @@ final class MediaCapacityService
             'quota_bytes' => $quota,
             'authoritative_bytes' => null,
             'generated_bytes' => null,
+            'staging_bytes' => null,
+            'staging_files' => null,
+            'reserved_upload_bytes' => null,
             'managed_bytes' => null,
             'database_bytes' => null,
             'site_used_bytes' => null,
@@ -268,6 +286,40 @@ final class MediaCapacityService
             : get_debug_type($configured);
 
         return 'media-capacity:display:'.sha1((string) config('media.disk').'|'.$quotaToken);
+    }
+
+    /**
+     * Count the not-yet-transferred portion of open sessions as reserved
+     * capacity. The bytes already written under incoming-media/ are counted
+     * separately as REAL physical staging bytes, never double-counted.
+     * Inconsistent session metadata fails admission closed.
+     */
+    private function measureUntransferredUploadReservations(): int
+    {
+        $dir = storage_path('app/private/incoming-media');
+        $reserved = 0;
+        foreach (glob($dir.'/*.json') ?: [] as $manifest) {
+            $id = basename($manifest, '.json');
+            if (! \Illuminate\Support\Str::isUuid($id)) {
+                continue;
+            }
+            $raw = @file_get_contents($manifest);
+            $meta = is_string($raw) ? json_decode($raw, true) : null;
+            if (! is_array($meta)) {
+                throw new \RuntimeException('Upload staging manifest could not be measured.');
+            }
+            if (isset($meta['asset_id'])) {
+                continue;
+            }
+            $total = $meta['size'] ?? null;
+            $part = $dir.'/'.$id.'.part';
+            $onDisk = @filesize($part);
+            if (! is_int($total) || $total <= 0 || ! is_int($onDisk) || $onDisk < 0 || $onDisk > $total) {
+                throw new \RuntimeException('Unfinished media reservation is inconsistent.');
+            }
+            $reserved += $total - $onDisk;
+        }
+        return $reserved;
     }
 
     /** @return array{int, int, array<string, int>} */

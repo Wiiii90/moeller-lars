@@ -45,26 +45,17 @@ final class ResumableMediaUploadService
             return $existing;
         }
 
-        $capacity = app(MediaCapacityService::class)->snapshot();
-        if (($capacity['configuration_valid'] ?? false) !== true
-            || ($capacity['measurement_available'] ?? false) !== true
-            || ! is_int($capacity['quota_bytes'] ?? null)
-            || ! is_int($capacity['remaining_bytes'] ?? null)) {
-            throw $this->invalid('The site storage allowance is not configured or cannot be measured.');
-        }
-
-        // Staging isn't included in the published-media accounting. Reserve
-        // unfinished transfers separately so concurrent starts cannot evade it.
-        return $this->admissionLock(function () use ($userId, $filename, $size, $capacity): array {
-            $reserved = 0;
-            foreach (glob($this->directory().'/*.json') ?: [] as $file) {
-                $meta = json_decode((string) @file_get_contents($file), true);
-                if (is_array($meta) && ! isset($meta['asset_id'])) {
-                    $reserved += max(0, (int) ($meta['size'] ?? 0));
-                }
+        // Admission is serialized so two simultaneous starts cannot both
+        // observe the same remaining capacity and oversubscribe the quota.
+        return $this->admissionLock(function () use ($userId, $filename, $size): array {
+            $capacity = app(MediaCapacityService::class)->snapshot();
+            if (($capacity['configuration_valid'] ?? false) !== true
+                || ($capacity['measurement_available'] ?? false) !== true
+                || ! is_int($capacity['quota_bytes'] ?? null)
+                || ! is_int($capacity['remaining_bytes'] ?? null)) {
+                throw $this->invalid('The site storage allowance is not configured or cannot be measured.');
             }
-
-            if ($size > (int) $capacity['remaining_bytes'] - $reserved) {
+            if ($size > (int) $capacity['remaining_bytes']) {
                 throw $this->invalid('The selected file exceeds the remaining site storage allowance.');
             }
 
@@ -72,8 +63,9 @@ final class ResumableMediaUploadService
             if (! is_float($free) && ! is_int($free)) {
                 throw $this->invalid('Free temporary storage could not be verified.');
             }
-            // Finalization temporarily holds both staged and immutable copies.
-            if ($free < $reserved + 2 * $size + self::MIN_FREE_RESERVE) {
+            // Atomic rename retains one physical original, not two copies.
+            // Leave headroom for derivative generation and other server work.
+            if ($free < (int) ($capacity['reserved_upload_bytes'] ?? 0) + $size + self::MIN_FREE_RESERVE) {
                 throw $this->invalid('Not enough physical space to safely stage and save this media file.');
             }
 
@@ -170,7 +162,7 @@ final class ResumableMediaUploadService
 
             $upload = new UploadedFile($path, (string) $meta['filename'], null, UPLOAD_ERR_OK, true);
             // This service is the ONLY canonical ingest/persistence owner.
-            $result = app(MediaIngestService::class)->ingestUnique($upload);
+            $result = app(MediaIngestService::class)->ingestUnique($upload, fromPrivateStaging: true);
             /** @var MediaAsset $asset */
             $asset = $result['asset'];
             $meta['asset_id'] = (int) $asset->getKey();
@@ -178,6 +170,7 @@ final class ResumableMediaUploadService
             $meta['updated_at'] = time();
             $this->writeManifest($id, $meta);
             @unlink($path);
+            app(MediaCapacityService::class)->forgetCachedSnapshot();
             return $this->status($id, $meta);
         });
     }
