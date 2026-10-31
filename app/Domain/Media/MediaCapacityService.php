@@ -179,7 +179,7 @@ final class MediaCapacityService
 
         $quota = $quotaConfiguration['bytes'];
         if ($quota === null) {
-            return;
+            throw ValidationException::withMessages(['media' => 'The site storage allowance must be configured before saving media.']);
         }
 
         try {

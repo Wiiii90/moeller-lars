@@ -231,6 +231,14 @@ final class StorageWorkspaceOverview
                 'files' => max(0, (int) ($snapshot['generated_files'] ?? 0)),
             ],
             [
+                'key' => 'staging',
+                'label' => 'Unfinished uploads',
+                'area' => 'staging',
+                'area_label' => 'Unfinished uploads',
+                'bytes' => max(0, (int) ($snapshot['staging_bytes'] ?? 0)),
+                'files' => max(0, (int) ($snapshot['staging_files'] ?? 0)),
+            ],
+            [
                 'key' => 'application',
                 'label' => 'Application data',
                 'area' => 'application',

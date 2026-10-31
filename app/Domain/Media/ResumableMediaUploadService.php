@@ -170,7 +170,7 @@ final class ResumableMediaUploadService
             $meta['updated_at'] = time();
             $this->writeManifest($id, $meta);
             @unlink($path);
-            app(MediaCapacityService::class)->forgetCachedSnapshot();
+            app(MediaCapacityService::class)->refreshCachedSnapshot();
             return $this->status($id, $meta);
         });
     }

@@ -212,17 +212,17 @@ class MediaIngestService
                 $movedStagedOriginal = true;
             } else {
                 $originalStream = @fopen($prepared['path'], 'rb');
-            if (! is_resource($originalStream)) {
-                throw $this->validationFailure('The uploaded media could not be read completely.');
-            }
-
-            try {
-                if (! $disk->put($originalKey, $originalStream)) {
-                    throw new RuntimeException('Unable to write canonical media.');
+                if (! is_resource($originalStream)) {
+                    throw $this->validationFailure('The uploaded media could not be read completely.');
                 }
-            } finally {
-                fclose($originalStream);
-            }
+
+                try {
+                    if (! $disk->put($originalKey, $originalStream)) {
+                        throw new RuntimeException('Unable to write canonical media.');
+                    }
+                } finally {
+                    fclose($originalStream);
+                }
             }
 
             if ($thumbnailKey !== null && ! $disk->put($thumbnailKey, $prepared['thumbnail_bytes'])) {
