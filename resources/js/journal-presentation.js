@@ -152,9 +152,42 @@ function initializeExhibitionMap(button) {
     };
 }
 
+function initializeExhibitionVideoPreview(button) {
+    const details = button.closest('details.exhibition-entry__disclosure');
+    const video = details?.querySelector('.exhibition-entry__cover video');
+    if (!details || !(video instanceof HTMLVideoElement)) return null;
+
+    // The catalogue preview is a poster, not a miniature player. Clicking
+    // its play symbol opens the original Folio and plays the existing video.
+    const openAndPlay = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        details.open = true;
+        const result = video.play();
+        result?.catch(() => {
+            // Playback can be blocked by browser policy; native video controls
+            // remain the authorized fallback when the editor enabled them.
+        });
+    };
+    const pauseWhenClosed = () => {
+        if (!details.open) video.pause();
+    };
+    button.addEventListener('click', openAndPlay);
+    details.addEventListener('toggle', pauseWhenClosed);
+
+    return () => {
+        button.removeEventListener('click', openAndPlay);
+        details.removeEventListener('toggle', pauseWhenClosed);
+    };
+}
+
 export function initializeJournalPresentation() {
     document.querySelectorAll('[data-journal-slideshow]').forEach(initializeSlideshow);
-    const disposers = Array.from(document.querySelectorAll('[data-exhibition-map-open]'))
-        .map(initializeExhibitionMap).filter(Boolean);
+    const disposers = [
+        ...Array.from(document.querySelectorAll('[data-exhibition-map-open]'))
+            .map(initializeExhibitionMap),
+        ...Array.from(document.querySelectorAll('[data-exhibition-video-play]'))
+            .map(initializeExhibitionVideoPreview),
+    ].filter(Boolean);
     return () => disposers.forEach((dispose) => dispose());
 }

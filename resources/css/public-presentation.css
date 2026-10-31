@@ -1463,20 +1463,21 @@ body {
     min-width: 0;
     padding: .8rem 0 1.2rem;
     container-type: inline-size;
-    --exhibition-date-track: 7.25rem;
-    --exhibition-column-gap: 1.55rem;
+    --exhibition-media-track: 5.1rem;
+    --exhibition-date-track: 6.7rem;
+    --exhibition-column-gap: 1.35rem;
     --exhibition-rule: rgba(130, 116, 100, .35);
     color: var(--public-ink);
 }
 .exhibition-entry {
     min-width: 0;
-    margin: 0 0 2rem;
+    margin: 0 0 1.7rem;
 }
 .exhibition-entry:last-of-type { margin-bottom: 0; }
-/* Keep the title at the exact same position while opening an entry. The
-   expanded folio gains its breathing room in the body, not around summary. */
+/* Open folios have matching insets whether or not they own a top rule:
+   no heading touches the line, and the first entry remains equally spaced. */
 .exhibition-entry__disclosure[open] {
-    padding: 0;
+    padding-block: 1.1rem 1.05rem;
 }
 /* Give each expanded folio's neighboring boundary one rule, not two.
    The first and last records never draw a rule outside the catalogue. */
@@ -1492,64 +1493,76 @@ body {
 .exhibition-entry__summary {
     display: grid;
     min-width: 0;
-    grid-template-columns: var(--exhibition-date-track) minmax(0, 1fr);
+    grid-template-columns: var(--exhibition-media-track) var(--exhibition-date-track) minmax(0, 1fr);
     column-gap: var(--exhibition-column-gap);
     align-items: start;
     padding: .1rem 0 .2rem;
     list-style: none;
     cursor: default;
-    /* Only the exhibition heading opens details on pointer devices.
-       The summary remains a native keyboard-operable disclosure. */
     pointer-events: none;
 }
-/* The cover anchors the left page edge, followed by date and identity.
-   Explicit grid placement keeps both text tracks fixed as details open. */
-.exhibition-entry--with-cover .exhibition-entry__summary {
-    grid-template-columns: minmax(0, 7.4rem) var(--exhibition-date-track) minmax(0, 1fr);
-}
-.exhibition-entry--with-cover .exhibition-entry__teaser {
+/* Reserve the same discreet image track for every exhibition. No-cover
+   entries preserve the date and heading axes without a fake placeholder. */
+.exhibition-entry__schedule { grid-column: 2; grid-row: 1; }
+.exhibition-entry__heading { grid-column: 3; grid-row: 1; }
+.exhibition-entry__teaser {
+    display: block;
     grid-column: 1;
     grid-row: 1;
-}
-.exhibition-entry--with-cover .exhibition-entry__schedule {
-    grid-column: 2;
-    grid-row: 1;
-}
-.exhibition-entry--with-cover .exhibition-entry__heading {
-    grid-column: 3;
-    grid-row: 1;
-}
-.exhibition-entry__teaser {
-    display: grid;
-    align-items: center;
-    justify-items: center;
     position: relative;
     width: 100%;
-    height: 6.2rem;
     min-width: 0;
-    overflow: hidden;
+    height: 4.1rem;
     background: #f3f1ed;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: pointer;
 }
+.exhibition-entry__teaser-media,
 .exhibition-entry__teaser :is(img, video) {
     display: block;
     width: 100%;
     height: 100%;
+    min-width: 0;
+}
+.exhibition-entry__teaser :is(img, video) {
     object-fit: contain;
 }
-.exhibition-entry__teaser--video::after {
-    content: "VIDEO";
+.exhibition-entry__teaser-media {
+    pointer-events: none;
+}
+.exhibition-entry__video-play {
     position: absolute;
-    inset-inline-end: .3rem;
-    inset-block-end: .3rem;
-    padding: .15rem .32rem;
-    background: rgba(36, 32, 29, .86);
+    inset: 0;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
     color: #fff;
-    font: 600 .56rem/1.25 var(--public-typeface);
-    letter-spacing: .095em;
+    cursor: pointer;
+    pointer-events: auto;
+}
+.exhibition-entry__video-play svg {
+    display: block;
+    width: 1.85rem;
+    height: 1.85rem;
+    padding: .22rem;
+    border-radius: 50%;
+    background: rgba(31, 28, 25, .72);
+    transition: background-color 140ms ease;
+}
+.exhibition-entry__video-play:is(:hover, :focus-visible) svg {
+    background: rgba(31, 28, 25, .95);
+}
+.exhibition-entry__video-play:focus-visible {
+    outline: 2px solid var(--public-artwork-line-hover);
+    outline-offset: 2px;
 }
 .exhibition-entry__disclosure[open] .exhibition-entry__teaser {
-    display: none;
+    visibility: hidden;
+    pointer-events: none;
 }
 .exhibition-entry__summary::-webkit-details-marker { display: none; }
 .exhibition-entry__summary::marker { content: ""; }
@@ -1626,17 +1639,33 @@ body {
    adding an inner divider, card frame or state-specific control column. */
 .exhibition-entry__body {
     min-width: 0;
-    padding: 1.5rem 0 1.3rem;
+    padding: .95rem 0 .65rem;
 }
 .exhibition-entry__feature {
     display: flow-root;
     min-width: 0;
 }
+/* On opening, the image is a genuine editorial column; venue, address and
+   prose share the title axis rather than floating alongside an unrelated
+   cover width. The gallery below remains an independent full-width section. */
+.exhibition-entry__feature--with-cover {
+    display: grid;
+    grid-template-columns:
+        minmax(0, calc(var(--exhibition-media-track) + var(--exhibition-column-gap) + var(--exhibition-date-track)))
+        minmax(0, 1fr);
+    column-gap: var(--exhibition-column-gap);
+    align-items: start;
+}
 .exhibition-entry__feature--text {
-    margin-inline-start: calc(var(--exhibition-date-track) + var(--exhibition-column-gap));
+    margin-inline-start: calc(var(--exhibition-media-track) + var(--exhibition-date-track) + var(--exhibition-column-gap) + var(--exhibition-column-gap));
+}
+.exhibition-entry__feature--with-cover .exhibition-entry__editorial {
+    grid-column: 2;
+    min-width: 0;
 }
 .exhibition-entry__cover {
-    width: min(100%, 17rem);
+    width: 100%;
+    max-width: 14rem;
     min-width: 0;
     margin: 0 0 1rem;
 }
@@ -1748,52 +1777,43 @@ body {
     max-height: 28rem;
     object-fit: contain;
 }
-@container (min-width: 27rem) {
-    .exhibition-entry__feature--with-cover .exhibition-entry__cover {
-        float: left;
-        width: min(37%, 15rem);
-        margin: 0 clamp(1rem, 3vw, 1.5rem) .85rem 0;
+@container (max-width: 34rem) {
+    .exhibition-entry {
+        --exhibition-media-track: 4.35rem;
+        --exhibition-date-track: 6.15rem;
+        --exhibition-column-gap: 1rem;
     }
-}
-@container (max-width: 34rem) and (min-width: 27rem) {
-    .exhibition-entry--with-cover .exhibition-entry__summary {
-        grid-template-columns: minmax(0, 5.9rem) var(--exhibition-date-track) minmax(0, 1fr);
-        column-gap: 1rem;
+    .exhibition-entry__teaser { height: 3.65rem; }
+    .exhibition-entry__feature--with-cover {
+        grid-template-columns: minmax(0, 1fr);
     }
-    .exhibition-entry__teaser { height: 5.2rem; }
+    .exhibition-entry__feature--with-cover .exhibition-entry__editorial {
+        grid-column: 1;
+    }
 }
 @container (max-width: 26.999rem) {
-    .exhibition-entry { margin-bottom: 1.7rem; }
+    .exhibition-entry {
+        --exhibition-media-track: 4rem;
+        --exhibition-column-gap: .85rem;
+    }
     .exhibition-entry__summary {
-        grid-template-columns: minmax(0, 1fr);
-        row-gap: .4rem;
+        grid-template-columns: var(--exhibition-media-track) minmax(0, 1fr);
+        row-gap: .22rem;
     }
-    /* On narrow pages the cover remains left; date and title stack beside
-       it, rather than compressing three columns into unreadable fragments. */
-    .exhibition-entry--with-cover .exhibition-entry__summary {
-        grid-template-columns: minmax(0, 5.3rem) minmax(0, 1fr);
-        column-gap: .9rem;
-    }
-    .exhibition-entry--with-cover .exhibition-entry__teaser {
+    .exhibition-entry__teaser {
         grid-column: 1;
         grid-row: 1 / span 2;
+        height: 3.5rem;
     }
-    .exhibition-entry--with-cover .exhibition-entry__schedule {
+    .exhibition-entry__schedule {
         grid-column: 2;
         grid-row: 1;
     }
-    .exhibition-entry--with-cover .exhibition-entry__heading {
+    .exhibition-entry__heading {
         grid-column: 2;
         grid-row: 2;
     }
-    /* Retain the teaser's grid footprint on open, so the second text row
-       cannot jump upward when the large cover takes over below. */
-    .exhibition-entry__disclosure[open] .exhibition-entry__teaser {
-        display: grid;
-        visibility: hidden;
-    }
-    .exhibition-entry__teaser { height: 4.8rem; }
-    .exhibition-entry__body { padding-top: 1.15rem; }
+    .exhibition-entry__body { padding-top: .9rem; }
     .exhibition-entry__feature--text { margin-inline-start: 0; }
     .exhibition-entry__cover { margin-bottom: 1rem; }
 }

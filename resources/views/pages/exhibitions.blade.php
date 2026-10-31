@@ -31,7 +31,7 @@
                 $hasDetails = $hasFacts || $hasDescription || $hasCover
                     || $gallery->isNotEmpty() || $hasActions;
             @endphp
-            <article class="exhibition-entry {{ $hasCover ? 'exhibition-entry--with-cover' : '' }}" @if ($exhibition->image_viewer_enabled) data-artwork-viewer-sequence @endif data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
+            <article class="exhibition-entry" @if ($exhibition->image_viewer_enabled) data-artwork-viewer-sequence @endif data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
                 @if ($hasDetails)
                     <details class="exhibition-entry__disclosure">
                         <summary class="exhibition-entry__summary">
@@ -47,8 +47,24 @@
                         @endif
                     </span>
                     @if ($hasCover)
-                        <span class="exhibition-entry__teaser {{ \App\Domain\Media\MediaTypePolicy::isVideo((string) $cover->mediaAsset?->getAttribute('mime_type')) ? 'exhibition-entry__teaser--video' : '' }}" aria-hidden="true">
-                            {!! $journalMedia->renderPreview($cover) !!}
+                        @php
+                            $isVideoCover = \App\Domain\Media\MediaTypePolicy::isVideo(
+                                (string) $cover->mediaAsset?->getAttribute('mime_type')
+                            );
+                        @endphp
+                        <span class="exhibition-entry__teaser">
+                            <span class="exhibition-entry__teaser-media" aria-hidden="true">
+                                {!! $journalMedia->renderPreview($cover) !!}
+                            </span>
+                            @if ($isVideoCover)
+                                <button class="exhibition-entry__video-play" type="button"
+                                    data-exhibition-video-play
+                                    aria-label="Open and play video for {{ $exhibition->title }}">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                        <path d="M9 5.5 18 12l-9 6.5z" fill="currentColor" />
+                                    </svg>
+                                </button>
+                            @endif
                         </span>
                     @endif
                     <span class="exhibition-entry__heading">
@@ -68,6 +84,9 @@
                                 <div class="exhibition-entry__feature {{ $hasCover ? 'exhibition-entry__feature--with-cover' : 'exhibition-entry__feature--text' }}">
                                     @if ($hasCover)
                                         {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: true, enableViewer: (bool) $exhibition->image_viewer_enabled) !!}
+                                    @endif
+                                    @if ($hasFacts || $hasActions || $hasDescription)
+                                        <div class="exhibition-entry__editorial">
                                     @endif
                                     @if ($hasFacts || $hasActions)
                                         <div class="exhibition-entry__info">
@@ -115,6 +134,9 @@
                                     @endif
                                     @if ($hasDescription)
                                         <div class="rich-text journal-entry-content exhibition-entry__description">{!! $exhibition->image_viewer_enabled ? $journalMedia->renderRichText((string) $exhibition->description) : $richText->render((string) $exhibition->description) !!}</div>
+                                    @endif
+                                    @if ($hasFacts || $hasActions || $hasDescription)
+                                        </div>
                                     @endif
                                 </div>
                             @endif
