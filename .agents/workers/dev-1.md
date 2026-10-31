@@ -26,6 +26,8 @@
 
 **Übernahme Dev Worker 1 (Lease 3):** Aktueller Nutzerbefund: Der Float des geöffneten Covers plus Margin überschreitet die übliche Titelachse; dadurch springt Address nach rechts gegenüber Einträgen ohne Cover. Technische Korrektur isoliert in der Exhibition-Darstellung, natürliche Textumflüsse und maximale Coverbreite erhalten. Visuelle Template-Neugestaltung ausdrücklich nicht mit beliebigen CSS-Zierelementen beantworten.
 
+**Adress-Doppelung — Sicherheit nachgezogen:** Der Adress-only-Vergleich verwendet denselben gespeicherten `streetAddress()`-Wert auch dann, wenn das öffentliche Adressfeld verborgen ist. Damit kann ein bloßes `<p>…</p>` die ältere Ausblendregel nicht unbeabsichtigt umgehen. Nur inhaltlich identische Ortsbeschreibung wird verborgen; andere Rich-Text-Inhalte bleiben sichtbar. Keine Datenänderung.
+
 ## Aktuelle Aufgabe — zweite Exhibition-Vorlage (31.10.2026)
 - **Dev Worker 1 Lease 3 ausdrücklich übernommen** auf `dev`. Nutzer beauftragt einen rücknehmbaren zweiten öffentlichen Prototyp „Index mit Bildbühne“ (Bühne links, kompakte Chronologie rechts; für kleine Bildschirme stapeln) statt der verworfenen dekorativen Galerie-Liste. Noch keine Settings-Optionen, keine Datenmigration und keine Blogänderung.
 - Screenshot „Der blonde Hans“ zeigt identische Ortsangabe unter Address und nochmals als separaten Beschreibungstext. Ursache im kanonischen Exhibition-Model/Renderer prüfen, keine gespeicherten Inhalte mutieren und keine Einträge doppelt erzeugen. Die wiederherstellbaren Medienrechte-/Publikationsgarantien bleiben unverändert.

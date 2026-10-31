@@ -148,7 +148,10 @@ class Exhibition extends Model
             return false;
         }
 
-        if (! $this->publicFieldVisible('location_text') || $this->publicAddress() === null) {
+        // Match the old raw-text gate even when the public address itself
+        // is hidden: formatting must never cause an address-only description
+        // to become visible merely because it gained <p> markup.
+        if ($this->streetAddress() === null) {
             return true;
         }
 
