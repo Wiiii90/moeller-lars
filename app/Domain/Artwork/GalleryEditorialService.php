@@ -263,7 +263,7 @@ final class GalleryEditorialService
         }
     }
 
-    /** @return array{name:string,slug?:string,description:?string,show_on_home?:bool} */
+    /** @return array<string,mixed> */
     private function validateData(array $data, bool $update): array
     {
         $name = trim((string) ($data['name'] ?? ''));
@@ -271,14 +271,8 @@ final class GalleryEditorialService
             throw ValidationException::withMessages(['name' => 'The Gallery name is invalid.']);
         }
 
-        $description = $data['description'] ?? null;
-        if ($description !== null && (! is_string($description) || mb_strlen($description) > 10000)) {
-            throw ValidationException::withMessages(['description' => 'The Gallery description is invalid.']);
-        }
-
         $validated = [
             'name' => $name,
-            'description' => $description,
             ...GalleryPresentation::validateSettings($data),
         ];
 

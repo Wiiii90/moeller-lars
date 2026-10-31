@@ -54,6 +54,37 @@ final class SiteSectionEditorialService
         });
     }
 
+    /** Metadata belongs to the public Page, not its Gallery/Journal settings. */
+    public function updateMetaDescription(SiteSection $section, mixed $description): SiteSection
+    {
+        if ($description !== null && ! is_string($description)) {
+            throw ValidationException::withMessages(['meta_description' => 'Enter plain text for the Meta Description.']);
+        }
+
+        $value = is_string($description) ? trim($description) : '';
+        if (mb_strlen($value) > 10000) {
+            throw ValidationException::withMessages(['meta_description' => 'Meta Description must not exceed 10000 characters.']);
+        }
+
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($section, $value, $actor): SiteSection {
+            /** @var SiteSection $fresh */
+            $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
+            if (! $fresh->hasPublicPage()) {
+                throw ValidationException::withMessages(['meta_description' => 'This navigation-only item has no public Meta Description.']);
+            }
+
+            $fresh->setAttribute('meta_description', $value === '' ? null : $value);
+            if ($fresh->isDirty('meta_description')) {
+                $fresh->save();
+                $this->audit->record($actor, 'site_section.updated', 'site_section', (int) $fresh->getKey());
+            }
+
+            return $fresh;
+        });
+    }
+
     /** Home-only public menu control; routing and publication stay independent. */
     public function updateHomeNavigationVisibility(SiteSection $section, bool $visible): bool
     {
@@ -597,13 +628,11 @@ final class SiteSectionEditorialService
                 throw ValidationException::withMessages(['type' => 'This Gallery is missing its Gallery configuration.']);
             }
 
-            $description = trim((string) $gallery->getAttribute('description'));
             $nameMatches = trim((string) $gallery->getAttribute('name')) === trim((string) $section->getAttribute('title'));
             $slugMatches = trim((string) $gallery->getAttribute('slug')) === trim((string) $section->getAttribute('slug'));
             if (
                 $gallery->artworks()->exists()
                 || (bool) $gallery->getAttribute('show_on_home')
-                || $description !== ''
                 || ! $nameMatches
                 || ! $slugMatches
             ) {
@@ -647,7 +676,6 @@ final class SiteSectionEditorialService
             $gallery = ArtworkCategory::query()->create([
                 'slug' => $slug,
                 'name' => (string) $section->getAttribute('title'),
-                'description' => null,
                 'show_on_home' => false,
             ]);
 

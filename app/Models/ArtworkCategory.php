@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['slug', 'name', 'show_on_home', 'description', 'landscape_detail_enabled', 'portrait_detail_enabled', 'artwork_page_surface_mode', 'artwork_menu_surface_wide', 'edge_navigation_mode', 'artwork_divider', 'sort_mode', 'video_sound_enabled', 'show_artwork_information', 'show_media_credits', 'show_media_copyright', 'caption_layout', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at'])]
+#[Fillable(['slug', 'name', 'show_on_home', 'landscape_detail_enabled', 'portrait_detail_enabled', 'artwork_page_surface_mode', 'artwork_menu_surface_wide', 'edge_navigation_mode', 'artwork_divider', 'sort_mode', 'video_sound_enabled', 'show_artwork_information', 'show_media_credits', 'show_media_copyright', 'caption_layout', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at'])]
 #[Guarded(['id'])]
 class ArtworkCategory extends Model
 {
