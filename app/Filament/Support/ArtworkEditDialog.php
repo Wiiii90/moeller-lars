@@ -8,21 +8,18 @@ use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
-use App\Domain\Media\MediaIngestService;
 use Closure;
 use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 final class ArtworkEditDialog
 {
@@ -147,18 +144,8 @@ final class ArtworkEditDialog
                             $set('primary_alt_text', null);
                         })
                         ->columnSpanFull(),
-                    ...(! $autosave ? [FileUpload::make('primary_upload')
-                        ->label('Or upload new primary media')
-                        ->storeFiles(false)
+                    ...(! $autosave ? [ResumableMediaField::make('primary_upload', 'Or upload new primary media')
                         ->disabled($primaryReadOnly)
-                        ->acceptedFileTypes(self::primaryMimeTypes())
-                        ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
-                        ->live()
-                        ->afterStateUpdated(static function (mixed $state, callable $set): void {
-                            if (filled($state)) {
-                                $set('primary_alt_text', null);
-                            }
-                        })
                         ->extraFieldWrapperAttributes($primaryReadOnly ? [
                             'title' => 'Unpublish this Artwork before uploading a different primary file.',
                         ] : [], merge: true)
@@ -228,29 +215,21 @@ final class ArtworkEditDialog
             ? (int) $data['artwork_category_id']
             : ($allowGalleryAssignment ? null : $currentGalleryId);
 
-        if ($upload !== null && ! $upload instanceof TemporaryUploadedFile) {
-            throw ValidationException::withMessages(['primary_upload' => 'Choose a valid image or video file.']);
+        $uploadedId = filter_var($upload, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if ($upload !== null && $uploadedId === false) {
+            throw ValidationException::withMessages(['primary_upload' => 'Choose an available Media File.']);
         }
-        if ($upload instanceof TemporaryUploadedFile && $assetId > 0 && $assetId !== $currentAssetId) {
+        if ($uploadedId !== false && $assetId > 0 && $assetId !== $currentAssetId) {
             throw ValidationException::withMessages(['primary_upload' => 'Choose either a new upload or an existing Media File, not both.']);
         }
-        if ($upload instanceof TemporaryUploadedFile) {
-            $this->assertUploadIsPrimaryMedia($upload);
-        }
-
-        // Storage owns durable originals and variants. Ingest the new file
-        // before the Artwork database transaction so a later editorial failure
-        // cannot roll back the MediaAsset while leaving its files on disk.
-        // The successfully ingested file remains reusable in Storage.
-        try {
-            $uploadedAsset = $upload instanceof TemporaryUploadedFile
-                ? app(MediaIngestService::class)->ingest($upload)
-                : null;
-        } catch (ValidationException $exception) {
-            throw ValidationException::withMessages([
-                'primary_upload' => collect($exception->errors())->flatten()->first()
-                    ?? 'The selected image or video could not be processed.',
-            ]);
+        // Upload transport already completed its own canonical Storage ingest.
+        // The Artwork transaction only attaches an available canonical asset.
+        $uploadedAsset = $uploadedId === false || $uploadedId === null ? null
+            : MediaAsset::query()->whereKey($uploadedId)->where('state', 'available')->first();
+        if ($uploadedId !== false && $uploadedId !== null
+            && (! $uploadedAsset instanceof MediaAsset
+                || ! in_array((string) $uploadedAsset->getAttribute('mime_type'), self::primaryMimeTypes(), true))) {
+            throw ValidationException::withMessages(['primary_upload' => 'Uploaded media is not an available image or video.']);
         }
 
         DB::transaction(function () use ($artwork, $data, $uploadedAsset, $assetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment, $savePrimaryMedia): void {
@@ -273,8 +252,8 @@ final class ArtworkEditDialog
             $primaryMedia = app(ArtworkPrimaryMediaService::class);
             if ($uploadedAsset instanceof MediaAsset) {
                 $currentPrimary === null
-                    ? $primaryMedia->attachAsset($artwork, $uploadedAsset, recordIngest: true)
-                    : $primaryMedia->replaceAsset($artwork, $uploadedAsset, recordIngest: true);
+                    ? $primaryMedia->attachAsset($artwork, $uploadedAsset)
+                    : $primaryMedia->replaceAsset($artwork, $uploadedAsset);
             } elseif ($savePrimaryMedia && array_key_exists('primary_media_asset_id', $data)) {
                 // Gallery autosave persists this field in afterStateUpdated.
                 // This full-form path remains for standalone EditRecord.

@@ -7,20 +7,16 @@ use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
-use App\Domain\Media\MediaIngestService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\AdminRowAction;
-use App\Domain\Media\MediaTypePolicy;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 trait GalleryWorkspaceArtworkDialogs
 {
@@ -39,15 +35,12 @@ trait GalleryWorkspaceArtworkDialogs
             ->action(function (array $data): void {
                 $upload = $data['primary_upload'] ?? null;
                 $assetId = (int) ($data['primary_media_asset_id'] ?? 0);
-                if ($upload !== null && ! $upload instanceof TemporaryUploadedFile) {
-                    throw ValidationException::withMessages(['primary_upload' => 'Choose a valid image or video file.']);
+                $uploadedId = filter_var($upload, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                if ($upload !== null && $uploadedId === false) {
+                    throw ValidationException::withMessages(['primary_upload' => 'Choose an available Media File.']);
                 }
-                if ($upload instanceof TemporaryUploadedFile && $assetId > 0) {
+                if ($uploadedId !== false && $uploadedId !== null && $assetId > 0) {
                     throw ValidationException::withMessages(['primary_upload' => 'Choose either a new upload or an existing Media File, not both.']);
-                }
-
-                if ($upload instanceof TemporaryUploadedFile) {
-                    $this->assertUploadIsPrimaryMedia($upload);
                 }
 
                 if (filled($data['primary_alt_text'] ?? null) && ! $upload && $assetId <= 0) {
@@ -56,29 +49,22 @@ trait GalleryWorkspaceArtworkDialogs
                     ]);
                 }
 
-                // Uploads have an independent Storage lifecycle and must
-                // remain valid, reusable files if Artwork validation fails.
-                // Artwork creation, primary linkage and its ALT override are
-                // one canonical DB mutation, preventing orphan Gallery drafts.
-                try {
-                    $asset = $upload instanceof TemporaryUploadedFile
-                        ? app(MediaIngestService::class)->ingest($upload)
-                        : ($assetId > 0 ? MediaAsset::query()->findOrFail($assetId) : null);
-                } catch (ValidationException $exception) {
-                    throw ValidationException::withMessages([
-                        'primary_upload' => collect($exception->errors())->flatten()->first()
-                            ?? 'The selected image or video could not be processed.',
-                    ]);
+                $selectedId = $uploadedId !== false && $uploadedId !== null ? $uploadedId : $assetId;
+                $asset = $selectedId > 0
+                    ? MediaAsset::query()->whereKey($selectedId)->where('state', 'available')->first()
+                    : null;
+                if ($selectedId > 0 && (! $asset instanceof MediaAsset
+                    || ! in_array((string) $asset->getAttribute('mime_type'), $this->primaryMimeTypes(), true))) {
+                    throw ValidationException::withMessages(['primary_upload' => 'Choose an available image or video from Storage.']);
                 }
                 $payload = $this->normalizeArtworkFormData($data);
 
-                DB::transaction(function () use ($payload, $asset, $data, $upload): void {
+                DB::transaction(function () use ($payload, $asset, $data): void {
                     $artwork = app(ArtworkDraftService::class)->create($payload);
                     if ($asset instanceof MediaAsset) {
                         app(ArtworkPrimaryMediaService::class)->attachAsset(
                             $artwork,
                             $asset,
-                            recordIngest: $upload instanceof TemporaryUploadedFile,
                         );
                     }
 
@@ -172,11 +158,7 @@ trait GalleryWorkspaceArtworkDialogs
             ->label('Upload primary media')
             ->modalHeading(__('Upload primary media'))
             ->schema([
-                FileUpload::make('primary_upload')
-                    ->label('New image or video')
-                    ->storeFiles(false)
-                    ->acceptedFileTypes([...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
-                    ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
+                \App\Filament\Support\ResumableMediaField::make('primary_upload', 'New image or video')
                     ->required()
                     ->helperText(__('Replaces the draft artwork’s primary media. The previous file remains in Storage.')),
                 TextInput::make('primary_alt_text')
@@ -194,27 +176,17 @@ trait GalleryWorkspaceArtworkDialogs
                 }
 
                 $upload = $data['primary_upload'] ?? null;
-                if (! $upload instanceof TemporaryUploadedFile) {
-                    throw ValidationException::withMessages([
-                        'primary_upload' => 'Select an image or video before saving.',
-                    ]);
+                $uploadedId = filter_var($upload, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                $asset = $uploadedId === false || $uploadedId === null
+                    ? null
+                    : MediaAsset::query()->whereKey($uploadedId)->where('state', 'available')->first();
+                if (! $asset instanceof MediaAsset || ! in_array(
+                    (string) $asset->getAttribute('mime_type'),
+                    $this->primaryMimeTypes(),
+                    true,
+                )) {
+                    throw ValidationException::withMessages(['primary_upload' => 'Select a valid image or video before saving.']);
                 }
-                $this->assertUploadIsPrimaryMedia($upload);
-
-                // A pure media mutation must not submit and validate the
-                // entire autosaving Artwork form. The existing ingest and
-                // primary linkage services are the authoritative owners.
-                // Ingest commits independently so a later editorial error
-                // cannot leave an unregistered file in Storage.
-                try {
-                    $ingested = app(MediaIngestService::class)->ingestUnique($upload);
-                } catch (ValidationException $exception) {
-                    throw ValidationException::withMessages([
-                        'primary_upload' => collect($exception->errors())->flatten()->first()
-                            ?? 'The selected image or video could not be processed.',
-                    ]);
-                }
-                $asset = $ingested['asset'];
                 $current = $artwork->artworkMedia()
                     ->where('role', 'primary')->first();
                 $oldId = $current === null ? null : (int) $current->getAttribute('media_asset_id');
@@ -231,12 +203,12 @@ trait GalleryWorkspaceArtworkDialogs
                     return;
                 }
 
-                DB::transaction(function () use ($artwork, $asset, $ingested, $newAlt, $current): void {
+                DB::transaction(function () use ($artwork, $asset, $newAlt, $current): void {
                     $primary = app(ArtworkPrimaryMediaService::class);
                     if ($current === null) {
-                        $primary->attachAsset($artwork, $asset, recordIngest: ! $ingested['duplicate']);
+                        $primary->attachAsset($artwork, $asset);
                     } else {
-                        $primary->replaceAsset($artwork, $asset, recordIngest: ! $ingested['duplicate']);
+                        $primary->replaceAsset($artwork, $asset);
                     }
                     app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($artwork, $newAlt);
                 });

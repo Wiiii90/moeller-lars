@@ -215,3 +215,28 @@ export async function adminMediaUploader(state, input, wire, context) {
         state.phase = 'result';
     }
 }
+
+/** Resumable field shared by Artwork create/edit, replacement and extra images. */
+export async function adminMediaUploadField(state, input, wire, statePath, imagesOnly = false) {
+    if (state.phase === 'uploading' || state.phase === 'processing') return;
+    const file = input.files?.[0];
+    if (!file) return;
+    state.phase = 'uploading';
+    state.progress = 0;
+    state.result = '';
+    try {
+        // The transfer updates this Alpine state through the shared transport.
+        const outcome = await transfer(file, state, 0, 1);
+        if (imagesOnly && !file.type.startsWith('image/')) {
+            throw new Error('This field accepts images only. The uploaded file remains reusable in Storage.');
+        }
+        await wire.set(statePath, outcome.asset_id);
+        forget(outcome.resumeKey);
+        state.result = file.name + ' — ready to save';
+    } catch (error) {
+        state.result = error?.message || 'Upload failed. Re-select the same file to resume.';
+    } finally {
+        state.phase = 'result';
+        input.value = '';
+    }
+}

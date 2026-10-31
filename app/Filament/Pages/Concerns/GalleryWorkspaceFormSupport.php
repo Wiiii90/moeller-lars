@@ -4,8 +4,6 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Media\MediaTypePolicy;
-use Illuminate\Validation\ValidationException;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 trait GalleryWorkspaceFormSupport
 {
@@ -53,13 +51,4 @@ trait GalleryWorkspaceFormSupport
         return [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES];
     }
 
-    private function assertUploadIsPrimaryMedia(TemporaryUploadedFile $upload): void
-    {
-        $mime = (string) $upload->getMimeType();
-        if (! MediaTypePolicy::isImage($mime) && ! MediaTypePolicy::isVideo($mime)) {
-            throw ValidationException::withMessages([
-                'primary_upload' => 'Primary media must be an image or video. Audio is not supported.',
-            ]);
-        }
-    }
 }

@@ -4,6 +4,7 @@ namespace App\Domain\Media;
 
 use App\Models\MediaAsset;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
@@ -47,7 +48,16 @@ final class ResumableMediaUploadService
 
         // Admission is serialized so two simultaneous starts cannot both
         // observe the same remaining capacity and oversubscribe the quota.
-        return $this->admissionLock(function () use ($userId, $filename, $size): array {
+        // Serialize reservation against the canonical ingest lock as well:
+        // an ordinary upload and a new resumable reservation must not both
+        // pass admission against the same bytes in a race.
+        $lock = Cache::lock('media-ingest', 420);
+        if (! $lock->get()) {
+            throw $this->invalid('Another media file is being finalized. Try again shortly.');
+        }
+
+        try {
+            return $this->admissionLock(function () use ($userId, $filename, $size): array {
             $capacity = app(MediaCapacityService::class)->snapshot();
             if (($capacity['configuration_valid'] ?? false) !== true
                 || ($capacity['measurement_available'] ?? false) !== true
@@ -84,7 +94,10 @@ final class ResumableMediaUploadService
             }
 
             return $this->status($id, $meta);
-        });
+            });
+        } finally {
+            $lock->release();
+        }
     }
 
     /** @return array{id:string,offset:int,chunk_size:int,complete:bool,asset_id:int|null,duplicate:bool} */

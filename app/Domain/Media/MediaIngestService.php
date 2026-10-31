@@ -205,7 +205,8 @@ class MediaIngestService
                 $destination = $disk->path($originalKey);
                 if (! is_string($source) || ! is_string($stagingDir)
                     || dirname($source) !== $stagingDir
-                    || ! is_dir(dirname($destination))
+                    || (! is_dir(dirname($destination))
+                        && ! @mkdir(dirname($destination), 0700, true))
                     || ! @rename($source, $destination)) {
                     throw new RuntimeException('The staged original could not be moved into Storage.');
                 }

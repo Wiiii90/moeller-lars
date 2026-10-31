@@ -3,8 +3,6 @@
 namespace App\Filament\Resources\Artworks\RelationManagers;
 
 use App\Domain\Artwork\ArtworkEditorialService;
-use App\Domain\Media\MediaIngestService;
-use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -15,7 +13,6 @@ use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use Filament\Actions\Action;
-use Filament\Forms\Components\FileUpload;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -63,18 +60,23 @@ class GalleryImagesRelationManager extends RelationManager
                         ->label('Upload image')
                         ->icon(AdminIcon::Upload)
                         ->schema([
-                            FileUpload::make('upload')
-                                ->label('Image')
-                                ->image()
-                                ->storeFiles(false)
-                                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                                ->maxSize((int) ceil(MediaTypePolicy::imageMaxBytes() / 1024))
+                            \App\Filament\Support\ResumableMediaField::make('upload', 'Image', imagesOnly: true)
                                 ->required(),
                         ])
                         ->action(function (array $data): void {
                             /** @var Artwork $artwork */
                             $artwork = $this->getOwnerRecord();
-                            app(ArtworkEditorialService::class)->ingestAdditionalMedia($artwork, $data['upload']);
+                            $asset = MediaAsset::query()
+                                ->whereKey((int) ($data['upload'] ?? 0))
+                                ->where('state', 'available')
+                                ->whereIn('mime_type', \App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES)
+                                ->first();
+                            if (! $asset instanceof MediaAsset) {
+                                throw \Illuminate\Validation\ValidationException::withMessages([
+                                    'upload' => 'Choose an available image from Storage.',
+                                ]);
+                            }
+                            app(ArtworkEditorialService::class)->attachAdditionalMedia($artwork, $asset);
                         }),
                     'Upload image',
                     AdminDialogSize::Small,
