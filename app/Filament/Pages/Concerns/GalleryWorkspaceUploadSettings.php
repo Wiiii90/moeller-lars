@@ -13,11 +13,9 @@ use App\Models\ArtworkMaterialPreset;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 trait GalleryWorkspaceUploadSettings
@@ -33,8 +31,6 @@ trait GalleryWorkspaceUploadSettings
 
                 return [
                     'name' => (string) $gallery->getAttribute('name'),
-                    'slug' => (string) $gallery->getAttribute('slug'),
-                    'description' => $gallery->getAttribute('description'),
                     'show_on_home' => (bool) $gallery->getAttribute('show_on_home'),
                     'landscape_detail_enabled' => GalleryPresentation::enabled($gallery),
                     'portrait_detail_enabled' => GalleryPresentation::portraitEnabled($gallery),
@@ -55,12 +51,6 @@ trait GalleryWorkspaceUploadSettings
                     ->columns(['md' => 2])
                     ->schema([
                         TextInput::make('name')->label('Gallery title')->required()->maxLength(160),
-                        TextInput::make('slug')
-                            ->label('Public URL slug')
-                            ->required()
-                            ->maxLength(80)
-                            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
-                        Textarea::make('description')->label('Search description')->rows(5)->maxLength(10000)->nullable()->columnSpanFull(),
                         Toggle::make('show_on_home')->label('Eligible for homepage presentation')->columnSpanFull(),
                         Select::make('sort_mode')
                             ->label('Artwork order')
@@ -124,14 +114,11 @@ trait GalleryWorkspaceUploadSettings
             ->action(function (array $data): void {
                 /** @var ArtworkCategory $gallery */
                 $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
-                $currentSlug = (string) $gallery->getAttribute('slug');
                 $service = app(GalleryEditorialService::class);
 
                 try {
-                    $changed = DB::transaction(function () use ($service, $gallery, $currentSlug, $data): bool {
-                        $updated = $service->update($gallery, [
+                    $updated = $service->update($gallery, [
                             'name' => $data['name'],
-                            'description' => $data['description'] ?? null,
                             'show_on_home' => (bool) ($data['show_on_home'] ?? false),
                             'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? false,
                             'portrait_detail_enabled' => $data['portrait_detail_enabled'] ?? false,
@@ -146,16 +133,7 @@ trait GalleryWorkspaceUploadSettings
                             'show_media_copyright' => $data['show_media_copyright'] ?? false,
                             'caption_layout' => $data['caption_layout'] ?? GalleryPresentation::CAPTION_RIGHTS_LEFT,
                         ]);
-                        $changed = $updated->wasChanged();
-
-                        $newSlug = trim((string) ($data['slug'] ?? ''));
-                        if ($newSlug !== $currentSlug) {
-                            $service->changeSlug($gallery, $newSlug);
-                            $changed = true;
-                        }
-
-                        return $changed;
-                    });
+                    $changed = $updated->wasChanged();
                 } catch (ValidationException $exception) {
                     // Domain errors use field names; the mounted Filament form
                     // owns their presentation path, including nested actions.

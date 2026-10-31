@@ -15,6 +15,7 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Filament\Support\PageHeadingFields;
+use App\Filament\Support\PageMetaDescriptionField;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
@@ -50,6 +51,7 @@ trait ManagesSitePageEditDialog
                     'slug' => $section->getAttribute('slug'),
                     'parent_id' => $section->getAttribute('parent_id'),
                     'position' => $this->dialogDisplayPosition($section),
+                    'meta_description' => $section->getAttribute('meta_description'),
                     ...SitePageHeading::formState($section),
                 ];
             })
@@ -88,6 +90,8 @@ trait ManagesSitePageEditDialog
                             ->integer()
                             ->minValue(1)
                             ->required(),
+                        PageMetaDescriptionField::make()
+                            ->visible(fn (callable $get): bool => $get('type') !== SiteSectionType::NavigationNode->value),
                     ]),
                 PageHeadingFields::schema(function (string $field, mixed $value) use ($arguments): bool {
                     $section = $this->dialogSection($arguments);
@@ -138,6 +142,7 @@ trait ManagesSitePageEditDialog
                 return [
                     ...$dialog->fill(),
                     'name' => (string) $home->getAttribute('title'),
+                    'meta_description' => $home->getAttribute('meta_description'),
                     'public_path' => '/',
                     'parent_page' => 'Top level',
                     'position' => 1,
@@ -151,6 +156,7 @@ trait ManagesSitePageEditDialog
                         TextInput::make('public_path')->label('Public slug')->disabled()->dehydrated(false),
                         TextInput::make('parent_page')->label('Parent page')->disabled()->dehydrated(false),
                         TextInput::make('position')->label('Position')->disabled()->dehydrated(false),
+                        PageMetaDescriptionField::make(),
                     ]),
                 ...$dialog->schema(),
             ])
@@ -171,6 +177,10 @@ trait ManagesSitePageEditDialog
                             $home,
                             trim((string) ($data['name'] ?? $home->getAttribute('title'))),
                             null,
+                        );
+                        $updated = app(SiteSectionEditorialService::class)->updateMetaDescription(
+                            $updated,
+                            $data['meta_description'] ?? null,
                         );
                         $settingsChanged = $dialog->save($data);
                         $after = $this->pageDialogPersistedState($updated->fresh());
@@ -244,6 +254,8 @@ trait ManagesSitePageEditDialog
             $this->orderService()->moveTo($section, $parentId, $position - 1);
         }
 
+        $section = $editorial->updateMetaDescription($section, $data['meta_description'] ?? null);
+
         /** @var SiteSection $fresh */
         $fresh = SiteSection::query()->findOrFail($section->getKey());
         $this->dialogSectionCache[(int) $fresh->getKey()] = $fresh;
@@ -270,6 +282,7 @@ trait ManagesSitePageEditDialog
             'slug' => $slug === null ? null : (string) $slug,
             'parent_id' => $parentId === null ? null : (int) $parentId,
             'position' => (int) $section->getAttribute('position'),
+            'meta_description' => $section->getAttribute('meta_description'),
             ...SitePageHeading::formState($section),
         ];
     }
@@ -285,7 +298,6 @@ trait ManagesSitePageEditDialog
         $galleryService = app(GalleryEditorialService::class);
         $gallery = $galleryService->update($gallery, [
             'name' => $name,
-            'description' => $gallery->getAttribute('description'),
             'show_on_home' => (bool) $gallery->getAttribute('show_on_home'),
         ]);
 

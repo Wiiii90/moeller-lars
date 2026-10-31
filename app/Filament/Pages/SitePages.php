@@ -566,7 +566,6 @@ final class SitePages extends Page
             'name' => $this->newPageTitle,
             'slug' => $this->newPageSlug,
             'parent_section_id' => $parentId,
-            'description' => null,
             'show_on_home' => false,
         ]);
         $section = SiteSection::query()
