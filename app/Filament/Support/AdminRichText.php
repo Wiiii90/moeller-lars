@@ -171,13 +171,16 @@ final class AdminRichText
                             linkTop: 0,
                             // Filament wraps each View field in its own Alpine scope.
                             // Child x-refs are not members of this editor shell's $refs.
+                            richShell() {
+                                return this.$el.closest('.admin-rich-text-editor-shell')
+                            },
                             richElement(ref) {
-                                return this.$el.querySelector(`[x-ref='${ref}']`)
+                                return this.richShell()?.querySelector(`[x-ref='${ref}']`)
                             },
                             openLinkEditor(event) {
                                 const editor = event.detail?.editor
                                 if (!editor || editor.isDestroyed) return
-                                this.$el.__artistRichEditor = editor
+                                this.richShell().__artistRichEditor = editor
                                 if (this.linkOpen) {
                                     this.linkOpen = false
                                     return
@@ -230,7 +233,7 @@ final class AdminRichText
                                 }
                             },
                             applyLink() {
-                                const editor = this.$el.__artistRichEditor
+                                const editor = this.richShell().__artistRichEditor
                                 if (!editor || editor.isDestroyed || !this.linkSelection) return
 
                                 const url = this.normalizedLinkUrl()
@@ -261,7 +264,7 @@ final class AdminRichText
                                 if (result) this.finishLinkEdit()
                             },
                             removeLink() {
-                                const editor = this.$el.__artistRichEditor
+                                const editor = this.richShell().__artistRichEditor
                                 if (!editor || editor.isDestroyed || !this.linkSelection) return
                                 const result = editor.chain().focus()
                                     .setTextSelection(this.linkSelection)
@@ -283,7 +286,7 @@ final class AdminRichText
                                 const editor = event.detail?.editor
                                 const image = editor?.storage?.artistImageLayout?.selected(editor)
                                 if (!image) return
-                                this.$el.__artistRichEditor = editor
+                                this.richShell().__artistRichEditor = editor
                                 if (this.captionOpen) {
                                     this.captionOpen = false
                                     return
@@ -301,16 +304,17 @@ final class AdminRichText
                                 })
                             },
                             applyCaption() {
-                                const editor = this.$el.__artistRichEditor
+                                const editor = this.richShell().__artistRichEditor
                                 if (!editor?.storage?.artistImageLayout?.setCaption(editor, this.captionText)) return
                                 this.captionOpen = false
                                 this.commitEditorChange()
                             },
                             commitEditorChange() {
-                                if (!this.$el.closest('.admin-dialog--edit')) return
+                                const shell = this.richShell()
+                                if (!shell?.closest('.admin-dialog--edit')) return
                                 this.$nextTick(() => {
-                                    if (this.$el.isConnected) {
-                                        this.$el.dispatchEvent(new Event('change', { bubbles: true }))
+                                    if (shell.isConnected) {
+                                        shell.dispatchEvent(new Event('change', { bubbles: true }))
                                     }
                                 })
                             },
@@ -326,13 +330,19 @@ final class AdminRichText
                             spacingLeft: 0,
                             spacingTop: 0,
                             positionInlinePanel(panel, anchor, prefix) {
-                                const bounds = this.$el.closest('.fi-modal-content')?.getBoundingClientRect()
-                                    ?? this.$el.getBoundingClientRect()
-                                const shell = this.$el.getBoundingClientRect()
-                                const box = anchor?.getBoundingClientRect() ?? shell
-                                const left = Math.max(bounds.left + 8,
-                                    Math.min(box.left, bounds.right - panel.offsetWidth - 8))
-                                const below = box.bottom + 4
+                                const owner = this.richShell()
+                                const bounds = owner.closest('.fi-modal-content')?.getBoundingClientRect()
+                                    ?? owner.getBoundingClientRect()
+                                const shell = owner.getBoundingClientRect()
+                                const origin = prefix === 'caption'
+                                    ? anchor?.closest('.fi-fo-rich-editor-floating-toolbar') ?? anchor
+                                    : anchor
+                                const box = origin?.getBoundingClientRect() ?? shell
+                                const minLeft = Math.max(bounds.left, shell.left) + 8
+                                const maxRight = Math.min(bounds.right, shell.right) - 8
+                                const left = Math.max(minLeft,
+                                    Math.min(box.left, maxRight - panel.offsetWidth))
+                                const below = box.bottom + 6
                                 const top = below + panel.offsetHeight <= bounds.bottom - 8
                                     ? below
                                     : Math.max(bounds.top + 8, box.top - panel.offsetHeight - 4)
@@ -342,7 +352,7 @@ final class AdminRichText
                             openColorEditor(event) {
                                 const editor = event.detail?.editor
                                 if (!editor || editor.isDestroyed) return
-                                this.$el.__artistRichEditor = editor
+                                this.richShell().__artistRichEditor = editor
                                 if (this.colorOpen) { this.colorOpen = false; return }
                                 const selection = editor.state.selection
                                 const current = editor.getAttributes('textColor')['data-color']
@@ -359,7 +369,7 @@ final class AdminRichText
                                 })
                             },
                             applyTextColor(clear = false) {
-                                const editor = this.$el.__artistRichEditor
+                                const editor = this.richShell().__artistRichEditor
                                 if (!editor || editor.isDestroyed || !this.colorSelection) return
                                 let chain = editor.chain().focus().setTextSelection(this.colorSelection)
                                 if (this.colorSelection.from === this.colorSelection.to) {
@@ -375,7 +385,7 @@ final class AdminRichText
                             openSpacingEditor(event) {
                                 const editor = event.detail?.editor
                                 if (!editor || editor.isDestroyed) return
-                                this.$el.__artistRichEditor = editor
+                                this.richShell().__artistRichEditor = editor
                                 if (this.spacingOpen) { this.spacingOpen = false; return }
                                 this.spacingNodeType = editor.isActive('heading') ? 'heading' : 'paragraph'
                                 this.spacingSelection = {
@@ -394,7 +404,7 @@ final class AdminRichText
                                 })
                             },
                             applySpacing() {
-                                const editor = this.$el.__artistRichEditor
+                                const editor = this.richShell().__artistRichEditor
                                 if (!editor || editor.isDestroyed || !this.spacingSelection) return
                                 const { from, to } = this.spacingSelection
                                 const changed = editor.chain().focus()
@@ -409,8 +419,8 @@ final class AdminRichText
                                 }
                             },
                             onRichEditorFocusOut() {
-                                if (!this.$el.closest('.admin-dialog--edit')) return
-                                const shell = this.$el
+                                const shell = this.richShell()
+                                if (!shell?.closest('.admin-dialog--edit')) return
                                 this.$nextTick(() => {
                                     if (!shell.isConnected || shell.contains(document.activeElement)) return
                                     shell.dispatchEvent(new Event('change', { bubbles: true }))
@@ -447,8 +457,9 @@ final class AdminRichText
                                 this.$nextTick(() => {
                                     const picker = this.richElement('richImagePicker')
                                     if (!picker) return
-                                    const shell = this.$el.getBoundingClientRect()
-                                    const bounds = this.$el.closest('.fi-modal-content')?.getBoundingClientRect() ?? shell
+                                    const owner = this.richShell()
+                                    const shell = owner.getBoundingClientRect()
+                                    const bounds = owner.closest('.fi-modal-content')?.getBoundingClientRect() ?? shell
                                     const anchor = trigger.getBoundingClientRect()
                                     const minLeft = Math.max(shell.left, bounds.left) + 8
                                     const maxRight = Math.min(shell.right, bounds.right) - 8
