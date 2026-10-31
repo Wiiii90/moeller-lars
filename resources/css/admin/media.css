@@ -763,6 +763,29 @@
     transition: width .12s linear;
 }
 
+/* A byte progress percentage is available only while transferring the file.
+   During server-side validation and preview generation, show an indeterminate
+   animation instead of a misleading completed 100% bar or fake percentages. */
+@keyframes admin-media-upload-processing {
+    from { transform: translateX(-110%); }
+    to { transform: translateX(310%); }
+}
+
+.media-workspace__upload-progress.is-processing .media-workspace__upload-progress-fill,
+.admin-gallery-upload__progress.is-processing .admin-gallery-upload__progress-fill {
+    width: 33% !important;
+    animation: admin-media-upload-processing 1.25s ease-in-out infinite;
+    transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .media-workspace__upload-progress.is-processing .media-workspace__upload-progress-fill,
+    .admin-gallery-upload__progress.is-processing .admin-gallery-upload__progress-fill {
+        animation: none;
+        transform: translateX(100%);
+    }
+}
+
 /* Media-specific delete-dialog content; shared modal geometry/chrome lives in dialog-contract.css. */
 .media-delete-dialog {
     display: grid;

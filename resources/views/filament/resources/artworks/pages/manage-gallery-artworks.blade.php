@@ -52,6 +52,25 @@
                         this.result = message
                         this.phase = 'result'
                     },
+                    preflight(files) {
+                        this.fileCount = files.length
+                        const videoLimit = @js(\App\Domain\Media\MediaTypePolicy::videoMaxBytes())
+                        const imageLimit = @js(\App\Domain\Media\MediaTypePolicy::imageMaxBytes())
+                        for (const file of files) {
+                            const limit = file.type.startsWith('video/') || /\.(mp4|webm)$/i.test(file.name)
+                                ? videoLimit
+                                : imageLimit
+                            if (file.size > limit) {
+                                return file.name + ' exceeds the ' + Math.round(limit / 1048576) + ' MiB limit.'
+                            }
+                        }
+                        // Gallery sends a batch in one multipart request. Keep its
+                        // total below the PHP post limit; Storage uploads separately.
+                        if (files.reduce((sum, file) => sum + file.size, 0) > 560 * 1048576) {
+                            return 'Batch exceeds 560 MiB. Select fewer files at once.'
+                        }
+                        return null
+                    },
                 }"
                 x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
                 x-on:livewire-upload-start="phase = 'uploading'; progress = 0; result = ''"
@@ -61,15 +80,30 @@
                     phase = 'processing'
                     $wire.processDirectPrimaryMedia()
                         .then((response) => showResult(response?.summary ?? 'Upload complete'))
-                        .catch(() => showResult('Upload failed'))
+                        .catch(() => {
+                            showResult('Processing failed. Check the header notification or server logs.')
+                            $wire.notifyDirectPrimaryTransferFailure('The server could not finish processing the uploaded media.')
+                        })
                 "
-                x-on:livewire-upload-error="$wire.set('directPrimaryMedia', []); showResult('Upload failed')"
+                x-on:livewire-upload-error="
+                    $wire.set('directPrimaryMedia', [])
+                    showResult('Transfer failed. Check the file size and connection.')
+                    $wire.notifyDirectPrimaryTransferFailure('The media transfer failed before server processing. Check the upload size and connection.')
+                "
             >
                 <input
                     class="admin-gallery-upload__input"
                     type="file"
                     wire:model="directPrimaryMedia"
-                    x-on:change="fileCount = $event.target.files.length"
+                    x-on:change.capture="
+                        const message = preflight(Array.from($event.target.files ?? []))
+                        if (message) {
+                            $event.stopImmediatePropagation()
+                            $event.target.value = ''
+                            showResult(message)
+                            $wire.notifyDirectPrimaryTransferFailure(message)
+                        }
+                    "
                     x-bind:disabled="phase === 'uploading' || phase === 'processing'"
                     accept="{{ implode(',', [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES]) }}"
                     aria-label="Upload primary images or videos for new artworks"
@@ -81,7 +115,7 @@
                             phase === 'uploading'
                                 ? `Uploading ${fileCount} ${fileCount === 1 ? 'file' : 'files'} · ${progress}%`
                                 : phase === 'processing'
-                                    ? `Processing ${fileCount} ${fileCount === 1 ? 'file' : 'files'}…`
+                                    ? `Transfer complete · Checking and processing ${fileCount} ${fileCount === 1 ? 'file' : 'files'}…`
                                     : phase === 'result'
                                         ? result
                                         : 'Drop images or videos here or choose from your device'
@@ -91,13 +125,15 @@
                 </div>
                 <div
                     class="admin-gallery-upload__progress"
-                    x-show="phase === 'uploading'"
+                    x-show="phase === 'uploading' || phase === 'processing'"
+                    x-bind:class="{ 'is-processing': phase === 'processing' }"
                     x-cloak
                     role="progressbar"
-                    aria-label="Upload progress"
+                    aria-label="Media upload status"
                     aria-valuemin="0"
                     aria-valuemax="100"
-                    x-bind:aria-valuenow="progress"
+                    x-bind:aria-valuenow="phase === 'uploading' ? progress : null"
+                    x-bind:aria-valuetext="phase === 'processing' ? 'File transfer finished; server processing in progress' : null"
                 >
                     <span class="admin-gallery-upload__progress-track" aria-hidden="true">
                         <span class="admin-gallery-upload__progress-fill" x-bind:style="`width: ${progress}%`"></span>

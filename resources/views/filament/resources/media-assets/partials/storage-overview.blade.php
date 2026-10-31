@@ -142,6 +142,21 @@
                     const errors = []
 
                     for (const file of files) {
+                        const isVideo = file.type.startsWith('video/') || /\.(mp4|webm)$/i.test(file.name)
+                        const isAudio = file.type.startsWith('audio/') || /\.(mp3|m4a|wav|ogg)$/i.test(file.name)
+                        const sizeLimit = isVideo
+                            ? @js(\App\Domain\Media\MediaTypePolicy::videoMaxBytes())
+                            : isAudio
+                                ? @js(\App\Domain\Media\MediaTypePolicy::audioMaxBytes())
+                                : @js(\App\Domain\Media\MediaTypePolicy::imageMaxBytes())
+                        if (file.size > sizeLimit) {
+                            failed++
+                            errors.push(file.name + ' — File exceeds the ' + Math.round(sizeLimit / 1048576) + ' MiB limit.')
+                            this.completed++
+                            this.progress = Math.round(this.completed * 100 / this.fileCount)
+                            continue
+                        }
+
                         this.phase = 'uploading'
 
                         const transferred = await new Promise((resolve) => {
@@ -186,6 +201,13 @@
                         failed + ' failed (' + this.fileCount + ' selected)'
                     this.result = errors.length ? summary + ' · ' + errors.slice(0, 2).join('; ') : summary
                     this.phase = 'result'
+                    // One top-of-page notification for the entire batch, including
+                    // transport failures that never reached the ingestion service.
+                    try {
+                        await $wire.notifyDirectMediaBatch(added, duplicates, failed, errors.slice(0, 2).join('; '))
+                    } catch {
+                        // The status remains visible here if the server is unavailable.
+                    }
                 },
             }"
             x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
@@ -206,7 +228,7 @@
                         phase === 'uploading'
                             ? `Uploading file ${completed + 1} of ${fileCount} · ${progress}%`
                             : phase === 'processing'
-                                ? `Processing file ${completed + 1} of ${fileCount}…`
+                                ? `Transfer complete · Checking and processing file ${completed + 1} of ${fileCount}…`
                                 : phase === 'result'
                                     ? result
                                     : 'Drop files here or choose from your device'
@@ -216,13 +238,15 @@
             </div>
             <div
                 class="media-workspace__upload-progress"
-                x-show="phase === 'uploading'"
+                x-show="phase === 'uploading' || phase === 'processing'"
+                x-bind:class="{ 'is-processing': phase === 'processing' }"
                 x-cloak
                 role="progressbar"
-                aria-label="Upload progress"
+                aria-label="Media upload status"
                 aria-valuemin="0"
                 aria-valuemax="100"
-                x-bind:aria-valuenow="progress"
+                x-bind:aria-valuenow="phase === 'uploading' ? progress : null"
+                x-bind:aria-valuetext="phase === 'processing' ? 'File transfer finished; server processing in progress' : null"
             >
                 <span class="media-workspace__upload-progress-track" aria-hidden="true">
                     <span class="media-workspace__upload-progress-fill" x-bind:style="`width: ${progress}%`"></span>
