@@ -198,8 +198,6 @@ final class MediaCapacityService
         }
 
         try {
-            [$authoritativeBytes] = $this->measurePrefix('originals');
-            [$storedGeneratedBytes] = $this->measurePrefix('variants');
             [$privateBytes] = $this->measurePrefix('');
             $reservedUploadBytes = $this->measureUntransferredUploadReservations();
         } catch (Throwable) {

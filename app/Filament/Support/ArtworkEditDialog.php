@@ -323,13 +323,4 @@ final class ArtworkEditDialog
         return [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES];
     }
 
-    private function assertUploadIsPrimaryMedia(TemporaryUploadedFile $upload): void
-    {
-        $mime = (string) $upload->getMimeType();
-        if (! MediaTypePolicy::isImage($mime) && ! MediaTypePolicy::isVideo($mime)) {
-            throw ValidationException::withMessages([
-                'primary_upload' => 'Primary media must be an image or video. Audio is not supported.',
-            ]);
-        }
-    }
 }

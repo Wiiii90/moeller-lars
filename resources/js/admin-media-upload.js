@@ -226,10 +226,10 @@ export async function adminMediaUploadField(state, input, wire, statePath, image
     state.result = '';
     try {
         // The transfer updates this Alpine state through the shared transport.
-        const outcome = await transfer(file, state, 0, 1);
-        if (imagesOnly && !file.type.startsWith('image/')) {
-            throw new Error('This field accepts images only. The uploaded file remains reusable in Storage.');
+        if (imagesOnly && !file.type.startsWith('image/') && !/\.(jpe?g|png|webp)$/i.test(file.name)) {
+            throw new Error('This field accepts images only.');
         }
+        const outcome = await transfer(file, state, 0, 1);
         await wire.set(statePath, outcome.asset_id);
         forget(outcome.resumeKey);
         state.result = file.name + ' — ready to save';
