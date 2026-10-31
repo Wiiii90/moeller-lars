@@ -59,7 +59,7 @@ final class AdminRichText
             ->required($required)
             ->nullable()
             ->columnSpanFull()
-            ->extraFieldWrapperAttributes(['class' => 'admin-rich-text admin-rich-text--visual']);
+            ->extraFieldWrapperAttributes(['class' => 'admin-rich-text admin-rich-text--visual'], merge: true);
 
         if ($allowEmbeddedMedia) {
             $editor->resizableImages();

@@ -17,7 +17,6 @@ use App\Models\MediaAsset;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
@@ -164,7 +163,7 @@ final class ArtworkEditDialog
                             'title' => 'Unpublish this Artwork before uploading a different primary file.',
                         ] : [])
                         ->columnSpanFull()] : []),
-                    Textarea::make('primary_alt_text')
+                    TextInput::make('primary_alt_text')
                         ->label('Primary media ALT text')
                         ->maxLength(500)
                         ->nullable()

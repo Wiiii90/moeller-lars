@@ -17,7 +17,7 @@ use App\Domain\Media\MediaTypePolicy;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -179,7 +179,7 @@ trait GalleryWorkspaceArtworkDialogs
                     ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
                     ->required()
                     ->helperText(__('Replaces the draft artwork’s primary media. The previous file remains in Storage.')),
-                Textarea::make('primary_alt_text')
+                TextInput::make('primary_alt_text')
                     ->label('ALT text')
                     ->maxLength(500)
                     ->nullable()
