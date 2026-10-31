@@ -175,16 +175,6 @@ final class ListMediaAssets extends Page
     }
 
     /** @return array{summary:string,added:int,duplicates:int,failed:int,errors:list<string>} */
-    /** Transfer failures never reach MediaIngestService, so report them here. */
-    public function notifyDirectMediaTransferFailure(string $message): void
-    {
-        app(AdminNotifier::class)->notification(
-            title: 'Upload failed',
-            body: mb_substr($message, 0, 400),
-            status: 'danger',
-        );
-    }
-
     /** Send exactly one header notification for a completed Storage batch. */
     public function notifyDirectMediaBatch(int $added, int $duplicates, int $failed, string $details = ''): void
     {
