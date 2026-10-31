@@ -1,11 +1,15 @@
 # Dev Worker 1 — aktueller Arbeitsstand
 
-**Branch:** `dev` · **Lease:** 3 · **Zuständigkeit:** Admin-Dialog schließen bei Autosave; Medien-Upload, Vorschaubilder und optionale Medienrechte.
+**Branch:** `dev` · **Lease:** 5 · **Zuständigkeit:** Admin-Dialog schließen bei Autosave; Medien-Upload, Vorschaubilder und optionale Medienrechte.
 
 **Night-Gallery-Prototyp ausdrücklich abgelehnt:** Nutzer fand den dunklen Ausstellungsbereich unpassend auf einer ansonsten hellen Homepage und bat, Überschriften/Titel unverändert zu lassen. `94585bf` wird beim neuen Stilversuch vollständig durch die vor-Night-Gallery-CSS-Grundlage ersetzt (zusätzliche Titel-/Hoverfarben beseitigt). **Neuer, isolierter Soft-Paper-Stilversuch:** Diffuse warme, zu transparenten Außenkanten auslaufende Farbflächen innerhalb der Exhibitions-Fläche, kräftigere warme Fläche unter geöffneten Artikeln sowie sichtbare helle Passepartouts und Schatten an den bestehenden Medien. Kein Eingriff in globale General-Hintergründe, Titel/Schriftarten/Schriftgrößen, General Width/Padding, Blade, Video-Logik oder Mediadaten. Kein Nummern-/Trennlinien-/Bühnenkonzept. Noch keine reale Browserabnahme, isolierter CSS-Commit rücknehmbar.
 
-## Aktuelle Aufgabe — ausdrücklich bestätigte Lease-3-Übernahme (31.10.2026)
-- **Dev Worker 1 auf `dev`, Lease 3.** Nutzer verlangt einen *visuellen Stilwechsel* ausschließlich innerhalb der öffentlichen Exhibitions-Fläche. Keine neue Interaktion, Medienbühne, neue Katalognummern, rote/zusätzliche Trennlinien, neue Schriftart/-größen, keine Änderung des globalen Seitenhintergrunds oder von General Width/Padding.
+## Übernahme durch neuen Chat — Lease 5 (31.10.2026)
+- Der Nutzer hat denselben nummerierten Dev-Worker ausdrücklich zur Fortsetzung angewiesen. Kein neuer Aufgabenbereich: vorhandenen Soft-Paper-Stil für Public Exhibitions gegen aktuellen `dev`-Stand und akzeptierte Designgrenzen prüfen; reale Browserabnahme und neues Künstlerfeedback bleiben offen.
+- Keine weiteren Gestaltungsvarianten auf Verdacht, keine Änderung von General/Titel/Typografie, keine CI-Starts, Tests oder Deployments, keine Aufgaben von Dev 2/3 übernehmen.
+
+## Vorherige Aufgabe — Lease 3 (31.10.2026)
+- **Dev Worker 1 auf `dev`, damalige Lease 3.** Nutzer verlangt einen *visuellen Stilwechsel* ausschließlich innerhalb der öffentlichen Exhibitions-Fläche. Keine neue Interaktion, Medienbühne, neue Katalognummern, rote/zusätzliche Trennlinien, neue Schriftart/-größen, keine Änderung des globalen Seitenhintergrunds oder von General Width/Padding.
 - Die Oberfläche soll visuell **deutlich** anders und hochwertiger wirken, sowohl geschlossen als auch geöffnet, **mit und ohne Feature-Medium**. Funktional vorhandene Datum/Titel/Organizer-Übersicht, Toggle, Video, Gallery, Rich-Text, Medienrechte, Canonical Layout strikt erhalten.
 - Umsetzung am bestehenden Public-Exhibitions-Styles-Owner, isoliert rücknehmbar und ohne Settings-/Datenmigration; Quellcodeprüfung nicht als Browserabnahme ausgeben.
 
