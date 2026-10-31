@@ -325,6 +325,7 @@ final class AdminRichText
                             spacingSelection: null,
                             spacingLeft: 0,
                             spacingTop: 0,
+                            inlinePanelSpace: 0,
                             positionInlinePanel(panel, anchor, prefix) {
                                 const bounds = this.$el.closest('.fi-modal-content')?.getBoundingClientRect()
                                     ?? this.$el.getBoundingClientRect()
@@ -332,12 +333,26 @@ final class AdminRichText
                                 const box = anchor?.getBoundingClientRect() ?? shell
                                 const left = Math.max(bounds.left + 8,
                                     Math.min(box.left, bounds.right - panel.offsetWidth - 8))
-                                const below = box.bottom + 4
+                                // The first toolbar can wrap to two rows. Never cover
+                                // its lower row with a popup from its upper row.
+                                const toolbarBottom = this.$el.querySelector('.fi-fo-rich-editor-toolbar')
+                                    ?.getBoundingClientRect().bottom ?? box.bottom
+                                const below = Math.max(box.bottom, toolbarBottom) + 8
                                 const top = below + panel.offsetHeight <= bounds.bottom - 8
                                     ? below
                                     : Math.max(bounds.top + 8, box.top - panel.offsetHeight - 4)
                                 this[prefix + 'Left'] = left - shell.left
                                 this[prefix + 'Top'] = top - shell.top
+                                // Reserve room only for main-toolbar popups. An image
+                                // caption is anchored to a floating toolbar within
+                                // the document and must not move its own anchor.
+                                if (prefix !== 'caption') {
+                                    const contentTop = this.$el.querySelector('.fi-fo-rich-editor-content')
+                                        ?.getBoundingClientRect().top
+                                    this.inlinePanelSpace = contentTop === undefined
+                                        ? 0
+                                        : Math.max(0, top + panel.offsetHeight + 8 - contentTop)
+                                }
                             },
                             openColorEditor(event) {
                                 const editor = event.detail?.editor
@@ -466,6 +481,9 @@ final class AdminRichText
                     // A focus change inside the editor/picker never commits.
                     // The focus check runs after Alpine's state update without
                     // a timer, but only when the editor genuinely loses focus.
+                    // Popup open/close toggles existing content padding without
+                    // intercepting editor focus, input, or save operations.
+                    'x-bind:style' => '`--artist-rich-panel-space: ${linkOpen || colorOpen || spacingOpen ? inlinePanelSpace : 0}px`',
                     'x-on:focusout' => 'onRichEditorFocusOut()',
                     'x-on:artist-rich-link-toggle' => 'openLinkEditor($event)',
                     'x-on:artist-rich-color-toggle' => 'openColorEditor($event)',

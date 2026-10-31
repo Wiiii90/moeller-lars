@@ -519,6 +519,11 @@
     position: relative;
 }
 
+/* Top-toolbar popups need real document space, not an overlay over text. */
+.admin-rich-text-editor-shell .fi-fo-rich-editor-content {
+    padding-top: var(--artist-rich-panel-space, 0px);
+}
+
 .admin-rich-text-storage-dropdown {
     position: absolute;
     z-index: 40;
