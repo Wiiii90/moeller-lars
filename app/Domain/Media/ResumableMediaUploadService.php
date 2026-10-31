@@ -275,9 +275,16 @@ final class ResumableMediaUploadService
         return $this->directory().'/'.$id.'.part';
     }
 
-    /** Opportunistic bounded cleanup; abandoned uploads never accumulate forever. */
-    private function pruneExpired(): void
+    /**
+     * Bounded cleanup; also callable from the standard Laravel daily scheduler.
+     * Files are removed only when their upload lock can be acquired.
+     */
+    public function pruneExpired(): int
     {
+        if (! is_dir($this->directory())) {
+            return 0;
+        }
+        $removed = 0;
         foreach (array_slice(glob($this->directory().'/*.json') ?: [], 0, 100) as $manifest) {
             if (filemtime($manifest) !== false && filemtime($manifest) > time() - self::EXPIRY_SECONDS) {
                 continue;
@@ -286,14 +293,17 @@ final class ResumableMediaUploadService
             if (! Str::isUuid($id)) {
                 continue;
             }
-            $this->locked($id, function () use ($manifest, $id): void {
+            $this->locked($id, function () use ($manifest, $id, &$removed): void {
                 if (is_file($manifest) && filemtime($manifest) < time() - self::EXPIRY_SECONDS) {
-                    @unlink($manifest);
                     @unlink($this->partPath($id));
+                    if (@unlink($manifest)) {
+                        $removed++;
+                    }
                 }
             });
             // Do not unlink a lock inode: another request may already hold it.
         }
+        return $removed;
     }
 
     private function invalid(string $message): ValidationException

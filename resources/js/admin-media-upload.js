@@ -201,6 +201,15 @@ export async function adminMediaUploader(state, input, wire, context) {
         }
     } catch (error) {
         state.result = error?.message || 'Upload could not be completed. Select the same file to resume.';
+        try {
+            if (context === 'gallery') {
+                await wire.notifyDirectPrimaryTransferFailure(state.result);
+            } else {
+                await wire.notifyDirectMediaBatch(added, duplicates, Math.max(1, failed), state.result);
+            }
+        } catch {
+            // When the connection is down, the inline result remains visible.
+        }
     } finally {
         input.value = '';
         state.phase = 'result';

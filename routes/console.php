@@ -4,6 +4,7 @@ use App\Domain\Admin\AdminLocalHistoryResetService;
 use App\Domain\Content\ExhibitionAddressNormalizer;
 use App\Domain\Contact\ContactMessageRetentionService;
 use App\Domain\Media\MediaCapacityService;
+use App\Domain\Media\ResumableMediaUploadService;
 use App\Domain\Media\MediaThumbnailCutoverService;
 use App\Domain\Media\MediaIntegrityService;
 use App\Domain\Media\MediaRightsWorkingPreparation;
@@ -56,6 +57,16 @@ Artisan::command('media:thumbnails:consolidate {--apply : Convert GD thumbnails 
         return 1;
     }
 })->purpose('Preview or execute guarded offline libvips thumbnail consolidation');
+
+// Expired unfinished private transfers are reclaimed without touching the
+// canonical media registry or completed files. The scheduler must be enabled
+// independently by the operator at deployment.
+Artisan::command('media:uploads:prune', function (ResumableMediaUploadService $uploads): int {
+    $removed = $uploads->pruneExpired();
+    $this->info($removed.' expired upload sessions reclaimed.');
+    return 0;
+})->purpose('Prune private resumable media staging older than 48 hours');
+Schedule::command('media:uploads:prune')->daily()->withoutOverlapping()->onOneServer();
 
 // Contact messages are retained in this database for 180 days. The command
 // is preview-only unless --apply is explicit. Existing mailboxes and backup
