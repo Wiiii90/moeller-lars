@@ -91,6 +91,17 @@ A stop means: identify the underlying owner/invariant that is failing, inspect t
 
 Do not preserve an obsolete implementation alongside its replacement. Remove obsolete files, hooks, imports, tests and documentation *as part of the same scoped correction*. Do not modify tests to make a broken implementation appear correct. An exceptional workaround is allowed **only if the user explicitly authorizes that specific, fully explained temporary exception**; convenience, time pressure, regressions and framework limitations do not constitute permission. This rule overrides generic instructions to “just make it work.”
 
+## UI component ownership and discoverability — mandatory
+
+**Obvious source of truth is a quality requirement, not an optional naming preference.** A maintainer must be able to locate a component's behavior and visual appearance from its canonical component/factory and a clearly identifiable, centrally owned style rule, without reconstructing unrelated parent hierarchies, searching for arbitrary ancestor selectors or chasing overrides. A working screenshot or passing build does not excuse hidden ownership.
+
+- **Component-owned presentation:** Put intrinsic component properties (border, radius, background, internal typography, toolbar appearance and focus treatment) on the component's own stable root/class through its canonical construction point, and define their styling in the existing shared component/style owner. Parents own placement, sizing constraints and spacing *between* components; they do not secretly restyle a reusable child's intrinsic appearance.
+- **No accidental hierarchy contracts:** Do not require a particular unrelated ancestor, wrapper nesting, internal Filament/Livewire markup or page-local context for a reusable component to look correct. A parent-dependent selector is acceptable only for a **genuine, explicitly named contextual variant** (for example, the same component laid out differently in a narrow panel), or when the framework offers no stable component-root hook. In that case, justify the specific dependency at its owner, use the narrowest stable supported hook and identify affected consumers.
+- **Repair the real owner, not the cascade:** When a component style is defective, correct or remove the original rule and update direct consumers; do not append a stronger selector, an `!important` escalation or another stylesheet to hide it. Avoid unnecessary wrapper layers, convenience aliases and duplicate styling entrypoints. An unavoidable specificity rule must have an explicit, documented reason at the canonical owner, not become the default repair method.
+- **Make future changes obvious:** Before committing, check that a maintainer can answer “Where do I change this component's frame/behavior?” from its construction and named style owner; verify the rule matches the **actual rendered element**, not a presumed ancestor. If the problem is visual, source inspection and static checks are *not* browser acceptance. Record whether the current rendered UI was reviewed, and never call an unseen change a confirmed visual fix.
+
+These boundaries apply to Admin and Public without merging their distinct design systems. Existing component APIs and genuinely intentional contextual variants remain valid; do not rewrite every selector solely to satisfy this rule.
+
 ## Mandatory mutation/feedback completion contract
 
 For any user-facing authenticated editorial admin mutation, changing
