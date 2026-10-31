@@ -27,7 +27,6 @@ use Throwable;
 
 trait GalleryWorkspaceDirectUpload
 {
-    /** @return array{summary:string,added:int,duplicates:int,failed:int} */
     /** Report client transfer errors that never reach the ingest action. */
     public function notifyDirectPrimaryTransferFailure(string $message): void
     {
@@ -38,12 +37,23 @@ trait GalleryWorkspaceDirectUpload
         );
     }
 
-    public function processDirectPrimaryMedia(): array
+    /** Begin a selected stack without retaining stale assets from an earlier upload. */
+    public function beginDirectPrimaryMediaBatch(): void
+    {
+        $this->reset('directPrimaryMedia');
+        $this->pendingPrimaryMediaAssetId = null;
+        $this->pendingBatchArtworkMedia = [];
+    }
+
+    /** @return array{summary:string,added:int,duplicates:int,failed:int,errors:list<string>} */
+    public function processDirectPrimaryMedia(bool $collectBatch = false): array
     {
         $uploads = $this->directPrimaryMedia;
         $this->resetErrorBag('directPrimaryMedia');
-        $this->pendingPrimaryMediaAssetId = null;
-        $this->pendingBatchArtworkMedia = [];
+        if (! $collectBatch) {
+            $this->pendingPrimaryMediaAssetId = null;
+            $this->pendingBatchArtworkMedia = [];
+        }
 
         if ($uploads === []) {
             $this->reset('directPrimaryMedia');
@@ -53,6 +63,7 @@ trait GalleryWorkspaceDirectUpload
                 'added' => 0,
                 'duplicates' => 0,
                 'failed' => 1,
+                'errors' => ['No uploaded file was received.'],
             ];
         }
 
@@ -114,6 +125,31 @@ trait GalleryWorkspaceDirectUpload
         $summary = $this->directUploadSummary($total, $added, $duplicates, $failed);
         $this->reset('directPrimaryMedia');
 
+        if ($collectBatch) {
+            $existingIds = array_map(
+                static fn (array $row): int => (int) ($row['media_asset_id'] ?? 0),
+                $this->pendingBatchArtworkMedia,
+            );
+            foreach ($addedAssets as $asset) {
+                $assetId = (int) $asset->getKey();
+                if (! in_array($assetId, $existingIds, true)) {
+                    $this->pendingBatchArtworkMedia[] = $this->pendingBatchArtworkRow($asset);
+                    $existingIds[] = $assetId;
+                }
+            }
+
+            return [
+                'summary' => $summary,
+                'added' => $added,
+                'duplicates' => $duplicates,
+                'failed' => $failed,
+                'errors' => array_map(
+                    static fn (array $failure): string => $failure['filename'].' — '.$failure['message'],
+                    $failures,
+                ),
+            ];
+        }
+
         $this->notifyDirectUploadResult($summary, $added, $duplicates, $failures);
 
         if ($added === 1) {
@@ -133,7 +169,49 @@ trait GalleryWorkspaceDirectUpload
             'added' => $added,
             'duplicates' => $duplicates,
             'failed' => $failed,
+            'errors' => array_map(
+                static fn (array $failure): string => $failure['filename'].' — '.$failure['message'],
+                $failures,
+            ),
         ];
+    }
+
+    /**
+     * Finalize a multi-file queue after each file was transferred and ingested
+     * in its own bounded request. The existing Artwork dialogs remain the owner.
+     *
+     * @param list<string> $errors
+     * @return array{summary:string,added:int,failed:int,duplicates:int}
+     */
+    public function finishDirectPrimaryMediaBatch(int $failed = 0, int $duplicates = 0, array $errors = []): array
+    {
+        $failed = max(0, min(10000, $failed));
+        $duplicates = max(0, min(10000, $duplicates));
+        $rows = $this->pendingBatchArtworkMedia;
+        $added = count($rows);
+        $total = $added + $failed;
+        $summary = $this->directUploadSummary($total, $added, $duplicates, $failed);
+        $details = [];
+        foreach (array_slice($errors, 0, 4) as $message) {
+            if (is_string($message) && trim($message) !== '') {
+                $details[] = ['filename' => 'File', 'message' => mb_substr($message, 0, 240)];
+            }
+        }
+        if ($failed > count($details)) {
+            $details[] = ['filename' => 'Files', 'message' => ($failed - count($details)).' further failures'];
+        }
+
+        $this->notifyDirectUploadResult($summary, $added, $duplicates, $details);
+
+        if ($added === 1) {
+            $this->pendingPrimaryMediaAssetId = (int) $rows[0]['media_asset_id'];
+            $this->pendingBatchArtworkMedia = [];
+            $this->mountAction('addArtwork');
+        } elseif ($added > 1) {
+            $this->mountAction('batchAddArtworks');
+        }
+
+        return ['summary' => $summary, 'added' => $added, 'failed' => $failed, 'duplicates' => $duplicates];
     }
 
     public function batchAddArtworksAction(): Action
