@@ -41,7 +41,7 @@
 @section('artwork_menu_surface_wide', $presentation::wideArtworkMenu($category) ? '1' : '')
 
 @section('title', $artwork->title.' — Lars Möller')
-@section('meta_description', $artwork->description ?: $artwork->title.' — Lars Möller')
+@section('meta_description', trim(strip_tags((string) $artwork->description)) ?: $artwork->title.' — Lars Möller')
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/artworks/'.$artwork->slug))
 
 @section('content')
@@ -125,10 +125,8 @@
             </div>
         </div>
 
-        @if ($artwork->description)
-            <div class="artwork-detail__narrative">
-                <p>{{ $artwork->description }}</p>
-            </div>
+        @if (filled($artwork->description))
+            <div class="artwork-detail__narrative rich-text">{!! $richText->render((string) $artwork->description) !!}</div>
         @endif
 
         @if ($primaryAsset->credit)
