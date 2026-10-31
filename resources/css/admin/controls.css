@@ -34,7 +34,9 @@
     text-transform: uppercase;
 }
 
-.admin-control-field .fi-input-wrp {
+/* RichEditor also receives fi-input-wrp from Filament. The underline
+ * contract belongs to plain input wrappers, never to that editor surface. */
+.admin-control-field .fi-input-wrp:not(.fi-fo-rich-editor) {
     min-height: var(--admin-control-height);
     border: 0 !important;
     border-bottom: 1px solid var(--admin-control-border) !important;
@@ -44,8 +46,8 @@
     --tw-ring-shadow: 0 0 #0000 !important;
 }
 
-.admin-control-field .fi-input-wrp:focus-within,
-.admin-control-field .fi-input-wrp:has(.fi-select-input-btn[aria-expanded="true"]) {
+.admin-control-field .fi-input-wrp:not(.fi-fo-rich-editor):focus-within,
+.admin-control-field .fi-input-wrp:not(.fi-fo-rich-editor):has(.fi-select-input-btn[aria-expanded="true"]) {
     border-bottom-color: var(--admin-control-border-focus) !important;
 }
 

@@ -301,8 +301,9 @@
     box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / .12);
 }
 
+/* Ordinary inputs use an underline; the RichEditor is its own framed surface. */
 .admin-form-control,
-.admin-form-controls .fi-input-wrp {
+.admin-form-controls .fi-input-wrp:not(.fi-fo-rich-editor) {
     box-sizing: border-box;
     width: 100%;
     min-height: var(--admin-control-height);
@@ -323,7 +324,7 @@
 }
 
 .admin-form-control:focus-visible,
-.admin-form-controls .fi-input-wrp:focus-within {
+.admin-form-controls .fi-input-wrp:not(.fi-fo-rich-editor):focus-within {
     border-bottom-color: var(--admin-accent) !important;
     outline: 0;
 }
@@ -469,15 +470,15 @@
    Other admin input fields keep their intentionally underlined controls.
    The root class is set by AdminRichText for every shared editor. */
 .fi-fo-rich-editor.admin-rich-text-editor-frame {
-    border: 1px solid var(--admin-line-strong) !important;
-    border-radius: 0 !important;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: 0;
     background: transparent;
     color: var(--admin-text);
     box-shadow: none;
 }
 
 .fi-fo-rich-editor.admin-rich-text-editor-frame:focus-within {
-    border-color: var(--admin-control-border-focus, var(--admin-accent)) !important;
+    border-color: var(--admin-control-border-focus, var(--admin-accent));
 }
 
 .admin-rich-text--visual .fi-fo-rich-editor-toolbar {
