@@ -18,7 +18,7 @@
 @endphp
 
 <div class="admin-repeater-table @if ($isMediaTable) admin-repeater-table--media @endif" role="group" aria-label="{{ $repeater->getLabel() }}">
-    <x-admin.table class="admin-table--data admin-repeater-table__table @if ($isMediaTable) admin-table--ranked @endif" aria-label="{{ $repeater->getLabel() }}">
+    <x-admin.table :class="$isMediaTable ? 'admin-table--data admin-repeater-table__table admin-table--ranked' : 'admin-table--data admin-repeater-table__table'" aria-label="{{ $repeater->getLabel() }}">
         <table>
             @if ($isMediaTable)
                 <colgroup>
