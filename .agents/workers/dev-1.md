@@ -2,6 +2,11 @@
 
 **Branch:** `dev` · **Lease:** 3 · **Zuständigkeit:** Admin-Dialog schließen bei Autosave; Medien-Upload, Vorschaubilder und optionale Medienrechte.
 
+## Aktuelle Aufgabe — ausdrücklich bestätigte Lease-3-Übernahme (31.10.2026)
+- **Dev Worker 1 auf `dev`, Lease 3.** Nutzer verlangt einen *visuellen Stilwechsel* ausschließlich innerhalb der öffentlichen Exhibitions-Fläche. Keine neue Interaktion, Medienbühne, neue Katalognummern, rote/zusätzliche Trennlinien, neue Schriftart/-größen, keine Änderung des globalen Seitenhintergrunds oder von General Width/Padding.
+- Die Oberfläche soll visuell **deutlich** anders und hochwertiger wirken, sowohl geschlossen als auch geöffnet, **mit und ohne Feature-Medium**. Funktional vorhandene Datum/Titel/Organizer-Übersicht, Toggle, Video, Gallery, Rich-Text, Medienrechte, Canonical Layout strikt erhalten.
+- Umsetzung am bestehenden Public-Exhibitions-Styles-Owner, isoliert rücknehmbar und ohne Settings-/Datenmigration; Quellcodeprüfung nicht als Browserabnahme ausgeben.
+
 ## Abgeschlossen
 - **Thumbnail-Cutover lokal und auf Validation erfolgreich.** Validation meldete am 30.10.2026 für das Anwendungsimage aus `dev@1e023f955fabd54f2ac355fc19c6e58fefe8fa49`: Konfiguration gültig, Cutover abgeschlossen, neue Anwendung gesund, passwortgeschützter Zugang aktiv. Produktionshomepage wurde nicht geändert. **Nicht erneut ausführen.**
 - Validation-Daten und Medien wurden zuvor konsistent gesichert; externe Kopie und Prüfsumme sind laut Nutzer bestätigt. Eine isolierte Wiederherstellungsprobe wurde ausdrücklich zurückgestellt.
