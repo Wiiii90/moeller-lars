@@ -1474,8 +1474,18 @@ body {
 }
 .exhibition-entry:last-of-type { margin-bottom: 0; }
 .exhibition-entry__disclosure[open] {
-    border-block: 1px solid var(--exhibition-rule);
     padding-block: 1.2rem 1.4rem;
+}
+/* Give each expanded folio's neighboring boundary one rule, not two.
+   The first and last records never draw a rule outside the catalogue. */
+.exhibition-entry:not(:first-child) > .exhibition-entry__disclosure[open] {
+    border-top: 1px solid var(--exhibition-rule);
+}
+.exhibition-entry:not(:last-child) > .exhibition-entry__disclosure[open] {
+    border-bottom: 1px solid var(--exhibition-rule);
+}
+.exhibition-entry:has(> .exhibition-entry__disclosure[open]) + .exhibition-entry > .exhibition-entry__disclosure[open] {
+    border-top: 0;
 }
 .exhibition-entry__summary {
     display: grid;
@@ -1561,8 +1571,8 @@ body {
     line-height: 1.5;
     overflow-wrap: break-word;
 }
-/* Open folios have precisely two full-width rules; no card border, no
-   redundant inner divider, and no state-specific control column. */
+/* Open folios reuse the common catalogue detail layout without
+   adding an inner divider, card frame or state-specific control column. */
 .exhibition-entry__body {
     min-width: 0;
     padding: 1.4rem 0 0;

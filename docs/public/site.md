@@ -443,8 +443,9 @@ Content width, disappear on narrow viewports, and never change artist-configured
 background, reading insets or media size. Only the Blog's actual artworks have
 small square-edged double-line mounts. The additional Gallery item corners have been rejected and entirely removed:
 artwork images and existing labels are separated by their natural white space.
-All extra Exhibition entry separators have been removed after browser rejection;
-the open chronological catalogue is intentionally undecorated between entries.
+Collapsed Exhibition entries remain undecorated. Expanded entries use at most
+one subdued rule at a shared boundary, with no rule above the first or below
+the last item. No duplicated separator when adjacent entries are expanded.
 Neither surface gets framed records, date-axis timelines, decorative stickers,
 repeated corner ornaments or new entry rules.
 No artwork is cropped or covered.
@@ -521,8 +522,8 @@ temporal state labels (Current / Upcoming) do not reorder that editorial list.
 The closed entry presents the authored date, exhibition title and venue/place
 as an open **exhibition catalogue**, not a timeline or a set of rectangular
 cards. Dates and titles share the measured reading area with generous whitespace
-and no fabricated image substitutes, vertical date spine, connection nodes or
-repeated horizontal separator rules. The artist's manual exhibition order and
+and no fabricated image substitutes, vertical date spine or connection nodes.
+Only opened entries may expose the restrained shared-boundary separator. The artist's manual exhibition order and
 the fixed typography remain authoritative.
 
 Optional material is exposed through independent native `details` disclosures
