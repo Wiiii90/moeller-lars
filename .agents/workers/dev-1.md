@@ -26,6 +26,11 @@
 
 **Übernahme Dev Worker 1 (Lease 3):** Aktueller Nutzerbefund: Der Float des geöffneten Covers plus Margin überschreitet die übliche Titelachse; dadurch springt Address nach rechts gegenüber Einträgen ohne Cover. Technische Korrektur isoliert in der Exhibition-Darstellung, natürliche Textumflüsse und maximale Coverbreite erhalten. Visuelle Template-Neugestaltung ausdrücklich nicht mit beliebigen CSS-Zierelementen beantworten.
 
+## Exhibition-Cover-Geometrie (31.10.2026)
+- **Neuer Nutzer-Browserbefund:** Bei geöffneten FFFF2-Einträgen beginnt „Address“ weiter rechts als bei Art Empire ohne Cover. Ursache: Breite des links gefloateten Covers plus `margin-right` war größer als der definierte gemeinsame Vorsprung der Titelachse.
+- **Fachlich isolierte Korrektur:** `--exhibition-title-offset` als gemeinsame Berechnung der vorhandenen Summary-Tracks. Ohne Cover starten Fakten an diesem Offset. Mit Cover nutzt die Figure (maximal 14 rem) *plus* rechts folgenden Spaltenabstand denselben Offset. Text fließt natürlich rechts herum und darunter weiter; bis herunter auf Container mit 27 rem bleibt der Float aktiv, danach stapelt die Seite und setzt den Text wie bisher links. Keine neuen Textspalten, Schmuckelemente, Daten oder JavaScript.
+- **Design-Handoff:** Die visuelle Gesamtlösung bleibt abgelehnt. Keine weitere spontane CSS-Dekoration. Falls ein neues Template umgesetzt wird, zuerst eine konzeptionell andere geschlossene Übersicht mit klarer Informationsarchitektur und Beurteilung der Bildlos-/Video-Fälle abstimmen. Browserabnahme dieses Geometriefixes ausstehend.
+
 ## Exhibitions — Nutzer verwirft Editorial-Offset-Ornamentik (31.10.2026)
 - Im Browser ausdrücklich abgelehnt: Katalognummern, ziegelrote Akzentstreifen/Trennlinien und generell Separatoren zwischen geschlossenen Einträgen. **Nicht wiederholen.**
 - Darstellungsdateien von vor dem isolierten Prototyp `1bb0730` als saubere Grundlage verwendet. Aus dem Versuch bleiben nur die warme Hintergrundfläche **geöffneter** Einträge, kleinere Vorschaubilder und dezente typografische/Abstandsänderungen. Auch alle mobilen Nummernregeln sind entfernt. Kein dekorativer Ersatz, keine neuen Kontrollen. Caption-, Medien-, Video-, Galerie- und Textumlauf-Logik unverändert.

@@ -1465,6 +1465,9 @@ body {
     --exhibition-media-track: 4.25rem;
     --exhibition-date-track: 6.5rem;
     --exhibition-column-gap: 1.2rem;
+    /* Summary and expanded facts must share the exact same title axis.
+       The float + right gap consume this offset, never exceed it. */
+    --exhibition-title-offset: calc(var(--exhibition-media-track) + var(--exhibition-date-track) + 2 * var(--exhibition-column-gap));
     --exhibition-paper: #f5f1e9;
     color: var(--public-ink);
 }
@@ -1637,18 +1640,21 @@ body {
    Text begins next to the image and continues across the full reading width
    after its bottom edge, as in a printed exhibition catalogue. */
 .exhibition-entry__feature--text {
-    margin-inline-start: calc(var(--exhibition-media-track) + var(--exhibition-date-track) + 2 * var(--exhibition-column-gap));
+    margin-inline-start: var(--exhibition-title-offset);
 }
 .exhibition-entry__cover {
     width: min(100%, 14rem);
     min-width: 0;
     margin: 0 0 1rem;
 }
-@container (min-width: 34.001rem) {
+@container (min-width: 27rem) {
     .exhibition-entry__feature--with-cover .exhibition-entry__cover {
-        float: left;
-        width: min(41%, 14rem);
-        margin: 0 clamp(1.1rem, 3cqw, 1.65rem) .85rem 0;
+        float: inline-start;
+        /* The cover and its margin fill precisely the columns before the
+           title, keeping Address on the same reading axis as no-cover rows.
+           Its physical right edge is capped by the catalogue's date track. */
+        width: min(14rem, calc(var(--exhibition-title-offset) - var(--exhibition-column-gap)));
+        margin: 0 var(--exhibition-column-gap) .85rem 0;
     }
 }
 .exhibition-entry__cover img {
