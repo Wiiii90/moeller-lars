@@ -254,7 +254,11 @@ trait ManagesSitePageEditDialog
             $this->orderService()->moveTo($section, $parentId, $position - 1);
         }
 
-        $section = $editorial->updateMetaDescription($section, $data['meta_description'] ?? null);
+        // Group Nodes have no public document or Meta Description. The field is
+        // hidden in their Edit form and must not trigger a page-metadata write.
+        if ($section->hasPublicPage()) {
+            $section = $editorial->updateMetaDescription($section, $data['meta_description'] ?? null);
+        }
 
         /** @var SiteSection $fresh */
         $fresh = SiteSection::query()->findOrFail($section->getKey());
