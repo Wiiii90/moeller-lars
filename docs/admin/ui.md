@@ -195,7 +195,7 @@ Rules:
 - the shared table contract reserves the terminal `--admin-table-selection-width` rail inside the Selection trigger for that badge; do not add page-local margins, padding nudges or duplicate trigger grids that move the badge off the checkbox axis;
 - the badge/checkbox axis is a desktop/table invariant until an intentional responsive breakpoint changes the composition; once controls or rows deliberately stack/reflow, exact cross-row pixel alignment may relax;
 - visual card/contact-sheet surfaces without one trailing table Selection column, such as Gallery, do not invent a fake column or axis merely to satisfy the table rule;
-- invalid actions remain visible but disabled when that makes capability/state clearer;
+- invalid actions remain visible but disabled, including empty selections and domain-ineligible mixed states; the [single Tables/Hierarchy action contract](tables.md#action-order) owns the actual selected-state and sort/filter eligibility rules across Gallery, Journal, Pages, Home and Dashboard;
 - do not duplicate separate “selected parents” and “selected children” menus in the same toolbar;
 - mixed selections must not cause ambiguous mutations;
 - destructive bulk actions require the same domain safeguards as row actions;

@@ -63,6 +63,8 @@ Workspace searches, filters, pager controls and compact inline controls may rema
 
 A native control is not a separate design system. It is another renderer of this contract.
 
+**Task-state and inline help (source inspected through `dev@478bccc1`):** The shared `x-admin.clear-filters` follows the actual active Search/Filter fields and is disabled when every corresponding value is already neutral; workspace pages must not create a second, always-clickable Reset implementation. The shared Admin Help control remains an adjacent, properly aligned label affordance with the canonical Filament native popover/tooltip and accessibility behavior; avoid teleported Alpine popover state or a page-specific pointer/focus owner. A form-repeater's action rail, responsive columns and media choice subtitle (ALT text and image dimensions on one useful line) use the existing shared table/control geometry, not separate local spacing fixes. These are scoped source rules, not confirmation that the latest responsive browser presentation has been accepted.
+
 ### Toolbar interaction states
 
 `x-admin.controls` is the only ordinary editorial toolbar presentation owner.

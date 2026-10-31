@@ -144,6 +144,10 @@ Rules:
 
 Operational/history tables may have a different canonical leading action. When `Details` is that action, keep `Details` first on every row and append contextual actions such as Undo, Restore or Revert after it rather than shifting the leading slot.
 
+**Availability is a capability projection, not merely an icon state (source inspected through `dev@478bccc1`):** A row action or selected-items command stays visible in its existing semantic slot but is disabled when the current record, selected set, filter/sort state or publication state makes it inapplicable. The disabled attribute, accessible label and actual server mutation guard must agree; hiding a row command or leaving a clickable no-op is not an alternative availability policy. For bulk operations, derive permitted actions from the **actual selected records**, with no fabricated eligibility when the selection is empty. A mixed set cannot partially execute a destructive or state-dependent operation that the domain requires to be uniform. A correct enablement check must not change the persisted mutation, audit or notification owner.
+
+Concrete consumers: Gallery movement is available only in Manual sort with the required complete/filtered view and actual movable positions; Publish/Unpublish and Remove/Delete use each Artwork's effective state, and the Gallery selection trigger is disabled when empty. Journal reordering additionally requires its canonical unfiltered, one-page view and valid entry IDs; Blog/Exhibition bulk publish/archive/restore/delete capabilities come from the chosen active template and selected entry states. Home and Pages selection actions cannot be enabled when their proposed operation is redundant or its targets are ineligible. Dashboard Feed pin/unpin and read-state actions check the whole selected set rather than the trigger alone. `Clear` on Search/Filter toolbars remains visible but disabled when there is nothing to reset. **Browser interaction and action authorization** require separate verification; source review alone is not user acceptance.
+
 ## Selection
 
 Selection is a trailing utility, not row identity.
