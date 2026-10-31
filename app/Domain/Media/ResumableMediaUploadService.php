@@ -48,17 +48,17 @@ final class ResumableMediaUploadService
 
         // Admission is serialized so two simultaneous starts cannot both
         // observe the same remaining capacity and oversubscribe the quota.
-        // Serialize reservation against the canonical ingest lock as well:
-        // an ordinary upload and a new resumable reservation must not both
-        // pass admission against the same bytes in a race.
-        $lock = Cache::lock('media-ingest', 420);
-        if (! $lock->get()) {
-            throw $this->invalid('Another media file is being finalized. Try again shortly.');
-        }
+        // Lock ordering is always admission -> canonical ingest, matching
+        // finish() (which already holds a shared admission lock). Inverting
+        // that order can deadlock begin and finish under concurrent requests.
+        return $this->admissionLock(function () use ($userId, $filename, $size): array {
+            $lock = Cache::lock('media-ingest', 420);
+            if (! $lock->get()) {
+                throw $this->invalid('Another media file is being finalized. Try again shortly.');
+            }
 
-        try {
-            return $this->admissionLock(function () use ($userId, $filename, $size): array {
-            $capacity = app(MediaCapacityService::class)->snapshot();
+            try {
+                $capacity = app(MediaCapacityService::class)->snapshot();
             if (($capacity['configuration_valid'] ?? false) !== true
                 || ($capacity['measurement_available'] ?? false) !== true
                 || ! is_int($capacity['quota_bytes'] ?? null)
@@ -93,11 +93,11 @@ final class ResumableMediaUploadService
                 throw $this->invalid('Unable to reserve upload staging space.');
             }
 
-            return $this->status($id, $meta);
-            });
-        } finally {
-            $lock->release();
-        }
+                return $this->status($id, $meta);
+            } finally {
+                $lock->release();
+            }
+        });
     }
 
     /** @return array{id:string,offset:int,chunk_size:int,complete:bool,asset_id:int|null,duplicate:bool} */
