@@ -87,7 +87,7 @@ The shared table empty state is **content**, not another framed surface. Inside 
 
 ## Position and Add Row
 
-A Position rank is a **1-based editorial display value**, not the sparse/zero-based stored order. Compact labels such as `01`, `02`, `03` are valid when legible. Add Position intentionally to reviewed ordered tables, not as an unrequested global presentation rewrite.
+A Position rank is a **1-based editorial display value**, not the sparse/zero-based stored order. Compact labels such as `01`, `02`, `03` are valid when legible. Add Position intentionally to reviewed ordered tables, not as an unrequested global presentation rewrite. The Gallery Artwork **Edit** dialog may also expose the same human one-based rank as an editable numeric field in **Manual** order only, using the existing Gallery reorder owner to translate it to a zero-based internal index. In an automatically date-sorted Gallery the displayed Position is read-only; do not create a competing manual sequence or mutate ordering through a locally stored integer.
 
 The Position indicator and the leading `+` square of `x-admin.add-row` share one canonical square geometry and leading inset.
 
