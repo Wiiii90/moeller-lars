@@ -1454,40 +1454,45 @@ body {
     }
 }
 
-/* EXHIBITIONS — AN EDITORIAL CATALOGUE
-   An exhibition name is the only pointer toggle; the date and venue remain
-   informational. Native details provide keyboard and disclosure semantics. */
+/* EXHIBITIONS — EDITORIAL OFFSET / disposable visual concept trial.
+   The native details and existing Media/Publication owners are unchanged.
+   One coherent catalogue rhythm, not stacked cards or multiple rule owners. */
 .exhibitions-page {
     width: 100%;
     min-width: 0;
     padding: .8rem 0 1.2rem;
     container-type: inline-size;
-    --exhibition-media-track: 5.1rem;
-    --exhibition-date-track: 6.7rem;
-    --exhibition-column-gap: 1.35rem;
-    --exhibition-rule: rgba(130, 116, 100, .35);
-    color: var(--public-ink);
+    --exhibition-media-track: 4.25rem;
+    --exhibition-date-track: 6.5rem;
+    --exhibition-column-gap: 1.2rem;
+    --exhibition-ink: #2d2722;
+    --exhibition-paper: #f5f1e9;
+    --exhibition-accent: #995340;
+    --exhibition-rule: rgba(111, 89, 71, .23);
+    color: var(--exhibition-ink);
 }
 .exhibition-entry {
     min-width: 0;
-    margin: 0 0 1.7rem;
+    margin: 0;
+    border-inline-start: 3px solid transparent;
 }
-.exhibition-entry:last-of-type { margin-bottom: 0; }
-/* Open folios have matching insets whether or not they own a top rule:
-   no heading touches the line, and the first entry remains equally spaced. */
-.exhibition-entry__disclosure[open] {
-    padding-block: 1.1rem 1.05rem;
-}
-/* Give each expanded folio's neighboring boundary one rule, not two.
-   The first and last records never draw a rule outside the catalogue. */
-.exhibition-entry:not(:first-child) > .exhibition-entry__disclosure[open] {
-    border-top: 1px solid var(--exhibition-rule);
-}
-.exhibition-entry:not(:last-child) > .exhibition-entry__disclosure[open] {
+.exhibition-entry:not(:last-child) {
     border-bottom: 1px solid var(--exhibition-rule);
 }
-.exhibition-entry:has(> .exhibition-entry__disclosure[open]) + .exhibition-entry > .exhibition-entry__disclosure[open] {
-    border-top: 0;
+.exhibition-entry:has(> .exhibition-entry__disclosure[open]) {
+    border-inline-start-color: var(--exhibition-accent);
+    background: var(--exhibition-paper);
+}
+.exhibition-entry__disclosure[open] {
+    padding: 0;
+}
+.exhibition-entry__disclosure:not([open]) > .exhibition-entry__summary:hover {
+    background: rgba(153, 83, 64, .035);
+}
+@media (prefers-reduced-motion: no-preference) {
+    .exhibition-entry {
+        transition: background-color 150ms ease, border-color 150ms ease;
+    }
 }
 .exhibition-entry__summary {
     display: grid;
@@ -1495,13 +1500,28 @@ body {
     grid-template-columns: var(--exhibition-media-track) var(--exhibition-date-track) minmax(0, 1fr);
     column-gap: var(--exhibition-column-gap);
     align-items: start;
-    padding: .1rem 0 .2rem;
+    padding: .92rem 1.05rem .96rem;
     list-style: none;
     cursor: default;
     pointer-events: none;
 }
-/* Reserve the same discreet image track for every exhibition. No-cover
-   entries preserve the date and heading axes without a fake placeholder. */
+/* Every record has a real editorial index. Where no cover is supplied, its
+   number alone occupies the media track: no dummy media, empty card or gap. */
+.exhibition-entry__folio {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: end;
+    justify-self: start;
+    z-index: 1;
+    padding: .14rem .3rem .13rem;
+    border-top: 2px solid var(--exhibition-accent);
+    background: rgba(255, 253, 250, .9);
+    color: var(--exhibition-accent);
+    font: 600 .63rem/1.25 var(--public-typeface);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .08em;
+    pointer-events: none;
+}
 .exhibition-entry__schedule { grid-column: 2; grid-row: 1; }
 .exhibition-entry__heading { grid-column: 3; grid-row: 1; }
 .exhibition-entry__teaser {
@@ -1511,8 +1531,8 @@ body {
     position: relative;
     width: 100%;
     min-width: 0;
-    height: 4.1rem;
-    background: #f3f1ed;
+    height: 3.7rem;
+    background: #ebe6dd;
     pointer-events: auto;
     cursor: pointer;
 }
@@ -1563,6 +1583,10 @@ body {
     visibility: hidden;
     pointer-events: none;
 }
+.exhibition-entry__disclosure[open] .exhibition-entry__folio {
+    border-top-color: var(--exhibition-accent);
+    background: transparent;
+}
 .exhibition-entry__summary::-webkit-details-marker { display: none; }
 .exhibition-entry__summary::marker { content: ""; }
 .exhibition-entry__summary--static { pointer-events: auto; }
@@ -1577,7 +1601,7 @@ body {
     gap: .35rem;
 }
 .exhibition-entry__date {
-    color: #504941;
+    color: #675950;
     font-family: var(--public-index-typeface);
     font-size: var(--journal-date-font-size);
     font-variant-numeric: tabular-nums;
@@ -1601,7 +1625,7 @@ body {
     width: fit-content;
     max-width: 100%;
     margin: -.1rem 0 0;
-    color: #302b27;
+    color: var(--exhibition-ink);
     font-family: var(--public-index-typeface);
     font-size: var(--journal-exhibition-title-font-size);
     font-weight: 400;
@@ -1614,6 +1638,9 @@ body {
     pointer-events: auto;
     cursor: pointer;
 }
+.exhibition-entry__disclosure[open] .exhibition-entry__title {
+    color: var(--exhibition-accent);
+}
 .exhibition-entry__disclosure .exhibition-entry__title:hover,
 .exhibition-entry__disclosure > .exhibition-entry__summary:focus-visible .exhibition-entry__title {
     color: #19130e;
@@ -1624,7 +1651,7 @@ body {
 .exhibition-entry__byline {
     display: block;
     min-width: 0;
-    margin-top: .55rem;
+    margin-top: .48rem;
 }
 .exhibition-entry__location {
     display: block;
@@ -1638,7 +1665,7 @@ body {
    adding an inner divider, card frame or state-specific control column. */
 .exhibition-entry__body {
     min-width: 0;
-    padding: .95rem 0 .65rem;
+    padding: .45rem 1.05rem 1.4rem;
 }
 .exhibition-entry__feature {
     display: flow-root;
@@ -1702,11 +1729,12 @@ body {
 }
 .exhibition-entry__fact dt {
     margin: 0;
-    color: #81776e;
+    color: var(--exhibition-accent);
     font-family: var(--public-index-typeface);
-    font-size: .8rem;
-    font-weight: 400;
+    font-size: .72rem;
+    font-weight: 500;
     line-height: 1.35;
+    letter-spacing: .045em;
 }
 .exhibition-entry__fact dd {
     min-width: 0;
@@ -1769,15 +1797,17 @@ body {
 }
 @container (max-width: 34rem) {
     .exhibition-entry {
-        --exhibition-media-track: 4.35rem;
+        --exhibition-media-track: 3.8rem;
         --exhibition-date-track: 6.15rem;
-        --exhibition-column-gap: 1rem;
+        --exhibition-column-gap: .95rem;
     }
-    .exhibition-entry__teaser { height: 3.65rem; }
+    .exhibition-entry__summary { padding-inline: .8rem; }
+    .exhibition-entry__body { padding-inline: .8rem; }
+    .exhibition-entry__teaser { height: 3.2rem; }
 }
 @container (max-width: 26.999rem) {
     .exhibition-entry {
-        --exhibition-media-track: 4rem;
+        --exhibition-media-track: 3.25rem;
         --exhibition-column-gap: .85rem;
     }
     .exhibition-entry__summary {
@@ -1787,8 +1817,9 @@ body {
     .exhibition-entry__teaser {
         grid-column: 1;
         grid-row: 1 / span 2;
-        height: 3.5rem;
+        height: 3rem;
     }
+    .exhibition-entry__folio { grid-row: 1 / span 2; }
     .exhibition-entry__schedule {
         grid-column: 2;
         grid-row: 1;

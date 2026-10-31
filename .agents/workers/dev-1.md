@@ -26,7 +26,7 @@
 
 ## Aktuelle Übernahme: Exhibition-Template-Prototyp (31.10.2026)
 - **Lease 3 ausdrücklich übernommen:** Neuer, leicht reversibler Versuch „Editorial Offset“ ausschließlich auf der öffentlichen Exhibitions-Seite. Konzeption: einheitliche Zeilen ohne leere Bildplatzhalter, kompakte Daten/Titel/Organizer, bewusste Katalog-Zählung, dezenter Ziegel-/Ockerton, warmes Papier **nur beim geöffneten Eintrag**, natürliche Cover-Textumflüsse, bestehender Video-Play und Viewer unverändert. **Kein Settings-Schema, kein Blog-Umbau**; später nach visueller Abnahme mögliche auswählbare Templates unter Exhibitions → Settings. Vorherige Versuche und separater Caption/Textfluss-Fix nicht zurücknehmen.
-- Dieses Layout als isolierten Git-Commit veröffentlichen, damit ein normaler Revert es zurücknehmen kann; noch keine Browserabnahme.
+- **Versuch vorbereitet:** Lokale Änderung ausschließlich in `resources/views/pages/exhibitions.blade.php` und im bestehenden Exhibitions-Block von `resources/css/public-presentation.css`: redaktionelle laufende Nummern (statt blinder Leerstelle ohne Cover), kompaktere Medien, durchgehende einzelne Trenner zwischen Einträgen, geöffnete Folios in warmer Papierfarbe mit schmalem Ziegelrot-Akzent, ruhigere Titel-/Datums-/Label-Hierarchie. Native Details, Video-Klick, Galerie, Viewer, natürlicher Bild-Textumlauf und Cover-Caption-Fix unverändert. Rücknahme durch Revert des isolierten Features-Commits möglich; kein Settings-System eingeführt. **Noch kein Browser-Screenshot oder ästhetische Abnahme.**
 
 ## Noch offen, nicht Teil des abgeschlossenen Cutovers
 - Browserabnahme von Galerie, Artwork-Detail, Original-Viewer und Storage-Uploads; bei Aktivierung der Medienrechte deren Warteschlangen- und Auslieferungsverhalten.
