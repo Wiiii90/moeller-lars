@@ -34,14 +34,17 @@
     text-transform: uppercase;
 }
 
-/* RichEditor also receives fi-input-wrp from Filament. The underline
- * contract belongs to plain input wrappers, never to that editor surface. */
+/* Sole owner of ordinary Filament input chrome. RichEditor also has the
+ * framework's fi-input-wrp class but owns a complete frame instead. */
 .admin-control-field .fi-input-wrp:not(.fi-fo-rich-editor) {
+    box-sizing: border-box;
+    width: 100%;
     min-height: var(--admin-control-height);
     border: 0 !important;
     border-bottom: 1px solid var(--admin-control-border) !important;
     border-radius: 0 !important;
     background: transparent !important;
+    color: var(--admin-text);
     box-shadow: none !important;
     --tw-ring-shadow: 0 0 #0000 !important;
 }
@@ -49,6 +52,7 @@
 .admin-control-field .fi-input-wrp:not(.fi-fo-rich-editor):focus-within,
 .admin-control-field .fi-input-wrp:not(.fi-fo-rich-editor):has(.fi-select-input-btn[aria-expanded="true"]) {
     border-bottom-color: var(--admin-control-border-focus) !important;
+    outline: 0;
 }
 
 .admin-control-field .fi-input,

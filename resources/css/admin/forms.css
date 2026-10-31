@@ -301,9 +301,9 @@
     box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / .12);
 }
 
-/* Ordinary inputs use an underline; the RichEditor is its own framed surface. */
-.admin-form-control,
-.admin-form-controls .fi-input-wrp:not(.fi-fo-rich-editor) {
+/* Native admin form controls. Filament's input wrapper chrome is owned by
+   controls.css; do not define it a second time in this stylesheet. */
+.admin-form-control {
     box-sizing: border-box;
     width: 100%;
     min-height: var(--admin-control-height);
@@ -314,17 +314,13 @@
     color: var(--admin-text);
     box-shadow: none !important;
     --tw-ring-shadow: 0 0 #0000 !important;
-}
-
-.admin-form-control {
     padding: .45rem var(--admin-control-text-inset, .25rem);
     font: inherit;
     font-size: .78rem;
     outline: none;
 }
 
-.admin-form-control:focus-visible,
-.admin-form-controls .fi-input-wrp:not(.fi-fo-rich-editor):focus-within {
+.admin-form-control:focus-visible {
     border-bottom-color: var(--admin-accent) !important;
     outline: 0;
 }
