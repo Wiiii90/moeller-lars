@@ -341,7 +341,10 @@ final class ResumableMediaUploadService
                         break 2;
                     }
                     $id = basename($path, '.'.$suffix);
-                    if (! Str::isUuid($id) || is_file($this->manifestPath($id))) {
+                    // An expired .json.tmp is disposable even when its
+                    // corresponding committed manifest remains in use.
+                    if (! Str::isUuid($id)
+                        || ($suffix !== 'json.tmp' && is_file($this->manifestPath($id)))) {
                         continue;
                     }
                     $modified = @filemtime($path);
