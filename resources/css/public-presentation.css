@@ -1454,10 +1454,9 @@ body {
     }
 }
 
-/* EXHIBITIONS — SOFT PAPER / visual-only trial.
-   The public content sheet owns the full-page wash (including its heading
-   and configured insets); the exhibition list owns only its inner layout.
-   Menu, typography, General width/padding and interaction remain intact. */
+/* EXHIBITIONS — EDITORIAL CATALOGUE.
+   The shared Public sheet owns its configurable background and padding;
+   the index supplies only the exhibition composition and native disclosure. */
 .exhibitions-page {
     width: 100%;
     min-width: 0;
@@ -1470,32 +1469,19 @@ body {
     /* Summary and expanded facts must share the exact same title axis.
        The float + right gap consume this offset, never exceed it. */
     --exhibition-title-offset: calc(var(--exhibition-media-track) + var(--exhibition-date-track) + 2 * var(--exhibition-column-gap));
-    --exhibition-mat: #fffdf9;
     color: var(--public-ink);
-}
-/* Scope the wash to the actual Public content sheet, including the page
-   heading and General's existing inner padding. Keep the configured base
-   surface behind transparent gradient edges, without touching Menu/other pages. */
-#content:not(.site-content--transparent):has(> .public-content-reveal > .exhibitions-page) {
-    background:
-        radial-gradient(ellipse 83% 34% at 47% 15%,
-            rgba(230, 216, 193, .55), transparent 100%),
-        radial-gradient(ellipse 77% 31% at 66% 52%,
-            rgba(235, 224, 207, .44), transparent 100%),
-        radial-gradient(ellipse 79% 36% at 32% 87%,
-            rgba(230, 215, 195, .40), transparent 100%),
-        var(--public-content-background);
 }
 .exhibition-entry {
     min-width: 0;
     margin: 0 0 .7rem;
 }
 .exhibition-entry:last-child { margin-bottom: 0; }
-/* Light pools extend behind compact rows without introducing cards,
-   filler thumbnails or persistent divider lines. */
-.exhibition-entry {
-    background: radial-gradient(ellipse 76% 89% at 52% 48%,
-        rgba(255, 252, 246, .34), transparent 100%);
+/* An unillustrated exhibition introduces a typographic pause after an
+   illustrated one; neither editorial importance nor manual order is inferred.
+   Consecutive image-led or text-only entries retain the ordinary rhythm. */
+.exhibition-entry:has(.exhibition-entry__teaser)
+    + .exhibition-entry:not(:has(.exhibition-entry__teaser)) {
+    margin-top: 1.35rem;
 }
 /* Only opened folios receive the restrained catalogue separators.
    No line outside the first/last entry. Two adjacent opened folios share
@@ -1509,12 +1495,6 @@ body {
 .exhibition-entry:has(> .exhibition-entry__disclosure[open])
     + .exhibition-entry > .exhibition-entry__disclosure[open] {
     border-top: 0;
-}
-/* Hover and keyboard focus lift the existing row's light without
-   introducing a new active state or an extra interaction. */
-.exhibition-entry:has(> .exhibition-entry__disclosure:not([open])):is(:hover, :focus-within) {
-    background: radial-gradient(ellipse 82% 90% at 51% 48%,
-        rgba(248, 242, 230, .76), transparent 100%);
 }
 .exhibition-entry__summary {
     display: grid;
@@ -1539,11 +1519,6 @@ body {
     width: 100%;
     min-width: 0;
     height: 3.7rem;
-    padding: .19rem;
-    background: var(--exhibition-mat);
-    box-shadow:
-        0 1px 3px rgba(77, 62, 44, .14),
-        0 7px 19px -7px rgba(77, 62, 44, .34);
     pointer-events: auto;
     cursor: pointer;
 }
@@ -1685,11 +1660,6 @@ body {
     width: min(100%, 14rem);
     min-width: 0;
     margin: 0 0 1rem;
-    padding: .38rem;
-    background: var(--exhibition-mat);
-    box-shadow:
-        0 2px 5px rgba(77, 62, 44, .10),
-        0 15px 30px -15px rgba(77, 62, 44, .29);
 }
 @container (min-width: 27rem) {
     .exhibition-entry__feature--with-cover .exhibition-entry__cover {
@@ -1802,8 +1772,6 @@ body {
     clear: both;
     margin: 1.7rem auto 0;
     padding-block: .3rem .65rem;
-    background: radial-gradient(ellipse 82% 94% at 50% 48%,
-        rgba(255, 253, 248, .34), transparent 100%);
 }
 .exhibitions-page .journal-entry-gallery img {
     max-height: 28rem;
