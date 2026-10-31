@@ -1454,10 +1454,10 @@ body {
     }
 }
 
-/* EXHIBITIONS — NIGHT GALLERY (reversible visual style trial).
-   This changes only the existing exhibition surface and media treatment.
-   All typography, route, menu, global frame, General widths/padding and
-   native details behaviour stay owned by their existing sources. */
+/* EXHIBITIONS — SOFT PAPER / visual-only trial.
+   All content, menu, typography, General width/padding and interaction
+   remain owned by their existing components. Gradients fade transparently
+   into the configured public background instead of drawing box edges. */
 .exhibitions-page {
     width: 100%;
     min-width: 0;
@@ -1469,38 +1469,46 @@ body {
     /* Summary and expanded facts must share the exact same title axis.
        The float + right gap consume this offset, never exceed it. */
     --exhibition-title-offset: calc(var(--exhibition-media-track) + var(--exhibition-date-track) + 2 * var(--exhibition-column-gap));
-    --exhibition-paper: #eee6d8;
-    --exhibition-night: #272c2a;
-    --exhibition-ivory: #f6f1e8;
-    --exhibition-muted: #cfc7bb;
-    color: var(--exhibition-ivory);
-    background: var(--exhibition-night);
+    --exhibition-paper: #f5f1e9;
+    --exhibition-wash: rgba(230, 216, 193, .55);
+    --exhibition-mat: #fffdf9;
+    color: var(--public-ink);
+    /* Broad, unequal light pools give the entire compact list a visual
+       atmosphere without separators, cards or a solid secondary background. */
+    background:
+        radial-gradient(ellipse 83% 34% at 47% 15%,
+            var(--exhibition-wash), transparent 100%),
+        radial-gradient(ellipse 77% 31% at 66% 52%,
+            rgba(235, 224, 207, .44), transparent 100%),
+        radial-gradient(ellipse 79% 36% at 32% 87%,
+            rgba(230, 215, 195, .40), transparent 100%);
 }
 .exhibition-entry {
     min-width: 0;
-    margin: 0 0 .55rem;
-    background: transparent;
+    margin: 0 0 .7rem;
 }
 .exhibition-entry:last-child { margin-bottom: 0; }
-/* One continuous gallery wall rather than individual grey cards.
-   Warm paper appears only where an exhibition is expanded. */
+/* Light pools extend behind compact rows without introducing edges,
+   filler thumbnails, counters or divider lines. */
+.exhibition-entry {
+    background: radial-gradient(ellipse 76% 89% at 52% 48%,
+        rgba(255, 252, 246, .34), transparent 100%);
+}
+/* A soft paper glow follows the opened article and dissolves at both ends.
+   The same typography, summary grid and native details stay untouched. */
 .exhibition-entry:has(> .exhibition-entry__disclosure[open]) {
-    background: var(--exhibition-paper);
-    color: #2a2926;
+    background:
+        radial-gradient(ellipse 91% 100% at 51% 48%,
+            rgba(246, 239, 228, .98) 0%,
+            rgba(246, 239, 228, .93) 53%,
+            rgba(243, 233, 217, .73) 76%,
+            transparent 100%);
 }
-.exhibition-entry:has(> .exhibition-entry__disclosure:not([open])):hover,
-.exhibition-entry:has(> .exhibition-entry__disclosure:not([open])):focus-within {
-    background: rgb(255 255 255 / 5%);
-}
-.exhibition-entry__disclosure[open] .exhibition-entry__title {
-    color: #292723;
-}
-.exhibition-entry__disclosure[open] .exhibition-entry__date,
-.exhibition-entry__disclosure[open] .exhibition-entry__timing {
-    color: #655f55;
-}
-.exhibition-entry__disclosure[open] .exhibition-entry__location {
-    color: #514b43;
+/* Hover and keyboard focus lift the existing row's light without
+   introducing a new active state or an extra interaction. */
+.exhibition-entry:has(> .exhibition-entry__disclosure:not([open])):is(:hover, :focus-within) {
+    background: radial-gradient(ellipse 82% 90% at 51% 48%,
+        rgba(248, 242, 230, .76), transparent 100%);
 }
 .exhibition-entry__summary {
     display: grid;
@@ -1525,8 +1533,11 @@ body {
     width: 100%;
     min-width: 0;
     height: 3.7rem;
-    background: #d9d1c5;
-    box-shadow: 0 3px 14px rgb(0 0 0 / 24%);
+    padding: .19rem;
+    background: var(--exhibition-mat);
+    box-shadow:
+        0 1px 3px rgba(77, 62, 44, .14),
+        0 7px 19px -7px rgba(77, 62, 44, .34);
     pointer-events: auto;
     cursor: pointer;
 }
@@ -1591,7 +1602,7 @@ body {
     gap: .35rem;
 }
 .exhibition-entry__date {
-    color: var(--exhibition-muted);
+    color: #746d65;
     font-family: var(--public-index-typeface);
     font-size: var(--journal-date-font-size);
     font-variant-numeric: tabular-nums;
@@ -1599,7 +1610,7 @@ body {
     overflow-wrap: break-word;
 }
 .exhibition-entry__timing {
-    color: #e1d1ac;
+    color: #6e675f;
     font-size: .64rem;
     font-weight: 500;
     letter-spacing: .075em;
@@ -1615,7 +1626,7 @@ body {
     width: fit-content;
     max-width: 100%;
     margin: -.1rem 0 0;
-    color: var(--exhibition-ivory);
+    color: #302b27;
     font-family: var(--public-index-typeface);
     font-size: var(--journal-exhibition-title-font-size);
     font-weight: 500;
@@ -1630,18 +1641,10 @@ body {
 }
 .exhibition-entry__disclosure .exhibition-entry__title:hover,
 .exhibition-entry__disclosure > .exhibition-entry__summary:focus-visible .exhibition-entry__title {
-    color: #fff;
+    color: #19130e;
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: .18em;
-}
-/* A light expanded article must retain dark, readable text on hover. */
-.exhibition-entry__disclosure[open] .exhibition-entry__title:hover,
-.exhibition-entry__disclosure[open] > .exhibition-entry__summary:focus-visible .exhibition-entry__title {
-    color: #171b19;
-}
-.exhibition-entry__disclosure:not([open]) > .exhibition-entry__summary:focus-visible {
-    outline-color: #f6f1e8;
 }
 .exhibition-entry__byline {
     display: block;
@@ -1651,7 +1654,7 @@ body {
 .exhibition-entry__location {
     display: block;
     min-width: 0;
-    color: #d9d0c5;
+    color: #5f574f;
     font-size: .79rem;
     line-height: 1.5;
     overflow-wrap: break-word;
@@ -1676,6 +1679,11 @@ body {
     width: min(100%, 14rem);
     min-width: 0;
     margin: 0 0 1rem;
+    padding: .38rem;
+    background: var(--exhibition-mat);
+    box-shadow:
+        0 2px 5px rgba(77, 62, 44, .10),
+        0 15px 30px -15px rgba(77, 62, 44, .29);
 }
 @container (min-width: 27rem) {
     .exhibition-entry__feature--with-cover .exhibition-entry__cover {
@@ -1787,6 +1795,9 @@ body {
 .exhibitions-page .journal-entry-gallery {
     clear: both;
     margin: 1.7rem auto 0;
+    padding-block: .3rem .65rem;
+    background: radial-gradient(ellipse 82% 94% at 50% 48%,
+        rgba(255, 253, 248, .34), transparent 100%);
 }
 .exhibitions-page .journal-entry-gallery img {
     max-height: 28rem;
