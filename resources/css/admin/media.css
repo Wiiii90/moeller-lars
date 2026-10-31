@@ -899,21 +899,32 @@
     font-size: .65rem;
 }
 
-/* Keep the searchable Storage popup's visual thumbnail grid, while its
-   selected value follows the ordinary one-line Select field grammar. */
+/* Selected Media Files remain ordinary underline Selects, but keep a small
+ * preview alongside a single-line filename. The popup above retains its
+ * existing visual Storage thumbnail grid without a second picker control. */
 .admin-media-picker--visual .fi-select-input-value-label .admin-media-choice {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
     min-width: 0;
     width: 100%;
 }
 
-.admin-media-picker--visual .fi-select-input-value-label .admin-media-choice__preview,
+.admin-media-picker--visual .fi-select-input-value-label .admin-media-choice__preview {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex: none;
+    aspect-ratio: 1;
+}
+
+.admin-media-picker--visual .fi-select-input-value-label .admin-media-choice__preview:has(.admin-media-choice__unavailable),
 .admin-media-picker--visual .fi-select-input-value-label .admin-media-choice__meta small {
     display: none;
 }
 
 .admin-media-picker--visual .fi-select-input-value-label .admin-media-choice__meta {
     display: block;
+    flex: 1 1 auto;
     min-width: 0;
     padding: 0;
 }

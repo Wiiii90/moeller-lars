@@ -469,8 +469,7 @@
    label wrapper and focus treatment as ordinary Admin controls. Tiptap retains
    its own toolbar, text selection, undo/redo and popup lifecycle. */
 .admin-rich-text--visual .fi-fo-rich-editor {
-    border: 0;
-    border-bottom: 1px solid var(--admin-control-border, var(--admin-line));
+    border: 1px solid var(--admin-control-border, var(--admin-line));
     border-radius: 0;
     background: transparent;
     color: var(--admin-text);
@@ -478,7 +477,7 @@
 }
 
 .admin-rich-text--visual .fi-fo-rich-editor:focus-within {
-    border-bottom-color: var(--admin-control-border-focus, var(--admin-accent));
+    border-color: var(--admin-control-border-focus, var(--admin-accent));
 }
 
 .admin-rich-text--visual .fi-fo-rich-editor-toolbar {

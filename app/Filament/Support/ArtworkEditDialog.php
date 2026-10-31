@@ -132,7 +132,7 @@ final class ArtworkEditDialog
                         ->selectablePlaceholder(! $primaryReadOnly)
                         ->extraFieldWrapperAttributes($primaryReadOnly ? [
                             'title' => 'Unpublish this Artwork before changing or removing its primary Media File.',
-                        ] : [])
+                        ] : [], merge: true)
                         ->live()
                         ->afterStateUpdated(static function (mixed $state, callable $set) use ($onPrimaryMediaChanged): void {
                             // Gallery Edit persists this discrete Media File choice at
@@ -161,7 +161,7 @@ final class ArtworkEditDialog
                         })
                         ->extraFieldWrapperAttributes($primaryReadOnly ? [
                             'title' => 'Unpublish this Artwork before uploading a different primary file.',
-                        ] : [])
+                        ] : [], merge: true)
                         ->columnSpanFull()] : []),
                     TextInput::make('primary_alt_text')
                         ->label('Primary media ALT text')

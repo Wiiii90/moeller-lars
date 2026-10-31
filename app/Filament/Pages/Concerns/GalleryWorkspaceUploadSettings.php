@@ -60,7 +60,7 @@ trait GalleryWorkspaceUploadSettings
                             ->required()
                             ->maxLength(80)
                             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
-                        Textarea::make('description')->rows(5)->maxLength(10000)->nullable()->columnSpanFull(),
+                        Textarea::make('description')->label('Search description')->rows(5)->maxLength(10000)->nullable()->columnSpanFull(),
                         Toggle::make('show_on_home')->label('Eligible for homepage presentation')->columnSpanFull(),
                         Select::make('sort_mode')
                             ->label('Artwork order')

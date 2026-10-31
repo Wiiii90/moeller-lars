@@ -59,10 +59,21 @@
     font-size: var(--admin-control-value-size) !important;
 }
 
+/* The select trigger retains space for its own caret. A selected, clearable
+ * value instead shows the X in that terminal control slot, not an X floating
+ * inward to leave room for a redundant caret. These rules apply to all native
+ * Filament searchable Selects through the existing AdminControl wrapper. */
 .admin-control-field .fi-select-input-btn {
-    /* Filament text inputs use the normal field inset; searchable Selects
-     * must not start at the edge when adjacent text fields are indented. */
-    padding-inline: .75rem !important;
+    padding-inline-start: var(--admin-control-text-inset) !important;
+    padding-inline-end: 2rem !important;
+}
+
+.admin-control-field .fi-select-input-ctn:has(.fi-select-input-value-remove-btn) .fi-select-input-btn {
+    background-image: none;
+}
+
+.admin-control-field .fi-select-input-value-remove-btn {
+    inset-inline-end: var(--admin-control-text-inset);
 }
 
 .admin-control-field .fi-select-input-placeholder {
