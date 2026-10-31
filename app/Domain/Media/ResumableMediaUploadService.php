@@ -228,8 +228,9 @@ final class ResumableMediaUploadService
 
     private function locked(string $id, callable $action): mixed
     {
-        if (! Str::isUuid($id)) {
-            throw $this->invalid('Invalid upload identifier.');
+        if (! Str::isUuid($id) || ! is_file($this->manifestPath($id))) {
+            // Never create per-upload lock files for guessed/expired IDs.
+            throw $this->invalid('Upload session not found or expired.');
         }
         return $this->withLock($this->directory().'/'.$id.'.lock', $action);
     }
