@@ -1454,9 +1454,10 @@ body {
     }
 }
 
-/* EXHIBITIONS — AN EDITORIAL CATALOGUE
-   An exhibition name is the only pointer toggle; the date and venue remain
-   informational. Native details provide keyboard and disclosure semantics. */
+/* EXHIBITIONS — NIGHT GALLERY (reversible visual style trial).
+   This changes only the existing exhibition surface and media treatment.
+   All typography, route, menu, global frame, General widths/padding and
+   native details behaviour stay owned by their existing sources. */
 .exhibitions-page {
     width: 100%;
     min-width: 0;
@@ -1468,18 +1469,38 @@ body {
     /* Summary and expanded facts must share the exact same title axis.
        The float + right gap consume this offset, never exceed it. */
     --exhibition-title-offset: calc(var(--exhibition-media-track) + var(--exhibition-date-track) + 2 * var(--exhibition-column-gap));
-    --exhibition-paper: #f5f1e9;
-    color: var(--public-ink);
+    --exhibition-paper: #eee6d8;
+    --exhibition-night: #272c2a;
+    --exhibition-ivory: #f6f1e8;
+    --exhibition-muted: #cfc7bb;
+    color: var(--exhibition-ivory);
+    background: var(--exhibition-night);
 }
 .exhibition-entry {
     min-width: 0;
-    margin: 0 0 .7rem;
+    margin: 0 0 .55rem;
+    background: transparent;
 }
 .exhibition-entry:last-child { margin-bottom: 0; }
-/* No separators, numbering, ornament or empty-image stand-ins.
-   Only the expanded article uses a warm paper surface. */
+/* One continuous gallery wall rather than individual grey cards.
+   Warm paper appears only where an exhibition is expanded. */
 .exhibition-entry:has(> .exhibition-entry__disclosure[open]) {
     background: var(--exhibition-paper);
+    color: #2a2926;
+}
+.exhibition-entry:has(> .exhibition-entry__disclosure:not([open])):hover,
+.exhibition-entry:has(> .exhibition-entry__disclosure:not([open])):focus-within {
+    background: rgb(255 255 255 / 5%);
+}
+.exhibition-entry__disclosure[open] .exhibition-entry__title {
+    color: #292723;
+}
+.exhibition-entry__disclosure[open] .exhibition-entry__date,
+.exhibition-entry__disclosure[open] .exhibition-entry__timing {
+    color: #655f55;
+}
+.exhibition-entry__disclosure[open] .exhibition-entry__location {
+    color: #514b43;
 }
 .exhibition-entry__summary {
     display: grid;
@@ -1504,7 +1525,8 @@ body {
     width: 100%;
     min-width: 0;
     height: 3.7rem;
-    background: #ebe6dd;
+    background: #d9d1c5;
+    box-shadow: 0 3px 14px rgb(0 0 0 / 24%);
     pointer-events: auto;
     cursor: pointer;
 }
@@ -1569,7 +1591,7 @@ body {
     gap: .35rem;
 }
 .exhibition-entry__date {
-    color: #746d65;
+    color: var(--exhibition-muted);
     font-family: var(--public-index-typeface);
     font-size: var(--journal-date-font-size);
     font-variant-numeric: tabular-nums;
@@ -1577,7 +1599,7 @@ body {
     overflow-wrap: break-word;
 }
 .exhibition-entry__timing {
-    color: #6e675f;
+    color: #e1d1ac;
     font-size: .64rem;
     font-weight: 500;
     letter-spacing: .075em;
@@ -1593,7 +1615,7 @@ body {
     width: fit-content;
     max-width: 100%;
     margin: -.1rem 0 0;
-    color: #302b27;
+    color: var(--exhibition-ivory);
     font-family: var(--public-index-typeface);
     font-size: var(--journal-exhibition-title-font-size);
     font-weight: 500;
@@ -1608,10 +1630,18 @@ body {
 }
 .exhibition-entry__disclosure .exhibition-entry__title:hover,
 .exhibition-entry__disclosure > .exhibition-entry__summary:focus-visible .exhibition-entry__title {
-    color: #19130e;
+    color: #fff;
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: .18em;
+}
+/* A light expanded article must retain dark, readable text on hover. */
+.exhibition-entry__disclosure[open] .exhibition-entry__title:hover,
+.exhibition-entry__disclosure[open] > .exhibition-entry__summary:focus-visible .exhibition-entry__title {
+    color: #171b19;
+}
+.exhibition-entry__disclosure:not([open]) > .exhibition-entry__summary:focus-visible {
+    outline-color: #f6f1e8;
 }
 .exhibition-entry__byline {
     display: block;
@@ -1621,7 +1651,7 @@ body {
 .exhibition-entry__location {
     display: block;
     min-width: 0;
-    color: #5f574f;
+    color: #d9d0c5;
     font-size: .79rem;
     line-height: 1.5;
     overflow-wrap: break-word;
