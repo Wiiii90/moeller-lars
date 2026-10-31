@@ -42,6 +42,9 @@
                         @endforeach
                         @if ($hasActions)
                             <td class="admin-table__actions">
+                                @if ($isMediaTable)
+                                    <div class="admin-row-actions--stable admin-row-actions--move-delete">
+                                @endif
                                 @if ($canReorder)
                                     <x-admin.row-action
                                         :action="\App\Filament\Support\AdminRowAction::MoveUp"
@@ -60,6 +63,9 @@
                                     wire:click="{{ $deleteAction(['item' => $itemKey])->getLivewireClickHandler() }}"
                                     :aria-label="$isMediaTable ? __('Delete').' '.__('Gallery media').' '.$loop->iteration : 'Delete color '.$loop->iteration"
                                 />
+                                @if ($isMediaTable)
+                                    </div>
+                                @endif
                             </td>
                         @endif
                     </tr>

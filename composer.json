@@ -71,6 +71,7 @@
             "@php scripts/patch-livewire-csp-history.php",
             "@php artisan package:discover --ansi",
             "@php scripts/patch-filament-scroll-lock.php",
+            "@php scripts/patch-filament-modal-close.php",
             "@php artisan filament:upgrade"
         ],
         "post-update-cmd": [

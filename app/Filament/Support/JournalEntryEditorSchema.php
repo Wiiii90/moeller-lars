@@ -180,7 +180,11 @@ final class JournalEntryEditorSchema
     {
         return [
             Toggle::make('map_enabled')
-                ->label(__('Map enabled'))
+                ->label(new HtmlString(
+                    '<span class="admin-form-label-with-help">'.e(__('Map enabled'))
+                    .AdminHelp::make(__('Map location help'), __('Requires Country and either City or Postal code.'))->toHtml()
+                    .'</span>',
+                ))
                 // The central Edit change event is the only persistence request.
                 // A second eager Livewire request can race with the first
                 // enable immediately after a newly entered country is saved.
@@ -192,7 +196,6 @@ final class JournalEntryEditorSchema
                         'city' => $get('city'),
                         'country' => $get('country'),
                     ]))
-                ->hint(AdminHelp::make(__('Map location help'), __('Requires Country and either City or Postal code.')))
                 ->columnSpanFull(),
             Hidden::make('latitude')->dehydrated(false),
             Hidden::make('longitude')->dehydrated(false),
@@ -263,14 +266,26 @@ final class JournalEntryEditorSchema
         return AdminTableRepeater::make('gallery_images')
             ->label(__('Gallery media'))
             ->hiddenLabel()
-            ->table([TableColumn::make(__('Image or video')), TableColumn::make(__('Playback controls'))])
+            ->table([TableColumn::make(__('Image or video')), TableColumn::make(__('Controls'))])
             ->compact()
             ->schema([
                 MediaAssetSelect::makeId(
                     'media_asset_id',
                     __('Image or video'),
                     allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
-                )->hiddenLabel()->required(),
+                )
+                    ->hiddenLabel()
+                    ->required()
+                    ->live()
+                    ->extraAlpineAttributes(['data-admin-edit-change-owner' => 'livewire'], merge: true)
+                    ->skipRenderAfterStateUpdated()
+                    ->afterStateUpdated(static function (mixed $state, Component $livewire): void {
+                        if (filled($state)
+                            && $livewire instanceof \App\Filament\Pages\JournalWorkspace
+                            && $livewire->getMountedAction()?->getName() === 'editExhibition') {
+                            $livewire->callMountedAction();
+                        }
+                    }),
                 self::videoControlsToggle('video_controls_enabled')->hiddenLabel(),
             ])
             ->addActionLabel(__('Add media'))

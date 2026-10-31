@@ -63,6 +63,7 @@ export function applyPublicLayoutFromMeta() {
     // divider class. Reconcile it with the destination's server-owned mode.
     const dividerModes = ['fine', 'menu', 'full', 'separate', 'full_gap'];
     const header = document.querySelector('.site-header');
+    header?.classList.toggle('site-header--artwork-wide-menu', config.dataset.publicLayoutArtworkWideMenu === '1');
     const dividerMode = config.dataset.publicLayoutDividerMode;
     if (header && dividerModes.includes(dividerMode)) {
         for (const candidate of dividerModes) {

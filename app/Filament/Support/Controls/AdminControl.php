@@ -136,7 +136,7 @@ final class AdminControl
     {
         $field->extraAlpineAttributes([
             'x-init' => <<<'JS'
-                if (typeof state !== 'undefined') {
+                if (typeof state !== 'undefined' && $el.dataset.adminEditChangeOwner !== 'livewire') {
                     $watch('state', (value, previous) => {
                         if (value === previous || ! $el.closest('.admin-dialog--edit')) return
                         $nextTick(() => $el.dispatchEvent(new Event('change', { bubbles: true })))

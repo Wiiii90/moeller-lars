@@ -43,13 +43,38 @@ final class MediaThumbnailCutoverService
     }
 
     /**
+     * Validation may run this only inside the platform's explicit, offline
+     * maintenance container, never through the ordinary production runtime.
+     * Database, application identity and an ephemeral command-scoped flag must
+     * all agree; changing APP_ENV to "local" is not a supported escape hatch.
+     */
+    public function authorized(bool $validationOffline = false): bool
+    {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return false;
+        }
+
+        if (app()->environment(['local', 'testing'])) {
+            return ! $validationOffline;
+        }
+
+        return $validationOffline
+            && app()->environment('production')
+            && config('media.validation_offline_cutover') === true
+            && config('app.url') === 'https://validation.moeller-lars.de'
+            && DB::connection()->getDatabaseName() === 'moeller_lars_validation';
+    }
+
+    /**
      * @return array{converted:int,rebased:int,invalidated_rights:int,reclaimed:int}
      */
-    public function apply(bool $rebaselineCheckpoints = false, bool $invalidateThumbnailRights = false): array
-    {
-        if (! app()->environment(['local', 'testing'])
-            || DB::connection()->getDriverName() !== 'pgsql') {
-            throw new RuntimeException('Thumbnail cutover requires a local pre-release PostgreSQL database.');
+    public function apply(
+        bool $rebaselineCheckpoints = false,
+        bool $invalidateThumbnailRights = false,
+        bool $validationOffline = false,
+    ): array {
+        if (! $this->authorized($validationOffline)) {
+            throw new RuntimeException('Thumbnail cutover requires local/testing or explicit offline Validation maintenance.');
         }
 
         $lock = Cache::lock('media-ingest', 1800);
@@ -138,7 +163,7 @@ final class MediaThumbnailCutoverService
 
                 // All DB representations are updated together. Failure leaves
                 // the old originals and old variant registry intact.
-                $result = DB::transaction(function () use ($prepared, $checkpoints): array {
+                $result = DB::transaction(function () use ($prepared, $checkpoints, $validationOffline): array {
                     DB::statement(
                         'LOCK TABLE public.media_variants, committed.media_variants, publication_version_rows, '
                         .'publication_checkpoints IN SHARE ROW EXCLUSIVE MODE',
@@ -156,10 +181,16 @@ final class MediaThumbnailCutoverService
                             ->update($columns);
 
                         DB::update(
-                            "UPDATE publication_version_rows SET payload = payload || ?::jsonb
-                             WHERE table_name = 'media_variants'
-                               AND row_key = ?
-                               AND payload->>'transform_profile' = ?",
+                            "UPDATE publication_version_row_manifests AS manifest
+                             SET payload_id = resolve_history_payload(stored.payload || ?::jsonb)
+                             FROM history_payloads AS stored,
+                                  publication_checkpoints AS checkpoint
+                             WHERE manifest.payload_id = stored.id
+                               AND checkpoint.id = manifest.publication_checkpoint_id
+                               AND checkpoint.snapshot_available = true
+                               AND manifest.table_name = 'media_variants'
+                               AND manifest.row_key = ?
+                               AND stored.payload->>'transform_profile' = ?",
                             [
                                 json_encode($columns, JSON_THROW_ON_ERROR),
                                 (string) $id,
@@ -177,6 +208,7 @@ final class MediaThumbnailCutoverService
                     }
 
                     if ($checkpoints > 0) {
+                        app(PublicationVersionService::class)->reconcilePreReleaseSnapshotDefaults($validationOffline);
                         $this->rebaselineCheckpoints();
                     }
 

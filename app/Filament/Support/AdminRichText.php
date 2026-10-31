@@ -167,15 +167,22 @@ final class AdminRichText
                             linkIsExisting: false,
                             linkNewTab: false,
                             linkInvalid: false,
+                            linkAppliedUrl: null,
+                            linkAppliedNewTab: false,
                             linkLeft: 0,
                             linkTop: 0,
-                            getRichEditor() {
-                                const surface = this.$el.querySelector('.fi-fo-rich-editor')
-                                return surface ? window.Alpine?.$data(surface)?.getEditor?.() : null
+                            // Filament wraps each View field in its own Alpine scope.
+                            // Child x-refs are not members of this editor shell's $refs.
+                            richShell() {
+                                return this.$el.closest('.admin-rich-text-editor-shell')
+                            },
+                            richElement(ref) {
+                                return this.richShell()?.querySelector(`[x-ref='${ref}']`)
                             },
                             openLinkEditor(event) {
-                                const editor = this.getRichEditor()
+                                const editor = event.detail?.editor
                                 if (!editor || editor.isDestroyed) return
+                                this.richShell().__artistRichEditor = editor
                                 if (this.linkOpen) {
                                     this.linkOpen = false
                                     return
@@ -188,6 +195,8 @@ final class AdminRichText
                                 this.linkIsExisting = editor.isActive('link') && Boolean(attrs?.href)
                                 this.linkUrl = this.linkIsExisting ? (attrs.href ?? '') : ''
                                 this.linkNewTab = this.linkIsExisting && attrs.target === '_blank'
+                                this.linkAppliedUrl = this.linkIsExisting ? this.normalizedLinkUrl() : null
+                                this.linkAppliedNewTab = this.linkNewTab
                                 this.linkText = selection.from !== selection.to
                                     ? editor.state.doc.textBetween(selection.from, selection.to, ' ')
                                     : ''
@@ -195,9 +204,9 @@ final class AdminRichText
 
                                 this.linkOpen = true
                                 this.$nextTick(() => {
-                                    const panel = this.$refs.richLinkPanel
+                                    const panel = this.richElement('richLinkPanel')
                                     if (panel) this.positionInlinePanel(panel, event.detail?.anchor, 'link')
-                                    this.$refs.richLinkUrl?.focus()
+                                    this.richElement('richLinkUrl')?.focus()
                                 })
                             },
                             normalizedLinkUrl() {
@@ -227,15 +236,26 @@ final class AdminRichText
                                     return null
                                 }
                             },
+                            applyLinkOnExit(event) {
+                                // Let the URL and optional label be completed together.
+                                // Leaving the popover commits once, not on each keystroke.
+                                if (this.richElement('richLinkPanel')?.contains(event.relatedTarget)) return
+                                this.applyLink()
+                            },
                             applyLink() {
-                                const editor = this.getRichEditor()
-                                if (!editor || editor.isDestroyed || !this.linkSelection) return
+                                const editor = this.richShell().__artistRichEditor
+                                if (!editor || editor.isDestroyed || !this.linkSelection) return false
 
+                                // Incomplete addresses stay in the input until a valid
+                                // Enter, blur or new-tab change. No partial URL is saved.
+                                if (!this.linkUrl.trim()) return false
                                 const url = this.normalizedLinkUrl()
                                 if (!url) {
                                     this.linkInvalid = true
-                                    return
+                                    return false
                                 }
+                                if (this.linkIsExisting && url === this.linkAppliedUrl
+                                    && this.linkNewTab === this.linkAppliedNewTab) return false
 
                                 const { from, to } = this.linkSelection
                                 let chain = editor.chain().focus().setTextSelection({ from, to })
@@ -256,10 +276,20 @@ final class AdminRichText
                                     result = chain.setLink(attrs).run()
                                 }
 
-                                if (result) this.finishLinkEdit()
+                                if (!result) return false
+                                if (from === to && !this.linkIsExisting) {
+                                    const label = this.linkText.trim() || url
+                                    this.linkSelection = { from, to: from + label.length }
+                                }
+                                this.linkIsExisting = true
+                                this.linkAppliedUrl = url
+                                this.linkAppliedNewTab = this.linkNewTab
+                                this.linkInvalid = false
+                                this.commitEditorChange()
+                                return true
                             },
                             removeLink() {
-                                const editor = this.getRichEditor()
+                                const editor = this.richShell().__artistRichEditor
                                 if (!editor || editor.isDestroyed || !this.linkSelection) return
                                 const result = editor.chain().focus()
                                     .setTextSelection(this.linkSelection)
@@ -278,9 +308,10 @@ final class AdminRichText
                             captionLeft: 0,
                             captionTop: 0,
                             openCaptionEditor(event) {
-                                const editor = this.getRichEditor()
-                                const image = window.ArtistRichImage?.selected(editor)
+                                const editor = event.detail?.editor
+                                const image = editor?.storage?.artistImageLayout?.selected(editor)
                                 if (!image) return
+                                this.richShell().__artistRichEditor = editor
                                 if (this.captionOpen) {
                                     this.captionOpen = false
                                     return
@@ -291,29 +322,31 @@ final class AdminRichText
                                 this.linkOpen = false
                                 this.captionOpen = true
                                 this.$nextTick(() => {
-                                    const panel = this.$refs.richCaptionPanel
+                                    const panel = this.richElement('richCaptionPanel')
                                     if (!panel || !event.detail?.anchor) return
                                     this.positionInlinePanel(panel, event.detail?.anchor, 'caption')
-                                    this.$refs.richCaptionInput?.focus()
+                                    this.richElement('richCaptionInput')?.focus()
                                 })
                             },
                             applyCaption() {
-                                const editor = this.getRichEditor()
-                                if (!window.ArtistRichImage?.setCaption(editor, this.captionText)) return
+                                const editor = this.richShell().__artistRichEditor
+                                if (!editor?.storage?.artistImageLayout?.setCaption(editor, this.captionText)) return
                                 this.captionOpen = false
                                 this.commitEditorChange()
                             },
                             commitEditorChange() {
-                                if (!this.$el.closest('.admin-dialog--edit')) return
+                                const shell = this.richShell()
+                                if (!shell?.closest('.admin-dialog--edit')) return
                                 this.$nextTick(() => {
-                                    if (this.$el.isConnected) {
-                                        this.$el.dispatchEvent(new Event('change', { bubbles: true }))
+                                    if (shell.isConnected) {
+                                        shell.dispatchEvent(new Event('change', { bubbles: true }))
                                     }
                                 })
                             },
                             colorOpen: false,
                             colorSelection: null,
                             colorValue: '#333333',
+                            colorAppliedValue: null,
                             colorLeft: 0,
                             colorTop: 0,
                             spacingOpen: false,
@@ -323,13 +356,19 @@ final class AdminRichText
                             spacingLeft: 0,
                             spacingTop: 0,
                             positionInlinePanel(panel, anchor, prefix) {
-                                const bounds = this.$el.closest('.fi-modal-content')?.getBoundingClientRect()
-                                    ?? this.$el.getBoundingClientRect()
-                                const shell = this.$el.getBoundingClientRect()
-                                const box = anchor?.getBoundingClientRect() ?? shell
-                                const left = Math.max(bounds.left + 8,
-                                    Math.min(box.left, bounds.right - panel.offsetWidth - 8))
-                                const below = box.bottom + 4
+                                const owner = this.richShell()
+                                const bounds = owner.closest('.fi-modal-content')?.getBoundingClientRect()
+                                    ?? owner.getBoundingClientRect()
+                                const shell = owner.getBoundingClientRect()
+                                const origin = prefix === 'caption'
+                                    ? anchor?.closest('.fi-fo-rich-editor-floating-toolbar') ?? anchor
+                                    : anchor
+                                const box = origin?.getBoundingClientRect() ?? shell
+                                const minLeft = Math.max(bounds.left, shell.left) + 8
+                                const maxRight = Math.min(bounds.right, shell.right) - 8
+                                const left = Math.max(minLeft,
+                                    Math.min(box.left, maxRight - panel.offsetWidth))
+                                const below = box.bottom + 6
                                 const top = below + panel.offsetHeight <= bounds.bottom - 8
                                     ? below
                                     : Math.max(bounds.top + 8, box.top - panel.offsetHeight - 4)
@@ -337,40 +376,47 @@ final class AdminRichText
                                 this[prefix + 'Top'] = top - shell.top
                             },
                             openColorEditor(event) {
-                                const editor = this.getRichEditor()
+                                const editor = event.detail?.editor
                                 if (!editor || editor.isDestroyed) return
+                                this.richShell().__artistRichEditor = editor
                                 if (this.colorOpen) { this.colorOpen = false; return }
                                 const selection = editor.state.selection
                                 const current = editor.getAttributes('textColor')['data-color']
                                 this.colorSelection = { from: selection.from, to: selection.to }
                                 this.colorValue = /^#[0-9a-f]{6}$/i.test(current ?? '') ? current : '#333333'
+                                this.colorAppliedValue = /^#[0-9a-f]{6}$/i.test(current ?? '') ? current.toLowerCase() : null
                                 this.colorOpen = true
                                 this.spacingOpen = false
                                 this.linkOpen = false
                                 this.captionOpen = false
                                 this.closeImagePicker()
                                 this.$nextTick(() => {
-                                    const panel = this.$refs.richColorPanel
+                                    const panel = this.richElement('richColorPanel')
                                     if (panel) this.positionInlinePanel(panel, event.detail?.anchor, 'color')
                                 })
                             },
                             applyTextColor(clear = false) {
-                                const editor = this.getRichEditor()
+                                const editor = this.richShell().__artistRichEditor
                                 if (!editor || editor.isDestroyed || !this.colorSelection) return
+                                const value = this.colorValue.trim().toLowerCase()
+                                if (!clear && !/^#[0-9a-f]{6}$/.test(value)) return
+                                if ((clear && this.colorAppliedValue === null)
+                                    || (!clear && this.colorAppliedValue === value)) return
                                 let chain = editor.chain().focus().setTextSelection(this.colorSelection)
                                 if (this.colorSelection.from === this.colorSelection.to) {
                                     chain = chain.extendMarkRange('textColor')
                                 }
                                 const changed = clear ? chain.unsetTextColor().run()
-                                    : chain.setTextColor({ color: this.colorValue }).run()
+                                    : chain.setTextColor({ color: value }).run()
                                 if (changed) {
-                                    this.colorOpen = false
+                                    this.colorAppliedValue = clear ? null : value
                                     this.commitEditorChange()
                                 }
                             },
                             openSpacingEditor(event) {
-                                const editor = this.getRichEditor()
+                                const editor = event.detail?.editor
                                 if (!editor || editor.isDestroyed) return
+                                this.richShell().__artistRichEditor = editor
                                 if (this.spacingOpen) { this.spacingOpen = false; return }
                                 this.spacingNodeType = editor.isActive('heading') ? 'heading' : 'paragraph'
                                 this.spacingSelection = {
@@ -384,12 +430,12 @@ final class AdminRichText
                                 this.captionOpen = false
                                 this.closeImagePicker()
                                 this.$nextTick(() => {
-                                    const panel = this.$refs.richSpacingPanel
+                                    const panel = this.richElement('richSpacingPanel')
                                     if (panel) this.positionInlinePanel(panel, event.detail?.anchor, 'spacing')
                                 })
                             },
                             applySpacing() {
-                                const editor = this.getRichEditor()
+                                const editor = this.richShell().__artistRichEditor
                                 if (!editor || editor.isDestroyed || !this.spacingSelection) return
                                 const { from, to } = this.spacingSelection
                                 const changed = editor.chain().focus()
@@ -403,9 +449,24 @@ final class AdminRichText
                                     this.commitEditorChange()
                                 }
                             },
+                            onRichEditorFocusOut() {
+                                const shell = this.richShell()
+                                if (!shell?.closest('.admin-dialog--edit')) return
+                                this.$nextTick(() => {
+                                    if (!shell.isConnected || shell.contains(document.activeElement)) return
+                                    shell.dispatchEvent(new Event('change', { bubbles: true }))
+                                })
+                            },
+                            closeRichTextPanels() {
+                                this.closeImagePicker()
+                                this.linkOpen = false
+                                this.captionOpen = false
+                                this.colorOpen = false
+                                this.spacingOpen = false
+                            },
                             imagePickerOpen: false,
                             closeImagePicker() {
-                                const input = this.$refs.richImagePicker?.querySelector('.fi-select-input')
+                                const input = this.richElement('richImagePicker')?.querySelector('.fi-select-input')
                                 const select = input ? window.Alpine?.$data(input)?.select : null
                                 if (select?.isOpen) select.closeDropdown()
                                 this.imagePickerOpen = false
@@ -425,10 +486,11 @@ final class AdminRichText
                                 this.linkOpen = false
                                 this.captionOpen = false
                                 this.$nextTick(() => {
-                                    const picker = this.$refs.richImagePicker
+                                    const picker = this.richElement('richImagePicker')
                                     if (!picker) return
-                                    const shell = this.$el.getBoundingClientRect()
-                                    const bounds = this.$el.closest('.fi-modal-content')?.getBoundingClientRect() ?? shell
+                                    const owner = this.richShell()
+                                    const shell = owner.getBoundingClientRect()
+                                    const bounds = owner.closest('.fi-modal-content')?.getBoundingClientRect() ?? shell
                                     const anchor = trigger.getBoundingClientRect()
                                     const minLeft = Math.max(shell.left, bounds.left) + 8
                                     const maxRight = Math.min(shell.right, bounds.right) - 8
@@ -446,14 +508,7 @@ final class AdminRichText
                     // A focus change inside the editor/picker never commits.
                     // The focus check runs after Alpine's state update without
                     // a timer, but only when the editor genuinely loses focus.
-                    'x-on:focusout' => <<<'JS'
-                        if (!$el.closest('.admin-dialog--edit')) return;
-                        const shell = $el;
-                        $nextTick(() => {
-                            if (!shell.isConnected || shell.contains(document.activeElement)) return;
-                            shell.dispatchEvent(new Event('change', { bubbles: true }));
-                        });
-                        JS,
+                    'x-on:focusout' => 'onRichEditorFocusOut()',
                     'x-on:artist-rich-link-toggle' => 'openLinkEditor($event)',
                     'x-on:artist-rich-color-toggle' => 'openColorEditor($event)',
                     'x-on:artist-rich-spacing-toggle' => 'openSpacingEditor($event)',
@@ -462,7 +517,7 @@ final class AdminRichText
                     'x-on:artist-rich-caption-toggle' => 'openCaptionEditor($event)',
                     'x-on:artist-rich-image-toggle' => 'toggleImagePicker($event)',
                     'x-on:artist-rich-image-inserted.window' => 'closeImagePicker()',
-                    'x-on:keydown.escape.window' => 'closeImagePicker(); linkOpen = false; captionOpen = false; colorOpen = false; spacingOpen = false',
+                    'x-on:keydown.escape.window' => 'closeRichTextPanels()',
                 ])
                 ->columnSpanFull(),
         ];

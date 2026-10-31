@@ -183,6 +183,8 @@
                     <x-admin.row-action
                         :action="\App\Filament\Support\AdminRowAction::Delete"
                         wire:click="mountAction('deletePage', { section: {{ $section['id'] }} })"
+                        :disabled="! $section['delete_available']"
+                        :title="$section['delete_help'] ?? 'Delete page'"
                     />
                 @else
                     <span class="admin-pages__action-placeholder" aria-hidden="true"></span>

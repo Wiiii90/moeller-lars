@@ -21,7 +21,7 @@
             <x-slot:reset>
                 <div class="admin-data-control-group">
                     <span class="admin-data-control-label">{{ __('Filter') }}</span>
-                    <x-admin.clear-filters wire:click="resetComponentFilters" />
+                    <x-admin.clear-filters wire:click="resetComponentFilters" :disabled="trim($componentSearch) === '' && $componentType === 'any'" />
                 </div>
             </x-slot:reset>
 

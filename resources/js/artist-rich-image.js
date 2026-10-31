@@ -1,9 +1,5 @@
 // Single Tiptap extension for editor and Public image layout attributes.
 // Filament owns the editor lifecycle; this adds only canonical image metadata.
-// Keep the node selections shared across all editor instances in the SPA,
-// rather than resetting the registry when each editor is mounted.
-const selectedImages = new WeakMap();
-
 export default () => {
     const tiptap = window.FilamentRichEditor?.tiptap;
     if (!tiptap?.core?.Extension) {
@@ -26,12 +22,10 @@ export default () => {
         if ($from?.nodeBefore?.type.name === 'image') {
             candidates.push($from.pos - $from.nodeBefore.nodeSize);
         }
-        candidates.push(selectedImages.get(editor));
         for (const pos of candidates) {
             if (!Number.isInteger(pos)) continue;
             const node = editor.state.doc.nodeAt(pos);
             if (node?.type.name === 'image') {
-                selectedImages.set(editor, pos);
                 return { pos, node };
             }
         }
@@ -43,41 +37,79 @@ export default () => {
     const updateSelectedImage = (editor, attrs) => {
         const selected = selectedImage(editor);
         if (!selected) return false;
-        const transaction = editor.state.tr.setNodeMarkup(
-            selected.pos, undefined, { ...selected.node.attrs, ...attrs },
-        );
-        transaction.setSelection(NodeSelection.create(transaction.doc, selected.pos));
-        editor.view.dispatch(transaction);
-        selectedImages.set(editor, selected.pos);
-        editor.view.focus();
-        return true;
+        if (Object.entries(attrs).every(([key, value]) => selected.node.attrs[key] === value)) {
+            return false;
+        }
+        return editor.chain().focus()
+            .setNodeSelection(selected.pos)
+            .updateAttributes('image', attrs)
+            .run();
     };
 
-    window.ArtistRichImage = {
-        selected: editor => {
-            const selected = selectedImage(editor);
-            return selected ? { caption: selected.node.attrs.artistCaption } : null;
-        },
-        hasPlacement: (editor, value) => selectedImage(editor)?.node.attrs.artistPlacement === value,
-        setCaption: (editor, value) => updateSelectedImage(
-            editor, { artistCaption: [...String(value).trim()].slice(0, 500).join('') || null },
-        ),
-        setPlacement: (editor, value) => {
-            const changed = updateSelectedImage(
-                editor, { artistPlacement: placements.has(value) ? value : 'inline' },
-            );
-            if (changed) {
-                editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-image-changed', { bubbles: true }));
-            }
-            return changed;
-        },
-    };
     const { Decoration, DecorationSet } = tiptap.pmView;
     const placements = new Set(['inline', 'left', 'center', 'right', 'float-left', 'float-right']);
     const placement = value => placements.has(value) ? value : 'inline';
 
     return Extension.create({
         name: 'artistImageLayout',
+        addStorage() {
+            return {
+                selectedPosition: editor => selectedImage(editor)?.pos ?? null,
+                setPlacement: (editor, value) => {
+                    const image = selectedImage(editor);
+                    if (!image) return false;
+                    const notify = changed => {
+                        if (changed) {
+                            editor.view.dom.dispatchEvent(new CustomEvent('artist-rich-image-changed', { bubbles: true }));
+                        }
+                        return changed;
+                    };
+                    const nextPlacement = placement(value);
+
+                    if (nextPlacement === 'inline') {
+                        const $image = editor.state.doc.resolve(image.pos);
+                        const paragraph = $image.parent;
+                        if (paragraph.type.name === 'paragraph'
+                            && paragraph.childCount === 1
+                            && paragraph.firstChild === image.node) {
+                            const start = $image.before($image.depth);
+                            const end = $image.after($image.depth);
+                            const nextParagraph = editor.state.doc.nodeAt(end);
+                            const previousParagraph = editor.state.doc.resolve(start).nodeBefore;
+                            const nextHasText = nextParagraph?.type.name === 'paragraph'
+                                && nextParagraph.textContent.trim().length > 0;
+                            const previousHasText = previousParagraph?.type.name === 'paragraph'
+                                && previousParagraph.textContent.trim().length > 0;
+
+                            if (nextHasText || previousHasText) {
+                                const targetPos = nextHasText ? start + 1 : start - 1;
+                                const movedImage = image.node.type.create(
+                                    { ...image.node.attrs, artistPlacement: 'inline' },
+                                    null,
+                                    image.node.marks,
+                                );
+                                const changed = editor.chain().focus().command(({ tr }) => {
+                                    tr.delete(start, end);
+                                    tr.insert(targetPos, movedImage);
+                                    tr.setSelection(NodeSelection.create(tr.doc, targetPos));
+                                    return true;
+                                }).run();
+                                return notify(changed);
+                            }
+                        }
+                    }
+
+                    return notify(updateSelectedImage(editor, { artistPlacement: nextPlacement }));
+                },
+                selected: editor => {
+                    const image = selectedImage(editor);
+                    return image ? { caption: image.node.attrs.artistCaption } : null;
+                },
+                setCaption: (editor, value) => updateSelectedImage(
+                    editor, { artistCaption: [...String(value).trim()].slice(0, 500).join('') || null },
+                ),
+            };
+        },
         addGlobalAttributes() {
             return [{
                 types: ['image'],
@@ -98,13 +130,11 @@ export default () => {
             }];
         },
         addProseMirrorPlugins() {
-            const editor = this.editor;
             return [new Plugin({
                 key: new PluginKey('artistImageCaptions'),
                 props: {
                     handleClickOn(view, pos, node, nodePos) {
                         if (node.type.name !== 'image') return false;
-                        selectedImages.set(editor, nodePos);
                         const transaction = view.state.tr.setSelection(
                             NodeSelection.create(view.state.doc, nodePos),
                         );
@@ -146,17 +176,6 @@ export default () => {
                         });
                         return DecorationSet.create(state.doc, captions);
                     },
-                },
-                view() {
-                    return {
-                        update(view) {
-                            const selection = view.state.selection;
-                            if (selection instanceof NodeSelection && selection.node.type.name === 'image') {
-                                selectedImages.set(editor, selection.from);
-                            }
-                        },
-                        destroy() { selectedImages.delete(editor); },
-                    };
                 },
             })];
         },

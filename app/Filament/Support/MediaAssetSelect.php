@@ -254,12 +254,15 @@ final class MediaAssetSelect
                 ? e($asset->getAttribute('width').'×'.$asset->getAttribute('height'))
                 : '';
             $alt = trim((string) $asset->getAttribute('alt_text'));
+            $secondary = implode(', ', array_filter([
+                $alt !== '' ? e($alt) : '',
+                $details,
+            ], static fn (string $value): bool => $value !== ''));
 
             return '<span class="admin-media-choice">'
                 .'<span class="admin-media-choice__preview">'.$preview.'</span>'
                 .'<span class="admin-media-choice__meta"><strong>'.$filename.'</strong>'
-                .($details !== '' ? '<small>'.$details.'</small>' : '')
-                .($alt !== '' ? '<small class="admin-media-choice__alt">'.e($alt).'</small>' : '')
+                .($secondary !== '' ? '<small>'.$secondary.'</small>' : '')
                 .'</span></span>';
         }
 

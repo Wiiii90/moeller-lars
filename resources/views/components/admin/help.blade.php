@@ -10,10 +10,17 @@
         top: 0,
         left: 0,
         show() {
+            const panel = this.$refs.panel;
+            if (! panel || panel.matches(':popover-open')) return;
+            panel.showPopover();
             this.open = true;
             this.$nextTick(() => this.place());
         },
-        hide() { this.open = false },
+        hide() {
+            this.open = false;
+            const panel = this.$refs.panel;
+            if (panel?.matches(':popover-open')) panel.hidePopover();
+        },
         place() {
             if (! this.open || ! this.$refs.trigger || ! this.$refs.panel) return;
             const trigger = this.$refs.trigger.getBoundingClientRect();
@@ -52,15 +59,12 @@
             <path d="M9 18h6M10 22h4M8.4 14.4A6 6 0 1 1 15.6 14.4C14.6 15.2 14 16 14 17h-4c0-1-.6-1.8-1.6-2.6Z" />
         </svg>
     </button>
-    <template x-teleport="body">
-        <span
-            id="{{ $tooltipId }}"
-            x-ref="panel"
-            class="admin-help__popover"
-            role="tooltip"
-            x-cloak
-            x-show="open"
-            x-bind:style="'top:' + top + 'px;left:' + left + 'px'"
-        >{{ $text }}</span>
-    </template>
+    <span
+        id="{{ $tooltipId }}"
+        x-ref="panel"
+        class="admin-help__popover"
+        role="tooltip"
+        popover="manual"
+        x-bind:style="'top:' + top + 'px;left:' + left + 'px'"
+    >{{ $text }}</span>
 </span>

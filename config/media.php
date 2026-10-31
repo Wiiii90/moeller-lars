@@ -15,6 +15,10 @@ $positiveBytes = static function (mixed $value, int $default): int {
 return [
     'disk' => env('MEDIA_DISK', 'local'),
 
+    // Only the platform's dedicated offline Validation maintenance container sets
+    // this flag. It is never enabled on the normal web or migration services.
+    'validation_offline_cutover' => env('MOELLER_LARS_VALIDATION_OFFLINE_CUTOVER', false),
+
     // Required by the *offline* IPTC/XMP staging writer, never public requests.
     // The executable must be ExifTool >=12.67; Debian Bookworm's 12.57 is too old.
     'exiftool_binary' => env('MEDIA_EXIFTOOL_BINARY', 'exiftool'),
