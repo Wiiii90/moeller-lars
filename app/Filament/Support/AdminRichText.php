@@ -169,12 +169,8 @@ final class AdminRichText
                             linkInvalid: false,
                             linkLeft: 0,
                             linkTop: 0,
-                            getRichEditor() {
-                                const surface = this.$el.querySelector('.fi-fo-rich-editor')
-                                return surface ? window.Alpine?.$data(surface)?.getEditor?.() : null
-                            },
                             openLinkEditor(event) {
-                                const editor = event.detail?.editor ?? this.getRichEditor()
+                                const editor = event.detail?.editor
                                 if (!editor || editor.isDestroyed) return
                                 this.$refs.richLinkPanel.__artistEditor = editor
                                 if (this.linkOpen) {
@@ -279,7 +275,7 @@ final class AdminRichText
                             captionLeft: 0,
                             captionTop: 0,
                             openCaptionEditor(event) {
-                                const editor = event.detail?.editor ?? this.getRichEditor()
+                                const editor = event.detail?.editor
                                 const image = editor?.storage?.artistImageLayout?.selected(editor)
                                 if (!image) return
                                 this.$refs.richCaptionPanel.__artistEditor = editor
@@ -339,7 +335,7 @@ final class AdminRichText
                                 this[prefix + 'Top'] = top - shell.top
                             },
                             openColorEditor(event) {
-                                const editor = event.detail?.editor ?? this.getRichEditor()
+                                const editor = event.detail?.editor
                                 if (!editor || editor.isDestroyed) return
                                 this.$refs.richColorPanel.__artistEditor = editor
                                 if (this.colorOpen) { this.colorOpen = false; return }
@@ -372,7 +368,7 @@ final class AdminRichText
                                 }
                             },
                             openSpacingEditor(event) {
-                                const editor = event.detail?.editor ?? this.getRichEditor()
+                                const editor = event.detail?.editor
                                 if (!editor || editor.isDestroyed) return
                                 this.$refs.richSpacingPanel.__artistEditor = editor
                                 if (this.spacingOpen) { this.spacingOpen = false; return }
@@ -414,6 +410,13 @@ final class AdminRichText
                                     if (!shell.isConnected || shell.contains(document.activeElement)) return
                                     shell.dispatchEvent(new Event('change', { bubbles: true }))
                                 })
+                            },
+                            closeRichTextPanels() {
+                                this.closeImagePicker()
+                                this.linkOpen = false
+                                this.captionOpen = false
+                                this.colorOpen = false
+                                this.spacingOpen = false
                             },
                             imagePickerOpen: false,
                             closeImagePicker() {
@@ -467,7 +470,7 @@ final class AdminRichText
                     'x-on:artist-rich-caption-toggle' => 'openCaptionEditor($event)',
                     'x-on:artist-rich-image-toggle' => 'toggleImagePicker($event)',
                     'x-on:artist-rich-image-inserted.window' => 'closeImagePicker()',
-                    'x-on:keydown.escape.window' => 'closeImagePicker(); linkOpen = false; captionOpen = false; colorOpen = false; spacingOpen = false',
+                    'x-on:keydown.escape.window' => 'closeRichTextPanels()',
                 ])
                 ->columnSpanFull(),
         ];

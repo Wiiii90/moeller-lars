@@ -1,9 +1,5 @@
 // Single Tiptap extension for editor and Public image layout attributes.
 // Filament owns the editor lifecycle; this adds only canonical image metadata.
-// Keep the node selections shared across all editor instances in the SPA,
-// rather than resetting the registry when each editor is mounted.
-const selectedImages = new WeakMap();
-
 export default () => {
     const tiptap = window.FilamentRichEditor?.tiptap;
     if (!tiptap?.core?.Extension) {
@@ -26,12 +22,10 @@ export default () => {
         if ($from?.nodeBefore?.type.name === 'image') {
             candidates.push($from.pos - $from.nodeBefore.nodeSize);
         }
-        candidates.push(selectedImages.get(editor));
         for (const pos of candidates) {
             if (!Number.isInteger(pos)) continue;
             const node = editor.state.doc.nodeAt(pos);
             if (node?.type.name === 'image') {
-                selectedImages.set(editor, pos);
                 return { pos, node };
             }
         }
@@ -43,12 +37,13 @@ export default () => {
     const updateSelectedImage = (editor, attrs) => {
         const selected = selectedImage(editor);
         if (!selected) return false;
-        const changed = editor.chain().focus()
+        if (Object.entries(attrs).every(([key, value]) => selected.node.attrs[key] === value)) {
+            return false;
+        }
+        return editor.chain().focus()
             .setNodeSelection(selected.pos)
             .updateAttributes('image', attrs)
             .run();
-        if (changed) selectedImages.set(editor, selected.pos);
-        return changed;
     };
 
     const { Decoration, DecorationSet } = tiptap.pmView;
@@ -99,7 +94,6 @@ export default () => {
                                     tr.setSelection(NodeSelection.create(tr.doc, targetPos));
                                     return true;
                                 }).run();
-                                if (changed) selectedImages.set(editor, targetPos);
                                 return notify(changed);
                             }
                         }
@@ -136,13 +130,11 @@ export default () => {
             }];
         },
         addProseMirrorPlugins() {
-            const editor = this.editor;
             return [new Plugin({
                 key: new PluginKey('artistImageCaptions'),
                 props: {
                     handleClickOn(view, pos, node, nodePos) {
                         if (node.type.name !== 'image') return false;
-                        selectedImages.set(editor, nodePos);
                         const transaction = view.state.tr.setSelection(
                             NodeSelection.create(view.state.doc, nodePos),
                         );
@@ -184,17 +176,6 @@ export default () => {
                         });
                         return DecorationSet.create(state.doc, captions);
                     },
-                },
-                view() {
-                    return {
-                        update(view) {
-                            const selection = view.state.selection;
-                            if (selection instanceof NodeSelection && selection.node.type.name === 'image') {
-                                selectedImages.set(editor, selection.from);
-                            }
-                        },
-                        destroy() { selectedImages.delete(editor); },
-                    };
                 },
             })];
         },
