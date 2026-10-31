@@ -28,6 +28,16 @@ use Throwable;
 trait GalleryWorkspaceDirectUpload
 {
     /** @return array{summary:string,added:int,duplicates:int,failed:int} */
+    /** Report client transfer errors that never reach the ingest action. */
+    public function notifyDirectPrimaryTransferFailure(string $message): void
+    {
+        app(AdminNotifier::class)->notification(
+            title: 'Upload failed',
+            body: mb_substr($message, 0, 400),
+            status: 'danger',
+        );
+    }
+
     public function processDirectPrimaryMedia(): array
     {
         $uploads = $this->directPrimaryMedia;
