@@ -519,7 +519,21 @@
 
 .admin-rich-text-editor-shell {
     position: relative;
-    gap: 0 !important;
+}
+
+.admin-rich-text-editor-shell > .fi-sc > :not(:first-child) {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    pointer-events: none;
+}
+
+.admin-rich-text-editor-shell :is(
+    .admin-rich-text-link-dropdown,
+    .admin-rich-text-image-caption-dropdown,
+    .admin-rich-text-storage-dropdown
+) {
+    pointer-events: auto;
 }
 
 .admin-rich-text-storage-dropdown {
