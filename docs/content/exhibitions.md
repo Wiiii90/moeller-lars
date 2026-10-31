@@ -102,9 +102,20 @@ Gallery or Map section wrappers. Organizer, Venue, Exhibition website and
 Street address each occupy a full row; City and Postal code share a row;
 Country occupies the next full row. Start/End dates, the date override,
 and Vernissage controls follow the cover field. Gallery presentation spans the full form width. Gallery media uses
-the existing AdminTableRepeater table with visual Storage selection and native
-add/delete/order actions. Select changes and media list actions trigger the
-normal shared Edit autosave. Validation and publication behavior are unchanged;
+one shared **ranked** `AdminTableRepeater` with visible one-based Position,
+its own Drag handle and canonical Storage picker/actions. For the Exhibition
+Edit action, the native `wire:sort` calls `JournalWorkspace::sortExhibitionGalleryMedia`
+with the existing row key and zero-based target index. That owner rejects the
+wrong Journal template, an unmounted/different Action, missing/invalid keys,
+out-of-range positions and no-op movement; valid moves reorder the **current
+mounted form state** and persist through the existing `callMountedAction()`
+path. It is not a second media-storage service or a separate save timer.
+The component reuses shared `admin-table__col-position`, Drag, media/control
+and action tracks. Video playback preferences stay attached to the **same
+selected media usage**, not to a visual row number. Select, move, add/remove
+and other media edits follow the common Edit autosave and Publication boundary.
+The source contains an authored focused Exhibition Gallery ordering test, but
+this Docs review has not run it or performed a browser drag interaction. Validation and publication behavior are unchanged;
 Blog retains its existing field order.
 
 Per-field visibility changes use the canonical `exhibition.updated` audit

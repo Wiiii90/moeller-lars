@@ -124,6 +124,8 @@ The named sortable group stays `site-pages` in Pages and `custom-components` in 
 
 ## Action order
 
+**Exhibition Gallery media is a ranked AdminTableRepeater consumer (source `dev@12c65a27`).** Each media row shows a one-based Position and a native drag handle followed by the canonical media picker and existing edit/delete controls. Its explicit column geometry and drag hit rail belong to the shared `admin/table-flow.css`/table primitives, not a page-only table or independent JavaScript sortable engine. The persisted order is applied through the one mounted Exhibition Edit Action, retaining the exact media row keys and per-usage options such as video playback controls. Do not unconditionally add Drag/Position to non-media repeaters, where ordering is not part of the task. Browser drop-target/scroll/accessibility and actual store/reopen behavior remain acceptance gates.
+
 Use a stable semantic order when the actions exist:
 
 ```text
