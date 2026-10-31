@@ -519,17 +519,12 @@
     position: relative;
 }
 
-/* Top-toolbar popups need real document space, not an overlay over text. */
-.admin-rich-text-editor-shell .fi-fo-rich-editor-content {
-    padding-top: var(--artist-rich-panel-space, 0px);
-}
-
 .admin-rich-text-storage-dropdown {
     position: absolute;
     z-index: 40;
     width: min(38rem, calc(100% - 1rem));
     padding: .65rem;
-    background: var(--admin-surface);
+    background: var(--admin-control-popover-surface, #fff);
     color: var(--admin-text);
     border: 1px solid var(--admin-line);
     border-radius: var(--admin-radius, .35rem);
@@ -628,7 +623,7 @@
     padding: .75rem;
     border: 1px solid var(--admin-line);
     border-radius: var(--admin-radius, .35rem);
-    background: var(--admin-surface);
+    background: var(--admin-control-popover-surface, #fff);
     color: var(--admin-text);
     box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
 }
@@ -680,7 +675,7 @@
     padding: .75rem;
     border: 1px solid var(--admin-line);
     border-radius: var(--admin-radius, .35rem);
-    background: var(--admin-surface);
+    background: var(--admin-control-popover-surface, #fff);
     color: var(--admin-text);
     box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
 }
