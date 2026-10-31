@@ -95,10 +95,7 @@ final class ArtworkEditDialog
                             ->minValue(1)
                             ->maxValue(max(1, $positionCount))
                             ->required()
-                            ->disabled(! $positionEditable)
-                            ->helperText($positionEditable
-                                ? 'Move this Artwork directly to a position in this Gallery.'
-                                : 'Switch Gallery sorting to Manual to change the position.'),
+                            ->disabled(! $positionEditable),
                     ] : []),
                     Select::make('exclude_from_home')
                         ->label('Home eligibility')
