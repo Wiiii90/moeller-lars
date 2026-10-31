@@ -165,8 +165,8 @@ function initializeExhibitionVideoPreview(button) {
         details.open = true;
         const result = video.play();
         result?.catch(() => {
-            // Playback can be blocked by browser policy; native video controls
-            // remain the authorized fallback when the editor enabled them.
+            // Browser media policies can reject play(). The expanded Exhibition
+            // cover always has native controls for a manual start.
         });
     };
     const pauseWhenClosed = () => {
@@ -178,6 +178,7 @@ function initializeExhibitionVideoPreview(button) {
     return () => {
         button.removeEventListener('click', openAndPlay);
         details.removeEventListener('toggle', pauseWhenClosed);
+        video.pause();
     };
 }
 

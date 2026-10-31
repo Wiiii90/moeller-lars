@@ -4,10 +4,10 @@
 
 **Night-Gallery-Prototyp ausdrücklich abgelehnt:** Nutzer fand den dunklen Ausstellungsbereich unpassend auf einer ansonsten hellen Homepage und bat, Überschriften/Titel unverändert zu lassen. `94585bf` wird beim neuen Stilversuch vollständig durch die vor-Night-Gallery-CSS-Grundlage ersetzt (zusätzliche Titel-/Hoverfarben beseitigt). **Neuer, isolierter Soft-Paper-Stilversuch:** Diffuse warme, zu transparenten Außenkanten auslaufende Farbflächen innerhalb der Exhibitions-Fläche, kräftigere warme Fläche unter geöffneten Artikeln sowie sichtbare helle Passepartouts und Schatten an den bestehenden Medien. Kein Eingriff in globale General-Hintergründe, Titel/Schriftarten/Schriftgrößen, General Width/Padding, Blade, Video-Logik oder Mediadaten. Kein Nummern-/Trennlinien-/Bühnenkonzept. Noch keine reale Browserabnahme, isolierter CSS-Commit rücknehmbar.
 
-## Browserfeedback 31.10.2026 — noch umzusetzen
-- Benutzer fordert den warmen Exhibitions-Hintergrund über die gesamte Page bei unverändertem Padding/General; geöffneten Entry nicht als deutlich andersfarbigen Block darstellen.
-- Video-Teaser öffnet Details, großes Video spielt danach nicht und bietet keine Startmöglichkeit. Eigentümer von Teaser-Klick und tatsächlichem Video-Renderer prüfen, funktional und manuell bedienbar machen.
-- Nutzer bestätigt: kein lokaler Checkout ist **kein** GitHub-Zugriffsblocker; verbundener GitHub-Connector ist nutzbar. Zugriffspflicht in Arbeitsprotokoll und Dev-Skill nachgezogen. Quelle/Browserabnahme nach der Korrektur offen.
+## Browserfeedback 31.10.2026 — Quellkorrektur, Browserabnahme offen
+- Exhibition-Wash vom engen Index auf die ganze Content-Paper-Fläche einschließlich Heading/Insets verlegt. General-Padding, Menu und andere Seiten unverändert; starke geöffnete Entry-Farbfläche entfernt, sanfte Zeilen- und Hover-Akzente bleiben.
+- Video-Teaser öffnet weiterhin den nativen Detailbereich. Exhibition-Featurevideo hat nun immer echte Controls und ist nicht mehr am Auto-Mute/Loop-Observer; Klick fordert einmal Wiedergabe an, manuelle Wiedergabe bleibt möglich, Schließen/Navigieren pausiert. Andere Journal-Videos bleiben im bisherigen Modus.
+- Diese Änderungen wurden nur im Quellcode geprüft; Browser- und Laufzeitabnahme weiterhin offen. Zugriffspflicht des verbundenen GitHub-Connectors ist in Arbeitsprotokoll und Dev-Skill verbindlich ergänzt.
 
 ## Übernahme durch neuen Chat — Lease 5 (31.10.2026)
 - Der Nutzer hat denselben nummerierten Dev-Worker ausdrücklich zur Fortsetzung angewiesen. Kein neuer Aufgabenbereich: vorhandenen Soft-Paper-Stil für Public Exhibitions gegen aktuellen `dev`-Stand und akzeptierte Designgrenzen prüfen; reale Browserabnahme und neues Künstlerfeedback bleiben offen.

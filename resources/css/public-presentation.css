@@ -1455,9 +1455,9 @@ body {
 }
 
 /* EXHIBITIONS — SOFT PAPER / visual-only trial.
-   All content, menu, typography, General width/padding and interaction
-   remain owned by their existing components. Gradients fade transparently
-   into the configured public background instead of drawing box edges. */
+   The public content sheet owns the full-page wash (including its heading
+   and configured insets); the exhibition list owns only its inner layout.
+   Menu, typography, General width/padding and interaction remain intact. */
 .exhibitions-page {
     width: 100%;
     min-width: 0;
@@ -1469,19 +1469,21 @@ body {
     /* Summary and expanded facts must share the exact same title axis.
        The float + right gap consume this offset, never exceed it. */
     --exhibition-title-offset: calc(var(--exhibition-media-track) + var(--exhibition-date-track) + 2 * var(--exhibition-column-gap));
-    --exhibition-paper: #f5f1e9;
-    --exhibition-wash: rgba(230, 216, 193, .55);
     --exhibition-mat: #fffdf9;
     color: var(--public-ink);
-    /* Broad, unequal light pools give the entire compact list a visual
-       atmosphere without separators, cards or a solid secondary background. */
+}
+/* Scope the wash to the actual Public content sheet, including the page
+   heading and General's existing inner padding. Keep the configured base
+   surface behind transparent gradient edges, without touching Menu/other pages. */
+#content:not(.site-content--transparent):has(> .public-content-reveal > .exhibitions-page) {
     background:
         radial-gradient(ellipse 83% 34% at 47% 15%,
-            var(--exhibition-wash), transparent 100%),
+            rgba(230, 216, 193, .55), transparent 100%),
         radial-gradient(ellipse 77% 31% at 66% 52%,
             rgba(235, 224, 207, .44), transparent 100%),
         radial-gradient(ellipse 79% 36% at 32% 87%,
-            rgba(230, 215, 195, .40), transparent 100%);
+            rgba(230, 215, 195, .40), transparent 100%),
+        var(--public-content-background);
 }
 .exhibition-entry {
     min-width: 0;
@@ -1493,16 +1495,6 @@ body {
 .exhibition-entry {
     background: radial-gradient(ellipse 76% 89% at 52% 48%,
         rgba(255, 252, 246, .34), transparent 100%);
-}
-/* A soft paper glow follows the opened article and dissolves at both ends.
-   The same typography, summary grid and native details stay untouched. */
-.exhibition-entry:has(> .exhibition-entry__disclosure[open]) {
-    background:
-        radial-gradient(ellipse 91% 100% at 51% 48%,
-            rgba(246, 239, 228, .98) 0%,
-            rgba(246, 239, 228, .93) 53%,
-            rgba(243, 233, 217, .73) 76%,
-            transparent 100%);
 }
 /* Hover and keyboard focus lift the existing row's light without
    introducing a new active state or an extra interaction. */

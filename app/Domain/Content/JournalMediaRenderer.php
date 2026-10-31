@@ -28,7 +28,7 @@ final class JournalMediaRenderer
             ], true);
     }
 
-    public function render(JournalEntryMedia $usage, string $class = 'journal-entry-media', bool $priority = false, bool $includeInheritedCopyright = true, bool $includeCopyrightNotice = true, bool $showCaption = true, bool $enableViewer = false): HtmlString
+    public function render(JournalEntryMedia $usage, string $class = 'journal-entry-media', bool $priority = false, bool $includeInheritedCopyright = true, bool $includeCopyrightNotice = true, bool $showCaption = true, bool $enableViewer = false, bool $manualVideoPlayback = false): HtmlString
     {
         $usage->loadMissing('mediaAsset.variants');
         $asset = $usage->mediaAsset;
@@ -65,8 +65,11 @@ final class JournalMediaRenderer
             ? '<video src="'.e($this->media->originalUrlForAsset($asset)).'" aria-label="'.e($alt).'"'
                 .($posterUrl !== null ? ' poster="'.e($posterUrl).'"' : '')
                 .($posterVariant !== null ? ' width="'.(int) $posterVariant->getAttribute('width').'" height="'.(int) $posterVariant->getAttribute('height').'"' : '')
-                .($usage->videoControlsEnabled() ? ' controls' : '')
-                .' muted loop playsinline preload="metadata" data-public-loop-video></video>'
+                .($manualVideoPlayback || $usage->videoControlsEnabled() ? ' controls' : '')
+                .($manualVideoPlayback
+                    ? ' playsinline preload="metadata"'
+                    : ' muted loop playsinline preload="metadata" data-public-loop-video')
+                .'></video>'
             : '<img src="'.e($this->media->variantUrl($variant)).'" alt="'.e($alt).'"'.$dimensions
                 .' loading="'.($priority ? 'eager' : 'lazy').'" decoding="async" fetchpriority="'.($priority ? 'high' : 'auto').'"'.$viewerAttributes.'>';
         $figure = '<figure class="'.e($class).'">'
