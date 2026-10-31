@@ -1476,13 +1476,6 @@ body {
     margin: 0 0 .7rem;
 }
 .exhibition-entry:last-child { margin-bottom: 0; }
-/* An unillustrated exhibition introduces a typographic pause after an
-   illustrated one; neither editorial importance nor manual order is inferred.
-   Consecutive image-led or text-only entries retain the ordinary rhythm. */
-.exhibition-entry:has(.exhibition-entry__teaser)
-    + .exhibition-entry:not(:has(.exhibition-entry__teaser)) {
-    margin-top: 1.35rem;
-}
 /* Only opened folios receive the restrained catalogue separators.
    No line outside the first/last entry. Two adjacent opened folios share
    exactly one border: the previous entry owns their common boundary. */

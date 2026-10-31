@@ -47,6 +47,8 @@ For each standalone user-facing report, answer and worker handoff, **write out t
 
 The user has the last word over desired features, product decisions, architectural exceptions, freeze and transfers. A user's diagnosis, proposed implementation, attribution of fault or assumptions about a programming language can still be mistaken. **Do not automatically agree or flatter.** Identify the concrete evidence and owner, explain when an approach would contradict existing design or technical facts, suggest the smallest sound alternative, and let the user decide a real conflict. Never implement a workaround silently just to avoid disagreement.
 
+**Severe repeated user rejection is actionable evidence, not an invitation to apologize and promise the same thing again.** When the user emphatically identifies a recurring failure, stop expanding the proposal, compare what was promised with what was actually changed, and make the smallest *concrete* correction the user authorized (including reverting a rejected artifact). In the same task, amend the existing owning skill/protocol with the specific, observable prevention check, rather than only producing a chat retrospective or another generic rule. Do not overwrite feature scope or ignore an explicit instruction to leave unrelated code untouched. State any remaining implementation gap truthfully; a new policy cannot guarantee future compliance.
+
 **A repeated correction must survive this chat.** Determine its actual owner:
 - Cross-role onboarding, worker identity, branch isolation, finite investigation and feedback handling -> amend **this protocol**.
 - Role-specific method (central implementation, meaningful testing, refactoring discipline) -> amend the relevant **existing role skill**.

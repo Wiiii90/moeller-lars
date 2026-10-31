@@ -2,12 +2,17 @@
 
 **Branch:** `dev` · **Lease:** 5 · **Zuständigkeit:** Admin-Dialog schließen bei Autosave; Medien-Upload, Vorschaubilder und optionale Medienrechte.
 
-**Aktueller Public-Exhibitions-Stil:** Heller, ungerahmter Katalog auf der normalen konfigurierbaren Public-Content-Fläche (Standard weiß). Keine Sonderfarbverläufe, Papierkarten, Schatten, Passepartouts, Nummern oder Bildbühne. Miniaturen behalten die bisherige kleine Bildfläche; nur eine dezente zusätzliche Pause beim Übergang von einem bebilderten zu einem bildlosen Eintrag. Gleichbleibende redaktionelle Reihenfolge/Typografie und einfache Trennlinien nur an geöffneten Einträgen. Browserabnahme offen.
+**Aktueller Public-Exhibitions-Stil:** Heller, ungerahmter Katalog auf der normalen konfigurierbaren Public-Content-Fläche (Standard weiß). Keine Sonderfarbverläufe, Papierkarten, Schatten, Passepartouts, Nummern oder Bildbühne. Miniaturen behalten die bisherige kleine Bildfläche; keine inhaltsabhängigen Sonderabstände. Redaktionelle Reihenfolge/Typografie und einfache Trennlinien nur an geöffneten Einträgen unverändert. **Die angekündigte neue kompositorische Rhythmik wurde nicht umgesetzt**; Browserabnahme offen.
 
-## Exhibitions — weißer Katalog, flache Miniaturen und Inhaltsrhythmus (31.10.2026)
+## Korrektur des wiederholten Design/Implementierungsfehlers (31.10.2026)
+- Nutzer lehnt die Diskrepanz zwischen angekündigter anspruchsvoller Komposition/Referenz und trivialer Implementierung ausdrücklich ab. Keine neuen Designvorschläge oder CSS-Experimente ohne neuen Auftrag. Die ad hoc erdachte Zusatzabstandsregel wurde entfernt.
+- Verbindlicher Abgleich von Designidee, konkreten visuellen Entscheidungen, tatsächlichem Diff und ehrlichem Abnahmestatus im bestehenden `AGENTS.md` und Dev-Skill ergänzt. Gemeinsames Worker-Protokoll verlangt bei starkem wiederholtem Feedback eine reale, belegbare Korrektur statt einer bloßen Entschuldigung. Kein Versprechen, dass eine Regel allein künftige Fehler ausschließt.
+- Bis zur nächsten ausdrücklichen Freigabe keine weiteren Änderungen an Exhibitions; keine Vorschau-/Browserabnahme behaupten.
+
+## Exhibitions — weißer Katalog und ungerahmte Miniaturen (31.10.2026)
 - Neues Nutzerfeedback verwirft endgültig den Soft-Paper-Wash und aufgeklebte Papierbildrahmen: die Seite nutzt wieder den bestehenden zentralen `--public-content-background` (Standard `#fff`), ohne neuen Spezialhintergrund; aufklappende Einträge und Galerien ohne zusätzliche Washes. Der Künstler kann die vorhandene zentrale Hintergrundfarbe weiterhin redaktionell konfigurieren.
 - Sowohl die kleine Vorschau als auch das große Exhibition-Cover verlieren nur die dekorative Innenpolsterung, Hintergrundplatte und Schlagschatten. Miniaturabmessungen, Cover-Layout, Bildproportionen, Video-Play-Overlay, Viewer, native Steuerung und Einzel-Trennlinien bleiben unverändert.
-- Redaktionelles Gewicht ist **kein** aus Datum, Cover oder Titel ableitbares Faktum. Keine neue Gewichtungs- oder Sortierautomatik, kein Settings-Feld ohne Entscheidung des Künstlers. Ein sehr zurückhaltender zusätzlicher Zwischenraum nur beim Übergang von einem bebilderten zu einem bildlosen Listeneintrag bringt eine typografische Pause; bei aufeinanderfolgenden gleichen Typen bleiben die bisherigen Abstände erhalten. Die manuelle Reihenfolge bleibt unverändert.
+- Die spontane `margin-top: 1.35rem`-Regel zwischen bebilderten und bildlosen Einträgen wurde auf ausdrücklichen Nutzerwunsch vollständig zurückgenommen. Keine inhaltsabhängige Gewichtung oder Umordnung. Die zuvor in Aussicht gestellte eigenständige visuelle Rhythmik ist **nicht geliefert**. Ein neuer Entwurf darf künftig nicht als erledigt gemeldet werden, wenn nur ein minimaler Abstand oder eine Hintergrundfarbe geändert wurde.
 - Änderungsnachweis derzeit nur Quellcode; Browserabnahme für geschlossen/geöffnet, mit/ohne Cover, Video, schmale Breite und weiße Fläche noch ausstehend.
 
 ## Journal-Mosaik — obere Bildkanten auf gleicher Höhe (31.10.2026)

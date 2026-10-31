@@ -477,6 +477,10 @@ The admin is still under browser acceptance. Existing work is a starting point, 
 - consult `docs/admin/ui.md` and `docs/admin/responsive.md` before changing admin workspace geometry;
 - when the user explicitly rejects the current presentation or asks for a reset, do not preserve that rejected structure merely to minimize the diff.
 
+**Visual concept-to-implementation gate (especially for artistic Public pages):** When proposing or agreeing to a composition, reference images and terms such as *rhythm*, *hierarchy*, *visual weight*, *asymmetry* or *editorial layout* are a design requirement, **not** a license to report a barely changed layout as a redesign. Before coding, identify the concrete changes that would make the promised result visibly different and the parts that must remain intact. After coding, inspect the real diff against those changes and the current browser reference for desktop, narrow width, open/closed and image/no-image variants as relevant. **A conditional margin, minor decoration removal or color rollback alone does not deliver a promised new composition.** Either implement a materially recognizable version of the agreed idea, or explicitly mark the concept *not implemented / only partially implemented*; do not sell a small patch using the earlier ambitious design language. Browser acceptance remains with the user.
+
+**No unapproved editorial weighting from incidental content:** Do not translate presence/absence of a preview, date, word count, position or similar metadata into ad hoc visual priority or irregular spacing under the label of artistic rhythm. If compositional emphasis is needed, derive it from an actual agreed editorial criterion or a genuine reviewed layout, never from a convenient CSS selector. Preserve the artist's stored exhibition order. User-approved intentional reduction (including a plain white page) is valid, but must not be passed off as the missing larger redesign.
+
 ## Responsive system
 
 Responsive behavior is content-driven, not device-name driven. Issue #15 owns the current public/admin responsive contract.
