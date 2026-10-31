@@ -1,7 +1,7 @@
 # Testing Worker 1 — active assignment
 
 - **Branch:** `testing`
-- **Lease token:** 1
+- **Lease token:** 2
 - **State:** active
 - **User assignment:** Integrate current `dev` changes into `testing` and reconcile the canonical test suite; keep `dev` untouched, remove obsolete tests, preserve durable contracts; no CI or final qualification.
 - **Starting testing source:** `116f3563884b7a1cff660952ca9108691f123d67`
@@ -29,3 +29,10 @@
 - **Testing ownership:** Existing curated tests and removals retained; testing worker roster and own record preserved; dev worker files excluded. Existing Pages and Home Selection feature tests extended for parent-delete constraints and derived bulk-action availability before/after a persisted change, rather than generating incident-specific test files.
 - **Verification limitation:** Branch/tree and source review only. No PHP/PostgreSQL/Node/Chromium test run, no Code Coverage and no CI or deployment. These test edits are not claimed as passing.
 - **Next:** When development freezes, perform exact source parity check and user-authorized disposable-database and browser qualification, especially Publication historical snapshot behavior and editor interactions; transfer curated tests to Dev only on explicit user authorization.
+
+## Chat replacement — 2026-10-31
+
+- **Takeover:** User deliberately replaced Testing Worker 1 because the prior chat reached its context limit. New active lease token: `2`; previous chat must not write under token `1`.
+- **Checked head:** `testing` `aafafd295d3d00da8919e6dc6b55fa183aa97ed5`, latest previously reconciled `dev` source `478bccc1c8aa7cf119cae0f8f02647628877247f`.
+- **Current Dev observed at takeover:** `8351bea9f97952abf295cc3c718311178b2085d5`; branch comparison indicates 15 newer Dev commits not yet reconciled into Testing. No new Dev source transfer or test execution was performed during this registration.
+- **Resumption gate:** Retain the curated Testing-owned suite and previous deletions; wait for an explicit continuation/task instruction before reconciling newer Dev source. No continuous integration, destructive tests, production operations or integration are authorized by takeover alone.
