@@ -14,7 +14,11 @@ function csrfToken() {
 }
 
 function requestHeaders() {
-    return { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken() };
+    const token = document.querySelector('meta[name="csrf-token"]')?.content;
+    return {
+        'Accept': 'application/json',
+        ...(token ? { 'X-CSRF-TOKEN': token } : { 'X-XSRF-TOKEN': csrfToken() }),
+    };
 }
 
 async function jsonRequest(path, body) {
@@ -39,9 +43,8 @@ function sendChunk(id, offset, blob, progress) {
         xhr.open('POST', endpoint + '/' + encodeURIComponent(id) + '/chunk');
         xhr.timeout = 5 * 60 * 1000;
         xhr.withCredentials = true;
-        xhr.setRequestHeader('Accept', 'application/json');
+        for (const [name, value] of Object.entries(requestHeaders())) xhr.setRequestHeader(name, value);
         xhr.setRequestHeader('Content-Type', 'application/octet-stream');
-        xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken());
         xhr.setRequestHeader('X-Upload-Offset', String(offset));
         xhr.upload.onprogress = (event) => {
             if (event.lengthComputable) progress(event.loaded);

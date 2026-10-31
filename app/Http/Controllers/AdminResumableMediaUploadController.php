@@ -36,8 +36,8 @@ final class AdminResumableMediaUploadController extends Controller
             throw ValidationException::withMessages(['media' => 'Invalid upload offset.']);
         }
         $length = $request->header('Content-Length');
-        if (! is_string($length) || ! ctype_digit($length)
-            || (int) $length < 1 || (int) $length > ResumableMediaUploadService::CHUNK_BYTES) {
+        if ($length !== null && (! is_string($length) || ! ctype_digit($length)
+            || (int) $length < 1 || (int) $length > ResumableMediaUploadService::CHUNK_BYTES)) {
             throw ValidationException::withMessages(['media' => 'Invalid media chunk size.']);
         }
 

@@ -292,7 +292,7 @@ final class ResumableMediaUploadService
                     @unlink($this->partPath($id));
                 }
             });
-            @unlink($this->directory().'/'.$id.'.lock');
+            // Do not unlink a lock inode: another request may already hold it.
         }
     }
 

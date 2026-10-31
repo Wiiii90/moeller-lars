@@ -43,14 +43,14 @@
         <div class="admin-gallery-upload" aria-label="Add artwork from media">
             <div
                 class="admin-gallery-upload__dropzone"
-                    x-data="{
+                x-data="{
                     phase: 'idle', progress: 0, fileCount: 0,
                     completed: 0, result: '',
                     async uploadFiles(input) {
                         await window.adminMediaUploader(this, input, $wire, 'gallery')
                     },
                 }"
-            x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
+                x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
             >
                 <input
                     class="admin-gallery-upload__input"

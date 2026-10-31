@@ -40,7 +40,6 @@ trait GalleryWorkspaceDirectUpload
         $this->pendingBatchArtworkMedia = [];
     }
 
-    /** @return array{summary:string,added:int,duplicates:int,failed:int,errors:list<string>} */
     /**
      * Queue the canonical available asset returned by the shared resumable
      * ingest endpoint. Only images/videos can become Artwork primary media.

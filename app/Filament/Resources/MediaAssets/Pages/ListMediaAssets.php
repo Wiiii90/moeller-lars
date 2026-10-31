@@ -166,7 +166,6 @@ final class ListMediaAssets extends Page
         $this->loadStorageOverview();
     }
 
-    /** @return array{summary:string,added:int,duplicates:int,failed:int,errors:list<string>} */
     /** Send exactly one header notification for a completed Storage batch. */
     public function notifyDirectMediaBatch(int $added, int $duplicates, int $failed, string $details = ''): void
     {
