@@ -1242,6 +1242,30 @@ final class JournalWorkspace extends Page
         );
     }
 
+    /** @return array{publish:bool,unpublish:bool,archive:bool,restore:bool,delete:bool} */
+    public function selectedEntryCapabilities(): array
+    {
+        $isBlog = $this->journalTemplate() === JournalTemplate::Blog;
+        $records = $isBlog ? $this->selectedPosts() : $this->selectedExhibitions();
+        $states = $records->map(static fn (BlogPost|Exhibition $entry): string =>
+            (string) $entry->getAttribute('state')
+        );
+
+        return [
+            'publish' => $isBlog && $states->contains(static fn (string $state): bool =>
+                in_array($state, ['draft', 'scheduled', 'unpublished'], true)
+            ),
+            'unpublish' => $isBlog && $states->contains('published'),
+            'archive' => $isBlog && $states->contains(static fn (string $state): bool => $state !== 'archived'),
+            'restore' => $isBlog && $states->contains(static fn (string $state): bool =>
+                in_array($state, ['scheduled', 'unpublished', 'archived'], true)
+            ),
+            'delete' => $states->contains(static fn (string $state): bool =>
+                $isBlog ? ! in_array($state, ['published', 'scheduled'], true) : $state !== 'published'
+            ),
+        ];
+    }
+
     private function selectedPosts(): EloquentCollection
     {
         $ids = collect($this->selectedPostIds)->map(fn (mixed $id): int => (int) $id)->unique()->all();

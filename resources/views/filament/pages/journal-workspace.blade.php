@@ -5,6 +5,7 @@
         $selectedIds = collect($isBlog ? $selectedPostIds : $selectedExhibitionIds)
             ->map(static fn (mixed $id): int => (int) $id)
             ->all();
+        $selectedCapabilities = $this->selectedEntryCapabilities();
         $visibleIds = collect($entries)->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
         $resultStart = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
         $resultEnd = $total === 0 ? 0 : min($total, $page * $pageSize);
@@ -132,12 +133,12 @@
                                 <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('up')" x-on:click="open = false">{{ __('Move selected up') }}</button>
                                 <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('down')" x-on:click="open = false">{{ __('Move selected down') }}</button>
                                 @if ($isBlog)
-                                    <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedPosts" x-on:click="open = false">{{ __('Publish selected') }}</button>
-                                    <button class="admin-action" type="button" role="menuitem" wire:click="unpublishSelectedPosts" x-on:click="open = false">{{ __('Unpublish selected') }}</button>
-                                    <button class="admin-action" type="button" role="menuitem" wire:click="archiveSelectedPosts" x-on:click="open = false">{{ __('Archive selected') }}</button>
-                                    <button class="admin-action" type="button" role="menuitem" wire:click="restoreSelectedPosts" x-on:click="open = false">{{ __('Restore selected to draft') }}</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedPosts" x-on:click="open = false" @disabled(! $selectedCapabilities['publish'])>{{ __('Publish selected') }}</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="unpublishSelectedPosts" x-on:click="open = false" @disabled(! $selectedCapabilities['unpublish'])>{{ __('Unpublish selected') }}</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="archiveSelectedPosts" x-on:click="open = false" @disabled(! $selectedCapabilities['archive'])>{{ __('Archive selected') }}</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="restoreSelectedPosts" x-on:click="open = false" @disabled(! $selectedCapabilities['restore'])>{{ __('Restore selected to draft') }}</button>
                                 @endif
-                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('{{ $isBlog ? 'deleteSelectedPosts' : 'deleteSelectedExhibitions' }}')" x-on:click="open = false">{{ __('Delete selected') }}</button>
+                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('{{ $isBlog ? 'deleteSelectedPosts' : 'deleteSelectedExhibitions' }}')" x-on:click="open = false" @disabled(! $selectedCapabilities['delete'])>{{ __('Delete selected') }}</button>
                             </div>
                         </div>
                         <span class="admin-selection__count" aria-label="{{ count($selectedIds) }} selected">{{ count($selectedIds) }}</span>
