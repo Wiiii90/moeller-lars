@@ -228,11 +228,19 @@ final class ResumableMediaUploadService
 
     private function locked(string $id, callable $action): mixed
     {
-        if (! Str::isUuid($id) || ! is_file($this->manifestPath($id))) {
-            // Never create per-upload lock files for guessed/expired IDs.
-            throw $this->invalid('Upload session not found or expired.');
+        if (! Str::isUuid($id)) {
+            throw $this->invalid('Invalid upload identifier.');
         }
-        return $this->withLock($this->directory().'/'.$id.'.lock', $action);
+
+        // Shared global gate allows independent sessions to progress, while
+        // exclusive cleanup waits for ALL active writers before deleting an
+        // expired session's lock file. Never unlink a live flock inode.
+        return $this->withLock($this->directory().'/.admission.lock', function () use ($id, $action): mixed {
+            if (! is_file($this->manifestPath($id))) {
+                throw $this->invalid('Upload session not found or expired.');
+            }
+            return $this->withLock($this->directory().'/'.$id.'.lock', $action);
+        }, exclusive: false);
     }
 
     private function admissionLock(callable $action): mixed
@@ -240,10 +248,10 @@ final class ResumableMediaUploadService
         return $this->withLock($this->directory().'/.admission.lock', $action);
     }
 
-    private function withLock(string $path, callable $action): mixed
+    private function withLock(string $path, callable $action, bool $exclusive = true): mixed
     {
         $lock = @fopen($path, 'c+');
-        if (! is_resource($lock) || ! flock($lock, LOCK_EX)) {
+        if (! is_resource($lock) || ! flock($lock, $exclusive ? LOCK_EX : LOCK_SH)) {
             throw $this->invalid('Upload storage is currently unavailable.');
         }
         try {
@@ -277,34 +285,74 @@ final class ResumableMediaUploadService
     }
 
     /**
-     * Bounded cleanup; also callable from the standard Laravel daily scheduler.
-     * Files are removed only when their upload lock can be acquired.
+     * Reclaim expired sessions and orphan artifacts with the global gate held
+     * exclusively. Shared upload locks prevent deleting a session or its lock
+     * while a chunk/finalization still uses it. One invocation removes at most
+     * 100 groups of artifacts; a subsequent run continues the sweep.
      */
     public function pruneExpired(): int
     {
         if (! is_dir($this->directory())) {
             return 0;
         }
-        $removed = 0;
-        foreach (array_slice(glob($this->directory().'/*.json') ?: [], 0, 100) as $manifest) {
-            if (filemtime($manifest) !== false && filemtime($manifest) > time() - self::EXPIRY_SECONDS) {
-                continue;
-            }
-            $id = basename($manifest, '.json');
-            if (! Str::isUuid($id)) {
-                continue;
-            }
-            $this->locked($id, function () use ($manifest, $id, &$removed): void {
-                if (is_file($manifest) && filemtime($manifest) < time() - self::EXPIRY_SECONDS) {
+
+        return $this->admissionLock(function (): int {
+            $removed = 0;
+            $cutoff = time() - self::EXPIRY_SECONDS;
+
+            foreach (glob($this->directory().'/*.json') ?: [] as $manifest) {
+                if ($removed >= 100) {
+                    break;
+                }
+
+                $id = basename($manifest, '.json');
+                if (! Str::isUuid($id)) {
+                    continue;
+                }
+
+                // Completed sessions are kept for recovery of a lost final
+                // response, but their staged multi-GB copy can go immediately.
+                $meta = $this->readManifest($id);
+                if (is_array($meta) && isset($meta['asset_id']) && is_file($this->partPath($id))) {
                     @unlink($this->partPath($id));
-                    if (@unlink($manifest)) {
+                }
+
+                $modified = @filemtime($manifest);
+                if ($modified === false || $modified >= $cutoff) {
+                    continue;
+                }
+
+                // The exclusive gate ensures nobody is currently using the
+                // per-session lock or writing this manifest.
+                if (@unlink($manifest)) {
+                    @unlink($this->partPath($id));
+                    @unlink($manifest.'.tmp');
+                    @unlink($this->directory().'/'.$id.'.lock');
+                    $removed++;
+                }
+            }
+
+            // A crash between manifest creation, atomic replacement and
+            // writing can orphan .part, .json.tmp or .lock individually.
+            // Match only our own UUID-based names; never touch media originals.
+            foreach (['part', 'json.tmp', 'lock'] as $suffix) {
+                foreach (glob($this->directory().'/*.'.$suffix) ?: [] as $path) {
+                    if ($removed >= 100) {
+                        break 2;
+                    }
+                    $id = basename($path, '.'.$suffix);
+                    if (! Str::isUuid($id) || is_file($this->manifestPath($id))) {
+                        continue;
+                    }
+                    $modified = @filemtime($path);
+                    if ($modified !== false && $modified < $cutoff && @unlink($path)) {
                         $removed++;
                     }
                 }
-            });
-            // Do not unlink a lock inode: another request may already hold it.
-        }
-        return $removed;
+            }
+
+            return $removed;
+        });
     }
 
     private function invalid(string $message): ValidationException
