@@ -167,6 +167,8 @@ final class AdminRichText
                             linkIsExisting: false,
                             linkNewTab: false,
                             linkInvalid: false,
+                            linkAppliedUrl: null,
+                            linkAppliedNewTab: false,
                             linkLeft: 0,
                             linkTop: 0,
                             // Filament wraps each View field in its own Alpine scope.
@@ -193,6 +195,8 @@ final class AdminRichText
                                 this.linkIsExisting = editor.isActive('link') && Boolean(attrs?.href)
                                 this.linkUrl = this.linkIsExisting ? (attrs.href ?? '') : ''
                                 this.linkNewTab = this.linkIsExisting && attrs.target === '_blank'
+                                this.linkAppliedUrl = this.linkIsExisting ? this.normalizedLinkUrl() : null
+                                this.linkAppliedNewTab = this.linkNewTab
                                 this.linkText = selection.from !== selection.to
                                     ? editor.state.doc.textBetween(selection.from, selection.to, ' ')
                                     : ''
@@ -232,15 +236,26 @@ final class AdminRichText
                                     return null
                                 }
                             },
+                            applyLinkOnExit(event) {
+                                // Let the URL and optional label be completed together.
+                                // Leaving the popover commits once, not on each keystroke.
+                                if (this.richElement('richLinkPanel')?.contains(event.relatedTarget)) return
+                                this.applyLink()
+                            },
                             applyLink() {
                                 const editor = this.richShell().__artistRichEditor
-                                if (!editor || editor.isDestroyed || !this.linkSelection) return
+                                if (!editor || editor.isDestroyed || !this.linkSelection) return false
 
+                                // Incomplete addresses stay in the input until a valid
+                                // Enter, blur or new-tab change. No partial URL is saved.
+                                if (!this.linkUrl.trim()) return false
                                 const url = this.normalizedLinkUrl()
                                 if (!url) {
                                     this.linkInvalid = true
-                                    return
+                                    return false
                                 }
+                                if (this.linkIsExisting && url === this.linkAppliedUrl
+                                    && this.linkNewTab === this.linkAppliedNewTab) return false
 
                                 const { from, to } = this.linkSelection
                                 let chain = editor.chain().focus().setTextSelection({ from, to })
@@ -261,7 +276,17 @@ final class AdminRichText
                                     result = chain.setLink(attrs).run()
                                 }
 
-                                if (result) this.finishLinkEdit()
+                                if (!result) return false
+                                if (from === to && !this.linkIsExisting) {
+                                    const label = this.linkText.trim() || url
+                                    this.linkSelection = { from, to: from + label.length }
+                                }
+                                this.linkIsExisting = true
+                                this.linkAppliedUrl = url
+                                this.linkAppliedNewTab = this.linkNewTab
+                                this.linkInvalid = false
+                                this.commitEditorChange()
+                                return true
                             },
                             removeLink() {
                                 const editor = this.richShell().__artistRichEditor
@@ -321,6 +346,7 @@ final class AdminRichText
                             colorOpen: false,
                             colorSelection: null,
                             colorValue: '#333333',
+                            colorAppliedValue: null,
                             colorLeft: 0,
                             colorTop: 0,
                             spacingOpen: false,
@@ -358,6 +384,7 @@ final class AdminRichText
                                 const current = editor.getAttributes('textColor')['data-color']
                                 this.colorSelection = { from: selection.from, to: selection.to }
                                 this.colorValue = /^#[0-9a-f]{6}$/i.test(current ?? '') ? current : '#333333'
+                                this.colorAppliedValue = /^#[0-9a-f]{6}$/i.test(current ?? '') ? current.toLowerCase() : null
                                 this.colorOpen = true
                                 this.spacingOpen = false
                                 this.linkOpen = false
@@ -371,14 +398,18 @@ final class AdminRichText
                             applyTextColor(clear = false) {
                                 const editor = this.richShell().__artistRichEditor
                                 if (!editor || editor.isDestroyed || !this.colorSelection) return
+                                const value = this.colorValue.trim().toLowerCase()
+                                if (!clear && !/^#[0-9a-f]{6}$/.test(value)) return
+                                if ((clear && this.colorAppliedValue === null)
+                                    || (!clear && this.colorAppliedValue === value)) return
                                 let chain = editor.chain().focus().setTextSelection(this.colorSelection)
                                 if (this.colorSelection.from === this.colorSelection.to) {
                                     chain = chain.extendMarkRange('textColor')
                                 }
                                 const changed = clear ? chain.unsetTextColor().run()
-                                    : chain.setTextColor({ color: this.colorValue }).run()
+                                    : chain.setTextColor({ color: value }).run()
                                 if (changed) {
-                                    this.colorOpen = false
+                                    this.colorAppliedValue = clear ? null : value
                                     this.commitEditorChange()
                                 }
                             },
