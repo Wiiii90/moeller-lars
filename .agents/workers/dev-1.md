@@ -2,6 +2,8 @@
 
 **Branch:** `dev` · **Lease:** 3 · **Zuständigkeit:** Admin-Dialog schließen bei Autosave; Medien-Upload, Vorschaubilder und optionale Medienrechte.
 
+**Stilprototyp implementiert:** `94585bf084cdc05c2f7a835a9ee24befba8d929c` ändert *ausschließlich* den vorhandenen Exhibitions-Abschnitt in `resources/css/public-presentation.css`: dunkle zusammenhängende Ausstellungsfläche, helle kontrastreiche Titel/Organizer/Datumszeilen, warme expandierte Artikel, kleine gerahmte Medien und lesbare Hover-/Fokuszustände. Keine Änderungen an Schriftgrößen/-familien, öffentlichem Shell-/General-Hintergrund/-Breite/-Padding, Ansicht/Interaktion, Datensätzen, Videos oder Gallery. **Revert nur dieses Commits** entfernt den Stil wieder. Quellcode und reine Geltungsbereichsprüfung bestanden; Browserdarstellung/Performance nicht getestet. **Wichtig:** Der Nutzer hat diesen spezifischen Night-Gallery-Stil noch nicht visuell akzeptiert.
+
 ## Aktuelle Aufgabe — ausdrücklich bestätigte Lease-3-Übernahme (31.10.2026)
 - **Dev Worker 1 auf `dev`, Lease 3.** Nutzer verlangt einen *visuellen Stilwechsel* ausschließlich innerhalb der öffentlichen Exhibitions-Fläche. Keine neue Interaktion, Medienbühne, neue Katalognummern, rote/zusätzliche Trennlinien, neue Schriftart/-größen, keine Änderung des globalen Seitenhintergrunds oder von General Width/Padding.
 - Die Oberfläche soll visuell **deutlich** anders und hochwertiger wirken, sowohl geschlossen als auch geöffnet, **mit und ohne Feature-Medium**. Funktional vorhandene Datum/Titel/Organizer-Übersicht, Toggle, Video, Gallery, Rich-Text, Medienrechte, Canonical Layout strikt erhalten.
