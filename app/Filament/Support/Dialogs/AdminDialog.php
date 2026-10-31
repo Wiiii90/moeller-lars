@@ -47,13 +47,6 @@ final class AdminDialog
             ->extraModalWindowAttributes([
                 'wire:change' => 'callMountedAction',
                 'x-on:admin-edit-list-updated.window' => '$el.closest(".fi-modal.fi-modal-open") && $wire.call("callMountedAction")',
-                // Track the *existing* Livewire requests, not a second save
-                // executor. The native close event is deferred only while an
-                // actual edit request is in flight, and only until it succeeds.
-                'data-admin-edit-close-guard' => 'true',
-                'x-data' => self::editCloseGuard(),
-                'x-on:close-modal.window.capture' => 'handleEditClose($event)',
-                'x-on:close-modal-quietly.window.capture' => 'handleEditClose($event)',
             ], merge: true);
 
         if ($windowAttributes instanceof Closure || $windowAttributes !== []) {
@@ -61,97 +54,6 @@ final class AdminDialog
         }
 
         return $action;
-    }
-
-    /**
-     * Only native Edit dialogs use this guard. All persistence remains owned
-     * by the current mounted Filament Action or field update: no additional
-     * request is started on close, and ordinary closes remain instantaneous.
-     * Livewire v4.4 resolves Actions after server effects are applied and
-     * rejects failed validation/network Actions.
-     */
-    private static function editCloseGuard(): string
-    {
-        return <<<'JS'
-            {
-                pendingEditActions: new Set(),
-                editCloseRequested: false,
-                editCloseRequestedEvent: 'close-modal',
-                editCloseAuthorized: false,
-                editSaveFailed: false,
-                stopTrackingEditActions: null,
-
-                init() {
-                    // Livewire 4 exposes a component-local interceptor.
-                    // No global request listener or second save execution.
-                    this.stopTrackingEditActions = this.$wire.$intercept(({ action }) => {
-                        if (! this.$el.closest('.fi-modal.fi-modal-open')
-                            || action.name === 'unmountAction') return
-
-                        // This is the same Action Promise already created by
-                        // Livewire. Track it, never initiate another save.
-                        // A failed validation is only cleared by a new attempt
-                        // through the validating mounted Edit Action; unrelated
-                        // component requests must not authorize discarding edits.
-                        if (this.pendingEditActions.size === 0 && action.name === 'callMountedAction') {
-                            this.editSaveFailed = false
-                        }
-                        this.pendingEditActions.add(action)
-
-                        action.promise.then(
-                            () => this.completeEditAction(action, true),
-                            () => this.completeEditAction(action, false),
-                        )
-                    })
-                },
-
-                destroy() {
-                    this.stopTrackingEditActions?.()
-                },
-
-                completeEditAction(action, succeeded) {
-                    this.pendingEditActions.delete(action)
-                    if (! succeeded) this.editSaveFailed = true
-
-                    if (! this.editCloseRequested || this.pendingEditActions.size > 0) return
-                    this.editCloseRequested = false
-
-                    // A failed save must never be interpreted as permission to
-                    // unmount a dirty editor. Only the framework success path
-                    // may resume the original modal close event.
-                    if (this.editSaveFailed || ! this.$el.isConnected) return
-
-                    const modal = this.$el.closest('.fi-modal')
-                    if (! modal?.classList.contains('fi-modal-open')) return
-
-                    this.editCloseAuthorized = true
-                    this.$dispatch(this.editCloseRequestedEvent, { id: modal.id })
-                },
-
-                handleEditClose(event) {
-                    const modal = this.$el.closest('.fi-modal')
-                    if (! modal || event.detail?.id !== modal.id) return
-
-                    if (this.editCloseAuthorized) {
-                        this.editCloseAuthorized = false
-                        return
-                    }
-
-                    // No pending request: preserve Filament's immediate native
-                    // close, with no server roundtrip and no delay.
-                    if (! this.pendingEditActions.size && ! this.editSaveFailed) return
-
-                    // Capture before the native Filament close-modal listener
-                    // so neither X, Escape nor backdrop can discard an edit
-                    // during a request or after a failed validation.
-                    event.stopImmediatePropagation()
-                    if (this.pendingEditActions.size) {
-                        this.editCloseRequestedEvent = event.type
-                        this.editCloseRequested = true
-                    }
-                },
-            }
-            JS;
     }
 
     /**
