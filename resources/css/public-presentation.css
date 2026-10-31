@@ -1562,7 +1562,9 @@ body {
         padding-inline: 0;
     }
     .exhibitions-page__layout[data-stage-ready] .exhibition-entry__feature--with-cover .exhibition-entry__cover {
-        max-width: min(36%, 10rem);
+        /* The side-stage carries the large image. This inline float plus its
+           gap must not pass the index's 7.5rem title/venue reading axis. */
+        max-width: 6.5rem;
         margin-inline-end: 1rem;
     }
 }
