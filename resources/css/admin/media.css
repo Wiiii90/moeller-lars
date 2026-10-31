@@ -899,18 +899,30 @@
     font-size: .65rem;
 }
 
+/* Keep the searchable Storage popup's visual thumbnail grid, while its
+   selected value follows the ordinary one-line Select field grammar. */
 .admin-media-picker--visual .fi-select-input-value-label .admin-media-choice {
-    display: flex;
-    align-items: center;
-    gap: .5rem;
+    display: block;
+    min-width: 0;
+    width: 100%;
 }
 
-.admin-media-picker--visual .fi-select-input-value-label .admin-media-choice__preview {
-    width: 2rem;
-    height: 2rem;
-    flex: none;
+.admin-media-picker--visual .fi-select-input-value-label .admin-media-choice__preview,
+.admin-media-picker--visual .fi-select-input-value-label .admin-media-choice__meta small {
+    display: none;
 }
 
 .admin-media-picker--visual .fi-select-input-value-label .admin-media-choice__meta {
+    display: block;
+    min-width: 0;
     padding: 0;
+}
+
+.admin-media-picker--visual .fi-select-input-value-label .admin-media-choice__meta strong {
+    display: block;
+    overflow: hidden;
+    color: inherit;
+    font: inherit;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
