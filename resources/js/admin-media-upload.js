@@ -235,6 +235,9 @@ export async function adminMediaUploadField(state, input, wire, statePath, image
         state.result = file.name + ' — ready to save';
     } catch (error) {
         state.result = error?.message || 'Upload failed. Re-select the same file to resume.';
+        try { await jsonRequest('/failure', { message: state.result.slice(0, 400) }); } catch {
+            // The inline message remains accessible if the connection is down.
+        }
     } finally {
         state.phase = 'result';
         input.value = '';

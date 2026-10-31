@@ -59,39 +59,39 @@ final class ResumableMediaUploadService
 
             try {
                 $capacity = app(MediaCapacityService::class)->snapshot();
-            if (($capacity['configuration_valid'] ?? false) !== true
-                || ($capacity['measurement_available'] ?? false) !== true
-                || ! is_int($capacity['quota_bytes'] ?? null)
-                || ! is_int($capacity['remaining_bytes'] ?? null)) {
-                throw $this->invalid('The site storage allowance is not configured or cannot be measured.');
-            }
-            if ($size > (int) $capacity['remaining_bytes']) {
-                throw $this->invalid('The selected file exceeds the remaining site storage allowance.');
-            }
+                if (($capacity['configuration_valid'] ?? false) !== true
+                    || ($capacity['measurement_available'] ?? false) !== true
+                    || ! is_int($capacity['quota_bytes'] ?? null)
+                    || ! is_int($capacity['remaining_bytes'] ?? null)) {
+                    throw $this->invalid('The site storage allowance is not configured or cannot be measured.');
+                }
+                if ($size > (int) $capacity['remaining_bytes']) {
+                    throw $this->invalid('The selected file exceeds the remaining site storage allowance.');
+                }
 
-            $free = @disk_free_space($this->directory());
-            if (! is_float($free) && ! is_int($free)) {
-                throw $this->invalid('Free temporary storage could not be verified.');
-            }
-            // Atomic rename retains one physical original, not two copies.
-            // Leave headroom for derivative generation and other server work.
-            if ($free < (int) ($capacity['reserved_upload_bytes'] ?? 0) + $size + self::MIN_FREE_RESERVE) {
-                throw $this->invalid('Not enough physical space to safely stage and save this media file.');
-            }
+                $free = @disk_free_space($this->directory());
+                if (! is_float($free) && ! is_int($free)) {
+                    throw $this->invalid('Free temporary storage could not be verified.');
+                }
+                // Atomic rename retains one physical original, not two copies.
+                // Leave headroom for derivative generation and other server work.
+                if ($free < (int) ($capacity['reserved_upload_bytes'] ?? 0) + $size + self::MIN_FREE_RESERVE) {
+                    throw $this->invalid('Not enough physical space to safely stage and save this media file.');
+                }
 
-            $id = (string) Str::uuid();
-            $meta = [
-                'user_id' => $userId,
-                'filename' => $filename,
-                'size' => $size,
-                'created_at' => time(),
-                'updated_at' => time(),
-            ];
-            $this->writeManifest($id, $meta);
-            if (@file_put_contents($this->partPath($id), '') === false) {
-                @unlink($this->manifestPath($id));
-                throw $this->invalid('Unable to reserve upload staging space.');
-            }
+                $id = (string) Str::uuid();
+                $meta = [
+                    'user_id' => $userId,
+                    'filename' => $filename,
+                    'size' => $size,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ];
+                $this->writeManifest($id, $meta);
+                if (@file_put_contents($this->partPath($id), '') === false) {
+                    @unlink($this->manifestPath($id));
+                    throw $this->invalid('Unable to reserve upload staging space.');
+                }
 
                 return $this->status($id, $meta);
             } finally {

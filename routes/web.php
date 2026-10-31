@@ -64,6 +64,8 @@ Route::prefix('admin/media-upload')
     ->name('admin.media-upload.')
     ->group(function (): void {
         Route::post('/start', [AdminResumableMediaUploadController::class, 'start'])->name('start');
+        Route::post('/failure', [AdminResumableMediaUploadController::class, 'reportFailure'])
+            ->middleware('throttle:30,1')->name('failure');
         Route::post('/{id}/chunk', [AdminResumableMediaUploadController::class, 'chunk'])
             ->whereUuid('id')->name('chunk');
         Route::post('/{id}/finish', [AdminResumableMediaUploadController::class, 'finish'])

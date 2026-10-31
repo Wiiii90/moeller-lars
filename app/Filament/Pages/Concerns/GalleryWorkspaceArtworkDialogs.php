@@ -62,10 +62,7 @@ trait GalleryWorkspaceArtworkDialogs
                 DB::transaction(function () use ($payload, $asset, $data): void {
                     $artwork = app(ArtworkDraftService::class)->create($payload);
                     if ($asset instanceof MediaAsset) {
-                        app(ArtworkPrimaryMediaService::class)->attachAsset(
-                            $artwork,
-                            $asset,
-                        );
+                        app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
                     }
 
                     if (filled($data['primary_alt_text'] ?? null)) {
