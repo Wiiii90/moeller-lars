@@ -147,7 +147,8 @@ class MediaIngestService
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
-            throw $this->validationFailure('The uploaded media could not be processed.', $exception);
+            report($exception);
+            throw $this->validationFailure('The file reached the server, but media validation or processing failed unexpectedly. It was not saved. Contact the site administrator.');
         }
     }
 
@@ -165,7 +166,8 @@ class MediaIngestService
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
-            throw $this->validationFailure('The uploaded media could not be processed.', $exception);
+            report($exception);
+            throw $this->validationFailure('The media was processed, but the server could not check storage capacity. It was not saved. Contact the site administrator.');
         }
 
         $extension = MediaTypePolicy::extensionFor($prepared['mime']);
@@ -714,7 +716,7 @@ class MediaIngestService
         return basename(str_replace('\\', '/', $filename));
     }
 
-    private function validationFailure(string $message, ?Throwable $previous = null): ValidationException
+    private function validationFailure(string $message): ValidationException
     {
         return ValidationException::withMessages(['media' => $message]);
     }

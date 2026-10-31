@@ -2,8 +2,11 @@
 
 namespace App\Domain\Media;
 
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
+use Throwable;
 
 /**
  * New derivatives only. Legacy public-v1 GD derivatives remain immutable and
@@ -19,6 +22,7 @@ final class MediaDerivativeGenerator
         return $this->generate(
             ['vipsthumbnail', '--size', '960x960', '--output', '{output}[Q=85]', $originalPath],
             ['VIPS_CONCURRENCY' => '1', 'VIPS_DISC_THRESHOLD' => '100m'],
+            'image',
         );
     }
 
@@ -31,22 +35,27 @@ final class MediaDerivativeGenerator
             '-i', $originalPath, '-map', '0:v:0', '-frames:v', '1',
             '-vf', 'scale=w=960:h=960:force_original_aspect_ratio=decrease',
             '-c:v', 'libwebp', '-quality', '80', '-y', '{output}',
-        ]);
+        ], [], 'video');
     }
 
     /**
-     * Process arguments are always passed without a shell. Both executables
-     * are packaged into the release and local-preview Docker images.
+     * The image/video derivative processor is the single owner of these
+     * failures. Keep detailed diagnostics in the server log; show the artist
+     * a truthful processing stage and a safe, actionable error.
      *
      * @param list<string> $command
      * @param array<string,string> $environment
      * @return array{bytes:string,width:int,height:int}
      */
-    private function generate(array $command, array $environment = []): array
+    private function generate(array $command, array $environment, string $kind): array
     {
+        $preview = $kind === 'video' ? 'video poster' : 'image preview';
         $temporary = tempnam(sys_get_temp_dir(), 'media-derivative-');
         if (! is_string($temporary)) {
-            throw new RuntimeException('Unable to reserve temporary media processing space.');
+            $this->fail(
+                'The server could not reserve temporary space for the '.$preview.'. The file was not saved. Contact the site administrator.',
+                'Unable to create a temporary file for the '.$preview.'.',
+            );
         }
 
         $output = $temporary.'.webp';
@@ -57,17 +66,48 @@ final class MediaDerivativeGenerator
             );
             $process = new Process($command, null, $environment);
             $process->setTimeout(120);
-            if ($process->run() !== 0) {
-                throw new RuntimeException('The media preview processor rejected the source file.');
+
+            try {
+                $exitCode = $process->run();
+            } catch (ProcessTimedOutException $exception) {
+                $this->fail(
+                    'The '.$preview.' took longer than 120 seconds to generate. The file was not saved. Contact the site administrator.',
+                    'Media '.$preview.' processor exceeded its 120-second deadline.',
+                    $exception,
+                );
+            } catch (Throwable $exception) {
+                $this->fail(
+                    'The server could not start the '.$preview.' processor. The file was not saved. Contact the site administrator.',
+                    'Media '.$preview.' processor could not be started.',
+                    $exception,
+                );
+            }
+
+            if ($exitCode !== 0) {
+                $stderr = trim($process->getErrorOutput());
+                $diagnostic = sprintf(
+                    'Media %s processor exited with code %s, signal %s: %s',
+                    $preview,
+                    (string) $exitCode,
+                    (string) ($process->getTermSignal() ?? 'none'),
+                    substr($stderr, 0, 3000),
+                );
+                $this->fail($this->processingErrorMessage($kind, $stderr), $diagnostic);
             }
 
             $length = is_file($output) ? filesize($output) : false;
             if (! is_int($length) || $length < 1 || $length > self::MAX_DERIVATIVE_BYTES) {
-                throw new RuntimeException('The media preview has an invalid size.');
+                $this->fail(
+                    'The server did not generate a usable '.$preview.' (missing, empty or over 8 MiB). The file was not saved. Contact the site administrator.',
+                    'Media '.$preview.' output has invalid byte size: '.var_export($length, true),
+                );
             }
             $bytes = file_get_contents($output);
             if (! is_string($bytes) || strlen($bytes) !== $length) {
-                throw new RuntimeException('The generated media preview could not be read.');
+                $this->fail(
+                    'The server generated the '.$preview.' but could not read it. The file was not saved. Contact the site administrator.',
+                    'Media '.$preview.' output could not be read completely.',
+                );
             }
             $dimensions = @getimagesizefromstring($bytes);
             if (! is_array($dimensions)
@@ -75,7 +115,10 @@ final class MediaDerivativeGenerator
                 || (int) $dimensions[0] < 1
                 || (int) $dimensions[1] < 1
                 || max((int) $dimensions[0], (int) $dimensions[1]) > MediaIngestService::THUMBNAIL_MAX_EDGE) {
-                throw new RuntimeException('The media processor produced an invalid WebP preview.');
+                $this->fail(
+                    'The server generated an invalid '.$preview.' format or image size. The file was not saved. Contact the site administrator.',
+                    'Media '.$preview.' output was not a valid bounded WebP image.',
+                );
             }
 
             return [
@@ -87,5 +130,26 @@ final class MediaDerivativeGenerator
             @unlink($output);
             @unlink($temporary);
         }
+    }
+
+    private function processingErrorMessage(string $kind, string $stderr): string
+    {
+        $preview = $kind === 'video' ? 'video poster' : 'image preview';
+        if (preg_match('/out.of.memory|cannot allocate memory|allocation failed|memory allocation failed|not enough memory/i', $stderr)) {
+            return 'The server ran out of memory while generating the '.$preview.'. The file was not saved. Contact the site administrator.';
+        }
+
+        if ($kind === 'image' && preg_match('/corrupt|truncated|premature end|unexpected end|invalid jpeg|not a jpeg|unsupported marker|jpeg datastream/i', $stderr)) {
+            return 'The JPEG image could not be decoded completely to generate its preview. The file was not saved. Check the original or re-export it as JPEG and retry.';
+        }
+
+        return 'The file was transferred, but the server failed to generate its '.$preview.'. The file was not saved. Contact the site administrator.';
+    }
+
+    private function fail(string $message, string $diagnostic, ?Throwable $previous = null): never
+    {
+        report(new RuntimeException($diagnostic, 0, $previous));
+
+        throw ValidationException::withMessages(['media' => $message]);
     }
 }

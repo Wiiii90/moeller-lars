@@ -166,18 +166,47 @@ final class ListMediaAssets extends Page
         $this->loadStorageOverview();
     }
 
-    /** Send exactly one header notification for a completed Storage batch. */
+    /** Send exactly one durable header notification for a completed Storage selection. */
     public function notifyDirectMediaBatch(int $added, int $duplicates, int $failed, string $details = ''): void
     {
         $added = max(0, $added);
         $duplicates = max(0, $duplicates);
         $failed = max(0, $failed);
+        $details = trim($details);
+        $processed = $added + $duplicates;
+
+        $title = $failed > 0
+            ? ($processed > 0 ? 'Upload completed with issues' : 'Upload failed')
+            : ($added > 0 ? 'Media uploaded' : 'Already in Storage');
+
+        if ($failed > 0 && $processed === 0) {
+            // For one failed upload the cause and filename are the message,
+            // not a meaningless list of zero-valued counters.
+            $body = $details !== ''
+                ? $details
+                : ($failed === 1 ? 'The selected file was not saved.' : $failed.' files were not saved.');
+        } else {
+            $parts = [];
+            if ($added > 0) {
+                $parts[] = $added.' '.($added === 1 ? 'file' : 'files').' saved to Storage';
+            }
+            if ($duplicates > 0) {
+                $parts[] = $duplicates.' already in Storage';
+            }
+            if ($failed > 0) {
+                $parts[] = $failed.' '.($failed === 1 ? 'file' : 'files').' failed';
+            }
+
+            $body = implode('; ', $parts).'.';
+            if ($details !== '') {
+                $body .= "\n".$details;
+            }
+        }
+
         app(AdminNotifier::class)->notification(
-            title: $failed > 0 ? ($added + $duplicates > 0 ? 'Upload completed with issues' : 'Upload failed')
-                : ($added > 0 ? 'Media uploaded' : 'Already in Storage'),
-            body: mb_substr($added.' uploaded, '.$duplicates.' already in Storage, '.$failed.' failed'.
-                ($details !== '' ? "\n".$details : ''), 0, 500),
-            status: $failed > 0 ? ($added + $duplicates > 0 ? 'warning' : 'danger') : ($added > 0 ? 'success' : 'info'),
+            title: $title,
+            body: mb_substr($body, 0, 500),
+            status: $failed > 0 ? ($processed > 0 ? 'warning' : 'danger') : ($added > 0 ? 'success' : 'info'),
         );
     }
 
