@@ -140,7 +140,7 @@ final class MediaDerivativeGenerator
         }
 
         if ($kind === 'image' && preg_match('/corrupt|truncated|premature end|unexpected end|invalid jpeg|not a jpeg|unsupported marker|jpeg datastream/i', $stderr)) {
-            return 'The JPEG image could not be decoded completely to generate its preview. The file was not saved. Check the original or re-export it as JPEG and retry.';
+            return 'The image data could not be decoded completely to generate its preview. The file was not saved. Check the original or re-export it in a supported image format and retry.';
         }
 
         return 'The file was transferred, but the server failed to generate its '.$preview.'. The file was not saved. Contact the site administrator.';
