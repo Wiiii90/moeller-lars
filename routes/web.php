@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminMediaController;
+use App\Http\Controllers\AdminResumableMediaUploadController;
 use App\Http\Controllers\PublicArtworkController;
 use App\Http\Controllers\PublicContactController;
 use App\Http\Controllers\PublicHomeController;
@@ -54,6 +55,19 @@ Route::middleware(ProtectArtistPreview::class)
         Route::get('/{section}', [PublicSiteSectionController::class, 'show'])
             ->where('section', '[a-z0-9]+(?:-[a-z0-9]+)*')
             ->name('site.section');
+    });
+
+// Authenticated, CSRF-protected private staging. Each request contains at most
+// one 16 MiB chunk. Durable identity, offset and quota checks live in the service.
+Route::prefix('admin/media-upload')
+    ->middleware('auth')
+    ->name('admin.media-upload.')
+    ->group(function (): void {
+        Route::post('/start', [AdminResumableMediaUploadController::class, 'start'])->name('start');
+        Route::post('/{id}/chunk', [AdminResumableMediaUploadController::class, 'chunk'])
+            ->whereUuid('id')->name('chunk');
+        Route::post('/{id}/finish', [AdminResumableMediaUploadController::class, 'finish'])
+            ->whereUuid('id')->name('finish');
     });
 
 Route::get('/admin/media-preview/original/{mediaAsset}', [AdminMediaController::class, 'original'])
