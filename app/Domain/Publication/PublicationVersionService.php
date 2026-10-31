@@ -343,7 +343,7 @@ final class PublicationVersionService
 
                 DB::update(
                     'UPDATE publication_version_row_manifests AS manifest '
-                    .'SET payload_id = resolve_history_payload(stored.payload || jsonb_build_object(?, to_jsonb('.$fallback.'))) '
+                    .'SET payload_id = resolve_history_payload(stored.payload || jsonb_build_object(?::text, to_jsonb('.$fallback.'))) '
                     .'FROM history_payloads AS stored, publication_checkpoints AS checkpoint '
                     .'WHERE manifest.payload_id = stored.id '
                     .'AND manifest.publication_checkpoint_id = checkpoint.id '

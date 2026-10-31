@@ -6,6 +6,19 @@
     $editableTypeOptions = SiteSectionType::compactOptions();
     $journalTemplateOptions = JournalTemplate::options();
     $selectedCount = count($selectedSectionIds);
+    $selectedIds = array_map('intval', $selectedSectionIds);
+    $selectedRows = collect($filteredRows)->filter(static fn (array $row): bool =>
+        in_array((int) $row['id'], $selectedIds, true)
+    );
+    $canPublishSelected = $selectedRows->contains(static fn (array $row): bool =>
+        $row['can_change_publication'] && $row['state'] !== 'published'
+    );
+    $canUnpublishSelected = $selectedRows->contains(static fn (array $row): bool =>
+        $row['can_change_publication'] && $row['state'] === 'published'
+    );
+    $canDeleteSelected = $selectedRows->contains(static fn (array $row): bool =>
+        $row['delete_available']
+    );
 @endphp
 
 <x-filament-panels::page>
@@ -98,9 +111,9 @@
                                 <x-admin.selection-trigger-label>{{ __('Selected') }}</x-admin.selection-trigger-label>
                             </button>
                             <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
-                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkPublish" @disabled($selectedCount === 0)>{{ __('Publish selected') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpublish" @disabled($selectedCount === 0)>{{ __('Unpublish selected') }}</button>
-                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedPages')" x-on:click="open = false" @disabled($selectedCount === 0)>{{ __('Delete selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkPublish" @disabled(! $canPublishSelected)>{{ __('Publish selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpublish" @disabled(! $canUnpublishSelected)>{{ __('Unpublish selected') }}</button>
+                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedPages')" x-on:click="open = false" @disabled(! $canDeleteSelected)>{{ __('Delete selected') }}</button>
                             </div>
                         </div>
                         <span class="admin-selection__count" aria-label="{{ $selectedCount }} selected">{{ $selectedCount }}</span>

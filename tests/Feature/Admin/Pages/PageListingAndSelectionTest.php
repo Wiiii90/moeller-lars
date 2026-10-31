@@ -65,6 +65,8 @@ it('keeps parent context when a child matches a filter and disables reorder', fu
     expect($groups)->toHaveCount(1)
         ->and((int) $groups[0]['id'])->toBe((int) $parent->getKey())
         ->and($groups[0]['filter_context'])->toBeTrue()
+        ->and($groups[0]['delete_available'])->toBeFalse()
+        ->and($groups[0]['delete_help'])->toBe('Move or delete child pages before deleting')
         ->and($groups[0]['children'])->toHaveCount(1)
         ->and((int) $groups[0]['children'][0]['id'])->toBe((int) $child->getKey())
         ->and(collect($component->get('filteredRows'))->pluck('id')->map(fn ($id): int => (int) $id)->all())

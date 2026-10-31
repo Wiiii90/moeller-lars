@@ -10,18 +10,45 @@
     role="group"
     aria-label="{{ __('Text color') }}"
 >
-    <div class="admin-rich-text-link-dropdown__form">
-        <label class="admin-rich-text-link-dropdown__label">
-            {{ __('Text color') }}
-            <input type="color" x-model="colorValue" class="admin-rich-text-color-input" />
-        </label>
-        <div class="admin-rich-text-link-dropdown__actions">
-            <button type="button" class="admin-rich-text-link-dropdown__button" x-on:click="applyTextColor(true)">
-                {{ __('Remove color') }}
-            </button>
-            <button type="button" class="admin-rich-text-link-dropdown__button admin-rich-text-link-dropdown__button--apply" x-on:click="applyTextColor()">
-                {{ __('Apply') }}
-            </button>
+    <div class="admin-rich-text-link-dropdown__header">
+        <span>{{ __('Text color') }}</span>
+        <div class="admin-rich-text-link-dropdown__header-actions">
+            <x-filament::icon-button
+                icon="heroicon-o-no-symbol"
+                size="sm"
+                color="gray"
+                :label="__('Remove color')"
+                x-on:click.stop="applyTextColor(true)"
+            />
+            <x-filament::icon-button
+                icon="heroicon-o-x-mark"
+                size="sm"
+                color="gray"
+                :label="__('Close')"
+                x-on:click.stop="colorOpen = false"
+            />
         </div>
+    </div>
+    <div class="admin-rich-text-color-picker">
+        <input
+            type="color"
+            x-model="colorValue"
+            x-on:change.stop="applyTextColor()"
+            class="admin-rich-text-color-picker__swatch"
+            aria-label="{{ __('Choose text color') }}"
+        />
+        <label class="admin-rich-text-link-dropdown__label admin-rich-text-color-picker__value">
+            {{ __('Hex color') }}
+            <input
+                type="text"
+                x-model="colorValue"
+                x-on:change.stop="applyTextColor()"
+                x-on:keydown.enter.prevent="applyTextColor()"
+                spellcheck="false"
+                maxlength="7"
+                placeholder="#333333"
+                class="admin-rich-text-link-dropdown__input"
+            />
+        </label>
     </div>
 </div>

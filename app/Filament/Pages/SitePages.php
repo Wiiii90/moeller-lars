@@ -14,7 +14,10 @@ use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\SiteNodePresentation;
+use App\Models\Artwork;
 use App\Models\ArtworkCategory;
+use App\Models\BlogPost;
+use App\Models\Exhibition;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Models\User;
@@ -768,6 +771,24 @@ final class SitePages extends Page
         $type = $section->nodeType();
         $journalTemplate = $section->journalTemplate();
         $navigationLabel = $section->getAttribute('navigation_label');
+        $sectionId = (int) $section->getKey();
+
+        // Project the same deletion prerequisites enforced by the domain
+        // services. Actual deletion must still revalidate locked records.
+        $deleteHelp = match (true) {
+            ! $type->canDelete() => null,
+            $hasChildren => 'Move or delete child pages before deleting',
+            $type !== SiteSectionType::Journal && (string) $section->getAttribute('state') !== 'hidden'
+                => 'Unpublish the page before deleting',
+            $type === SiteSectionType::Gallery && Artwork::query()
+                ->where('artwork_category_id', (int) $section->getAttribute('artwork_category_id'))->exists()
+                => 'Remove the Gallery artworks before deleting',
+            $type === SiteSectionType::Journal && (
+                BlogPost::query()->where('site_section_id', $sectionId)->exists()
+                || Exhibition::query()->where('site_section_id', $sectionId)->exists()
+            ) => 'Remove the Journal entries before deleting',
+            default => null,
+        };
 
         return [
             'id' => (int) $section->getKey(),
@@ -791,6 +812,8 @@ final class SitePages extends Page
             'can_move_up' => $canMoveUp,
             'can_move_down' => $canMoveDown,
             'can_delete' => $type->canDelete(),
+            'delete_available' => $type->canDelete() && $deleteHelp === null,
+            'delete_help' => $deleteHelp,
             'can_change_publication' => $type->canChangePublication(),
             'can_convert' => $type->canConvert(),
             'filter_context' => false,

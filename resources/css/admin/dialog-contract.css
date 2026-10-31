@@ -69,6 +69,7 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     flex: 1 1 auto;
     overflow-y: auto;
     overscroll-behavior: contain;
+    overflow-anchor: none;
     scrollbar-gutter: auto;
 }
 

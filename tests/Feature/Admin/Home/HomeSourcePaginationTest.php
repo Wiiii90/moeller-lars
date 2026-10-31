@@ -133,13 +133,22 @@ it('persists selected source changes with every audit and exactly one notificati
     homeSourcePaginationSettings();
     $first = homeSourcePaginationGallery(2); $second = homeSourcePaginationGallery(4);
     $before = \App\Models\AuditEvent::query()->count();
-    $editor = Livewire::test(HomePresentation::class)->set('selectedSourceIds', [$first->id, $second->id])
-        ->call('setSelectedGalleryEligibility', true)->assertHasNoErrors();
+    $editor = Livewire::test(HomePresentation::class)->set('selectedSourceIds', [$first->id, $second->id]);
+    expect($editor->instance()->selectedSourceCapabilities())->toBe([
+        'enable' => true,
+        'disable' => false,
+    ]);
+    $editor->call('setSelectedGalleryEligibility', true)->assertHasNoErrors();
     expect($first->fresh()->show_on_home)->toBeTrue()->and($second->fresh()->show_on_home)->toBeTrue()
         ->and(\App\Models\AuditEvent::query()->count())->toBe($before + 2)
         ->and(\App\Models\AdminNotification::query()->count())->toBe(1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
-    $editor->set('selectedSourceIds', [$first->id, $second->id])->call('setSelectedGalleryEligibility', true)
+    $editor->set('selectedSourceIds', [$first->id, $second->id]);
+    expect($editor->instance()->selectedSourceCapabilities())->toBe([
+        'enable' => false,
+        'disable' => true,
+    ]);
+    $editor->call('setSelectedGalleryEligibility', true)
         ->assertNotDispatched('admin-header-notification');
     expect(\App\Models\AuditEvent::query()->count())->toBe($before + 2)
         ->and(\App\Models\AdminNotification::query()->count())->toBe(1);

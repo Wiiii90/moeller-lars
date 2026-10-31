@@ -54,14 +54,15 @@
 }
 
 .admin-repeater-table--media .admin-repeater-table__table th:nth-child(2):not(:last-child) {
-    width: 11rem;
+    width: 7rem;
 }
 
 .admin-repeater-table--media .admin-repeater-table__table th.admin-table__actions {
-    width: calc(
-        var(--admin-row-action-slot-move-up-width) + var(--admin-row-action-slot-move-down-width)
-        + var(--admin-row-action-slot-delete-width) + .75rem
-    );
+    width: var(--admin-row-actions-move-delete-width);
+}
+
+.admin-repeater-table--media .fi-select-input .fi-dropdown-panel {
+    min-width: min(34rem, calc(100vw - 3rem));
 }
 
 .admin-repeater-table--media .admin-repeater-table__table td:first-child .fi-select-input-value-label img {
@@ -74,18 +75,14 @@
     white-space: nowrap;
 }
 
-@container admin-table (max-width: 38rem) {
-    .admin-repeater-table--media .admin-repeater-table__table th:nth-child(2):not(:last-child),
+@container admin-table (max-width: 46rem) {
     .admin-repeater-table--media .admin-repeater-table__table th.admin-table__actions {
-        width: 6.5rem;
+        width: var(--admin-row-actions-move-delete-compact-width);
     }
+}
 
-    .admin-repeater-table--media .admin-repeater-table__table td.admin-table__actions .admin-action__label {
-        display: none;
-    }
-
-    .admin-repeater-table--media .admin-repeater-table__table td.admin-table__actions .admin-action {
-        min-width: 1.5rem;
-        padding-inline: .25rem;
+@container admin-table (max-width: 38rem) {
+    .admin-repeater-table--media .admin-repeater-table__table th:nth-child(2):not(:last-child) {
+        width: 5rem;
     }
 }

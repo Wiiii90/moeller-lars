@@ -21,3 +21,11 @@
 - **Tests deliberately not added:** No extra incident-named test files, CSS-geometry assertions or speculative mock of historical Publication data. The newest `PublicationVersionService` replay of legacy exhibition snapshot payloads requires an actual disposable PostgreSQL history/restore acceptance case before cutover; record as a specific follow-up rather than claiming verification.
 - **Execution:** No PHP/Pest, JavaScript/Node, browser, PostgreSQL multi-process, CI/Actions or preview/validation database tests executed. No code coverage measured. These are reviewed source/test edits, not passed runtime results.
 - **Next:** On a future change, compare both branch heads and reconcile only new source. On explicit Dev freeze, verify unchanged source, construct a genuinely disposable PostgreSQL/media environment, execute targeted historical Publication and media behavior first, then the authorized cutover test campaign. Transfer only reviewed Testing-owned tests after explicit user approval.
+
+## Reconciliation — current request
+
+- **Dev source reconciled:** `478bccc1c8aa7cf119cae0f8f02647628877247f` (compare against prior integrated `3282cce04e6f8721a854e8a4f4d47fc391533790`: 42 new Dev commits).
+- **Changes inspected:** Admin tables and bulk-action states, Gallery/Exhibition presentation, Filament Rich Text popovers, shared controls, public documentation and the small PublicationVersionService adjustment. Dev supplied no new `tests/` diffs in this interval.
+- **Testing ownership:** Existing curated tests and removals retained; testing worker roster and own record preserved; dev worker files excluded. Existing Pages and Home Selection feature tests extended for parent-delete constraints and derived bulk-action availability before/after a persisted change, rather than generating incident-specific test files.
+- **Verification limitation:** Branch/tree and source review only. No PHP/PostgreSQL/Node/Chromium test run, no Code Coverage and no CI or deployment. These test edits are not claimed as passing.
+- **Next:** When development freezes, perform exact source parity check and user-authorized disposable-database and browser qualification, especially Publication historical snapshot behavior and editor interactions; transfer curated tests to Dev only on explicit user authorization.

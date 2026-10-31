@@ -1,4 +1,27 @@
 <x-filament-panels::page>
+    @php
+        $reorderEnabled = ($galleryContext['sort_mode'] ?? 'manual') === 'manual'
+            && trim($search) === ''
+            && $statusFilter === 'any'
+            && $readinessFilter === 'any';
+        $selectedIds = array_map('intval', $selectedArtworkIds);
+        $selectedArtworks = collect($artworkDataset)->filter(static fn (array $row): bool =>
+            in_array((int) $row['id'], $selectedIds, true)
+        );
+        $selectedHasPublished = $selectedArtworks->contains(static fn (array $row): bool => $row['state'] === 'published');
+        $selectedAllDraft = $selectedArtworks->isNotEmpty()
+            && $selectedArtworks->every(static fn (array $row): bool => $row['state'] === 'draft');
+        $selectedCanPublish = $galleryContext['state'] === 'published'
+            && $selectedArtworks->contains(static fn (array $row): bool => $row['state'] === 'draft')
+            && $selectedArtworks->every(static fn (array $row): bool => $row['is_ready']);
+        $hasPublishedMoveTarget = collect($moveTargets)->contains(static fn (array $target): bool => $target['state'] === 'published');
+        $selectedCanMoveToGallery = $selectedArtworks->isNotEmpty() && $moveTargets !== []
+            && (! $selectedHasPublished || $hasPublishedMoveTarget);
+        $selectedCanMoveUp = $reorderEnabled
+            && $selectedArtworks->contains(static fn (array $row): bool => $row['can_move_up']);
+        $selectedCanMoveDown = $reorderEnabled
+            && $selectedArtworks->contains(static fn (array $row): bool => $row['can_move_down']);
+    @endphp
     <x-admin.workspace :title="$galleryContext['name']">
         <x-admin.metrics :columns="6" class="gallery-status-metrics admin-metrics--six-state" aria-label="Gallery overview">
             @foreach ($metrics as $metric)
@@ -83,7 +106,7 @@
             </div>
         </div>
 
-        @php($reorderEnabled = ($galleryContext['sort_mode'] ?? 'manual') === 'manual' && trim($search) === '' && $statusFilter === 'any' && $readinessFilter === 'any')
+
 
         <div class="gallery-workspace__result-surface">
             <x-admin.controls class="admin-data-controls--dashboard-responsive gallery-workspace__controls" aria-label="Gallery controls" metric-grid :filter-count="2" :search-span="2">
@@ -117,7 +140,7 @@
                 <x-slot:reset>
                     <div class="admin-data-control-group">
                         <span class="admin-data-control-label">{{ __('Filter') }}</span>
-                        <x-admin.clear-filters wire:click="resetFilters" />
+                        <x-admin.clear-filters wire:click="resetFilters" :disabled="trim($search) === '' && $statusFilter === 'any' && $readinessFilter === 'any'" />
                     </div>
                 </x-slot:reset>
 
@@ -168,14 +191,14 @@
                             </button>
                             <div class="admin-selection__menu" x-show="open" x-cloak x-on:click.outside="open = false" role="menu">
                                 @if ($moveTargets !== [])
-                                    <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('moveSelectedToGallery')">{{ __('Move to Gallery…') }}</button>
+                                    <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('moveSelectedToGallery')" @disabled(! $selectedCanMoveToGallery)>{{ __('Move to Gallery…') }}</button>
                                 @endif
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('up')" @disabled(! $reorderEnabled)>{{ __('Move selected up') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('down')" @disabled(! $reorderEnabled)>{{ __('Move selected down') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('publishSelectedArtworks')">{{ __('Publish selected') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('unpublishSelectedArtworks')">{{ __('Unpublish selected') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('removeSelectedArtworks')">{{ __('Remove selected') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('deleteSelectedArtworks')">{{ __('Delete selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('up')" @disabled(! $selectedCanMoveUp)>{{ __('Move selected up') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('down')" @disabled(! $selectedCanMoveDown)>{{ __('Move selected down') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('publishSelectedArtworks')" @disabled(! $selectedCanPublish)>{{ __('Publish selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('unpublishSelectedArtworks')" @disabled(! $selectedHasPublished)>{{ __('Unpublish selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('removeSelectedArtworks')" @disabled(! $selectedAllDraft)>{{ __('Remove selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('deleteSelectedArtworks')" @disabled(! $selectedAllDraft)>{{ __('Delete selected') }}</button>
                             </div>
                         </div>
                         <span class="admin-selection__count" aria-label="{{ count($selectedArtworkIds) }} selected">{{ count($selectedArtworkIds) }}</span>
@@ -398,11 +421,15 @@
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" />
                                     </button>
                                     @if ($moveTargets !== [])
-                                        <button class="gallery-workspace__icon-action" type="button" wire:click="mountAction('moveArtworkToGallery', { artwork: {{ $artwork['id'] }} })" title="Move to Gallery" aria-label="Move {{ $artwork['title'] }} to another Gallery">
+                                        <button class="gallery-workspace__icon-action" type="button" wire:click="mountAction('moveArtworkToGallery', { artwork: {{ $artwork['id'] }} })"
+                                            @disabled($artwork['state'] === 'published' && ! $hasPublishedMoveTarget)
+                                            title="{{ $artwork['state'] === 'published' && ! $hasPublishedMoveTarget ? 'Published artwork needs a published destination Gallery' : 'Move to Gallery' }}" aria-label="Move {{ $artwork['title'] }} to another Gallery">
                                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveBetween->mini()" />
                                         </button>
                                     @endif
-                                    <button class="gallery-workspace__icon-action" type="button" wire:click="mountAction('removeArtwork', { artwork: {{ $artwork['id'] }} })" title="Remove from Gallery" aria-label="Remove {{ $artwork['title'] }} from Gallery">
+                                    <button class="gallery-workspace__icon-action" type="button" wire:click="mountAction('removeArtwork', { artwork: {{ $artwork['id'] }} })"
+                                        @disabled($artwork['state'] !== 'draft')
+                                        title="{{ $artwork['state'] === 'draft' ? 'Remove from Gallery' : 'Unpublish artwork before removing from Gallery' }}" aria-label="Remove {{ $artwork['title'] }} from Gallery">
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Detach->mini()" />
                                     </button>
                                     <button

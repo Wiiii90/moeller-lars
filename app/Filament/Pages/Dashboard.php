@@ -534,7 +534,7 @@ final class Dashboard extends Page
             ->all();
     }
 
-    /** @return array{has_selection:bool,all_mutable:bool,all_readable:bool} */
+    /** @return array{has_selection:bool,can_pin:bool,can_unpin:bool,all_mutable:bool,all_readable:bool} */
     private function selectionCapabilities(): array
     {
         $feed = app(DashboardFeed::class);
@@ -552,8 +552,16 @@ final class Dashboard extends Page
             }
         }
 
+        $pinnedKeys = collect(app(DashboardFeedPins::class)->entries())->pluck('key')->all();
+
         return [
             'has_selection' => $entries !== [],
+            'can_pin' => collect($entries)->contains(static fn (array $entry): bool =>
+                ! in_array($entry['key'] ?? null, $pinnedKeys, true)
+            ),
+            'can_unpin' => collect($entries)->contains(static fn (array $entry): bool =>
+                in_array($entry['key'] ?? null, $pinnedKeys, true)
+            ),
             'all_readable' => $entries !== [] && collect($entries)->every(
                 fn (array $entry): bool => $this->isReadableFeedEntry($entry),
             ),

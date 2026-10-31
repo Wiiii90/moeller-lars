@@ -21,9 +21,9 @@
 }
 
 /* Ordinary tables are responsive layouts, never horizontal scrollports. */
-.admin-table,
+.admin-table:not(.admin-repeater-table__table),
 .admin-data-table,
-.admin-table--data,
+.admin-table--data:not(.admin-repeater-table__table),
 .media-workspace__table-wrap,
 .admin-hierarchy--pages{
     max-width: 100%;
@@ -52,7 +52,7 @@
 }
 
 .admin-table th,
-.admin-table td{
+.admin-table:not(.admin-repeater-table__table) td{
     min-width: 0;
     overflow: hidden;
 }

@@ -317,7 +317,7 @@ final class JournalWorkspace extends Page
 
     public function moveSelectedEntries(string $direction): void
     {
-        if (! in_array($direction, ['up', 'down'], true)) {
+        if (! $this->canDragSort() || ! in_array($direction, ['up', 'down'], true)) {
             return;
         }
         if ($this->journalTemplate() === JournalTemplate::Blog) {
@@ -1240,6 +1240,30 @@ final class JournalWorkspace extends Page
             body: is_string($message) ? $message : 'The requested Journal change is not valid.',
             status: 'danger',
         );
+    }
+
+    /** @return array{publish:bool,unpublish:bool,archive:bool,restore:bool,delete:bool} */
+    public function selectedEntryCapabilities(): array
+    {
+        $isBlog = $this->journalTemplate() === JournalTemplate::Blog;
+        $records = $isBlog ? $this->selectedPosts() : $this->selectedExhibitions();
+        $states = $records->map(static fn (BlogPost|Exhibition $entry): string =>
+            (string) $entry->getAttribute('state')
+        );
+
+        return [
+            'publish' => $isBlog && $states->contains(static fn (string $state): bool =>
+                in_array($state, ['draft', 'scheduled', 'unpublished'], true)
+            ),
+            'unpublish' => $isBlog && $states->contains('published'),
+            'archive' => $isBlog && $states->contains(static fn (string $state): bool => $state !== 'archived'),
+            'restore' => $isBlog && $states->contains(static fn (string $state): bool =>
+                in_array($state, ['scheduled', 'unpublished', 'archived'], true)
+            ),
+            'delete' => $states->contains(static fn (string $state): bool =>
+                $isBlog ? ! in_array($state, ['published', 'scheduled'], true) : $state !== 'published'
+            ),
+        ];
     }
 
     private function selectedPosts(): EloquentCollection

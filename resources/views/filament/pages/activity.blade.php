@@ -353,10 +353,12 @@
                     <x-slot:reset>
                         <div class="admin-data-control-group activity-control--reset">
                             <span class="admin-data-control-label">{{ __('Filter') }}</span>
-                            <a class="admin-action admin-action--with-icon" href="{{ $resetUrl }}" wire:navigate aria-label="Clear activity filters">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">{{ __('Clear') }}</span>
-                            </a>
+                            <x-admin.clear-filters
+                                :href="$resetUrl"
+                                wire:navigate
+                                aria-label="Clear activity filters"
+                                :disabled="trim($search) === '' && $areaFilter === '' && $familyFilter === '' && $dateFilter === '' && $hourFilter === ''"
+                            />
                         </div>
                     </x-slot:reset>
 
