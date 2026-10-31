@@ -34,7 +34,7 @@
 
         <x-slot:reset>
             <div class="admin-data-control-group admin-dashboard__feed-clear">
-                <x-admin.clear-filters wire:click="resetFeed" />
+                <x-admin.clear-filters wire:click="resetFeed" :disabled="trim($feedSearch) === '' && $feedType === 'all' && $notificationFilter === 'all'" />
             </div>
         </x-slot:reset>
 
