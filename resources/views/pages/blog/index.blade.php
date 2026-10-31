@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', $section->title.' · Lars Möller')
-@section('meta_description', $section->title.' by Lars Möller')
+@section('meta_description', $section->metaDescriptionOr($section->title.' by Lars Möller'))
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($siteNodeRoute->path($section)))
 
 @section('content')
