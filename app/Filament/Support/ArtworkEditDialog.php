@@ -108,7 +108,6 @@ final class ArtworkEditDialog
                         ->default(0)
                         ->columnSpanFull(),
 
-
                     TextInput::make('dimension_height')->label('Height (H)')->numeric()->minValue(0.01)->nullable(),
                     TextInput::make('dimension_width')->label('Width (W)')->numeric()->minValue(0.01)->nullable(),
                     TextInput::make('dimension_depth')->label('Depth (D)')->numeric()->minValue(0.01)->nullable(),

@@ -2,7 +2,9 @@
 
 @php
     $title = trim((string) $artwork->title);
-    $material = trim((string) ($artwork->medium ?? ''));
+    // Historical preset names may contain HTML entities. Decode for display
+    // only: persisted material values and existing Artwork associations stay intact.
+    $material = html_entity_decode(trim((string) ($artwork->medium ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8');
     $size = \App\Domain\Artwork\ArtworkDimensions::display($artwork->dimensions) ?? '';
     $year = $artwork->work_year !== null ? trim((string) $artwork->work_year) : '';
     // Numeric legacy H × W [× 0] uses the editorial default cm.

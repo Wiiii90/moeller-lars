@@ -60,7 +60,9 @@
 }
 
 .admin-control-field .fi-select-input-btn {
-    padding-inline: var(--admin-control-text-inset) !important;
+    /* Filament text inputs use the normal field inset; searchable Selects
+     * must not start at the edge when adjacent text fields are indented. */
+    padding-inline: .75rem !important;
 }
 
 .admin-control-field .fi-select-input-placeholder {
