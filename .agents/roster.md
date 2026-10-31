@@ -4,7 +4,7 @@
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
-| Dev Worker 1 | 3 | Active — takeover for independent Exhibition image-stage prototype and duplicate-address diagnosis | Public Exhibitions, Admin-Dialog-Autosave/Schließen; Medien-Folgeaufgaben | [dev-1.md](workers/dev-1.md) |
+| Dev Worker 1 | 3 | Active — one-list Exhibition image-stage prototype committed; browser review pending | Public Exhibitions, Admin-Dialog-Autosave/Schließen; Medien-Folgeaufgaben | [dev-1.md](workers/dev-1.md) |
 | Dev Worker 2 | 2 | Active — shared select layout and squared rich editor committed; browser acceptance pending | Gallery and Exhibition Media File selection, Rich Text frame, Gallery Settings search description; previous Admin action consistency | [dev-2.md](workers/dev-2.md) |
 | Dev Worker 3 | 4 | Active — inherited Rich-Text changes; awaiting local browser acceptance | Shared Admin Rich-Text editor link/color popovers and visual consistency; avoid unrelated editor changes | [dev-3.md](workers/dev-3.md) |
 

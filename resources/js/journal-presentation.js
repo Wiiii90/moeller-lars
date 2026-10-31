@@ -181,6 +181,87 @@ function initializeExhibitionVideoPreview(button) {
     };
 }
 
+function initializeExhibitionImageIndex(root) {
+    const stage = root.querySelector('[data-exhibition-stage]');
+    const stageImage = stage?.querySelector('img');
+    const stageVideo = stage?.querySelector('video');
+    const stagePlay = stage?.querySelector('[data-exhibition-stage-play]');
+    const rows = Array.from(root.querySelectorAll('.exhibition-entry'));
+    if (!stage || !stageImage || !stageVideo || !stagePlay) return null;
+
+    const previewFor = (row) => row?.querySelector('.exhibition-entry__teaser :is(img, video)');
+    const initial = rows.find((row) => previewFor(row));
+    if (!initial) return null;
+
+    let active = initial;
+    const show = (row) => {
+        const preview = previewFor(row);
+        const src = preview?.getAttribute('src');
+        const isImage = preview instanceof HTMLImageElement && !!src;
+        const isVideo = preview instanceof HTMLVideoElement && !!src;
+
+        // Only the selected preview is transferred into the one stage visual.
+        // There is no second list, request, player or automatic playback.
+        if (isImage) {
+            if (stageImage.getAttribute('src') !== src) stageImage.setAttribute('src', src);
+        } else {
+            stageImage.removeAttribute('src');
+        }
+        stageImage.hidden = !isImage;
+
+        if (isVideo) {
+            if (stageVideo.getAttribute('src') !== src) stageVideo.setAttribute('src', src);
+        } else if (stageVideo.hasAttribute('src')) {
+            stageVideo.pause();
+            stageVideo.removeAttribute('src');
+            stageVideo.load();
+        }
+        stageVideo.hidden = !isVideo;
+
+        const play = row?.querySelector('[data-exhibition-video-play]');
+        stagePlay.hidden = !play;
+        if (play) stagePlay.setAttribute('aria-label', play.getAttribute('aria-label') || 'Open and play exhibition video');
+        active = row;
+    };
+
+    const fallback = () => {
+        const opened = rows.find((row) => row.querySelector('details[open]') && previewFor(row));
+        show(opened || initial);
+    };
+    const disposers = rows.flatMap((row) => {
+        const enter = () => show(row);
+        const leave = () => fallback();
+        const focus = () => show(row);
+        const toggle = () => {
+            if (row.querySelector('details')?.open) show(row);
+            else if (row === active) fallback();
+        };
+        const details = row.querySelector('details');
+        row.addEventListener('pointerenter', enter);
+        row.addEventListener('pointerleave', leave);
+        row.addEventListener('focusin', focus);
+        details?.addEventListener('toggle', toggle);
+        return () => {
+            row.removeEventListener('pointerenter', enter);
+            row.removeEventListener('pointerleave', leave);
+            row.removeEventListener('focusin', focus);
+            details?.removeEventListener('toggle', toggle);
+        };
+    });
+    const playCurrent = () => active?.querySelector('[data-exhibition-video-play]')?.click();
+    stagePlay.addEventListener('click', playCurrent);
+    show(initial);
+    root.setAttribute('data-stage-ready', '');
+
+    return () => {
+        root.removeAttribute('data-stage-ready');
+        stagePlay.removeEventListener('click', playCurrent);
+        disposers.forEach((dispose) => dispose());
+        stageVideo.pause();
+        stageVideo.removeAttribute('src');
+    };
+}
+
 export function initializeJournalPresentation() {
     document.querySelectorAll('[data-journal-slideshow]').forEach(initializeSlideshow);
     const disposers = [
@@ -188,6 +269,8 @@ export function initializeJournalPresentation() {
             .map(initializeExhibitionMap),
         ...Array.from(document.querySelectorAll('[data-exhibition-video-play]'))
             .map(initializeExhibitionVideoPreview),
+        ...Array.from(document.querySelectorAll('[data-exhibition-image-index]'))
+            .map(initializeExhibitionImageIndex),
     ].filter(Boolean);
     return () => disposers.forEach((dispose) => dispose());
 }
