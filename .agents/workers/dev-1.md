@@ -4,6 +4,11 @@
 
 **Night-Gallery-Prototyp ausdrücklich abgelehnt:** Nutzer fand den dunklen Ausstellungsbereich unpassend auf einer ansonsten hellen Homepage und bat, Überschriften/Titel unverändert zu lassen. `94585bf` wird beim neuen Stilversuch vollständig durch die vor-Night-Gallery-CSS-Grundlage ersetzt (zusätzliche Titel-/Hoverfarben beseitigt). **Neuer, isolierter Soft-Paper-Stilversuch:** Diffuse warme, zu transparenten Außenkanten auslaufende Farbflächen innerhalb der Exhibitions-Fläche, kräftigere warme Fläche unter geöffneten Artikeln sowie sichtbare helle Passepartouts und Schatten an den bestehenden Medien. Kein Eingriff in globale General-Hintergründe, Titel/Schriftarten/Schriftgrößen, General Width/Padding, Blade, Video-Logik oder Mediadaten. Kein Nummern-/Trennlinien-/Bühnenkonzept. Noch keine reale Browserabnahme, isolierter CSS-Commit rücknehmbar.
 
+## Browserfeedback 31.10.2026 — noch umzusetzen
+- Benutzer fordert den warmen Exhibitions-Hintergrund über die gesamte Page bei unverändertem Padding/General; geöffneten Entry nicht als deutlich andersfarbigen Block darstellen.
+- Video-Teaser öffnet Details, großes Video spielt danach nicht und bietet keine Startmöglichkeit. Eigentümer von Teaser-Klick und tatsächlichem Video-Renderer prüfen, funktional und manuell bedienbar machen.
+- Nutzer bestätigt: kein lokaler Checkout ist **kein** GitHub-Zugriffsblocker; verbundener GitHub-Connector ist nutzbar. Zugriffspflicht in Arbeitsprotokoll und Dev-Skill nachgezogen. Quelle/Browserabnahme nach der Korrektur offen.
+
 ## Übernahme durch neuen Chat — Lease 5 (31.10.2026)
 - Der Nutzer hat denselben nummerierten Dev-Worker ausdrücklich zur Fortsetzung angewiesen. Kein neuer Aufgabenbereich: vorhandenen Soft-Paper-Stil für Public Exhibitions gegen aktuellen `dev`-Stand und akzeptierte Designgrenzen prüfen; reale Browserabnahme und neues Künstlerfeedback bleiben offen.
 - Keine weiteren Gestaltungsvarianten auf Verdacht, keine Änderung von General/Titel/Typografie, keine CI-Starts, Tests oder Deployments, keine Aufgaben von Dev 2/3 übernehmen.
