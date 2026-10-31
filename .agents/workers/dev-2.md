@@ -22,3 +22,9 @@
 - User-reported `Undefined variable $reorderEnabled` in `resources/views/filament/resources/artworks/pages/manage-gallery-artworks.blade.php` was a regression introduced by my Admin bulk availability change `fe55f052`; computed bulk move availability at top of template before the prior reorder mode assignment further down.
 - Fix committed on `dev` as `82fa25437afe2c54c14978d930e96768acab0f0c`: compute `$reorderEnabled` at the start of the top-level `@php` block, remove the later duplicate. No domain action or filter business rules changed.
 - Source re-fetched and definition order verified (one declaration before both consumers). No local browser/PHP runtime validation possible here. Real Gallery page load verification remains an acceptance requirement. No CI or deployment started.
+
+
+## 2026-10-31 — Gallery Edit manual Position
+- **User request:** Add a direct 1-based Position field to Gallery Artwork Edit (as in Pages), avoiding repeated Move up/down or dragging from last to first. Manual/auto-sorted Galleries remain distinct.
+- **Implementation:** Extend existing shared ArtworkEditDialog schema with optional Gallery-only Position; Gallery Edit fill reads live canonical displayed rank, and its existing autosave transaction composes metadata and GalleryEditorialService::reorderArtworks() through GalleryWorkspaceMoveActions (the same insertion owner as native sort). Auto date sorting shows read-only Position and explanation. No separate ranking algorithm or direct raw position assignment.
+- **Validation:** Numeric integer 1..Gallery size; no-op never notifies; changes refresh Gallery and retain mounted Editor; server rejects attempts in automatic sort mode. Runtime/browser test, notification cardinality and edit reopening remain unverified; test owner should cover manual first/last, unchanged, invalid/out-of-range, auto sort, mixed metadata and mode transitions.

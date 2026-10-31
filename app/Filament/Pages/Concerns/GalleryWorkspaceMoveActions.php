@@ -65,21 +65,10 @@ trait GalleryWorkspaceMoveActions
             return;
         }
 
-        $artworkId = (int) $artworkId;
-        $position = (int) $position;
-        $orderedIds = $this->orderedArtworkIds();
-        $from = array_search($artworkId, $orderedIds, true);
-
-        if ($from === false || $position < 0 || $position >= count($orderedIds) || $from === $position) {
-            return;
-        }
-
-        $next = $orderedIds;
-        array_splice($next, $from, 1);
-        array_splice($next, $position, 0, [$artworkId]);
-
         try {
-            $this->saveArtworkOrder($next);
+            if (! $this->placeArtworkAtIndex((int) $artworkId, (int) $position)) {
+                return;
+            }
         } catch (ValidationException $exception) {
             $this->notifyValidationFailure('Gallery order was not updated', $exception);
 
@@ -91,6 +80,40 @@ trait GalleryWorkspaceMoveActions
             title: 'Gallery order updated',
             status: 'success',
         );
+    }
+
+    /**
+     * Manual Edit position is one-based, unlike Livewire drag's zero-based
+     * target index. Both use the same ordering persistence and audit owner.
+     */
+    private function moveArtworkToPosition(int $artworkId, mixed $position): bool
+    {
+        if (($this->galleryContext['sort_mode'] ?? GalleryPresentation::SORT_MANUAL) !== GalleryPresentation::SORT_MANUAL) {
+            throw ValidationException::withMessages(['position' => 'Switch the Gallery to Manual sorting to change Position.']);
+        }
+        $rank = filter_var($position, FILTER_VALIDATE_INT);
+        $count = count($this->orderedArtworkIds());
+        if ($rank === false || $rank < 1 || $rank > $count) {
+            throw ValidationException::withMessages(['position' => 'Choose a position from 1 to '.$count.'.']);
+        }
+
+        return $this->placeArtworkAtIndex($artworkId, $rank - 1);
+    }
+
+    /** Reorder by canonical rank; no-op positions are not persisted or notified. */
+    private function placeArtworkAtIndex(int $artworkId, int $index): bool
+    {
+        $orderedIds = $this->orderedArtworkIds();
+        $from = array_search($artworkId, $orderedIds, true);
+        if ($from === false || $index < 0 || $index >= count($orderedIds) || $from === $index) {
+            return false;
+        }
+
+        array_splice($orderedIds, $from, 1);
+        array_splice($orderedIds, $index, 0, [$artworkId]);
+        $this->saveArtworkOrder($orderedIds);
+
+        return true;
     }
 
     public function moveSelectedArtworks(string $direction): void

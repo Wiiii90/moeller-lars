@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
+use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaIngestService;
@@ -106,9 +107,20 @@ trait GalleryWorkspaceArtworkDialogs
         $action = Action::make('editArtwork')
             ->label('Edit')
             ->modalHeading(__('Edit artwork'))
-            ->fillForm(fn (array $arguments): array => $dialog->fill($this->actionArtwork($arguments)->fresh()))
+            ->fillForm(function (array $arguments) use ($dialog): array {
+                $artwork = $this->actionArtwork($arguments)->fresh();
+                $orderedIds = $this->orderedArtworkIds();
+                $index = array_search((int) $artwork->getKey(), $orderedIds, true);
+
+                return [
+                    ...$dialog->fill($artwork),
+                    'position' => $index === false ? null : $index + 1,
+                ];
+            })
             ->schema(fn (array $arguments): array => $dialog->schema(
                 autosave: true,
+                positionCount: count($this->artworkDataset),
+                positionEditable: ($this->galleryContext['sort_mode'] ?? GalleryPresentation::SORT_MANUAL) === GalleryPresentation::SORT_MANUAL,
                 primaryReadOnly: (string) $this->actionArtwork($arguments)->fresh()->getAttribute('state') === 'published',
                 onPrimaryMediaChanged: function (?int $assetId) use ($dialog, $arguments): void {
                     if (! $dialog->changePrimaryMedia($this->actionArtwork($arguments), $assetId)) {
@@ -124,8 +136,20 @@ trait GalleryWorkspaceArtworkDialogs
             ))
             ->extraModalFooterActions(fn (array $arguments): array => $this->artworkEditHeaderActions($arguments))
             ->action(function (array $data, array $arguments) use ($dialog): void {
-                $changed = $dialog->save($this->actionArtwork($arguments), $data, savePrimaryMedia: false);
+                // Artwork metadata and the Gallery ranking share one transaction,
+                // while the existing Gallery order service owns the ranking.
+                $changed = DB::transaction(function () use ($dialog, $data, $arguments): bool {
+                    $artwork = $this->actionArtwork($arguments);
+                    $metadataChanged = $dialog->save($artwork, $data, savePrimaryMedia: false);
+                    $orderChanged = array_key_exists('position', $data)
+                        && $this->moveArtworkToPosition((int) $artwork->getKey(), $data['position']);
+
+                    return $metadataChanged || $orderChanged;
+                });
                 $this->refreshWorkspaceAfterMutation();
+                if ($changed) {
+                    $this->forceRender();
+                }
 
                 if ($changed) {
                     app(AdminNotifier::class)->notification(
