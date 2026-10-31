@@ -23,8 +23,7 @@
                 $attribution = $exhibition->summaryAttribution();
                 $physicalVenue = $exhibition->publicVenue();
                 $location = $exhibition->mapLocationLabel();
-                $hasDescription = trim((string) ($exhibition->description ?? '')) !== ''
-                    && trim((string) $exhibition->description) !== trim((string) $exhibition->location_text);
+                $hasDescription = $exhibition->hasDistinctPublicDescription();
                 $hasCover = $cover instanceof \App\Models\JournalEntryMedia;
                 $hasFacts = $vernissage !== null || $address !== null || $physicalVenue !== null;
                 $hasActions = $map !== null || ($exhibition->publicFieldVisible('external_url') && $exhibition->external_url !== null);

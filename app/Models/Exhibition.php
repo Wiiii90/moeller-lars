@@ -135,6 +135,36 @@ class Exhibition extends Model
         return $address !== '' ? $address : null;
     }
 
+    /**
+     * Avoid printing a migrated street address twice when a legacy rich-text
+     * description consists of nothing but that already visible address.
+     * Preserve all authored prose and media-bearing markup, without changing
+     * persisted content or the visibility of an independently hidden address.
+     */
+    public function hasDistinctPublicDescription(): bool
+    {
+        $description = trim((string) ($this->getAttribute('description') ?? ''));
+        if ($description === '') {
+            return false;
+        }
+
+        if (! $this->publicFieldVisible('location_text') || $this->publicAddress() === null) {
+            return true;
+        }
+
+        if (preg_match('/<\\s*(?:a|img|video|audio|iframe|picture|figure|svg|table|ul|ol)\\b/i', $description)) {
+            return true;
+        }
+
+        $plain = strip_tags(preg_replace('/<br\\s*\\/?>/i', ' ', $description) ?? $description);
+        $plain = html_entity_decode($plain, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $normalize = static fn (string $text): string => mb_strtolower(
+            trim(preg_replace('/\\s+/u', ' ', $text) ?? $text)
+        );
+
+        return $normalize($plain) !== $normalize((string) $this->streetAddress());
+    }
+
     /** Public bylines prioritize the organizer and never append an unrelated city. */
     public function summaryAttribution(): ?string
     {
