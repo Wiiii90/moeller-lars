@@ -63,8 +63,8 @@
                         <x-admin.selection-trigger-label>{{ __('Selected') }}</x-admin.selection-trigger-label>
                     </button>
                     <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
-                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkPin" @disabled(! $selectionCapabilities['has_selection'])>{{ __('Pin selected') }}</button>
-                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpin" @disabled(! $selectionCapabilities['has_selection'])>{{ __('Unpin selected') }}</button>
+                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkPin" @disabled(! $selectionCapabilities['can_pin'])>{{ __('Pin selected') }}</button>
+                        <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpin" @disabled(! $selectionCapabilities['can_unpin'])>{{ __('Unpin selected') }}</button>
                         <button class="admin-action" type="button" role="menuitem" wire:click="bulkMarkRead" @disabled(! $selectionCapabilities['all_readable'])>{{ __('Mark read') }}</button>
                         <button class="admin-action" type="button" role="menuitem" wire:click="bulkMarkUnread" @disabled(! $selectionCapabilities['all_readable'])>{{ __('Mark unread') }}</button>
                         @if ($deleteWithoutConfirmation)
