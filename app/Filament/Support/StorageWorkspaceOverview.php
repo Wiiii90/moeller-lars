@@ -239,6 +239,14 @@ final class StorageWorkspaceOverview
                 'files' => max(0, (int) ($snapshot['staging_files'] ?? 0)),
             ],
             [
+                'key' => 'other-private',
+                'label' => 'Other private files',
+                'area' => 'application',
+                'area_label' => 'Other private files',
+                'bytes' => max(0, (int) ($snapshot['other_private_bytes'] ?? 0)),
+                'files' => max(0, (int) ($snapshot['other_private_files'] ?? 0)),
+            ],
+            [
                 'key' => 'application',
                 'label' => 'Application data',
                 'area' => 'application',

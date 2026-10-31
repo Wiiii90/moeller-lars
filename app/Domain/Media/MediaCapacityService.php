@@ -27,6 +27,8 @@ final class MediaCapacityService
      *   generated_bytes:int|null,
      *   staging_bytes:int|null,
      *   staging_files:int|null,
+     *   other_private_bytes:int|null,
+     *   other_private_files:int|null,
      *   reserved_upload_bytes:int|null,
      *   managed_bytes:int|null,
      *   database_bytes:int|null,
@@ -54,6 +56,9 @@ final class MediaCapacityService
             [$authoritativeBytes, $originalFiles, $authoritativeFiles] = $this->measurePrefix('originals', true);
             [$generatedBytes, $generatedFiles] = $this->measurePrefix('variants');
             [$stagingBytes, $stagingFiles] = $this->measurePrefix('incoming-media');
+            [$privateBytes, $privateFiles] = $this->measurePrefix('');
+            $otherPrivateBytes = max(0, $privateBytes - $authoritativeBytes - $generatedBytes - $stagingBytes);
+            $otherPrivateFiles = max(0, $privateFiles - $originalFiles - $generatedFiles - $stagingFiles);
             $reservedUploadBytes = $this->measureUntransferredUploadReservations();
         } catch (Throwable) {
             return $this->unavailableSnapshot($quotaConfiguration['configured'], true, $quota);
@@ -64,8 +69,16 @@ final class MediaCapacityService
             return $this->unavailableSnapshot($quotaConfiguration['configured'], true, $quota);
         }
 
-        $databaseBytes = max(0, (int) ($database['logical_bytes'] ?? 0));
-        $siteUsedBytes = $authoritativeBytes + $generatedBytes + $stagingBytes + $databaseBytes;
+        // Charge at least the real PostgreSQL database footprint, including
+        // table/index overhead, not just the total logical row payload.
+        $databaseBytes = max(
+            0,
+            (int) ($database['logical_bytes'] ?? 0),
+            (int) ($database['physical_database_bytes'] ?? 0),
+        );
+        // Charge EVERY file on the private media volume, not merely the
+        // familiar originals/variants/incoming-media prefixes.
+        $siteUsedBytes = $privateBytes + $databaseBytes;
         $remaining = $quota === null ? null : max(0, $quota - $siteUsedBytes - $reservedUploadBytes);
         $ratio = $quota === null ? null : $siteUsedBytes / $quota;
         $status = 'healthy';
@@ -86,9 +99,11 @@ final class MediaCapacityService
             'quota_bytes' => $quota,
             'authoritative_bytes' => $authoritativeBytes,
             'generated_bytes' => $generatedBytes,
-            'managed_bytes' => $authoritativeBytes + $generatedBytes + $stagingBytes,
+            'managed_bytes' => $privateBytes,
             'staging_bytes' => $stagingBytes,
             'staging_files' => $stagingFiles,
+            'other_private_bytes' => $otherPrivateBytes,
+            'other_private_files' => $otherPrivateFiles,
             'reserved_upload_bytes' => $reservedUploadBytes,
             'database_bytes' => $databaseBytes,
             'site_used_bytes' => $siteUsedBytes,
@@ -185,7 +200,7 @@ final class MediaCapacityService
         try {
             [$authoritativeBytes] = $this->measurePrefix('originals');
             [$storedGeneratedBytes] = $this->measurePrefix('variants');
-            [$stagingBytes] = $this->measurePrefix('incoming-media');
+            [$privateBytes] = $this->measurePrefix('');
             $reservedUploadBytes = $this->measureUntransferredUploadReservations();
         } catch (Throwable) {
             throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified. Try the upload again later.']);
@@ -196,10 +211,12 @@ final class MediaCapacityService
             throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified. Try the upload again later.']);
         }
 
-        $siteUsedBytes = $authoritativeBytes
-            + $storedGeneratedBytes
-            + $stagingBytes
-            + max(0, (int) ($database['logical_bytes'] ?? 0));
+        $siteUsedBytes = $privateBytes
+            + max(
+                0,
+                (int) ($database['logical_bytes'] ?? 0),
+                (int) ($database['physical_database_bytes'] ?? 0),
+            );
 
         // Reserved untransferred bytes protect concurrent resumable sessions
         // against ordinary media ingest or unrelated generated variants.
@@ -263,6 +280,8 @@ final class MediaCapacityService
             'generated_bytes' => null,
             'staging_bytes' => null,
             'staging_files' => null,
+            'other_private_bytes' => null,
+            'other_private_files' => null,
             'reserved_upload_bytes' => null,
             'managed_bytes' => null,
             'database_bytes' => null,
