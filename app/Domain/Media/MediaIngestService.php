@@ -32,7 +32,10 @@ class MediaIngestService
 
     public const TRANSFORM_PROFILE = 'public-v1';
 
-    private const INGEST_LOCK_SECONDS = 240;
+    // A 512 MiB original may require hashing, container probing, poster generation
+    // and storage admission. Keep the atomic ingest lock beyond the bounded
+    // web request so concurrent uploads cannot race the shared storage quota.
+    private const INGEST_LOCK_SECONDS = 420;
 
     private const MEDIA_PROBE_BYTES = 1024 * 1024;
 
