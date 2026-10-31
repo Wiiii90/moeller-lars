@@ -86,7 +86,7 @@
         <x-slot:reset>
             <div class="admin-data-control-group">
                 <span class="admin-data-control-label">{{ __('Filter') }}</span>
-                <x-admin.clear-filters wire:click="resetFilters" />
+                <x-admin.clear-filters wire:click="resetFilters" :disabled="trim($search) === '' && $type === 'all' && $size === 'all' && $usage === 'all' && $state === 'available'" />
             </div>
         </x-slot:reset>
 
