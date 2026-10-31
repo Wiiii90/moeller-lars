@@ -263,7 +263,7 @@ final class JournalEntryEditorSchema
         return AdminTableRepeater::make('gallery_images')
             ->label(__('Gallery media'))
             ->hiddenLabel()
-            ->table([TableColumn::make(__('Image or video')), TableColumn::make(__('Playback controls'))])
+            ->table([TableColumn::make(__('Image or video')), TableColumn::make(__('Controls'))])
             ->compact()
             ->schema([
                 MediaAssetSelect::makeId(
