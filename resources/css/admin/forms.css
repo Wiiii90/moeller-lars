@@ -437,9 +437,11 @@
 }
 
 .admin-help__popover {
-    /* The single shared help component positions its portal in the viewport,
-       clear of modal scroll clipping and all four screen edges. */
+    /* Native Popover API uses the top layer without detaching Alpine state
+       during Livewire morphs. Keep the viewport-positioned help geometry. */
     position: fixed;
+    inset: auto;
+    margin: 0;
     z-index: 100000;
     width: min(18rem, calc(100dvw - 24px));
     max-height: calc(100dvh - 24px);
