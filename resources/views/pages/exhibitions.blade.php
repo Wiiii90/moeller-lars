@@ -26,12 +26,17 @@
                 $hasDescription = trim((string) ($exhibition->description ?? '')) !== ''
                     && trim((string) $exhibition->description) !== trim((string) $exhibition->location_text);
                 $hasCover = $cover instanceof \App\Models\JournalEntryMedia;
+                // Only image covers appear as quiet catalogue previews. Video
+                // covers keep their existing expanded playback behavior.
+                $hasCoverPreview = $hasCover && \App\Domain\Media\MediaTypePolicy::isImage(
+                    (string) $cover->mediaAsset?->getAttribute('mime_type')
+                );
                 $hasFacts = $vernissage !== null || $address !== null || $physicalVenue !== null;
                 $hasActions = $map !== null || ($exhibition->publicFieldVisible('external_url') && $exhibition->external_url !== null);
                 $hasDetails = $hasFacts || $hasDescription || $hasCover
                     || $gallery->isNotEmpty() || $hasActions;
             @endphp
-            <article class="exhibition-entry" @if ($exhibition->image_viewer_enabled) data-artwork-viewer-sequence @endif data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
+            <article class="exhibition-entry {{ $hasCoverPreview ? 'exhibition-entry--with-teaser' : '' }}" @if ($exhibition->image_viewer_enabled) data-artwork-viewer-sequence @endif data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
                 @if ($hasDetails)
                     <details class="exhibition-entry__disclosure">
                         <summary class="exhibition-entry__summary">
@@ -160,6 +165,13 @@
                         </div>
                     </details>
                 @else
+                    </div>
+                @endif
+                @if ($hasCoverPreview)
+                    {{-- Decorative, small rendition of the same canonical variant;
+                         viewer and credits remain on the expanded cover only. --}}
+                    <div class="exhibition-entry__teaser" aria-hidden="true">
+                        {!! $journalMedia->render($cover, 'journal-entry-media exhibition-entry__teaser-media', includeInheritedCopyright: false, includeCopyrightNotice: false, showCaption: false) !!}
                     </div>
                 @endif
             </article>

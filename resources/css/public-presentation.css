@@ -1469,8 +1469,42 @@ body {
     color: var(--public-ink);
 }
 .exhibition-entry {
+    position: relative;
     min-width: 0;
     margin: 0 0 2rem;
+}
+/* The catalogue thumbnail stays outside native details, so its media does not
+   become a second disclosure trigger or interfere with the original viewer. */
+.exhibition-entry--with-teaser > .exhibition-entry__disclosure:not([open]) {
+    min-height: 4.3rem;
+}
+.exhibition-entry--with-teaser > .exhibition-entry__disclosure:not([open]) > .exhibition-entry__summary {
+    padding-inline-end: 5.5rem;
+}
+.exhibition-entry__teaser {
+    position: absolute;
+    inset-block-start: .1rem;
+    inset-inline-end: 0;
+    width: 4.6rem;
+    max-width: 100%;
+    pointer-events: none;
+}
+.exhibition-entry__teaser-media {
+    display: flex;
+    justify-content: flex-end;
+    min-width: 0;
+    margin: 0;
+}
+.exhibition-entry__teaser img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    max-height: 4.25rem;
+    height: auto;
+    object-fit: contain;
+}
+.exhibition-entry__disclosure[open] ~ .exhibition-entry__teaser {
+    display: none;
 }
 .exhibition-entry:last-of-type { margin-bottom: 0; }
 .exhibition-entry__disclosure[open] {
@@ -1597,6 +1631,20 @@ body {
     height: auto;
     object-fit: contain;
 }
+/* A brief entrance of the full cover suggests enlargement without moving
+   media nodes, duplicating viewer controls or animating overall page height. */
+.exhibition-entry__disclosure[open] .exhibition-entry__cover {
+    animation: exhibition-cover-enter 260ms ease-out both;
+}
+@keyframes exhibition-cover-enter {
+    from { opacity: 0; transform: translateY(.35rem) scale(.965); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .exhibition-entry__disclosure[open] .exhibition-entry__cover {
+        animation: none;
+    }
+}
 .exhibition-entry__info {
     min-width: 0;
     margin: 0 0 1rem;
@@ -1691,6 +1739,10 @@ body {
 }
 @container (max-width: 26.999rem) {
     .exhibition-entry { margin-bottom: 1.7rem; }
+    .exhibition-entry--with-teaser > .exhibition-entry__disclosure:not([open]) > .exhibition-entry__summary {
+        padding-inline-end: 5.1rem;
+    }
+    .exhibition-entry__teaser { width: 4.1rem; }
     .exhibition-entry__summary {
         grid-template-columns: minmax(0, 1fr);
         row-gap: .4rem;
