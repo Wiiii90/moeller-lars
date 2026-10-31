@@ -7,22 +7,6 @@
 @section('content')
     <x-public.page-heading :section="$section" />
     <section class="exhibitions-page" aria-label="Exhibitions">
-        <div class="exhibitions-page__layout" data-exhibition-image-index>
-            {{-- A single visual stage; the loop below still renders each exhibition
-                 exactly once. It reuses the preview media from the same row. --}}
-            <aside class="exhibitions-page__stage" data-exhibition-stage aria-label="Exhibition artwork preview">
-                <div class="exhibitions-page__stage-media">
-                    <img alt="" hidden>
-                    <video muted playsinline preload="metadata" hidden></video>
-                    <button class="exhibitions-page__stage-play" type="button"
-                        data-exhibition-stage-play aria-label="Open and play exhibition video" hidden>
-                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                            <path d="M9 5.5 18 12l-9 6.5z" fill="currentColor" />
-                        </svg>
-                    </button>
-                </div>
-            </aside>
-            <div class="exhibitions-page__entries">
         @foreach ($exhibitions as $exhibition)
             @php
                 $timing = $exhibition->temporalState(now());
@@ -200,7 +184,5 @@
                 @endif
             </article>
         @endforeach
-            </div>
-        </div>
     </section>
 @endsection
