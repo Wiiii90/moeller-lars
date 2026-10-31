@@ -277,8 +277,10 @@ final class JournalEntryEditorSchema
                     ->extraAlpineAttributes(['data-admin-edit-change-owner' => 'livewire'], merge: true)
                     ->skipRenderAfterStateUpdated()
                     ->afterStateUpdated(static function (mixed $state, Component $livewire): void {
-                        if (filled($state) && $livewire instanceof \App\Filament\Pages\JournalWorkspace) {
-                            $livewire->dispatch('admin-edit-list-updated');
+                        if (filled($state)
+                            && $livewire instanceof \App\Filament\Pages\JournalWorkspace
+                            && $livewire->getMountedAction()?->getName() === 'editExhibition') {
+                            $livewire->callMountedAction();
                         }
                     }),
                 self::videoControlsToggle('video_controls_enabled')->hiddenLabel(),

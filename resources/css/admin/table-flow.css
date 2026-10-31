@@ -54,14 +54,11 @@
 }
 
 .admin-repeater-table--media .admin-repeater-table__table th:nth-child(2):not(:last-child) {
-    width: 11rem;
+    width: 9rem;
 }
 
 .admin-repeater-table--media .admin-repeater-table__table th.admin-table__actions {
-    width: calc(
-        var(--admin-row-action-slot-move-up-width) + var(--admin-row-action-slot-move-down-width)
-        + var(--admin-row-action-slot-delete-width) + .75rem
-    );
+    width: 7.75rem;
 }
 
 .admin-repeater-table--media .fi-select-input .fi-dropdown-panel {
@@ -78,18 +75,24 @@
     white-space: nowrap;
 }
 
+.admin-repeater-table--media .admin-repeater-table__table td.admin-table__actions .admin-action {
+    display: inline-flex !important;
+    width: 1.75rem !important;
+    min-width: 1.75rem !important;
+    height: 1.75rem;
+    margin: 0 .125rem 0 0;
+    padding: 0 !important;
+    align-items: center;
+    justify-content: center;
+    gap: 0 !important;
+}
+
+.admin-repeater-table--media .admin-repeater-table__table td.admin-table__actions .admin-action__label {
+    display: none !important;
+}
+
 @container admin-table (max-width: 38rem) {
-    .admin-repeater-table--media .admin-repeater-table__table th:nth-child(2):not(:last-child),
-    .admin-repeater-table--media .admin-repeater-table__table th.admin-table__actions {
-        width: 6.5rem;
-    }
-
-    .admin-repeater-table--media .admin-repeater-table__table td.admin-table__actions .admin-action__label {
-        display: none;
-    }
-
-    .admin-repeater-table--media .admin-repeater-table__table td.admin-table__actions .admin-action {
-        min-width: 1.5rem;
-        padding-inline: .25rem;
+    .admin-repeater-table--media .admin-repeater-table__table th:nth-child(2):not(:last-child) {
+        width: 5rem;
     }
 }

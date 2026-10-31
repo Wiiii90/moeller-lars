@@ -67,6 +67,8 @@ function syncOpenModalGeometry() {
     }
 }
 
+const openModalIds = new Set();
+
 // The application owns only placement geometry. Every blocking Filament modal
 // opened over an admin Main frame receives the same measured content bounds.
 // Filament owns modal opening, document scroll lock, focus trapping, Escape,
@@ -75,8 +77,21 @@ function syncOpenModalGeometry() {
 // Only x-modal-opened represents an actual closed-to-open transition; position
 // once at that boundary, never in response to an unchanged mounted Action.
 document.addEventListener('x-modal-opened', (event) => {
-    syncModalGeometry(modalForEvent(event), { resetScroll: true });
+    const modal = modalForEvent(event);
+    if (! modal) return;
+
+    const id = String(event.detail.id);
+    const isNewSession = ! openModalIds.has(id);
+    openModalIds.add(id);
+    syncModalGeometry(modal, { resetScroll: isNewSession });
+});
+
+document.addEventListener('modal-closed', (event) => {
+    if (event.detail?.id != null) openModalIds.delete(String(event.detail.id));
 });
 
 window.addEventListener('resize', syncOpenModalGeometry, { passive: true });
-document.addEventListener('livewire:navigated', syncOpenModalGeometry);
+document.addEventListener('livewire:navigated', () => {
+    openModalIds.clear();
+    syncOpenModalGeometry();
+});
