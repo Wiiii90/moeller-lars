@@ -172,7 +172,7 @@ final class AdminRichText
                             // Filament wraps each View field in its own Alpine scope.
                             // Child x-refs are not members of this editor shell's $refs.
                             richElement(ref) {
-                                return this.$el.querySelector(`[x-ref="${ref}"]`)
+                                return this.$el.querySelector(`[x-ref='${ref}']`)
                             },
                             openLinkEditor(event) {
                                 const editor = event.detail?.editor
