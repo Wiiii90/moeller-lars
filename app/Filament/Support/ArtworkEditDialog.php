@@ -52,7 +52,7 @@ final class ArtworkEditDialog
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
@@ -87,6 +87,19 @@ final class ArtworkEditDialog
                     ArtworkMaterialSelect::make(),
                     TextInput::make('work_year')->label('Year')->numeric()->minValue(1000)->maxValue(9999)->nullable(),
                     DatePicker::make('work_date')->label('Exact date')->nullable(),
+                    ...($positionCount !== null ? [
+                        TextInput::make('position')
+                            ->label('Position')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(1)
+                            ->maxValue(max(1, $positionCount))
+                            ->required()
+                            ->disabled(! $positionEditable)
+                            ->helperText($positionEditable
+                                ? 'Move this Artwork directly to a position in this Gallery.'
+                                : 'Switch Gallery sorting to Manual to change the position.'),
+                    ] : []),
                     Select::make('exclude_from_home')
                         ->label('Home eligibility')
                         ->options([
