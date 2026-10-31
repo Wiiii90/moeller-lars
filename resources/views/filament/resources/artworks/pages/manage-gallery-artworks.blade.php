@@ -1,5 +1,9 @@
 <x-filament-panels::page>
     @php
+        $reorderEnabled = ($galleryContext['sort_mode'] ?? 'manual') === 'manual'
+            && trim($search) === ''
+            && $statusFilter === 'any'
+            && $readinessFilter === 'any';
         $selectedIds = array_map('intval', $selectedArtworkIds);
         $selectedArtworks = collect($artworkDataset)->filter(static fn (array $row): bool =>
             in_array((int) $row['id'], $selectedIds, true)
@@ -102,7 +106,7 @@
             </div>
         </div>
 
-        @php($reorderEnabled = ($galleryContext['sort_mode'] ?? 'manual') === 'manual' && trim($search) === '' && $statusFilter === 'any' && $readinessFilter === 'any')
+
 
         <div class="gallery-workspace__result-surface">
             <x-admin.controls class="admin-data-controls--dashboard-responsive gallery-workspace__controls" aria-label="Gallery controls" metric-grid :filter-count="2" :search-span="2">
