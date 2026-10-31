@@ -92,7 +92,15 @@ final class MediaDerivativeGenerator
                     (string) ($process->getTermSignal() ?? 'none'),
                     substr($stderr, 0, 3000),
                 );
-                $this->fail($this->processingErrorMessage($kind, $stderr), $diagnostic);
+                // A container memory-cgroup kill usually produces no stderr:
+                // the kernel kills vipsthumbnail, not the image decoder.
+                // Exit 137 / SIGKILL is evidence of forced termination, but
+                // the exact cause must be confirmed from kernel/container logs.
+                $signal = $process->getTermSignal();
+                $message = $signal === 9 || $exitCode === 137
+                    ? 'The server forcibly stopped the '.$preview.' process, possibly because its memory limit was reached. The file was not saved. Contact the site administrator.'
+                    : $this->processingErrorMessage($kind, $stderr);
+                $this->fail($message, $diagnostic);
             }
 
             $length = is_file($output) ? filesize($output) : false;
