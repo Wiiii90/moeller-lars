@@ -1,12 +1,12 @@
 <div
     x-ref="richCaptionPanel"
     class="admin-rich-text-image-caption-dropdown"
-    x-show="captionOpen"
+    x-show="activeRichPanel === 'caption'"
     x-cloak
-    x-bind:style="`top: ${captionTop}px; left: ${captionLeft}px`"
+    x-bind:style="`top: ${richPanelTop}px; left: ${richPanelLeft}px`"
     x-on:change.stop
-    x-on:click.outside="captionOpen = false"
-    x-on:keydown.escape.stop.prevent="captionOpen = false"
+    x-on:click.outside="closeRichPanel('caption')"
+    x-on:keydown.escape.stop.prevent="closeRichPanel('caption')"
     role="group"
     aria-label="{{ __('Image caption') }}"
 >
@@ -23,7 +23,7 @@
             />
         </label>
         <div class="admin-rich-text-link-dropdown__actions">
-            <button type="button" x-on:click="captionOpen = false" class="admin-rich-text-link-dropdown__button">
+            <button type="button" x-on:click="closeRichPanel('caption')" class="admin-rich-text-link-dropdown__button">
                 {{ __('Cancel') }}
             </button>
             <button type="button" x-on:click="applyCaption()" class="admin-rich-text-link-dropdown__button admin-rich-text-link-dropdown__button--apply">

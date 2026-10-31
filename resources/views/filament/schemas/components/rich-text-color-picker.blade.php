@@ -1,12 +1,12 @@
 <div
     x-ref="richColorPanel"
     class="admin-rich-text-link-dropdown"
-    x-show="colorOpen"
+    x-show="activeRichPanel === 'color'"
     x-cloak
     x-on:change.stop
-    x-bind:style="`top: ${colorTop}px; left: ${colorLeft}px`"
-    x-on:click.outside="colorOpen = false"
-    x-on:keydown.escape.stop.prevent="colorOpen = false"
+    x-bind:style="`top: ${richPanelTop}px; left: ${richPanelLeft}px`"
+    x-on:click.outside="closeRichPanel('color')"
+    x-on:keydown.escape.stop.prevent="closeRichPanel('color')"
     role="group"
     aria-label="{{ __('Text color') }}"
 >
@@ -25,7 +25,7 @@
                 size="sm"
                 color="gray"
                 :label="__('Close')"
-                x-on:click.stop="colorOpen = false"
+                x-on:click.stop="closeRichPanel('color')"
             />
         </div>
     </div>

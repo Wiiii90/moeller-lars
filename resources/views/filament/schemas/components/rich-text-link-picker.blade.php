@@ -1,12 +1,12 @@
 <div
     x-ref="richLinkPanel"
     class="admin-rich-text-link-dropdown"
-    x-show="linkOpen"
+    x-show="activeRichPanel === 'link'"
     x-cloak
-    x-bind:style="`top: ${linkTop}px; left: ${linkLeft}px`"
+    x-bind:style="`top: ${richPanelTop}px; left: ${richPanelLeft}px`"
     x-on:change.stop
-    x-on:click.outside="applyLink(); linkOpen = false"
-    x-on:keydown.escape.stop.prevent="linkOpen = false"
+    x-on:click.outside="applyLink(); closeRichPanel('link')"
+    x-on:keydown.escape.stop.prevent="closeRichPanel('link')"
     role="group"
     aria-label="{{ __('Link') }}"
 >
@@ -26,7 +26,7 @@
                 size="sm"
                 color="gray"
                 :label="__('Close')"
-                x-on:click.stop="linkOpen = false"
+                x-on:click.stop="closeRichPanel('link')"
             />
         </div>
     </div>

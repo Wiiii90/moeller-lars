@@ -3,7 +3,7 @@
     <button
         type="button"
         class="admin-rich-text-storage-dropdown__close"
-        x-on:click="closeImagePicker()"
+        x-on:click="closeRichPanel('image')"
         aria-label="{{ __('Close') }}"
     >
         <x-heroicon-o-x-mark aria-hidden="true" />

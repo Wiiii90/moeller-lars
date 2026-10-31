@@ -1,12 +1,12 @@
 <div
     x-ref="richSpacingPanel"
     class="admin-rich-text-link-dropdown"
-    x-show="spacingOpen"
+    x-show="activeRichPanel === 'spacing'"
     x-cloak
     x-on:change.stop
-    x-bind:style="`top: ${spacingTop}px; left: ${spacingLeft}px`"
-    x-on:click.outside="spacingOpen = false"
-    x-on:keydown.escape.stop.prevent="spacingOpen = false"
+    x-bind:style="`top: ${richPanelTop}px; left: ${richPanelLeft}px`"
+    x-on:click.outside="closeRichPanel('spacing')"
+    x-on:keydown.escape.stop.prevent="closeRichPanel('spacing')"
     role="group"
     aria-label="{{ __('Line spacing') }}"
 >
