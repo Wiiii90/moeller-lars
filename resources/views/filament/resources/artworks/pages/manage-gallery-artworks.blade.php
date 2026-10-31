@@ -47,29 +47,88 @@
                     phase: 'idle',
                     progress: 0,
                     fileCount: 0,
+                    completed: 0,
                     result: '',
-                    showResult(message) {
-                        this.result = message
-                        this.phase = 'result'
-                    },
-                    preflight(files) {
+                    async uploadFiles(input) {
+                        if (this.phase === 'uploading' || this.phase === 'processing') return
+                        const files = Array.from(input.files ?? [])
+                        if (files.length === 0) return
+
                         this.fileCount = files.length
-                        const videoLimit = @js(\App\Domain\Media\MediaTypePolicy::videoMaxBytes())
-                        const imageLimit = @js(\App\Domain\Media\MediaTypePolicy::imageMaxBytes())
+                        this.completed = 0
+                        this.progress = 0
+                        this.result = ''
+                        let failed = 0
+                        let duplicates = 0
+                        const errors = []
+
+                        try {
+                            await $wire.beginDirectPrimaryMediaBatch()
+                        } catch {
+                            this.phase = 'result'
+                            this.result = 'Unable to prepare the upload. Check your connection.'
+                            input.value = ''
+                            return
+                        }
+
                         for (const file of files) {
-                            const limit = file.type.startsWith('video/') || /\.(mp4|webm)$/i.test(file.name)
-                                ? videoLimit
-                                : imageLimit
+                            const isVideo = file.type.startsWith('video/') || /\\.(mp4|webm)$/i.test(file.name)
+                            const limit = isVideo
+                                ? @js(\App\Domain\Media\MediaTypePolicy::videoMaxBytes())
+                                : @js(\App\Domain\Media\MediaTypePolicy::imageMaxBytes())
+
                             if (file.size > limit) {
-                                return file.name + ' exceeds the ' + Math.round(limit / 1048576) + ' MiB limit.'
+                                failed++
+                                errors.push(file.name + ' — File exceeds the ' + Math.round(limit / 1048576) + ' MiB limit.')
+                            } else {
+                                this.phase = 'uploading'
+                                const transferred = await new Promise((resolve) => {
+                                    $wire.uploadMultiple(
+                                        'directPrimaryMedia',
+                                        [file],
+                                        () => resolve(true),
+                                        () => resolve(false),
+                                        (event) => {
+                                            const percent = Number(event?.detail?.progress ?? 0)
+                                            this.progress = Math.round((this.completed + percent / 100) * 100 / this.fileCount)
+                                        },
+                                    )
+                                })
+
+                                if (!transferred) {
+                                    failed++
+                                    errors.push(file.name + ' — Transfer failed. Check the file size and connection.')
+                                } else {
+                                    this.phase = 'processing'
+                                    try {
+                                        const outcome = await $wire.processDirectPrimaryMedia(true)
+                                        duplicates += Number(outcome?.duplicates ?? 0)
+                                        failed += Number(outcome?.failed ?? 0)
+                                        for (const error of outcome?.errors ?? []) errors.push(error)
+                                    } catch {
+                                        failed++
+                                        errors.push(file.name + ' — Processing failed.')
+                                        try { await $wire.set('directPrimaryMedia', []) } catch {}
+                                    }
+                                }
                             }
+
+                            this.completed++
+                            this.progress = Math.round(this.completed * 100 / this.fileCount)
                         }
-                        // Gallery sends a batch in one multipart request. Keep its
-                        // total below the PHP post limit; Storage uploads separately.
-                        if (files.reduce((sum, file) => sum + file.size, 0) > 560 * 1048576) {
-                            return 'Batch exceeds 560 MiB. Select fewer files at once.'
+
+                        input.value = ''
+                        this.phase = 'processing'
+                        try {
+                            const response = await $wire.finishDirectPrimaryMediaBatch(failed, duplicates, errors)
+                            this.result = response?.summary ?? 'Upload completed'
+                        } catch {
+                            this.result = 'Upload finished, but the final summary could not be confirmed. Check Storage.'
+                            try {
+                                await $wire.notifyDirectPrimaryTransferFailure(this.result)
+                            } catch {}
                         }
-                        return null
+                        this.phase = 'result'
                     },
                 }"
                 x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
@@ -94,16 +153,7 @@
                 <input
                     class="admin-gallery-upload__input"
                     type="file"
-                    wire:model="directPrimaryMedia"
-                    x-on:change.capture="
-                        const message = preflight(Array.from($event.target.files ?? []))
-                        if (message) {
-                            $event.stopImmediatePropagation()
-                            $event.target.value = ''
-                            showResult(message)
-                            $wire.notifyDirectPrimaryTransferFailure(message)
-                        }
-                    "
+                    x-on:change="uploadFiles($el)"
                     x-bind:disabled="phase === 'uploading' || phase === 'processing'"
                     accept="{{ implode(',', [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES]) }}"
                     aria-label="Upload primary images or videos for new artworks"
@@ -113,9 +163,9 @@
                     <strong
                         x-text="
                             phase === 'uploading'
-                                ? `Uploading ${fileCount} ${fileCount === 1 ? 'file' : 'files'} · ${progress}%`
+                                ? `Uploading file ${completed + 1} of ${fileCount} · ${progress}%`
                                 : phase === 'processing'
-                                    ? `Transfer complete · Checking and processing ${fileCount} ${fileCount === 1 ? 'file' : 'files'}…`
+                                    ? `Transfer complete · Checking and processing file ${completed + 1} of ${fileCount}…`
                                     : phase === 'result'
                                         ? result
                                         : 'Drop images or videos here or choose from your device'
