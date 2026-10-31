@@ -41,7 +41,6 @@ final class LegacyArtworkManifestImporter
                         'slug' => $categoryData['slug'],
                         'name' => $categoryData['name'],
                         'show_on_home' => $categoryData['show_on_home'],
-                        'description' => $categoryData['description'],
                         'legacy_source' => $categoryData['legacy_source'],
                         'migration_batch_id' => $batch,
                         'migrated_at' => $now,
@@ -57,6 +56,7 @@ final class LegacyArtworkManifestImporter
                         'position' => $categoryData['position'],
                         'parent_id' => null,
                         'artwork_category_id' => (int) $category->getKey(),
+                        'meta_description' => $categoryData['description'],
                     ]);
 
                     foreach ($categoryData['artworks'] as $artworkData) {
