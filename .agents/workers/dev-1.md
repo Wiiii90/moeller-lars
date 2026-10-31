@@ -4,6 +4,11 @@
 
 **Night-Gallery-Prototyp ausdrücklich abgelehnt:** Nutzer fand den dunklen Ausstellungsbereich unpassend auf einer ansonsten hellen Homepage und bat, Überschriften/Titel unverändert zu lassen. `94585bf` wird beim neuen Stilversuch vollständig durch die vor-Night-Gallery-CSS-Grundlage ersetzt (zusätzliche Titel-/Hoverfarben beseitigt). **Neuer, isolierter Soft-Paper-Stilversuch:** Diffuse warme, zu transparenten Außenkanten auslaufende Farbflächen innerhalb der Exhibitions-Fläche, kräftigere warme Fläche unter geöffneten Artikeln sowie sichtbare helle Passepartouts und Schatten an den bestehenden Medien. Kein Eingriff in globale General-Hintergründe, Titel/Schriftarten/Schriftgrößen, General Width/Padding, Blade, Video-Logik oder Mediadaten. Keine Nummern, keine permanenten Trennlinien geschlossener Einträge und keine Bildbühne; einfache Trennlinien nur bei geöffneten Einträgen auf neues Nutzerfeedback. Noch keine reale Browserabnahme, isolierter CSS-Commit rücknehmbar.
 
+## Journal-Mosaik — obere Bildkanten auf gleicher Höhe (31.10.2026)
+- Browserfeedback: Die erste rechte Kachel startet sichtbar tiefer als die erste linke. Ursache war ein künstliches `padding-top: 1.1rem` an der zweiten Spalte im gemeinsamen Mosaikstil. Den Versatz und dessen überflüssige mobile Rücksetzung entfernt; beide Spalten beginnen oben bündig.
+- Gemeinsamer Konsument: Blog- und Exhibitions-Galerien; die unabhängigen vertikalen Bildfolgen, ungleichen Spaltenbreiten, Medienreihenfolge und die einspaltige mobile Ansicht bleiben unverändert. Die ältere Dokumentationsbeschreibung eines absichtlichen Mosaik-Offsets ist durch das aktuelle Nutzerfeedback überholt und dem Docs-Worker zu melden.
+- Quellcodeänderung, Browserabnahme nach lokalem Build noch ausstehend.
+
 ## Exhibitions — einzelne Trennlinien bei geöffneter Ansicht (31.10.2026)
 - Der Nutzer hat nach Browservergleich die dünnen Separatoren ausdrücklich wieder freigegeben, aber nur für geöffnete Einträge. Im bestehenden Public-Styles-Owner gelten wieder einzelne Linien; keine vor dem ersten oder nach dem letzten Eintrag und bei direkt benachbarten offenen Einträgen exakt eine gemeinsame Linie. Geschlossene Liste ohne Trennlinien.
 - Keine Änderung an Hintergrund, Padding, Schriften, Video, Daten und Interaktionen. Reale Browserabnahme der reaktivierten Linien steht aus.
