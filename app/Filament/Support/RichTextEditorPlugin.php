@@ -77,7 +77,7 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                     return RichEditorTool::make($name)
                         ->label(__('filament-forms::components.rich_editor.tools.'.$suffix))
                         ->icon('fi-o-'.\Illuminate\Support\Str::kebab($name))
-                        ->jsHandler("if ({$command}) \$dispatch('artist-rich-content-changed')");
+                        ->jsHandler("({$command}) && \$dispatch('artist-rich-content-changed')");
                 },
                 array_keys(self::TABLE_COMMANDS),
                 array_values(self::TABLE_COMMANDS),
