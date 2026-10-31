@@ -3,6 +3,7 @@
 namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\EditorialRichTextValidator;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use Illuminate\Support\Facades\DB;
@@ -170,6 +171,13 @@ final class ArtworkDraftService
             'exclude_from_home' => ['sometimes', 'boolean'],
         ]);
         $validator->validate();
+        if (array_key_exists('description', $payload)) {
+            app(EditorialRichTextValidator::class)->validate(
+                $payload['description'],
+                'description',
+                allowEmbeddedMedia: true,
+            );
+        }
 
         return $payload;
     }

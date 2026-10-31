@@ -2,13 +2,8 @@
 
 namespace App\Filament\Resources\Artworks\Support;
 
-use App\Domain\Artwork\ArtworkMaterialPresetService;
-use App\Filament\Support\Dialogs\AdminDialog;
-use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\ArtworkMaterialPreset;
-use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 
 final class ArtworkMaterialSelect
 {
@@ -25,23 +20,6 @@ final class ArtworkMaterialSelect
             ->native(false)
             ->placeholder('No material')
             ->nullable()
-            ->getOptionLabelUsing(static fn (mixed $value): ?string => is_string($value) && trim($value) !== '' ? $value : null)
-            ->createOptionModalHeading('Add material')
-            ->createOptionForm([
-                TextInput::make('name')
-                    ->label('Material')
-                    ->required()
-                    ->maxLength(240),
-            ])
-            ->createOptionUsing(function (array $data): string {
-                $preset = app(ArtworkMaterialPresetService::class)->add((string) ($data['name'] ?? ''));
-
-                return (string) $preset->getAttribute('name');
-            })
-            ->createOptionAction(fn (Action $action): Action => AdminDialog::create(
-                $action->label('Add material'),
-                'Add material',
-                AdminDialogSize::Small,
-            ));
+            ->getOptionLabelUsing(static fn (mixed $value): ?string => is_string($value) && trim($value) !== '' ? $value : null);
     }
 }

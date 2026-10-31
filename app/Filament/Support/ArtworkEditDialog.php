@@ -19,6 +19,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -64,7 +65,8 @@ final class ArtworkEditDialog
         }
 
         return [
-            AdminForm::section('Basics')
+            Grid::make()
+                ->columns(['md' => 2])
                 ->schema([
                     TextInput::make('title')
                         ->required()
@@ -105,8 +107,8 @@ final class ArtworkEditDialog
                         ])
                         ->default(0)
                         ->columnSpanFull(),
-                ])->columns(['md' => 2]),
-            AdminForm::section('Dimensions')->schema([
+
+
                     TextInput::make('dimension_height')->label('Height (H)')->numeric()->minValue(0.01)->nullable(),
                     TextInput::make('dimension_width')->label('Width (W)')->numeric()->minValue(0.01)->nullable(),
                     TextInput::make('dimension_depth')->label('Depth (D)')->numeric()->minValue(0.01)->nullable(),
@@ -120,11 +122,7 @@ final class ArtworkEditDialog
                         ->maxLength(240)
                         ->nullable()
                         ->columnSpanFull(),
-                ])->columns(['md' => 2]),
-            AdminForm::section('Content')->schema([
-                    Textarea::make('description')->nullable()->maxLength(10000)->columnSpanFull(),
-                ]),
-            AdminForm::section('Media')->schema([
+                    ...AdminRichText::schema('description', 'Description', 10000),
                     MediaAssetSelect::makeId(
                         'primary_media_asset_id',
                         'Existing Media File',
@@ -172,7 +170,7 @@ final class ArtworkEditDialog
                         ->maxLength(500)
                         ->nullable()
                         ->columnSpanFull(),
-                ])->columns(['md' => 2]),
+                ]),
         ];
     }
 
