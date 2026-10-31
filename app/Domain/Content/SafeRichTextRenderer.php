@@ -143,7 +143,12 @@ final class SafeRichTextRenderer
             $rules .= '.rich-text .color[data-color="'.$color.'" i]{color:'.$color.';}';
         }
 
-        return new HtmlString('<style nonce="'.e($nonce).'">'.$rules.'</style>'.$html);
+        // Keep style elements in the existing public layout head stack, not
+        // inside Rich Text: inserting a style as the first or last child would
+        // change :first-child / :last-child paragraph spacing.
+        view()->startPush('public-component-styles', '<style nonce="'.e($nonce).'">'.$rules.'</style>');
+
+        return new HtmlString($html);
     }
 
     private function parse(string $source): Document
