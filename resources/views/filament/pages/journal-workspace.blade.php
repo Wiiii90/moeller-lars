@@ -10,6 +10,12 @@
         $resultStart = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
         $resultEnd = $total === 0 ? 0 : min($total, $page * $pageSize);
         $dragEnabled = $this->canDragSort();
+        $canMoveSelectedUp = $dragEnabled && collect($entries)->contains(static fn (array $entry): bool =>
+            in_array((int) $entry['id'], $selectedIds, true) && $entry['can_move_up']
+        );
+        $canMoveSelectedDown = $dragEnabled && collect($entries)->contains(static fn (array $entry): bool =>
+            in_array((int) $entry['id'], $selectedIds, true) && $entry['can_move_down']
+        );
         $entryLabel = $isBlog ? 'posts' : 'exhibitions';
         $entryLabelSingular = $isBlog ? 'post' : 'exhibition';
     @endphp
@@ -130,8 +136,8 @@
                                 <x-admin.selection-trigger-label>{{ __('Selected') }}</x-admin.selection-trigger-label>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak x-on:click.outside="open = false">
-                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('up')" x-on:click="open = false">{{ __('Move selected up') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('down')" x-on:click="open = false">{{ __('Move selected down') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('up')" x-on:click="open = false" @disabled(! $canMoveSelectedUp)>{{ __('Move selected up') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('down')" x-on:click="open = false" @disabled(! $canMoveSelectedDown)>{{ __('Move selected down') }}</button>
                                 @if ($isBlog)
                                     <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedPosts" x-on:click="open = false" @disabled(! $selectedCapabilities['publish'])>{{ __('Publish selected') }}</button>
                                     <button class="admin-action" type="button" role="menuitem" wire:click="unpublishSelectedPosts" x-on:click="open = false" @disabled(! $selectedCapabilities['unpublish'])>{{ __('Unpublish selected') }}</button>

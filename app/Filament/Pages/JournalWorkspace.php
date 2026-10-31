@@ -317,7 +317,7 @@ final class JournalWorkspace extends Page
 
     public function moveSelectedEntries(string $direction): void
     {
-        if (! in_array($direction, ['up', 'down'], true)) {
+        if (! $this->canDragSort() || ! in_array($direction, ['up', 'down'], true)) {
             return;
         }
         if ($this->journalTemplate() === JournalTemplate::Blog) {
