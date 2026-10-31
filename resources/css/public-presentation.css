@@ -1502,13 +1502,22 @@ body {
        The summary remains a native keyboard-operable disclosure. */
     pointer-events: none;
 }
-/* A picture-led record uses a real third catalogue column, not a floating
-   thumbnail at the opposite edge. Its three tracks never change on open. */
+/* The cover anchors the left page edge, followed by date and identity.
+   Explicit grid placement keeps both text tracks fixed as details open. */
 .exhibition-entry--with-cover .exhibition-entry__summary {
-    grid-template-columns: var(--exhibition-date-track) minmax(0, 7.4rem) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 7.4rem) var(--exhibition-date-track) minmax(0, 1fr);
+}
+.exhibition-entry--with-cover .exhibition-entry__teaser {
+    grid-column: 1;
+    grid-row: 1;
+}
+.exhibition-entry--with-cover .exhibition-entry__schedule {
+    grid-column: 2;
+    grid-row: 1;
 }
 .exhibition-entry--with-cover .exhibition-entry__heading {
     grid-column: 3;
+    grid-row: 1;
 }
 .exhibition-entry__teaser {
     display: grid;
@@ -1623,10 +1632,6 @@ body {
     display: flow-root;
     min-width: 0;
 }
-/* The expanded cover begins at the same catalogue track as its miniature. */
-.exhibition-entry--with-cover .exhibition-entry__feature {
-    margin-inline-start: calc(var(--exhibition-date-track) + var(--exhibition-column-gap));
-}
 .exhibition-entry__feature--text {
     margin-inline-start: calc(var(--exhibition-date-track) + var(--exhibition-column-gap));
 }
@@ -1643,13 +1648,14 @@ body {
     height: auto;
     object-fit: contain;
 }
-/* A brief entrance of the full cover suggests enlargement without moving
-   media nodes, duplicating viewer controls or animating overall page height. */
+/* The larger cover now opens from the same left image edge.
+   Transform-only entrance avoids costly height/position animation. */
 .exhibition-entry__disclosure[open] .exhibition-entry__cover {
+    transform-origin: top left;
     animation: exhibition-cover-enter 260ms ease-out both;
 }
 @keyframes exhibition-cover-enter {
-    from { opacity: 0; transform: translateY(.35rem) scale(.965); }
+    from { opacity: 0; transform: translateY(-.3rem) scale(.92); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1751,13 +1757,10 @@ body {
 }
 @container (max-width: 34rem) and (min-width: 27rem) {
     .exhibition-entry--with-cover .exhibition-entry__summary {
-        grid-template-columns: var(--exhibition-date-track) minmax(0, 5.9rem) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 5.9rem) var(--exhibition-date-track) minmax(0, 1fr);
         column-gap: 1rem;
     }
     .exhibition-entry__teaser { height: 5.2rem; }
-    .exhibition-entry--with-cover .exhibition-entry__feature {
-        margin-inline-start: calc(var(--exhibition-date-track) + 1rem);
-    }
 }
 @container (max-width: 26.999rem) {
     .exhibition-entry { margin-bottom: 1.7rem; }
@@ -1765,16 +1768,33 @@ body {
         grid-template-columns: minmax(0, 1fr);
         row-gap: .4rem;
     }
+    /* On narrow pages the cover remains left; date and title stack beside
+       it, rather than compressing three columns into unreadable fragments. */
     .exhibition-entry--with-cover .exhibition-entry__summary {
         grid-template-columns: minmax(0, 5.3rem) minmax(0, 1fr);
         column-gap: .9rem;
     }
-    .exhibition-entry--with-cover .exhibition-entry__schedule { grid-column: 1 / -1; }
-    .exhibition-entry--with-cover .exhibition-entry__heading { grid-column: 2; }
+    .exhibition-entry--with-cover .exhibition-entry__teaser {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+    }
+    .exhibition-entry--with-cover .exhibition-entry__schedule {
+        grid-column: 2;
+        grid-row: 1;
+    }
+    .exhibition-entry--with-cover .exhibition-entry__heading {
+        grid-column: 2;
+        grid-row: 2;
+    }
+    /* Retain the teaser's grid footprint on open, so the second text row
+       cannot jump upward when the large cover takes over below. */
+    .exhibition-entry__disclosure[open] .exhibition-entry__teaser {
+        display: grid;
+        visibility: hidden;
+    }
     .exhibition-entry__teaser { height: 4.8rem; }
     .exhibition-entry__body { padding-top: 1.15rem; }
-    .exhibition-entry__feature--text,
-    .exhibition-entry--with-cover .exhibition-entry__feature { margin-inline-start: 0; }
+    .exhibition-entry__feature--text { margin-inline-start: 0; }
     .exhibition-entry__cover { margin-bottom: 1rem; }
 }
 
