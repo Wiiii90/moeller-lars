@@ -59,6 +59,9 @@ final class AdminRichText
             ->required($required)
             ->nullable()
             ->columnSpanFull()
+            // Attach the frame to Filament's actual editor root, not a
+            // field-wrapper whose structure varies between dialogs.
+            ->extraAttributes(['class' => 'admin-rich-text-editor-frame'])
             ->extraFieldWrapperAttributes(['class' => 'admin-rich-text admin-rich-text--visual'], merge: true);
 
         if ($allowEmbeddedMedia) {

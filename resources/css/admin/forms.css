@@ -465,19 +465,19 @@
     font-size: .7rem;
 }
 
-/* Rich Text is an editing surface, but uses the same shared input underline,
-   label wrapper and focus treatment as ordinary Admin controls. Tiptap retains
-   its own toolbar, text selection, undo/redo and popup lifecycle. */
-.admin-rich-text--visual .fi-fo-rich-editor {
-    border: 1px solid var(--admin-control-border, var(--admin-line));
-    border-radius: 0;
+/* One square, complete frame on the Filament RichEditor root.
+   Other admin input fields keep their intentionally underlined controls.
+   The root class is set by AdminRichText for every shared editor. */
+.fi-fo-rich-editor.admin-rich-text-editor-frame {
+    border: 1px solid var(--admin-line-strong) !important;
+    border-radius: 0 !important;
     background: transparent;
     color: var(--admin-text);
     box-shadow: none;
 }
 
-.admin-rich-text--visual .fi-fo-rich-editor:focus-within {
-    border-color: var(--admin-control-border-focus, var(--admin-accent));
+.fi-fo-rich-editor.admin-rich-text-editor-frame:focus-within {
+    border-color: var(--admin-control-border-focus, var(--admin-accent)) !important;
 }
 
 .admin-rich-text--visual .fi-fo-rich-editor-toolbar {
