@@ -6,4 +6,10 @@
 **Current verification:** Source-reviewed; browser testing of real Laravel page, including alternating portrait/landscape and resizing, remains unverified.
 **Ownership:** Existing Public Gallery artwork detail sizing and immediately involved shared menu/paper sizing; no media upload, rights, thumbnail cutover, tests, unrelated admin pages, CI or deployment.
 **Implementation:** `114b5225ceda5b052664d133239558d3e2a6cab1` (source correction); registration `2d93ba33d1fa9e429d18b6469bd994bd8f481ca5`. Source change confined to `resources/js/public-gallery-loading.js`; no schema or CSS changes.
-**Next:** Browser acceptance against a freshly built local Preview on `dev`: verify portrait/landscape detail at wide viewport without scroll when visible metadata fits; title/year/dimensions/credits/optional description, all divider surface modes, menu wide on/off, and repeated wide→narrow→wide resize. Verify native scrolling remains possible when long authored text exceeds the viewport; keep ordinary narrow layout unchanged. Runtime/browser test unverified here.
+**Next (prior Gallery):** Browser acceptance against a freshly built local Preview on `dev`: verify portrait/landscape detail at wide viewport without scroll when visible metadata fits; title/year/dimensions/credits/optional description, all divider surface modes, menu wide on/off, and repeated wide→narrow→wide resize. Verify native scrolling remains possible when long authored text exceeds the viewport; keep ordinary narrow layout unchanged. Runtime/browser test unverified here.
+
+
+## 2026-10-31 — Current assignment: Admin action disabled-state consistency
+- **User decision:** Pages' disabled Clear when no filters and disabled Selected when no selection are the preferred model across equivalent Admin pages. Row Delete should be visibly disabled while the corresponding record is still published, as other pages already do.
+- **Claim:** Cross-Admin ordinary list/table toolbar, selection and delete-action availability; coordinate with Dev Worker 1's dialog changes, do not alter his mutation lifecycle, and do not alter Public Gallery or tests.
+- **Status:** Inspect canonical Admin table/action primitives and direct consumers, then implement one coherent availability policy, preserving server-side deletion guards. No browser verification yet.
