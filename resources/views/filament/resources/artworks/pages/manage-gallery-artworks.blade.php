@@ -72,7 +72,7 @@
                         }
 
                         for (const file of files) {
-                            const isVideo = file.type.startsWith('video/') || /\\.(mp4|webm)$/i.test(file.name)
+                            const isVideo = file.type.startsWith('video/') || /\.(mp4|webm)$/i.test(file.name)
                             const limit = isVideo
                                 ? @js(\App\Domain\Media\MediaTypePolicy::videoMaxBytes())
                                 : @js(\App\Domain\Media\MediaTypePolicy::imageMaxBytes())
@@ -132,23 +132,6 @@
                     },
                 }"
                 x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
-                x-on:livewire-upload-start="phase = 'uploading'; progress = 0; result = ''"
-                x-on:livewire-upload-progress="progress = $event.detail.progress"
-                x-on:livewire-upload-finish="
-                    progress = 100
-                    phase = 'processing'
-                    $wire.processDirectPrimaryMedia()
-                        .then((response) => showResult(response?.summary ?? 'Upload complete'))
-                        .catch(() => {
-                            showResult('Processing failed. Check the header notification or server logs.')
-                            $wire.notifyDirectPrimaryTransferFailure('The server could not finish processing the uploaded media.')
-                        })
-                "
-                x-on:livewire-upload-error="
-                    $wire.set('directPrimaryMedia', [])
-                    showResult('Transfer failed. Check the file size and connection.')
-                    $wire.notifyDirectPrimaryTransferFailure('The media transfer failed before server processing. Check the upload size and connection.')
-                "
             >
                 <input
                     class="admin-gallery-upload__input"
