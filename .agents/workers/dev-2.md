@@ -3,7 +3,7 @@
 **Working branch:** `dev`  
 **Lease:** 6 (previous Dev Worker 2 session retired with lease 2)  
 **State:** Active; registered 2026-10-31 by explicit user assignment.  
-**Current assignment:** Register as Dev Worker 2 and read into the branch. **No implementation task or application-file ownership has been assigned yet.**
+**Current assignment (2026-10-31):** Investigate a reported 28 MB JPEG upload failure on the artist's site; own only canonical media ingest/derivative-processing diagnosis and any subsequently evidenced correction. Do not alter adjacent Admin dialogs, Public display or other worker claims.
 
 ## Startup completed
 - Read `AGENTS.md`, `.agents/skills/dev/SKILL.md`, `.agents/README.md`, `.agents/roster.md` on `dev` and the previous Dev Worker 2 handoff record.
@@ -21,3 +21,10 @@
 
 ## Operational gate for next task
 Check fresh `dev` HEAD, own lease and other claims before every write. Scope the task to its canonical implementation owner, reconcile parallel changes, commit only to `dev` using a checked non-forced head update, record actual verification and distinguish source inspection from runtime/browser/user acceptance. No CI, deployment, Test-owned test edits, broad audits or cross-branch transfer without explicit authorization.
+
+## 2026-10-31 — JPEG upload failure triage
+- Artist reports a roughly 28 MB JPEG rejected with a generic `could not be processed` message. Runtime source and original file are not available in this worker's environment; do not claim a fixed decoder, quota or memory issue without evidence.
+- At current source, `MediaIngestService::prepareForIngest()` wraps non-validation exceptions into generic `The uploaded media could not be processed.`; a second generic wrap exists around quota admission, so UI wording alone cannot identify the failing stage. `MediaDerivativeGenerator` runs `vipsthumbnail` (libvips) with 120-second timeout, one worker and 960px WebP output, but currently discards subprocess error details; no cause is reported.
+- Allowed images include JPEG, pixel ceiling 500 megapixels, file-byte allowance is derived from site quota; 28 MB by itself is not a rejected size. The current release image has a finite container memory budget; exact runtime outcome unverified.
+- Resumable upload finalization leaves a failed `.part` original in private staging for up to 48 hours; safe inspection of its actual dimensions, container memory events and independent media processor result can distinguish image decode failure from resource or quota failure without modifying application source.
+- **Next:** Obtain read-only Validation runtime evidence before implementing a correction. Preserve media originals/staging and do not rerun heavy image transformations inside the active serving container without isolation. No source fix, runtime check, CI, deployment or browser acceptance completed.
