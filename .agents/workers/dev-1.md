@@ -26,6 +26,11 @@
 
 **Übernahme Dev Worker 1 (Lease 3):** Aktueller Nutzerbefund: Der Float des geöffneten Covers plus Margin überschreitet die übliche Titelachse; dadurch springt Address nach rechts gegenüber Einträgen ohne Cover. Technische Korrektur isoliert in der Exhibition-Darstellung, natürliche Textumflüsse und maximale Coverbreite erhalten. Visuelle Template-Neugestaltung ausdrücklich nicht mit beliebigen CSS-Zierelementen beantworten.
 
+## Aktuelle Aufgabe — zweite Exhibition-Vorlage (31.10.2026)
+- **Dev Worker 1 Lease 3 ausdrücklich übernommen** auf `dev`. Nutzer beauftragt einen rücknehmbaren zweiten öffentlichen Prototyp „Index mit Bildbühne“ (Bühne links, kompakte Chronologie rechts; für kleine Bildschirme stapeln) statt der verworfenen dekorativen Galerie-Liste. Noch keine Settings-Optionen, keine Datenmigration und keine Blogänderung.
+- Screenshot „Der blonde Hans“ zeigt identische Ortsangabe unter Address und nochmals als separaten Beschreibungstext. Ursache im kanonischen Exhibition-Model/Renderer prüfen, keine gespeicherten Inhalte mutieren und keine Einträge doppelt erzeugen. Die wiederherstellbaren Medienrechte-/Publikationsgarantien bleiben unverändert.
+- Vor Browserabnahme keine Behauptung, das visuelle Layout oder die Adressdeduplizierung sei verifiziert.
+
 ## Exhibition-Cover-Geometrie (31.10.2026)
 - **Neuer Nutzer-Browserbefund:** Bei geöffneten FFFF2-Einträgen beginnt „Address“ weiter rechts als bei Art Empire ohne Cover. Ursache: Breite des links gefloateten Covers plus `margin-right` war größer als der definierte gemeinsame Vorsprung der Titelachse.
 - **Fachlich isolierte Korrektur:** `--exhibition-title-offset` als gemeinsame Berechnung der vorhandenen Summary-Tracks. Ohne Cover starten Fakten an diesem Offset. Mit Cover nutzt die Figure (maximal 14 rem) *plus* rechts folgenden Spaltenabstand denselben Offset. Text fließt natürlich rechts herum und darunter weiter; bis herunter auf Container mit 27 rem bleibt der Float aktiv, danach stapelt die Seite und setzt den Text wie bisher links. Keine neuen Textspalten, Schmuckelemente, Daten oder JavaScript.
