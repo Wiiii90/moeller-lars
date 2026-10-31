@@ -169,10 +169,15 @@ final class AdminRichText
                             linkInvalid: false,
                             linkLeft: 0,
                             linkTop: 0,
+                            // Filament wraps each View field in its own Alpine scope.
+                            // Child x-refs are not members of this editor shell's $refs.
+                            richElement(ref) {
+                                return this.$el.querySelector(`[x-ref="${ref}"]`)
+                            },
                             openLinkEditor(event) {
                                 const editor = event.detail?.editor
                                 if (!editor || editor.isDestroyed) return
-                                this.$refs.richLinkPanel.__artistEditor = editor
+                                this.$el.__artistRichEditor = editor
                                 if (this.linkOpen) {
                                     this.linkOpen = false
                                     return
@@ -192,9 +197,9 @@ final class AdminRichText
 
                                 this.linkOpen = true
                                 this.$nextTick(() => {
-                                    const panel = this.$refs.richLinkPanel
+                                    const panel = this.richElement('richLinkPanel')
                                     if (panel) this.positionInlinePanel(panel, event.detail?.anchor, 'link')
-                                    this.$refs.richLinkUrl?.focus()
+                                    this.richElement('richLinkUrl')?.focus()
                                 })
                             },
                             normalizedLinkUrl() {
@@ -225,7 +230,7 @@ final class AdminRichText
                                 }
                             },
                             applyLink() {
-                                const editor = this.$refs.richLinkPanel.__artistEditor
+                                const editor = this.$el.__artistRichEditor
                                 if (!editor || editor.isDestroyed || !this.linkSelection) return
 
                                 const url = this.normalizedLinkUrl()
@@ -256,7 +261,7 @@ final class AdminRichText
                                 if (result) this.finishLinkEdit()
                             },
                             removeLink() {
-                                const editor = this.$refs.richLinkPanel.__artistEditor
+                                const editor = this.$el.__artistRichEditor
                                 if (!editor || editor.isDestroyed || !this.linkSelection) return
                                 const result = editor.chain().focus()
                                     .setTextSelection(this.linkSelection)
@@ -278,7 +283,7 @@ final class AdminRichText
                                 const editor = event.detail?.editor
                                 const image = editor?.storage?.artistImageLayout?.selected(editor)
                                 if (!image) return
-                                this.$refs.richCaptionPanel.__artistEditor = editor
+                                this.$el.__artistRichEditor = editor
                                 if (this.captionOpen) {
                                     this.captionOpen = false
                                     return
@@ -289,14 +294,14 @@ final class AdminRichText
                                 this.linkOpen = false
                                 this.captionOpen = true
                                 this.$nextTick(() => {
-                                    const panel = this.$refs.richCaptionPanel
+                                    const panel = this.richElement('richCaptionPanel')
                                     if (!panel || !event.detail?.anchor) return
                                     this.positionInlinePanel(panel, event.detail?.anchor, 'caption')
-                                    this.$refs.richCaptionInput?.focus()
+                                    this.richElement('richCaptionInput')?.focus()
                                 })
                             },
                             applyCaption() {
-                                const editor = this.$refs.richCaptionPanel.__artistEditor
+                                const editor = this.$el.__artistRichEditor
                                 if (!editor?.storage?.artistImageLayout?.setCaption(editor, this.captionText)) return
                                 this.captionOpen = false
                                 this.commitEditorChange()
@@ -337,7 +342,7 @@ final class AdminRichText
                             openColorEditor(event) {
                                 const editor = event.detail?.editor
                                 if (!editor || editor.isDestroyed) return
-                                this.$refs.richColorPanel.__artistEditor = editor
+                                this.$el.__artistRichEditor = editor
                                 if (this.colorOpen) { this.colorOpen = false; return }
                                 const selection = editor.state.selection
                                 const current = editor.getAttributes('textColor')['data-color']
@@ -349,12 +354,12 @@ final class AdminRichText
                                 this.captionOpen = false
                                 this.closeImagePicker()
                                 this.$nextTick(() => {
-                                    const panel = this.$refs.richColorPanel
+                                    const panel = this.richElement('richColorPanel')
                                     if (panel) this.positionInlinePanel(panel, event.detail?.anchor, 'color')
                                 })
                             },
                             applyTextColor(clear = false) {
-                                const editor = this.$refs.richColorPanel.__artistEditor
+                                const editor = this.$el.__artistRichEditor
                                 if (!editor || editor.isDestroyed || !this.colorSelection) return
                                 let chain = editor.chain().focus().setTextSelection(this.colorSelection)
                                 if (this.colorSelection.from === this.colorSelection.to) {
@@ -370,7 +375,7 @@ final class AdminRichText
                             openSpacingEditor(event) {
                                 const editor = event.detail?.editor
                                 if (!editor || editor.isDestroyed) return
-                                this.$refs.richSpacingPanel.__artistEditor = editor
+                                this.$el.__artistRichEditor = editor
                                 if (this.spacingOpen) { this.spacingOpen = false; return }
                                 this.spacingNodeType = editor.isActive('heading') ? 'heading' : 'paragraph'
                                 this.spacingSelection = {
@@ -384,12 +389,12 @@ final class AdminRichText
                                 this.captionOpen = false
                                 this.closeImagePicker()
                                 this.$nextTick(() => {
-                                    const panel = this.$refs.richSpacingPanel
+                                    const panel = this.richElement('richSpacingPanel')
                                     if (panel) this.positionInlinePanel(panel, event.detail?.anchor, 'spacing')
                                 })
                             },
                             applySpacing() {
-                                const editor = this.$refs.richSpacingPanel.__artistEditor
+                                const editor = this.$el.__artistRichEditor
                                 if (!editor || editor.isDestroyed || !this.spacingSelection) return
                                 const { from, to } = this.spacingSelection
                                 const changed = editor.chain().focus()
@@ -420,7 +425,7 @@ final class AdminRichText
                             },
                             imagePickerOpen: false,
                             closeImagePicker() {
-                                const input = this.$refs.richImagePicker?.querySelector('.fi-select-input')
+                                const input = this.richElement('richImagePicker')?.querySelector('.fi-select-input')
                                 const select = input ? window.Alpine?.$data(input)?.select : null
                                 if (select?.isOpen) select.closeDropdown()
                                 this.imagePickerOpen = false
@@ -440,7 +445,7 @@ final class AdminRichText
                                 this.linkOpen = false
                                 this.captionOpen = false
                                 this.$nextTick(() => {
-                                    const picker = this.$refs.richImagePicker
+                                    const picker = this.richElement('richImagePicker')
                                     if (!picker) return
                                     const shell = this.$el.getBoundingClientRect()
                                     const bounds = this.$el.closest('.fi-modal-content')?.getBoundingClientRect() ?? shell
