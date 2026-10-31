@@ -180,7 +180,11 @@ final class JournalEntryEditorSchema
     {
         return [
             Toggle::make('map_enabled')
-                ->label(__('Map enabled'))
+                ->label(new HtmlString(
+                    '<span class="admin-form-label-with-help">'.e(__('Map enabled'))
+                    .AdminHelp::make(__('Map location help'), __('Requires Country and either City or Postal code.'))->toHtml()
+                    .'</span>',
+                ))
                 // The central Edit change event is the only persistence request.
                 // A second eager Livewire request can race with the first
                 // enable immediately after a newly entered country is saved.
@@ -192,7 +196,6 @@ final class JournalEntryEditorSchema
                         'city' => $get('city'),
                         'country' => $get('country'),
                     ]))
-                ->hint(AdminHelp::make(__('Map location help'), __('Requires Country and either City or Postal code.')))
                 ->columnSpanFull(),
             Hidden::make('latitude')->dehydrated(false),
             Hidden::make('longitude')->dehydrated(false),

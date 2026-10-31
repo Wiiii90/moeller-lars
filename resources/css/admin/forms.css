@@ -519,6 +519,7 @@
 
 .admin-rich-text-editor-shell {
     position: relative;
+    gap: 0 !important;
 }
 
 .admin-rich-text-storage-dropdown {
