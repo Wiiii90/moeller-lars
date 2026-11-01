@@ -173,7 +173,9 @@
                 </x-slot:actions>
 
                 <x-slot:selection>
-                    @php($sourceCapabilities = $this->selectedSourceCapabilities())
+                    @php
+                        $sourceCapabilities = $this->selectedSourceCapabilities();
+                    @endphp
                     <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
                         <span class="admin-data-control-label">{{ __('Selection') }}</span>
                         <div class="admin-selection__anchor">
