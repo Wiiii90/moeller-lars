@@ -471,10 +471,9 @@ final class DashboardFeed
         ];
     }
 
-    /** @return Collection<int, array<string, mixed>> */
+    /** @return Collection<int, covariant array<string, mixed>> */
     private function staticItems(): Collection
     {
-        /** @var Collection<int, array<string, mixed>> $items */
         $configured = collect(config('dashboard-feed.items', []))->filter(
             static fn (mixed $item): bool => is_array($item),
         );
@@ -485,7 +484,6 @@ final class DashboardFeed
         $readFlags = app(DashboardFeedReleaseState::class)->readFlags($keys);
 
         $items = $configured
-            ->filter(static fn (mixed $item): bool => is_array($item))
             ->map(function (array $item) use ($readFlags): ?array {
                 $id = is_string($item['id'] ?? null) ? trim($item['id']) : '';
                 $type = is_string($item['type'] ?? null) ? trim($item['type']) : '';
