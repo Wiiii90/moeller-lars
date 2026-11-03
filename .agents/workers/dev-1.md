@@ -4,6 +4,9 @@
 
 **Aktueller Public-Exhibitions-Stil:** Heller, ungerahmter Katalog auf der normalen konfigurierbaren Public-Content-Fläche (Standard weiß), ohne Schatten und zusätzliche Farbverläufe. Miniaturen, Bild-Text-Fluss mit Cover, redaktionelle Reihenfolge und einzelne Separatoren bei geöffneten Einträgen bleiben wie zuvor. Neu: ohne Cover beginnt der vollständige geöffnete Inhalt links. Keine inhaltsabhängigen Sonderabstände. Browserabnahme für die neue Korrektur ausstehend.
 
+## Read-only historical snapshot integrity guard (03.11.2026)
+- The pending conversion preflight now rejects missing archived date keys explicitly and reports unexpected parser errors as invalid rows instead of crashing the Artisan command. Unicode uppercase German month spelling (e.g. MÄRZ) remains parseable without making date parsing locale-ambiguous. Still no source/schema cutover or Validation mutation.
+
 ## Published-date migration guard (03.11.2026)
 - The strict read-only conversion preflight now also fails when a Published Exhibition would lose its sole displayed date (no structured date and no parseable authored date). This covers a historical Validation-only category that might not appear in the 29-row local fixture. Still no migration or runtime cutover.
 

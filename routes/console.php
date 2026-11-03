@@ -87,7 +87,7 @@ Artisan::command('exhibitions:audit-dates {--all : Include structured rows witho
                 throw new \InvalidArgumentException('A published exhibition would lose its only displayed date.');
             }
             $verified++;
-        } catch (\InvalidArgumentException $exception) {
+        } catch (\Throwable $exception) {
             $invalid[] = [$source, $id, $title, $exception->getMessage()];
         }
     };
@@ -141,7 +141,9 @@ Artisan::command('exhibitions:audit-dates {--all : Include structured rows witho
             }
 
             $original = trim((string) ($payload['date_text'] ?? ''));
-            if ($verify) {
+            if ($verify && (! array_key_exists('starts_on', $payload) || ! array_key_exists('ends_on', $payload) || ! array_key_exists('date_text', $payload))) {
+                $invalid[] = ['checkpoint '.$row->publication_checkpoint_id, (string) $row->row_key, (string) ($payload['title'] ?? '—'), 'Historical snapshot is missing one of its original date fields.'];
+            } elseif ($verify) {
                 $check('checkpoint '.$row->publication_checkpoint_id, (string) $row->row_key, (string) ($payload['title'] ?? '—'), $payload['state'] ?? null, $payload['starts_on'] ?? null, $payload['ends_on'] ?? null, $original);
             }
             if ($original === '' && ! $showAll) {

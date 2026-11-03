@@ -51,7 +51,7 @@ final class ExhibitionDate
             $startDate = $text;
             $endDate = null;
         } elseif (preg_match('/^(January|February|March|April|May|June|July|August|September|October|November|December|Januar|Februar|März|Mai|Juni|Juli|Oktober|Dezember)\s+([1-9][0-9]{3})$/iuD', $text, $groups) === 1) {
-            $month = match (strtolower($groups[1])) {
+            $month = match (strtolower(str_replace('Ä', 'ä', $groups[1]))) {
                 'january', 'januar' => 1,
                 'february', 'februar' => 2,
                 'march', 'märz' => 3,
