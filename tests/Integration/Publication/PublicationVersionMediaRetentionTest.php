@@ -2,7 +2,6 @@
 
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaIngestService;
-use App\Domain\Media\MediaVariantRegenerationService;
 use App\Domain\Publication\PublicationMediaCleanupService;
 use App\Domain\Publication\PublicationService;
 use App\Domain\Publication\PublicationVersionService;
@@ -84,7 +83,7 @@ function assertPublicationImageReferences(array $fixture, string $schema): void
 {
     $asset = $fixture['asset'];
     $assetFields = ['state', 'storage_key', 'sha256', 'byte_size', 'mime_type', 'original_filename', 'alt_text', 'credit', 'file_creator', 'file_rights_holder', 'copyright_notice_mode', 'copyright_notice'];
-    $variantFields = ['state', 'storage_key', 'sha256', 'byte_size', 'mime_type', 'variant_kind', 'transform_profile', 'width', 'height'];
+    $variantFields = ['state', 'storage_key', 'sha256', 'byte_size', 'mime_type', 'variant_kind', 'width', 'height'];
     expect(DB::table($schema.'.artwork_media')->where('media_asset_id', $asset->id)->orderBy('artwork_id')->pluck('artwork_id')->all())
         ->toBe($fixture['artworks']->pluck('id')->all())
         ->and(DB::table($schema.'.artwork_media')->where('media_asset_id', $asset->id)->where('role', 'primary')->where('position', 1)->count())->toBe(2)
@@ -137,13 +136,13 @@ it('preserves original image bytes and shared references across deletion, histor
         ->and(DB::table('committed.artwork_media')->where('media_asset_id', $fixture['asset']->id)->count())->toBe(0)
         ->and($versions->currentLiveCheckpoint()->id)->toBe($live->id);
 
-    // Free storage may release only reproducible thumbnails, never the original.
+    // Free Storage preserves the required preview and original while restore or revert still owns them.
     $result = app(SiteStorageReclaimService::class)->reclaim();
     $disk = Storage::disk(config('media.disk'));
-    expect($result['removed_files'])->toBe(0)->and($result['generated_files'])->toBe(1)
+    expect($result['removed_files'])->toBe(0)
+        ->and($result['orphan_files'])->toBe(0)
         ->and(hash_file('sha256', $disk->path($fixture['asset']->storage_key)))->toBe($fixture['asset']->sha256)
-        ->and($disk->exists($fixture['variant']->storage_key))->toBeFalse()
-        ->and(app(MediaVariantRegenerationService::class)->ensureFile($fixture['variant']->fresh()))->toBeTrue();
+        ->and(hash_file('sha256', $disk->path($fixture['variant']->storage_key)))->toBe($fixture['variant']->sha256);
     assertPublicationImageBytes($fixture);
     $published = $publication->commit($actor, 'Publish recovered media');
     expect($published->operation)->toBe($operation)
@@ -164,7 +163,7 @@ it('releases original bytes only after the final recoverable source is explicitl
     $versions->stageVersion($target, $actor);
     app(SiteStorageReclaimService::class)->reclaim();
     expect($versions->isRestorable($target->fresh()))->toBeTrue()
-        ->and(app(MediaVariantRegenerationService::class)->ensureFile($fixture['variant']->fresh()))->toBeTrue();
+        ->and(Storage::disk(config('media.disk'))->exists($fixture['variant']->storage_key))->toBeTrue();
     assertPublicationImageBytes($fixture);
     $versions->resetStagedChanges($actor);
     expect($versions->isRestorable($target->fresh()))->toBeTrue()
