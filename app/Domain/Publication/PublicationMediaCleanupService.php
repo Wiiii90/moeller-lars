@@ -417,7 +417,6 @@ final class PublicationMediaCleanupService
         $result = DB::transaction(function () use ($limit, $includeFiles): array {
             DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
             $candidates = $this->rightsCleanupCandidates($limit, $includeFiles);
-            $disk = Storage::disk((string) config('media.disk'));
             $removedRegistry = 0;
             $removedFiles = 0;
 
@@ -434,12 +433,10 @@ final class PublicationMediaCleanupService
                 if ($key !== $candidate['key'] || ! $this->validRightsKey($key, (string) $row->revision, (string) $row->mime_type)) {
                     throw new RuntimeException('Rights file identity changed during cleanup.');
                 }
-                if ($disk->exists($key)) {
-                    if (! $disk->delete($key) || $disk->exists($key)) {
-                        throw new RuntimeException('Unable to reclaim an unreferenced rights file.');
-                    }
-                    $removedFiles++;
+                if (! $this->deleteKey($key, $removed)) {
+                    throw new RuntimeException('Unable to reclaim an unreferenced rights file.');
                 }
+                $removedFiles += (int) $removed;
                 DB::table('media_rights_artifacts')->where('id', $row->id)->delete();
                 $removedRegistry++;
             }
@@ -449,12 +446,10 @@ final class PublicationMediaCleanupService
                     || DB::table('media_rights_artifacts')->where('storage_key', $key)->exists()) {
                     continue;
                 }
-                if ($disk->exists($key)) {
-                    if (! $disk->delete($key) || $disk->exists($key)) {
-                        throw new RuntimeException('Unable to reclaim an orphaned rights file.');
-                    }
-                    $removedFiles++;
+                if (! $this->deleteKey($key, $removed)) {
+                    throw new RuntimeException('Unable to reclaim an orphaned rights file.');
                 }
+                $removedFiles += (int) $removed;
             }
 
             return ['registry_removed' => $removedRegistry, 'files_removed' => $removedFiles];
