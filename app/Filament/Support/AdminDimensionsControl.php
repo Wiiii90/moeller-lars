@@ -15,7 +15,7 @@ final class AdminDimensionsControl
     public static function make(): Grid
     {
         return Grid::make()
-            ->columns(4)
+            ->columns(['default' => 4])
             ->columnSpanFull()
             ->extraAttributes(['class' => 'admin-dimensions-control'])
             ->schema([

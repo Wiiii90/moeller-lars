@@ -31,11 +31,11 @@ export function adminPartialDateControl(entangledValue, preferredRegion) {
         mode: 'year',
         year: new Date().getFullYear(),
         month: new Date().getMonth() + 1,
-        position: { left: 8, top: 8 },
+        position: { left: '8px', top: '8px' },
         get display() { return formatDate(this.value, this.region); },
         get years() {
             const first = Math.floor(this.year / 12) * 12;
-            return Array.from({ length: 12 }, (_, index) => first + index);
+            return Array.from({ length: 12 }, (_, index) => first + index).filter(candidate => candidate >= 1000 && candidate <= 9999);
         },
         get monthNames() {
             return Array.from({ length: 12 }, (_, index) => new Intl.DateTimeFormat(this.region, { month: 'short', timeZone: 'UTC' })
@@ -75,10 +75,10 @@ export function adminPartialDateControl(entangledValue, preferredRegion) {
             const rect = this.$refs.trigger.getBoundingClientRect();
             const width = Math.min(340, Math.max(260, window.innerWidth - 16));
             this.position = {
-                left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
-                top: rect.bottom + 352 <= window.innerHeight
+                left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)) + 'px',
+                top: (rect.bottom + 352 <= window.innerHeight
                     ? rect.bottom + 5
-                    : Math.max(8, rect.top - 352),
+                    : Math.max(8, rect.top - 352)) + 'px',
             };
         },
         toggle() {

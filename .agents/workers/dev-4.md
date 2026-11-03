@@ -17,6 +17,7 @@
 - Additional Artwork images were never an intended feature. Active Gallery Images relation, editors, extra media commands removed; historical database references and audit records preserved until inventory. Generic audio uploads are retained.
 
 ## Source implementation (NOT runtime/browser acceptance)
+- Source review: force dimensions Grid 4 columns at default breakpoint (avoids Filament integer-columns breakpoint collapse); partial-date popover style now uses CSS pixel lengths and bounds selectable years. Browser unverified.
 - Artwork date now has one centrally owned ViewField popover with Year, Month / year and Exact date modes, canonical ISO partial-value state and General RegionalFormats display. ArtworkDate normalizes into existing work_year/work_date/date_precision (month represented internally by first day only; precision prevents rendering an invented day). Existing Draft service preserves chosen precision, Gallery date ordering compares months first then exact days ahead of month-only. No migration; browser/runtime acceptance outstanding.
 - Dimensions: implemented a central AdminDimensionsControl group with Height × Width × Depth then Unit in one compact four-column grid; multiplication signs belong to gaps, never field suffixes; root CSS in shared controls.css. Browser responsive geometry unverified.
 - Dimensions editor shows a separator after Width only when Depth is entered; avoid an extra × before Unit for flat artworks. Uses same numeric fields, no new CSS.
