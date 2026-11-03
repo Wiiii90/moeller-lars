@@ -8,11 +8,37 @@ if ($args.Count -gt 0 -and $args[0] -eq '-QualificationSuite') {
     $args = @($args | Select-Object -Skip 2)
 }
 
+$linux = $QualificationSuite -ne 'Browser' -and $args.Count -gt 0 -and $args[0] -eq '-Linux'
+if ($linux) { $args = @($args | Select-Object -Skip 1) }
 $ErrorActionPreference = 'Stop'
 $repoPath = (Get-Location).Path
 if ((git branch --show-current) -notin @('dev', 'testing') -or (git rev-parse --show-toplevel).Replace('/', '\') -ne $repoPath) {
     throw 'Run from the root of the dev or testing checkout; only disposable PostgreSQL and isolated runtime paths are permitted.'
 }
+function Invoke-QualificationPhp {
+    if (-not $linux) {
+        php @phpOptions @args
+        return
+    }
+
+    $containerRoot = "/app/$relativeRoot"
+    $containerEnv = @()
+    foreach ($entry in $values.GetEnumerator()) {
+        $value = [Environment]::GetEnvironmentVariable($entry.Key, 'Process')
+        if ($null -eq $value) { continue }
+        $value = $value.Replace($runtimeRoot, $containerRoot)
+        if ($entry.Key -in @('DB_PORT', 'CONCURRENCY_PORT')) { $value = '5432' }
+        $containerEnv += @('--env', "$($entry.Key)=$value")
+    }
+    $linuxArgs = @($args | ForEach-Object { $_.Replace($runtimeRoot, $containerRoot) })
+    docker run --rm --network "container:$containerId" --entrypoint php --workdir /app `
+        --mount "type=bind,source=$repoPath,target=/app,readonly" `
+        --mount "type=bind,source=$runtimeRoot,target=$containerRoot" `
+        @containerEnv moeller-lars-local-preview:latest `
+        -d memory_limit=512M -d variables_order=EGPCS `
+        -d "sys_temp_dir=$containerRoot/php-temp" -d "upload_tmp_dir=$containerRoot/php-upload" @linuxArgs
+}
+
 $token = [guid]::NewGuid().ToString('N')
 $relativeRoot = "storage/framework/testing/concurrency-$token"
 $runtimeRoot = Join-Path $repoPath $relativeRoot
@@ -83,8 +109,8 @@ try {
         if ((Test-Path -LiteralPath '.env') -or (Test-Path -LiteralPath '.env.testing')) {
             throw 'Qualification requires a checkout without application environment files.'
         }
-        $response = php @phpOptions tests/Support/PublicationConcurrencyWorker.php '{"operation":"verify-qualification"}'
-        if ($LASTEXITCODE -ne 0) { throw 'Effective isolation verification failed.' }
+        $response = Invoke-QualificationPhp tests/Support/PublicationConcurrencyWorker.php '{"operation":"verify-qualification"}'
+        if ($LASTEXITCODE -ne 0) { Write-Output $response; throw 'Effective isolation verification failed.' }
         $evidence = @($response | ForEach-Object { ConvertFrom-Json -InputObject $_ })
         if ($evidence.Count -ne 2 -or $evidence[0].phase -ne 'verified' -or $evidence[1].phase -ne 'result' -or
             $evidence[1].ok -ne $true -or $evidence[1].cluster -ne $clusterIdentity) {
@@ -122,11 +148,11 @@ try {
             }
             npm.cmd run test:browser -- @args
         } else {
-            php @phpOptions vendor/bin/pest "--testsuite=$QualificationSuite" --cache-directory "$runtimeRoot/phpunit-cache" @args
+            Invoke-QualificationPhp vendor/bin/pest "--testsuite=$QualificationSuite" --cache-directory "$runtimeRoot/phpunit-cache" @args
         }
     } else {
         # Each worker verifies its own connection before enabling disposable flags.
-        php @phpOptions vendor/bin/pest tests/Integration/Publication/PublicationConcurrencyTest.php --cache-directory "$runtimeRoot/phpunit-cache" @args
+        Invoke-QualificationPhp vendor/bin/pest tests/Integration/Publication/PublicationConcurrencyTest.php --cache-directory "$runtimeRoot/phpunit-cache" @args
     }
     $testExit = $LASTEXITCODE
 } finally {
