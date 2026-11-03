@@ -356,8 +356,8 @@ final class AdminRichText
                                     const panel = this.richElement(refs[kind])
                                     if (!panel) return
                                     this.positionRichPanel(panel, anchor, kind)
-                                    if (kind === 'link') this.richElement('richLinkUrl')?.focus()
-                                    if (kind === 'caption') this.richElement('richCaptionInput')?.focus()
+                                    if (kind === 'link') this.richElement('richLinkUrl')?.focus({ preventScroll: true })
+                                    if (kind === 'caption') this.richElement('richCaptionInput')?.focus({ preventScroll: true })
                                     if (kind === 'image') panel.querySelector('.fi-select-input-btn')?.click()
                                 })
                             },
