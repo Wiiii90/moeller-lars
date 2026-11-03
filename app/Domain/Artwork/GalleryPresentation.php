@@ -49,8 +49,8 @@ final class GalleryPresentation
     public const SORT_NEWEST = 'newest';
 
     public const SORT_OPTIONS = [
-        self::SORT_MANUAL => 'Manual (new Artworks first)',
-        self::SORT_NEWEST => 'Artwork date (newest first)',
+        self::SORT_MANUAL => 'Manual',
+        self::SORT_NEWEST => 'Newest artwork date',
     ];
 
     public static function sortMode(ArtworkCategory $gallery): string
@@ -67,17 +67,27 @@ final class GalleryPresentation
      */
     public static function orderArtworks(Builder $query, ArtworkCategory $gallery): Builder
     {
-        if (self::sortMode($gallery) === self::SORT_NEWEST) {
-            return $query
-                ->orderByRaw('CASE WHEN work_year IS NULL THEN 1 ELSE 0 END')
-                ->orderByDesc('work_year')
-                ->orderByRaw('CASE WHEN work_date IS NULL THEN 1 ELSE 0 END')
-                ->orderByDesc('work_date')
-                ->orderByDesc('created_at')
-                ->orderByDesc('id');
-        }
+        return self::sortMode($gallery) === self::SORT_NEWEST
+            ? self::orderArtworksByDate($query)
+            : $query->orderBy('position')->orderBy('id');
+    }
 
-        return $query->orderBy('position')->orderBy('id');
+    /**
+     * The same date order is used for live display and one-time Manual sorting.
+     *
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     * @param Builder<TModel> $query
+     * @return Builder<TModel>
+     */
+    public static function orderArtworksByDate(Builder $query): Builder
+    {
+        return $query
+            ->orderByRaw('CASE WHEN work_year IS NULL THEN 1 ELSE 0 END')
+            ->orderByDesc('work_year')
+            ->orderByRaw('CASE WHEN work_date IS NULL THEN 1 ELSE 0 END')
+            ->orderByDesc('work_date')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
     }
 
     public const EDGE_DISABLED = 'disabled';

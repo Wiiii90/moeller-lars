@@ -49,10 +49,11 @@ trait GalleryWorkspaceUploadSettings
                 Grid::make()
                     ->columns(['md' => 2])
                     ->schema([
-                        TextInput::make('name')->label('Gallery title')->required()->maxLength(160),
+                        TextInput::make('name')->label('Gallery title')->required()->maxLength(160)->columnSpanFull(),
                         Toggle::make('show_on_home')->label('Eligible for homepage presentation')->columnSpanFull(),
                         Select::make('sort_mode')
                             ->label('Artwork order')
+                            ->hintIcon('heroicon-o-light-bulb', tooltip: 'Manual: drag or edit positions; new artworks appear first. Newest artwork date: the Gallery always displays works by date instead of manual position. To sort the manual positions only once, save Manual first and use Sort once by artwork date below.')
                             ->options(GalleryPresentation::SORT_OPTIONS)
                             ->default(GalleryPresentation::SORT_MANUAL)
                             ->required()
@@ -88,7 +89,6 @@ trait GalleryWorkspaceUploadSettings
                             ->columnSpanFull(),
                         Toggle::make('artwork_menu_surface_wide')
                             ->label('Match Menu surface to Artwork page width')
-                            ->helperText('Only the Menu background becomes wider. Navigation items keep their usual size and spacing.')
                             ->default(false)
                             ->columnSpanFull(),
                         Select::make('artwork_divider')
@@ -110,6 +110,34 @@ trait GalleryWorkspaceUploadSettings
                     ]),
             ])
             ->modalHeading('Gallery settings')
+            ->extraModalFooterActions([
+                Action::make('sortArtworksByDateOnce')
+                    ->label('Sort once by artwork date')
+                    ->color('gray')
+                    ->disabled(fn (): bool => ($this->galleryContext['sort_mode'] ?? GalleryPresentation::SORT_MANUAL) !== GalleryPresentation::SORT_MANUAL)
+                    ->tooltip('Save Manual ordering first. This replaces manual positions with a one-time date sort; future edits remain manual.')
+                    ->action(function (): void {
+                        /** @var ArtworkCategory $gallery */
+                        $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+                        if (GalleryPresentation::sortMode($gallery) !== GalleryPresentation::SORT_MANUAL) {
+                            throw ValidationException::withMessages(['sort_mode' => 'Save Manual ordering first.']);
+                        }
+                        $sortedIds = GalleryPresentation::orderArtworksByDate($gallery->artworks()->getQuery())
+                            ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
+                        $currentIds = $gallery->artworks()->orderBy('position')->orderBy('id')
+                            ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
+                        if ($sortedIds === $currentIds) {
+                            return;
+                        }
+                        app(GalleryEditorialService::class)->reorderArtworks($gallery, $sortedIds);
+                        $this->loadGallery((int) $gallery->getKey());
+                        $this->refreshWorkspaceAfterMutation();
+                        app(AdminNotifier::class)->notification(
+                            title: 'Manual artwork order sorted by date',
+                            status: 'success',
+                        );
+                    }),
+            ])
             ->action(function (array $data): void {
                 /** @var ArtworkCategory $gallery */
                 $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
