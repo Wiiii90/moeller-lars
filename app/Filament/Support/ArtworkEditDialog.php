@@ -82,6 +82,37 @@ final class ArtworkEditDialog
                             ->searchable()
                             ->preload(),
                     ] : []),
+                    MediaAssetSelect::makeId(
+                        'primary_media_asset_id',
+                        'Media file',
+                        allowedMimeTypes: self::primaryMimeTypes(),
+                    )
+                        ->placeholder(__('No primary media'))
+                        ->nullable()
+                        ->disabled($primaryReadOnly)
+                        ->selectablePlaceholder(! $primaryReadOnly)
+                        ->extraFieldWrapperAttributes($primaryReadOnly ? [
+                            'title' => 'Unpublish this Artwork before changing or removing its primary Media File.',
+                        ] : [], merge: true)
+                        ->live()
+                        ->afterStateUpdated(static function (mixed $state, callable $set) use ($onPrimaryMediaChanged): void {
+                            // Gallery Edit persists this discrete Media File choice at
+                            // the field boundary, not through a bubbled modal change.
+                            // Create and the standalone EditRecord keep their existing
+                            // full-form submission lifecycle.
+                            if ($onPrimaryMediaChanged instanceof Closure) {
+                                $onPrimaryMediaChanged(filled($state) ? (int) $state : null);
+                            }
+
+                            // ALT belongs to the newly chosen file, not the old primary.
+                            $set('primary_alt_text', null);
+                        })
+                        ->columnSpanFull(),
+                    TextInput::make('primary_alt_text')
+                        ->label('ALT text override')
+                        ->maxLength(500)
+                        ->nullable()
+                        ->columnSpanFull(),
                     ArtworkMaterialSelect::make(),
                     TextInput::make('work_year')->label('Year')->numeric()->minValue(1000)->maxValue(9999)->nullable(),
                     DatePicker::make('work_date')->label('Exact date')->nullable(),
@@ -118,43 +149,7 @@ final class ArtworkEditDialog
                         ->nullable()
                         ->columnSpanFull(),
                     ...AdminRichText::schema('description', 'Description', 10000),
-                    MediaAssetSelect::makeId(
-                        'primary_media_asset_id',
-                        'Existing Media File',
-                        allowedMimeTypes: self::primaryMimeTypes(),
-                    )
-                        ->placeholder(__('No primary media'))
-                        ->nullable()
-                        ->disabled($primaryReadOnly)
-                        ->selectablePlaceholder(! $primaryReadOnly)
-                        ->extraFieldWrapperAttributes($primaryReadOnly ? [
-                            'title' => 'Unpublish this Artwork before changing or removing its primary Media File.',
-                        ] : [], merge: true)
-                        ->live()
-                        ->afterStateUpdated(static function (mixed $state, callable $set) use ($onPrimaryMediaChanged): void {
-                            // Gallery Edit persists this discrete Media File choice at
-                            // the field boundary, not through a bubbled modal change.
-                            // Create and the standalone EditRecord keep their existing
-                            // full-form submission lifecycle.
-                            if ($onPrimaryMediaChanged instanceof Closure) {
-                                $onPrimaryMediaChanged(filled($state) ? (int) $state : null);
-                            }
 
-                            // ALT belongs to the newly chosen file, not the old primary.
-                            $set('primary_alt_text', null);
-                        })
-                        ->columnSpanFull(),
-                    ...(! $autosave ? [ResumableMediaField::make('primary_upload', 'Or upload new primary media')
-                        ->disabled($primaryReadOnly)
-                        ->extraFieldWrapperAttributes($primaryReadOnly ? [
-                            'title' => 'Unpublish this Artwork before uploading a different primary file.',
-                        ] : [], merge: true)
-                        ->columnSpanFull()] : []),
-                    TextInput::make('primary_alt_text')
-                        ->label('Primary media ALT text')
-                        ->maxLength(500)
-                        ->nullable()
-                        ->columnSpanFull(),
                 ]),
         ];
     }
@@ -208,31 +203,8 @@ final class ArtworkEditDialog
             'primary_alt_text' => $currentPrimary?->getAttribute('alt_text_override'),
         ];
         $assetId = (int) ($data['primary_media_asset_id'] ?? 0);
-        $upload = $data['primary_upload'] ?? null;
-        $currentGalleryId = $artwork->getAttribute('artwork_category_id');
-        $currentGalleryId = $currentGalleryId === null ? null : (int) $currentGalleryId;
-        $requestedGalleryId = $allowGalleryAssignment && filled($data['artwork_category_id'] ?? null)
-            ? (int) $data['artwork_category_id']
-            : ($allowGalleryAssignment ? null : $currentGalleryId);
 
-        $uploadedId = filter_var($upload, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-        if ($upload !== null && $uploadedId === false) {
-            throw ValidationException::withMessages(['primary_upload' => 'Choose an available Media File.']);
-        }
-        if ($uploadedId !== false && $assetId > 0 && $assetId !== $currentAssetId) {
-            throw ValidationException::withMessages(['primary_upload' => 'Choose either a new upload or an existing Media File, not both.']);
-        }
-        // Upload transport already completed its own canonical Storage ingest.
-        // The Artwork transaction only attaches an available canonical asset.
-        $uploadedAsset = $uploadedId === false || $uploadedId === null ? null
-            : MediaAsset::query()->whereKey($uploadedId)->where('state', 'available')->first();
-        if ($uploadedId !== false && $uploadedId !== null
-            && (! $uploadedAsset instanceof MediaAsset
-                || ! in_array((string) $uploadedAsset->getAttribute('mime_type'), self::primaryMimeTypes(), true))) {
-            throw ValidationException::withMessages(['primary_upload' => 'Uploaded media is not an available image or video.']);
-        }
-
-        DB::transaction(function () use ($artwork, $data, $uploadedAsset, $assetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment, $savePrimaryMedia): void {
+        DB::transaction(function () use ($artwork, $data, $assetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment, $savePrimaryMedia): void {
             if ($allowGalleryAssignment && $requestedGalleryId !== $currentGalleryId) {
                 $assignments = app(ArtworkGalleryAssignmentService::class);
                 if ($requestedGalleryId === null) {
@@ -250,13 +222,7 @@ final class ArtworkEditDialog
             );
 
             $primaryMedia = app(ArtworkPrimaryMediaService::class);
-            if ($uploadedAsset instanceof MediaAsset) {
-                $currentPrimary === null
-                    ? $primaryMedia->attachAsset($artwork, $uploadedAsset)
-                    : $primaryMedia->replaceAsset($artwork, $uploadedAsset);
-            } elseif ($savePrimaryMedia && array_key_exists('primary_media_asset_id', $data)) {
-                // Gallery autosave persists this field in afterStateUpdated.
-                // This full-form path remains for standalone EditRecord.
+            if ($savePrimaryMedia && array_key_exists('primary_media_asset_id', $data)) {
                 $this->changePrimaryMedia($artwork, $assetId > 0 ? $assetId : null);
             }
 
@@ -268,7 +234,7 @@ final class ArtworkEditDialog
                 );
             } elseif (filled($data['primary_alt_text'] ?? null)) {
                 throw ValidationException::withMessages([
-                    'primary_alt_text' => 'Choose or upload primary media before entering ALT text.',
+                    'primary_alt_text' => 'Choose a Media file before entering an ALT text override.',
                 ]);
             }
         });

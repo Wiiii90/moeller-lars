@@ -150,11 +150,6 @@ trait GalleryWorkspaceBatchActions
                 }
             });
 
-        return AdminDialog::confirm(
-            $action,
-            'Unpublish artworks?',
-            submitLabel: 'Unpublish',
-            icon: AdminIcon::Unpublish,
-        );
+        return $action;
     }
 }

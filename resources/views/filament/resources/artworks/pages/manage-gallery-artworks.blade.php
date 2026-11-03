@@ -147,10 +147,6 @@
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Artwork->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">{{ __('Add artwork') }}</span>
                             </button>
-                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addExistingArtwork')" aria-label="Add existing artwork">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::AddFromLibrary->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">{{ __('Add existing') }}</span>
-                            </button>
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('materialPresets')" aria-label="Materials">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Materials->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">{{ __('Materials') }}</span>
@@ -384,17 +380,6 @@
                                     >
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" />
                                     </button>
-                                    @if ($artwork['state'] === 'draft')
-                                        <button
-                                            class="gallery-workspace__icon-action"
-                                            type="button"
-                                            wire:click="mountAction('uploadArtworkPrimaryMedia', { artwork: {{ $artwork['id'] }} })"
-                                            title="Replace primary image or video"
-                                            aria-label="Replace primary media for {{ $artwork['title'] }}"
-                                        >
-                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Upload->mini()" />
-                                        </button>
-                                    @endif
                                     <button
                                         class="gallery-workspace__icon-action gallery-workspace__order-action"
                                         type="button"
