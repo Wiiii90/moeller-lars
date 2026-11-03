@@ -4,6 +4,10 @@
 
 **Aktueller Public-Exhibitions-Stil:** Heller, ungerahmter Katalog auf der normalen konfigurierbaren Public-Content-Fläche (Standard weiß), ohne Schatten und zusätzliche Farbverläufe. Miniaturen, Bild-Text-Fluss mit Cover, redaktionelle Reihenfolge und einzelne Separatoren bei geöffneten Einträgen bleiben wie zuvor. Neu: ohne Cover beginnt der vollständige geöffnete Inhalt links. Keine inhaltsabhängigen Sonderabstände. Browserabnahme für die neue Korrektur ausstehend.
 
+## Admin map-preview CSS cleanup (03.11.2026)
+- Since the Exhibition Add/Edit preview was removed, the now-unreachable `.journal-entry-editor__map*` CSS rules in its existing shared Admin Journal owner were deleted rather than retained as a second presentation path. Public map classes are separate and untouched.
+- No runtime/browser acceptance performed.
+
 ## Exhibition date cleanup — read-only Working/Committed/checkpoint inventory (03.11.2026)
 - Added `php artisan exhibitions:audit-dates` in the existing Laravel console command owner. It reads the current editable and committed Exhibitions tables and retained publication checkpoint payloads and displays every nonempty authored `date_text` alongside structured start/end dates; **no modifications, no date guesses, no writing to any schema**, no service requests and no scheduled task.
 - Because the connector has no access to the local or Validation database, the command has **not been executed**; no assertion about current artist values or safe automatic conversion. The actual inventory must run locally first, and only after reviewed conversions can the old field be dropped and all UI/model/snapshot references removed. A fail-safe conversion, not an unreviewed heuristic, is the migration acceptance boundary.
