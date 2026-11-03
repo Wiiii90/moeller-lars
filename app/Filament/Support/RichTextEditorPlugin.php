@@ -22,8 +22,6 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
         'tableDeleteRow' => '$getEditor()?.chain().focus().deleteRow().run()',
         'tableMergeCells' => '$getEditor()?.chain().focus().mergeCells().run()',
         'tableSplitCell' => '$getEditor()?.chain().focus().splitCell().run()',
-        'tableToggleHeaderRow' => '$getEditor()?.chain().focus().toggleHeaderRow().run()',
-        'tableToggleHeaderCell' => '$getEditor()?.chain().focus().toggleHeaderCell().run()',
         'tableDelete' => '$getEditor()?.chain().focus().deleteTable().run()',
     ];
     public static function make(): static
