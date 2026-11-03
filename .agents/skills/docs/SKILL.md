@@ -50,6 +50,19 @@ The documentation branch is the owner of general contracts, architectural guides
 
    The checker refuses newly introduced merge/root history, commits that touch branch-local worker/coordination/topics or `AGENTS.md`, and a candidate tree containing another branch's roster/worker files. Use `--target=main` for a separately prepared Main release candidate; `main` must not contain **any** worker/area/topic files. A passing check is **necessary, not sufficient**: a human still reviews documentation ownership and tests, checks that the candidate is based on the latest destination HEAD and authorizes promotion. This tool is presently only on `docs`; it is not an installed enforcement hook on `dev` or `main`.
 
+## English-only publication gate
+
+Repository documentation is authored in English. A German user conversation, German artist content or historical German source text does not permit German explanatory prose in `docs/`, skills, worker methods or generated human-readable reports.
+
+Before a Docs-owned publication or consolidation:
+1. inspect every changed/current owner for mixed-language prose;
+2. translate repository-authored German text into English **in the existing canonical owner**, preserving technical meaning, source evidence and identifiers;
+3. if translated headings change anchors, update all inbound Markdown links in the same correction;
+4. do not fork a second English document or retain a German compatibility copy;
+5. keep literal artist/source content non-English only when the content itself is intentionally being represented, with English explanation around it.
+
+Known mixed-language canonical documentation is an outstanding Docs defect, not acceptable historical style.
+
 ## Agent-readable source of truth
 
 The shortest useful read path is [the documentation index](../../../docs/README.md) → one canonical contract → actual code and adjacent consumers. Obsolete entrypoints and duplicated manuals must be **deleted outright** after their unique current substance reaches its owner. Do not keep redirect stubs, rename-only aliases, compatibility gateways, dated source-audit dump files or second skill manuals. Update incoming paths, labels and links atomically with the deletion; historical versions are available in Git. Before shrinking a legacy contract, compare every feature-specific rule against the destination: Home-routing row actions belong to Tables, Gallery file ownership belongs to Media, modal persistence to Dialogs and responsive geometry to Responsive. If a rule cannot be verified as present and consistent, transfer it or flag it explicitly for source review **before** removing the old text.

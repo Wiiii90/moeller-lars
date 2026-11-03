@@ -48,6 +48,8 @@ The user declares freezes. Org may report which gates remain and inspect relevan
 ### Documentation consolidation
 Org keeps organizational/release/process facts coherent. Durable product/architecture rules still belong in their canonical documentation owners. When an organizational decision changes a durable release/process contract, reconcile the existing owner rather than leaving the only truth in chat or `.agents/org.md`. Do not create duplicate manuals.
 
+Org also audits repository-language hygiene. All repository-authored prose must be English even when the user chat is German. If worker/live-state files or canonical Docs contain German/mixed-language explanatory text, record the exact owning workstream as a correction gate. Org may fix the shared policy/Org state, but does not silently rewrite another active worker's private record or take over a broad Docs translation task. Known non-English canonical documentation must be normalized by Docs before final publication/release transfer.
+
 ### Live-file hygiene
 `.agents/org.md` is rewritten as a compact current snapshot, never appended indefinitely. Preserve only current milestone state, accepted decisions, active gates, deferred organizational obligations and the next organizational action. Historical details are recoverable in Git.
 

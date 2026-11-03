@@ -66,6 +66,19 @@ Current audit (2026-11-03, later pass):
 
 **Protocol propagation:** the new promotion/compaction Shared Protocol is now present on `testing` as well as `dev`. It is still absent from branch-local `docs` and `refactor` protocol snapshots. Their role skills already retain durable-feedback rules, so no immediate lesson is unprotected, but reviewed shared-method synchronization remains pending before those branches can rely on the exact new compaction/current-state contract.
 
+## Repository language hygiene
+
+Project rule: **all repository-authored prose is English only**. German is acceptable only as intentionally preserved product/source content, locale data, proper names or verbatim artist text, never as explanatory documentation/process prose.
+
+Audit on current `dev` found a real violation, not just isolated wording:
+- `.agents/workers/dev-1.md` contains extensive German live-state prose and must be translated/compacted by its owning worker on its next substantive write.
+- Dev Worker 2, Dev Worker 4, current shared skills/protocol, Org state and the sampled main product/operations documents are English.
+- `docs/admin/dialogs.md` contains a mixed German section.
+- Numerous permanent `docs/architecture/*.md` reports are predominantly or materially German, including Activity/Undo, notification transport, publication calls/working operations, runtime boundaries/entrypoints, Artwork/Gallery publication, Eloquent relations, Exhibition map, import boundaries, inventory, Journal lifecycle, lifecycles, media cleanup, PHP source audit, Publication, schema evolution, structured components, UI surfaces and Public security/SPA lifecycle.
+- `docs/public/rights-privacy.md` contains at least a mixed German subsection; `docs/migration/invariants.md` has at least one German heading-fragment dependency.
+
+This is now a **Docs normalization gate**: translate in place to English, preserve technical/source meaning, update heading-fragment links where necessary, and do not create duplicate English copies. Because the active Docs branch owns durable documentation, Org records the gate rather than rewriting that branch's canonical corpus itself. The English-only rule is published on `dev`; the Docs branch must receive the reviewed shared-method update as part of its next synchronization.
+
 ## Immediate organizational objective
 
 Continue artist-feedback development without inventing a freeze. Maintain Issue/milestone hygiene while work moves. When the user declares the v0.4 Dev freeze, drive the bounded #198 → #199 → #214 closeout sequence, then prepare the separately authorized history-cleanup/main-promotion gate.

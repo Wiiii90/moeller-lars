@@ -41,6 +41,12 @@ Each branch-local roster owns its independent **next lease token**. A new alloca
 
 **For the future approved Docs-to-Dev publication:** bring the reviewed shared protocol/skills across, but **never** bring Docs' active worker rows, lease counter or individual Docs records. Retain a verified existing Dev roster if present; otherwise initialize **one empty Dev roster**, not both a Docs copy and a Dev copy. Testing and Refactor likewise receive their own empty roster during their authorized method synchronization if missing. No unfiltered branch history merge and no transfer of another branch's `.agents/workers/` directory. This is an explicit transfer gate, not a promise that other branch trees were already changed.
 
+## Repository-authored language — mandatory
+
+All tracked project-authored prose is **English only**, regardless of the language used in the user conversation. This applies to worker records, rosters, Org state, skills, protocol files, documentation, architecture reports, source comments/docblocks, handoffs, commit messages and repository issue/task text. Do not translate literal artist content, locale fixtures, proper names or externally defined strings that intentionally model non-English data; keep the surrounding explanation English.
+
+A worker updating a live file must also normalize any German/mixed-language prose in the **current section it is replacing** instead of perpetuating it. A Docs worker must treat known non-English canonical documentation as a documentation defect: preserve technical meaning, translate into English in the existing owner, update inbound heading links if headings change, and verify links/fragments before publication. Do not create a parallel English copy.
+
 ## Clear user-facing language and evidence
 
 For each standalone user-facing report, answer and worker handoff, **write out technical abbreviations on first use and explain unfamiliar terms briefly in plain language**. This includes initialisms for protocols, tooling and file formats. Keep literal source identifiers, file paths, configuration keys and existing interface labels unchanged; explain them next to the identifier instead of renaming code. A long chain of unexplained acronyms is not evidence of progress. If an expansion is uncertain, verify it or use an ordinary descriptive expression.

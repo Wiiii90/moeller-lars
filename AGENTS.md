@@ -19,6 +19,14 @@ Org **never starts, assigns or simulates other chats/workers**. The user decides
 
 This file is the default working contract for coding agents, review/orchestration chats and parallel workers in `Wiiii90/moeller-lars`.
 
+## Repository language — English only
+
+**All repository-authored prose must be English.** This includes `docs/`, architecture reports, source comments/docblocks, Markdown files, agent instructions, skills, rosters, worker/live-state files, handoffs, issue/task text prepared for the repository, commit messages and generated human-readable documentation. A German-speaking chat does **not** authorize German repository prose.
+
+Non-English text is allowed only when it is intentionally preserved product/content data, an external literal, proper name, locale-specific example or verbatim user/artist content that the software must represent. Explain such material in English; never use that exception for surrounding documentation or process notes.
+
+Before committing documentation, worker-state or policy text, review the changed prose for language consistency. If an existing owner contains German or mixed-language prose, do not append more mixed text: keep new material English and record/perform a bounded normalization of that owner. Docs publication and release documentation are not complete while known non-English authored prose remains in canonical documentation.
+
 ## Abbreviations in user-facing communication — mandatory
 
 **On first use in each user-facing reply, report, handoff, explanation or standalone document, write out every abbreviation in full and immediately explain what it means in plain language.** This applies to technical initialisms, acronyms, file formats, protocols, systems and project-specific shorthand, even if they are familiar to developers or were explained in an earlier chat. Format: **full term (abbreviation)**, followed by a short explanation of its purpose when the term is not self-explanatory.
