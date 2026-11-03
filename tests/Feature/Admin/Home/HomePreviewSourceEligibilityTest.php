@@ -108,8 +108,7 @@ function homeSourceArtwork(ArtworkCategory $category, string $state = 'published
         'title' => 'Home artwork',
         'state' => $state,
         'position' => 0,
-        'work_year' => 2026,
-        'date_precision' => 'year',
+        'year' => 2026,
     ]);
     $artwork->save();
     $artwork->artworkMedia()->create([

@@ -58,7 +58,6 @@ it('preserves the historical target label after a deleted record disappears', fu
         'analytics_key' => '6d6f9c8a-7b61-4a85-8f09-7d6d5f6e3c21',
         'state' => 'draft',
         'position' => 0,
-        'date_precision' => 'unknown',
     ]);
 
     app(ArtworkDraftService::class)->delete(Artwork::query()->findOrFail($artworkId));
