@@ -159,6 +159,14 @@ trait GalleryWorkspaceDataProjection
             })
             ->values()
             ->all();
+
+        // Selection is scoped to cards the artist can currently see. A filter,
+        // status change or mutation may remove cards from the visible set.
+        $visibleIds = array_column($this->artworks, 'id');
+        $this->selectedArtworkIds = array_values(array_filter(
+            $this->selectedArtworkIds,
+            static fn (int|string $id): bool => in_array((int) $id, $visibleIds, true),
+        ));
     }
 
     private function refreshWorkspaceAfterMutation(): void

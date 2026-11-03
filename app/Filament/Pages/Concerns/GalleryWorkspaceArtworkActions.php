@@ -124,6 +124,7 @@ trait GalleryWorkspaceArtworkActions
                 $this->refreshWorkspaceAfterMutation();
                 app(AdminNotifier::class)->notification(
                     title: 'Artwork removed from Gallery',
+                    body: 'Its data and media remain available through Add existing in any Gallery.',
                     status: 'success',
                 );
             });

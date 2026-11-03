@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
+use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
@@ -12,8 +13,11 @@ use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\AdminRowAction;
+use App\Models\Artwork;
+use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -82,6 +86,65 @@ trait GalleryWorkspaceArtworkDialogs
             });
 
         return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
+    }
+
+    /**
+     * Removing an artwork from a Gallery does not destroy its identity or its media.
+     * Allow the artist to attach that existing record instead of recreating its slug.
+     */
+    public function addExistingArtworkAction(): Action
+    {
+        $action = Action::make('addExistingArtwork')
+            ->label('Add existing')
+            ->schema([
+                Select::make('artwork_id')
+                    ->label('Unassigned artwork')
+                    ->options(fn (): array => Artwork::query()
+                        ->whereNull('artwork_category_id')
+                        ->orderBy('title')
+                        ->orderBy('id')
+                        ->get()
+                        ->mapWithKeys(static fn (Artwork $artwork): array => [
+                            (int) $artwork->getKey() => (string) $artwork->getAttribute('title')
+                                .' ('.(string) $artwork->getAttribute('slug').')',
+                        ])->all())
+                    ->searchable()
+                    ->preload()
+                    ->required(),
+            ])
+            ->action(function (array $data): void {
+                $artworkId = filter_var($data['artwork_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                $artwork = $artworkId === false
+                    ? null
+                    : Artwork::query()->whereKey($artworkId)->whereNull('artwork_category_id')->first();
+
+                if (! $artwork instanceof Artwork) {
+                    throw ValidationException::withMessages([
+                        'artwork_id' => 'Choose an artwork that is still unassigned.',
+                    ]);
+                }
+
+                /** @var ArtworkCategory $gallery */
+                $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+
+                try {
+                    app(ArtworkGalleryAssignmentService::class)->reassign($artwork, $gallery);
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Artwork could not be added', $exception);
+
+                    return;
+                }
+
+                $this->refreshWorkspaceAfterMutation();
+                $this->resetFilters();
+                app(AdminNotifier::class)->notification(
+                    title: 'Existing artwork added to Gallery',
+                    body: 'The original artwork, its URL and media were preserved.',
+                    status: 'success',
+                );
+            });
+
+        return AdminDialog::command($action, 'Add artwork', AdminDialogSize::Default);
     }
 
     public function editArtworkAction(): Action
