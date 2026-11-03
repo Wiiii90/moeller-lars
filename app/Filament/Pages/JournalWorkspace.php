@@ -1045,6 +1045,7 @@ final class JournalWorkspace extends Page
         };
     }
 
+    /** @param Builder<Exhibition> $query */
     private function applyTimingFilter(Builder $query): void
     {
         if (! in_array($this->timingFilter, ['upcoming', 'current', 'past', 'unknown'], true)) {
@@ -1264,6 +1265,7 @@ final class JournalWorkspace extends Page
         ];
     }
 
+    /** @return EloquentCollection<int, BlogPost> */
     private function selectedPosts(): EloquentCollection
     {
         $ids = collect($this->selectedPostIds)->map(fn (mixed $id): int => (int) $id)->unique()->all();
@@ -1271,6 +1273,7 @@ final class JournalWorkspace extends Page
         return BlogPost::query()->where('site_section_id', $this->sectionId)->whereKey($ids)->orderBy('position')->orderBy('id')->get();
     }
 
+    /** @return EloquentCollection<int, Exhibition> */
     private function selectedExhibitions(): EloquentCollection
     {
         $ids = collect($this->selectedExhibitionIds)->map(fn (mixed $id): int => (int) $id)->unique()->all();
