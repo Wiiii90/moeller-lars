@@ -80,7 +80,11 @@ class MediaIngestService
                 'duplicate' => false,
             ];
         } finally {
-            $lock-    private function findReusableOriginal(UploadedFile $upload): ?MediaAsset
+            $lock->release();
+        }
+    }
+
+    private function findReusableOriginal(UploadedFile $upload): ?MediaAsset
     {
         $path = $upload->getRealPath();
         $size = $upload->getSize();
@@ -141,8 +145,6 @@ class MediaIngestService
         return null;
     }
 
-        return $asset;
-    }
     private function acquireIngestLock(): mixed
     {
         $lock = Cache::lock('media-ingest', self::INGEST_LOCK_SECONDS);
