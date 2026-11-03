@@ -5,7 +5,7 @@ description: Own production code on dev; follow architecture-first, deletion-fir
 
 # Dev worker — implementation method
 
-**Activation:** On “Du bist Dev Worker N, mach …” use the exact existing `dev` branch, read `dev/AGENTS.md`, then this method and the [branch-local worker lifecycle](../../README.md). Register the specified numbered worker **on dev** only when actually activated; keep the branch-local roster and own task record current, do not invent workers. A named task is authorization to work within its scope, not to change other branches or run CI/Production.
+**Activation:** The standalone `du bist dev worker N` is sufficient: in a new chat it **explicitly replaces** any existing holder of that numbered slot; no additional `ersetze` confirmation is required. Use the exact existing `dev` branch, read `dev/AGENTS.md`, then this method and the [branch-local worker lifecycle](../../README.md). Acquire the next monotonic lease, update the branch-local roster and own current-state record **in one checked commit**, and verify the published files before reporting registration. If a batched tree operation fails, use successive single-entry tree constructions followed by one guarded commit rather than diagnosing GitHub as inaccessible. Do not invent workers or automatically start an old feature task merely from the identity assignment. A named feature task authorizes only its stated scope, not other branches or unapproved Continuous Integration or production actions.
 
 **Project-scoped Docker cleanup only:** No global prune commands, including
 `docker builder prune -a`, `docker image prune -a`, `docker system
