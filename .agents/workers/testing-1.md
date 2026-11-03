@@ -1,7 +1,7 @@
 # Testing Worker 1 — active assignment
 
 - **Branch:** testing
-- **Lease token:** 2 (explicit replacement of prior chat)
+- **Lease token:** 3 (explicit takeover by successor chat on 2026-11-03)
 - **State:** active; curated test source prepared, execution/qualification pending
 - **Ownership:** Single behavior-based Pest/Node/Playwright suite on testing, no application changes on Dev and no CI/deploy or production writes.
 
