@@ -12,7 +12,7 @@ return new class extends Migration
     {
         DB::transaction(function (): void {
             DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
-            app(PublicationSchemaGuard::class)->assertParity();
+            app(PublicationSchemaGuard::class)->assertParity(['media_variants']);
 
             foreach (['public', 'committed'] as $schema) {
                 $duplicate = DB::selectOne("
@@ -36,7 +36,7 @@ return new class extends Migration
                 DB::statement("CREATE UNIQUE INDEX media_variants_one_available_kind_unique ON {$schema}.media_variants (media_asset_id, variant_kind) WHERE state = 'available'");
             }
 
-            app(PublicationSchemaGuard::class)->assertParity();
+            app(PublicationSchemaGuard::class)->assertParity(['media_variants']);
             DB::table('publication_checkpoints')
                 ->where('snapshot_available', true)
                 ->where('schema_hash', $oldHash)
