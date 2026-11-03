@@ -206,3 +206,49 @@ it('rejects invalid or backwards Exhibition partial dates atomically in the moun
     'end without start' => ['', '2027-06', 'ends_on'],
     'noncanonical month' => ['2027-00', null, 'starts_on'],
 ]);
+
+it('filters Exhibition timing using the exact same partial-date certainty as the displayed entry', function (): void {
+    \Carbon\Carbon::setTestNow('2027-06-12 12:00:00');
+    try {
+        $section = app(SiteSectionEditorialService::class)->createJournal(
+            'Timing precision', 'timing-precision', JournalTemplate::Exhibitions->value,
+        );
+        foreach ([
+            ['Year only', '2027', null, 'unknown'],
+            ['Month only', '2027-06', null, 'unknown'],
+            ['Undated', null, null, 'unknown'],
+            ['Exact current', '2027-06-11', '2027-06-13', 'current'],
+            ['Future month', '2027-07', null, 'upcoming'],
+            ['Past month', '2027-05', null, 'past'],
+        ] as $i => [$title, $start, $end, $expected]) {
+            Exhibition::query()->create([
+                'site_section_id' => $section->getKey(),
+                'title' => $title,
+                'slug' => 'timing-'.($i + 1),
+                'state' => 'draft',
+                'position' => $i + 1,
+                'starts_on' => $start,
+                'ends_on' => $end,
+            ]);
+        }
+
+        $page = Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()]);
+        foreach ([
+            'unknown' => ['Year only', 'Month only', 'Undated'],
+            'current' => ['Exact current'],
+            'upcoming' => ['Future month'],
+            'past' => ['Past month'],
+        ] as $filter => $titles) {
+            $page->set('timingFilter', $filter)->assertHasNoErrors();
+            $rows = $page->get('exhibitions');
+            expect(array_column($rows, 'title'))->toBe($titles);
+            foreach ($rows as $row) {
+                expect($row['timing'])->toBe($filter);
+            }
+        }
+        $page->set('timingFilter', 'any')->assertHasNoErrors();
+        expect($page->get('total'))->toBe(6);
+    } finally {
+        \Carbon\Carbon::setTestNow();
+    }
+});
