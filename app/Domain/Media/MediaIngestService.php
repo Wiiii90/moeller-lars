@@ -17,21 +17,18 @@ use Throwable;
 
 class MediaIngestService
 {
-    // All newly ingested images use bounded libvips. GD is retained only in
-    // MediaVariantRegenerationService for historical immutable thumbnails.
+    // All new image thumbnails use the one canonical libvips generator.
     // Allow native high-resolution camera images and approximately 400 MP
     // multi-shot composites, with headroom, while retaining a finite
     // decompression safety bound. Runtime resource limits still apply.
     public const MAX_PIXELS = 500_000_000;
-    public const LARGE_IMAGE_TRANSFORM_PROFILE = 'public-v2';
+    public const IMAGE_THUMBNAIL_PROFILE = 'image-thumbnail';
     public const VIDEO_POSTER_KIND = 'poster';
-    public const VIDEO_POSTER_PROFILE = 'video-poster-v1';
+    public const VIDEO_POSTER_PROFILE = 'video-poster';
 
     public const THUMBNAIL_MAX_EDGE = 960;
 
     public const THUMBNAIL_KIND = 'thumbnail';
-
-    public const TRANSFORM_PROFILE = 'public-v1';
 
     // A 512 MiB original may require hashing, container probing, poster generation
     // and storage admission. Keep the atomic ingest lock beyond the bounded
@@ -217,7 +214,7 @@ class MediaIngestService
         $variantKind = $isVideo ? self::VIDEO_POSTER_KIND : self::THUMBNAIL_KIND;
         $transformProfile = $isVideo
             ? self::VIDEO_POSTER_PROFILE
-            : self::LARGE_IMAGE_TRANSFORM_PROFILE;
+            : self::IMAGE_THUMBNAIL_PROFILE;
         $thumbnailKey = $prepared['thumbnail_bytes'] === null
             ? null
             : 'variants/'.$uuid.'-'.$variantKind.'.webp';

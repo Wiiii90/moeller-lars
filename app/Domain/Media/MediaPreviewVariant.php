@@ -7,8 +7,9 @@ use App\Models\MediaVariant;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
- * One source of truth for current libvips image thumbnails
- * and optional video-poster-v1 variants across Publication, Admin and Public.
+ * Single media preview reader for images and videos across Publication,
+ * Admin and Public. A kind is canonical; historical transform metadata does
+ * not create a second reader or allow multiple current preview assets.
  */
 final class MediaPreviewVariant
 {
@@ -16,7 +17,6 @@ final class MediaPreviewVariant
     {
         return $variant->getAttribute('state') === 'available'
             && $variant->getAttribute('variant_kind') === MediaIngestService::THUMBNAIL_KIND
-            && $variant->getAttribute('transform_profile') === MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE
             && $variant->getAttribute('mime_type') === 'image/webp';
     }
 
@@ -24,7 +24,6 @@ final class MediaPreviewVariant
     {
         return $variant->getAttribute('state') === 'available'
             && $variant->getAttribute('variant_kind') === MediaIngestService::VIDEO_POSTER_KIND
-            && $variant->getAttribute('transform_profile') === MediaIngestService::VIDEO_POSTER_PROFILE
             && $variant->getAttribute('mime_type') === 'image/webp';
     }
 

@@ -25,7 +25,6 @@ class PublicMedia
 {
     public const THUMBNAIL_KIND = 'thumbnail';
 
-    public const PUBLIC_TRANSFORM_PROFILE = MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE;
 
     public function __construct(
         private readonly SitePreviewContext $preview,

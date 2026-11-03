@@ -45,15 +45,10 @@ class MediaIntegrityService
             $issues = [...$issues, ...$this->checkFile($disk, $variantKey, $variant, $key)];
             if (
                 $state === 'available'
-                && (
-                    ($variant->getAttribute('variant_kind') === MediaIngestService::THUMBNAIL_KIND
-                        && in_array($variant->getAttribute('transform_profile'), [
-                            MediaIngestService::TRANSFORM_PROFILE,
-                            MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
-                        ], true))
-                    || ($variant->getAttribute('variant_kind') === MediaIngestService::VIDEO_POSTER_KIND
-                        && $variant->getAttribute('transform_profile') === MediaIngestService::VIDEO_POSTER_PROFILE)
-                )
+                && in_array((string) $variant->getAttribute('variant_kind'), [
+                    MediaIngestService::THUMBNAIL_KIND,
+                    MediaIngestService::VIDEO_POSTER_KIND,
+                ], true)
             ) {
                 if ($variant->getAttribute('mime_type') !== 'image/webp') {
                     $issues[] = $key.'public_thumbnail_mime_invalid';

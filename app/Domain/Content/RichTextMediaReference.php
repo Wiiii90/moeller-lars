@@ -102,36 +102,6 @@ final class RichTextMediaReference
         return trim(is_string($clean) ? $clean : '');
     }
 
-    /**
-     * Extract only canonical rich-text media fields from Custom Page blocks.
-     * Titles, URLs, labels and other plain-text fields are deliberately ignored.
-     *
-     * @param  list<array<string, mixed>>  $blocks
-     * @return list<int>
-     */
-    public static function idsFromCustomPageBlocks(array $blocks): array
-    {
-        $ids = [];
-
-        foreach ($blocks as $block) {
-            if (($block['type'] ?? null) === 'text' && is_string($block['body'] ?? null)) {
-                $ids = array_merge($ids, self::ids($block['body']));
-            }
-
-            if (($block['type'] ?? null) !== 'list' || ! is_array($block['items'] ?? null)) {
-                continue;
-            }
-
-            foreach ($block['items'] as $item) {
-                if (is_array($item) && is_string($item['body'] ?? null)) {
-                    $ids = array_merge($ids, self::ids($item['body']));
-                }
-            }
-        }
-
-        return array_values(array_unique($ids));
-    }
-
     private static function escapeAlt(string $alt): string
     {
         $alt = preg_replace('/\s+/u', ' ', trim($alt)) ?? trim($alt);

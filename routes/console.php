@@ -5,7 +5,6 @@ use App\Domain\Content\ExhibitionAddressNormalizer;
 use App\Domain\Contact\ContactMessageRetentionService;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\ResumableMediaUploadService;
-use App\Domain\Media\MediaThumbnailCutoverService;
 use App\Domain\Media\MediaIntegrityService;
 use App\Domain\Media\MediaRightsWorkingPreparation;
 use App\Domain\Migration\LegacyArtworkManifestImporter;
@@ -23,40 +22,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
-
-// Explicit offline thumbnail consolidation. Validation is allowed exclusively
-// from the platform's maintenance container, before the new web image starts.
-Artisan::command('media:thumbnails:consolidate {--apply : Convert GD thumbnails to libvips} {--rebaseline-checkpoints : Recompute pre-release checkpoint hashes while preserving their rows} {--invalidate-thumbnail-rights : Explicitly invalidate obsolete generated thumbnail rights selections} {--validation-offline : Dedicated guarded Validation maintenance mode}', function (MediaThumbnailCutoverService $cutover): int {
-    $validationOffline = (bool) $this->option('validation-offline');
-    if (! $cutover->authorized($validationOffline)) {
-        $this->error('Thumbnail consolidation requires local/testing or dedicated offline Validation maintenance.');
-        return 1;
-    }
-
-    $preview = $cutover->preview();
-    $this->info("Original images: {$preview['assets']} · Legacy thumbnails: {$preview['variants']} · Restorable checkpoints: {$preview['checkpoints']} · Rights selections: {$preview['rights_selections']}");
-
-    if (! $this->option('apply')) {
-        $this->comment('Preview only. --apply is required to convert the thumbnail registry.');
-        if ($preview['checkpoints'] > 0) {
-            $this->warn('--rebaseline-checkpoints is additionally required to preserve but rehash pre-release history.');
-        }
-        return 0;
-    }
-
-    try {
-        $result = $cutover->apply(
-            (bool) $this->option('rebaseline-checkpoints'),
-            (bool) $this->option('invalidate-thumbnail-rights'),
-            $validationOffline,
-        );
-        $this->info("Converted {$result['converted']} thumbnails. Rebaselined {$result['rebased']} checkpoints; invalidated {$result['invalidated_rights']} thumbnail rights selections for offline re-preparation; reclaimed {$result['reclaimed']} unreferenced old derivative files.");
-        return 0;
-    } catch (\Throwable $exception) {
-        $this->error($exception->getMessage());
-        return 1;
-    }
-})->purpose('Preview or execute guarded offline libvips thumbnail consolidation');
 
 // Expired unfinished private transfers are reclaimed without touching the
 // canonical media registry or completed files. The scheduler must be enabled
