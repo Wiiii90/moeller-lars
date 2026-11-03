@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { signIn } from '../../support/admin.mjs';
 
+test.setTimeout(90_000);
+
 /**
  * These tests use the same disposable BrowserProfilingSeeder as the other
  * Admin end-to-end tests. Create unique, unpublished pages through the
@@ -141,3 +143,45 @@ test('each native Storage selection inserts exactly one image and the saved edit
     await expect(editable.locator('img[data-id]')).toHaveCount(2);
     await expect(editable.locator('[data-artist-caption]')).toHaveCount(0);
 });
+
+test('Rich Text toolbar edits a real table and persists colors, spacing and undo/redo after reopening', async ({ page }) => {
+    let { modal, shell, editable } = await openFreshEditor(page);
+
+    await editable.click();
+    await page.keyboard.press('ControlOrMeta+A');
+    await shell.getByRole('button', { name: 'Text color', exact: true }).click();
+    const hex = panel(modal, 'Text color').getByRole('textbox', { name: 'Hex color' });
+    await hex.fill('#3265ac');
+    await hex.press('Enter');
+    await expect(editable.locator('[data-color="#3265ac"]')).toHaveCount(1);
+
+    await shell.getByRole('button', { name: 'Line spacing', exact: true }).click();
+    await panel(modal, 'Line spacing').getByRole('combobox', { name: 'Line spacing' })
+        .selectOption('2.0');
+    await expect(editable.locator('[data-artist-line-spacing="2.0"]')).toHaveCount(1);
+
+    await shell.getByRole('button', { name: /^Table$|^Insert table$/i }).click();
+    const rows = editable.locator('table tr');
+    await expect(rows).toHaveCount(2);
+    const cell = rows.nth(1).locator('td').first();
+    await cell.click();
+    await page.keyboard.type('2026');
+    await expect(cell).toContainText('2026');
+
+    await shell.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expect(cell).not.toContainText('2026');
+    await shell.getByRole('button', { name: 'Redo', exact: true }).click();
+    await expect(cell).toContainText('2026');
+
+    await modal.getByRole('heading', { name: 'Edit component' }).click();
+    await page.keyboard.press('Escape');
+    await expect(modal).toBeHidden();
+    await page.reload();
+
+    ({ modal, shell, editable } = await openExistingEditor(page));
+    await expect(editable.locator('table')).toHaveCount(1);
+    await expect(editable.locator('table')).toContainText('2026');
+    await expect(editable.locator('[data-color="#3265ac"]')).toHaveCount(1);
+    await expect(editable.locator('[data-artist-line-spacing="2.0"]')).toHaveCount(1);
+});
+

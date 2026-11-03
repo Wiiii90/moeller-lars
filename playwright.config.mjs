@@ -31,6 +31,7 @@ export default defineConfig({
       '**/e2e/public/public-media.spec.mjs',
       '**/e2e/public/public-spa-navigation.spec.mjs',
       '**/e2e/public/public-menu-touch.spec.mjs',
+      '**/e2e/admin/rich-text-editor.spec.mjs',
     ], use: { ...devices['Desktop Safari'] } },
     { name: 'e2e-webkit-mobile', testMatch: [
       '**/e2e/admin/gallery-ordering.spec.mjs',

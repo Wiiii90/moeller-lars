@@ -37,3 +37,5 @@
 - **Feature persistence:** Existing Custom Page autosave and nested Rich Text tests now assert saved/reopened visual HTML containing line spacing, color, links and table. Existing Journal Blog edit checks formatted body and reload; Home content modes have a shared reopen scenario. All are authored only, not executed.
 
 - **Browser E2E authored:** New `tests/browser/e2e/admin/rich-text-editor.spec.mjs` exercises real disposable UI page creation, native Rich Text editor, a single panel across Link/Color/Spacing/Storage, focus/Escape/outside click, unsafe-link rejection and link removal, repeated same Storage image insertion (exactly one per selection), caption persistence/reopen/removal. All test pages are unique draft UI creations; no artist data. Browser suite NOT executed; selectors and timing must be qualified in final isolated WebKit/Chromium runs.
+
+- **Browser toolbar test:** The same canonical E2E Rich Text spec now also exercises real color/spacing selection, table insertion/cell editing, Undo/Redo and reload persistence. Added it to the existing desktop WebKit project; real native macOS Safari and all browser runtime results remain pending.
