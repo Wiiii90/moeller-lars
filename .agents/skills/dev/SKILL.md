@@ -7,6 +7,15 @@ description: Own production code on dev; follow architecture-first, deletion-fir
 
 **Activation:** On “Du bist Dev Worker N, mach …” use the exact existing `dev` branch, read `dev/AGENTS.md`, then this method and the [branch-local worker lifecycle](../../README.md). Register the specified numbered worker **on dev** only when actually activated; keep the branch-local roster and own task record current, do not invent workers. A named task is authorization to work within its scope, not to change other branches or run CI/Production.
 
+**Project-scoped Docker cleanup only:** No global prune commands, including
+`docker builder prune -a`, `docker image prune -a`, `docker system
+prune` or `docker volume prune`, as remediation for a project-specific
+mistake. Build-cache pruning is Docker-wide by default, not confined to the
+application even when reported entirely reclaimable. Remove only artifacts
+proven to belong exclusively to this project and with explicit user
+authorization; otherwise leave them untouched. Never propose a global
+cleanup as an "optional" second command or rely solely on inactive status.
+
 **Build-free local operation gate:** For a database-only Laravel command,
 first distinguish `docker compose exec` (requires the service to be running)
 from `docker compose run` (can build the missing service image). Never

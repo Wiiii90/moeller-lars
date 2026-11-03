@@ -461,6 +461,23 @@ running database operation. When explaining a standalone Artisan migration,
 do not invent an extra Git synchronization step; use the known project
 workflow and distinguish source state from the already built preview image.
 
+**Docker cleanup scope — strict project isolation:** Never suggest a Docker
+daemon-wide deletion or prune operation as cleanup for this project, even
+when Docker reports objects as reclaimable. `docker builder prune -a`,
+`docker image prune -a`, `docker system prune`, `docker volume prune`
+and equivalent unscoped operations can remove resources from unrelated
+projects. A running container's safety does not make the deletion acceptable.
+Before any cleanup, identify objects **exclusively owned by this project**
+using verified container/image identifiers or project-specific labels and
+check their current users; if ownership cannot be proven, **do not delete**.
+Do not propose a broad cleanup command merely with a warning, an optional
+designation or an assurance that running containers remain intact. Never
+remove persistent database/media volumes. A cleanup executed by the user is
+not evidence of how much disk was freed unless a fresh measurement is
+provided. For small database migrations, focus on progressing the operation
+using a verified existing runtime rather than additional infrastructure
+maintenance.
+
 **Local Laravel command execution — mandatory for all workers:** Do not tell the user
 to run bare `php artisan …` (or other application commands that depend on the
 container's PHP extensions, environment or database) in Windows PowerShell.
