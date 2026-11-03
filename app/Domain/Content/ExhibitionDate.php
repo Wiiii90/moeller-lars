@@ -41,6 +41,10 @@ final class ExhibitionDate
         $structuredEnd = self::normalize($end, 'stored end');
         $text = trim((string) ($authored ?? ''));
         if ($text === '') {
+            if (! self::validRange($structuredStart, $structuredEnd)) {
+                throw new InvalidArgumentException('Stored exhibition end precedes the start or has no start.');
+            }
+
             return ['starts_on' => $structuredStart, 'ends_on' => $structuredEnd];
         }
 
@@ -79,8 +83,8 @@ final class ExhibitionDate
 
         $startDate = self::normalize($startDate, 'authored start') ?? throw new InvalidArgumentException('Missing authored exhibition start date.');
         $endDate = self::normalize($endDate, 'authored end');
-        if ($endDate !== null && $startDate > $endDate) {
-            throw new InvalidArgumentException('End date precedes start date.');
+        if (! self::validRange($startDate, $endDate)) {
+            throw new InvalidArgumentException('Authored exhibition end precedes the start.');
         }
         if (($structuredStart !== null && $structuredStart !== $startDate)
             || ($structuredEnd !== null && $structuredEnd !== $endDate)) {
