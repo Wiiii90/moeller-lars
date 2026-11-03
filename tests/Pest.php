@@ -13,7 +13,6 @@ pest()->extend(\Illuminate\Foundation\Testing\TestCase::class)->in(
     'Unit/Artwork/ArtworkDateTest.php',
     'Unit/Artwork/GalleryDividerPresentationTest.php',
     'Unit/Artwork/GalleryPresentationTest.php',
-    'Unit/Content/ExhibitionPresentationTest.php',
     'Unit/Content/RegionalFormatsTest.php',
     'Unit/Content/SafeRichTextRendererTest.php',
 );
