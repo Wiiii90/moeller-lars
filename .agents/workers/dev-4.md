@@ -9,6 +9,7 @@
 - Scope: Gallery-workspace actions, Artwork assignment and presentation, material preset owners, directly affected views/styles, scoped browser tests. Do not touch Dev Worker 2 media ingest/feedback, Dev Worker 3 rich text or Dev Worker 1 exhibitions.
 
 ## Evidence and progress
+- Root-cause source fix for Artwork viewport fitting: consistent viewport measurement and image sizing across narrow/wide layouts; runtime/browser acceptance outstanding.
 - Corrected blocked sorting explanations (Manual versus filters) and Working publication metric wording; preserved filter-independent absolute Position editing.
 - Aligned PublicArtworkQuery thumbnail profile with the canonical current MediaPreviewVariant, removing obsolete profile acceptance from the public read model. Historical data cutover remains separately unverified.
 - Replaced Material preset Repeater/command with canonical modal table and immediate domain mutations; introduced persistent manual position and retained IDs on rename. Migration/runtime/browser pending.

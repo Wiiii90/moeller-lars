@@ -649,9 +649,20 @@ body {
     overflow-wrap: break-word;
 }
 
-/* Expanded details have one viewport-derived size on wide screens.
-   On narrow screens the original Gallery layout is left untouched. The
-   image, caption and paper have no mutually measured dimensions. */
+/* Fitted Artwork images keep their intrinsic aspect ratio at every viewport width.
+   The Menu and surrounding paper expand only on wide screens. */
+.site-content--fitted-artwork .artwork-detail__media {
+    width: min(100%, var(--public-fitted-image-width, var(--public-art-max)));
+    margin-inline: auto;
+}
+.site-content--fitted-artwork .artwork-detail__viewer-trigger,
+.site-content--fitted-artwork .artwork-detail__image,
+.site-content--fitted-artwork .artwork-detail__footer {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+}
+
 @media (min-width: 64.001rem) {
     #content.site-content--fitted-artwork {
         width: min(calc(100% - 2 * var(--public-gutter)),
@@ -661,19 +672,6 @@ body {
 
     .site-content--fitted-artwork .artwork-detail {
         width: 100%;
-    }
-
-    .site-content--fitted-artwork .artwork-detail__media {
-        width: min(100%, var(--public-fitted-image-width, var(--public-art-max)));
-        margin-inline: auto;
-    }
-
-    .site-content--fitted-artwork .artwork-detail__viewer-trigger,
-    .site-content--fitted-artwork .artwork-detail__image,
-    .site-content--fitted-artwork .artwork-detail__footer {
-        width: 100%;
-        max-width: 100%;
-        height: auto;
     }
 
     /* The Menu paper alone grows; its entire original title/navigation
