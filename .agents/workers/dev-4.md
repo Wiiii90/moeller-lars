@@ -74,12 +74,12 @@
 ## Current takeover checkpoint — 2026-11-03
 - New Dev Worker 4 chat explicitly replaces lease 7 under lease 8. Current owner scope and all safety restrictions continue unchanged.
 - User confirmed PHP syntax check: `PublicationVersionService.php` has no syntax errors. `verifyCheckpointReadOnly(PublicationCheckpoint::findOrFail(10))` returned `checkpoint_id=10`, `historical_date_projection=true`, `differences_from_working=98`, `committed_artwork_differences=0`. This is a successful read-only preflight for checkpoint 10, **not** a destructive stage/restore acceptance.
-- User's `verifyCheckpointReadOnly(9)` call was interrupted using Ctrl+C; no conclusive result. Examine the method's expected cost before another local read-only attempt.
+- User's attempted `verifyCheckpointReadOnly(9)` did **not execute**: the shown PowerShell command omitted the closing double quote and displayed the `>>` continuation prompt. Ctrl+C only canceled the unfinished input. Supply the corrected one-line read-only command; no performance diagnosis, rebuild, pull or migration is needed.
 - Previous checkpoint-10 failure in the historic sections below is superseded by the successful result. Previous statements that the final projection was awaiting application are also superseded. Local schema parity already passed for all 15 tables.
 - The 98 restored-row differences are against current Working; zero Committed Artwork differences confirms the projected checkpoint artworks match current published artworks according to the verifier. Do not equate Working differences with checkpoint corruption.
 - Never stage/revert on persistent local-preview; only a fully isolated database and media store can qualify destructive staging. No Validation deploy or migration. Do not recommend standalone git pull/reset/stash; the local-preview script handles source refresh.
 
 ## Next
-- Inspect the current `PublicationVersionService::verifyCheckpointReadOnly` implementation and direct validators to determine why checkpoint 9 may be slow. Request the smallest safe **read-only** local diagnostic; preserve the existing local-preview state and user data.
-- Evaluate checkpoint 9 from actual execution evidence; do not infer failure from Ctrl+C. Stage historical restore only on a verified isolated database **and** media store, separately authorized.
+- Corrected one-line checkpoint 9 read-only verification command was supplied. Await its actual output. The earlier `>>` prompt was PowerShell input continuation, **not** verifier latency. Preserve the existing local-preview state and user data.
+- Evaluate checkpoint 9 from actual execution evidence. Stage historical restore only on a verified isolated database **and** media store, separately authorized.
 - Resume the already listed Gallery/Artwork browser acceptance and delegated Testing/Docs work within branch ownership.
