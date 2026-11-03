@@ -439,6 +439,25 @@ Current durable local interface assumptions:
 - the helper reloads the existing local `storage/app/analytics-demo.php` fixture after the preview container is healthy; do not fold the old large analytics-normalization block back into the Docker build;
 - canonical private media mount destination: `/var/www/html/storage/app/private`.
 
+**Local Laravel command execution — mandatory for all workers:** Do not tell the user
+to run bare `php artisan …` (or other application commands that depend on the
+container's PHP extensions, environment or database) in Windows PowerShell.
+The canonical local application context is the existing Docker/Compose
+container connected to the project's persistent PostgreSQL database.
+From `P:\\moeller-lars` in Windows PowerShell, give a *complete*, ready-to-paste
+command for a verified running target, for example
+`docker compose exec app php artisan exhibitions:audit-dates --all`
+when the Compose `app` service is running, or
+`docker exec moeller-lars-local-web php artisan exhibitions:audit-dates --all`
+when the local preview container is running. Do not suggest starting or
+rebuilding an additional stack if the appropriate container is already
+available. A command shown without its `docker compose exec` / `docker exec`
+prefix is acceptable only when **explicitly identified as already inside
+that container's shell**. For Validation/Production, discover and state the
+actual remote application container and authorization boundary; never reuse
+local commands or imply the local database is the authoritative artist data.
+A read-only query must remain read-only regardless of environment.
+
 The local browser database is the one persistent local development database. Do not run
 `migrate:fresh`, `migrate:refresh`, `migrate:reset` or `db:wipe` locally. Do not spoof CI flags
 to bypass the guard. Local
