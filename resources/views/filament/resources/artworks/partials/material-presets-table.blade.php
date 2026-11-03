@@ -2,10 +2,10 @@
     <x-admin.table class="admin-table--data admin-table--ranked" aria-label="Material presets">
         <table class="admin-table--six-grid">
             <colgroup>
-                <col class="admin-table__col-quarter-unit">
-                <col class="admin-table__col-quarter-unit">
+                <col class="admin-table__col-position">
+                <col class="admin-table__col-drag">
                 <col>
-                <col class="admin-table__col-two-units">
+                <col class="admin-table__col-actions-move-delete">
             </colgroup>
             <thead>
                 <tr>
@@ -20,11 +20,11 @@
                         <td class="admin-table__position"><span class="admin-position">{{ $loop->iteration }}</span></td>
                         <td class="admin-table__drag">
                             <button class="admin-drag-handle" type="button" wire:sort:handle title="Drag to reorder"
-                                aria-label="Drag material {{ $preset->name }} to reorder">⋮⋮</button>
+                                aria-label="Drag material {{ html_entity_decode((string) $preset->name, ENT_QUOTES | ENT_HTML5, 'UTF-8') }} to reorder">⋮⋮</button>
                         </td>
                         <td>
                             <input class="admin-inline-input" type="text" maxlength="240"
-                                value="{{ $preset->name }}"
+                                value="{{ html_entity_decode((string) $preset->name, ENT_QUOTES | ENT_HTML5, 'UTF-8') }}"
                                 aria-label="Material name {{ $loop->iteration }}"
                                 wire:change="renameMaterialPreset({{ $preset->getKey() }}, $event.target.value)"
                                 x-on:keydown.enter.prevent="$el.blur()">

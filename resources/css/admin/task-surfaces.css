@@ -282,6 +282,9 @@
     background: transparent;
     color: var(--admin-faint);
     cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-drag: none;
     font: inherit;
     font-size: .82rem;
     line-height: 1;
@@ -572,6 +575,12 @@
     font: inherit;
     text-align: left;
     cursor: pointer;
+}
+
+/* The last table row already draws the shared seam; Add Row must not
+   paint a second line on top of that same boundary. */
+.admin-table + .admin-add-row {
+    border-top: 0;
 }
 
 .admin-add-row:hover,

@@ -184,7 +184,10 @@
 /* Shared ordering rails. Pages may use feature-specific hierarchy geometry,
  * while ordinary ranked tables can opt into these semantic columns. */
 .admin-table__col-position { width: 3rem; }
+/* A three-action Move Up / Move Down / Delete rail is a true table column,
+   not a generic two-unit data cell. Keep its heading and body on one axis. */
 .admin-table__col-drag { width: 2rem; }
+.admin-table__col-actions-move-delete { width: var(--admin-row-actions-move-delete-width); }
 
 .admin-action--with-icon {
     gap: .3rem;
@@ -359,7 +362,10 @@
     }
 }
 
-@container admin-table (max-width: 46rem) {
+@container admin-table (max-width: 34rem) {
+    .admin-table__col-actions-move-delete {
+        width: var(--admin-row-actions-move-delete-compact-width);
+    }
     .admin-row-actions--move-delete {
         --admin-row-actions-width: var(--admin-row-actions-move-delete-compact-width);
         --admin-row-actions-columns: repeat(3, 1.35rem);
