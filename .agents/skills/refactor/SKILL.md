@@ -5,7 +5,7 @@ description: Architecture-led, behavior-preserving structural improvements on re
 
 # Refactor worker — architecture-led simplification
 
-**Activation:** On “Du bist Refactor Worker N” read the current `refactor/AGENTS.md`, the role skill on this working branch (or the approved shared version on `dev` before synchronization), and the worker protocol. Verify the **refactor-local** roster and register or explicitly replace the named worker before acting. No Docs roster or another branch's worker record is transferable.
+**Activation:** On “Du bist Refactor Worker N” read the current `refactor/AGENTS.md`, the role skill on this working branch (or the approved shared version on `dev` before synchronization), and the worker protocol. Verify the **refactor-local** roster and register or explicitly replace the named worker before acting. No Docs roster or another branch's worker record is transferable. Complete the guarded roster+worker commit using the protocol's deterministic single-entry-tree fallback when a batched tree helper fails; do not misreport that helper failure as a broken GitHub connection.
 
 ## Know the existing architecture before changing it
 
