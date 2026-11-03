@@ -70,29 +70,42 @@ class MediaIntegrityService
     }
 
     /** @return list<string> */
+    /** @return list<string> */
     private function checkFile(mixed $disk, string $key, mixed $record, string $prefix): array
     {
         if (! $this->exists($disk, $key)) {
             return [$prefix === 'original' ? 'original_missing' : $prefix.'missing'];
         }
 
+        $issues = [];
+        $readableError = $prefix === 'original' ? 'original_unreadable' : $prefix.'unreadable';
         try {
-            $bytes = $disk->get($key);
+            $size = $disk->size($key);
+            $stream = $disk->readStream($key);
+            if (! is_resource($stream)) {
+                return [$readableError];
+            }
+            try {
+                $hash = hash_init('sha256');
+                $hashed = hash_update_stream($hash, $stream);
+                if (! is_int($hashed) || $hashed !== (int) $size) {
+                    return [$readableError];
+                }
+                $sha256 = hash_final($hash);
+            } finally {
+                fclose($stream);
+            }
+            $mime = $this->mimeFromPath($disk->path($key));
         } catch (Throwable) {
-            return [$prefix === 'original' ? 'original_unreadable' : $prefix.'unreadable'];
-        }
-        if (! is_string($bytes)) {
-            return [$prefix === 'original' ? 'original_unreadable' : $prefix.'unreadable'];
+            return [$readableError];
         }
 
-        $issues = [];
-        if (strlen($bytes) !== (int) $record->getAttribute('byte_size')) {
+        if ($size !== (int) $record->getAttribute('byte_size')) {
             $issues[] = $prefix === 'original' ? 'original_size_mismatch' : $prefix.'size_mismatch';
         }
-        if (hash('sha256', $bytes) !== (string) $record->getAttribute('sha256')) {
+        if (! hash_equals((string) $record->getAttribute('sha256'), $sha256)) {
             $issues[] = $prefix === 'original' ? 'original_checksum_mismatch' : $prefix.'checksum_mismatch';
         }
-        $mime = $this->mime($bytes);
         if ($mime !== (string) $record->getAttribute('mime_type')) {
             $issues[] = $prefix === 'original' ? 'original_mime_mismatch' : $prefix.'mime_mismatch';
         }
@@ -109,14 +122,14 @@ class MediaIntegrityService
         }
     }
 
-    private function mime(string $bytes): ?string
+    private function mimeFromPath(string $path): ?string
     {
         $info = finfo_open(FILEINFO_MIME_TYPE);
         if ($info === false) {
             return null;
         }
         try {
-            $mime = finfo_buffer($info, $bytes);
+            $mime = finfo_file($info, $path);
         } finally {
             finfo_close($info);
         }
