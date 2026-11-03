@@ -158,6 +158,52 @@ it('uses one canonical Usage path for in-use unreferenced broad and specific des
 });
 
 
+it('discovers nested Custom Page and Home Rich Text references in saved content without inventing usages', function (): void {
+    $customEmbedded = workspaceReferenceAsset('nested-custom-rich-text.jpg');
+    $homeEmbedded = workspaceReferenceAsset('home-rich-text.jpg');
+    $unassigned = workspaceReferenceAsset('unassigned-rich-text.jpg');
+
+    $page = workspaceReferenceNode(SiteSectionType::CustomPage->value, 'Nested Rich Text');
+    $page->customPageSetting()->create([
+        'blocks' => [[
+            'type' => 'image',
+            'image_decorative' => true,
+            'media_asset_id' => null,
+            'children' => [[
+                'type' => 'text',
+                'title' => null,
+                'body' => 'Nested illustration ![Studio](media:'.$customEmbedded->id.')',
+            ]],
+        ]],
+    ]);
+
+    $homeNode = SiteSection::query()->where('type', SiteSection::TYPE_HOME)->firstOrFail();
+    $home = \App\Models\HomePresentationSetting::query()
+        ->where('site_section_id', $homeNode->id)->firstOrFail();
+    $configuration = \App\Domain\Content\HomePresentationEditorialService::defaults();
+    $configuration['custom']['components'] = [[
+        'type' => 'text',
+        'published' => false,
+        'title' => null,
+        'body' => '<p><img data-id="'.$homeEmbedded->id.'" alt="Home image" src="media:'.$homeEmbedded->id.'"></p>',
+    ]];
+    $home->setAttribute('configuration', $configuration);
+    $home->save();
+
+    $references = app(MediaReferenceQuery::class);
+    expect($references->mediaIdsForCustomPage($page->customPageSetting()->firstOrFail()))
+        ->toBe([$customEmbedded->id])
+        ->and($references->mediaIdsForHome($home->fresh()))->toContain($homeEmbedded->id)
+        ->and($references->isReferenced($customEmbedded))->toBeTrue()
+        ->and($references->isReferenced($homeEmbedded))->toBeTrue()
+        ->and($references->isReferenced($unassigned))->toBeFalse();
+
+    $unused = MediaAsset::query();
+    $references->apply($unused, false);
+    expect($unused->pluck('id')->all())->toContain($unassigned->id)
+        ->not->toContain($customEmbedded->id, $homeEmbedded->id);
+});
+
 it('counts available images videos and audio in the six library metrics', function (): void {
     $referenced = workspaceReferenceAsset('metric-referenced.jpg', bytes: 4);
     workspaceReferenceAsset('metric-image.png', 'image/png', alt: null, bytes: 8);

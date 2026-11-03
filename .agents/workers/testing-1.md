@@ -52,3 +52,5 @@
 - **JavaScript behavior:** Added a transport-level Node.js unit test that exercises the real upload module with changed interior file bytes but identical name, size, timestamp and first/last 64 KiB. It verifies the acknowledged staged chunk is rejected, canceled and replaced before a successful fresh transfer. Not run.
 
 - **Format matrix:** Extended the existing media lifecycle integration owner with real FFmpeg WebM/VP9 + poster verification and a high-resolution progressive JPEG rejection versus baseline JPEG acceptance test at identical pixel dimensions. These are runtime-dependent and unexecuted.
+
+- **Reference coverage:** Extended existing Storage usage tests with saved nested Custom Page and Home visual Rich Text references, verified canonical in-use vs unassigned categorization without introducing another fixture or runner. Not executed.
