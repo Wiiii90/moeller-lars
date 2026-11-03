@@ -76,16 +76,14 @@ final class AdminRichText
         // Creation and Command dialogs never autosave.
         $editorKey = 'artist-rich-text-'.$name;
         $editor->key($editorKey);
-        $fields = [
-            $editor,
-            View::make('filament.schemas.components.rich-text-link-picker')->columnSpanFull(),
-            View::make('filament.schemas.components.rich-text-color-picker')->columnSpanFull(),
-            View::make('filament.schemas.components.rich-text-spacing-picker')->columnSpanFull(),
-        ];
+        // All tool popovers share one explicit, out-of-flow surface.
+        // Filament may wrap schema components, but their order no longer
+        // determines which elements are positioned over the editor.
+        $popovers = View::make('filament.schemas.components.rich-text-popover-layer')
+            ->viewData(['allowEmbeddedMedia' => $allowEmbeddedMedia])
+            ->liberatedFromContainerGrid();
 
         if ($allowEmbeddedMedia) {
-            $fields[] = View::make('filament.schemas.components.rich-text-image-caption-picker')->columnSpanFull();
-
             $picker = MediaAssetSelect::makeId(
                 '__rich_image_'.$name,
                 'Image from Storage',
@@ -129,34 +127,16 @@ final class AdminRichText
                     $field->getLivewire()->dispatch('artist-rich-image-inserted');
                 });
 
-
-            $fields[] = Grid::make()
-                ->columns(1)
-                ->schema([
-                    View::make('filament.schemas.components.rich-text-image-picker-header'),
-                    $picker->hiddenLabel(),
-                ])
-                ->extraAttributes([
-                    'x-show' => "activeRichPanel === 'image'",
-                    'x-ref' => 'richImagePicker',
-                    'x-cloak' => true,
-                    'x-bind:style' => "{ top: richPanelTop + 'px', left: richPanelLeft + 'px' }",
-                    // Picker is a transient Livewire field. Its native change
-                    // must not autosave an unrelated Rich Text state.
-                    'x-on:change.stop' => 'void 0',
-                    'x-on:click.outside' => "closeRichPanel('image')",
-                    'x-on:keydown.escape.capture.stop.prevent' => "closeRichPanel('image')",
-                    'class' => 'admin-rich-text-storage-dropdown',
-                    'role' => 'group',
-                    'aria-label' => __('Image from Storage'),
-                ])
-                ->columnSpanFull();
+            // Keep the canonical Filament Select in the same nested schema.
+            // It remains Livewire-owned and never becomes a second image picker.
+            $popovers->schema([$picker->hiddenLabel()]);
         }
 
         return [
             Grid::make()
                 ->columns(1)
-                ->schema($fields)
+                ->gap(false)
+                ->schema([$editor, $popovers])
                 ->key($editorKey.'-shell')
                 ->extraAttributes([
                     'class' => 'admin-rich-text-editor-shell',
@@ -173,8 +153,8 @@ final class AdminRichText
                             linkInvalid: false,
                             linkAppliedUrl: null,
                             linkAppliedNewTab: false,
-                            // Filament wraps each View field in its own Alpine scope.
-                            // Child x-refs are not members of this editor shell's $refs.
+                            // The nested Filament Select has its own Alpine scope.
+                            // Resolve tool refs from the owning editor shell.
                             richShell() {
                                 return this.$el.closest('.admin-rich-text-editor-shell')
                             },

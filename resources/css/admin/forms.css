@@ -524,14 +524,18 @@
     position: relative;
 }
 
-.admin-rich-text-editor-shell > .fi-sc > :not(:first-child) {
+/* The popover layer owns positioning without selecting Filament's schema
+   wrappers or relying on field order. Neither the layer nor its panels
+   participates in the editor's or dialog's document height. */
+.admin-rich-text-panel-layer {
     position: absolute;
     inset: 0 auto auto 0;
     width: 100%;
+    height: 0;
     pointer-events: none;
 }
 
-.admin-rich-text-editor-shell :is(
+.admin-rich-text-panel-layer > :is(
     .admin-rich-text-link-dropdown,
     .admin-rich-text-storage-dropdown
 ) {
