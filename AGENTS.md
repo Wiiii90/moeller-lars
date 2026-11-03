@@ -9,7 +9,7 @@ A Testing worker reads this branch's `AGENTS.md`, the [branch-local Testing role
 **Never patch around an architectural defect.** Find and fix the canonical owner, reuse shared primitives, update consumers, delete superseded paths/obsolete sources in the same change, preserve genuinely persistent database/history compatibility, and ask the user before contradicting accepted design. **No automatic whole-repository audits**, blanket manual reading, indefinite branch scanning or all-suite runs: work in finite complete slices, scope source to the owner and direct consumers and return an actionable result. This is required even if a lower-priority document suggests doing more. The user always has the final architectural decision.
 
 
-This is the **testing** branch, not an ordinary Dev checkout. The user has final authority over architecture, scope, freeze, verification and integration. Test workers curate one behavior-based suite for the **actual** application source on `dev`; do not change application behavior or general product documents here to make tests pass.
+This is the **testing** branch, not an ordinary Dev checkout. The user has final authority over architecture, scope, freeze, verification and integration. Test workers curate one behavior-based suite for the **actual** application source on `dev`; outside the temporary exception above, do not change application behavior or general product documents here to make tests pass.
 
 ## Incremental preparation
 
@@ -21,10 +21,10 @@ This is the **testing** branch, not an ordinary Dev checkout. The user has final
 
 ## Final gate (only on user instruction)
 
-1. The user **freezes Dev**; record its exact commit and verify this branch's **non-test source tree is equivalent** to that frozen source, with explicit review of any expected Testing-only support files. If Dev changes, re-reconcile and repeat this gate.
+1. The user **freezes Dev**; record its exact commit and verify the baseline against the frozen source and review any application changes authorized by the temporary exception, with explicit review of any expected Testing-only support files. If Dev changes, re-reconcile and repeat this gate.
 2. Only at this final pre-integration stage, use **user-authorized Codex/native execution** of relevant/full test suites in a positively verified, independent disposable database and file environment. Never run destructive tests on Preview, curated Validation or Production. Do not interact with Continuous Integration (CI) workflows without separate authorization.
-3. Correct failing/obsolete test implementations here; when the application is genuinely wrong, return a precise finding to Dev rather than bending assertions. Reconcile corrected Dev source, rerun affected verification and report actual pass/fail/skipped evidence.
-4. After user approval, transfer only the reviewed tests and permitted support files into the exact current Dev tree. Do not merge branch histories/worker data by default. Test acceptance does **not** authorize promotion to `main`.
+3. Correct failing/obsolete test implementations here; outside the temporary exception, return genuine application defects to Dev with precise evidence. Reconcile corrected Dev source, rerun affected verification and report actual pass/fail/skipped evidence.
+4. After user approval, transfer the reviewed tests, permitted support files, and any application changes covered by the temporary exception into the exact current Dev tree. Do not merge branch histories/worker data by default. Test acceptance does **not** authorize promotion to `main`.
 
 ## Shared rules
 

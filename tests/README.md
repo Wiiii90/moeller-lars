@@ -8,7 +8,7 @@ Tests protect observable domain/product behavior and durable invariants, not rep
 
 Review the cumulative `dev` source changes since the last accepted integration, including framework/library changes, shared components, migrations and test configuration. Reconsider and consolidate the whole affected suite rather than adding branch-specific regressions. Preparatory reconciliation may run in parallel with Dev.
 
-Final Codex/native test execution and corrections require **a user-declared Dev freeze**, exact non-test source parity, independent isolated database/filesystem checks, and final approval before selective transfer. A real application defect goes back to Dev; a new Dev commit requires a fresh source-parity check and affected test rerun. Do not infer browser/user acceptance from authored test code.
+Final Codex/native test execution and corrections require **a user-declared Dev freeze**, a verified frozen baseline with reviewed stabilization changes, independent isolated database/filesystem checks, and final approval before selective transfer. During the temporary exception, repair confirmed application defects on testing; otherwise return them to Dev. a new Dev commit requires a fresh source-parity check and affected test rerun. Do not infer browser/user acceptance from authored test code.
 
 ## Layers
 
@@ -57,7 +57,7 @@ These runners are **not** executed by ordinary `composer test:integration` or th
 
 The number of passing tests or PHPUnit assertions is **not a code-coverage percentage**. For a PHP `app/` line-coverage measurement use Pest with an enabled PCOV/Xdebug coverage driver and an isolated database. The canonical `release.yml` workflow measures and reports a combined PHP line-coverage baseline on pull requests to `main` and on `main`; there is currently **no percentage threshold**. JavaScript and browser tests are not included in that PHP number.
 
-During preparatory Testing work, source and test code can be reconciled without triggering GitHub Actions or a final qualification run. The user separately authorizes an isolated final test campaign after freezing `dev`; only the curated tests and permitted support are later transferred into `dev` with explicit approval. `main` promotion is independent.
+During preparatory Testing work, source and test code can be reconciled without triggering GitHub Actions or a final qualification run. The user separately authorizes an isolated final test campaign after freezing `dev`; the curated tests, permitted support, and approved stabilization changes are later transferred into `dev` with explicit approval. `main` promotion is independent.
 
 ## Regression policy
 
