@@ -16,6 +16,12 @@
 - Material presets use canonical Admin table with direct Add/Rename/Move/Delete persistence and stable positions. No extra redundant heading.
 - Additional Artwork images were never an intended feature. Active Gallery Images relation, editors, extra media commands removed; historical database references and audit records preserved until inventory. Generic audio uploads are retained.
 
+## Current urgent assignment — full Artwork date-model redesign
+- User rejected `work_year`, `work_date`, `date_precision` and the first-day-of-month storage hack. Target a single canonical Artwork data model `year` / nullable `month` / nullable `day` with no precision flag, no old live schema columns or code aliases. The existing UI picker may remain as a *presentation* control, not a second persisted field.
+- Cutover must include Working and Committed tables, backwards-safe historical data migration, domain validation, Gallery and Home queries, public/admin rendering, import/export/legacy verification and distinct rollback compatibility. Avoid Dev Worker 1's Exhibition/CV date fields and Dev Worker 2's media code. Never drop artist data without proof.
+- Existing restored snapshot payloads retain immutable historical schema/hashes and may require a separate authorized compatibility review if the app refuses restoration after schema evolution. No silent rewrite of historical snapshots.
+- Skill corrected now: fundamental redesign names flow end-to-end; migration-only legacy identifiers acceptable, active aliases prohibited.
+
 ## Source implementation (NOT runtime/browser acceptance)
 - Removed obsolete work_date fillForm state from Add Artwork action; canonical single artwork_date field owns picker input from creation through normalization.
 - Same precision-aware DATE_ORDER_SQL now reused in Gallery and Home candidate selection/ranking. No separate Home algorithm that treats a month-only value like an exact first-day Artwork. Browser/tests pending.
