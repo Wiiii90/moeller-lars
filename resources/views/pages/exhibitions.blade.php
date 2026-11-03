@@ -27,8 +27,8 @@
                 $hasCover = $cover instanceof \App\Models\JournalEntryMedia;
                 $hasFacts = $vernissage !== null || $address !== null || $physicalVenue !== null;
                 $hasActions = $map !== null || ($exhibition->publicFieldVisible('external_url') && $exhibition->external_url !== null);
-                $hasDetails = $hasFacts || $hasDescription || $hasCover
-                    || $gallery->isNotEmpty() || $hasActions;
+                $hasFeature = $hasCover || $hasFacts || $hasActions || $hasDescription;
+                $hasDetails = $hasFeature || $gallery->isNotEmpty();
             @endphp
             <article class="exhibition-entry" @if ($exhibition->image_viewer_enabled) data-artwork-viewer-sequence @endif data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
                 @if ($hasDetails)
@@ -79,8 +79,8 @@
                         <div class="exhibition-entry__body">
                             {{-- Cover, practical information and long-form prose each have a
                                  stable editorial place. No empty partner column is rendered. --}}
-                            @if ($hasCover || $hasFacts || $hasActions || $hasDescription)
-                                <div class="exhibition-entry__feature {{ $hasCover ? 'exhibition-entry__feature--with-cover' : 'exhibition-entry__feature--text' }}">
+                            @if ($hasFeature)
+                                <div class="exhibition-entry__feature{{ $hasCover ? ' exhibition-entry__feature--with-cover' : '' }}">
                                     @if ($hasCover)
                                         {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: false, enableViewer: (bool) $exhibition->image_viewer_enabled, manualVideoPlayback: $isVideoCover) !!}
                                     @endif

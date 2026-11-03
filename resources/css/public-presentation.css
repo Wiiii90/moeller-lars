@@ -1466,8 +1466,8 @@ body {
     --exhibition-date-track: 6.5rem;
     --exhibition-column-gap: 1.2rem;
     --exhibition-rule: rgba(130, 116, 100, .35);
-    /* Summary and expanded facts must share the exact same title axis.
-       The float + right gap consume this offset, never exceed it. */
+    /* With a cover, the float and its right gap occupy the tracks before
+       the title. Without a cover, the detail body uses its full width. */
     --exhibition-title-offset: calc(var(--exhibition-media-track) + var(--exhibition-date-track) + 2 * var(--exhibition-column-gap));
     color: var(--public-ink);
 }
@@ -1643,12 +1643,9 @@ body {
     display: flow-root;
     min-width: 0;
 }
-/* Cover and editorial copy share one flow, not two rigid grid tracks.
-   Text begins next to the image and continues across the full reading width
-   after its bottom edge, as in a printed exhibition catalogue. */
-.exhibition-entry__feature--text {
-    margin-inline-start: var(--exhibition-title-offset);
-}
+/* A cover floats within the shared content flow: text starts beside it and
+   continues full-width below. With no cover, info and prose start at the
+   existing body's left padding, without a reserved image column. */
 .exhibition-entry__cover {
     width: min(100%, 14rem);
     min-width: 0;
@@ -1762,7 +1759,6 @@ body {
     outline-offset: 3px;
 }
 .exhibitions-page .journal-entry-gallery {
-    clear: both;
     margin: 1.7rem auto 0;
     padding-block: .3rem .65rem;
 }
@@ -1803,8 +1799,6 @@ body {
         grid-row: 2;
     }
     .exhibition-entry__body { padding-top: .9rem; }
-    .exhibition-entry__feature--text { margin-inline-start: 0; }
-    .exhibition-entry__cover { margin-bottom: 1rem; }
 }
 
 /* Blog only: reviewed angled corner strokes, with no color wash or
