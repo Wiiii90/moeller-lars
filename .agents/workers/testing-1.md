@@ -65,3 +65,5 @@
 - **Exhibition partial-date feature:** Extended the existing Journal/Exhibition mounted editor suite with actual year-month and exact-day save/reopen/no-op, historical title/field preservation, and invalid/backwards/end-without-start rejection without false Activity/feedback. Untested until isolated runtime.
 
 - **Exhibition migration tests:** New dedicated Migration owner recreates the immediately preceding `DATE` plus `date_text` schema ONLY inside disposable RefreshDatabase transactions. Covers lossless dual Working/Committed conversion, immutable original publication checkpoint hash/payload, read-only historical preflight and true restore, transaction abort on ambiguous/contradictory/undated published Committed rows, plus rejection of corrupt historic checkpoint rows. Not run.
+
+- **Public Exhibition map failure:** Extended existing Journal browser component tests with actual map tile-error/unavailability lifecycle: removes broken optional modal/trigger, retains exhibition content and external link, no unhandled app JavaScript error. Uses synthetic DOM and deterministic Leaflet tile events, not external requests. Not run.
