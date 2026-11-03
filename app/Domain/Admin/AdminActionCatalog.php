@@ -13,6 +13,7 @@ final class AdminActionCatalog
         'artwork.deleted' => ['label' => 'Deleted artwork', 'area' => 'Artwork', 'family' => 'lifecycle'],
         'artwork.primary_media_attached' => ['label' => 'Attached primary image', 'area' => 'Artwork', 'family' => 'media'],
         'artwork.primary_media_replaced' => ['label' => 'Replaced primary image', 'area' => 'Artwork', 'family' => 'media'],
+        'artwork.primary_media_detached' => ['label' => 'Unlinked primary media', 'area' => 'Artwork', 'family' => 'media'],
         'artwork.primary_media_alt_updated' => ['label' => 'Edited primary image ALT text', 'area' => 'Artwork', 'family' => 'media'],
         'artwork.additional_media_attached' => ['label' => 'Added gallery image', 'area' => 'Artwork', 'family' => 'media'],
         'artwork.additional_media_detached' => ['label' => 'Removed gallery image', 'area' => 'Artwork', 'family' => 'media'],
