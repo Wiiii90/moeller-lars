@@ -118,7 +118,9 @@ final class JournalEntryEditorSchema
                 ->columnSpanFull(),
             self::publicLocationField('external_url', 'Exhibition website', 2048, $exhibition)->url()->columnSpanFull(),
             Grid::make()
-                ->columns(['default' => 2, 'sm' => 4])
+                // Four fields are one composite address row at every breakpoint.
+                // A narrower dialog must not silently split this into two rows.
+                ->columns(4)
                 ->schema([
                     self::publicLocationField('location_text', 'Street address', 500, $exhibition),
                     self::publicLocationField('city', 'City', 160, $exhibition),
