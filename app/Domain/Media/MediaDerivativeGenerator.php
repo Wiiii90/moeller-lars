@@ -146,18 +146,18 @@ final class MediaDerivativeGenerator
 
             if ($exitCode !== 0) {
                 $stderr = trim($process->getErrorOutput());
+                $signal = $process->hasBeenSignaled() ? $process->getTermSignal() : null;
                 $diagnostic = sprintf(
                     'Media %s processor exited with code %s, signal %s: %s',
                     $preview,
                     (string) $exitCode,
-                    (string) ($process->getTermSignal() ?? 'none'),
+                    (string) ($signal ?? 'none'),
                     substr($stderr, 0, 3000),
                 );
                 // A container memory-cgroup kill usually produces no stderr:
                 // the kernel kills vipsthumbnail, not the image decoder.
                 // Exit 137 / SIGKILL is evidence of forced termination, but
                 // the exact cause must be confirmed from kernel/container logs.
-                $signal = $process->getTermSignal();
                 $message = $signal === 9 || $exitCode === 137
                     ? 'The server forcibly stopped the '.$preview.' process, possibly because its memory limit was reached. The file was not saved. Contact the site administrator.'
                     : $this->processingErrorMessage($kind, $stderr);
@@ -180,7 +180,7 @@ final class MediaDerivativeGenerator
             }
             $dimensions = @getimagesizefromstring($bytes);
             if (! is_array($dimensions)
-                || ($dimensions['mime'] ?? null) !== 'image/webp'
+                || $dimensions['mime'] !== 'image/webp'
                 || (int) $dimensions[0] < 1
                 || (int) $dimensions[1] < 1
                 || max((int) $dimensions[0], (int) $dimensions[1]) > MediaIngestService::THUMBNAIL_MAX_EDGE) {

@@ -65,8 +65,8 @@ final class ResumableMediaUploadService
 
             try {
                 $capacity = app(MediaCapacityService::class)->snapshot();
-                if (($capacity['configuration_valid'] ?? false) !== true
-                    || ($capacity['measurement_available'] ?? false) !== true
+                if ($capacity['configuration_valid'] !== true
+                    || $capacity['measurement_available'] !== true
                     || ! is_int($capacity['quota_bytes'] ?? null)
                     || ! is_int($capacity['remaining_bytes'] ?? null)) {
                     throw $this->invalid('The site storage allowance is not configured or cannot be measured.');
@@ -76,7 +76,7 @@ final class ResumableMediaUploadService
                 }
 
                 $free = @disk_free_space($this->directory());
-                if (! is_float($free) && ! is_int($free)) {
+                if ($free === false) {
                     throw $this->invalid('Free temporary storage could not be verified.');
                 }
                 // Atomic rename retains one physical original, not two copies.
@@ -124,7 +124,7 @@ final class ResumableMediaUploadService
 
             try {
                 $current = fstat($file)['size'] ?? -1;
-                if (! is_int($current) || $current !== $offset) {
+                if ($current !== $offset) {
                     // Caller can resume from the authoritative server offset.
                     throw $this->invalid('Upload offset changed. Resume from the server position.');
                 }
@@ -287,7 +287,7 @@ final class ResumableMediaUploadService
 
         $size = @filesize($path);
         $declared = (int) $meta['size'];
-        if (! is_int($size) || $size < 0 || $size > $declared) {
+        if ($size === false || $size > $declared) {
             throw $this->invalid('Previous upload staging has an invalid size. Cancel it and start again.');
         }
 
@@ -356,7 +356,7 @@ final class ResumableMediaUploadService
                 $length = min(self::CHUNK_BYTES, $confirmed - $offset);
                 $hash = hash_init('sha256');
                 $count = hash_update_stream($hash, $stream, $length);
-                if (! is_int($count) || $count !== $length) {
+                if ($count !== $length) {
                     throw $this->invalid('Previous upload staging could not be verified.');
                 }
                 $hashes[] = hash_final($hash);
