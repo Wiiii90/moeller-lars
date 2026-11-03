@@ -2,7 +2,7 @@
 
 **Lease:** 7
 **Branch:** dev
-**State:** Active; browser and database migration acceptance outstanding.
+**State:** Active; local schema migration reported successful (Batch 76), data parity and historical restore acceptance outstanding.
 
 ## Ownership and hard limits
 - Own Gallery/Artwork controls, metadata and sorting; Materials and Artwork public presentation. Do not change Dev Worker 1's Exhibition date/address, Dev Worker 2's Storage/media lifecycle or Dev Worker 3's Rich Text controls.
@@ -10,7 +10,7 @@
 
 ## Accepted and implemented source contracts
 - **Artwork date, canonical 2026-11-03 cutover:** The *only* persistent Artwork date fields are `year`, nullable `month`, nullable `day`. No combined `work_date`, `work_year`, `date_precision`, synthetic 1st-of-month or parallel date representation. The `artwork_date` picker is a virtual Admin input only. `ArtworkDate` owns parsing and localized display. Gallery, one-time date sort, Home candidate rankings and all Admin/Public readers use the same fields. Historical import/export/validation produces the canonical schema. Source commits `20ddb05`, `ae7c9fe`.
-- **Migration:** `2026_11_03_150000_replace_artwork_date_with_components.php` first checks existing data and atomically migrates both Working and Committed under publication lock, deleting old active columns/constraints only inside the successful transaction. **NOT EXECUTED**. Frozen historical migration files and immutable publication version payloads remain untouched. Pre-change checkpoint restores are subject to existing schema-hash parity gate; review explicitly with Testing/Org rather than silently rewriting history.
+- **Migration:** `2026_11_03_150000_replace_artwork_date_with_components.php` first checks existing data and atomically migrates both Working and Committed under publication lock, deleting old active columns/constraints only inside the successful transaction. **Executed locally by the user** (migration status: Batch 76, Ran); NOT executed by this worker or on Validation. Column/data parity not yet verified. Frozen historical migration files and immutable publication version payloads remain untouched. Pre-change checkpoint restores are subject to existing schema-hash parity gate; review explicitly with Testing/Org rather than silently rewriting history.
 - **Admin Artwork:** Add draft slot with or without an existing Storage media file. No direct file upload in Add/Edit (Gallery dropzone/Storage only). Edit's Media file selection may be cleared to unlink while slot/file survive; delete slot with file retained by default or opt-in file cleanup through central media owner. Removed redundant Remove/Restore actions; Delete in Edit header and Gallery cards. ALT override per Artwork. Material/Position and responsive compact Height × Width × Depth/Unit central controls. Material presets: canonical Admin table, immediate persistence/order.
 - **General date locale:** One shared picker supports Year, Month/Year, Day/Month/Year and General Regional Formats for display. Do not make month-only dates appear to have a day.
 - **Gallery Settings:** Manual positions or live newest-artwork-date mode; one-time Sort once by Artwork date commits manual positions. Title full width, no forbidden helper text; help icon.
@@ -45,6 +45,12 @@
 - One guarded read-time projection now maps ONLY immutable pre-change Artwork date payloads into current year/month/day during staged restore and pending-count calculations; shared `history_payloads`, checkpoint hashes and source rows remain unchanged. Verifies precise field sets for all historical rows, permitted date values and original snapshot hash before touching Working; unknown schema differences fail closed.
 - Admin Publication History now uses the same VersionService eligibility check for staged restore and Revert, instead of separate schema-hash-only UI logic.
 - No runtime or database-copy restore executed here. Use local read-only inventory and *disposable database copy* before any real staging. Validation remains out of scope.
+
+## Local migration read-only follow-up (2026-11-03)
+- User's `docker exec moeller-lars-local-web php artisan migrate:status` reports `2026_11_03_150000_replace_artwork_date_with_components` as **[76] Ran**. This confirms local execution, not semantic parity or historic snapshot restore.
+- User asked for local-only qualification; gave two read-only Tinker checks for public/committed columns and date counts. Await outputs. New `PublicationVersionService::verifyCheckpointReadOnly()` can check retained historical payload hash + the projected full row diff without staging/clearing Working.
+- Explicitly DO NOT stage a historical restore on normal local preview: it overwrites Working and can queue media cleanup. Test actual restore only in a fully isolated database AND media store, following independent verification and user decision. No Validation deployment or migration.
+- Source commits: `909a2c1` guarded historical restore projection; `69c582f` read-only checkpoint preflight. PHP linter/runtime and actual local database preflight unverified by worker.
 
 ## Next
 - Migration not executed. Review exact source and have user run safe local migration, then browser acceptance of Artwork/date/forms and outstanding image sizing. No tests authored, no CI or deployment.
