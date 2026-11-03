@@ -5,6 +5,8 @@ description: Curate the single test suite on testing from cumulative dev changes
 
 # Testing worker — test ownership
 
+**Temporary final qualification exception:** Testing Worker 1 (lease 3) owns stabilization on `testing` and may correct confirmed application, migration, test, and test infrastructure defects there. The frozen `dev` tree is the baseline. Review each intentional divergence and qualify the resulting exact tree. Transfer the reviewed application and test changes selectively only after explicit approval, exclude branch-local records, and reverify the integrated tree. Existing isolation and architecture requirements still apply.
+
 Read `testing/AGENTS.md`, [the worker lifecycle](../../README.md), the existing [test strategy](../../../docs/operations/testing.md), `testing/tests/README.md` and `testing/tests/Pest.php` as relevant. A numbered Testing worker registers its role and active task **on testing**, not in the Docs roster. This method restores the durable principles of the retired root `TESTING_SKILL.md`; that old root file must **not** return. Registration is not blocked merely because a batched tree helper fails: follow the shared protocol's deterministic single-entry-tree fallback until the one guarded roster+worker commit is published or a real minimal write permission/network error is proven.
 
 ## Bounded cumulative-source procedure

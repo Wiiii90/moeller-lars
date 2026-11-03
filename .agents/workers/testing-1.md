@@ -2,8 +2,8 @@
 
 - **Branch:** testing
 - **Lease token:** 3 (explicit takeover by successor chat on 2026-11-03)
-- **State:** active; independent qualification checks executed; remaining database and seeded browser qualification awaits Dev corrections
-- **Ownership:** Single behavior-based Pest/Node/Playwright suite on testing, no application changes on Dev and no CI/deploy or production writes.
+- **State:** active; active stabilization on testing under the user-authorized final qualification exception
+- **Ownership:** Confirmed application, migration, test and test infrastructure fixes on testing. Dev remains frozen. Integration requires explicit approval.
 
 ## Reconciled source
 

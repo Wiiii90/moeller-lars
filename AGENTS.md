@@ -1,5 +1,7 @@
 # Testing worker instructions
 
+**Temporary final qualification exception:** Testing Worker 1 (lease 3) owns stabilization on `testing` and may correct confirmed application, migration, test, and test infrastructure defects there. The frozen `dev` tree is the baseline. Review each intentional divergence and qualify the resulting exact tree. Transfer the reviewed application and test changes selectively only after explicit approval, exclude branch-local records, and reverify the integrated tree. Existing isolation and architecture requirements still apply.
+
 ## Immediate numbered-worker bootstrap and non-negotiable method
 
 A Testing worker reads this branch's `AGENTS.md`, the [branch-local Testing role method](.agents/skills/testing/SKILL.md), and the [worker lifecycle](.agents/README.md) before work. A genuinely activated numbered worker registers in the testing-local roster and maintains its own task record. The published shared method is synchronized from `dev`; there is no permanent dependency on the provisional `docs` branch. Source and task ownership remains on `testing`.
