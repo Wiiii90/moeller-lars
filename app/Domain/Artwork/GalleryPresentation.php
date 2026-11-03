@@ -80,13 +80,8 @@ final class GalleryPresentation
      * @return Builder<TModel>
      */
     // Shared by live Gallery, one-time manual sort and public Home candidates.
-    // A month-only date ranks after all exact days within its month.
-    public const DATE_ORDER_SQL = 'CASE WHEN work_year IS NULL THEN 1 ELSE 0 END, '
-        .'work_year DESC, '
-        .'CASE WHEN work_date IS NULL THEN 1 ELSE 0 END, '
-        .'EXTRACT(MONTH FROM work_date) DESC NULLS LAST, '
-        ."CASE WHEN date_precision = 'month' THEN 1 ELSE 0 END, "
-        .'work_date DESC, created_at DESC, id DESC';
+    // Exact day precedes month-only; month-only precedes year-only.
+    public const DATE_ORDER_SQL = 'year DESC NULLS LAST, month DESC NULLS LAST, day DESC NULLS LAST, created_at DESC, id DESC';
 
     public static function orderArtworksByDate(Builder $query): Builder
     {

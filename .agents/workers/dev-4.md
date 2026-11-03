@@ -16,6 +16,11 @@
 - Material presets use canonical Admin table with direct Add/Rename/Move/Delete persistence and stable positions. No extra redundant heading.
 - Additional Artwork images were never an intended feature. Active Gallery Images relation, editors, extra media commands removed; historical database references and audit records preserved until inventory. Generic audio uploads are retained.
 
+## Artwork date schema cutover in progress
+- Canonical date storage: year, nullable month, nullable day. First-day placeholder and precision flags retired. Working and Committed forward migration checks old data before dropping columns, transactionally.
+- Model/Draft/Gallery/Preview/Public caption and date filters updated to canonical three-part fields. Follow-up immediate commit must synchronize Home, legacy importer/exporter/validator and hidden Artwork view; this initial source commit is NOT a runtime-verified release. Old publication-version payloads remain immutable; schema-hash restore gate remains.
+- Existing testing backlog and global concurrency refactor remain pending.
+
 ## Current urgent assignment — full Artwork date-model redesign
 - User rejected `work_year`, `work_date`, `date_precision` and the first-day-of-month storage hack. Target a single canonical Artwork data model `year` / nullable `month` / nullable `day` with no precision flag, no old live schema columns or code aliases. The existing UI picker may remain as a *presentation* control, not a second persisted field.
 - Cutover must include Working and Committed tables, backwards-safe historical data migration, domain validation, Gallery and Home queries, public/admin rendering, import/export/legacy verification and distinct rollback compatibility. Avoid Dev Worker 1's Exhibition/CV date fields and Dev Worker 2's media code. Never drop artist data without proof.

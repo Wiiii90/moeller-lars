@@ -236,7 +236,7 @@ trait GalleryWorkspaceArtworkActions
                 'title' => (string) $artwork->getAttribute('title'),
                 'medium' => (string) ($artwork->getAttribute('medium') ?? ''),
                 'dimensions' => (string) ($artwork->getAttribute('dimensions') ?? ''),
-                'year' => $artwork->getAttribute('work_year'),
+                'year' => $artwork->getAttribute('year'),
                 'state' => $state,
                 'state_label' => (string) ($row['state_label'] ?? ucfirst($state)),
                 'readiness_label' => (string) ($row['readiness_label'] ?? '—'),

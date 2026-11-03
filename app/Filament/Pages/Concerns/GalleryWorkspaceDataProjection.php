@@ -73,7 +73,7 @@ trait GalleryWorkspaceDataProjection
                 'state_label' => ucfirst((string) $artwork->getAttribute('state')),
                 'readiness_label' => $this->readinessLabel($artwork, $galleryPublished, $primaries->count(), $primaryAsset, $primary),
                 'is_ready' => $this->isReadyToPublish($artwork, $galleryPublished, $primaries->count(), $primaryAsset, $primary),
-                'year' => $artwork->getAttribute('work_year'),
+                'year' => $artwork->getAttribute('year'),
                 'medium' => $artwork->getAttribute('medium'),
                 'dimensions' => $artwork->getAttribute('dimensions'),
                 'primary_kind' => $kind,

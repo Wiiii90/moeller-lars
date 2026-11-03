@@ -164,7 +164,6 @@ final class GalleryWorkspace extends Page
                 'artwork_category_id' => (int) $artwork->getAttribute('artwork_category_id'),
                 'slug' => (string) $artwork->getAttribute('slug'),
                 'title' => $normalized,
-                'work_date' => $artwork->getAttribute('work_date'),
             ]);
         } catch (ValidationException $exception) {
             $this->notifyValidationFailure('Artwork title was not saved', $exception);

@@ -176,7 +176,6 @@ trait GalleryWorkspaceDirectUpload
                                 'artwork_category_id' => $galleryId,
                                 'slug' => $this->uniqueBatchArtworkSlug($title),
                                 'title' => $title,
-                                'work_date' => null,
                             ]);
                             app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
                             if (filled($row['primary_alt_text'] ?? null)) {
