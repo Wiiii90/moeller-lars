@@ -2,7 +2,7 @@
 
 **Lease:** 8  
 **Branch:** dev  
-**State:** Active — 2026-11-03; historical checkpoints 9 and 10 passed local read-only preflight. Actual restore and browser acceptance outstanding.
+**State:** Active — 2026-11-03; historical checkpoints 9 and 10 passed local read-only preflight. Four-column Dimensions layout source corrected; browser acceptance outstanding.
 
 ## Ownership and boundaries
 
@@ -26,6 +26,12 @@
 - **Checkpoint 9: PASS** — user ran corrected one-line `verifyCheckpointReadOnly(9)`: `historical_date_projection=true`, `differences_from_working=96`, `committed_artwork_differences=null`. Null is expected for a checkpoint that is not current Live. The earlier PowerShell `>>` prompt was caused by an unfinished closing quote, not service latency.
 - These are **read-only preflights**, not evidence that a full destructive Stage/Restore and rights/media reconstruction succeeded. Before any actual restore, construct and independently confirm a disposable database **and** isolated media store. **Never** stage/revert on persistent `local-preview`: it can overwrite Working and queue media cleanup. No Validation deployment.
 - User made a local `pg_dump -Fc` backup at `C:\Users\Wiiii\moeller-lars-checkpoint.dump` (680686 bytes, 2026-11-03 16:25:58); restore viability is untested. Avoid standalone `git pull`, `git reset` and manual stash instructions; `local-preview.ps1` already handles source synchronization and an unnecessary pull previously disturbed Windows index state.
+
+## Current Gallery dimensions correction (2026-11-03)
+- User explicitly accepts the existing optional Artwork date/Clear behavior after confirming that date-less items fall to the end in newest-date sorting; do not change it or make dates mandatory without a new request.
+- User's screenshot shows Height and Width on the first row, Depth and Unit on the second, even in the large Edit dialog. Confirmed root cause at `AdminDimensionsControl::make()`: Filament 5 `Grid::make()` defaults to `lg => 2`; subsequent `->columns(['default' => 4])` **merges** rather than removes that default breakpoint, so desktop remains two columns. Canonical fix is `Grid::make(['default' => 4])`, with no inherited large-screen two-column breakpoint. No CSS override or second renderer.
+- This modifies only the existing shared dimensions component. It preserves persisted dimensions/field names, inputs, labels and × separators. Source-only correction; real browser verification is pending after local preview refresh.
+- Historical checkpoint 9/10 read-only preflights and local migration/schema parity are already complete. Do not request another generic audit or incorrectly assert that the user's existing local environment is not isolated.
 
 ## Remaining acceptance and delegated work
 
