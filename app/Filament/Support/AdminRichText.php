@@ -6,6 +6,7 @@ use App\Domain\Content\RichTextDocument;
 use App\Domain\Media\MediaPreviewVariant;
 use App\Models\MediaAsset;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\RichEditor\EditorCommand;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\View;
 use Filament\Forms\Components\RichEditor;
@@ -91,10 +92,6 @@ final class AdminRichText
                 ->nullable()
                 ->dehydrated(false)
                 ->live()
-                // The picker is transient, not an edit-dialog form mutation.
-                // A full Livewire morph here destroys the current Tiptap
-                // instance before the selected-image event is consumed.
-                ->skipRenderAfterStateUpdated()
                 ->afterStateUpdated(static function (mixed $state, Select $field) use ($editor): void {
                     $id = filter_var($state, FILTER_VALIDATE_INT);
                     if ($id === false || $id <= 0) {
@@ -112,22 +109,22 @@ final class AdminRichText
                         return;
                     }
 
-                    // Server validates the Storage asset; the active editor shell
-                    // owns the sole insertion, not a broadcast Filament command.
-                    $field->state(null);
-                    $field->getLivewire()->dispatch(
-                        'artist-rich-image-selected',
-                        livewireId: $field->getLivewire()->getId(),
-                        editorKey: $editor->getKey(),
-                        image: [
+                    // Use the owning editor object from this shared schema.
+                    // The former root-schema search could resolve the wrong
+                    // component during Livewire morphs and break Edit dialogs.
+                    $editor->runCommands([
+                        EditorCommand::make('insertContent', arguments: [[
                             'type' => 'image',
                             'attrs' => [
                                 'id' => (string) $id,
                                 'src' => route('admin.media.variant', $variant),
                                 'alt' => (string) ($asset->getAttribute('alt_text') ?: ''),
                             ],
-                        ],
-                    );
+                        ]]),
+                    ]);
+
+                    $field->state(null);
+                    $field->getLivewire()->dispatch('artist-rich-image-inserted');
                 });
 
             // Keep the canonical Filament Select in the same nested schema.
@@ -445,39 +442,12 @@ final class AdminRichText
                                 })
                             },
                             toggleImagePicker(event) {
-                                const editor = event.detail?.editor
-                                if (!editor || editor.isDestroyed) return
                                 if (this.activeRichPanel === 'image') {
                                     this.closeRichPanel('image')
                                     return
                                 }
-                                this.openRichPanel('image', event.detail?.anchor)
-                            },
-                            insertStorageImage(event) {
-                                const shell = this.richShell()
-                                const root = shell?.querySelector('[data-rich-editor-key]')
-                                const detail = event.detail
-                                const owner = shell?.closest('[wire\\:id]')
-                                // Livewire may re-render the picker before dispatching
-                                // its server-validated selection. A transient open
-                                // panel or DOM-attached editor reference is not a
-                                // reliable async identity.
-                                if (!root || !owner
-                                    || owner.getAttribute('wire:id') !== detail?.livewireId
-                                    || root.dataset.richEditorKey !== detail?.editorKey
-                                    || detail?.image?.type !== 'image'
-                                    || !/^[1-9]\d*$/.test(detail?.image?.attrs?.id ?? '')
-                                    || detail.handledByRichText === true) return
-
-                                // Use Filament's current editor instance after morph,
-                                // not a reference captured before the server response.
-                                const editor = window.Alpine?.$data(root)?.getEditor?.()
-                                if (!editor || editor.isDestroyed) return
-                                detail.handledByRichText = true
-                                this.closeRichPanel('image')
-                                if (editor.chain().focus(null, { scrollIntoView: false }).insertContent(detail.image).run()) {
-                                    this.commitEditorChange()
-                                }
+                                const trigger = event.target.closest('.fi-fo-rich-editor-tool')
+                                if (trigger) this.openRichPanel('image', trigger)
                             },
                         }
                         JS,
@@ -493,7 +463,7 @@ final class AdminRichText
                     'x-on:artist-rich-content-changed' => 'commitEditorChange()',
                     'x-on:artist-rich-caption-toggle' => 'openCaptionEditor($event)',
                     'x-on:artist-rich-image-toggle' => 'toggleImagePicker($event)',
-                    'x-on:artist-rich-image-selected.window' => 'insertStorageImage($event)',
+                    'x-on:artist-rich-image-inserted.window' => "closeRichPanel('image')",
                     'x-on:keydown.escape.window' => 'closeRichPanel()',
                 ])
                 ->columnSpanFull(),

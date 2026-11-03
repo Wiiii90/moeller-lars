@@ -84,7 +84,7 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                 ->label(__('Insert image from Storage'))
                 ->icon(AdminIcon::Storage->value)
                 ->activeStyling(false)
-                ->jsHandler("\$dispatch('artist-rich-image-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+                ->jsHandler("\$dispatch('artist-rich-image-toggle')"),
             ...array_map(
                 static fn (string $placement): RichEditorTool =>
                     RichEditorTool::make('image'.str_replace('-', '', ucfirst($placement)))
