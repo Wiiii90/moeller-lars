@@ -2,7 +2,7 @@
 
 - **Branch:** testing
 - **Lease token:** 3 (explicit takeover by successor chat on 2026-11-03)
-- **State:** active; final qualification authorized and partially executed by delegated local executor; do not stop on suite-local blockers
+- **State:** active; independent qualification checks executed; remaining database and seeded browser qualification awaits Dev corrections
 - **Ownership:** Single behavior-based Pest/Node/Playwright suite on testing, no application changes on Dev and no CI/deploy or production writes.
 
 ## Reconciled source
@@ -56,3 +56,12 @@ User-provided execution report, **not independently rerun by this chat**, at Tes
 4. Fix erroneous tests only here. Return confirmed product defects to Dev, reconcile fixes and rerun; record actual pass/fail/skipped and evidence before seeking explicit selective test transfer to Dev. CI and deployment remain separately gated.
 
 **Evidence:** Earlier authoring/parity established through GitHub; delegated local executor subsequently reported the partial JavaScript, Pest, PHPStan, Pint and concurrency results above. These were not rerun in this chat. No coverage measured, no browser acceptance, no final gate passed.
+
+## Local qualification continuation
+
+- Frozen application candidate: Dev 33f598f94afd6717cc3bb234b0d85c14e758491f. Remote Testing base: 70e83fbbada5fce7869f8902c8592e6f68a59788. Local commits 3c6f0d68, e8b43a18, b75f60ca, 0a1e63a8 and 5cd0bec0 contain Testing-only changes.
+- JavaScript: 43/43. Chromium components: 7/7 without an application server. Unit: 96/97, 358 assertions and no bootstrap errors. The database-backed vernissage case moved to Integration. The remaining strict renderer assertion shows authored 2.0 line spacing missing from public output; this is a runtime observation to investigate on Dev with the locked dependencies.
+- Pint passes for tests. Repository-wide Pint findings remain in application source. The default PHPStan configuration analyzes app only and reported production-source diagnostics, including unhandled matches in RegionalFormats and a collection return type in public navigation.
+- The local Windows qualification mode reuses the disposable PostgreSQL runner and relative Laravel cache paths. A targeted Migration run verified the effective Laravel connection and PostgreSQL 17.11 cluster identity, empty public schema, private and public file roots, temporary and upload paths, array cache and array sessions. The test then failed before its first behavior assertion during the clean Exhibition migration.
+- Dev Worker 1 owns the migration defect. Reproduce on a new empty PostgreSQL cluster with the documented Migration command or either dedicated concurrency runner. Both concurrency setups reached the same missing public.exhibitions entry. Initialize the migration's per-table plan for empty Working and Committed sources in the canonical migration. The Publication checksum bypass remains source-confirmed and awaits isolated runtime execution of PublicationVersionHistoryTest.
+- After Dev corrections, check current remote references and reconcile exact source parity. Run the three documented Windows Pest suites, both dedicated concurrency runners, Chromium end-to-end, desktop and mobile WebKit, and Chromium profiling using an isolated seeded server. Rerun the strict renderer assertion after the renderer is corrected. No browser projects requiring an application server have been run.
