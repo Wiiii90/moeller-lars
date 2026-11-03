@@ -41,6 +41,7 @@ description: Own production code on dev; follow architecture-first, deletion-fir
 
 ## Pre-release media lifecycle and cleanup — mandatory
 
+- **Retired symbols must have zero live callers:** when removing a constant, persistence field or service, inspect live application callers including Artwork/Home/Public queries and database constraints; remove obsolete predicates and imports in the same commit. A passing isolated source check without those consumers is not acceptable evidence. Do not restore obsolete aliases as a workaround.
 - **Version retirement must reach persistence, not only its reader.** Removing versioned rendering branches while leaving a mandatory `transform_profile` column and version-keyed uniqueness allows inconsistent old rows to hide. Consolidate the active model, writer, Working/Committed schema constraints and restorable snapshot compatibility as a single safe migration; explicitly detect conflicting current variants before changing any stored content. Historical immutable checkpoint data is not a second runtime pipeline.
 
 

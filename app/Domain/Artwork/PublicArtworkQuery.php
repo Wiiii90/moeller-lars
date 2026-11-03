@@ -425,7 +425,6 @@ class PublicArtworkQuery
                                         $images->whereIn('mime_type', MediaTypePolicy::IMAGE_MIME_TYPES)
                                             ->whereHas('variants', fn (Builder $variants) => $variants
                                                 ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
-                                                ->where('transform_profile', MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE)
                                                 ->where('mime_type', 'image/webp')
                                                 ->where('state', 'available'), '=', 1);
                                     });

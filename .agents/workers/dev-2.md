@@ -81,3 +81,7 @@
 - Free Storage now reports an independently failed post-cleanup audit write as an incomplete result rather than implying an already executed file removal was rolled back. The existing notification shows a warning and the actual removal counts.
 - MediaIntegrityService now verifies physically retained bytes for logically deleted originals and variants when they exist, without labeling valid Publication/Undo retention as a zombie or requiring removed preview bytes to exist.
 - Grouped Testing handoff B/D: post-cleanup audit failure with already removed orphan, deleted-but-retained corrupt original and poster, truly removed deleted original, and ordinary available original with required preview missing. No Dev-owned tests, no validation deployment.
+
+## 2026-11-03 — Home admin source regression from retired profile constant
+- Directly caused by Dev Worker 2 media profile removal: PublicArtworkQuery::publicQuery still referenced removed MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE and filtered the retired transform_profile database column (HTTP 500 at /admin/pages/home). Removed that obsolete condition. The existing one-thumbnail-kind, WebP MIME and available-state predicate remains; no compatibility constant introduced.
+- Testing handoff D/B: Home admin candidate statistics and artwork on real migrated schema; zero/one/duplicate available thumbnails; verify no unresolved old profile symbols under new revision. Code source review only, no browser execution.
