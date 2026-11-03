@@ -29,7 +29,7 @@ async function openFreshEditor(page) {
     await destination.click();
     await expect(page).toHaveURL(/\/admin\/pages\/custom\/\d+(?:[/?#]|$)/);
 
-    await page.getByRole('button', { name: 'Add component', exact: true }).click();
+    await page.getByLabel('Component table tools').getByRole('button', { name: 'Add component', exact: true }).click();
     const creation = page.locator('.fi-modal.fi-modal-open').last();
     await expect(creation.getByRole('heading', { name: 'Add component' })).toBeVisible();
     await creation.getByRole('combobox', { name: 'Component', exact: true }).selectOption('text');
@@ -224,7 +224,7 @@ test('two Rich Text component editors keep independent Storage image selections 
     await page.keyboard.press('Escape');
     await expect(modal).toBeHidden();
 
-    await page.getByRole('button', { name: 'Add component', exact: true }).click();
+    await page.getByLabel('Component table tools').getByRole('button', { name: 'Add component', exact: true }).click();
     const creation = page.locator('.fi-modal.fi-modal-open').last();
     await creation.getByRole('combobox', { name: 'Component', exact: true }).selectOption('text');
     await creation.locator('.admin-rich-text-editor-shell [contenteditable="true"]').fill('Second editor');

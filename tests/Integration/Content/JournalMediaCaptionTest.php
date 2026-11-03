@@ -123,10 +123,8 @@ it('renders one public caption below the correct repeated Rich Text image withou
     Storage::fake('rich-text-public-caption');
     config(['media.disk' => 'rich-text-public-caption']);
     [$asset] = journalImageUsage();
-    $variant = $asset->variants()->sole();
     $disk = Storage::disk(config('media.disk'));
     $disk->put($asset->storage_key, str_repeat('o', 10));
-    $disk->put($variant->storage_key, str_repeat('v', 10));
     PublicContentSetting::general()->update(['favicon_media_asset_id' => $asset->getKey()]);
 
     $rich = '<p><img data-id="'.$asset->getKey().'" data-artist-placement="float-left"'
