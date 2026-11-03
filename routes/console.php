@@ -57,6 +57,94 @@ Artisan::command('contact:purge {--apply : Delete contact messages older than 18
 // That runtime scheduler has not been verified on the server.
 Schedule::command('contact:purge --apply')->daily()->withoutOverlapping()->onOneServer();
 
+// Read-only checkpoint before retiring the free-form Exhibition date field.
+// Scan the editable and committed records as well as immutable publication
+// checkpoint payloads. Never infer precision or update artist content here.
+Artisan::command('exhibitions:audit-dates', function (): int {
+    if (DB::getDriverName() !== 'pgsql') {
+        $this->error('Exhibition date inventory requires PostgreSQL publication schemas.');
+
+        return 1;
+    }
+
+    $sources = [
+        'working' => 'public.exhibitions',
+        'committed' => 'committed.exhibitions',
+    ];
+    $review = [];
+    $counts = [];
+    foreach ($sources as $name => $table) {
+        if (DB::selectOne('SELECT to_regclass(?) AS relation_name', [$table])?->relation_name === null) {
+            $this->error('Missing publication table: '.$table);
+
+            return 1;
+        }
+
+        $rows = DB::table($table)
+            ->orderBy('id')
+            ->get(['id', 'title', 'state', 'starts_on', 'ends_on', 'date_text']);
+        $counts[$name] = $rows->count();
+        foreach ($rows as $row) {
+            $original = trim((string) ($row->date_text ?? ''));
+            if ($original === '') {
+                continue;
+            }
+
+            $review[] = [
+                $name,
+                (string) $row->id,
+                (string) $row->title,
+                (string) ($row->starts_on ?? '—'),
+                (string) ($row->ends_on ?? '—'),
+                $original,
+            ];
+        }
+    }
+
+    if (DB::selectOne("SELECT to_regclass('public.publication_version_rows') AS relation_name")?->relation_name !== null) {
+        $snapshots = DB::table('publication_version_rows')
+            ->where('table_name', 'exhibitions')
+            ->orderBy('publication_checkpoint_id')
+            ->orderBy('row_key')
+            ->get(['publication_checkpoint_id', 'row_key', 'payload']);
+        $counts['snapshot entries'] = $snapshots->count();
+
+        foreach ($snapshots as $row) {
+            $payload = is_string($row->payload)
+                ? json_decode($row->payload, true)
+                : (is_array($row->payload) ? $row->payload : json_decode((string) $row->payload, true));
+            if (! is_array($payload)) {
+                $this->error('Unparseable immutable publication checkpoint payload. Stopping inventory.');
+
+                return 1;
+            }
+
+            $original = trim((string) ($payload['date_text'] ?? ''));
+            if ($original === '') {
+                continue;
+            }
+
+            $review[] = [
+                'checkpoint '.$row->publication_checkpoint_id,
+                (string) $row->row_key,
+                (string) ($payload['title'] ?? '—'),
+                (string) ($payload['starts_on'] ?? '—'),
+                (string) ($payload['ends_on'] ?? '—'),
+                $original,
+            ];
+        }
+    }
+
+    $this->table(['Source', 'ID', 'Exhibition', 'Start', 'End', 'Authored date override'], $review);
+    foreach ($counts as $name => $count) {
+        $this->line($name.': '.$count.' records');
+    }
+    $this->info(count($review).' authored date overrides found across current and retained states.');
+    $this->comment('READ-ONLY. Do not drop date_text or infer missing day/month precision until every historical override has a lossless reviewed mapping.');
+
+    return 0;
+})->purpose('Inventory authored Exhibition dates without altering Working, Committed or history');
+
 // Legacy Exhibition addresses are normalised only by explicit local action:
 // the preview is the default; ambiguous strings and edited structured fields
 // are not inferred, and existing geocoded coordinates remain untouched.

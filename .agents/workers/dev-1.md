@@ -4,6 +4,11 @@
 
 **Aktueller Public-Exhibitions-Stil:** Heller, ungerahmter Katalog auf der normalen konfigurierbaren Public-Content-Fläche (Standard weiß), ohne Schatten und zusätzliche Farbverläufe. Miniaturen, Bild-Text-Fluss mit Cover, redaktionelle Reihenfolge und einzelne Separatoren bei geöffneten Einträgen bleiben wie zuvor. Neu: ohne Cover beginnt der vollständige geöffnete Inhalt links. Keine inhaltsabhängigen Sonderabstände. Browserabnahme für die neue Korrektur ausstehend.
 
+## Exhibition date cleanup — read-only Working/Committed/checkpoint inventory (03.11.2026)
+- Added `php artisan exhibitions:audit-dates` in the existing Laravel console command owner. It reads the current editable and committed Exhibitions tables and retained publication checkpoint payloads and displays every nonempty authored `date_text` alongside structured start/end dates; **no modifications, no date guesses, no writing to any schema**, no service requests and no scheduled task.
+- Because the connector has no access to the local or Validation database, the command has **not been executed**; no assertion about current artist values or safe automatic conversion. The actual inventory must run locally first, and only after reviewed conversions can the old field be dropped and all UI/model/snapshot references removed. A fail-safe conversion, not an unreviewed heuristic, is the migration acceptance boundary.
+- Until that data evidence exists, existing date input/outputs remain unchanged to preserve artist history and published information.
+
 ## Exhibition Create/Edit — Adresszeile und reine Map-Steuerung (03.11.2026)
 - Erste vorsichtige Implementierung: identische Schemaquelle für Add/Edit. Die Adresse ist eine kompakte Zeile aus Street address / City / Postal code / Country (mobiler Umbruch über das bestehende Filament-Grid); alle Felder bleiben freie, vom Künstler gewählte Strings und alle Public-Sichtbarkeitshints behalten den gleichen Owner.
 - Map enabled folgt jetzt unmittelbar auf die Adresszeile. Admin-Preview-iframe und Koordinaten-Hidden-Controls samt toter Render-Methode entfernt; bestehender Domain-Geocoder, bestehende Public-Karte/Overlay, Kartenfreigabe und Versionsschutz unverändert. Eine fehlgeschlagene Änderung setzt weiterhin das sichtbare Map-Toggle auf den gespeicherten Wert zurück.
