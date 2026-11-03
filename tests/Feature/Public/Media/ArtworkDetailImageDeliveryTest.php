@@ -34,8 +34,7 @@ it('renders selected rights thumbnail URLs for public and preview artwork detail
         'title' => 'Thumbnail rights artwork',
         'state' => 'published',
         'position' => 10,
-        'work_year' => 2024,
-        'date_precision' => 'year',
+        'year' => 2024,
     ]);
 
     $disk = Storage::disk(config('media.disk'));

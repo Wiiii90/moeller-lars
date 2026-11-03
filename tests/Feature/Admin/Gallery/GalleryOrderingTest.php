@@ -35,7 +35,7 @@ it('orders newly created Manual Gallery Artworks first and leaves older records 
         'artwork_category_id' => $gallery->getKey(),
         'title' => 'Newest Gallery addition',
         'slug' => 'newest-gallery-addition',
-        'work_date' => null,
+        'artwork_date' => null,
     ]);
 
     expect(Artwork::query()->where('artwork_category_id', $gallery->getKey())
@@ -45,8 +45,8 @@ it('orders newly created Manual Gallery Artworks first and leaves older records 
 
 it('applies date sorting consistently without overwriting manual positions', function (): void {
     $gallery = galleryFixtureCategory();
-    $older = galleryFixtureArtwork($gallery, ['position' => 0, 'work_year' => 2023, 'work_date' => '2023-01-01']);
-    $newer = galleryFixtureArtwork($gallery, ['position' => 1, 'work_year' => 2026, 'work_date' => '2026-10-02']);
+    $older = galleryFixtureArtwork($gallery, ['position' => 0, 'year' => 2023, 'month' => 1, 'day' => 1]);
+    $newer = galleryFixtureArtwork($gallery, ['position' => 1, 'year' => 2026, 'month' => 10, 'day' => 2]);
     $gallery->forceFill(['sort_mode' => 'newest'])->save();
 
     $ids = \App\Domain\Artwork\GalleryPresentation::orderArtworks(

@@ -34,7 +34,6 @@ function galleryFixtureArtwork(?ArtworkCategory $gallery, array $overrides = [])
         'title' => 'Artwork fixture '.$sequence,
         'state' => 'draft',
         'position' => 0,
-        'date_precision' => 'unknown',
     ], $overrides));
 }
 

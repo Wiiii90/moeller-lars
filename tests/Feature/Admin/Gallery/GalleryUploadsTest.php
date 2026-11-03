@@ -37,7 +37,7 @@ it('ingests a real image through Add artwork and publishes its primary ALT descr
         ->fillForm([
             'title' => 'Uploaded Artwork',
             'slug' => 'uploaded-artwork',
-            'work_date' => null,
+            'artwork_date' => null,
             'dimension_unit' => 'cm',
             'primary_upload' => UploadedFile::fake()->image('new-artwork.jpg', 48, 32),
             'primary_alt_text' => 'A painting with red and blue geometric shapes',
@@ -177,7 +177,7 @@ it('turns a real direct Gallery upload into an editable and publishable artwork 
         'title' => 'Direct Upload Artwork',
         'slug' => 'direct-upload-artwork',
         'dimension_unit' => 'cm',
-        'work_date' => null,
+        'artwork_date' => null,
         'primary_media_asset_id' => $pendingAssetId,
         'primary_alt_text' => 'A mixed-media artwork with a bright turquoise border',
     ])
