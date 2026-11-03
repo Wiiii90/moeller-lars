@@ -471,14 +471,24 @@ command for a verified running target, for example
 `docker compose exec app php artisan exhibitions:audit-dates --all`
 when the Compose `app` service is running, or
 `docker exec moeller-lars-local-web php artisan exhibitions:audit-dates --all`
-when the local preview container is running. If `app` is stopped and the
-local source tree must be executed, use `docker compose run --rm app php
-artisan …`: this starts a one-off application container and removes
-**that temporary container** afterward, not the persistent PostgreSQL
-volume or existing images. Compose may create/build the application image
-if it is absent; do not promise otherwise. Do not suggest starting or
-rebuilding an additional stack if the appropriate container is already
-available. A command shown without its `docker compose exec` / `docker exec`
+when the local preview container is running **and contains the required
+application source/migration**. **Never recommend a bare
+`docker compose run --rm app …` for a one-off Laravel command.** When the
+`app` service is stopped, Compose may automatically build an entire PHP
+image before running the command, potentially wasting minutes and gigabytes.
+Only a verified existing service image may be used for a one-off command,
+with explicit build prohibition (`docker compose run --rm --no-build app …`)
+and a source-version check; `--rm` removes only the temporary container,
+not images or volumes. If no existing container/image contains the exact
+required source, **do not improvise an implicit build, alternate stack,
+database reset or copied partial application files**. State that the source
+must first be brought into a suitable pre-existing application runtime
+through an explicitly approved build/deploy workflow. Confirm the required
+source is locally present **before** instructing a schema migration,
+including after recent `dev` commits; do not separate Git synchronization
+from its owning helper or execute an older migration on user data.
+Never prescribe a build/long download merely to execute a small Artisan
+migration without disclosing that consequence first. A command shown without its `docker compose exec` / `docker exec`
 prefix is acceptable only when **explicitly identified as already inside
 that container's shell**. For Validation/Production, discover and state the
 actual remote application container and authorization boundary; never reuse

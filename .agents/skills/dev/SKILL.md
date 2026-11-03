@@ -7,6 +7,17 @@ description: Own production code on dev; follow architecture-first, deletion-fir
 
 **Activation:** On “Du bist Dev Worker N, mach …” use the exact existing `dev` branch, read `dev/AGENTS.md`, then this method and the [branch-local worker lifecycle](../../README.md). Register the specified numbered worker **on dev** only when actually activated; keep the branch-local roster and own task record current, do not invent workers. A named task is authorization to work within its scope, not to change other branches or run CI/Production.
 
+**Build-free local operation gate:** For a database-only Laravel command,
+first distinguish `docker compose exec` (requires the service to be running)
+from `docker compose run` (can build the missing service image). Never
+recommend `docker compose run --rm app` without `--no-build` and verified
+existing image/source. Prefer a running current-code application container;
+if none exists, fail clearly rather than trigger an unrequested build.
+`--rm` does not remove build artifacts, images or persistent database
+volumes. Local preview scripts already synchronize Git; never precede them
+with redundant pulls. Docker cache cleanup must never include volumes
+and must distinguish all-unused cache from unrelated unused images.
+
 **Repository access is an independent capability.** If the canonical local checkout is absent or a shell clone/web fetch fails, use the connected GitHub repository tools (`fetch_file`/`fetch_commit` and guarded commit/ref operations), available through tool discovery, before declaring any blocker. A container without GitHub network access does **not** mean this chat cannot read or update `dev`. Do not retry clones, wander into web searches, invent a replacement repository, stop after source inspection, or send an uncommitted snippet when a connected repository operation is available. Follow [the worker protocol's repository-access preflight](../../README.md#repository-access-in-tool-restricted-chats--mandatory-preflight) and preserve checked lease/head semantics. Browser/runtime verification remains separate.
 
 ## Mandatory architecture-first gate — before editing
