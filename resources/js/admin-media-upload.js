@@ -32,7 +32,11 @@ async function jsonRequest(path, body) {
     try { payload = await response.json(); } catch {}
     if (!response.ok) {
         const errors = payload.errors ? Object.values(payload.errors).flat() : [];
-        throw new Error(errors[0] || payload.message || 'Server rejected the upload (' + response.status + ').');
+        const serverMessage = errors[0] || (payload.message && !/^server error$/i.test(payload.message) ? payload.message : '');
+        const stage = path.endsWith('/finish') ? 'processing the uploaded file'
+            : path.endsWith('/start') ? 'starting the upload' : 'handling the upload';
+        throw new Error(serverMessage || 'The server failed while ' + stage + ' (HTTP ' + response.status
+            + '). The file was not confirmed in Storage. Try again later or contact the site administrator.');
     }
     return payload;
 }
@@ -49,14 +53,25 @@ function sendChunk(id, offset, blob, progress) {
         xhr.upload.onprogress = (event) => {
             if (event.lengthComputable) progress(event.loaded);
         };
-        xhr.onerror = () => reject(new Error('Connection interrupted during transfer.'));
-        xhr.ontimeout = () => reject(new Error('The chunk transfer timed out.'));
+        xhr.onerror = () => {
+            const error = new Error('The connection was interrupted during file transfer. Select the same file to resume.');
+            error.retryable = true;
+            reject(error);
+        };
+        xhr.ontimeout = () => {
+            const error = new Error('The file transfer timed out. Select the same file to resume.');
+            error.retryable = true;
+            reject(error);
+        };
         xhr.onload = () => {
             let payload = {};
             try { payload = JSON.parse(xhr.responseText); } catch {}
             if (xhr.status < 200 || xhr.status >= 300) {
                 const errors = payload.errors ? Object.values(payload.errors).flat() : [];
-                reject(new Error(errors[0] || payload.message || 'Chunk rejected (' + xhr.status + ').'));
+                const error = new Error(errors[0] || payload.message
+                    || 'The server rejected a file chunk (HTTP ' + xhr.status + '). Select the same file to resume.');
+                error.retryable = [502, 503, 504].includes(xhr.status);
+                reject(error);
             } else {
                 resolve(payload);
             }
@@ -121,7 +136,7 @@ async function transfer(file, state, fileIndex, total) {
             });
             failures = 0;
         } catch (error) {
-            if (++failures > 3) throw error;
+            if (!error?.retryable || ++failures > 3) throw error;
             state.result = 'Connection interrupted; resuming from the last saved chunk…';
             session = await jsonRequest('/start', {
                 filename: file.name, size: file.size, resume_id: session.id,
@@ -135,10 +150,17 @@ async function transfer(file, state, fileIndex, total) {
         try {
             session = await jsonRequest('/' + session.id + '/finish', {});
         } catch (error) {
-            // If the response was lost after saving, query the durable session.
-            const recheck = await jsonRequest('/start', {
-                filename: file.name, size: file.size, resume_id: session.id,
-            });
+            // If the final acknowledgment was lost after saving, consult the
+            // durable session. Never overwrite the actual processing failure
+            // with a secondary session-status error.
+            let recheck;
+            try {
+                recheck = await jsonRequest('/start', {
+                    filename: file.name, size: file.size, resume_id: session.id,
+                });
+            } catch {
+                throw error;
+            }
             if (!recheck.complete) throw error;
             session = recheck;
         }
@@ -166,13 +188,16 @@ export async function adminMediaUploader(state, input, wire, context) {
     let duplicates = 0;
     let failed = 0;
     const errors = [];
+    let notificationAttempted = false;
 
     try {
         if (context === 'gallery') await wire.beginDirectPrimaryMediaBatch();
 
         for (const file of files) {
+            let savedToStorage = false;
             try {
                 const result = await transfer(file, state, state.completed, files.length);
+                savedToStorage = true;
                 // Acknowledgment in the consumer comes before the local resume
                 // token is cleared; a lost response can be recovered on retry.
                 if (context === 'gallery') {
@@ -183,7 +208,10 @@ export async function adminMediaUploader(state, input, wire, context) {
                 else added++;
             } catch (error) {
                 failed++;
-                errors.push(file.name + ' — ' + (error?.message || 'Upload failed.'));
+                const reason = savedToStorage && context === 'gallery'
+                    ? 'Saved to Storage, but could not be added to the Artwork selection: ' + (error?.message || 'Selection failed.')
+                    : (error?.message || 'The upload failed. Select the same file to retry.');
+                errors.push(file.name + ' — ' + reason);
             }
             state.completed++;
             state.progress = Math.round(state.completed * 100 / files.length);
@@ -191,24 +219,32 @@ export async function adminMediaUploader(state, input, wire, context) {
 
         state.phase = 'processing';
         if (context === 'gallery') {
+            notificationAttempted = true;
             const result = await wire.finishDirectPrimaryMediaBatch(failed, duplicates, errors);
-            state.result = result?.summary || 'Upload finished.';
+            state.result = result?.summary || 'The Gallery upload finished. Review your Artwork selection.';
         } else {
             if (added > 0) await wire.refreshAfterResumableMediaUpload();
-            await wire.notifyDirectMediaBatch(added, duplicates, failed, errors.slice(0, 2).join('; '));
-            state.result = added + ' uploaded, ' + duplicates + ' already in Storage, ' + failed + ' failed';
-            if (errors.length) state.result += ' · ' + errors.slice(0, 2).join('; ');
+            notificationAttempted = true;
+            state.result = await wire.notifyDirectMediaBatch(added, duplicates, failed, errors.join('\n'));
         }
     } catch (error) {
-        state.result = error?.message || 'Upload could not be completed. Select the same file to resume.';
-        try {
-            if (context === 'gallery') {
-                await wire.notifyDirectPrimaryTransferFailure(state.result);
-            } else {
-                await wire.notifyDirectMediaBatch(added, duplicates, Math.max(1, failed), state.result);
+        if (notificationAttempted) {
+            // A lost response is not evidence that the server did not notify
+            // or save the uploaded originals. Avoid a duplicate failure notice.
+            state.result = 'The final upload status could not be confirmed. Check Storage before retrying. '
+                + (error?.message || '');
+        } else {
+            state.result = error?.message || 'Upload could not be completed. Select the same file to resume.';
+            try {
+                const details = errors.length ? errors.join('\n') : state.result;
+                if (context === 'gallery') {
+                    await wire.notifyDirectPrimaryTransferFailure(details);
+                } else {
+                    state.result = await wire.notifyDirectMediaBatch(added, duplicates, Math.max(1, failed), details);
+                }
+            } catch {
+                // When the connection is down, the inline result remains visible.
             }
-        } catch {
-            // When the connection is down, the inline result remains visible.
         }
     } finally {
         input.value = '';
@@ -230,11 +266,15 @@ export async function adminMediaUploadField(state, input, wire, statePath, image
             throw new Error('This field accepts images only.');
         }
         const outcome = await transfer(file, state, 0, 1);
-        await wire.set(statePath, outcome.asset_id);
+        try {
+            await wire.set(statePath, outcome.asset_id);
+        } catch {
+            throw new Error('File saved to Storage, but could not be linked to this field. Select it from Storage or contact the site administrator.');
+        }
         forget(outcome.resumeKey);
-        state.result = file.name + ' — ready to save';
+        state.result = file.name + ' — uploaded to Storage and ready to save with the Artwork';
     } catch (error) {
-        state.result = error?.message || 'Upload failed. Re-select the same file to resume.';
+        state.result = file.name + ' — ' + (error?.message || 'Upload failed. Re-select the same file to resume.');
         try { await jsonRequest('/failure', { message: state.result.slice(0, 400) }); } catch {
             // The inline message remains accessible if the connection is down.
         }
