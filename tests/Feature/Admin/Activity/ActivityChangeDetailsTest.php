@@ -3,12 +3,17 @@
 use App\Domain\Admin\AdminChangeSummary;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Artwork\ArtworkDraftService;
+use App\Filament\Pages\Activity;
 use App\Filament\Support\AdminActivityFeed;
+use App\Models\AdminNotification;
 use App\Models\Artwork;
 use App\Models\AuditEvent;
 use App\Models\PublicContentSetting;
 use App\Models\User;
+use Filament\Facades\Filament;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 
 it('names multiple changed fields instead of a generic settings activity', function (): void {
     $actor = User::factory()->admin()->create();
@@ -40,7 +45,6 @@ it('names multiple changed fields instead of a generic settings activity', funct
         ->and($items->get('Public email visibility')['before'] ?? null)->toBe($beforeVisibility ? 'On' : 'Off')
         ->and($items->get('Public email visibility')['after'] ?? null)->toBe($beforeVisibility ? 'Off' : 'On');
 });
-
 
 it('preserves the historical target label after a deleted record disappears', function (): void {
     $actor = User::factory()->admin()->create();
@@ -80,7 +84,6 @@ it('preserves the historical target label after a deleted record disappears', fu
         ->and($projected['url'] ?? null)->toBeNull();
 });
 
-
 it('keeps the full change count when the Activity detail payload is truncated', function (): void {
     $before = [];
     $after = [];
@@ -104,24 +107,23 @@ it('keeps the full change count when the Activity detail payload is truncated', 
         ->and(count($summary['items']))->toBeLessThan($summary['count']);
 });
 
-
 it('renders persisted structured change details without rewriting history or notifying', function (): void {
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor, 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), ['public_email' => 'detail-render@example.test']);
     $event = AuditEvent::query()->latest('id')->firstOrFail();
     $before = $event->fresh()->getRawOriginal();
     $audits = AuditEvent::query()->count();
-    \Livewire\Livewire::test(\App\Filament\Pages\Activity::class)
+    Livewire::test(Activity::class)
         ->mountAction('activityDetails', ['id' => $event->id])
         ->assertActionMounted('activityDetails')
         ->assertMountedActionModalSee(['Edited website settings', 'Public email', 'detail-render@example.test'])
         ->assertNotDispatched('admin-header-notification');
     expect($event->fresh()->getRawOriginal())->toBe($before)
         ->and(AuditEvent::query()->count())->toBe($audits)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+        ->and(AdminNotification::query()->count())->toBe(0);
 });
 
 it('rejects rewriting and deleting audit records through the model', function (string $operation): void {
@@ -146,6 +148,6 @@ it('enforces append-only audit history at the PostgreSQL boundary', function (st
     expect(fn () => DB::transaction(function () use ($event, $operation): void {
         $query = DB::table('audit_events')->where('id', $event->id);
         $operation === 'update' ? $query->update(['entity_id' => 2]) : $query->delete();
-    }))->toThrow(\Illuminate\Database\QueryException::class, 'append-only');
+    }))->toThrow(QueryException::class, 'append-only');
     expect($event->fresh()->getRawOriginal())->toBe($before)->and(AuditEvent::query()->count())->toBe(1);
 })->with(['update', 'delete']);

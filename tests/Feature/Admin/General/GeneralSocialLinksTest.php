@@ -1,11 +1,11 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Admin\AdminSettingsService;
 use App\Filament\Pages\General;
+use App\Models\AdminNotification;
 use App\Models\PublicContentSetting;
 use App\Models\User;
-use App\Models\AdminNotification;
-use App\Domain\Admin\AdminActivityNotificationContext;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
@@ -54,7 +54,6 @@ it('persists configured social link add update order and delete without a repeat
     expect(PublicContentSetting::general()->getAttribute('social_links'))->toBe([])
         ->and(generalSettingsAuditCount())->toBeGreaterThan($auditBefore);
 });
-
 
 it('drag-reorders configured social links by array position without filter state', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [

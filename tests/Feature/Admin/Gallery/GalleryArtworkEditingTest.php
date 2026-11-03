@@ -4,19 +4,19 @@ use App\Domain\Artwork\ArtworkPublicationService;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Support\ArtworkEditDialog;
+use App\Models\AdminNotification;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
-use App\Models\MediaAsset;
-use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\User;
-use Illuminate\Support\Facades\Storage;
+use Filament\Facades\Filament;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 require_once __DIR__.'/GalleryFixtures.php';
@@ -43,12 +43,10 @@ it('offers per-artwork ALT text in the Gallery create and edit dialogs without c
     $artwork = Artwork::query()->where('slug', 'new-publishable-draft')->firstOrFail();
     expect($artwork->state)->toBe('draft')
         ->and($artwork->artworkMedia()->where('role', 'primary')->value('alt_text_override'))
-            ->toBe('Painted landscape with bright green hills');
+        ->toBe('Painted landscape with bright green hills');
 
     expect(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
-
-
 
 it('clears a draft primary Media File from Edit without deleting the shared Storage original', function (): void {
     $gallery = galleryFixtureCategory();
@@ -85,11 +83,10 @@ it('refuses to clear primary media from a published Artwork without touching the
     $form['primary_alt_text'] = null;
 
     expect(fn () => app(ArtworkEditDialog::class)->save($draft, $form))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
     expect(ArtworkMedia::query()->where('artwork_id', $draft->getKey())->where('role', 'primary')->exists())->toBeTrue()
         ->and((string) $shared->fresh()->state)->toBe('available');
 });
-
 
 it('saves a changed existing Storage Media File through the Gallery field update only once', function (): void {
     $gallery = galleryFixtureCategory();
@@ -148,11 +145,10 @@ it('repairs an existing media-less Gallery draft using the same Edit form and th
 
     expect($dialog->save($draft, $form))->toBeTrue()
         ->and((int) $draft->artworkMedia()->where('role', 'primary')->value('media_asset_id'))
-            ->toBe((int) $asset->getKey());
+        ->toBe((int) $asset->getKey());
 
     expect(app(ArtworkPublicationService::class)->publish($draft)->state)->toBe('published');
 });
-
 
 it('stores per-artwork ALT for all images in the existing batch direct-upload action', function (): void {
     $gallery = galleryFixtureCategory();
@@ -202,7 +198,6 @@ it('edits the ALT description through the Gallery Edit action while retaining sh
         ->and(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
 
-
 it('routes the Artwork EditRecord page through the same ALT-aware editing service', function (): void {
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
@@ -223,8 +218,6 @@ it('routes the Artwork EditRecord page through the same ALT-aware editing servic
         ->toBe('A landscape painting viewed from a rocky terrace')
         ->and(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
-
-
 
 it('renames artwork through the Gallery inline editor with one audit and notification, but stays silent on no-op', function (): void {
     $gallery = galleryFixtureCategory();

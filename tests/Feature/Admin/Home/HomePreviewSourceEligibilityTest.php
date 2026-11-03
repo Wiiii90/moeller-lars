@@ -3,6 +3,7 @@
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\SitePreviewContext;
+use App\Domain\Publication\PublicationService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\HomePresentationSetting;
@@ -10,6 +11,7 @@ use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 function homePreviewSetting(string $template, array $components): HomePresentationSetting
 {
@@ -157,11 +159,11 @@ it('renders Home List while hiding unpublished parents and children', function (
         ['type' => 'divider', 'variant' => 'dotted', 'published' => true],
     ]);
 
-    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    Auth::guard('web')->logout();
     $this->get('/')->assertOk()->assertDontSee('Public Home component');
     $this->actingAs($actor, 'web');
-    app(\App\Domain\Publication\PublicationService::class)->commit($actor);
-    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    app(PublicationService::class)->commit($actor);
+    Auth::guard('web')->logout();
     $this->get('/')
         ->assertOk()
         ->assertSee('Public Home component')

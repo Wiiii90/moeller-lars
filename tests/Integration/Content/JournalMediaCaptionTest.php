@@ -1,10 +1,12 @@
 <?php
 
 use App\Domain\Content\JournalMediaRenderer;
+use App\Domain\Content\SafeRichTextRenderer;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\PublicContentSetting;
+use Illuminate\Support\Facades\Storage;
 
 function journalImageUsage(): array
 {
@@ -31,6 +33,7 @@ function journalImageUsage(): array
 
     $usage = new JournalEntryMedia;
     $usage->setRelation('mediaAsset', $asset);
+
     return [$asset, $usage];
 }
 
@@ -126,11 +129,11 @@ it('respects per-media video playback controls while keeping the existing defaul
 });
 
 it('renders one public caption below the correct repeated Rich Text image without losing placement', function (): void {
-    \Illuminate\Support\Facades\Storage::fake('rich-text-public-caption');
+    Storage::fake('rich-text-public-caption');
     config(['media.disk' => 'rich-text-public-caption']);
     [$asset] = journalImageUsage();
     $variant = $asset->variants()->sole();
-    $disk = \Illuminate\Support\Facades\Storage::disk(config('media.disk'));
+    $disk = Storage::disk(config('media.disk'));
     $disk->put($asset->storage_key, str_repeat('o', 10));
     $disk->put($variant->storage_key, str_repeat('v', 10));
     PublicContentSetting::general()->update(['favicon_media_asset_id' => $asset->getKey()]);
@@ -139,7 +142,7 @@ it('renders one public caption below the correct repeated Rich Text image withou
         .' data-artist-caption="Studio &amp; archive" alt="First image"></p>'
         .'<p><img data-id="'.$asset->getKey().'" data-artist-placement="center" alt="Second image"></p>';
 
-    $html = app(\App\Domain\Content\SafeRichTextRenderer::class)->render($rich)->toHtml();
+    $html = app(SafeRichTextRenderer::class)->render($rich)->toHtml();
 
     expect(substr_count($html, 'rich-text__image-caption'))->toBe(1)
         ->and(substr_count($html, '<img'))->toBe(2)
@@ -149,4 +152,3 @@ it('renders one public caption below the correct repeated Rich Text image withou
         ->not->toContain('<script');
     expect($html)->toMatch('/<img[^>]+><span class="rich-text__image-caption">Studio &amp; archive<\/span><\/span>/');
 });
-

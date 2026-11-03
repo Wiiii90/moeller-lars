@@ -2,28 +2,30 @@
 
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Pages\GalleryWorkspace;
-use App\Filament\Support\ArtworkEditDialog;
-use App\Models\Artwork;
 use App\Models\AdminNotification;
+use App\Models\Artwork;
 use App\Models\AuditEvent;
+use App\Models\MediaAsset;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 require_once __DIR__.'/GalleryFixtures.php';
 
 it('keeps Livewire temporary upload admission aligned to the canonical media policy', function (): void {
     expect(config('livewire.temporary_file_upload.rules'))
-        ->toBe('file|max:'.(int) ceil(\App\Domain\Media\MediaTypePolicy::maxUploadBytes() / 1024))
+        ->toBe('file|max:'.(int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
         ->and(config('livewire.temporary_file_upload.max_upload_time'))->toBe(10);
 });
 
@@ -66,7 +68,6 @@ it('ingests a real image through Add artwork and publishes its primary ALT descr
         ->assertOk()
         ->assertSee('Uploaded Artwork');
 });
-
 
 // The replacement command must be independently accessible from a Gallery
 // card, not only through the autosaving Edit modal's nested action stack.
@@ -120,7 +121,6 @@ it('replaces primary media through a committed Gallery command instead of Edit a
     expect(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
 
-
 it('treats a byte-identical primary upload without ALT changes as a no-op', function (): void {
     Storage::fake(config('media.disk'));
     $gallery = galleryFixtureCategory();
@@ -157,7 +157,7 @@ it('reuses a byte-identical original from Storage and still opens Add artwork', 
         ->assertHasNoErrors();
 
     expect($component->get('pendingPrimaryMediaAssetId'))->toBe((int) $original->getKey())
-        ->and(\App\Models\MediaAsset::query()->where('sha256', $original->sha256)->count())->toBe(1);
+        ->and(MediaAsset::query()->where('sha256', $original->sha256)->count())->toBe(1);
 });
 
 it('turns a real direct Gallery upload into an editable and publishable artwork draft', function (): void {

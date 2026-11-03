@@ -1,7 +1,6 @@
 <?php
 
 use App\Domain\Media\MediaIptcXmpWriter;
-use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaRightsArtifactRevision;
 use App\Domain\Media\MediaRightsProjection;
 use App\Domain\Media\PublicMedia;

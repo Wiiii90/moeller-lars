@@ -1,16 +1,17 @@
 <?php
 
-use App\Filament\Resources\MediaAssets\Pages\ListMediaAssets;
 use App\Domain\Media\MediaAssetEditorialService;
+use App\Filament\Resources\MediaAssets\Pages\ListMediaAssets;
+use App\Models\AdminActionReceipt;
+use App\Models\AdminNotification;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
+use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
-use App\Models\AdminNotification;
-use App\Models\AdminActionReceipt;
-use App\Models\AuditEvent;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
@@ -45,7 +46,7 @@ it('deletes an unreferenced file through the Files delete action', function (): 
     $disk->put($asset->storage_key, 'Original fixture');
     $disk->put($variant->storage_key, 'Variant fixture');
     $receiptsBefore = AdminActionReceipt::query()->count();
-    expect(\Illuminate\Support\Facades\DB::table('committed.media_assets')->where('id', $asset->id)->exists())->toBeFalse();
+    expect(DB::table('committed.media_assets')->where('id', $asset->id)->exists())->toBeFalse();
     $auditsBefore = AuditEvent::query()->count();
     $notificationsBefore = AdminNotification::query()->count();
 

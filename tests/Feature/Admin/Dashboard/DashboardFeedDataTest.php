@@ -1,8 +1,8 @@
 <?php
 
 use App\Domain\Admin\DashboardFeed;
-use App\Models\ContactMessage;
 use App\Models\AdminNotification;
+use App\Models\ContactMessage;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -52,7 +52,6 @@ it('projects announcements changelog and contact into the shared feed without tu
         ->and($feed->paginate('dashboard changed')['total'])->toBe(1);
 });
 
-
 it('paginates more than three contact pages without duplicates or omissions', function (): void {
     config()->set('dashboard-feed.items', []);
     $timestamp = Carbon::parse('2026-08-27 12:00:00');
@@ -95,7 +94,6 @@ it('paginates more than three contact pages without duplicates or omissions', fu
         ->and(array_values(array_unique($visibleIds)))->toHaveCount(87);
 });
 
-
 it('searches contact sender name email and message in the database with correct pagination metadata', function (): void {
     config()->set('dashboard-feed.items', []);
 
@@ -122,7 +120,6 @@ it('searches contact sender name email and message in the database with correct 
         ->and($message['total'])->toBe(25)
         ->and([$message['start'], $message['end']])->toBe([1, 25]);
 });
-
 
 it('merges static and contact items in one global chronological order', function (): void {
     config()->set('dashboard-feed.items', [

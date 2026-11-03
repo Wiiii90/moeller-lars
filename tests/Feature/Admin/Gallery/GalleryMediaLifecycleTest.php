@@ -1,17 +1,19 @@
 <?php
 
+use App\Domain\Admin\AdminAuditService;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Filament\Pages\GalleryWorkspace;
-use App\Models\Artwork;
 use App\Models\AdminNotification;
-use App\Models\AuditEvent;
+use App\Models\Artwork;
 use App\Models\ArtworkMedia;
+use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -19,8 +21,8 @@ use Livewire\Livewire;
 beforeEach(function (): void {
     Storage::fake(config('media.disk'));
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 require_once __DIR__.'/GalleryFixtures.php';
@@ -66,7 +68,7 @@ it('rolls back optional file deletion and Artwork removal together on a failed a
     galleryFixturePrimary($artwork, $asset);
     galleryFixtureUnavailableAnalytics();
 
-    $realAudit = app(\App\Domain\Admin\AdminAuditService::class);
+    $realAudit = app(AdminAuditService::class);
     $audit = Mockery::mock($realAudit);
     $audit->shouldReceive('record')->andReturnUsing(function (...$arguments) use ($realAudit): mixed {
         if (($arguments[1] ?? '') === 'artwork.deleted') {
@@ -75,7 +77,7 @@ it('rolls back optional file deletion and Artwork removal together on a failed a
 
         return $realAudit->record(...$arguments);
     });
-    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->instance(AdminAuditService::class, $audit);
 
     $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->mountAction('deleteArtwork', ['artwork' => $artwork->getKey()])
@@ -124,7 +126,6 @@ it('detaches a draft from its Gallery without deleting artwork media or shared M
         ->and((int) $remaining->fresh()->position)->toBe(0);
 });
 
-
 it('deletes only the draft and its usages while preserving a shared MediaAsset', function (): void {
     $gallery = galleryFixtureCategory();
     $asset = galleryFixtureAsset();
@@ -141,7 +142,6 @@ it('deletes only the draft and its usages while preserving a shared MediaAsset',
         ->and(ArtworkMedia::query()->where('artwork_id', $other->getKey())->where('media_asset_id', $asset->getKey())->exists())->toBeTrue();
 });
 
-
 it('preserves replaced MediaAssets in the library even when they become unreferenced', function (): void {
     $artwork = galleryFixtureArtwork(galleryFixtureCategory());
     $oldAsset = galleryFixtureAsset();
@@ -155,7 +155,6 @@ it('preserves replaced MediaAssets in the library even when they become unrefere
         ->and((int) ArtworkMedia::query()->where('artwork_id', $artwork->getKey())->where('role', 'primary')->value('media_asset_id'))
         ->toBe((int) $newAsset->getKey());
 });
-
 
 it('accepts existing image and video MediaAssets as primary and rejects audio', function (): void {
     $service = app(ArtworkPrimaryMediaService::class);
@@ -175,7 +174,6 @@ it('accepts existing image and video MediaAssets as primary and rejects audio', 
         ->and((int) $videoArtwork->fresh()->artworkMedia()->where('role', 'primary')->value('media_asset_id'))->toBe((int) $video->getKey())
         ->and(fn () => $service->attachAsset($audioArtwork, $audio))->toThrow(ValidationException::class);
 });
-
 
 it('deletes the selected Artwork and detaches other Galleries when its shared primary file is explicitly deleted', function (): void {
     $source = galleryFixtureCategory();
@@ -203,7 +201,6 @@ it('deletes the selected Artwork and detaches other Galleries when its shared pr
         ->and($asset->fresh()->getAttribute('state'))->toBe('deleted')
         ->and($disk->exists($asset->storage_key))->toBeFalse();
 });
-
 
 it('cleans Gallery membership when a shared primary file is deleted directly from Storage', function (): void {
     $firstGallery = galleryFixtureCategory();
@@ -250,7 +247,6 @@ it('cleans Gallery membership when a shared primary file is deleted directly fro
         ->assertSee($kept->title)
         ->assertDontSee($first->title);
 });
-
 
 it('removes a selected batch from its Gallery without deleting artwork records or shared MediaAssets', function (): void {
     $gallery = galleryFixtureCategory();

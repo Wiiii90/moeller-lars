@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
@@ -7,8 +8,11 @@ use App\Filament\Pages\JournalWorkspace;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\Exhibition;
+use App\Models\MediaAsset;
 use App\Models\User;
+use Carbon\Carbon;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Repeater;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
@@ -36,7 +40,7 @@ it('persists independent organizer, physical venue and vernissage visibility via
         'vernissage_at' => '2027-05-01 18:00:00',
         'show_vernissage' => false,
     ]);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $initialAudits = AuditEvent::query()->count();
     $initialNotifications = AdminNotification::query()->count();
 
@@ -85,13 +89,13 @@ it('round-trips formatted Exhibition descriptions through the actual mounted Jou
 });
 
 it('shows Exhibition Gallery video controls only when the selected Storage media is video', function (): void {
-    $undoRepeaterFake = \Filament\Forms\Components\Repeater::fake();
+    $undoRepeaterFake = Repeater::fake();
 
     try {
         $section = app(SiteSectionEditorialService::class)->createJournal(
             'Gallery video controls', 'gallery-video-controls', JournalTemplate::Exhibitions->value,
         );
-        $image = \App\Models\MediaAsset::query()->create([
+        $image = MediaAsset::query()->create([
             'storage_key' => 'originals/gallery-control-photo.jpg',
             'original_filename' => 'gallery-control-photo.jpg',
             'mime_type' => 'image/jpeg',
@@ -99,7 +103,7 @@ it('shows Exhibition Gallery video controls only when the selected Storage media
             'sha256' => hash('sha256', 'gallery-control-photo'),
             'state' => 'available',
         ]);
-        $video = \App\Models\MediaAsset::query()->create([
+        $video = MediaAsset::query()->create([
             'storage_key' => 'originals/gallery-control-motion.mp4',
             'original_filename' => 'gallery-control-motion.mp4',
             'mime_type' => 'video/mp4',
@@ -140,7 +144,7 @@ it('autosaves precise and partial Exhibition dates in the shared editor without 
         'title' => 'Dated exhibition',
         'slug' => 'dated-exhibition',
     ]);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $audits = AuditEvent::query()->count();
     $notifications = AdminNotification::query()->count();
 
@@ -184,7 +188,7 @@ it('rejects invalid or backwards Exhibition partial dates atomically in the moun
         'starts_on' => '2027-07',
         'ends_on' => '2027-08',
     ]);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $before = $entry->fresh()->getAttributes();
     $audits = AuditEvent::query()->count();
     $notifications = AdminNotification::query()->count();
@@ -208,7 +212,7 @@ it('rejects invalid or backwards Exhibition partial dates atomically in the moun
 ]);
 
 it('filters Exhibition timing using the exact same partial-date certainty as the displayed entry', function (): void {
-    \Carbon\Carbon::setTestNow('2027-06-12 12:00:00');
+    Carbon::setTestNow('2027-06-12 12:00:00');
     try {
         $section = app(SiteSectionEditorialService::class)->createJournal(
             'Timing precision', 'timing-precision', JournalTemplate::Exhibitions->value,
@@ -249,6 +253,6 @@ it('filters Exhibition timing using the exact same partial-date certainty as the
         $page->set('timingFilter', 'any')->assertHasNoErrors();
         expect($page->get('total'))->toBe(6);
     } finally {
-        \Carbon\Carbon::setTestNow();
+        Carbon::setTestNow();
     }
 });

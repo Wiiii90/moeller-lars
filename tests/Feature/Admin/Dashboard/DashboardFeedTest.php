@@ -2,6 +2,8 @@
 
 use App\Domain\Admin\DashboardFeed;
 use App\Domain\Admin\DashboardFeedPins;
+use App\Domain\Content\SafeRichTextRenderer;
+use App\Filament\Pages\Dashboard;
 use App\Models\ContactMessage;
 use App\Models\User;
 use Carbon\Carbon;
@@ -157,7 +159,7 @@ it('keeps every versioned note and announcement in the immutable Dashboard manif
     expect($page['total'])->toBe(count($expectedFiles));
 
     $index = (string) file_get_contents(base_path('CHANGELOG.md'));
-    $renderer = app(\App\Domain\Content\SafeRichTextRenderer::class);
+    $renderer = app(SafeRichTextRenderer::class);
 
     foreach ($changelogs as $item) {
         $version = pathinfo($item['body_file'], PATHINFO_FILENAME);
@@ -207,7 +209,7 @@ it('stores per-admin release read receipts without making release messages delet
 
     expect($feed->openEntry('static:notice')['status'])->toBe('Read');
 
-    $dashboard = new \App\Filament\Pages\Dashboard;
+    $dashboard = new Dashboard;
     $dashboard->markFeedUnread('static:notice');
     expect($feed->entry('static:notice')['status'])->toBe('Unread');
 

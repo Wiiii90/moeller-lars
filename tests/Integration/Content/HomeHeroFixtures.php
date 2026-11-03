@@ -9,7 +9,6 @@ use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
 
-
 function heroDomainSettings(array $artworkConfiguration = []): HomePresentationSetting
 {
     $home = SiteSection::query()

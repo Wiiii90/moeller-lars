@@ -1,12 +1,13 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
+use App\Domain\Admin\AdminAuditService;
 use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Pages\JournalWorkspace;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
-use App\Models\Exhibition;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Cache;
@@ -42,7 +43,7 @@ function journalMapExhibition(array $overrides = []): array
         'map_enabled' => false,
         ...$overrides,
     ]);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
 
     return [$section, $entry];
 }
@@ -160,7 +161,8 @@ it('rejects an incomplete map address without persisting a fake enabled state', 
 it('shows the current Exhibition projection after a combined title address and map edit', function (): void {
     [$section, $entry] = journalMapExhibition();
     Http::fake(fn () => Http::response([['lat' => '52.520008', 'lon' => '13.404954', 'display_name' => 'Berlin, Germany']], 200));
-    $before = AuditEvent::query()->count(); $notifications = AdminNotification::query()->count();
+    $before = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
     $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->id])
         ->mountAction('editExhibition', ['exhibition' => $entry->id])
         ->set('mountedActions.0.data.title', 'Current Exhibition title')->set('mountedActions.0.data.city', 'Berlin')
@@ -176,7 +178,7 @@ it('refuses stale Exhibition editors without overwriting concurrent changes', fu
     [$section, $entry] = journalMapExhibition();
     $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->id])->mountAction('editExhibition', ['exhibition' => $entry->id]);
     app(ExhibitionEditorialService::class)->update($entry, ['site_section_id' => $section->id, 'slug' => $entry->slug, 'title' => 'Concurrent Exhibition title']);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $before = AuditEvent::query()->count();
     $editor->set('mountedActions.0.data.title', 'Stale Exhibition title')->callMountedAction()->assertHasFormErrors(['title']);
     expect($entry->fresh()->title)->toBe('Concurrent Exhibition title')->and(AuditEvent::query()->count())->toBe($before)
@@ -187,9 +189,9 @@ it('rolls back geocoded coordinates when Exhibition audit persistence fails', fu
     [$section, $entry] = journalMapExhibition();
     Http::fake(fn () => Http::response([['lat' => '53.550341', 'lon' => '9.992477', 'display_name' => 'Hamburg, Germany']], 200));
     $before = AuditEvent::query()->count();
-    $audit = Mockery::mock(app(\App\Domain\Admin\AdminAuditService::class));
+    $audit = Mockery::mock(app(AdminAuditService::class));
     $audit->shouldReceive('record')->once()->andThrow(new RuntimeException('Audit unavailable'));
-    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->instance(AdminAuditService::class, $audit);
     app()->forgetInstance(ExhibitionEditorialService::class);
     expect(fn () => Livewire::test(JournalWorkspace::class, ['section' => $section->id])
         ->mountAction('editExhibition', ['exhibition' => $entry->id])->set('mountedActions.0.data.map_enabled', true)->callMountedAction())

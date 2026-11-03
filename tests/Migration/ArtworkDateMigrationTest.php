@@ -1,11 +1,12 @@
 <?php
 
-use App\Models\ArtworkCategory;
+use App\Domain\Publication\PublicationSchemaGuard;
+use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-function artworkDateMigration(): \Illuminate\Database\Migrations\Migration
+function artworkDateMigration(): Migration
 {
     return require database_path('migrations/2026_11_03_150000_replace_artwork_date_with_components.php');
 }
@@ -71,7 +72,7 @@ it('converts year month exact day and unknown Artwork dates losslessly in Workin
             expect([$parts->year, $parts->month, $parts->day])->toBe($expected);
         }
     }
-    app(\App\Domain\Publication\PublicationSchemaGuard::class)->assertParity();
+    app(PublicationSchemaGuard::class)->assertParity();
 });
 
 it('fails atomically for an inconsistent old Committed Artwork date instead of inventing precision', function (): void {

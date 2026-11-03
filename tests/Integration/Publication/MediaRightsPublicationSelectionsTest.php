@@ -1,9 +1,15 @@
 <?php
 
+use App\Domain\Media\MediaRightsArtifactRevision;
 use App\Domain\Publication\MediaRightsPublicationSelections;
+use App\Domain\Publication\PublicationService;
+use App\Models\MediaAsset;
 use App\Models\MediaRightsArtifact;
+use App\Models\MediaVariant;
 use App\Models\PublicationCheckpoint;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 it('captures immutable rights choices with checkpoints and restores only the working selection', function (): void {
     config()->set('media.rights_preparation_enabled', true);
@@ -50,12 +56,11 @@ it('captures immutable rights choices with checkpoints and restores only the wor
         ->toThrow(RuntimeException::class);
 });
 
-
 it('keeps legacy media selection database-free until rights-artifact delivery is enabled', function (): void {
     config()->set('media.rights_preparation_enabled', false);
     config()->set('media.rights_delivery_enabled', false);
     $selections = app(MediaRightsPublicationSelections::class);
-    $asset = new \App\Models\MediaAsset;
+    $asset = new MediaAsset;
     $asset->setRawAttributes(['id' => 901, 'mime_type' => 'image/jpeg'], true);
     $checkpoint = new PublicationCheckpoint;
     $checkpoint->setRawAttributes(['id' => 409], true);
@@ -71,32 +76,30 @@ it('keeps legacy media selection database-free until rights-artifact delivery is
         ->toThrow(RuntimeException::class, 'not enabled');
 });
 
-
 it('allows offline preparation mode without enabling public artifact selection', function (): void {
     config()->set('media.rights_preparation_enabled', true);
     config()->set('media.rights_delivery_enabled', false);
     $selections = app(MediaRightsPublicationSelections::class);
-    $asset = new \App\Models\MediaAsset;
+    $asset = new MediaAsset;
     $asset->setRawAttributes(['id' => 901, 'mime_type' => 'image/jpeg'], true);
     expect($selections->enabled())->toBeTrue()
         ->and($selections->deliveryEnabled())->toBeFalse()
         ->and($selections->selectedForPublic($asset))->toBeNull();
 });
 
-
 it('publishes a complete rights-only revision through the canonical checkpoint', function (): void {
-    \Illuminate\Support\Facades\Storage::fake('rights-publication');
+    Storage::fake('rights-publication');
     config()->set('media.disk', 'rights-publication');
     config()->set('media.rights_preparation_enabled', false);
     config()->set('media.rights_delivery_enabled', false);
 
     $originalBytes = 'original-source';
     $thumbnailBytes = 'thumbnail-source';
-    $disk = \Illuminate\Support\Facades\Storage::disk('rights-publication');
+    $disk = Storage::disk('rights-publication');
     $disk->put('originals/rights-publication.jpg', $originalBytes);
     $disk->put('variants/rights-publication.webp', $thumbnailBytes);
 
-    $asset = \App\Models\MediaAsset::query()->create([
+    $asset = MediaAsset::query()->create([
         'storage_key' => 'originals/rights-publication.jpg',
         'original_filename' => 'rights-publication.jpg',
         'mime_type' => 'image/jpeg',
@@ -107,7 +110,7 @@ it('publishes a complete rights-only revision through the canonical checkpoint',
         'width' => 480,
         'height' => 720,
     ]);
-    $thumbnail = \App\Models\MediaVariant::query()->create([
+    $thumbnail = MediaVariant::query()->create([
         'media_asset_id' => $asset->getKey(),
         'variant_kind' => 'thumbnail',
         'state' => 'available',
@@ -119,13 +122,13 @@ it('publishes a complete rights-only revision through the canonical checkpoint',
         'height' => 720,
     ]);
 
-    $publication = app(\App\Domain\Publication\PublicationService::class);
-    $actor = \App\Models\User::factory()->admin()->create();
+    $publication = app(PublicationService::class);
+    $actor = User::factory()->admin()->create();
     expect($publication->commit($actor, 'Media baseline'))->toBeInstanceOf(PublicationCheckpoint::class);
 
     config()->set('media.rights_preparation_enabled', true);
     $selections = app(MediaRightsPublicationSelections::class);
-    $revisionService = app(\App\Domain\Media\MediaRightsArtifactRevision::class);
+    $revisionService = app(MediaRightsArtifactRevision::class);
 
     foreach ([
         ['original', $asset, $originalBytes, 'image/jpeg', 'jpg'],
@@ -164,22 +167,21 @@ it('publishes a complete rights-only revision through the canonical checkpoint',
             ->where('scope_key', 'checkpoint:'.$checkpoint->getKey())->count())->toBe(2);
 });
 
-
 it('rejects a stale rights-file selection after the asset copyright facts change', function (): void {
     config()->set('media.rights_preparation_enabled', true);
     config()->set('media.rights_delivery_enabled', false);
 
-    $asset = new \App\Models\MediaAsset;
+    $asset = new MediaAsset;
     $asset->setRawAttributes([
         'id' => 923,
         'mime_type' => 'image/jpeg',
         'sha256' => str_repeat('6', 64),
         'file_creator' => 'First photographer',
-        'copyright_notice_mode' => \App\Models\MediaAsset::COPYRIGHT_OVERRIDE,
+        'copyright_notice_mode' => MediaAsset::COPYRIGHT_OVERRIDE,
         'copyright_notice' => '© First photographer',
     ], true);
 
-    $revision = app(\App\Domain\Media\MediaRightsArtifactRevision::class)->forSource($asset, $asset);
+    $revision = app(MediaRightsArtifactRevision::class)->forSource($asset, $asset);
     $artifact = MediaRightsArtifact::query()->create([
         'media_asset_id' => 923,
         'role' => 'original',

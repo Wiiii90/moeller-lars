@@ -1,9 +1,12 @@
 <?php
 
 use App\Domain\Publication\PublicationSchemaGuard;
+use App\Domain\Publication\PublicationService;
 use App\Domain\Publication\PublicationVersionService;
 use App\Models\MediaAsset;
 use App\Models\PublicationCheckpoint;
+use App\Models\User;
+use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -20,7 +23,7 @@ function preparePreviousMediaVariantSchema(): void
     }
 }
 
-function legacyVariantMigration(): \Illuminate\Database\Migrations\Migration
+function legacyVariantMigration(): Migration
 {
     return require database_path('migrations/2026_11_03_120000_retire_media_variant_transform_profile.php');
 }
@@ -131,8 +134,8 @@ it('keeps the historical media variant payload immutable and restores it through
     $variantId = (int) DB::table('media_variants')->insertGetId(
         previousMediaVariantRow($asset->getKey(), 'thumbnail', 'public-v2', 'variants/retained-old-preview.webp'),
     );
-    $actor = \App\Models\User::factory()->admin()->create();
-    $checkpoint = app(\App\Domain\Publication\PublicationService::class)
+    $actor = User::factory()->admin()->create();
+    $checkpoint = app(PublicationService::class)
         ->commit($actor, 'Historical preview checkpoint');
     expect($checkpoint)->not->toBeNull();
     $originalSnapshotHash = $checkpoint->snapshot_hash;

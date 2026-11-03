@@ -1,12 +1,17 @@
 <?php
 
+use App\Filament\Pages\Activity;
 use App\Filament\Support\AdminActivityFeed;
 use App\Filament\Support\AdminPublicationHistory;
+use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
 use App\Models\PublicationCheckpointEvent;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Auth;
+use Livewire\Livewire;
 
 it('filters Activity by time without requiring a date', function (): void {
     $actor = User::factory()->admin()->create();
@@ -113,13 +118,12 @@ it('uses the shared Activity page-size contract for activity and commit history'
         ->and($clampedHistory['paginator']->perPage())->toBe(100);
 });
 
-
 it('combines actor search area family date and hour across pagination and refreshes the real page filters', function (): void {
     $actor = User::factory()->admin()->create(['name' => 'Website filter editor']);
     $other = User::factory()->admin()->create(['name' => 'Media filter editor']);
     $this->actingAs($actor, 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     $day = CarbonImmutable::today()->subDay();
     $ids = [];
     foreach (range(1, 26) as $index) {
@@ -139,7 +143,7 @@ it('combines actor search area family date and hour across pagination and refres
         ->and($page['paginator']->total())->toBe(26)
         ->and(array_column($page['activity'], 'id'))->toBe([$ids[0]])
         ->and($page['activity'][0]['action_key'])->toBe('public_content_setting.updated');
-    \Livewire\Livewire::test(\App\Filament\Pages\Activity::class)
+    Livewire::test(Activity::class)
         ->set('activityPage', 2)->set('selectedActivityIds', [$ids[0]])
         ->set('areaFilter', 'Website')
         ->assertSet('activityPage', 1)->assertSet('selectedActivityIds', [])
@@ -152,12 +156,15 @@ it('combines actor search area family date and hour across pagination and refres
 it('rejects already mounted Activity requests after administrative access is lost', function (string $mode, bool $guest): void {
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor, 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
-    $component = \Livewire\Livewire::test(\App\Filament\Pages\Activity::class)->call('setViewMode', $mode);
-    if ($guest) { \Illuminate\Support\Facades\Auth::guard('web')->logout(); }
-    else { $actor->forceFill(['is_admin' => false])->save(); }
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+    $component = Livewire::test(Activity::class)->call('setViewMode', $mode);
+    if ($guest) {
+        Auth::guard('web')->logout();
+    } else {
+        $actor->forceFill(['is_admin' => false])->save();
+    }
     $component->set('search', 'Protected history')->assertForbidden();
     expect(AuditEvent::query()->count())->toBe(0)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+        ->and(AdminNotification::query()->count())->toBe(0);
 })->with(['activity', 'commits'])->with(['guest' => true, 'revoked admin' => false]);

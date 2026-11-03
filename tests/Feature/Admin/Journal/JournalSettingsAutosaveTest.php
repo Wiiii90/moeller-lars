@@ -1,18 +1,22 @@
 <?php
 
-use App\Domain\Content\JournalSettingsService;
+use App\Domain\Admin\AdminActivityNotificationContext;
+use App\Domain\Admin\AdminAuditService;
+use App\Domain\Content\BlogEditorialService;
 use App\Domain\Content\ExhibitionEditorialService;
+use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteSectionPathPolicy;
 use App\Domain\Content\SiteSectionEditorialService;
+use App\Domain\Content\SiteSectionPathPolicy;
 use App\Filament\Pages\JournalWorkspace;
 use App\Models\AdminNotification;
+use App\Models\AuditEvent;
 use App\Models\BlogPost;
 use App\Models\Exhibition;
 use App\Models\JournalSetting;
 use App\Models\Redirect;
+use App\Models\SiteSection;
 use App\Models\User;
-use App\Models\AuditEvent;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
@@ -50,17 +54,19 @@ it('saves a Journal template change with one audit and notification, and stays s
         ->and(AdminNotification::query()->count())->toBe($beforeNotifications + 1);
 });
 
-function journalSettingsFixture(string $template = 'blog'): \App\Models\SiteSection
+function journalSettingsFixture(string $template = 'blog'): SiteSection
 {
     $thisActor = User::factory()->admin()->create();
     auth('web')->login($thisActor);
-    Filament::setCurrentPanel('admin'); Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+
     return app(SiteSectionEditorialService::class)->createJournal('Journal before', 'journal-before', $template);
 }
 
 it('refreshes combined Journal settings immediately with complete audit and single feedback', function (string $template): void {
     $section = journalSettingsFixture($template);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $before = AuditEvent::query()->count();
     $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->id])->mountAction('journalSettings')
         ->fillForm(['title' => 'Journal after', 'navigation_label' => 'Journal after', 'slug' => 'journal-after'])
@@ -88,10 +94,10 @@ it('keeps duplicate Journal slugs on the mounted field and permits correction af
 it('rejects stale Journal settings instead of replacing a concurrent identity change', function (): void {
     $section = journalSettingsFixture();
     $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->id])->mountAction('journalSettings');
-    app(\App\Domain\Content\JournalSettingsService::class)->update($section, [
+    app(JournalSettingsService::class)->update($section, [
         'template' => 'blog', 'title' => 'Concurrent journal', 'navigation_label' => 'Concurrent journal', 'slug' => 'concurrent-journal',
     ]);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $before = AuditEvent::query()->count();
     $editor->set('mountedActions.0.data.title', 'Stale name')->callMountedAction()
         ->assertHasFormErrors(['title'])->assertNotDispatched('admin-header-notification');
@@ -101,7 +107,7 @@ it('rejects stale Journal settings instead of replacing a concurrent identity ch
 
 it('switches populated Journal templates while retaining entries and notifying once', function (string $template): void {
     $section = journalSettingsFixture($template);
-    $model = $template === 'blog' ? new \App\Models\BlogPost : new \App\Models\Exhibition;
+    $model = $template === 'blog' ? new BlogPost : new Exhibition;
     $entry = $model->newQuery()->create(['site_section_id' => $section->id, 'title' => 'Existing entry', 'slug' => 'existing-entry', 'position' => 1, 'state' => 'draft']);
     $before = AuditEvent::query()->count();
     $entryBefore = $entry->fresh()->attributesToArray();
@@ -121,13 +127,17 @@ it('switches populated Journal templates while retaining entries and notifying o
 it('rolls back combined Journal identity and template changes if the later audit fails', function (): void {
     $section = journalSettingsFixture();
     $before = AuditEvent::query()->count();
-    $realAudit = app(\App\Domain\Admin\AdminAuditService::class); $calls = 0;
+    $realAudit = app(AdminAuditService::class);
+    $calls = 0;
     $audit = Mockery::mock($realAudit);
     $audit->shouldReceive('record')->twice()->andReturnUsing(function (...$parameters) use (&$calls, $realAudit) {
-        if (++$calls === 2) { throw new RuntimeException('Audit unavailable'); }
+        if (++$calls === 2) {
+            throw new RuntimeException('Audit unavailable');
+        }
+
         return $realAudit->record(...$parameters);
     });
-    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->instance(AdminAuditService::class, $audit);
     expect(fn () => Livewire::test(JournalWorkspace::class, ['section' => $section->id])->mountAction('journalSettings')
         ->fillForm(['template' => 'exhibitions', 'title' => 'Rejected identity'])->callMountedAction())
         ->toThrow(RuntimeException::class, 'Audit unavailable');
@@ -137,8 +147,8 @@ it('rolls back combined Journal identity and template changes if the later audit
 
 it('persists Blog edits in the actual mounted editor refreshes its row and repeats silently', function (): void {
     $section = journalSettingsFixture();
-    $post = \App\Models\BlogPost::query()->create(['site_section_id' => $section->id, 'title' => 'Original Blog title', 'slug' => 'blog-editor', 'body' => 'Original body', 'position' => 1, 'state' => 'draft']);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $post = BlogPost::query()->create(['site_section_id' => $section->id, 'title' => 'Original Blog title', 'slug' => 'blog-editor', 'body' => 'Original body', 'position' => 1, 'state' => 'draft']);
+    app(AdminActivityNotificationContext::class)->discard();
     $before = AuditEvent::query()->count();
     $formatted = '<p data-artist-line-spacing="1.0"><span class="color" data-color="#123456">Studio entry</span></p>'
         .'<table><tbody><tr><th>Medium</th></tr><tr><td>Oil</td></tr></tbody></table>';
@@ -159,13 +169,13 @@ it('persists Blog edits in the actual mounted editor refreshes its row and repea
 
 it('keeps concurrent Blog content when a stale mounted editor attempts to save', function (): void {
     $section = journalSettingsFixture();
-    $post = \App\Models\BlogPost::query()->create(['site_section_id' => $section->id, 'title' => 'Original Blog title', 'slug' => 'stale-blog-editor', 'body' => 'Original body', 'position' => 1, 'state' => 'draft']);
+    $post = BlogPost::query()->create(['site_section_id' => $section->id, 'title' => 'Original Blog title', 'slug' => 'stale-blog-editor', 'body' => 'Original body', 'position' => 1, 'state' => 'draft']);
     $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->id])->mountAction('editPost', ['post' => $post->id]);
-    app(\App\Domain\Content\BlogEditorialService::class)->update($post, [
+    app(BlogEditorialService::class)->update($post, [
         'site_section_id' => $section->id, 'title' => 'Concurrent Blog title', 'slug' => $post->slug,
         'body' => 'Concurrent body', 'state' => $post->state, 'position' => $post->position,
     ]);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $before = AuditEvent::query()->count();
     $editor->set('mountedActions.0.data.title', 'Stale Blog title')->callMountedAction()->assertHasFormErrors(['title']);
     expect($post->fresh()->title)->toBe('Concurrent Blog title')->and($post->fresh()->body)->toBe('Concurrent body')
@@ -242,7 +252,7 @@ it('notifies on a real Journal Settings edit but not on an unchanged native auto
 
 it('preserves an authored navigation label across consecutive Journal autosaves and reopening', function (): void {
     $section = journalSettingsFixture();
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $before = AuditEvent::query()->count();
     $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
         ->mountAction('journalSettings')

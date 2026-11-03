@@ -2,8 +2,8 @@
 
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
-use App\Filament\Pages\HomePresentation;
 use App\Filament\Pages\CustomPageWorkspace;
+use App\Filament\Pages\HomePresentation;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\HomePresentationSetting;
@@ -30,7 +30,6 @@ function contactHomeFixture(array $children): HomePresentationSetting
     return $settings;
 }
 
-
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     Filament::setCurrentPanel('admin');
@@ -41,7 +40,6 @@ beforeEach(function (): void {
         ['platform' => 'facebook', 'url' => 'https://example.invalid/facebook'],
     ]]);
 });
-
 
 it('persists Home Contact settings once', function (): void {
     $settings = contactHomeFixture([[
@@ -107,7 +105,6 @@ it('defers incomplete Home Contact status', function (): void {
         ->and($children[0]['status_text'])->toBe('Opening soon')
         ->and(AuditEvent::query()->count())->toBe($before + 1);
 });
-
 
 it('persists Custom Page Contact settings once', function (): void {
     [$page, $settings] = customPageWorkspaceRecord('Contact direct save', 'contact-direct-save');

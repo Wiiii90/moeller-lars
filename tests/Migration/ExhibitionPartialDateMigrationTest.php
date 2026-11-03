@@ -7,6 +7,7 @@ use App\Domain\Publication\PublicationService;
 use App\Domain\Publication\PublicationVersionService;
 use App\Models\Exhibition;
 use App\Models\User;
+use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -26,7 +27,7 @@ function previousExhibitionDateSchema(): void
     app(PublicationSchemaGuard::class)->assertParity(['exhibitions']);
 }
 
-function exhibitionDateCutover(): \Illuminate\Database\Migrations\Migration
+function exhibitionDateCutover(): Migration
 {
     return require database_path('migrations/2026_11_03_180000_canonicalize_exhibition_partial_dates.php');
 }
@@ -118,7 +119,7 @@ it('aborts an invalid Committed conversion without changing either active public
         'state' => $state,
     ]);
 
-    expect(fn () => exhibitionDateCutover()->up())->toThrow(\RuntimeException::class, $message);
+    expect(fn () => exhibitionDateCutover()->up())->toThrow(RuntimeException::class, $message);
     expect(Schema::hasColumn('exhibitions', 'date_text'))->toBeTrue()
         ->and(DB::table('information_schema.columns')
             ->where('table_schema', 'committed')->where('table_name', 'exhibitions')
@@ -147,7 +148,7 @@ it('rejects an unconvertible immutable checkpoint even when Working and Committe
     }
 
     expect(fn () => exhibitionDateCutover()->up())
-        ->toThrow(\RuntimeException::class, 'contains an unconvertible date');
+        ->toThrow(RuntimeException::class, 'contains an unconvertible date');
 
     expect(Schema::hasColumn('exhibitions', 'date_text'))->toBeTrue()
         ->and($checkpoint->fresh()->snapshot_hash)->toBe($hash)

@@ -8,7 +8,6 @@ use App\Filament\Support\MediaReferenceCatalog;
 use App\Models\AdminActionReceipt;
 use App\Models\AuditEvent;
 use App\Models\BlogPost;
-use App\Models\MediaAsset;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
@@ -51,7 +50,6 @@ it('removes Custom Page image references before deleting the asset', function ()
         ->and($afterDeleteCatalog->references($deletedAsset))->toBe([])
         ->and(AdminActionReceipt::query()->where('audit_event_id', $cascadeEvent->getKey())->exists())->toBeFalse();
 });
-
 
 it('records draft Journal rich-text cleanup when referenced media is deleted without exposing unsafe Undo', function (): void {
     $asset = workspaceReferenceAsset('journal-rich-text-delete.jpg');

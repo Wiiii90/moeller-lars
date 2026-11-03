@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Admin\AdminMediaUploadFeedback;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\DashboardFeed;
 use App\Models\AdminNotification;
@@ -8,7 +9,6 @@ use App\Models\PublicContentSetting;
 use App\Models\User;
 use Livewire\Livewire;
 use Tests\Feature\Admin\Notifications\AdminHeaderNotificationProbe;
-
 
 it('persists an authenticated admin Notification and projects it into the header', function (): void {
     $user = User::factory()->admin()->create();
@@ -34,7 +34,6 @@ it('persists an authenticated admin Notification and projects it into the header
         ->and($notification->getAttribute('status'))->toBe('success')
         ->and((string) $notification->getAttribute('source_id'))->toStartWith('notification:');
 });
-
 
 it('sends one action Notification for two persisted setting changes while retaining both audits', function (): void {
     $actor = User::factory()->admin()->create();
@@ -71,7 +70,7 @@ it('reports one durable upload result with correct saved, reused and failed sema
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor, 'web');
 
-    $summary = app(\App\Domain\Admin\AdminMediaUploadFeedback::class)
+    $summary = app(AdminMediaUploadFeedback::class)
         ->batch($ready, $reused, $failed, $errors, $destination);
 
     $notification = AdminNotification::query()->where('user_id', $actor->id)->sole();
@@ -102,7 +101,7 @@ it('does not issue a successful upload notification for an empty batch', functio
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor, 'web');
 
-    expect(app(\App\Domain\Admin\AdminMediaUploadFeedback::class)
+    expect(app(AdminMediaUploadFeedback::class)
         ->batch(0, 0, 0, [], 'storage'))->toBe('No media files selected.')
         ->and(AdminNotification::query()->where('user_id', $actor->id)->count())->toBe(0);
 });

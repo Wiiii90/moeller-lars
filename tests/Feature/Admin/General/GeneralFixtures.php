@@ -3,7 +3,6 @@
 use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 
-
 function generalStatusFavicon(): MediaAsset
 {
     return MediaAsset::query()->create([

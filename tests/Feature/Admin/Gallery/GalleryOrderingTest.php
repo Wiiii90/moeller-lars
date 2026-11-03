@@ -2,13 +2,16 @@
 
 use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\GalleryEditorialService;
+use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Models\AdminNotification;
 use App\Models\Artwork;
 use App\Models\AuditEvent;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
@@ -16,8 +19,8 @@ require_once __DIR__.'/GalleryFixtures.php';
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     galleryFixtureUnavailableAnalytics();
 });
 
@@ -31,7 +34,7 @@ it('orders newly created Manual Gallery Artworks first and leaves older records 
     $first = galleryFixtureArtwork($gallery, ['position' => 0]);
     $second = galleryFixtureArtwork($gallery, ['position' => 1]);
 
-    $created = app(\App\Domain\Artwork\ArtworkDraftService::class)->create([
+    $created = app(ArtworkDraftService::class)->create([
         'artwork_category_id' => $gallery->getKey(),
         'title' => 'Newest Gallery addition',
         'slug' => 'newest-gallery-addition',
@@ -49,7 +52,7 @@ it('applies date sorting consistently without overwriting manual positions', fun
     $newer = galleryFixtureArtwork($gallery, ['position' => 1, 'year' => 2026, 'month' => 10, 'day' => 2]);
     $gallery->forceFill(['sort_mode' => 'newest'])->save();
 
-    $ids = \App\Domain\Artwork\GalleryPresentation::orderArtworks(
+    $ids = GalleryPresentation::orderArtworks(
         Artwork::query()->where('artwork_category_id', $gallery->getKey()),
         $gallery->fresh(),
     )->pluck('id')->all();

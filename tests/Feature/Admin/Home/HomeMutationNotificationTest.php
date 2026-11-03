@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
 use App\Filament\Pages\HomePresentation;
@@ -166,7 +167,7 @@ it('rejects a stale Home component editor without overwriting the current record
     $editor = Livewire::test(HomePresentation::class)->mountAction('editComponent', ['index' => 0, 'type' => 'text']);
     app(HomePresentationEditorialService::class)->updateComponent($settings, HomeTemplate::Custom, 0, 'text',
         ['type' => 'text', 'title' => 'Concurrent heading', 'body' => null]);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $before = AuditEvent::query()->count();
     $editor->set('mountedActions.0.data.title', 'Stale heading')->callMountedAction()
         ->assertHasFormErrors(['editor_kind'])->assertNotDispatched('admin-header-notification');

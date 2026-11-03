@@ -31,7 +31,6 @@ it('keeps Preview authentication and private indexing protections unchanged', fu
     publicationWorkflowAssertPrivateNoCache($preview);
 });
 
-
 it('denies a signed-in non-admin access to Working preview content', function (): void {
     $secret = 'Private unfinished legal copy';
     PublicContentSetting::general()->update(['legal_disclaimer' => $secret]);

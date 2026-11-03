@@ -2,9 +2,9 @@
 
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
+use App\Models\AuditEvent;
 use App\Models\BlogPost;
 use App\Models\Exhibition;
-use App\Models\AuditEvent;
 use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
@@ -37,7 +37,6 @@ it('deletes an empty Journal blocks Journals with entries and allows recreation'
     expect(fn () => $sections->deleteConfigurableSection($replacement))
         ->toThrow(ValidationException::class, 'This Journal cannot be deleted while it still contains entries.');
 });
-
 
 it('preserves an Exhibitions Journal and its entries when deletion is forbidden', function (): void {
     $sections = app(SiteSectionEditorialService::class);

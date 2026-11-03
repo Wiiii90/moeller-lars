@@ -1,9 +1,9 @@
 <?php
 
+use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SitePageHeading;
 use App\Domain\Content\SiteSectionEditorialService;
-use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Publication\PublicationService;
 use App\Models\SiteSection;
 use App\Models\User;

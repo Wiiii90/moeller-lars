@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Publication\PublicationMediaCleanupService;
@@ -15,9 +16,11 @@ use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
@@ -25,13 +28,13 @@ require_once __DIR__.'/PublicationVersionFixtures.php';
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     config([
         'media.disk' => 'publication-bytes',
         'media.quota_bytes' => 1_000_000_000,
         'filesystems.disks.publication-bytes' => [
-            'driver' => 'local', 'root' => storage_path('framework/testing/publication-bytes/'.\Illuminate\Support\Str::uuid()), 'throw' => true,
+            'driver' => 'local', 'root' => storage_path('framework/testing/publication-bytes/'.Str::uuid()), 'throw' => true,
         ],
     ]);
 });
@@ -57,6 +60,7 @@ function publicationImageFixture(): array
             'published_at' => now(),
         ]);
         ArtworkMedia::query()->create(['artwork_id' => $artwork->id, 'media_asset_id' => $asset->id, 'role' => 'primary', 'position' => 1]);
+
         return $artwork;
     });
     $variant = $asset->variants()->sole();
@@ -64,6 +68,7 @@ function publicationImageFixture(): array
     $bytes = [$asset->storage_key => $disk->get($asset->storage_key), $variant->storage_key => $disk->get($variant->storage_key)];
     expect(getimagesizefromstring($bytes[$asset->storage_key])[0])->toBe(320)
         ->and(getimagesizefromstring($bytes[$variant->storage_key])[0])->toBe(320);
+
     return compact('asset', 'variant', 'artworks', 'bytes', 'gallery');
 }
 
@@ -103,7 +108,7 @@ it('preserves original image bytes and shared references across deletion, histor
     $target = $publication->commit($actor, 'Shared original image');
     assertPublicationImageReferences($fixture, 'committed');
     $notifications = AdminNotification::query()->count();
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $editor = Livewire::test(ListMediaAssets::class)->mountAction('delete', ['asset' => $fixture['asset']->id])->callMountedAction();
     expect(AdminNotification::query()->count())->toBe($notifications + 1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1)
@@ -173,7 +178,9 @@ it('releases original bytes only after the final recoverable source is explicitl
     expect($released['removed_files'])->toBe(2)
         ->and($versions->isRestorable($target->fresh()))->toBeFalse()
         ->and(DB::table('publication_media_cleanups')->count())->toBe(0);
-    foreach (array_keys($fixture['bytes']) as $key) expect(Storage::disk(config('media.disk'))->exists($key))->toBeFalse();
+    foreach (array_keys($fixture['bytes']) as $key) {
+        expect(Storage::disk(config('media.disk'))->exists($key))->toBeFalse();
+    }
     $before = DB::table('media_assets')->orderBy('id')->get()->toJson();
     $audits = AuditEvent::query()->count();
     $notifications = AdminNotification::query()->count();
@@ -182,5 +189,7 @@ it('releases original bytes only after the final recoverable source is explicitl
         ->and(ArtworkMedia::query()->where('media_asset_id', $fixture['asset']->id)->count())->toBe(0)
         ->and(AuditEvent::query()->count())->toBe($audits)
         ->and(AdminNotification::query()->count())->toBe($notifications);
-    foreach (array_keys($fixture['bytes']) as $key) expect(Storage::disk(config('media.disk'))->exists($key))->toBeFalse();
+    foreach (array_keys($fixture['bytes']) as $key) {
+        expect(Storage::disk(config('media.disk'))->exists($key))->toBeFalse();
+    }
 });

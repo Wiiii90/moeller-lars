@@ -1,19 +1,22 @@
 <?php
 
-use App\Domain\Content\JournalTemplate;
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeRoutingSettingsService;
+use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
+use App\Models\AdminNotification;
+use App\Models\AuditEvent;
 use App\Models\SiteSection;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 require_once __DIR__.'/PagesFixtures.php';
@@ -51,7 +54,6 @@ it('derives the six wide metrics and compact navigation count from real SiteSect
         ->and($skipHomeMetrics['navigation'])->toBe($metrics['navigation'] - 1);
 });
 
-
 it('keeps parent context when a child matches a filter and disables reorder', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
@@ -74,7 +76,6 @@ it('keeps parent context when a child matches a filter and disables reorder', fu
         ->and($component->get('filtersActive'))->toBeTrue()
         ->and($component->get('reorderEnabled'))->toBeFalse();
 });
-
 
 it('resets paging on filters and keeps root groups intact across pagination', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
@@ -121,7 +122,6 @@ it('resets paging on filters and keeps root groups intact across pagination', fu
         ->and($component->get('reorderEnabled'))->toBeFalse();
 });
 
-
 it('rejects ordering from filtered or incomplete page views without a successful mutation', function (bool $filtered): void {
     $this->actingAs(pagesTestAdmin(), 'web');
     $pages = app(SiteSectionEditorialService::class);
@@ -129,10 +129,10 @@ it('rejects ordering from filtered or incomplete page views without a successful
     foreach (range(1, $filtered ? 1 : 26) as $index) {
         $pages->createNavigationGroup('Guarded root '.$index);
     }
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $before = SiteSection::query()->orderBy('id')->get(['id', 'parent_id', 'position'])->toArray();
-    $audits = \App\Models\AuditEvent::query()->count();
-    $successes = \App\Models\AdminNotification::query()->where('status', 'success')->count();
+    $audits = AuditEvent::query()->count();
+    $successes = AdminNotification::query()->where('status', 'success')->count();
     $editor = Livewire::test(SitePages::class);
     if ($filtered) {
         $editor->set('search', 'Guarded order target');
@@ -145,8 +145,8 @@ it('rejects ordering from filtered or incomplete page views without a successful
         ->assertNotDispatched('refresh-sidebar')
         ->assertNotDispatched('admin-header-notification', fn ($name, $params): bool => ($params['notification']['status'] ?? null) === 'success');
     expect(SiteSection::query()->orderBy('id')->get(['id', 'parent_id', 'position'])->toArray())->toBe($before)
-        ->and(\App\Models\AuditEvent::query()->count())->toBe($audits)
-        ->and(\App\Models\AdminNotification::query()->where('status', 'success')->count())->toBe($successes);
+        ->and(AuditEvent::query()->count())->toBe($audits)
+        ->and(AdminNotification::query()->where('status', 'success')->count())->toBe($successes);
 })->with(['filtered view' => true, 'paginated view' => false]);
 
 it('selects all visible Pages from none or mixed, and clears them from all', function (): void {

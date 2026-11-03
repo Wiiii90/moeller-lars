@@ -1,15 +1,19 @@
 <?php
 
+use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Pages\SitePages;
 use App\Filament\Support\PagesSettingsDialog;
-use App\Models\AuditEvent;
 use App\Models\AdminNotification;
+use App\Models\AuditEvent;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Filament\Facades\Filament;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
 use Livewire\Livewire;
 
 require_once __DIR__.'/PagesFixtures.php';
@@ -73,7 +77,6 @@ it('autosaves Pages toggles from field updates without a separate Action submit'
         ->assertSet('mountedActions.0.data.navigation_nesting_enabled', false);
 });
 
-
 it('defaults Pages workflow preferences off and autosaves each new toggle once', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
     Filament::setCurrentPanel('admin');
@@ -127,15 +130,15 @@ it('defaults Pages workflow preferences off and autosaves each new toggle once',
     $mounted = Livewire::test(SitePages::class)->mountAction('pagesSettings')->instance();
     $schema = $mounted->{$mounted->getMountedActionSchemaName()}->getComponents();
     expect($schema)->toHaveCount(1)
-        ->and($schema[0])->toBeInstanceOf(\Filament\Schemas\Components\Grid::class);
+        ->and($schema[0])->toBeInstanceOf(Grid::class);
 
     $cells = $schema[0]->getChildComponents();
     expect($cells)->toHaveCount(4)
-        ->and($cells[1])->toBeInstanceOf(\Filament\Schemas\Components\Group::class);
+        ->and($cells[1])->toBeInstanceOf(Group::class);
 
     $fieldNames = [];
     foreach ($cells as $cell) {
-        if ($cell instanceof \Filament\Schemas\Components\Group) {
+        if ($cell instanceof Group) {
             foreach ($cell->getChildSchema()->getComponents(withHidden: true) as $field) {
                 $fieldNames[] = $field->getName();
             }
@@ -152,7 +155,6 @@ it('defaults Pages workflow preferences off and autosaves each new toggle once',
         'pages_delete_without_confirmation',
     ]);
 });
-
 
 it('skips Pages deletion confirmation only when configured and retains deletion safety rules', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
@@ -188,7 +190,6 @@ it('skips Pages deletion confirmation only when configured and retains deletion 
         ->mountAction('deletePage', ['section' => (int) $published->getKey()]);
     expect(SiteSection::query()->whereKey($published->getKey())->exists())->toBeTrue();
 });
-
 
 it('autosaves Skip Home destination selection and avoids duplicate mutations on no-op', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
@@ -227,7 +228,6 @@ it('autosaves Skip Home destination selection and avoids duplicate mutations on 
         ->assertSet('mountedActions.0.data.skip_target_section_id', $second->getKey());
 });
 
-
 it('closing an unchanged Pages Settings dialog does not create Activity or Notifications', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
     Filament::setCurrentPanel('admin');
@@ -247,7 +247,8 @@ it('closing an unchanged Pages Settings dialog does not create Activity or Notif
 
 it('shows invalid Skip Home settings in the mounted form without changing preferences', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
-    Filament::setCurrentPanel('admin'); Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     $before = AuditEvent::query()->count();
     Livewire::test(SitePages::class)->mountAction('pagesSettings')->set('mountedActions.0.data.skip_home', true)
         ->assertHasFormErrors(['skip_target_section_id'])->assertNotDispatched('admin-header-notification');
@@ -261,14 +262,18 @@ it('rolls back combined routing and workflow changes when a later audit fails', 
     $target = $service->createCustomPage('Rollback Target', 'rollback-settings-target');
     $service->updatePlacement($target, 'published', null);
     $before = AuditEvent::query()->count();
-    $realAudit = app(\App\Domain\Admin\AdminAuditService::class);
-    $audit = Mockery::mock($realAudit); $calls = 0;
+    $realAudit = app(AdminAuditService::class);
+    $audit = Mockery::mock($realAudit);
+    $calls = 0;
     $audit->shouldReceive('record')->twice()->andReturnUsing(function (...$arguments) use (&$calls, $realAudit) {
-        if (++$calls === 2) { throw new RuntimeException('Audit unavailable'); }
+        if (++$calls === 2) {
+            throw new RuntimeException('Audit unavailable');
+        }
+
         return $realAudit->record(...$arguments);
     });
-    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
-    app()->forgetInstance(\App\Domain\Admin\AdminSettingsService::class);
+    app()->instance(AdminAuditService::class, $audit);
+    app()->forgetInstance(AdminSettingsService::class);
     app()->forgetInstance(HomeRoutingSettingsService::class);
     expect(fn () => app(PagesSettingsDialog::class)->save([
         'skip_home' => true, 'skip_target_section_id' => $target->id,

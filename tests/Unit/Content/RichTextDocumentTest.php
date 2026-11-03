@@ -1,7 +1,9 @@
 <?php
 
+use App\Domain\Content\ArtistImageLayout;
 use App\Domain\Content\RichTextDocument;
 use App\Domain\Content\RichTextMediaReference;
+use App\Domain\Content\UnsafeRichTextException;
 
 it('keeps visual HTML and upgrades canonical legacy image references for the editor', function (): void {
     expect(RichTextDocument::forEditor('<p>Hello</p>'))->toBe('<p>Hello</p>');
@@ -29,7 +31,7 @@ it('renders one escaped caption below each image for all placements without dupl
     $rendered = '<p><img src="/synthetic/5.webp" width="320" height="240" alt="First"></p>'
         .'<p><img src="/synthetic/5.webp" alt="Second"></p>';
 
-    $html = \App\Domain\Content\ArtistImageLayout::decorateHtml($rendered, $source);
+    $html = ArtistImageLayout::decorateHtml($rendered, $source);
 
     expect(substr_count($html, '<img '))->toBe(2)
         ->and(substr_count($html, 'rich-text__image-caption'))->toBe(1)
@@ -43,10 +45,10 @@ it('removes the image caption without touching neighboring images and rejects mi
     $first = '<p><img data-id="4" data-artist-caption=""></p><p><img data-id="4" data-artist-caption="Retained"></p>';
     $out = '<p><img src="/synthetic/4.webp"></p><p><img src="/synthetic/4.webp"></p>';
 
-    $html = \App\Domain\Content\ArtistImageLayout::decorateHtml($out, $first);
+    $html = ArtistImageLayout::decorateHtml($out, $first);
     expect(substr_count($html, 'rich-text__image-caption'))->toBe(1)
         ->and($html)->toContain('Retained');
-    expect(fn () => \App\Domain\Content\ArtistImageLayout::decorateHtml(
+    expect(fn () => ArtistImageLayout::decorateHtml(
         '<p><img src="/synthetic/4.webp"></p>', $first,
-    ))->toThrow(\App\Domain\Content\UnsafeRichTextException::class);
+    ))->toThrow(UnsafeRichTextException::class);
 });

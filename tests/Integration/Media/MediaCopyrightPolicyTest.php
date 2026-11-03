@@ -2,9 +2,11 @@
 
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Media\MediaRightsProjection;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
@@ -87,7 +89,6 @@ it('saves an explicit override through the canonical media editorial service', f
         ->and($asset->effectiveCopyrightNotice())->toBe('© Asset override');
 });
 
-
 it('projects optional photographer and license data without claiming rights from the artwork', function (): void {
     PublicContentSetting::general()->update(['default_media_copyright_notice' => '© General']);
     $asset = copyrightAsset();
@@ -99,7 +100,7 @@ it('projects optional photographer and license data without claiming rights from
         'license_inquiry_url' => 'https://example.org/rights',
     ]);
 
-    expect(app(\App\Domain\Media\MediaRightsProjection::class)->forAsset($asset->fresh()))
+    expect(app(MediaRightsProjection::class)->forAsset($asset->fresh()))
         ->toMatchArray([
             'creator' => 'Photographer',
             'rights_holder' => 'Photo Agency',
@@ -112,7 +113,7 @@ it('projects optional photographer and license data without claiming rights from
     app(MediaAssetEditorialService::class)->updateMetadata($asset, [
         'copyright_notice_mode' => MediaAsset::COPYRIGHT_NONE,
     ]);
-    expect(app(\App\Domain\Media\MediaRightsProjection::class)->forAsset($asset->fresh())['copyright_notice'])->toBeNull()
+    expect(app(MediaRightsProjection::class)->forAsset($asset->fresh())['copyright_notice'])->toBeNull()
         ->and($asset->fresh()->file_rights_holder)->toBe('Photo Agency');
 });
 
@@ -120,6 +121,6 @@ it('rejects non-HTTPS media license inquiry URLs', function (): void {
     $asset = copyrightAsset();
     expect(fn () => app(MediaAssetEditorialService::class)->updateMetadata($asset, [
         'license_inquiry_url' => 'http://example.org/rights',
-    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    ]))->toThrow(ValidationException::class);
     expect($asset->fresh()->license_inquiry_url)->toBeNull();
 });

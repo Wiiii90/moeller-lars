@@ -2,6 +2,7 @@
 
 use App\Domain\Artwork\GalleryPresentation;
 use App\Models\ArtworkCategory;
+use Illuminate\Validation\ValidationException;
 
 it('uses conservative defaults for unconfigured and newly migrated Galleries', function (): void {
     $gallery = new ArtworkCategory(['name' => 'Unconfigured']);
@@ -22,7 +23,7 @@ it('uses conservative defaults for unconfigured and newly migrated Galleries', f
     expect(GalleryPresentation::validateSettings(['artwork_menu_surface_wide' => '1']))
         ->toBe(['artwork_menu_surface_wide' => true]);
     expect(fn () => GalleryPresentation::validateSettings(['artwork_menu_surface_wide' => 'expanded']))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 
     $gallery->setAttribute('artwork_menu_surface_wide', true);
     expect(GalleryPresentation::wideArtworkMenu($gallery))->toBeTrue();
@@ -32,6 +33,5 @@ it('uses conservative defaults for unconfigured and newly migrated Galleries', f
     expect(GalleryPresentation::artworkPageDividerOverride($gallery))->toBe('separate');
     expect(fn () => GalleryPresentation::validateSettings([
         'artwork_page_surface_mode' => 'full',
-    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    ]))->toThrow(ValidationException::class);
 });
-

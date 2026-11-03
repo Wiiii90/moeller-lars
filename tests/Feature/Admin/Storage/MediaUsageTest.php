@@ -1,24 +1,22 @@
 <?php
 
+use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaReferenceQuery;
-use App\Filament\Resources\MediaAssets\Pages\ListMediaAssets;
 use App\Filament\Support\MediaReferenceCatalog;
 use App\Filament\Support\SiteNodePresentation;
-use App\Models\AdminActionReceipt;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
-use App\Models\AuditEvent;
 use App\Models\BlogPost;
+use App\Models\HomePresentationSetting;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
-use Livewire\Livewire;
 
 beforeEach(function (): void {
     Storage::fake(config('media.disk'));
@@ -58,7 +56,6 @@ it('builds broad and specific Usage destinations from canonical site nodes', fun
             'site-identity',
         );
 });
-
 
 it('uses one canonical Usage path for in-use unreferenced broad and specific destinations', function (): void {
     $galleryAsset = workspaceReferenceAsset('gallery.jpg');
@@ -157,7 +154,6 @@ it('uses one canonical Usage path for in-use unreferenced broad and specific des
     expect($unreferenced->pluck('id')->all())->toBe([$other->id]);
 });
 
-
 it('discovers nested Custom Page and Home Rich Text references in saved content without inventing usages', function (): void {
     $customEmbedded = workspaceReferenceAsset('nested-custom-rich-text.jpg');
     $homeEmbedded = workspaceReferenceAsset('home-rich-text.jpg');
@@ -178,9 +174,9 @@ it('discovers nested Custom Page and Home Rich Text references in saved content 
     ]);
 
     $homeNode = SiteSection::query()->where('type', SiteSection::TYPE_HOME)->firstOrFail();
-    $home = \App\Models\HomePresentationSetting::query()
+    $home = HomePresentationSetting::query()
         ->where('site_section_id', $homeNode->id)->firstOrFail();
-    $configuration = \App\Domain\Content\HomePresentationEditorialService::defaults();
+    $configuration = HomePresentationEditorialService::defaults();
     $configuration['custom']['components'] = [[
         'type' => 'text',
         'published' => false,
@@ -236,7 +232,6 @@ it('counts available images videos and audio in the six library metrics', functi
         'bytes' => 44,
     ]);
 });
-
 
 it('projects canonical Custom Page list media through Usage and removes it on asset deletion', function (): void {
     $asset = workspaceReferenceAsset('list-reference.jpg');

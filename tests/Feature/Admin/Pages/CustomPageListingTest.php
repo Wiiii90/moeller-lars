@@ -61,7 +61,6 @@ it('paginates parent components in 25 50 and 100 unit pages without splitting ch
     expect($component->get('components'))->toHaveCount(30);
 });
 
-
 it('resets pagination for search type and page size changes and prunes invisible selections after projection', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Projection test', 'projection-test');
     $settings->update(['blocks' => customPageWorkspaceBlocks(30)]);

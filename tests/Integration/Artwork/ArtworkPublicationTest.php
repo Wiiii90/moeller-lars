@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Artwork\ArtworkEditorialService;
+use App\Domain\Artwork\PublicArtworkQuery;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
@@ -107,7 +108,7 @@ it('retains public Gallery visibility when the only image preview is the new pub
     ])->save();
 
     app(ArtworkEditorialService::class)->publish($artwork);
-    $public = app(\App\Domain\Artwork\PublicArtworkQuery::class)->publishedBySlug((string) $artwork->getAttribute('slug'));
+    $public = app(PublicArtworkQuery::class)->publishedBySlug((string) $artwork->getAttribute('slug'));
 
     expect($public)->not->toBeNull()
         ->and($public?->getKey())->toBe($artwork->getKey());

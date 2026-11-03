@@ -144,7 +144,6 @@ it('fails closed when the shared Nominatim lock is already held', function (): v
     }
 });
 
-
 it('rejects invalid geocoder coordinates without caching the failure as a successful lookup', function (): void {
     $clock = 0;
     $sleeps = [];

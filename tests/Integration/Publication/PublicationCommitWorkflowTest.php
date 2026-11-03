@@ -91,7 +91,6 @@ it('keeps the real public layout on committed appearance until one idempotent Co
 
 });
 
-
 it('keeps Commit truth exact for a Working mutation and a net-zero revert', function (): void {
     publicationWorkflowSetGradientBaseline();
 
@@ -109,7 +108,6 @@ it('keeps Commit truth exact for a Working mutation and a net-zero revert', func
 
     expect(app(PublicationService::class)->hasPendingChanges())->toBeFalse();
 });
-
 
 it('commits current Pending state in one component action and repeated clicks stay idempotent', function (): void {
     publicationWorkflowSetGradientBaseline();

@@ -2,15 +2,15 @@
 
 use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Filament\Support\AdminActivityFeed;
-use App\Models\Artwork;
 use App\Models\ArtworkMaterialPreset;
 use App\Models\AuditEvent;
 use App\Models\User;
+use Filament\Facades\Filament;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 require_once __DIR__.'/GalleryFixtures.php';
@@ -29,7 +29,6 @@ it('stores reusable Material presets without rewriting historical Artwork materi
     expect(ArtworkMaterialPreset::query()->pluck('name')->all())->toBe(['Graphite'])
         ->and($artwork->fresh()->medium)->toBe('Oil on linen');
 });
-
 
 it('records Material preset mutations precisely and keeps no-op preset writes silent', function (): void {
     $service = app(ArtworkMaterialPresetService::class);

@@ -57,7 +57,6 @@ it('retains files referenced by a retained publication snapshot after a later Co
     expect(DB::table('publication_media_cleanups')->count())->toBe(2);
 });
 
-
 it('retains working-only media while a Working reference still needs the file', function (): void {
     Storage::fake(config('media.disk'));
 

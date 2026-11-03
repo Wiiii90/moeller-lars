@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Content\ExhibitionDate;
+use App\Domain\Migration\LegacyPublicCvImporter;
 use Carbon\CarbonImmutable;
 
 it('retains authored year month and day precision without inventing calendar components', function (mixed $source, ?string $expected): void {
@@ -14,7 +15,7 @@ it('retains authored year month and day precision without inventing calendar com
 ]);
 
 it('rejects invalid Exhibition date precision and impossible calendar dates', function (mixed $invalid): void {
-    expect(fn () => ExhibitionDate::normalize($invalid))->toThrow(\InvalidArgumentException::class);
+    expect(fn () => ExhibitionDate::normalize($invalid))->toThrow(InvalidArgumentException::class);
 })->with([
     'zero year' => '0000',
     'out of range month' => '2027-13',
@@ -54,7 +55,7 @@ it('stops rather than guessing on contradictory or unconvertible legacy dates', 
     mixed $authored,
 ): void {
     expect(fn () => ExhibitionDate::fromLegacy($start, $end, $authored))
-        ->toThrow(\InvalidArgumentException::class);
+        ->toThrow(InvalidArgumentException::class);
 })->with([
     'authored conflict' => ['2014-07-01', null, 'June 2014'],
     'ambiguous festival' => [null, null, 'Summer 2027'],
@@ -83,7 +84,7 @@ it('formats the authored precision and protects unknown temporal certainty', fun
 });
 
 it('can losslessly map every factual Exhibition row in the legacy public Vita inventory', function (): void {
-    $source = new \App\Domain\Migration\LegacyPublicCvImporter;
+    $source = new LegacyPublicCvImporter;
     $rows = array_values(array_filter(
         $source->expectedRows(),
         static fn (array $row): bool => $row['section'] === 'Exhibitions',

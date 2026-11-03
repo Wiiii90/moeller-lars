@@ -1,13 +1,20 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
+use App\Domain\Admin\AdminAuditService;
+use App\Domain\Artwork\GalleryEditorialService;
+use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Models\AdminNotification;
-use App\Models\AuditEvent;
 use App\Models\ArtworkCategory;
+use App\Models\ArtworkMaterialPreset;
+use App\Models\AuditEvent;
 use App\Models\Redirect;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 require_once __DIR__.'/GalleryFixtures.php';
@@ -115,7 +122,6 @@ it('rolls back Gallery name changes when the requested slug belongs to another G
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 });
 
-
 it('surfaces a combined Gallery title and slug edit as one successful admin action', function (): void {
     $gallery = galleryFixtureCategory();
     galleryFixtureUnavailableAnalytics();
@@ -148,7 +154,6 @@ it('surfaces a combined Gallery title and slug edit as one successful admin acti
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 });
 
-
 it('commits the Materials repeater as one explicit Command, not as Edit autosave', function (): void {
     $gallery = galleryFixtureCategory();
     galleryFixtureUnavailableAnalytics();
@@ -156,16 +161,16 @@ it('commits the Materials repeater as one explicit Command, not as Edit autosave
         ->mountAction('materialPresets')
         ->assertMountedActionModalSee('Material presets')
         ->fillForm(['presets' => [['name' => 'Bronze'], ['name' => 'Ink']]]);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $auditsBefore = AuditEvent::query()->count();
     $notificationsBefore = AdminNotification::query()->count();
 
     // The draft Repeater has not committed while the dialog is open.
-    expect(\App\Models\ArtworkMaterialPreset::query()->whereIn('name', ['Bronze', 'Ink'])->count())->toBe(0);
+    expect(ArtworkMaterialPreset::query()->whereIn('name', ['Bronze', 'Ink'])->count())->toBe(0);
 
     $editor->callMountedAction()->assertHasNoFormErrors()->assertDispatched('admin-header-notification');
 
-    expect(\App\Models\ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all())->toBe(['Bronze', 'Ink'])
+    expect(ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all())->toBe(['Bronze', 'Ink'])
         ->and(AuditEvent::query()->where('action', 'artwork_material_preset.created')->count())->toBe(2)
         ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1)
@@ -183,30 +188,31 @@ it('rolls back the complete Materials command on audit failure and permits a cle
     $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->mountAction('materialPresets')
         ->fillForm(['presets' => [['name' => 'Bronze'], ['name' => 'Ink']]]);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $auditsBefore = AuditEvent::query()->count();
     $notificationsBefore = AdminNotification::query()->count();
-    $realAudit = app(\App\Domain\Admin\AdminAuditService::class);
+    $realAudit = app(AdminAuditService::class);
     $calls = 0;
     $audit = Mockery::mock($realAudit);
     $audit->shouldReceive('record')->twice()->andReturnUsing(function (...$parameters) use ($realAudit, &$calls) {
         if (++$calls === 2) {
             throw new RuntimeException('Materials audit unavailable');
         }
+
         return $realAudit->record(...$parameters);
     });
-    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->instance(AdminAuditService::class, $audit);
     try {
         expect(fn () => $editor->callMountedAction())->toThrow(RuntimeException::class, 'Materials audit unavailable');
-        expect(\App\Models\ArtworkMaterialPreset::query()->count())->toBe(0)
+        expect(ArtworkMaterialPreset::query()->count())->toBe(0)
             ->and(AuditEvent::query()->count())->toBe($auditsBefore)
             ->and(AdminNotification::query()->count())->toBe($notificationsBefore)
             ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(0);
     } finally {
-        app()->instance(\App\Domain\Admin\AdminAuditService::class, $realAudit);
+        app()->instance(AdminAuditService::class, $realAudit);
     }
     $editor->callMountedAction()->assertHasNoFormErrors();
-    expect(\App\Models\ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all())->toBe(['Bronze', 'Ink'])
+    expect(ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all())->toBe(['Bronze', 'Ink'])
         ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
@@ -227,7 +233,7 @@ it('protects a mounted Gallery Materials dialog after administrative access is l
     $auditsBefore = AuditEvent::query()->count();
     $notificationsBefore = AdminNotification::query()->count();
     $editor->set('mountedActions.0.data.presets.0.name', 'Rejected material')->assertForbidden();
-    expect(\App\Models\ArtworkMaterialPreset::query()->count())->toBe(0)
+    expect(ArtworkMaterialPreset::query()->count())->toBe(0)
         ->and(AuditEvent::query()->count())->toBe($auditsBefore)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore);
 })->with(['guest' => true, 'revoked administrator' => false]);
@@ -279,15 +285,15 @@ it('persists per-Gallery landscape and edge settings through one audited action'
     expect(AuditEvent::query()->count())->toBe($auditBefore + 1)
         ->and(AdminNotification::query()->count())->toBe($notificationBefore + 1);
 
-    expect(\Illuminate\Support\Facades\DB::table('committed.artwork_categories')
+    expect(DB::table('committed.artwork_categories')
         ->where('id', $gallery->getKey())->value('edge_navigation_mode'))->toBe('disabled');
-    expect(\Illuminate\Support\Facades\DB::table('committed.artwork_categories')
+    expect(DB::table('committed.artwork_categories')
         ->where('id', $gallery->getKey())->value('artwork_divider'))->toBe('none');
-    expect((bool) \Illuminate\Support\Facades\DB::table('committed.artwork_categories')
+    expect((bool) DB::table('committed.artwork_categories')
         ->where('id', $gallery->getKey())->value('artwork_menu_surface_wide'))->toBeFalse();
 
     expect(app(PublicationService::class)->commit(auth()->user()))->not->toBeNull();
-    $committed = \Illuminate\Support\Facades\DB::table('committed.artwork_categories')
+    $committed = DB::table('committed.artwork_categories')
         ->where('id', $gallery->getKey())
         ->first(['landscape_detail_enabled', 'artwork_menu_surface_wide', 'edge_navigation_mode', 'artwork_divider']);
     expect((bool) $committed->landscape_detail_enabled)->toBeTrue()
@@ -298,11 +304,11 @@ it('persists per-Gallery landscape and edge settings through one audited action'
 
 it('validates authored Gallery rights and Artwork caption display using the central settings policy', function (): void {
     $gallery = galleryFixtureCategory();
-    $service = app(\App\Domain\Artwork\GalleryEditorialService::class);
+    $service = app(GalleryEditorialService::class);
 
-    expect(\App\Domain\Artwork\GalleryPresentation::showArtworkInformation($gallery))->toBeTrue()
-        ->and(\App\Domain\Artwork\GalleryPresentation::showMediaCredits($gallery))->toBeFalse()
-        ->and(\App\Domain\Artwork\GalleryPresentation::showMediaCopyright($gallery))->toBeFalse();
+    expect(GalleryPresentation::showArtworkInformation($gallery))->toBeTrue()
+        ->and(GalleryPresentation::showMediaCredits($gallery))->toBeFalse()
+        ->and(GalleryPresentation::showMediaCopyright($gallery))->toBeFalse();
 
     $service->update($gallery, [
         'name' => $gallery->name,
@@ -312,29 +318,28 @@ it('validates authored Gallery rights and Artwork caption display using the cent
         'caption_layout' => 'rights_right',
     ]);
     $saved = $gallery->fresh();
-    expect(\App\Domain\Artwork\GalleryPresentation::showArtworkInformation($saved))->toBeFalse()
-        ->and(\App\Domain\Artwork\GalleryPresentation::showMediaCredits($saved))->toBeTrue()
-        ->and(\App\Domain\Artwork\GalleryPresentation::showMediaCopyright($saved))->toBeTrue()
-        ->and(\App\Domain\Artwork\GalleryPresentation::captionLayout($saved))->toBe('rights_right');
+    expect(GalleryPresentation::showArtworkInformation($saved))->toBeFalse()
+        ->and(GalleryPresentation::showMediaCredits($saved))->toBeTrue()
+        ->and(GalleryPresentation::showMediaCopyright($saved))->toBeTrue()
+        ->and(GalleryPresentation::captionLayout($saved))->toBe('rights_right');
 
     expect(fn () => $service->update($saved, ['name' => $saved->name, 'caption_layout' => 'unknown']))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 });
 
 it('rejects unsupported Gallery navigation and divider modes without mutation', function (): void {
     $gallery = galleryFixtureCategory();
-    $service = app(\App\Domain\Artwork\GalleryEditorialService::class);
+    $service = app(GalleryEditorialService::class);
     $auditBefore = AuditEvent::query()->count();
 
     expect(fn () => $service->update($gallery, ['name' => $gallery->name,
         'edge_navigation_mode' => 'wrap-automatically',
-    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    ]))->toThrow(ValidationException::class);
     expect(fn () => $service->update($gallery, ['name' => $gallery->name,
         'artwork_divider' => 'double',
-    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    ]))->toThrow(ValidationException::class);
 
     expect($gallery->fresh()->edge_navigation_mode)->toBe('disabled')
         ->and($gallery->fresh()->artwork_divider)->toBe('none')
         ->and(AuditEvent::query()->count())->toBe($auditBefore);
 });
-

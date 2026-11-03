@@ -1,10 +1,12 @@
 <?php
 
 use App\Domain\Admin\AdminActivityNotificationContext;
-use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\AdminSettingsService;
+use App\Domain\Content\RegionalFormats;
 use App\Filament\Pages\General;
 use App\Models\AdminNotification;
+use App\Models\AuditEvent;
 use App\Models\PublicContentSetting;
 use App\Models\User;
 use Filament\Facades\Filament;
@@ -55,8 +57,8 @@ it('keeps public Dates and Numbers independently editable', function (): void {
 
     expect(PublicContentSetting::general()->getAttribute('regional_format'))->toBe('en-GB')
         ->and(PublicContentSetting::general()->getAttribute('number_format'))->toBe('en-US')
-        ->and(\App\Domain\Content\RegionalFormats::publicDate(new \DateTimeImmutable('2026-10-20')))->toBe('20/10/2026')
-        ->and(\App\Domain\Content\RegionalFormats::publicNumber(1234.56, 2))->toBe('1,234.56')
+        ->and(RegionalFormats::publicDate(new DateTimeImmutable('2026-10-20')))->toBe('20/10/2026')
+        ->and(RegionalFormats::publicNumber(1234.56, 2))->toBe('1,234.56')
         ->and(generalSettingsAuditCount())->toBe($auditBefore + 2)
         ->and(AdminNotification::query()->count())->toBe($notificationBefore + 2);
 
@@ -108,7 +110,6 @@ it('persists changed text once and skips normalized no-op commits', function ():
         ->and(generalSettingsAuditCount())->toBe($auditAfterColor)
         ->and(AdminNotification::query()->count())->toBe($notificationsAfterColor);
 });
-
 
 it('saves distinct General layout changes with one audit and one success feedback each', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
@@ -211,7 +212,6 @@ it('keeps invalid event persistence visible without replacing persisted data', f
     expect(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
 });
 
-
 it('loads a persisted legal disclaimer unchanged without writing on mount', function (): void {
     $legalDisclaimer = 'Obwohl ich die Inhalte sowie die hier aufgeführten Verweise regelmäßig pflege, kann ich für diese nicht haften.';
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
@@ -225,7 +225,6 @@ it('loads a persisted legal disclaimer unchanged without writing on mount', func
     expect(PublicContentSetting::general()->getAttribute('legal_disclaimer'))->toBe($legalDisclaimer)
         ->and(generalSettingsAuditCount())->toBe($auditBefore);
 });
-
 
 it('persists media copyright and legal settings through event-driven controls', function (): void {
     $favicon = generalStatusFavicon();
@@ -246,24 +245,24 @@ it('persists media copyright and legal settings through event-driven controls', 
 it('autosaves legal copy only on real changes, including notification and audit', function (): void {
     $settings = PublicContentSetting::general();
     $audits = generalSettingsAuditCount();
-    $notifications = \App\Models\AdminNotification::query()->count();
+    $notifications = AdminNotification::query()->count();
 
     $page = Livewire::test(General::class)
         ->assertSet('data.legal_imprint', null)
         ->set('data.legal_imprint', "  Artist Name\nStudio address  ")
         ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
             return $event === 'admin-header-notification'
-                && (int) (AdminNotification::query()->find($params['notification']['notification_id'] ?? null)?->getAttribute('audit_event_id') ?? 0) === (int) \App\Models\AuditEvent::query()->latest('id')->value('id')
+                && (int) (AdminNotification::query()->find($params['notification']['notification_id'] ?? null)?->getAttribute('audit_event_id') ?? 0) === (int) AuditEvent::query()->latest('id')->value('id')
                 && ($params['notification']['status'] ?? null) === 'success';
         });
 
     expect($settings->fresh()->getAttribute('legal_imprint'))->toBe("Artist Name\nStudio address")
         ->and(generalSettingsAuditCount())->toBe($audits + 1)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe($notifications + 1);
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1);
 
     $page->call('persistChangedField', 'legal_imprint');
     expect(generalSettingsAuditCount())->toBe($audits + 1)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe($notifications + 1);
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1);
 
     $page->set('data.legal_privacy', 'Test privacy information.')
         ->set('data.legal_usage_rights', 'Test rights reservation.');
@@ -271,7 +270,7 @@ it('autosaves legal copy only on real changes, including notification and audit'
     expect($settings->fresh()->getAttribute('legal_privacy'))->toBe('Test privacy information.')
         ->and($settings->fresh()->getAttribute('legal_usage_rights'))->toBe('Test rights reservation.')
         ->and(generalSettingsAuditCount())->toBe($audits + 3)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe($notifications + 3);
+        ->and(AdminNotification::query()->count())->toBe($notifications + 3);
 
     Livewire::test(General::class)
         ->assertSet('data.legal_imprint', "Artist Name\nStudio address")

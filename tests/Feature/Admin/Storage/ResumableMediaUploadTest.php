@@ -1,12 +1,12 @@
 <?php
 
-use App\Domain\Media\MediaIngestService;
 use App\Models\MediaAsset;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
 
 beforeEach(function (): void {
     // The upload service stages files outside the configured Storage disk.
@@ -59,7 +59,7 @@ function resumableTestStart($test, string $filename, int $size, ?string $resumeI
     return $test->postJson(route('admin.media-upload.start'), $payload)->assertOk()->json();
 }
 
-function resumableTestChunk($test, string $id, int $offset, string $bytes): \Illuminate\Testing\TestResponse
+function resumableTestChunk($test, string $id, int $offset, string $bytes): TestResponse
 {
     return $test->call('POST', route('admin.media-upload.chunk', ['id' => $id]),
         [], [], [], [

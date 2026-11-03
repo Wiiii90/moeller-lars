@@ -1,30 +1,32 @@
 <?php
 
-use App\Domain\Storage\SiteStorageReclaimService;
-use App\Domain\Media\MediaIngestService;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Str;
 use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Media\MediaIngestService;
+use App\Domain\Storage\SiteStorageReclaimService;
 use App\Livewire\Admin\SiteStorageReclaimControl;
-use App\Models\AdminNotification;
-use App\Models\MediaAsset;
 use App\Models\AdminActionReceipt;
+use App\Models\AdminNotification;
 use App\Models\AuditEvent;
+use App\Models\MediaAsset;
 use App\Models\PublicationCheckpoint;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
     // Free Storage also prunes resumable private staging; never point it at
     // the operator's real incoming-media directory during tests.
     app()->instance('reclaim-media-test.original-storage-root', storage_path());
-    $root = sys_get_temp_dir().'/moeller-reclaim-test-'.\Illuminate\Support\Str::uuid();
+    $root = sys_get_temp_dir().'/moeller-reclaim-test-'.Str::uuid();
     app()->useStoragePath($root);
-    \Illuminate\Support\Facades\File::ensureDirectoryExists(storage_path('app/private/incoming-media'));
+    File::ensureDirectoryExists(storage_path('app/private/incoming-media'));
     Storage::fake('site-storage-reclaim-test');
     config([
         'media.disk' => 'site-storage-reclaim-test',
@@ -36,7 +38,7 @@ afterEach(function (): void {
     $root = storage_path();
     try {
         if (str_starts_with($root, sys_get_temp_dir().'/moeller-reclaim-test-')) {
-            \Illuminate\Support\Facades\File::deleteDirectory($root);
+            File::deleteDirectory($root);
         }
     } finally {
         app()->useStoragePath(app('reclaim-media-test.original-storage-root'));
@@ -167,7 +169,7 @@ it('frees recovery roots while preserving Activity and protected publication sna
 it('reports one real reclaim and stays silent when repeated without changes', function (): void {
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor, 'web');
-    reclaimCheckpoint($actor, 'new-live', \Carbon\Carbon::parse(PublicationCheckpoint::query()->max('published_at'))->addSecond());
+    reclaimCheckpoint($actor, 'new-live', Carbon::parse(PublicationCheckpoint::query()->max('published_at'))->addSecond());
     $auditsBefore = AuditEvent::query()->count();
     $notificationsBefore = AdminNotification::query()->count();
 

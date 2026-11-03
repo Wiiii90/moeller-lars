@@ -37,7 +37,6 @@ it('advances Sequential groups by frozen UTC day intervals and wraps', function 
         ->and($resolver->resolve($settings, $anchor->addDays(3))['current']->getKey())->toBe($first->getKey());
 });
 
-
 it('supports Sequential week intervals', function (): void {
     $category = heroDomainCategory();
     $first = heroDomainArtwork($category, 'First', 0);
@@ -56,7 +55,6 @@ it('supports Sequential week intervals', function (): void {
     expect(app(HomeHeroResolver::class)->resolve($settings, $anchor->addWeek())['current']->getKey())
         ->toBe($second->getKey());
 });
-
 
 it('re-anchors Sequential rotation when membership order or interval changes', function (): void {
     $category = heroDomainCategory();
@@ -89,7 +87,6 @@ it('re-anchors Sequential rotation when membership order or interval changes', f
         ->and($thirdAnchor)->toBe('2026-08-27T20:15:00+00:00');
 });
 
-
 it('re-anchors Automatic Sequential rotation when the candidate definition changes', function (array $initial, array $update): void {
     $oldAnchor = '2026-08-01T00:00:00+00:00';
     $settings = heroDomainSettings(array_replace([
@@ -118,7 +115,6 @@ it('re-anchors Automatic Sequential rotation when the candidate definition chang
     'active specific year' => [['pool_rule' => 'year', 'pool_year' => 2025], ['specific_year' => 2026]],
 ]);
 
-
 it('re-anchors Automatic Sequential rotation when Additional Includes change', function (): void {
     $category = heroDomainCategory();
     $first = heroDomainArtwork($category, 'First');
@@ -142,7 +138,6 @@ it('re-anchors Automatic Sequential rotation when Additional Includes change', f
     expect(app(HomeHeroConfigurationService::class)->configuration($settings->fresh())['rotation_started_at'])
         ->toBe('2026-08-27T21:15:00+00:00');
 });
-
 
 it('keeps the Automatic Sequential anchor for semantically identical settings', function (): void {
     $category = heroDomainCategory();
@@ -175,7 +170,6 @@ it('keeps the Automatic Sequential anchor for semantically identical settings', 
         ->toBe($oldAnchor);
 });
 
-
 it('ignores stale specific year changes while the Automatic candidate filter remains all', function (): void {
     $oldAnchor = '2026-08-01T00:00:00+00:00';
     $settings = heroDomainSettings([
@@ -198,7 +192,6 @@ it('ignores stale specific year changes while the Automatic candidate filter rem
         ->toBe($oldAnchor);
 });
 
-
 it('does not re-anchor Manual Sequential rotation for Automatic-only setting changes', function (): void {
     $artwork = heroDomainArtwork(heroDomainCategory(), 'Manual');
     $oldAnchor = '2026-08-01T00:00:00+00:00';
@@ -219,7 +212,6 @@ it('does not re-anchor Manual Sequential rotation for Automatic-only setting cha
     expect(app(HomeHeroConfigurationService::class)->configuration($settings->fresh())['rotation_started_at'])
         ->toBe($oldAnchor);
 });
-
 
 it('keeps Manual membership and source or strategy changes as Sequential re-anchor reasons', function (): void {
     $category = heroDomainCategory();

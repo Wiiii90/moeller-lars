@@ -39,7 +39,6 @@ it('uses the same canonical Hero resolver for direct domain and public Home pres
         ->and($publicCurrent->getKey())->toBe($second->getKey());
 });
 
-
 it('keeps the four independent Hero display options in the existing configuration and public projection', function (): void {
     $service = app(HomeHeroConfigurationService::class);
     $settings = heroDomainSettings();
@@ -77,7 +76,6 @@ it('keeps the four independent Hero display options in the existing configuratio
         'enable_viewer' => false,
     ]))->toBeFalse();
 });
-
 
 it('keeps the existing Hero resolution order available for optional Home navigation', function (): void {
     $category = heroDomainCategory();

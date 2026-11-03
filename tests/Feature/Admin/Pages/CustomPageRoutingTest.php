@@ -1,15 +1,20 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionPathPolicy;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\CustomPageWorkspace;
+use App\Models\AdminNotification;
+use App\Models\AuditEvent;
 use App\Models\CustomPageSetting;
+use App\Models\PublicContentSetting;
 use App\Models\Redirect;
 use App\Models\SiteSection;
 use App\Models\User;
 use App\Routing\SiteNodeRoute;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
@@ -28,8 +33,8 @@ it('updates Custom Page identity placement and flat public path through the cano
     $sections = app(SiteSectionEditorialService::class);
     $parent = $sections->createNavigationGroup('About');
     [$section] = customPageWorkspaceRecord('Original title', 'original-page-slug');
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
-    $auditCount = \App\Models\AuditEvent::query()->count();
+    app(AdminActivityNotificationContext::class)->discard();
+    $auditCount = AuditEvent::query()->count();
 
     $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->mountAction('pageSettings')
@@ -51,28 +56,27 @@ it('updates Custom Page identity placement and flat public path through the cano
         ->and($fresh->state)->toBe('published')
         ->and((int) $fresh->parent_id)->toBe((int) $parent->id)
         ->and(app(SiteNodeRoute::class)->path($fresh))->toBe('/updated-page-slug')
-        ->and(\App\Models\AuditEvent::query()->count())->toBe($auditCount + 2)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe(1)
+        ->and(AuditEvent::query()->count())->toBe($auditCount + 2)
+        ->and(AdminNotification::query()->count())->toBe(1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
     $editor->callMountedAction()->assertNotDispatched('admin-header-notification');
-    expect(\App\Models\AuditEvent::query()->count())->toBe($auditCount + 2)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe(1);
+    expect(AuditEvent::query()->count())->toBe($auditCount + 2)
+        ->and(AdminNotification::query()->count())->toBe(1);
 });
 
 it('keeps duplicate Custom Page slug errors in the mounted form and rolls back the combined edit', function (): void {
     [$section] = customPageWorkspaceRecord('Original', 'routing-original');
     customPageWorkspaceRecord('Reserved', 'routing-reserved');
-    $auditCount = \App\Models\AuditEvent::query()->count();
+    $auditCount = AuditEvent::query()->count();
     $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->mountAction('pageSettings')->fillForm(['title' => 'Rejected title', 'slug' => 'routing-reserved'])
         ->callMountedAction()->assertHasFormErrors(['slug'])->assertNotDispatched('admin-header-notification');
     expect($section->fresh()->title)->toBe('Original')->and($section->fresh()->slug)->toBe('routing-original')
-        ->and(\App\Models\AuditEvent::query()->count())->toBe($auditCount)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+        ->and(AuditEvent::query()->count())->toBe($auditCount)
+        ->and(AdminNotification::query()->count())->toBe(0);
     $editor->set('mountedActions.0.data.slug', 'routing-corrected')->callMountedAction()->assertHasNoFormErrors();
     expect($section->fresh()->title)->toBe('Rejected title')->and($section->fresh()->slug)->toBe('routing-corrected');
 });
-
 
 it('retains old Custom Page slugs as direct 301 redirects collapses chains and protects redirect sources from loops', function (): void {
     $service = app(SiteSectionEditorialService::class);
@@ -95,13 +99,13 @@ it('retains old Custom Page slugs as direct 301 redirects collapses chains and p
 
     // A Working redirect must not affect public URLs until an explicit Commit.
     $actor = auth()->user();
-    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    Auth::guard('web')->logout();
     $this->get('/redirect-a')->assertNotFound();
 
     $this->actingAs($actor, 'web');
     expect(app(PublicationService::class)->commit(auth()->user()))->not->toBeNull();
 
-    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    Auth::guard('web')->logout();
     $this->get('/redirect-a')->assertStatus(301)->assertRedirect('/redirect-c');
     $this->get('/redirect-b')->assertStatus(301)->assertRedirect('/redirect-c');
     $this->get('/redirect-c')->assertOk();
@@ -112,7 +116,6 @@ it('retains old Custom Page slugs as direct 301 redirects collapses chains and p
 
     expect($section->fresh()->slug)->toBe('redirect-c');
 });
-
 
 it('changes hierarchy placement without inventing a hierarchical Custom Page URL or redirect', function (): void {
     $service = app(SiteSectionEditorialService::class);
@@ -130,13 +133,12 @@ it('changes hierarchy placement without inventing a hierarchical Custom Page URL
         ->and(Redirect::query()->count())->toBe($beforeRedirects);
 });
 
-
 it('hides Custom Page parent settings when global nesting is disabled and rejects a stale parent', function (): void {
     $sections = app(SiteSectionEditorialService::class);
     $parent = $sections->createNavigationGroup('Parent');
     [$section] = customPageWorkspaceRecord('No nesting', 'no-nesting');
 
-    \App\Models\PublicContentSetting::general()->update(['navigation_nesting_enabled' => false]);
+    PublicContentSetting::general()->update(['navigation_nesting_enabled' => false]);
 
     Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
         ->mountAction('pageSettings')

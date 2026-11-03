@@ -7,7 +7,6 @@ use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 
-
 function galleryFixtureCategory(string $state = 'published'): ArtworkCategory
 {
     static $sequence = 0;

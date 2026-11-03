@@ -9,7 +9,7 @@ use Tests\TestCase;
 pest()->group('unit')->in('Unit');
 
 // These cases use Laravel services and model casts without persisting records.
-pest()->extend(\Illuminate\Foundation\Testing\TestCase::class)->in(
+pest()->extend(Illuminate\Foundation\Testing\TestCase::class)->in(
     'Unit/Artwork/ArtworkDateTest.php',
     'Unit/Artwork/GalleryDividerPresentationTest.php',
     'Unit/Artwork/GalleryPresentationTest.php',

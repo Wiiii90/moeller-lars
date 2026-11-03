@@ -1,12 +1,13 @@
 <?php
 
+use App\Domain\Admin\AdminAuditService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
+use App\Models\AdminNotification;
 use App\Models\ArtworkCategory;
 use App\Models\AuditEvent;
-use App\Models\AdminNotification;
 use App\Models\BlogPost;
 use Filament\Facades\Filament;
 use Illuminate\Validation\ValidationException;
@@ -34,7 +35,6 @@ it('does not report success for no-op page type or Journal template commands', f
         ->and($page->fresh()->type)->toBe(SiteSectionType::CustomPage->value)
         ->and($journal->fresh()->template)->toBe(JournalTemplate::Blog->value);
 });
-
 
 it('initializes target configuration for safe type conversions transactionally', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
@@ -69,9 +69,9 @@ it('rolls back type and configuration changes when conversion auditing fails', f
     $this->actingAs(pagesTestAdmin(), 'web');
     $section = app(SiteSectionEditorialService::class)->createCustomPage('Atomic conversion', 'atomic-conversion');
     $before = AuditEvent::query()->count();
-    $audit = Mockery::mock(app(\App\Domain\Admin\AdminAuditService::class));
+    $audit = Mockery::mock(app(AdminAuditService::class));
     $audit->shouldReceive('record')->once()->andThrow(new RuntimeException('Audit unavailable'));
-    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->instance(AdminAuditService::class, $audit);
     app()->forgetInstance(SiteSectionEditorialService::class);
     expect(fn () => app(SiteSectionEditorialService::class)->convertType($section, SiteSectionType::Journal->value))
         ->toThrow(RuntimeException::class, 'Audit unavailable');
@@ -79,7 +79,6 @@ it('rolls back type and configuration changes when conversion auditing fails', f
         ->and($section->customPageSetting()->exists())->toBeTrue()->and($section->journalSetting()->exists())->toBeFalse()
         ->and(AuditEvent::query()->count())->toBe($before)->and(AdminNotification::query()->count())->toBe(0);
 });
-
 
 it('blocks destructive type conversion when custom page content exists', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
@@ -98,7 +97,6 @@ it('blocks destructive type conversion when custom page content exists', functio
     expect($page->refresh()->type)->toBe(SiteSectionType::CustomPage->value)
         ->and($page->customPageSetting()->exists())->toBeTrue();
 });
-
 
 it('retains Journal entries across template switches and rejects destructive type conversion', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');

@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Exhibition;
-use Carbon\CarbonImmutable;
 
 it('derives exhibition attribution and location from editorial fields', function (): void {
     foreach ([

@@ -1,12 +1,12 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\General;
-use App\Models\PublicContentSetting;
 use App\Models\AdminNotification;
-use App\Domain\Admin\AdminActivityNotificationContext;
+use App\Models\PublicContentSetting;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Validation\ValidationException;
@@ -139,7 +139,6 @@ it('updates separate persisted solid and gradient colors through the shared cont
         ->and($fresh->getAttribute('background_gradient_end'))->toBe('#DDEEFF');
 });
 
-
 it('treats legacy default background as solid 777777 without writing on mount', function (): void {
     $settings = PublicContentSetting::general();
     app(AdminSettingsService::class)->updatePublicContent($settings, [
@@ -157,7 +156,6 @@ it('treats legacy default background as solid 777777 without writing on mount', 
         ->and($fresh->getAttribute('background_color'))->toBe('#123456')
         ->and(generalSettingsAuditCount())->toBe($auditBefore);
 });
-
 
 it('validates and canonicalizes structured public background settings', function (): void {
     $settings = PublicContentSetting::general();
@@ -183,7 +181,6 @@ it('validates and canonicalizes structured public background settings', function
         ->and(fn () => app(AdminSettingsService::class)->updatePublicContent($fresh, ['background_gradient_angle' => 361]))
         ->toThrow(ValidationException::class);
 });
-
 
 it('renders only committed default solid and gradient appearance through a request-local CSP nonce', function (): void {
     $actor = User::query()->firstOrFail();
@@ -253,7 +250,6 @@ it('renders only committed default solid and gradient appearance through a reque
         '--public-page: linear-gradient(45deg, #112233, #AABBCC) fixed',
     );
 });
-
 
 it('preserves the original white Menu and Page until independent global paint is chosen', function (): void {
     $settings = PublicContentSetting::general();
@@ -531,7 +527,6 @@ it('does not persist color defaults on mount', function (): void {
         ->and(PublicContentSetting::general()->getAttribute('header_divider_color'))->toBeNull();
 });
 
-
 it('round-trips each Solid paint and a multi-stop gradient through fresh General instances', function (): void {
     $page = Livewire::test(General::class);
 
@@ -582,11 +577,6 @@ it('saves color table rows sorted by the chosen numeric position', function (): 
         ['color' => '#778899', 'position' => 75],
     ]);
 });
-
-
-
-
-
 
 it('preserves the inherited title color until the artist explicitly sets a title paint', function (): void {
     $settings = PublicContentSetting::general();

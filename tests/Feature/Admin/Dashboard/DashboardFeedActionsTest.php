@@ -55,7 +55,6 @@ it('filters the Dashboard feed through Livewire and clears stale selections', fu
         ->and($component->get('selectedFeedKeys'))->toBe([]);
 });
 
-
 it('marks contact read on opening and can mark it unread again', function (): void {
     $message = ContactMessage::query()->create([
         'sender_name' => 'Visitor',
@@ -79,7 +78,6 @@ it('marks contact read on opening and can mark it unread again', function (): vo
     expect($message->refresh()->getAttribute('read_at'))->toBeNull()
         ->and(app(DashboardFeed::class)->entry('contact:'.$message->getKey())['status'])->toBe('Unread');
 });
-
 
 it('deletes stored contact messages cleanly', function (): void {
     $message = ContactMessage::query()->create([
@@ -207,7 +205,9 @@ it('preserves the inbox and pins when single or batch deletion fails', function 
     app(DashboardFeedPins::class)->toggle('contact:'.$contact->id);
     $dispatcher = AdminNotification::getEventDispatcher();
     AdminNotification::setEventDispatcher(clone $dispatcher);
-    AdminNotification::deleting(static function (): void { throw new RuntimeException('Delete unavailable'); });
+    AdminNotification::deleting(static function (): void {
+        throw new RuntimeException('Delete unavailable');
+    });
     try {
         $component = Livewire::test(Dashboard::class);
         expect(fn () => $bulk
@@ -238,7 +238,9 @@ it('keeps read unread and repeated inbox no ops silent', function (): void {
 
 it('renders current feed data and resets selection when changing pages and filters', function (): void {
     config()->set('dashboard-feed.items', []);
-    foreach (range(1, 26) as $index) { dashboardContact('Visitor'.$index); }
+    foreach (range(1, 26) as $index) {
+        dashboardContact('Visitor'.$index);
+    }
     $component = Livewire::test(Dashboard::class)->set('feedType', 'contact')->set('feedPageSize', 25)
         ->assertSee('visitor26@example.test')->assertDontSee('visitor1@example.test')
         ->call('toggleSelectAll');
@@ -267,7 +269,9 @@ it('rolls back all selected read states when one inbox update fails', function (
     $notificationBefore = $notification->fresh()->read_at?->toIso8601String();
     $dispatcher = AdminNotification::getEventDispatcher();
     AdminNotification::setEventDispatcher(clone $dispatcher);
-    AdminNotification::updating(static function (): void { throw new RuntimeException('Read update unavailable'); });
+    AdminNotification::updating(static function (): void {
+        throw new RuntimeException('Read update unavailable');
+    });
     try {
         $component = Livewire::test(Dashboard::class)->set('selectedFeedKeys', ['contact:'.$contact->id, 'notification:'.$notification->id]);
         expect(fn () => $component->call($unread ? 'bulkMarkUnread' : 'bulkMarkRead'))

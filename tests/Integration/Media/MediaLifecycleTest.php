@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\MediaAssetEditorialService;
@@ -7,8 +8,8 @@ use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaIntegrityService;
 use App\Domain\Media\MediaPreviewVariant;
-use App\Domain\Media\PublicMedia;
 use App\Domain\Media\MediaTypePolicy;
+use App\Domain\Media\PublicMedia;
 use App\Domain\Storage\SiteStorageDatabaseUsageService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -139,7 +140,7 @@ it('ingests an image above the legacy GD cap through bounded libvips and retains
             ->and($variant->variant_kind)->toBe('thumbnail')
             ->and(max((int) $variant->width, (int) $variant->height))->toBeLessThanOrEqual(960)
             ->and(app(PublicMedia::class)->thumbnailVariantForAsset($asset)->getKey())->toBe($variant->getKey())
-            ->and(app(\App\Domain\Artwork\ArtworkPublicationService::class)->mediaReady($asset, 'Large artwork preview'))->toBeTrue();
+            ->and(app(ArtworkPublicationService::class)->mediaReady($asset, 'Large artwork preview'))->toBeTrue();
 
         expect($disk->exists($variant->storage_key))->toBeTrue()
             ->and(hash('sha256', $disk->get($variant->storage_key)))->toBe($variant->sha256);
