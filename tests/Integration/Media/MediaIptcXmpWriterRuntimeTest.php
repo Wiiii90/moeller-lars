@@ -158,7 +158,6 @@ it('stages actual WebP thumbnails with their own hashes and the original asset r
             'id' => 247,
             'media_asset_id' => 142,
             'variant_kind' => \App\Domain\Media\PublicMedia::THUMBNAIL_KIND,
-            'transform_profile' => \App\Domain\Media\PublicMedia::PUBLIC_TRANSFORM_PROFILE,
             'state' => 'available',
             'mime_type' => 'image/webp',
             'byte_size' => filesize($source),

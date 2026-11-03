@@ -26,7 +26,6 @@ function journalImageUsage(): array
         'mime_type' => 'image/webp',
         'byte_size' => 10,
         'sha256' => hash('sha256', 'caption-variant'),
-        'transform_profile' => \App\Domain\Media\MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
         'state' => 'available',
     ]);
 

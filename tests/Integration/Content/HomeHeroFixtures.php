@@ -73,7 +73,6 @@ function heroDomainArtwork(ArtworkCategory $category, string $title, int $positi
     MediaVariant::query()->create([
         'media_asset_id' => $asset->getKey(),
         'variant_kind' => 'thumbnail',
-        'transform_profile' => 'public-v1',
         'storage_key' => 'variants/hero-domain-'.$artwork->getKey().'.webp',
         'mime_type' => 'image/webp',
         'byte_size' => 4,

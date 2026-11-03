@@ -29,7 +29,6 @@ function customPageComponentAsset(string $suffix): MediaAsset
     MediaVariant::query()->create([
         'media_asset_id' => $asset->getKey(),
         'variant_kind' => 'thumbnail',
-        'transform_profile' => \App\Domain\Media\MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
         'storage_key' => 'variants/custom-page-component-'.$suffix.'.webp',
         'mime_type' => 'image/webp',
         'byte_size' => 4,

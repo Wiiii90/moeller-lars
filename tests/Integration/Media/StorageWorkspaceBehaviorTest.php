@@ -112,7 +112,6 @@ it('counts generated derivatives and database storage against the site allowance
         'mime_type' => 'image/webp',
         'byte_size' => 300,
         'sha256' => hash('sha256', 'storage-behavior-allowance-variant'),
-        'transform_profile' => 'public-v1',
         'state' => 'available',
     ]);
 

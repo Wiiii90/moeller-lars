@@ -35,7 +35,6 @@ it('retains files referenced by a retained publication snapshot after a later Co
         'mime_type' => 'image/webp',
         'byte_size' => 7,
         'sha256' => hash('sha256', 'variant'),
-        'transform_profile' => 'public-v1',
         'state' => 'available',
     ]);
 

@@ -81,7 +81,6 @@ function editorialVariant(MediaAsset $asset): MediaVariant
         'mime_type' => 'image/webp',
         'byte_size' => 4,
         'sha256' => hash('sha256', 'var'),
-        'transform_profile' => 'public-v1',
         'state' => 'available',
         'width' => 2,
         'height' => 2,
@@ -106,7 +105,6 @@ it('retains public Gallery visibility when the only image preview is the new pub
     $asset = editorialAsset();
     attachEditorialPrimary($artwork, $asset);
     editorialVariant($asset)->forceFill([
-        'transform_profile' => \App\Domain\Media\MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
     ])->save();
 
     app(ArtworkEditorialService::class)->publish($artwork);

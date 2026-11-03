@@ -87,7 +87,7 @@ if (PHP_SAPI === 'cli') {
         Storage::disk('local')->copy('originals/session.png', 'variants/session.png');
         $variant = MediaVariant::query()->create(['media_asset_id' => $asset->id, 'variant_kind' => 'thumbnail',
             'storage_key' => 'variants/session.png', 'mime_type' => 'image/png', 'byte_size' => 68,
-            'sha256' => $asset->sha256, 'transform_profile' => 'public-v1', 'state' => 'available', 'width' => 1, 'height' => 1]);
+            'sha256' => $asset->sha256, 'state' => 'available', 'width' => 1, 'height' => 1]);
         Storage::disk('local')->copy('originals/session.png', 'originals/unreferenced.png');
         $private = MediaAsset::query()->create([...$attributes, 'storage_key' => 'originals/unreferenced.png', 'original_filename' => 'unreferenced.png']);
         foreach (['session-exhibitions', 'session-cv'] as $slug) {

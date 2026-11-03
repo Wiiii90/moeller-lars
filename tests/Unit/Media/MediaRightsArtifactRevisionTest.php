@@ -50,7 +50,6 @@ it('separates thumbnail rights revisions from full resolution and refuses anothe
         'sha256' => str_repeat('c', 64),
         'mime_type' => 'image/webp',
         'variant_kind' => PublicMedia::THUMBNAIL_KIND,
-        'transform_profile' => MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
         'state' => 'available',
     ], true);
 
@@ -73,7 +72,6 @@ it('refuses a thumbnail projection when its parent record is not an image', func
         'sha256' => str_repeat('c', 64),
         'mime_type' => 'image/webp',
         'variant_kind' => PublicMedia::THUMBNAIL_KIND,
-        'transform_profile' => MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
         'state' => 'available',
     ], true);
 

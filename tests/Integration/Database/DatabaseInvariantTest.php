@@ -34,7 +34,6 @@ function invariantAsset(): MediaAsset
         'mime_type' => 'image/webp',
         'byte_size' => 4,
         'sha256' => hash('sha256', 'invariant-thumbnail-'.$sequence),
-        'transform_profile' => 'public-v1',
         'state' => 'available',
     ]);
 
