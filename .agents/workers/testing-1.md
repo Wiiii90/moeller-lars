@@ -33,3 +33,5 @@
 - Resumed active lease 2 on `testing` after user-requested continuation; expressly **do not import later `dev` revisions** until the user requests the next reconciliation. Source baseline remains `570f9f987757022655003bea8fc73393880204e2`.
 - User-observed acceptance: native Storage insertion once, editor caption beneath image, popovers, tables, colors and spacing. Previously alleged duplicate insertion was **not reproducible**; abandoned alternate insertion implementation is not a contract.
 - Added pure output tests in canonical Rich Text Unit suites: repeated-image/caption association with all placements and escaping, intentional caption removal, image count mismatch, public table/spacing/color/link rendering and unsafe-link rejection. Source edits only, never executed.
+
+- **Feature persistence:** Existing Custom Page autosave and nested Rich Text tests now assert saved/reopened visual HTML containing line spacing, color, links and table. Existing Journal Blog edit checks formatted body and reload; Home content modes have a shared reopen scenario. All are authored only, not executed.

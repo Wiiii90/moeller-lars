@@ -48,12 +48,13 @@ it('saves a nested component and returns it to page level when Parent is cleared
     $audits = AuditEvent::query()->count();
     $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->mountAction('editImageChild', ['imageIndex' => 0, 'childIndex' => 0, 'componentType' => 'text']);
-    $editor->fillForm(['body' => 'Edited body', 'parent_image_index' => null])->callMountedAction()
+    $nestedRichText = '<p data-artist-line-spacing="1.15">A <a href="mailto:artist@example.org">linked</a> biography</p>';
+    $editor->fillForm(['body' => $nestedRichText, 'parent_image_index' => null])->callMountedAction()
         ->assertHasNoFormErrors()->assertDispatched('admin-header-notification');
     $blocks = $settings->fresh()->components();
     expect($blocks)->toHaveCount(2)
         ->and($blocks[0]['children'] ?? [])->toBeEmpty()
-        ->and($blocks[1]['body'])->toBe('Edited body')
+        ->and($blocks[1]['body'])->toBe($nestedRichText)
         ->and(AuditEvent::query()->count())->toBe($audits + 2)
         ->and(AdminNotification::query()->count())->toBe(1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
@@ -255,17 +256,21 @@ it('persists consecutive component edits without closing the autosaving dialog',
         ->and($first['title'])->toBe('Revised heading')
         ->and($first['body'])->toBe('Revised content');
 
+    $formatted = '<p data-artist-line-spacing="2.0"><span class="color" data-color="#1457a4">Painted light</span> <a href="https://example.org/studio">Studio notes</a></p><table><tbody><tr><th>Year</th></tr><tr><td>2026</td></tr></tbody></table>';
     $editor->fillForm([
         'publication_state' => 'unpublished',
         'title' => 'Revised heading',
-        'body' => 'Later rich text',
+        'body' => $formatted,
     ])
         ->callMountedAction()
         ->assertHasNoFormErrors()
         ->assertSet('mountedActions.0.name', 'editComponent')
         ->assertSee('Edit component');
 
-    expect($settings->fresh()->components()[0]['body'])->toBe('Later rich text');
+    expect($settings->fresh()->components()[0]['body'])->toBe($formatted);
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
+        ->assertActionDataSet(['body' => $formatted]);
 });
 
 

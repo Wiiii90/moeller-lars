@@ -140,13 +140,21 @@ it('persists Blog edits in the actual mounted editor refreshes its row and repea
     $post = \App\Models\BlogPost::query()->create(['site_section_id' => $section->id, 'title' => 'Original Blog title', 'slug' => 'blog-editor', 'body' => 'Original body', 'position' => 1, 'state' => 'draft']);
     app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
     $before = AuditEvent::query()->count();
+    $formatted = '<p data-artist-line-spacing="1.0"><span class="color" data-color="#123456">Studio entry</span></p>'
+        .'<table><tbody><tr><th>Medium</th></tr><tr><td>Oil</td></tr></tbody></table>';
     $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->id])->mountAction('editPost', ['post' => $post->id])
-        ->set('mountedActions.0.data.title', 'Current Blog title')->callMountedAction()->assertHasNoFormErrors()->assertSee('Current Blog title');
-    expect($post->fresh()->title)->toBe('Current Blog title')->and(AuditEvent::query()->count())->toBe($before + 1)
+        ->set('mountedActions.0.data.title', 'Current Blog title')
+        ->set('mountedActions.0.data.body', $formatted)
+        ->callMountedAction()->assertHasNoFormErrors()->assertSee('Current Blog title');
+    expect($post->fresh()->title)->toBe('Current Blog title')->and($post->fresh()->body)->toBe($formatted)
+        ->and(AuditEvent::query()->count())->toBe($before + 1)
         ->and(AdminNotification::query()->count())->toBe(1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
     $editor->callMountedAction()->assertHasNoFormErrors()->assertNotDispatched('admin-header-notification');
     expect(AuditEvent::query()->count())->toBe($before + 1)->and(AdminNotification::query()->count())->toBe(1);
+    Livewire::test(JournalWorkspace::class, ['section' => $section->id])
+        ->mountAction('editPost', ['post' => $post->id])
+        ->assertActionDataSet(['body' => $formatted]);
 });
 
 it('keeps concurrent Blog content when a stale mounted editor attempts to save', function (): void {

@@ -183,3 +183,25 @@ it('creates and converts a Home heading through the real editor without losing i
         ->and(\App\Models\AdminNotification::query()->count())->toBe($notifications + 1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
 })->with([HomeTemplate::Custom, HomeTemplate::UnderConstruction]);
+
+it('persists visual Rich Text as a Home component in both content modes and reopens it unchanged', function (HomeTemplate $template): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    \Filament\Facades\Filament::setCurrentPanel('admin');
+    \Filament\Facades\Filament::bootCurrentPanel();
+    $settings = homeComponentTypeSettings($template, [
+        ['type' => 'text', 'published' => true, 'title' => null, 'body' => '<p>Original</p>'],
+    ]);
+    $content = '<p data-artist-line-spacing="1.15"><span class="color" data-color="#214365">Home notes</span></p>';
+    \Livewire\Livewire::test(\App\Filament\Pages\HomePresentation::class)
+        ->mountAction('editComponent', ['index' => 0, 'type' => 'text'])
+        ->set('mountedActions.0.data.body', $content)
+        ->callMountedAction()->assertHasNoFormErrors();
+
+    $saved = app(HomePresentationEditorialService::class)
+        ->configuration($settings->fresh())[$template->value]['components'][0];
+    expect($saved['body'])->toBe($content);
+    \Livewire\Livewire::test(\App\Filament\Pages\HomePresentation::class)
+        ->mountAction('editComponent', ['index' => 0, 'type' => 'text'])
+        ->assertActionDataSet(['body' => $content]);
+})->with([HomeTemplate::Custom, HomeTemplate::UnderConstruction]);
+
