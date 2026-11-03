@@ -100,6 +100,7 @@ final class AdminUndoService
                     return;
                 }
 
+                $target = $this->lockedTarget($receipt);
                 $expectedState = (string) $receipt->getAttribute('after_state');
                 if ((string) $target->getAttribute('state') !== $expectedState) {
                     throw ValidationException::withMessages(['undo' => 'Undo is no longer available because this item changed afterwards.']);

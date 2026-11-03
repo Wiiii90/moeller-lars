@@ -9,6 +9,7 @@
 - Scope: Gallery-workspace actions, Artwork assignment and presentation, material preset owners, directly affected views/styles, scoped browser tests. Do not touch Dev Worker 2 media ingest/feedback, Dev Worker 3 rich text or Dev Worker 1 exhibitions.
 
 ## Evidence and progress
+- Restored shared lockedTarget resolution in the simplified generic Undo path; no historical extra-media reversal remains available.
 - Retired secondary Artwork images: removed GalleryImagesRelationManager UI and all active additional-media commands. Legacy Audit labels remain readable; historical Undo receipts no longer offer the retired operation. Existing stored links and Storage media remain untouched pending data inventory. Generic audio upload untouched.
 - Material table: replaced proportional Position/Actions tracks with canonical role-width columns, delayed compact icon-only rail until real narrow pressure, removed duplicate Add Row seam, made drag handles non-native draggable and decoded legacy HTML entity display. Browser screenshots still required.
 - Corrected reconstructed Edit save request's gallery assignment inputs immediately; the create action now derives a missing slug from the submitted title, avoiding a race with the title-blur suggestion. Neither behavior is browser verified.
