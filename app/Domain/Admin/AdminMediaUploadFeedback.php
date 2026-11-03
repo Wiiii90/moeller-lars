@@ -51,7 +51,8 @@ final class AdminMediaUploadFeedback
                 continue;
             }
 
-            $lines[] = mb_substr(trim($error), 0, 350);
+            $lineLimit = $failed === 1 ? 460 : ($failed === 2 ? 210 : 140);
+            $lines[] = mb_substr(trim($error), 0, $lineLimit);
             if (count($lines) >= 3) {
                 break;
             }
@@ -64,7 +65,7 @@ final class AdminMediaUploadFeedback
 
         if ($failed > 0 && $accepted === 0) {
             $body = $lines !== []
-                ? implode("\n", $lines)
+                ? ($failed > 1 ? $failed." files failed.\n" : '').implode("\n", $lines)
                 : ($failed === 1 ? 'The selected file was not saved.' : $failed.' files were not saved.')
                     .' Check the file and try again or contact the site administrator.';
         } else {

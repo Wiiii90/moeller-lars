@@ -69,7 +69,7 @@ final class MediaDerivativeGenerator
         if ($multiscan === '1') {
             throw ValidationException::withMessages([
                 'media' => sprintf(
-                    'This high-resolution JPEG (%d × %d pixels) uses progressive encoding, which needs too much server memory for preview generation. The file was not saved to Storage. Please export it as a standard (baseline/non-progressive) JPEG and upload it again. Keep the original resolution.',
+                    'High-resolution progressive JPEG (%d × %d px) cannot be previewed safely on this server. The file was not saved to Storage. Export it as a standard (baseline/non-progressive) JPEG, keep the resolution and upload again.',
                     $width,
                     $height,
                 ),
