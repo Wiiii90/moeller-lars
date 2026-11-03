@@ -64,6 +64,49 @@ it('sends one action Notification for two persisted setting changes while retain
         ->and($notice->getAttribute('metadata'))->toBe(['audit_event_ids' => $changes]);
 });
 
+it('reports one durable upload result with correct saved, reused and failed semantics', function (
+    string $destination, int $ready, int $reused, int $failed, array $errors,
+    string $expectedTitle, string $expectedStatus,
+): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
+
+    $summary = app(\App\Domain\Admin\AdminMediaUploadFeedback::class)
+        ->batch($ready, $reused, $failed, $errors, $destination);
+
+    $notification = AdminNotification::query()->where('user_id', $actor->id)->sole();
+    expect($notification->title)->toBe($expectedTitle)
+        ->and($notification->status)->toBe($expectedStatus)
+        ->and(AdminNotification::query()->count())->toBe(1)
+        ->and($summary)->not->toBeEmpty();
+
+    if ($ready > 0) {
+        expect($notification->body)->toContain($destination === 'gallery' ? 'ready for Artwork creation' : 'saved to Storage');
+    }
+    if ($reused > 0) {
+        expect($notification->body)->toContain('reused from Storage');
+    }
+    if ($errors !== []) {
+        expect($notification->body)->toContain($errors[0])
+            ->and($summary)->toContain($errors[0]);
+    }
+})->with([
+    'new Storage original' => ['storage', 1, 0, 0, [], 'Media uploaded', 'success'],
+    'reused Storage original' => ['storage', 0, 1, 0, [], 'Already in Storage', 'info'],
+    'mixed Storage batch' => ['storage', 1, 0, 1, ['large.jpg — re-export as baseline JPEG'], 'Upload completed with issues', 'warning'],
+    'failed upload' => ['storage', 0, 0, 1, ['invalid.mp4 — unsupported stream'], 'Upload failed', 'danger'],
+    'mixed Gallery queue' => ['gallery', 2, 1, 1, ['portrait.png — incomplete transfer'], 'Artwork media ready with issues', 'warning'],
+]);
+
+it('does not issue a successful upload notification for an empty batch', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
+
+    expect(app(\App\Domain\Admin\AdminMediaUploadFeedback::class)
+        ->batch(0, 0, 0, [], 'storage'))->toBe('No media files selected.')
+        ->and(AdminNotification::query()->where('user_id', $actor->id)->count())->toBe(0);
+});
+
 it('persists structured Notifications without requiring a browser session', function (): void {
     $user = User::factory()->admin()->create();
 

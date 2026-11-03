@@ -54,3 +54,5 @@
 - **Format matrix:** Extended the existing media lifecycle integration owner with real FFmpeg WebM/VP9 + poster verification and a high-resolution progressive JPEG rejection versus baseline JPEG acceptance test at identical pixel dimensions. These are runtime-dependent and unexecuted.
 
 - **Reference coverage:** Extended existing Storage usage tests with saved nested Custom Page and Home visual Rich Text references, verified canonical in-use vs unassigned categorization without introducing another fixture or runner. Not executed.
+
+- **User feedback:** Extended canonical notification feature suite with status, title and truthful saved/reused/failed summaries for Storage/Gallery and a no-op batch; no new notification implementation or runner. Not executed.
