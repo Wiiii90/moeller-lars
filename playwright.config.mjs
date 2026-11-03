@@ -25,9 +25,9 @@ export default defineConfig({
     { name: 'e2e-chromium', testMatch: '**/e2e/**/*.spec.mjs', use: { ...devices['Desktop Chrome'] } },
     // These projects qualify the Gallery's native Sortable handle under WebKit.
     // Desktop WebKit approximates Safari; macOS Safari acceptance is a separate gate.
-    { name: 'e2e-gallery-webkit-desktop', testMatch: '**/e2e/admin/gallery-ordering.spec.mjs', use: { ...devices['Desktop Safari'] } },
-    { name: 'e2e-gallery-webkit-mobile', testMatch: '**/e2e/admin/gallery-ordering.spec.mjs', use: { ...devices['iPhone 13'] } },
-    { name: 'e2e-gallery-chromium-mobile', testMatch: '**/e2e/admin/gallery-ordering.spec.mjs', use: { ...devices['Pixel 7'] } },
+    { name: 'e2e-gallery-webkit-desktop', testMatch: ['**/e2e/admin/gallery-ordering.spec.mjs', '**/e2e/public/artwork-fit.spec.mjs'], use: { ...devices['Desktop Safari'] } },
+    { name: 'e2e-gallery-webkit-mobile', testMatch: ['**/e2e/admin/gallery-ordering.spec.mjs', '**/e2e/public/artwork-fit.spec.mjs'], use: { ...devices['iPhone 13'] } },
+    { name: 'e2e-gallery-chromium-mobile', testMatch: ['**/e2e/admin/gallery-ordering.spec.mjs', '**/e2e/public/artwork-fit.spec.mjs'], use: { ...devices['Pixel 7'] } },
     { name: 'profiling-chromium', testMatch: '**/profiling/**/*.spec.mjs', use: { ...devices['Desktop Chrome'] } },
   ],
 });
