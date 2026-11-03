@@ -17,6 +17,7 @@
 - Additional Artwork images were never an intended feature. Active Gallery Images relation, editors, extra media commands removed; historical database references and audit records preserved until inventory. Generic audio uploads are retained.
 
 ## Source implementation (NOT runtime/browser acceptance)
+- Exact date picker now immediately synchronizes displayed Year value when user selects a complete date, matching Artwork model's canonical save invariant. Clearing exact date leaves Year available as year-only fallback. Source unverified.
 - Global border regression 389b078: removed invalid .admin-table + .admin-add-row border suppression in 2271aad; Exhibitions and other Admin tables were affected. Dev skill now requires checking both seam-owning borders and other consumers before global CSS changes.
 - Media unlink InvalidArgumentException root cause: artwork.primary_media_detached absent in AdminActionCatalog; corrected d83e920. Requires browser verification.
 - Artwork form restructured 6510dc1: Year/date, Material/Position, grouped dimensions, Unit optional, Home eligibility default, no Custom field; preserved existing unstructured dimensions until inventory.

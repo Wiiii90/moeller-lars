@@ -124,7 +124,13 @@ final class ArtworkEditDialog
                         ->nullable(),
                     DatePicker::make('work_date')
                         ->label('Exact date')
-                        ->nullable(),
+                        ->nullable()
+                        ->live()
+                        ->afterStateUpdated(static function (mixed $state, callable $set): void {
+                            if (is_string($state) && preg_match('/^(\\d{4})-\\d{2}-\\d{2}$/', $state, $matches) === 1) {
+                                $set('work_year', (int) $matches[1]);
+                            }
+                        }),
 
                     $material,
                     ...($positionCount !== null ? [
