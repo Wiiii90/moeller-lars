@@ -52,9 +52,9 @@
                     <td>
                         <input class="admin-inline-input" type="text" maxlength="240" x-ref="newMaterial"
                             aria-label="New material name" placeholder="Material name"
-                            wire:change="addMaterialPreset($event.target.value)"
                             x-on:keydown.enter.prevent="$el.blur()"
-                            x-on:change="adding = false; $el.value = ''">
+                            x-on:keydown.escape.prevent="adding = false; $el.value = ''"
+                            x-on:change="$wire.addMaterialPreset($el.value).then(saved => { if (saved) { adding = false; $el.value = '' } })">
                     </td>
                     <td class="admin-table__actions"></td>
                 </tr>

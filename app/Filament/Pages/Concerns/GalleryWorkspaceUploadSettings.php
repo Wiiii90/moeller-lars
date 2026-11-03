@@ -172,9 +172,9 @@ trait GalleryWorkspaceUploadSettings
         return AdminDialog::viewer($action, AdminDialogSize::Default);
     }
 
-    public function addMaterialPreset(string $name): void
+    public function addMaterialPreset(string $name): bool
     {
-        $this->saveMaterialChange(
+        return $this->saveMaterialChange(
             fn (): bool => app(ArtworkMaterialPresetService::class)->add($name),
             'Material added',
         );
@@ -219,18 +219,20 @@ trait GalleryWorkspaceUploadSettings
         );
     }
 
-    private function saveMaterialChange(\Closure $mutation, string $title): void
+    private function saveMaterialChange(\Closure $mutation, string $title): bool
     {
         try {
             $changed = $mutation();
         } catch (ValidationException $exception) {
             $this->notifyValidationFailure('Material not saved', $exception);
 
-            return;
+            return false;
         }
 
         if ($changed) {
             app(AdminNotifier::class)->notification(title: $title, status: 'success');
         }
+
+        return $changed;
     }
 }

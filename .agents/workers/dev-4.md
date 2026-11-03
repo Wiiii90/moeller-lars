@@ -9,6 +9,7 @@
 - Scope: Gallery-workspace actions, Artwork assignment and presentation, material preset owners, directly affected views/styles, scoped browser tests. Do not touch Dev Worker 2 media ingest/feedback, Dev Worker 3 rich text or Dev Worker 1 exhibitions.
 
 ## Evidence and progress
+- Material inline Add now awaits the same canonical server mutation result before clearing the input; invalid duplicate/empty names remain editable, no second autosave listener.
 - General admin live preview favicon now uses canonical MediaPreviewVariant rather than dead public-v1 thumbnail path; old profile remains historical until proven data cleanup.
 - Explicit exception: replaced obsolete Gallery Settings/Materials and upload tests with current stateful editor and resumable queue coverage; scoped Playwright WebKit Desktop, iPhone emulation and Android Chromium projects added. Not executed; disposable environment required.
 - Root-cause source fix for Artwork viewport fitting: consistent viewport measurement and image sizing across narrow/wide layouts; runtime/browser acceptance outstanding.
