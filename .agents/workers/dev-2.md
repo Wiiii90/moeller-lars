@@ -85,3 +85,7 @@
 ## 2026-11-03 — Home admin source regression from retired profile constant
 - Directly caused by Dev Worker 2 media profile removal: PublicArtworkQuery::publicQuery still referenced removed MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE and filtered the retired transform_profile database column (HTTP 500 at /admin/pages/home). Removed that obsolete condition. The existing one-thumbnail-kind, WebP MIME and available-state predicate remains; no compatibility constant introduced.
 - Testing handoff D/B: Home admin candidate statistics and artwork on real migrated schema; zero/one/duplicate available thumbnails; verify no unresolved old profile symbols under new revision. Code source review only, no browser execution.
+
+## 2026-11-03 — Local-web media migration startup regression
+- My media transform-profile migration incorrectly called full publication schema parity, failing on unrelated site_sections drift and blocking local-web startup. The canonical guard now accepts an optional scoped table set, with the full guard remaining the default for publication and restore; the media migration checks only media_variants before/after its atomic changes. Implemented on dev e3b65aaf / 308c778a; actual local migration not executed in this chat.
+- No DB reset or artist media mutation; underlying site_sections drift still requires independent ownership review. Testing handoff: media migration with unrelated site_sections drift, duplicate-variant rollback and full publication parity still catches site_sections.
