@@ -39,6 +39,9 @@ description: Own production code on dev; follow architecture-first, deletion-fir
 
 ## Pre-release media lifecycle and cleanup — mandatory
 
+- **Version retirement must reach persistence, not only its reader.** Removing versioned rendering branches while leaving a mandatory `transform_profile` column and version-keyed uniqueness allows inconsistent old rows to hide. Consolidate the active model, writer, Working/Committed schema constraints and restorable snapshot compatibility as a single safe migration; explicitly detect conflicting current variants before changing any stored content. Historical immutable checkpoint data is not a second runtime pipeline.
+
+
 For changes touching Upload, Storage, Gallery, Home, Custom Pages or media delivery, trace **the same media identity** through upload/staging, Working/Committed/public reference reads, preview availability, explicit deletion, filesystem cleanup and lost-response recovery. A successful isolated action or correct UI message is insufficient if another reader/cleanup path can violate that identity.
 
 - **Never make required previews disposable.** Available image thumbnails and video posters (including for intentionally unassigned Storage originals) are integral data, not cache space; Free Storage/garbage collection must preserve them. Do not regenerate them implicitly in HTTP delivery. A missing required preview is an integrity failure.
