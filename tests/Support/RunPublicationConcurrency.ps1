@@ -1,4 +1,6 @@
 # Dedicated disposable PostgreSQL runner; never uses the persistent preview.
+param([ValidateSet('Migration', 'Integration', 'Feature')][string] $QualificationSuite)
+
 $ErrorActionPreference = 'Stop'
 $repoPath = (Get-Location).Path
 if ((git branch --show-current) -notin @('dev', 'testing') -or (git rev-parse --show-toplevel).Replace('/', '\') -ne $repoPath) {
@@ -30,10 +32,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Disposable PostgreSQL did not become ready.' }
     $identity = docker exec --env "PGPASSWORD=$passwordValue" $containerId psql -h 127.0.0.1 -U $databaseName -d $databaseName -Atc "select current_database(),current_user,inet_server_port(),current_setting('server_version_num'),(select count(*) from information_schema.tables where table_schema='public');"
     if ($LASTEXITCODE -ne 0 -or $identity -notmatch "^$databaseName\|$databaseName\|5432\|17[0-9]+\|0$") { throw 'Initial SQL identity/schema verification failed.' }
+    $clusterIdentity = docker exec --env "PGPASSWORD=$passwordValue" $containerId psql -h 127.0.0.1 -U $databaseName -d $databaseName -Atc 'select system_identifier::text from pg_control_system();'
+    if ($LASTEXITCODE -ne 0 -or $clusterIdentity -notmatch '^[0-9]+$') { throw 'Cluster identity verification failed.' }
     Write-Output "Verified PostgreSQL: $identity; loopback port $($binding.HostPort); tmpfs; no persistent mounts."
     $values = @{
-        CONCURRENCY_RUNTIME=$runtimeRoot; CONCURRENCY_DATABASE=$databaseName; CONCURRENCY_USER=$databaseName; CONCURRENCY_PORT=$binding.HostPort
-        APP_ENV='testing'; APP_KEY='base64:AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8='
+        CONCURRENCY_CLUSTER=$clusterIdentity; CONCURRENCY_RUNTIME=$runtimeRoot; CONCURRENCY_DATABASE=$databaseName; CONCURRENCY_USER=$databaseName; CONCURRENCY_PORT=$binding.HostPort
+        APP_ENV='testing'; CACHE_STORE='array'; SESSION_DRIVER='array'; APP_KEY='base64:AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8='
         DB_CONNECTION='pgsql'; DB_HOST='127.0.0.1'; DB_PORT=$binding.HostPort; DB_DATABASE=$databaseName; DB_USERNAME=$databaseName; DB_PASSWORD=$passwordValue; DB_URL=''
         LARAVEL_STORAGE_PATH="$runtimeRoot/storage"; MEDIA_DISK='local'; FILESYSTEM_DISK='local'; MEDIA_STORAGE_QUOTA_BYTES='1000000000'
         APP_CONFIG_CACHE="$relativeRoot/bootstrap/cache/config.php"; APP_PACKAGES_CACHE="$relativeRoot/bootstrap/cache/packages.php"; APP_SERVICES_CACHE="$relativeRoot/bootstrap/cache/services.php"; APP_EVENTS_CACHE="$relativeRoot/bootstrap/cache/events.php"; APP_ROUTES_CACHE="$relativeRoot/bootstrap/cache/routes.php"
@@ -48,9 +52,30 @@ try {
         New-Item -ItemType Directory -Force (Join-Path $runtimeRoot $directory) | Out-Null
     }
     New-Item -ItemType File "$runtimeRoot/.env.testing" | Out-Null
-    # Each worker independently checks Laravel/PDO, PHPUnit and paths before
-    # enabling disposable flags. The controller itself never boots Laravel.
-    php -d variables_order=EGPCS -d "sys_temp_dir=$runtimeRoot/php-temp" -d "upload_tmp_dir=$runtimeRoot/php-upload" vendor/bin/pest tests/Integration/Publication/PublicationConcurrencyTest.php --cache-directory "$runtimeRoot/phpunit-cache" @args
+    $phpOptions = @('-d', 'variables_order=EGPCS', '-d', "sys_temp_dir=$runtimeRoot/php-temp", '-d', "upload_tmp_dir=$runtimeRoot/php-upload")
+    if ($QualificationSuite) {
+        if ((Test-Path -LiteralPath '.env') -or (Test-Path -LiteralPath '.env.testing')) {
+            throw 'Qualification requires a checkout without application environment files.'
+        }
+        $response = php @phpOptions tests/Support/PublicationConcurrencyWorker.php '{"operation":"verify-qualification"}'
+        if ($LASTEXITCODE -ne 0) { throw 'Effective isolation verification failed.' }
+        $evidence = @($response | ForEach-Object { ConvertFrom-Json -InputObject $_ })
+        if ($evidence.Count -ne 2 -or $evidence[0].phase -ne 'verified' -or $evidence[1].phase -ne 'result' -or
+            $evidence[1].ok -ne $true -or $evidence[1].cluster -ne $clusterIdentity) {
+            throw 'Missing positive effective isolation evidence; Pest will not start.'
+        }
+        Write-Output $response
+        # Dedicated concurrency cases retain their own setup and isolation.
+        foreach ($key in @('CONCURRENCY_CLUSTER', 'CONCURRENCY_RUNTIME', 'CONCURRENCY_DATABASE', 'CONCURRENCY_USER', 'CONCURRENCY_PORT')) {
+            [Environment]::SetEnvironmentVariable($key, $null, 'Process')
+        }
+        $env:GITHUB_ACTIONS = 'true'
+        $env:MOELLER_LARS_DISPOSABLE_TEST_DATABASE = '1'
+        php @phpOptions vendor/bin/pest "--testsuite=$QualificationSuite" --cache-directory "$runtimeRoot/phpunit-cache" @args
+    } else {
+        # Each worker verifies its own connection before enabling disposable flags.
+        php @phpOptions vendor/bin/pest tests/Integration/Publication/PublicationConcurrencyTest.php --cache-directory "$runtimeRoot/phpunit-cache" @args
+    }
     $testExit = $LASTEXITCODE
 } finally {
     foreach ($entry in $oldEnvironment.GetEnumerator()) { [Environment]::SetEnvironmentVariable($entry.Key, $entry.Value, 'Process') }

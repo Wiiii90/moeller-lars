@@ -67,3 +67,16 @@ During preparatory Testing work, source and test code can be reconciled without 
 6. Distinguish source review, actual test runs, browser review and user acceptance.
 
 Canonical strategy: [docs/operations/testing.md](../docs/operations/testing.md).
+
+For local Windows qualification, use the existing PostgreSQL runner's explicit suite mode:
+
+```powershell
+& .\tests\Support\RunPublicationConcurrency.ps1 -QualificationSuite Migration --compact
+& .\tests\Support\RunPublicationConcurrency.ps1 -QualificationSuite Integration --compact
+& .\tests\Support\RunPublicationConcurrency.ps1 -QualificationSuite Feature --compact
+```
+
+Each invocation owns a fresh PostgreSQL cluster and runtime directory. Relative Laravel cache
+paths resolve inside that runtime on Windows. The runner checks the effective Laravel connection,
+cluster identifier, empty schema and runtime paths before enabling the existing disposable
+database guard flags and launching Pest.
