@@ -3,7 +3,6 @@ import { expect, test } from '@playwright/test';
 import { signIn } from '../../support/admin.mjs';
 
 test.setTimeout(90_000);
-test.use({ viewport: { width: 1800, height: 1200 } });
 
 // Read-only assertions against the independently verified disposable DB.
 function snapshot() {
@@ -74,7 +73,8 @@ async function dragBefore(page, source, destination) {
     await handle(page, source).dragTo(target, { targetPosition: { x: box.width * 0.15, y: box.height * 0.25 } });
 }
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, isMobile }) => {
+    if (!isMobile) await page.setViewportSize({ width: 1800, height: 1200 });
     await page.addInitScript(() => {
         window.galleryOrderFeedback = [];
         window.addEventListener('admin-header-notification', event => window.galleryOrderFeedback.push(event.detail));

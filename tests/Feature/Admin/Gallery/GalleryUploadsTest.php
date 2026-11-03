@@ -6,6 +6,7 @@ use App\Domain\Media\PublicMedia;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Models\Artwork;
+use App\Models\MediaAsset;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\User;
@@ -144,49 +145,32 @@ it('treats a byte-identical primary upload without ALT changes as a no-op', func
         ->and(AdminNotification::query()->where('title', 'Primary media unchanged')->count())->toBe(1);
 });
 
-it('reuses a byte-identical original from Storage and still opens Add artwork', function (): void {
+it('reuses an ingested Storage asset through the current resumable Gallery queue and creates a draft', function (): void {
     Storage::fake(config('media.disk'));
     $gallery = galleryFixtureCategory();
     galleryFixtureUnavailableAnalytics();
-    $upload = UploadedFile::fake()->image('already-stored-artwork.jpg', 60, 40);
-    $original = app(MediaIngestService::class)->ingest($upload);
+    $file = UploadedFile::fake()->image('already-stored-artwork.jpg', 60, 40);
+    $original = app(MediaIngestService::class)->ingest($file);
 
-    $component = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->set('directPrimaryMedia', [$upload])
-        ->call('processDirectPrimaryMedia')
-        ->assertHasNoErrors();
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->call('beginDirectPrimaryMediaBatch')
+        ->call('queueResumablePrimaryMediaAsset', (int) $original->getKey())
+        ->call('finishDirectPrimaryMediaBatch')
+        ->assertActionMounted('addArtwork');
 
-    expect($component->get('pendingPrimaryMediaAssetId'))->toBe((int) $original->getKey())
-        ->and(\App\Models\MediaAsset::query()->where('sha256', $original->sha256)->count())->toBe(1);
-});
+    expect($editor->get('pendingPrimaryMediaAssetId'))->toBe((int) $original->getKey());
 
-it('turns a real direct Gallery upload into an editable and publishable artwork draft', function (): void {
-    Storage::fake(config('media.disk'));
-    $gallery = galleryFixtureCategory();
-    galleryFixtureUnavailableAnalytics();
-
-    $component = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->set('directPrimaryMedia', [UploadedFile::fake()->image('direct-artwork.jpg', 56, 40)])
-        ->call('processDirectPrimaryMedia')
-        ->assertHasNoErrors();
-
-    $pendingAssetId = $component->get('pendingPrimaryMediaAssetId');
-    expect($pendingAssetId)->toBeInt()->toBeGreaterThan(0);
-
-    $component->fillForm([
-        'title' => 'Direct Upload Artwork',
-        'slug' => 'direct-upload-artwork',
+    $editor->fillForm([
+        'title' => 'Reused Storage Artwork',
+        'slug' => 'reused-storage-artwork',
         'dimension_unit' => 'cm',
         'work_date' => null,
-        'primary_media_asset_id' => $pendingAssetId,
-        'primary_alt_text' => 'A mixed-media artwork with a bright turquoise border',
-    ])
-        ->callMountedAction()
-        ->assertHasNoFormErrors();
+        'primary_media_asset_id' => (int) $original->getKey(),
+        'primary_alt_text' => 'Storage image reused for a new artwork',
+    ])->callMountedAction()->assertHasNoFormErrors();
 
-    $artwork = Artwork::query()->where('slug', 'direct-upload-artwork')->firstOrFail();
-    $usage = $artwork->artworkMedia()->where('role', 'primary')->sole();
-    expect((int) $usage->media_asset_id)->toBe($pendingAssetId)
-        ->and($usage->alt_text_override)->toBe('A mixed-media artwork with a bright turquoise border')
-        ->and(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
+    $artwork = Artwork::query()->where('slug', 'reused-storage-artwork')->firstOrFail();
+    expect($artwork->state)->toBe('draft')
+        ->and((int) $artwork->artworkMedia()->where('role', 'primary')->sole()->media_asset_id)->toBe((int) $original->getKey())
+        ->and(MediaAsset::query()->where('sha256', $original->sha256)->count())->toBe(1);
 });

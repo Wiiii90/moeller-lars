@@ -9,6 +9,7 @@
 - Scope: Gallery-workspace actions, Artwork assignment and presentation, material preset owners, directly affected views/styles, scoped browser tests. Do not touch Dev Worker 2 media ingest/feedback, Dev Worker 3 rich text or Dev Worker 1 exhibitions.
 
 ## Evidence and progress
+- Explicit exception: replaced obsolete Gallery Settings/Materials and upload tests with current stateful editor and resumable queue coverage; scoped Playwright WebKit Desktop, iPhone emulation and Android Chromium projects added. Not executed; disposable environment required.
 - Root-cause source fix for Artwork viewport fitting: consistent viewport measurement and image sizing across narrow/wide layouts; runtime/browser acceptance outstanding.
 - Corrected blocked sorting explanations (Manual versus filters) and Working publication metric wording; preserved filter-independent absolute Position editing.
 - Aligned PublicArtworkQuery thumbnail profile with the canonical current MediaPreviewVariant, removing obsolete profile acceptance from the public read model. Historical data cutover remains separately unverified.
