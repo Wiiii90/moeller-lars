@@ -50,14 +50,14 @@ async function drag(page, handle, target, fraction = 0.35) {
         ? await target.locator('.admin-position').boundingBox() : null;
     // Root ordering uses the position rail, outside nested child drop zones.
     const x = position ? position.x + position.width / 2 : to.x + to.width / 2;
-    if (to.height === 0) {
-        // An empty native Sortable group accepts a drop at its boundary. It has
-        // no box for dragTo's target visibility check, so use the real pointer.
+    if (await target.getAttribute('data-drop-target') === 'true') {
+        // The child seam receives pointer events only after sorting starts.
         await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
         await page.mouse.down();
         await page.mouse.move(from.x + from.width / 2 + 12, from.y + from.height / 2, { steps: 5 });
-        await page.mouse.move(x, to.y, { steps: 20 });
-        await page.mouse.move(x, to.y);
+        const y = to.y + to.height * fraction;
+        await page.mouse.move(x, y, { steps: 20 });
+        await page.mouse.move(x, y);
         await page.mouse.up();
     } else {
         await handle.dragTo(target, { targetPosition: { x: x - to.x, y: to.height * fraction } });
