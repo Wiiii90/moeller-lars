@@ -139,6 +139,24 @@ test('each native Storage selection inserts exactly one image and the saved edit
     await editedCaption.press('Enter');
     await expect(editable.locator('[data-artist-caption="Revised caption"]')).toHaveCount(1);
 
+    // Continue switching within the same owning editor. Caption must never
+    // remain visible behind Text Color or the native Storage selector.
+    await editable.locator('img[data-id]').first().click();
+    await modal.getByRole('button', { name: 'Image caption', exact: true }).click();
+    await expect(panel(modal, 'Image caption')).toBeVisible();
+    await expect(visiblePanels(modal)).toHaveCount(1);
+    await shell.getByRole('button', { name: 'Text color', exact: true }).click();
+    await expect(panel(modal, 'Image caption')).toBeHidden();
+    await expect(panel(modal, 'Text color')).toBeVisible();
+    await expect(visiblePanels(modal)).toHaveCount(1);
+    await shell.getByRole('button', { name: 'Insert image from Storage', exact: true }).click();
+    await expect(panel(modal, 'Text color')).toBeHidden();
+    await expect(panel(modal, 'Image from Storage')).toBeVisible();
+    await expect(visiblePanels(modal)).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(visiblePanels(modal)).toHaveCount(0);
+    await expect(modal).toBeVisible();
+
     // Edit dialogs persist on native change/focusout; browser navigation must
     // discard any editor-only state and reconstruct the two saved image nodes.
     await modal.getByRole('heading', { name: 'Edit component' }).click();

@@ -49,3 +49,5 @@
 - **Multi-editor isolation:** Existing browser Rich Text test owner extended with an end-to-end scenario that creates two independently saved Text components, selects the same Storage image once in each editor, verifies the other editor is untouched before inserting, and checks both separately after a full reload. Browser run and actual native Safari acceptance remain pending.
 
 - **Public browser layout:** Reused the existing published synthetic SPA page 2 as a Rich Text caption/float/spacing/color fixture (all owned by its disposable seeder, no new public pages or media). Extended canonical `public-media.spec.mjs` to compare image/caption rectangles and float on desktop vs mobile, plus computed line spacing and color marker. No execution; fixture may only be seeded after independent disposable DB qualification.
+
+- **Popover sequence consolidated:** The same image/caption browser test now explicitly switches Caption→Color→Storage and asserts exactly one visible panel, Escape closure and retention of the parent editor, complementing Link→Color→Spacing→Storage. Not executed.
