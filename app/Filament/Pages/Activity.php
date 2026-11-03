@@ -566,7 +566,7 @@ final class Activity extends Page
                 ->label('Undo')
                 ->action(function (array $arguments): void {
                     $event = $this->activityDetails($arguments);
-                    $receiptId = is_array($event) && is_array($event['undo'] ?? null) && is_numeric($event['undo']['id'] ?? null)
+                    $receiptId = is_array($event['undo'] ?? null) && is_numeric($event['undo']['id'] ?? null)
                         ? (int) $event['undo']['id']
                         : 0;
 
@@ -582,7 +582,7 @@ final class Activity extends Page
             description: function (array $arguments): string {
                 $event = $this->activityDetails($arguments);
 
-                return is_array($event) && is_array($event['undo'] ?? null)
+                return is_array($event['undo'] ?? null)
                     ? (string) ($event['undo']['confirmation'] ?? 'Undo this change? Activity history remains available.')
                     : 'Undo this change? Activity history remains available.';
             },

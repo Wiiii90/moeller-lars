@@ -61,7 +61,7 @@ trait GalleryWorkspaceArtworkActions
                 }
 
                 try {
-                    if ($deleteFile && $asset instanceof MediaAsset) {
+                    if ($deleteFile) {
                         // One media-domain transaction owns both the optional
                         // original deletion and the Gallery Artwork removal.
                         app(MediaAssetEditorialService::class)->delete($asset, $artwork);
@@ -75,7 +75,7 @@ trait GalleryWorkspaceArtworkActions
                 } catch (\Throwable $exception) {
                     // Physical file cleanup can fail *after* a successful DB
                     // commit; distinguish that from an earlier failed mutation.
-                    if ($deleteFile && $asset instanceof MediaAsset
+                    if ($deleteFile
                         && ! Artwork::query()->whereKey($artwork->getKey())->exists()
                         && (string) $asset->fresh()?->getAttribute('state') === 'deleted') {
                         report($exception);

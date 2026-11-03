@@ -94,7 +94,7 @@ class MediaIntegrityService
             try {
                 $hash = hash_init('sha256');
                 $hashed = hash_update_stream($hash, $stream);
-                if (! is_int($hashed) || $hashed !== (int) $size) {
+                if ($hashed !== (int) $size) {
                     return [$readableError];
                 }
                 $sha256 = hash_final($hash);

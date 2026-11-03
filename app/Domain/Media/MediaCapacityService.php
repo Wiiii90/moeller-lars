@@ -332,7 +332,7 @@ final class MediaCapacityService
             $total = $meta['size'] ?? null;
             $part = $dir.'/'.$id.'.part';
             $onDisk = @filesize($part);
-            if (! is_int($total) || $total <= 0 || ! is_int($onDisk) || $onDisk < 0 || $onDisk > $total) {
+            if (! is_int($total) || $total <= 0 || $onDisk === false || $onDisk > $total) {
                 throw new \RuntimeException('Unfinished media reservation is inconsistent.');
             }
             $reserved += $total - $onDisk;

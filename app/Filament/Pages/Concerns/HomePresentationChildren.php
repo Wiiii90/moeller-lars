@@ -30,12 +30,8 @@ trait HomePresentationChildren
             return [];
         }
         $children = (new CustomPageSetting)->contactChildren($component);
-        $children = is_array($children) ? array_values($children) : [];
         $result = [];
         foreach ($children as $position => $child) {
-            if (! is_array($child)) {
-                continue;
-            }
             $kind = 'contact';
             $key = (string) ($child['type'] ?? '');
             $label = match ($key) {
