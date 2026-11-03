@@ -243,7 +243,6 @@ final class BrowserProfilingSeeder extends Seeder
         ]);
         $variant = MediaVariant::query()->create([
             'media_asset_id' => $asset->id, 'variant_kind' => PublicMedia::THUMBNAIL_KIND,
-            'transform_profile' => PublicMedia::PUBLIC_TRANSFORM_PROFILE,
             'storage_key' => $thumbnailKey, 'mime_type' => 'image/webp',
             'byte_size' => strlen($thumbBytes), 'sha256' => hash('sha256', $thumbBytes),
             'state' => 'available', 'width' => $thumbnailWidth, 'height' => $thumbnailHeight,

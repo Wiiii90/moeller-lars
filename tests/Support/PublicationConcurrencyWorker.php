@@ -98,7 +98,7 @@ try {
         $cluster = DB::selectOne('SELECT system_identifier::text AS id FROM pg_control_system()')->id;
         $tables = DB::selectOne("SELECT count(*) AS total FROM information_schema.tables WHERE table_schema = 'public'")->total;
         if ($cluster !== getenv('CONCURRENCY_CLUSTER') || (int) $tables !== 0
-            || config('cache.default') !== 'array' || config('session.driver') !== 'array'
+            || config('cache.default') !== 'array' || config('session.driver') !== getenv('SESSION_DRIVER')
             || config('media.disk') !== 'local') {
             throw new RuntimeException('Qualification cluster, schema, cache, session, or media isolation mismatch.');
         }
