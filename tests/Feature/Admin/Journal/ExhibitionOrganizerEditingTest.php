@@ -130,3 +130,79 @@ it('shows Exhibition Gallery video controls only when the selected Storage media
         $undoRepeaterFake();
     }
 });
+
+it('autosaves precise and partial Exhibition dates in the shared editor without manufacturing day values', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createJournal(
+        'Date precision journal', 'date-precision-journal', JournalTemplate::Exhibitions->value,
+    );
+    $entry = app(ExhibitionEditorialService::class)->createDraft([
+        'site_section_id' => $section->getKey(),
+        'title' => 'Dated exhibition',
+        'slug' => 'dated-exhibition',
+    ]);
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $audits = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
+
+    $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editExhibition', ['exhibition' => $entry->getKey()])
+        ->set('mountedActions.0.data.starts_on', '2027-06')
+        ->set('mountedActions.0.data.ends_on', '2027-08')
+        ->callMountedAction()->assertHasNoFormErrors()
+        ->assertSet('mountedActions.0.name', 'editExhibition');
+
+    expect($entry->fresh()->starts_on)->toBe('2027-06')
+        ->and($entry->fresh()->ends_on)->toBe('2027-08')
+        ->and(AuditEvent::query()->count())->toBe($audits + 1)
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1);
+    $reopened = Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editExhibition', ['exhibition' => $entry->getKey()])
+        ->assertActionDataSet(['starts_on' => '2027-06', 'ends_on' => '2027-08']);
+    $reopened->callMountedAction()->assertHasNoFormErrors()->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->count())->toBe($audits + 1)
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1);
+
+    $reopened->set('mountedActions.0.data.starts_on', '2027-06-17')
+        ->set('mountedActions.0.data.ends_on', null)
+        ->callMountedAction()->assertHasNoFormErrors();
+    expect($entry->fresh()->starts_on)->toBe('2027-06-17')
+        ->and($entry->fresh()->ends_on)->toBeNull();
+});
+
+it('rejects invalid or backwards Exhibition partial dates atomically in the mounted form', function (
+    string $start,
+    ?string $end,
+    string $field,
+): void {
+    $section = app(SiteSectionEditorialService::class)->createJournal(
+        'Invalid date journal', 'invalid-date-journal', JournalTemplate::Exhibitions->value,
+    );
+    $entry = app(ExhibitionEditorialService::class)->createDraft([
+        'site_section_id' => $section->getKey(),
+        'title' => 'Protected exhibition',
+        'slug' => 'protected-exhibition',
+        'starts_on' => '2027-07',
+        'ends_on' => '2027-08',
+    ]);
+    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    $before = $entry->fresh()->getAttributes();
+    $audits = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
+
+    Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editExhibition', ['exhibition' => $entry->getKey()])
+        ->set('mountedActions.0.data.title', 'Rejected edit')
+        ->set('mountedActions.0.data.starts_on', $start)
+        ->set('mountedActions.0.data.ends_on', $end)
+        ->callMountedAction()->assertHasFormErrors([$field])
+        ->assertNotDispatched('admin-header-notification');
+
+    expect($entry->fresh()->getAttributes())->toBe($before)
+        ->and(AuditEvent::query()->count())->toBe($audits)
+        ->and(AdminNotification::query()->count())->toBe($notifications);
+})->with([
+    'invalid calendar day' => ['2027-02-29', null, 'starts_on'],
+    'backwards month range' => ['2027-07', '2027-05', 'ends_on'],
+    'end without start' => ['', '2027-06', 'ends_on'],
+    'noncanonical month' => ['2027-00', null, 'starts_on'],
+]);
