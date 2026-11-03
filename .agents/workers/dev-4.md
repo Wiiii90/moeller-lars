@@ -1,47 +1,47 @@
 # Dev Worker 4 — branch-local progress
 
 **Lease:** 7
-**Branch:** `dev`
-**State:** Active — implementing user-approved Gallery/Artwork corrections; source and browser acceptance separate.
+**Branch:** dev
+**State:** Active — Gallery/Artwork corrections; browser acceptance pending.
 
-## Assignment and scope
-- User commissioned corrections to Gallery/Artwork remove/recovery, bulk selection, Materials table/autosave, ordering/drag, public presentation; narrowly scoped tests are explicitly authorized for this worker.
-- Scope: Gallery-workspace actions, Artwork assignment and presentation, material preset owners, directly affected views/styles, scoped browser tests. Do not touch Dev Worker 2 media ingest/feedback, Dev Worker 3 rich text or Dev Worker 1 exhibitions.
+## Active assignment and owner boundaries
+- Gallery/Artwork workflow, Material presets, filtered selection, Artwork image presentation. Avoid Dev Worker 2 media deletion/ingest, Dev Worker 3 Rich Text and Dev Worker 1 Exhibitions. No CI/deploy without user authorization.
+- Read dev AGENTS.md, Dev skill and shared worker protocol. Use fresh dev roster/lease/head before each write. Current deletion source change committed as 77d5fd3; browser acceptance not executed.
 
-## Evidence and progress
-- Removed redundant Remove action from Gallery cards, Edit header and Selected; removed arbitrary Restore removed artwork selector from Add artwork. Gallery source now has one Delete dialog (slot-only default, original file optional), and Media file selection remains a separate unlink action. Hidden standalone Artwork resource no longer permits creating new unassigned records. Code source only, not runtime verified.
+## Accepted product semantics
+- Add artwork creates a draft slot even with no image; an available existing Media file may be selected from Storage. No upload in Add/Edit: uploads only through Gallery dropbox or Storage. ALT text override is Artwork-specific; slug generated from title when omitted.
+- Clearing Edit Artwork → Media file removes only the association; slot and Storage file remain.
+- Delete artwork replaces both previous Delete and redundant Remove controls. Default removes the draft Artwork slot and association, leaves original file in Storage. Optional checkbox requests deletion of original file and all its references through the media-domain deletion owner with impact review. No normal Restore removed artwork choice or Remove button.
+- Selected Delete removes draft Artwork slots, preserving source media; there is no optional mass media deletion. Publish/Unpublish selected operate without redundant confirmation. Selection pruned when filters hide previously selected items.
+- Material presets use canonical Admin table with direct Add/Rename/Move/Delete persistence and stable positions. No extra redundant heading.
+- Additional Artwork images were never an intended feature. Active Gallery Images relation, editors, extra media commands removed; historical database references and audit records preserved until inventory. Generic audio uploads are retained.
 
-- Material dialog table-only Viewer now uses explicit central dialog spacing variant; no page-specific negative margins or wrapper overrides. Requires visual review.
-- Public Artwork description is now safely rendered once and its divider is omitted when only empty rich-text markup is present; other image/paper geometry remains unverified rather than patched speculatively.
-- Restored shared lockedTarget resolution in the simplified generic Undo path; no historical extra-media reversal remains available.
-- Retired secondary Artwork images: removed GalleryImagesRelationManager UI and all active additional-media commands. Legacy Audit labels remain readable; historical Undo receipts no longer offer the retired operation. Existing stored links and Storage media remain untouched pending data inventory. Generic audio upload untouched.
-- Material table: replaced proportional Position/Actions tracks with canonical role-width columns, delayed compact icon-only rail until real narrow pressure, removed duplicate Add Row seam, made drag handles non-native draggable and decoded legacy HTML entity display. Browser screenshots still required.
-- Corrected reconstructed Edit save request's gallery assignment inputs immediately; the create action now derives a missing slug from the submitted title, avoiding a race with the title-blur suggestion. Neither behavior is browser verified.
-- User browser feedback: removed unrequested Add existing toolbar action and the extra Artwork upload action (row/editor/form). Existing Media file picker now precedes Material/Year; ALT text override renamed. Only Gallery dropzone/Storage upload media; Add artwork creates media-less drafts or reuses an unassigned slot via optional select inside same dialog. Bulk Unpublish now direct, as bulk Publish. Runtime not verified.
-- Public Gallery action links now derive exclusively from Committed publication state/slug rather than Working. Added Working → Commit → pending Unpublish regression sequence; browser still unverified.
-- Scoped lifecycle tests now cover remove → reassign same Artwork slug/media, filter-pruned selections and exact-date versus year-only ordering.
-- Reconciled the dedicated GalleryMaterialPresetsTest (old sync() expectations were stale) and registered the new reorder action in the canonical AdminActionCatalog; kept GallerySettingsTest only on Gallery settings.
-- Added dedicated public Artwork fit browser matrix with portrait/landscape fixtures and three viewport shapes, targeted to new WebKit/mobile projects; isolated seeder only, not production data.
-- Material inline Add now awaits the same canonical server mutation result before clearing the input; invalid duplicate/empty names remain editable, no second autosave listener.
-- General admin live preview favicon now uses canonical MediaPreviewVariant rather than dead public-v1 thumbnail path; old profile remains historical until proven data cleanup.
-- Explicit exception: replaced obsolete Gallery Settings/Materials and upload tests with current stateful editor and resumable queue coverage; scoped Playwright WebKit Desktop, iPhone emulation and Android Chromium projects added. Not executed; disposable environment required.
-- Root-cause source fix for Artwork viewport fitting: consistent viewport measurement and image sizing across narrow/wide layouts; runtime/browser acceptance outstanding.
-- Corrected blocked sorting explanations (Manual versus filters) and Working publication metric wording; preserved filter-independent absolute Position editing.
-- Aligned PublicArtworkQuery thumbnail profile with the canonical current MediaPreviewVariant, removing obsolete profile acceptance from the public read model. Historical data cutover remains separately unverified.
-- Replaced Material preset Repeater/command with canonical modal table and immediate domain mutations; introduced persistent manual position and retained IDs on rename. Migration/runtime/browser pending.
-- Implemented source-level recovery via Gallery Add existing: unassigned Artworks retain identity and media; filter-hidden selections are pruned and guarded before batch operations. No runtime verification available.
-- Read current `dev/AGENTS.md`, `dev/.agents/skills/dev/SKILL.md`, `dev/.agents/README.md` and `dev/.agents/roster.md` before registration.
-- Initial registration on dev at base `b5a7f186e3192e0e7739582ab03844b505b1b03a`.
-- No application changes, tests, browser review, deployment or workflow execution.
+## Source implementation (NOT runtime/browser acceptance)
+- Gallery Remove/Restore entrypoints and actions retired, including Gallery card, Editor header, Selected menu, and Add artwork form. Hidden standalone Artwork editor cannot create new unassigned records. Source commit 77d5fd3. The existing single Delete dialog and media-domain optional deletion mechanism remain.
+- Previous source changes: new image-less Artwork slot creation and Media file selection, Material table and position migration, selection guards, Working/Committed link presentation, public image fitting and suppression of empty-description divider, additional-image UI retirement, scoped browser test definitions. No test execution, CI, deploy or migrations performed by this worker.
 
-## Deferred decisions / handoff
-- **Remove versus Delete — accepted and implemented in Gallery code:** Only Delete remains. It deletes a draft Artwork slot and keeps the source file by default; optional checkbox deletes the original through the media domain after reference-impact review. To unlink only the file while retaining the Artwork slot, clear Edit → Media file. Removed standalone/selected Remove and the artificial Restore selector. Existing previously detached, unassigned Artwork rows must be inventoried before deliberate data cleanup; never delete them silently.
-- **Delete cross-reference issue (Dev Worker 2 ownership):** The current MediaAssetEditorialService::removeCanonicalReferences() additionally detaches other Artworks when their primary file is deleted; review whether these other Artwork slots should instead remain as media-less drafts under the newly agreed semantics. Do not patch Dev Worker 2's active media domain here.
-- **Global future refactor:** concurrent multiple-admin editing may overwrite newer changes across editors; revisit after Gallery work under a separately assigned worker. Consider version/conflict contracts globally, not a Gallery-local patch.
-- **Testing Worker (not yet requested):** reconcile previously created Gallery tests after rejected upload/extra-image actions, test Safari/WebKit sorting and Working/Committed public-link isolation. User explicitly does not want Testing handoff prompt yet.
-- **Upload Worker 2:** owns legacy media-profile cleanup, no work here.
-- **Public image sizing:** still reported visually broken across portrait/landscape and Menu/Page combinations; only empty-description divider corrected. Do not claim image geometry accepted without real browser evidence.
-- **Materials:** retain user screenshot as failed visual acceptance; after browser acceptance update canonical Dev method/table/dialog UI contract with specific checks against premature icon-only rows, column alignment and wrong spacing.
+## Pending user browser checklist — MUST NOT LOSE
+1. Add artwork from Admin → Pages → Gallery: check title-generated slug and Create draft checkmark, image-less slot survives reload, attach and clear Media file independently of slot and Storage original. Artist previously clicked create and NOTHING happened; not yet reproduced/fixed with browser evidence.
+2. Single Delete: absent Remove/Restore controls; default deletes only a disposable draft slot while Storage image survives. Optional file deletion requires separate disposable non-shared asset and impact dialog review, no live destructive tests.
+3. Filtered selection: user ALREADY confirmed selecting two, filtering down to one, then only one remains selected and targeted Publish/Unpublish works. Do not make user retest without regression.
+4. Material dialog: previous screenshot FAILED visually (columns, labeled actions, top whitespace, Add row and divider, drag cursor); new code pending visual acceptance. Test Add/Rename/Move Up/Down/drag/Delete persist after reopen, correct display of etching & aquatinta, responsive layout and new migration.
+5. Artwork ordering: use existing Artworks, Manual drag and absolute Edit Position even with filters; newest-date sort exact dates before year-only records within year. New slots first only under Manual.
+6. Public Artwork detail: user still sees distorted/oversized portrait and landscape images, wrong upper whitespace and mixed Menu/Paper/Divider behaviors; empty-description divider root cause corrected only. Obtain example existing Artwork titles, settings and screenshots before any further formula changes.
+
+## Testing Worker backlog — requested later, NOT NOW
+- Source reconciliation: previous GalleryAssignmentTest tests expect retired Remove/Restore workflow and need replacement; earlier temporary Dev-edited tests for Material/Upload/secondary images must be reconciled to current source.
+- Real Safari/macOS and automated Playwright WebKit desktop/mobile sorting and drag-handle behavior; test configuration was added but never executed. Chromium mobile cross-check. Include disabled-with-filters behavior.
+- Verify Working/Preview and Committed public links/visibility isolation and retained historical media; slot-only and optional-file deletion with reference cascades, refresh and no-op/validation diagnostics; Add artwork slug and image-less drafts; Material ordering migration; portrait/landscape image geometry across layout combinations.
+- User explicitly wants Testing Worker prompt only upon later request. Do not issue one automatically.
+
+## Cross-worker and later global work — MUST NOT LOSE
+- **Dev Worker 2 owns media deletion:** MediaAssetEditorialService::removeCanonicalReferences() currently detaches other Artwork records from Galleries when their primary original is deleted. Check whether these other slots should instead remain as image-less draft Artworks under accepted product semantics. Do not change their currently owned media service in parallel.
+- **Dev Worker 2 owns prior public-v1/public-v2 media profile removal.** User requested that topic remain with Upload worker, not this Gallery chat.
+- **Global multi-admin refactor:** simultaneous editors/admins may overwrite more recent field changes via stale complete form saves. Design an application-wide concurrency/version/conflict contract after Gallery work; no local patch.
+- **Legacy orphan data:** old Remove may have left Artwork records with artwork_category_id null, retained slugs and media. Inventory safely before any intentional cleanup; do not silently delete saved artist data.
+- **Legacy extra-image references:** active feature removed; persisted role=additional associations/audit could remain. Do not delete assets, history or generic audio upload without inventory.
+- **Docs/skill:** user repeatedly rejects invented action families and one-off UI rules. Dev method updated with explicit entity/action map. After material visual acceptance, publish tested Admin table/dialog style expectations through Docs worker; no false claim of accepted design.
+- **Testing handoff:** pending as above; not authorized yet.
 
 ## Next action
-- Implement bounded root-cause slices, read/reconcile latest dev head before each guarded write. No CI/deploy. Browser/runtime acceptance remains unverified without an actual isolated environment.
+- User will resume remaining browser checks after this Delete correction. Make only bounded root-cause changes on current dev with checked lease/head. Report source versus actually executed browser evidence separately.
