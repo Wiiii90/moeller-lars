@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Domain\Content\ExhibitionMapPresentation;
+use App\Domain\Content\ExhibitionDate;
 use App\Domain\Content\SafeLinkPolicy;
 use App\Domain\Content\RegionalFormats;
 use Carbon\CarbonImmutable;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'organizer', 'venue', 'city', 'country', 'location_text', 'postal_code', 'show_organizer', 'show_venue', 'show_external_url', 'show_location_text', 'show_postal_code', 'show_city', 'show_country', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'show_vernissage', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'image_viewer_enabled', 'map_enabled', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'organizer', 'venue', 'city', 'country', 'location_text', 'postal_code', 'show_organizer', 'show_venue', 'show_external_url', 'show_location_text', 'show_postal_code', 'show_city', 'show_country', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'opening_text', 'vernissage_at', 'show_vernissage', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'image_viewer_enabled', 'map_enabled', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
 #[Guarded(['id'])]
 class Exhibition extends Model
 {
@@ -26,8 +27,6 @@ class Exhibition extends Model
     protected function casts(): array
     {
         return [
-            'starts_on' => 'date',
-            'ends_on' => 'date',
             'vernissage_at' => 'datetime',
             'geocoded_at' => 'datetime',
             'latitude' => 'decimal:7',
@@ -63,44 +62,20 @@ class Exhibition extends Model
 
     public function temporalState(CarbonInterface $date): string
     {
-        $startsOn = $this->getAttribute('starts_on');
-        if ($startsOn === null) {
-            return 'unknown';
-        }
-
-        $date = CarbonImmutable::instance($date)->startOfDay();
-        $startsOn = CarbonImmutable::instance($startsOn)->startOfDay();
-        if ($date->isBefore($startsOn)) {
-            return 'upcoming';
-        }
-
-        $endsOn = $this->getAttribute('ends_on');
-        if ($endsOn !== null) {
-            return $date->isAfter(CarbonImmutable::instance($endsOn)->startOfDay()) ? 'past' : 'current';
-        }
-
-        return $date->isSameDay($startsOn) ? 'current' : 'past';
+        return ExhibitionDate::temporalState(
+            $this->getAttribute('starts_on'),
+            $this->getAttribute('ends_on'),
+            $date,
+        );
     }
 
     public function displayDate(): ?string
     {
-        $override = trim((string) ($this->getAttribute('date_text') ?? ''));
-        if ($override !== '') {
-            return $override;
-        }
-
-        $starts = $this->getAttribute('starts_on');
-        if (! $starts instanceof CarbonInterface) {
-            return null;
-        }
-        $start = CarbonImmutable::instance($starts);
-        $ends = $this->getAttribute('ends_on');
-        if (! $ends instanceof CarbonInterface || $start->isSameDay($ends)) {
-            return RegionalFormats::publicDate($start);
-        }
-        $end = CarbonImmutable::instance($ends);
-
-        return RegionalFormats::publicDateRange($start, $end);
+        return ExhibitionDate::display(
+            $this->getAttribute('starts_on'),
+            $this->getAttribute('ends_on'),
+            RegionalFormats::publicRegion(),
+        );
     }
 
     public function publicFieldVisible(string $field): bool

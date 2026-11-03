@@ -51,3 +51,9 @@
 - **Public browser layout:** Reused the existing published synthetic SPA page 2 as a Rich Text caption/float/spacing/color fixture (all owned by its disposable seeder, no new public pages or media). Extended canonical `public-media.spec.mjs` to compare image/caption rectangles and float on desktop vs mobile, plus computed line spacing and color marker. No execution; fixture may only be seeded after independent disposable DB qualification.
 
 - **Popover sequence consolidated:** The same image/caption browser test now explicitly switches Caption→Color→Storage and asserts exactly one visible panel, Escape closure and retention of the parent editor, complementing Link→Color→Spacing→Storage. Not executed.
+
+## Cumulative `dev` reconciliation — 2026-11-03
+
+- Recorded source baseline `570f9f987757022655003bea8fc73393880204e2`; reviewed 39 `dev` commits and exact 18 changed application/migration/frontend/route paths through **`fcd000455f292f03c32f2c2406d8fb291b776e9e`**. Synced those exact blobs to Testing in one guarded source commit, excluding all `dev` rosters/records, Testing's curated files and its special synthetic browser seeder.
+- Main contract changes: canonical Exhibition partial dates (`YYYY`, `YYYY-MM`, `YYYY-MM-DD`), strict legacy conversion, dual Working/Committed migration and immutable snapshot validation; Publication historical projection, read-only preflight/restore, Gallery metadata schema parity; Exhibition maps fail silently for missing dependencies; shared Admin controls and UI layout. Need curate direct tests in existing Unit, Migration, Publication, Feature, JS and browser owners.
+- This is source preparation only, not executed qualification or a user-declared freeze. Remain on lease 2; no `dev`, main, CI, validation or production mutations.

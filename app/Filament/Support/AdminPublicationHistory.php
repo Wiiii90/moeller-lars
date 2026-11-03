@@ -30,15 +30,14 @@ final class AdminPublicationHistory
         int $page = 1,
     ): array {
         $perPage = max(10, min(100, $perPage));
-        $currentSchemaHash = $this->versions->schemaHash();
         $liveId = $this->versions->currentLiveCheckpoint()?->getKey();
 
         /** @var LengthAwarePaginator<int, PublicationCheckpoint> $paginator */
         $paginator = $this->queryForFilters($area, $family, $search, $date, $hour)
             ->with([
                 'adminUser:id,name',
-                'parent:id,hash,snapshot_available,schema_hash',
-                'source:id,hash,snapshot_available,schema_hash',
+                'parent:id,hash,snapshot_available,schema_hash,snapshot_hash',
+                'source:id,hash,snapshot_available,schema_hash,snapshot_hash',
             ])
             ->orderByDesc('published_at')
             ->orderByDesc('id')
@@ -56,7 +55,6 @@ final class AdminPublicationHistory
                 ->map(fn (PublicationCheckpoint $checkpoint): array => $this->project(
                     $checkpoint,
                     $liveId === $checkpoint->getKey(),
-                    $currentSchemaHash,
                     $activityCounts[(int) $checkpoint->getKey()] ?? 0,
                 ))
                 ->values()
@@ -163,21 +161,19 @@ final class AdminPublicationHistory
         $checkpoint = PublicationCheckpoint::query()
             ->with([
                 'adminUser:id,name',
-                'parent:id,hash,snapshot_available,schema_hash',
-                'source:id,hash,snapshot_available,schema_hash',
+                'parent:id,hash,snapshot_available,schema_hash,snapshot_hash',
+                'source:id,hash,snapshot_available,schema_hash,snapshot_hash',
             ])
             ->find($checkpointId);
         if (! $checkpoint instanceof PublicationCheckpoint) {
             return null;
         }
 
-        $currentSchemaHash = $this->versions->schemaHash();
         $liveId = $this->versions->currentLiveCheckpoint()?->getKey();
         $activity = $this->activity->forCheckpoint($checkpointId);
         $projected = $this->project(
             $checkpoint,
             $liveId === $checkpoint->getKey(),
-            $currentSchemaHash,
             count($activity),
         );
 
@@ -236,7 +232,7 @@ final class AdminPublicationHistory
     }
 
     /** @return array<string,mixed> */
-    private function project(PublicationCheckpoint $checkpoint, bool $live, string $currentSchemaHash, int $activityCount): array
+    private function project(PublicationCheckpoint $checkpoint, bool $live, int $activityCount): array
     {
         /** @var CarbonInterface $publishedAt */
         $publishedAt = $checkpoint->getAttribute('published_at');
@@ -246,13 +242,9 @@ final class AdminPublicationHistory
         $hash = (string) ($checkpoint->getAttribute('hash') ?? '');
         $schemaHash = $checkpoint->getAttribute('schema_hash');
         $snapshotAvailable = (bool) $checkpoint->getAttribute('snapshot_available');
-        $restorable = $snapshotAvailable
-            && is_string($schemaHash)
-            && hash_equals($schemaHash, $currentSchemaHash);
+        $restorable = $this->versions->isRestorable($checkpoint);
         $parentRestorable = $parent instanceof PublicationCheckpoint
-            && (bool) $parent->getAttribute('snapshot_available')
-            && is_string($parent->getAttribute('schema_hash'))
-            && hash_equals((string) $parent->getAttribute('schema_hash'), $currentSchemaHash);
+            && $this->versions->isRestorable($parent);
         $message = $checkpoint->getAttribute('message');
         $operation = (string) ($checkpoint->getAttribute('operation') ?? 'commit');
 

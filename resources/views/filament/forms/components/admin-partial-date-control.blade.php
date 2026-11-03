@@ -12,7 +12,7 @@
             x-on:click="toggle()"
             x-bind:aria-expanded="open"
             aria-haspopup="dialog"
-            aria-label="Choose Artwork date with year, month or day precision"
+            aria-label="{{ $accessibleLabel }}: choose year, month or exact date"
         >
             <span x-text="display"></span>
             <x-filament::icon icon="heroicon-o-calendar-days" class="admin-partial-date__icon" />
@@ -23,7 +23,7 @@
                 x-cloak x-show="open"
                 x-bind:style="position"
                 role="dialog"
-                aria-label="Artwork date picker"
+                aria-label="{{ $accessibleLabel }} date picker"
                 x-on:click.outside="if (!$event.target.closest('.admin-partial-date__trigger')) close()"
             >
                 <div class="admin-partial-date__modes" aria-label="Date precision">

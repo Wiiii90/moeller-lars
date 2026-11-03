@@ -6,6 +6,7 @@ use App\Domain\Admin\AdminNotifier;
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Content\BlogEditorialService;
 use App\Domain\Content\ExhibitionEditorialService;
+use App\Domain\Content\ExhibitionDate;
 use App\Domain\Content\JournalEntryOrderService;
 use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
@@ -936,7 +937,7 @@ final class JournalWorkspace extends Page
             $query->where(function (Builder $search) use ($term): void {
                 $search->where('title', 'ilike', '%'.$term.'%')->orWhere('organizer', 'ilike', '%'.$term.'%')->orWhere('venue', 'ilike', '%'.$term.'%')
                     ->orWhere('location_text', 'ilike', '%'.$term.'%')->orWhere('postal_code', 'ilike', '%'.$term.'%')->orWhere('city', 'ilike', '%'.$term.'%')
-                    ->orWhere('country', 'ilike', '%'.$term.'%')->orWhere('date_text', 'ilike', '%'.$term.'%');
+                    ->orWhere('country', 'ilike', '%'.$term.'%')->orWhere('starts_on', 'like', '%'.$term.'%')->orWhere('ends_on', 'like', '%'.$term.'%');
             });
         }
         $this->total = (clone $query)->count();
@@ -956,20 +957,11 @@ final class JournalWorkspace extends Page
             $rank = ((int) ($ranks[(int) $entry->getKey()] ?? 0)) + 1;
             $location = $entry->summaryAttribution();
 
-            // The admin table displays structured dates, not the public-facing
-            // free-text display override (which may use different separators).
-            $startsOn = $entry->getAttribute('starts_on');
-            $endsOn = $entry->getAttribute('ends_on');
-            $dateStart = $startsOn instanceof CarbonInterface ? RegionalFormats::adminDate($startsOn) : null;
-            $dateEnd = $endsOn instanceof CarbonInterface ? RegionalFormats::adminDate($endsOn) : null;
-            // Display structured dates as one consistent range, independent of
-            // the public-facing free-text date override.
-            $dateRange = match (true) {
-                $dateStart !== null && $dateEnd !== null && $dateStart !== $dateEnd => $dateStart.' – '.$dateEnd,
-                $dateStart !== null => $dateStart,
-                $dateEnd !== null => $dateEnd,
-                default => '',
-            };
+            $dateRange = ExhibitionDate::display(
+                $entry->getAttribute('starts_on'),
+                $entry->getAttribute('ends_on'),
+                RegionalFormats::adminRegion(),
+            ) ?? '';
             $vernissageAt = $entry->getAttribute('vernissage_at');
             $vernissage = $vernissageAt instanceof CarbonInterface
                 ? RegionalFormats::adminDateTime($vernissageAt)
@@ -1053,31 +1045,18 @@ final class JournalWorkspace extends Page
 
     private function applyTimingFilter(Builder $query): void
     {
-        $today = now()->toDateString();
-        if ($this->timingFilter === 'upcoming') {
-            $query->whereDate('starts_on', '>', $today);
-
+        if (! in_array($this->timingFilter, ['upcoming', 'current', 'past', 'unknown'], true)) {
             return;
         }
-        if ($this->timingFilter === 'unknown') {
-            $query->whereNull('starts_on');
 
-            return;
-        }
-        if ($this->timingFilter === 'current') {
-            $query->whereNotNull('starts_on')->whereDate('starts_on', '<=', $today)->where(function (Builder $current) use ($today): void {
-                $current->where(fn (Builder $range) => $range->whereNotNull('ends_on')->whereDate('ends_on', '>=', $today))
-                    ->orWhere(fn (Builder $single) => $single->whereNull('ends_on')->whereDate('starts_on', '=', $today));
-            });
-
-            return;
-        }
-        if ($this->timingFilter === 'past') {
-            $query->whereNotNull('starts_on')->where(function (Builder $past) use ($today): void {
-                $past->where(fn (Builder $range) => $range->whereNotNull('ends_on')->whereDate('ends_on', '<', $today))
-                    ->orWhere(fn (Builder $single) => $single->whereNull('ends_on')->whereDate('starts_on', '<', $today));
-            });
-        }
+        // Temporal certainty is owned by the Exhibition model, not a second
+        // SQL-only interpretation of imprecise months and years.
+        $now = now();
+        $ids = (clone $query)
+            ->get(['id', 'starts_on', 'ends_on'])
+            ->filter(fn (Exhibition $entry): bool => $entry->temporalState($now) === $this->timingFilter)
+            ->modelKeys();
+        $query->whereIn('id', $ids);
     }
 
     private function coverThumbnailUrl(BlogPost|Exhibition $entry): ?string

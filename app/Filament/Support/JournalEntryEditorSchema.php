@@ -11,7 +11,6 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Media\MediaTypePolicy;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Schemas\Components\Grid;
@@ -110,11 +109,18 @@ final class JournalEntryEditorSchema
     private static function venueFields(?Exhibition $exhibition): array
     {
         return [
-            self::publicLocationField('organizer', 'Organizer', 240, $exhibition)->columnSpanFull(),
-            self::publicLocationField('venue', 'Venue', 240, $exhibition)->columnSpanFull(),
+            Grid::make()
+                ->columns(['default' => 1, 'sm' => 2])
+                ->schema([
+                    self::publicLocationField('organizer', 'Organizer', 240, $exhibition),
+                    self::publicLocationField('venue', 'Venue', 240, $exhibition),
+                ])
+                ->columnSpanFull(),
             self::publicLocationField('external_url', 'Exhibition website', 2048, $exhibition)->url()->columnSpanFull(),
             Grid::make()
-                ->columns(['default' => 1, 'md' => 4])
+                // Four fields are one composite address row at every breakpoint.
+                // A narrower dialog must not silently split this into two rows.
+                ->columns(4)
                 ->schema([
                     self::publicLocationField('location_text', 'Street address', 500, $exhibition),
                     self::publicLocationField('city', 'City', 160, $exhibition),
@@ -128,9 +134,18 @@ final class JournalEntryEditorSchema
     private static function dateFields(): array
     {
         return [
-            DatePicker::make('starts_on')->label(__('Starts'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->nullable(),
-            DatePicker::make('ends_on')->label(__('Ends'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->afterOrEqual('starts_on')->nullable(),
-            TextInput::make('date_text')->label(__('Display date override'))->maxLength(160)->nullable()->columnSpanFull(),
+            Grid::make()
+                ->columns(['default' => 1, 'sm' => 2])
+                ->schema([
+                    AdminPartialDateControl::make(
+                        'starts_on',
+                        __('Starts'),
+                        __('For a one-day exhibition, enter only the start date and leave Ends empty.'),
+                        RegionalFormats::adminRegion(),
+                    ),
+                    AdminPartialDateControl::make('ends_on', __('Ends'), region: RegionalFormats::adminRegion()),
+                ])
+                ->columnSpanFull(),
             Toggle::make('show_vernissage')->label(__('Show vernissage until it begins'))->default(false)->columnSpanFull(),
             DateTimePicker::make('vernissage_at')->label(__('Vernissage'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateTimeFormat())->seconds(false)->default(null)->nullable()->columnSpanFull(),
         ];

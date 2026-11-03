@@ -4,6 +4,7 @@ namespace App\Domain\Publication;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Content\HistoricalCustomPageBlockCanonicalizer;
+use App\Domain\Content\ExhibitionDate;
 use App\Models\PublicationCheckpoint;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,23 @@ use Illuminate\Validation\ValidationException;
 
 final class PublicationVersionService
 {
+
+    /**
+     * Translation applies only when reading immutable historical checkpoint
+     * rows. Working and Committed never regain the retired Artwork columns.
+     */
+    private const HISTORICAL_ARTWORK_DATE_PAYLOAD = <<<'SQL'
+((version_row.payload - 'work_year' - 'work_date' - 'date_precision') || jsonb_build_object(
+    'year', COALESCE((version_row.payload->>'work_year')::smallint, EXTRACT(YEAR FROM (version_row.payload->>'work_date')::date)::smallint),
+    'month', CASE WHEN version_row.payload->>'date_precision' IN ('month', 'day') THEN EXTRACT(MONTH FROM (version_row.payload->>'work_date')::date)::smallint ELSE NULL END,
+    'day', CASE WHEN version_row.payload->>'date_precision' = 'day' THEN EXTRACT(DAY FROM (version_row.payload->>'work_date')::date)::smallint ELSE NULL END
+))
+SQL;
+
+    /** @var array<int, bool> */
+    private array $compatibleHistoricalCheckpoints = [];
+
+
     public function __construct(
         private readonly AdminAuditService $audit,
         private readonly PublicationMediaCleanupService $mediaCleanup,
@@ -183,7 +201,75 @@ final class PublicationVersionService
 
         $schemaHash = $checkpoint->getAttribute('schema_hash');
 
-        return is_string($schemaHash) && hash_equals($schemaHash, $this->schemaHash());
+        if (! is_string($schemaHash)) {
+            return false;
+        }
+
+        if (hash_equals($schemaHash, $this->schemaHash())) {
+            return true;
+        }
+
+        // Historical snapshots are immutable. Only verified source-era
+        // schemas with known, lossless domain cutovers may be restored.
+        return $this->isCompatibleHistoricalCheckpoint($checkpoint)
+            && (! $this->hasOldArtworkDates($checkpoint)
+                || $this->historicalArtworkDatesValid((int) $checkpoint->getKey()))
+            && (! $this->hasOldExhibitionDates($checkpoint)
+                || $this->historicalExhibitionDatesValid($checkpoint))
+            && $this->historicalMediaVariantsValid((int) $checkpoint->getKey())
+            && $this->originalSnapshotHashValid($checkpoint);
+    }
+
+    /**
+     * Non-destructive verification of a checkpoint against today's schema.
+     * Runs the same schema projection and full row-difference calculation used
+     * by Stage Version, but does not truncate Working, restore file rights,
+     * enqueue cleanup, or change publication history.
+     *
+     * @return array{checkpoint_id:int, historical_date_projection:bool, differences_from_working:int, committed_artwork_differences:?int}
+     */
+    public function verifyCheckpointReadOnly(PublicationCheckpoint $checkpoint): array
+    {
+        $this->schemaGuard->assertParity();
+        $checkpoint->refresh();
+        $this->assertRestorable($checkpoint);
+
+        // A matching schema hash alone is not proof that its stored rows are
+        // intact; the explicit audit also checks their original content hash.
+        if (! $this->originalSnapshotHashValid($checkpoint)) {
+            throw ValidationException::withMessages([
+                'publication' => 'This checkpoint does not match its original snapshot checksum.',
+            ]);
+        }
+
+        $committedArtworkDifferences = null;
+        if ($this->currentLiveCheckpoint()?->getKey() === $checkpoint->getKey()) {
+            // The current LIVE checkpoint must represent Committed exactly.
+            // A nonzero result identifies a failed or incomplete historical
+            // Artwork conversion without changing any database state.
+            $payload = $this->versionPayloadExpression($checkpoint, 'artworks');
+            $row = DB::selectOne(
+                "WITH target AS (
+                    SELECT (jsonb_populate_record(NULL::committed.artworks, {$payload})).*
+                    FROM publication_version_rows AS version_row
+                    WHERE version_row.publication_checkpoint_id = ? AND version_row.table_name = 'artworks'
+                )
+                SELECT COUNT(*)::int AS aggregate
+                FROM committed.artworks AS working
+                FULL OUTER JOIN target AS committed USING (id)
+                WHERE ".PublicationSnapshot::ROW_DIFFERENCE_SQL,
+                [(int) $checkpoint->getKey()],
+            );
+            $committedArtworkDifferences = (int) ($row->aggregate ?? -1);
+        }
+
+        return [
+            'checkpoint_id' => (int) $checkpoint->getKey(),
+            'historical_date_projection' => $this->hasOldArtworkDates($checkpoint)
+                || $this->hasOldExhibitionDates($checkpoint),
+            'differences_from_working' => $this->pendingCountAgainstCheckpoint($checkpoint),
+            'committed_artwork_differences' => $committedArtworkDifferences,
+        ];
     }
 
     public function currentLiveCheckpoint(): ?PublicationCheckpoint
@@ -278,9 +364,15 @@ final class PublicationVersionService
         }
 
         $schemaHash = $checkpoint->getAttribute('schema_hash');
-        if (! is_string($schemaHash) || ! hash_equals($schemaHash, $this->schemaHash())) {
+        if (is_string($schemaHash) && hash_equals($schemaHash, $this->schemaHash())) {
+            return;
+        }
+
+        // This is the same eligibility decision used by Admin History.
+        // It validates original payload integrity before Working is touched.
+        if (! $this->isRestorable($checkpoint)) {
             throw ValidationException::withMessages([
-                'publication' => 'This commit snapshot was created against a different publication schema and cannot be restored safely.',
+                'publication' => 'Historical snapshot validation failed; the original version remains preserved but cannot be restored safely.',
             ]);
         }
     }
@@ -290,12 +382,16 @@ final class PublicationVersionService
         $this->truncateWorkingTables();
 
         foreach (PublicationSnapshot::RESTORE_TABLES as $table) {
+            $payload = $this->versionPayloadExpression($checkpoint, $table);
             DB::statement(
-                "INSERT INTO public.{$table} SELECT (jsonb_populate_record(NULL::public.{$table}, version_row.payload)).* FROM publication_version_rows AS version_row WHERE version_row.publication_checkpoint_id = ? AND version_row.table_name = ? ORDER BY version_row.id",
+                "INSERT INTO public.{$table} SELECT (jsonb_populate_record(NULL::public.{$table}, {$payload})).* FROM publication_version_rows AS version_row WHERE version_row.publication_checkpoint_id = ? AND version_row.table_name = ? ORDER BY version_row.id",
                 [(int) $checkpoint->getKey(), $table],
             );
         }
 
+        if ($this->hasOldExhibitionDates($checkpoint)) {
+            $this->projectRestoredExhibitionDates($checkpoint);
+        }
         $this->canonicalizeRestoredCustomPageSettings();
     }
 
@@ -363,14 +459,357 @@ final class PublicationVersionService
         $total = 0;
 
         foreach (PublicationSnapshot::TABLES as $table) {
+            if ($table === 'exhibitions' && $this->hasOldExhibitionDates($checkpoint)) {
+                $total += $this->historicalExhibitionDifferences($checkpoint);
+                continue;
+            }
+            $payload = $this->versionPayloadExpression($checkpoint, $table);
             $row = DB::selectOne(
-                "WITH target AS (SELECT (jsonb_populate_record(NULL::public.{$table}, version_row.payload)).* FROM publication_version_rows AS version_row WHERE version_row.publication_checkpoint_id = ? AND version_row.table_name = ?) SELECT COUNT(*)::int AS aggregate FROM public.{$table} AS working FULL OUTER JOIN target AS committed USING (id) WHERE ".PublicationSnapshot::ROW_DIFFERENCE_SQL,
+                "WITH target AS (SELECT (jsonb_populate_record(NULL::public.{$table}, {$payload})).* FROM publication_version_rows AS version_row WHERE version_row.publication_checkpoint_id = ? AND version_row.table_name = ?) SELECT COUNT(*)::int AS aggregate FROM public.{$table} AS working FULL OUTER JOIN target AS committed USING (id) WHERE ".PublicationSnapshot::ROW_DIFFERENCE_SQL,
                 [(int) $checkpoint->getKey(), $table],
             );
             $total += (int) ($row->aggregate ?? 0);
         }
 
         return $total + $this->rightsSelections->pendingCount($checkpoint);
+    }
+
+
+    /**
+     * Project immutable historical rows into the one current publication
+     * schema. Values are taken from source-era migrations, not guessed.
+     * Modern rows are unchanged by these idempotent expressions.
+     */
+    private function versionPayloadExpression(PublicationCheckpoint $checkpoint, string $table): string
+    {
+        return match ($table) {
+            'artworks' => $this->hasOldArtworkDates($checkpoint)
+                ? self::HISTORICAL_ARTWORK_DATE_PAYLOAD : 'version_row.payload',
+            'artwork_categories' => "(version_row.payload || jsonb_build_object(
+                'artwork_menu_surface_wide',
+                COALESCE((version_row.payload->>'artwork_menu_surface_wide')::boolean, false)
+            ))",
+            'site_sections' => <<<'SQL'
+(version_row.payload || jsonb_build_object(
+    'meta_description',
+    CASE
+        WHEN jsonb_exists(version_row.payload, 'meta_description')
+            THEN version_row.payload->>'meta_description'
+        WHEN version_row.payload->>'type' = 'gallery' THEN (
+            SELECT CASE WHEN btrim(gallery.payload->>'description') <> ''
+                THEN gallery.payload->>'description' ELSE NULL END
+            FROM publication_version_rows AS gallery
+            WHERE gallery.publication_checkpoint_id = version_row.publication_checkpoint_id
+              AND gallery.table_name = 'artwork_categories'
+              AND gallery.row_key = version_row.payload->>'artwork_category_id'
+            LIMIT 1
+        )
+        ELSE NULL
+    END
+))
+SQL,
+            'media_variants' => "(version_row.payload - 'transform_profile')",
+            'exhibitions' => $this->hasOldExhibitionDates($checkpoint)
+                ? "(version_row.payload - 'date_text')" : 'version_row.payload',
+            default => 'version_row.payload',
+        };
+    }
+
+    /**
+     * Reject every unknown historical schema difference. Compare the exact
+     * keys AFTER applying only the known source-era cutovers; this is not an
+     * "ignore unknown columns" compatibility fallback.
+     */
+    private function isCompatibleHistoricalCheckpoint(PublicationCheckpoint $checkpoint): bool
+    {
+        $id = (int) $checkpoint->getKey();
+        if (array_key_exists($id, $this->compatibleHistoricalCheckpoints)) {
+            return $this->compatibleHistoricalCheckpoints[$id];
+        }
+
+        try {
+            // A different schema hash alone is never sufficient: there
+            // must be real evidence of at least one specifically supported
+            // source-era transformation in this checkpoint's stored rows.
+            $knownCutover = DB::table('publication_version_rows')
+                ->where('publication_checkpoint_id', $id)
+                ->where(static function ($query): void {
+                    $query->where(static function ($rows): void {
+                        $rows->where('table_name', 'artworks')
+                            ->whereRaw("jsonb_exists_all(payload, ARRAY['work_year', 'work_date', 'date_precision'])");
+                    })->orWhere(static function ($rows): void {
+                        $rows->where('table_name', 'exhibitions')
+                            ->whereRaw("jsonb_exists(payload, 'date_text')");
+                    })->orWhere(static function ($rows): void {
+                        $rows->where('table_name', 'artwork_categories')
+                            ->whereRaw("NOT jsonb_exists(payload, 'artwork_menu_surface_wide')");
+                    })->orWhere(static function ($rows): void {
+                        $rows->where('table_name', 'site_sections')
+                            ->whereRaw("NOT jsonb_exists(payload, 'meta_description')");
+                    })->orWhere(static function ($rows): void {
+                        $rows->where('table_name', 'media_variants')
+                            ->whereRaw("jsonb_exists(payload, 'transform_profile')");
+                    });
+                })
+                ->exists();
+
+            if (! $knownCutover) {
+                return $this->compatibleHistoricalCheckpoints[$id] = false;
+            }
+
+            $columns = DB::table('information_schema.columns')
+                ->where('table_schema', 'public')
+                ->whereIn('table_name', PublicationSnapshot::TABLES)
+                ->get(['table_name', 'column_name'])
+                ->groupBy('table_name');
+
+            $expected = [];
+            $projectionCases = [];
+            foreach (PublicationSnapshot::TABLES as $table) {
+                $current = $columns->get($table);
+                if ($current === null) {
+                    return $this->compatibleHistoricalCheckpoints[$id] = false;
+                }
+
+                $names = $current->pluck('column_name')
+                    ->map(static fn (mixed $name): string => (string) $name)
+                    ->all();
+                sort($names, SORT_STRING);
+
+                $literals = array_map(
+                    static fn (string $name): string => "'".str_replace("'", "''", $name)."'",
+                    $names,
+                );
+                $expected[] = "('{$table}', ARRAY[".implode(', ', $literals)."]::text[])";
+
+                $projection = $this->versionPayloadExpression($checkpoint, $table);
+                if ($projection !== 'version_row.payload') {
+                    $projectionCases[] = "WHEN version_row.table_name = '{$table}' THEN {$projection}";
+                }
+            }
+
+            $projectedPayload = '(CASE '.implode(' ', $projectionCases).
+                ' ELSE version_row.payload END)';
+
+            $shape = DB::selectOne(
+                "WITH expected(table_name, column_names) AS (VALUES ".implode(', ', $expected).")
+                 SELECT COUNT(*)::int AS invalid
+                 FROM publication_version_rows AS version_row
+                 LEFT JOIN expected ON expected.table_name = version_row.table_name
+                 WHERE version_row.publication_checkpoint_id = ?
+                   AND (expected.table_name IS NULL
+                        OR jsonb_typeof({$projectedPayload}) IS DISTINCT FROM 'object'
+                        OR ARRAY(
+                            SELECT name
+                            FROM jsonb_object_keys({$projectedPayload}) AS keys(name)
+                            ORDER BY name
+                        ) IS DISTINCT FROM expected.column_names)",
+                [$id],
+            );
+
+            return $this->compatibleHistoricalCheckpoints[$id]
+                = (int) ($shape->invalid ?? -1) === 0;
+        } catch (\Throwable) {
+            return $this->compatibleHistoricalCheckpoints[$id] = false;
+        }
+    }
+
+    private function hasOldArtworkDates(PublicationCheckpoint $checkpoint): bool
+    {
+        return DB::table('publication_version_rows')
+            ->where('publication_checkpoint_id', $checkpoint->getKey())
+            ->where('table_name', 'artworks')
+            ->whereRaw("jsonb_exists_all(payload, ARRAY['work_year', 'work_date', 'date_precision'])")
+            ->exists();
+    }
+
+    private function hasOldExhibitionDates(PublicationCheckpoint $checkpoint): bool
+    {
+        return DB::table('publication_version_rows')
+            ->where('publication_checkpoint_id', $checkpoint->getKey())
+            ->where('table_name', 'exhibitions')
+            ->whereRaw("jsonb_exists(payload, 'date_text')")
+            ->exists();
+    }
+
+    /** Convert an immutable snapshot only at the existing restore/read boundary. */
+    private function historicalExhibitionDatesValid(PublicationCheckpoint $checkpoint): bool
+    {
+        try {
+            foreach ($this->historicalExhibitionRows($checkpoint) as $row) {
+                $payload = $row['payload'];
+                $mapped = ExhibitionDate::fromLegacy(
+                    $payload['starts_on'],
+                    $payload['ends_on'],
+                    $payload['date_text'],
+                );
+                if (($payload['state'] ?? null) === 'published' && $mapped['starts_on'] === null) {
+                    return false;
+                }
+            }
+
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /** @return list<array{row_key:string,payload:array<string,mixed>}> */
+    private function historicalExhibitionRows(PublicationCheckpoint $checkpoint): array
+    {
+        $rows = DB::table('publication_version_rows')
+            ->where('publication_checkpoint_id', $checkpoint->getKey())
+            ->where('table_name', 'exhibitions')
+            ->orderByRaw('row_key::bigint')
+            ->get(['row_key', 'payload']);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $payload = is_array($row->payload)
+                ? $row->payload
+                : json_decode((string) $row->payload, true, 512, JSON_THROW_ON_ERROR);
+            if (! is_array($payload) || ! array_key_exists('starts_on', $payload)
+                || ! array_key_exists('ends_on', $payload) || ! array_key_exists('date_text', $payload)) {
+                throw new \RuntimeException('Historical Exhibition payload has an unsupported date shape.');
+            }
+            $result[] = ['row_key' => (string) $row->row_key, 'payload' => $payload];
+        }
+
+        return $result;
+    }
+
+    private function projectRestoredExhibitionDates(PublicationCheckpoint $checkpoint): void
+    {
+        foreach ($this->historicalExhibitionRows($checkpoint) as $row) {
+            $payload = $row['payload'];
+            $mapped = ExhibitionDate::fromLegacy(
+                $payload['starts_on'],
+                $payload['ends_on'],
+                $payload['date_text'],
+            );
+            DB::table('exhibitions')->where('id', (int) $row['row_key'])->update($mapped);
+        }
+    }
+
+    /** Compare the canonical current rows against the immutable original shape. */
+    private function historicalExhibitionDifferences(PublicationCheckpoint $checkpoint): int
+    {
+        $expected = [];
+        foreach ($this->historicalExhibitionRows($checkpoint) as $row) {
+            $record = $row['payload'];
+            $mapped = ExhibitionDate::fromLegacy(
+                $record['starts_on'],
+                $record['ends_on'],
+                $record['date_text'],
+            );
+            unset($record['date_text'], $record['created_at'], $record['updated_at']);
+            $record['starts_on'] = $mapped['starts_on'];
+            $record['ends_on'] = $mapped['ends_on'];
+            ksort($record);
+            $expected[$row['row_key']] = $record;
+        }
+
+        $current = [];
+        foreach (DB::select("SELECT id::text AS row_key, (to_jsonb(source) - 'created_at' - 'updated_at')::text AS payload FROM public.exhibitions AS source") as $row) {
+            $decoded = json_decode((string) $row->payload, true, 512, JSON_THROW_ON_ERROR);
+            if (! is_array($decoded)) {
+                throw new \RuntimeException('Canonical Exhibition snapshot is not a JSON object.');
+            }
+            ksort($decoded);
+            $current[(string) $row->row_key] = $decoded;
+        }
+
+        $different = 0;
+        foreach (array_unique([...array_keys($current), ...array_keys($expected)]) as $key) {
+            if (! array_key_exists($key, $current) || ! array_key_exists($key, $expected) || $current[$key] !== $expected[$key]) {
+                $different++;
+            }
+        }
+
+        return $different;
+    }
+
+    private function historicalArtworkDatesValid(int $checkpointId): bool
+    {
+        try {
+            $row = DB::selectOne(<<<'SQL'
+SELECT COUNT(*)::int AS invalid
+FROM publication_version_rows
+WHERE publication_checkpoint_id = ?
+  AND table_name = 'artworks'
+  AND (
+      COALESCE(payload->>'date_precision', '') NOT IN ('unknown', 'year', 'month', 'day')
+      OR ((payload->>'work_date') IS NOT NULL
+          AND (payload->>'work_year') IS NOT NULL
+          AND (payload->>'work_year')::integer <> EXTRACT(YEAR FROM (payload->>'work_date')::date))
+      OR ((payload->>'date_precision') IN ('day', 'month') AND (payload->>'work_date') IS NULL)
+      OR ((payload->>'date_precision') = 'month'
+          AND EXTRACT(DAY FROM (payload->>'work_date')::date) <> 1)
+      OR ((payload->>'date_precision') = 'year'
+          AND ((payload->>'work_date') IS NOT NULL OR (payload->>'work_year') IS NULL))
+      OR ((payload->>'date_precision') = 'unknown'
+          AND (payload->>'work_date') IS NOT NULL)
+  )
+SQL, [$checkpointId]);
+
+            return (int) ($row->invalid ?? -1) === 0;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * MediaVariant's retired transform_profile allowed several available
+     * variants of the same kind. Current schema permits exactly one; reject a
+     * historical snapshot that violates that constraint rather than choosing
+     * which media bytes to keep.
+     */
+    private function historicalMediaVariantsValid(int $checkpointId): bool
+    {
+        try {
+            $duplicate = DB::selectOne(<<<'SQL'
+SELECT 1 AS conflict
+FROM publication_version_rows
+WHERE publication_checkpoint_id = ?
+  AND table_name = 'media_variants'
+  AND payload->>'state' = 'available'
+GROUP BY payload->>'media_asset_id', payload->>'variant_kind'
+HAVING COUNT(*) > 1
+LIMIT 1
+SQL, [$checkpointId]);
+
+            return $duplicate === null;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /** Verify immutable original rows against the hash captured before migration. */
+    private function originalSnapshotHashValid(PublicationCheckpoint $checkpoint): bool
+    {
+        $expected = $checkpoint->getAttribute('snapshot_hash');
+        if (! is_string($expected) || strlen($expected) !== 64) {
+            return false;
+        }
+
+        try {
+            $hash = hash_init('sha256');
+            foreach (PublicationSnapshot::TABLES as $table) {
+                hash_update($hash, "table:{$table}\n");
+                foreach (DB::table('publication_version_rows')
+                    ->where('publication_checkpoint_id', $checkpoint->getKey())
+                    ->where('table_name', $table)
+                    ->selectRaw('row_key, payload::text AS payload')
+                    ->orderByRaw('row_key::bigint')
+                    ->cursor() as $row) {
+                    hash_update($hash, (string) $row->row_key."\n".(string) $row->payload."\n");
+                }
+            }
+
+            return hash_equals($expected, hash_final($hash));
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     private function setWorkingContext(string $operation, int $sourceCheckpointId): void
