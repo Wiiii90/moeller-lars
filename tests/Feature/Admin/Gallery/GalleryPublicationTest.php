@@ -284,3 +284,27 @@ it('retains the Gallery Artwork editor after a confirmed Unpublish launched from
         ->callMountedAction()
         ->assertSet('mountedActions', []);
 });
+
+it('links only actually committed Artwork URLs while Working publication changes remain preview-only', function (): void {
+    $gallery = galleryFixtureCategory();
+    $artwork = galleryFixtureArtwork($gallery);
+    galleryFixturePrimary($artwork, galleryFixtureAsset('video/mp4'));
+    galleryFixtureUnavailableAnalytics();
+
+    app(ArtworkPublicationService::class)->publish($artwork);
+    $row = collect(Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->get('artworkDataset'))->firstWhere('id', (int) $artwork->getKey());
+    expect($row['state'])->toBe('published')
+        ->and($row['public_url'])->toBeNull();
+
+    app(PublicationService::class)->commit(auth('web')->user());
+    $row = collect(Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->get('artworkDataset'))->firstWhere('id', (int) $artwork->getKey());
+    expect($row['public_url'])->toBe(route('artworks.show', ['slug' => $artwork->slug]));
+
+    app(ArtworkPublicationService::class)->unpublish($artwork);
+    $row = collect(Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->get('artworkDataset'))->firstWhere('id', (int) $artwork->getKey());
+    expect($row['state'])->toBe('draft')
+        ->and($row['public_url'])->toBe(route('artworks.show', ['slug' => $artwork->slug]));
+});

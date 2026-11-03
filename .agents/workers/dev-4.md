@@ -9,6 +9,7 @@
 - Scope: Gallery-workspace actions, Artwork assignment and presentation, material preset owners, directly affected views/styles, scoped browser tests. Do not touch Dev Worker 2 media ingest/feedback, Dev Worker 3 rich text or Dev Worker 1 exhibitions.
 
 ## Evidence and progress
+- Public Gallery action links now derive exclusively from Committed publication state/slug rather than Working. Added Working → Commit → pending Unpublish regression sequence; browser still unverified.
 - Scoped lifecycle tests now cover remove → reassign same Artwork slug/media, filter-pruned selections and exact-date versus year-only ordering.
 - Reconciled the dedicated GalleryMaterialPresetsTest (old sync() expectations were stale) and registered the new reorder action in the canonical AdminActionCatalog; kept GallerySettingsTest only on Gallery settings.
 - Added dedicated public Artwork fit browser matrix with portrait/landscape fixtures and three viewport shapes, targeted to new WebKit/mobile projects; isolated seeder only, not production data.
