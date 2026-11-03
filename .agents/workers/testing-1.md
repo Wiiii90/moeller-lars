@@ -2,7 +2,7 @@
 
 - **Branch:** testing
 - **Lease token:** 3 (explicit takeover by successor chat on 2026-11-03)
-- **State:** active; suite prepared; user-confirmed Dev freeze and final isolated test execution authorized; execution pending
+- **State:** active; final qualification authorized and partially executed by delegated local executor; do not stop on suite-local blockers
 - **Ownership:** Single behavior-based Pest/Node/Playwright suite on testing, no application changes on Dev and no CI/deploy or production writes.
 
 ## Reconciled source
@@ -28,6 +28,20 @@
 
 - **Checksum bypass, source-level finding:** PublicationVersionService::isRestorable and assertRestorable return early when schema_hash matches current schema without checking original snapshot_hash. verifyCheckpointReadOnly checks the checksum explicitly. A corrupted current-schema checkpoint can therefore appear restorable and enter Stage Version. The strict new negative test in tests/Integration/Publication/PublicationVersionHistoryTest.php is expected to fail until the canonical Dev owner repairs eligibility; do not weaken the test or modify production source on Testing. Not yet runtime-confirmed.
 
+## External executor's first partial run — follow-up required
+
+User-provided execution report, **not independently rerun by this chat**, at Testing `a0debcc0733afc10032f1784c19a10651b9f3aa3` and Dev `33f598f94afd6717cc3bb234b0d85c14e758491f`:
+- JavaScript suite: initially 42/43; 43/43 after repairing a Gallery test double. **The repair remains local and uncommitted** and must be reviewed/committed on Testing.
+- Pest Unit: 98 cases, 10 failing assertions, 6 errors. Inspect and fix test bootstrap, then triage the remaining real assertions; do not defer all Unit tests because a migration is blocked.
+- Pint and PHPStan: failed, including application-source `RegionalFormats` findings. Separate test-owned corrections from product-owner findings; do not modify application behavior on Testing.
+- Migration/Integration/Feature Pest suites had 21/154/540 bootstrap errors respectively due to an unresolved absolute Windows Laravel package-cache path; no meaningful behavior assertions ran. The delegated isolation preflight incorrectly continued after effective Laravel connection verification failed. Fix the fail-closed preflight and package-cache setup **before any retry**.
+- Publication concurrency: 10 failures, setup/fixtures not yet diagnosed; Public Session concurrency: stopped by clean-database migration. Dedicated PostgreSQL runners reported independently disposable PostgreSQL 17.11 environments, but do not infer the separate Pest environment's effective Laravel connection was proven.
+- Chromium Component, Chromium E2E, WebKit desktop/mobile and profiling were not run. Classify independent component checks for safe immediate execution, and retain DB-backed/browser E2E until a verified clean migration.
+- Production defect reported: empty-source Exhibition partial-date migration indexes missing `$planned[$table]` for `public.exhibitions`; requires canonical Dev Worker 1 fix including empty Working/Committed cases, without a Testing-only workaround. Previously documented Publication current-schema `snapshot_hash` validation bypass remains a Dev concern not yet runtime-verified.
+- No GitHub Actions, deployment, Dev changes or curated test transfer authorized. Final gate not passed.
+
+**Immediate continuation:** (1) review and commit the local JS-test correction; (2) complete unaffected JS/Unit/static/browser-component checks and triage failures; (3) repair local fail-closed isolation guard and Windows package-cache path, validate effective PostgreSQL/Laravel connection, only then rerun eligible DB suites; (4) route canonical migration and checksum defects to Dev without modifying source on Testing; (5) when Dev fixes arrive, recheck exact source parity and finish Migration, Integration, Feature, concurrency, Chromium E2E, WebKit and profiling as applicable. Keep a precise list of what still depends on the Dev migration and do not terminate the whole assignment just because one family is blocked.
+
 ## Final qualification authorized by user — execute now
 
 - On 2026-11-03 the user explicitly confirmed that Dev had already been frozen and requested that the execution assistant run the full prepared test qualification now. **Do not ask for the freeze or test-execution authorization again.**
@@ -41,4 +55,4 @@
 3. Authorize isolated Codex/native Node/Unit/Pest Migration/Integration/Feature qualification, separately isolated Publication and Public Session concurrency runners, Chromium component/E2E, WebKit desktop/mobile and diagnostics as needed. Actual native macOS Safari remains a distinct acceptance step.
 4. Fix erroneous tests only here. Return confirmed product defects to Dev, reconcile fixes and rerun; record actual pass/fail/skipped and evidence before seeking explicit selective test transfer to Dev. CI and deployment remain separately gated.
 
-**Evidence:** GitHub source review and guarded commits only. No PHP/Pest, PostgreSQL, Node, Codex, Chromium, WebKit or native Safari tests executed. No coverage measured and no final gate passed.
+**Evidence:** Earlier authoring/parity established through GitHub; delegated local executor subsequently reported the partial JavaScript, Pest, PHPStan, Pint and concurrency results above. These were not rerun in this chat. No coverage measured, no browser acceptance, no final gate passed.
