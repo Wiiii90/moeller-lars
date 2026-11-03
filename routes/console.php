@@ -80,9 +80,12 @@ Artisan::command('exhibitions:audit-dates {--all : Include structured rows witho
     $verify = (bool) $this->option('verify-conversion');
     $verified = 0;
     $invalid = [];
-    $check = static function (string $source, string $id, string $title, mixed $start, mixed $end, mixed $authored) use (&$verified, &$invalid): void {
+    $check = static function (string $source, string $id, string $title, mixed $state, mixed $start, mixed $end, mixed $authored) use (&$verified, &$invalid): void {
         try {
-            ExhibitionDate::fromLegacy($start, $end, $authored);
+            $mapped = ExhibitionDate::fromLegacy($start, $end, $authored);
+            if ($state === 'published' && $mapped['starts_on'] === null) {
+                throw new \InvalidArgumentException('A published exhibition would lose its only displayed date.');
+            }
             $verified++;
         } catch (\InvalidArgumentException $exception) {
             $invalid[] = [$source, $id, $title, $exception->getMessage()];
@@ -102,7 +105,7 @@ Artisan::command('exhibitions:audit-dates {--all : Include structured rows witho
         foreach ($rows as $row) {
             $original = trim((string) ($row->date_text ?? ''));
             if ($verify) {
-                $check($name, (string) $row->id, (string) $row->title, $row->starts_on, $row->ends_on, $original);
+                $check($name, (string) $row->id, (string) $row->title, $row->state, $row->starts_on, $row->ends_on, $original);
             }
             if ($original === '' && ! $showAll) {
                 continue;
@@ -139,7 +142,7 @@ Artisan::command('exhibitions:audit-dates {--all : Include structured rows witho
 
             $original = trim((string) ($payload['date_text'] ?? ''));
             if ($verify) {
-                $check('checkpoint '.$row->publication_checkpoint_id, (string) $row->row_key, (string) ($payload['title'] ?? '—'), $payload['starts_on'] ?? null, $payload['ends_on'] ?? null, $original);
+                $check('checkpoint '.$row->publication_checkpoint_id, (string) $row->row_key, (string) ($payload['title'] ?? '—'), $payload['state'] ?? null, $payload['starts_on'] ?? null, $payload['ends_on'] ?? null, $original);
             }
             if ($original === '' && ! $showAll) {
                 continue;

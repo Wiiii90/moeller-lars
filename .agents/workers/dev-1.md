@@ -4,6 +4,9 @@
 
 **Aktueller Public-Exhibitions-Stil:** Heller, ungerahmter Katalog auf der normalen konfigurierbaren Public-Content-Fläche (Standard weiß), ohne Schatten und zusätzliche Farbverläufe. Miniaturen, Bild-Text-Fluss mit Cover, redaktionelle Reihenfolge und einzelne Separatoren bei geöffneten Einträgen bleiben wie zuvor. Neu: ohne Cover beginnt der vollständige geöffnete Inhalt links. Keine inhaltsabhängigen Sonderabstände. Browserabnahme für die neue Korrektur ausstehend.
 
+## Published-date migration guard (03.11.2026)
+- The strict read-only conversion preflight now also fails when a Published Exhibition would lose its sole displayed date (no structured date and no parseable authored date). This covers a historical Validation-only category that might not appear in the 29-row local fixture. Still no migration or runtime cutover.
+
 ## Strict exhibition partial-date conversion preview (03.11.2026)
 - Added a domain-local `ExhibitionDate` parser, accepting ISO precision values, explicit German day.month.year, year spans and English/German month-year names. It checks stored structured dates for contradictions and permits only the known two consecutive days joined with `&`.
 - The existing read-only `exhibitions:audit-dates --verify-conversion` command now checks Working, Committed and immutable checkpoint rows. It lists unrecognized formats and conflicts, exits nonzero on any ambiguity and writes **nothing**. The uploaded local Working inventory (29 records) was parsed without contradictions in a standalone local PHP run. This is not a local Laravel execution or Validation verification.
