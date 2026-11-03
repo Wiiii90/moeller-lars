@@ -17,7 +17,7 @@ Final Codex/native test execution and corrections require **a user-declared Dev 
 | Feature | `tests/Feature/Admin`, `tests/Feature/Public` | Livewire/Filament and HTTP behavior, persisted outcomes |
 | Migration | `tests/Migration` | Compatibility/cutover guarantees with retirement conditions |
 | JavaScript | `tests/js` | Node-based frontend logic |
-| Browser | `tests/browser/component`, `e2e`, `profiling` | Chromium component behavior, actual flows and performance evidence |
+| Browser | `tests/browser/component`, `e2e`, `profiling` | Chromium components, real HTTP/browser flows, WebKit desktop/mobile smoke tests and Chromium profiling |
 
 PHP discovery is defined by `phpunit.xml` and `tests/Pest.php`. Playwright uses `playwright.config.mjs`. There is **no separate Architecture suite**.
 
@@ -33,11 +33,14 @@ npm run test:browser:component
 npm run test:browser:e2e
 npm run test:browser:profile
 npm run test:browser
+npx playwright test --config=playwright.config.mjs --project=e2e-webkit-desktop --project=e2e-webkit-mobile
 composer analyse
 composer lint
 ```
 
 **Database safety:** Only run Integration/Feature/Migration or seeded browser tests in a positively verified disposable PostgreSQL environment with isolated application storage, cache, sessions, media and PHP temporary directories. `Tests\\TestCase` and `LocalPreviewDatabaseGuard` must not be bypassed. The persistent local preview database is never a test target; CI environment flags alone are not proof of isolation.
+
+The WebKit desktop/mobile projects reuse the existing Gallery ordering, media delivery, mobile menu and desktop public navigation tests. Playwright WebKit is **not** proof that native Safari passed on macOS or iOS. That requires a separate real-device acceptance check with versions and observed results recorded.
 
 Two special PostgreSQL-17/tmpfs concurrency suites need their dedicated Windows PowerShell isolation runners, from an authorized `dev` or `testing` checkout:
 

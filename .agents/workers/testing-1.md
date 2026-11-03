@@ -56,3 +56,5 @@
 - **Reference coverage:** Extended existing Storage usage tests with saved nested Custom Page and Home visual Rich Text references, verified canonical in-use vs unassigned categorization without introducing another fixture or runner. Not executed.
 
 - **User feedback:** Extended canonical notification feature suite with status, title and truthful saved/reused/failed summaries for Storage/Gallery and a no-op batch; no new notification implementation or runner. Not executed.
+
+- **Safari/macOS browser coverage:** Broadened existing WebKit desktop/iPhone projects to exercise real media delivery, Gallery reordering, touch navigation and desktop public SPA flows; updated Testing commands and caveat. Native Safari on macOS remains a separate real-device gate; none executed yet.
