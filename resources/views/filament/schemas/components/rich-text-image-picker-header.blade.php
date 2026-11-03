@@ -1,11 +1,12 @@
-<div class="admin-rich-text-storage-dropdown__header">
+<div class="admin-rich-text-link-dropdown__header">
     <span>{{ __('Image from Storage') }}</span>
-    <button
-        type="button"
-        class="admin-rich-text-storage-dropdown__close"
-        x-on:click="closeRichPanel('image')"
-        aria-label="{{ __('Close') }}"
-    >
-        <x-heroicon-o-x-mark aria-hidden="true" />
-    </button>
+    <div class="admin-rich-text-link-dropdown__header-actions">
+        <x-filament::icon-button
+            icon="heroicon-o-x-mark"
+            size="sm"
+            color="gray"
+            :label="__('Close')"
+            x-on:click.stop="closeRichPanel('image')"
+        />
+    </div>
 </div>

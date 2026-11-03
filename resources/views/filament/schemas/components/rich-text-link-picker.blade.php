@@ -3,7 +3,7 @@
     class="admin-rich-text-link-dropdown"
     x-show="activeRichPanel === 'link'"
     x-cloak
-    x-bind:style="`top: ${richPanelTop}px; left: ${richPanelLeft}px`"
+    x-bind:style="{ top: richPanelTop + 'px', left: richPanelLeft + 'px' }"
     x-on:change.stop
     x-on:click.outside="applyLink(); closeRichPanel('link')"
     x-on:keydown.escape.stop.prevent="closeRichPanel('link')"

@@ -533,57 +533,13 @@
 
 .admin-rich-text-editor-shell :is(
     .admin-rich-text-link-dropdown,
-    .admin-rich-text-image-caption-dropdown,
     .admin-rich-text-storage-dropdown
 ) {
     pointer-events: auto;
 }
 
 .admin-rich-text-storage-dropdown {
-    position: absolute;
-    z-index: 40;
     width: min(38rem, calc(100% - 1rem));
-    padding: .65rem;
-    background: var(--admin-control-popover-surface, #fff);
-    color: var(--admin-text);
-    border: 1px solid var(--admin-line);
-    border-radius: var(--admin-radius, .35rem);
-    box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
-}
-
-.admin-rich-text-storage-dropdown__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .5rem;
-    margin-bottom: .5rem;
-    color: var(--admin-text);
-    font-size: .78rem;
-    font-weight: 600;
-}
-
-.admin-rich-text-storage-dropdown__close {
-    display: grid;
-    flex: none;
-    width: 1.75rem;
-    height: 1.75rem;
-    padding: 0;
-    place-items: center;
-    border: 0;
-    border-radius: var(--admin-radius, .35rem);
-    background: transparent;
-    color: var(--admin-muted);
-    cursor: pointer;
-}
-
-.admin-rich-text-storage-dropdown__close:is(:hover, :focus-visible) {
-    color: var(--admin-text);
-    background: var(--admin-subtle);
-}
-
-.admin-rich-text-storage-dropdown__close svg {
-    width: 1rem;
-    height: 1rem;
 }
 
 .admin-rich-text--visual .fi-fo-rich-editor-tool:is(:hover, :focus-visible, .fi-active) {
@@ -636,10 +592,10 @@
 .admin-artist-image-caption { display: block; font-size: .75rem; line-height: 1.5; color: var(--admin-muted); }
 
 /* In-editor link entry: stays inside the owning Edit dialog, never a nested modal. */
-.admin-rich-text-link-dropdown {
+.admin-rich-text-link-dropdown,
+.admin-rich-text-storage-dropdown {
     position: absolute;
     z-index: 45;
-    width: min(20rem, 100%);
     padding: .75rem;
     border: 1px solid var(--admin-line);
     border-radius: var(--admin-radius, .35rem);
@@ -647,6 +603,7 @@
     color: var(--admin-text);
     box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
 }
+.admin-rich-text-link-dropdown { width: min(20rem, 100%); }
 .admin-rich-text-link-dropdown__header {
     display: flex;
     min-height: 2rem;
@@ -684,16 +641,6 @@
 .admin-rich-text-link-dropdown__input[aria-invalid="true"] { border-color: var(--admin-danger, #b33); }
 .admin-rich-text-link-dropdown__checkbox { display: flex; align-items: center; gap: .45rem; font-size: .8125rem; }
 .admin-rich-text-link-dropdown__error { font-size: .75rem; color: var(--admin-danger, #b33); }
-.admin-rich-text-link-dropdown__actions { display: flex; gap: .35rem; flex-wrap: wrap; justify-content: flex-end; }
-.admin-rich-text-link-dropdown__button {
-    padding: .4rem .6rem;
-    border: 1px solid var(--admin-line);
-    border-radius: .25rem;
-    font-size: .8125rem;
-}
-.admin-rich-text-link-dropdown__button--apply { background: var(--admin-subtle); font-weight: 600; }
-.admin-rich-text-link-dropdown__button--remove { margin-right: auto; }
-
 .admin-rich-text--visual .fi-fo-rich-editor-floating-toolbar {
     flex-wrap: wrap;
     justify-content: center;
@@ -702,18 +649,6 @@
 
 .admin-rich-text--visual .fi-fo-rich-editor-floating-toolbar .fi-fo-rich-editor-tool:not(:disabled) {
     color: var(--admin-text);
-}
-
-.admin-rich-text-image-caption-dropdown {
-    position: absolute;
-    z-index: 46;
-    width: min(20rem, 100%);
-    padding: .75rem;
-    border: 1px solid var(--admin-line);
-    border-radius: var(--admin-radius, .35rem);
-    background: var(--admin-control-popover-surface, #fff);
-    color: var(--admin-text);
-    box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
 }
 
 .admin-rich-text-color-picker {

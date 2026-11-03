@@ -103,11 +103,21 @@ export default () => {
                 },
                 selected: editor => {
                     const image = selectedImage(editor);
-                    return image ? { caption: image.node.attrs.artistCaption } : null;
+                    return image ? { position: image.pos, caption: image.node.attrs.artistCaption } : null;
                 },
-                setCaption: (editor, value) => updateSelectedImage(
-                    editor, { artistCaption: [...String(value).trim()].slice(0, 500).join('') || null },
-                ),
+                setCaption: (editor, position, value) => {
+                    // Panel focus must not switch the target to another image.
+                    // The opening selection owns this position, not the later cursor.
+                    if (!editor || editor.isDestroyed || !Number.isInteger(position)) return false;
+                    const image = editor.state.doc.nodeAt(position);
+                    if (image?.type.name !== 'image') return false;
+                    const caption = [...String(value).trim()].slice(0, 500).join('') || null;
+                    if (image.attrs.artistCaption === caption) return false;
+                    return editor.chain().focus()
+                        .setNodeSelection(position)
+                        .updateAttributes('image', { artistCaption: caption })
+                        .run();
+                },
             };
         },
         addGlobalAttributes() {

@@ -4,7 +4,7 @@
     x-show="activeRichPanel === 'color'"
     x-cloak
     x-on:change.stop
-    x-bind:style="`top: ${richPanelTop}px; left: ${richPanelLeft}px`"
+    x-bind:style="{ top: richPanelTop + 'px', left: richPanelLeft + 'px' }"
     x-on:click.outside="closeRichPanel('color')"
     x-on:keydown.escape.stop.prevent="closeRichPanel('color')"
     role="group"

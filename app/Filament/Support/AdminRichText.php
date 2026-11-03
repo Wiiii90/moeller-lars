@@ -141,7 +141,7 @@ final class AdminRichText
                     'x-show' => "activeRichPanel === 'image'",
                     'x-ref' => 'richImagePicker',
                     'x-cloak' => true,
-                    'x-bind:style' => '`top: ${richPanelTop}px; left: ${richPanelLeft}px`',
+                    'x-bind:style' => "{ top: richPanelTop + 'px', left: richPanelLeft + 'px' }",
                     // Picker is a transient Livewire field. Its native change
                     // must not autosave an unrelated Rich Text state.
                     'x-on:change.stop' => 'void 0',
@@ -300,6 +300,7 @@ final class AdminRichText
                                 this.commitEditorChange()
                             },
                             captionText: '',
+                            captionImagePosition: null,
                             openCaptionEditor(event) {
                                 const editor = event.detail?.editor
                                 const image = editor?.storage?.artistImageLayout?.selected(editor)
@@ -311,13 +312,21 @@ final class AdminRichText
                                 }
 
                                 this.captionText = image.caption ?? ''
+                                this.captionImagePosition = image.position
                                 this.openRichPanel('caption', event.detail?.anchor)
+                            },
+                            applyCaptionOnExit(event) {
+                                if (this.richElement('richCaptionPanel')?.contains(event.relatedTarget)) return
+                                this.applyCaption()
                             },
                             applyCaption() {
                                 const editor = this.richShell().__artistRichEditor
-                                if (!editor?.storage?.artistImageLayout?.setCaption(editor, this.captionText)) return
-                                this.closeRichPanel('caption')
-                                this.commitEditorChange()
+                                if (!editor?.storage?.artistImageLayout || this.captionImagePosition === null) return false
+                                const changed = editor.storage.artistImageLayout.setCaption(
+                                    editor, this.captionImagePosition, this.captionText
+                                )
+                                if (changed) this.commitEditorChange()
+                                return changed
                             },
                             commitEditorChange() {
                                 const shell = this.richShell()
@@ -380,6 +389,7 @@ final class AdminRichText
                                     const select = input ? window.Alpine?.$data(input)?.select : null
                                     if (select?.isOpen) select.closeDropdown()
                                 }
+                                if (this.activeRichPanel === 'caption') this.captionImagePosition = null
                                 this.activeRichPanel = null
                             },
                             openColorEditor(event) {
