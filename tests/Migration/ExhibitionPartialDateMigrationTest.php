@@ -77,6 +77,9 @@ it('converts both publication schemas without rewriting a real immutable histori
         ->where('publication_checkpoint_id', $checkpoint->getKey())
         ->where('table_name', 'exhibitions')->where('row_key', (string) $entry->id)
         ->value('payload');
+    $afterHistory = is_string($afterHistory)
+        ? json_decode($afterHistory, true, 512, JSON_THROW_ON_ERROR)
+        : (array) $afterHistory;
     expect($afterHistory)->toBe($historical);
     app(PublicationSchemaGuard::class)->assertParity();
 
