@@ -200,3 +200,62 @@ test('Rich Text toolbar edits a real table and persists colors, spacing and undo
     await expect(editable.locator('[data-artist-line-spacing="2.0"]')).toHaveCount(1);
 });
 
+test('two Rich Text component editors keep independent Storage image selections across reopening', async ({ page }) => {
+    let { modal, shell, editable } = await openFreshEditor(page);
+    await expect(editable).toContainText('Studio rich text');
+    await page.keyboard.press('Escape');
+    await expect(modal).toBeHidden();
+
+    await page.getByRole('button', { name: 'Add component', exact: true }).click();
+    const creation = page.locator('.fi-modal.fi-modal-open').last();
+    await creation.getByRole('combobox', { name: 'Component', exact: true }).selectOption('text');
+    await creation.locator('.admin-rich-text-editor-shell [contenteditable="true"]').fill('Second editor');
+    await creation.getByRole('button', { name: 'Add component', exact: true }).click();
+    await expect(creation).toBeHidden();
+
+    const rows = page.locator('.custom-page-component__header[data-component-type="text"]');
+    await expect(rows).toHaveCount(2);
+    await rows.nth(1).getByRole('button', { name: 'Edit', exact: true }).click();
+    modal = page.locator('.fi-modal.fi-modal-open').last();
+    shell = modal.locator('.admin-rich-text-editor-shell').first();
+    editable = shell.locator('[contenteditable="true"]');
+    await expect(editable).toContainText('Second editor');
+    await expect(editable.locator('img[data-id]')).toHaveCount(0);
+    await shell.getByRole('button', { name: 'Insert image from Storage', exact: true }).click();
+    await page.getByRole('option', { name: /browser-viewer-1\.jpg/ }).first().click();
+    await expect(editable.locator('img[data-id]')).toHaveCount(1);
+    await expect(modal).toBeVisible();
+
+    await modal.getByRole('heading', { name: 'Edit component' }).click();
+    await page.keyboard.press('Escape');
+    await expect(modal).toBeHidden();
+
+    await rows.first().getByRole('button', { name: 'Edit', exact: true }).click();
+    modal = page.locator('.fi-modal.fi-modal-open').last();
+    shell = modal.locator('.admin-rich-text-editor-shell').first();
+    editable = shell.locator('[contenteditable="true"]');
+    await expect(editable).toContainText('Studio rich text');
+    await expect(editable.locator('img[data-id]')).toHaveCount(0);
+    await shell.getByRole('button', { name: 'Insert image from Storage', exact: true }).click();
+    await page.getByRole('option', { name: /browser-viewer-1\.jpg/ }).first().click();
+    await expect(editable.locator('img[data-id]')).toHaveCount(1);
+    await modal.getByRole('heading', { name: 'Edit component' }).click();
+    await page.keyboard.press('Escape');
+    await expect(modal).toBeHidden();
+    await page.reload();
+
+    await expect(rows).toHaveCount(2);
+    await rows.nth(1).getByRole('button', { name: 'Edit', exact: true }).click();
+    modal = page.locator('.fi-modal.fi-modal-open').last();
+    editable = modal.locator('.admin-rich-text-editor-shell [contenteditable="true"]');
+    await expect(editable).toContainText('Second editor');
+    await expect(editable.locator('img[data-id]')).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(modal).toBeHidden();
+
+    await rows.first().getByRole('button', { name: 'Edit', exact: true }).click();
+    modal = page.locator('.fi-modal.fi-modal-open').last();
+    editable = modal.locator('.admin-rich-text-editor-shell [contenteditable="true"]');
+    await expect(editable).toContainText('Studio rich text');
+    await expect(editable.locator('img[data-id]')).toHaveCount(1);
+});
