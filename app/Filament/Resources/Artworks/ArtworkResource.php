@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Artworks;
 use App\Domain\Media\MediaIngestService;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Resources\Artworks\Pages\ViewArtwork;
-use App\Filament\Resources\Artworks\RelationManagers\GalleryImagesRelationManager;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Models\Artwork;
@@ -45,13 +44,6 @@ class ArtworkResource extends Resource
             includeGalleryAssignment: true,
             primaryReadOnly: $record instanceof Artwork && (string) $record->getAttribute('state') === 'published',
         ));
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            'gallery-images' => GalleryImagesRelationManager::class,
-        ];
     }
 
     public static function getPages(): array
