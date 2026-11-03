@@ -25,8 +25,8 @@ trait GalleryWorkspaceFormSupport
             $data['dimension_height'] ?? null,
             $data['dimension_width'] ?? null,
             $data['dimension_depth'] ?? null,
-            $data['dimension_unit'] ?? 'cm',
-            $data['dimension_custom'] ?? null,
+            $data['dimension_unit'] ?? null,
+            null,
         );
 
         foreach ([
@@ -34,7 +34,6 @@ trait GalleryWorkspaceFormSupport
             'dimension_width',
             'dimension_depth',
             'dimension_unit',
-            'dimension_custom',
             'primary_media_asset_id',
             'primary_upload',
             'primary_alt_text',

@@ -38,7 +38,6 @@ final class ArtworkEditDialog
             'dimension_width' => $dimensions['width'],
             'dimension_depth' => $dimensions['depth'],
             'dimension_unit' => $dimensions['unit'],
-            'dimension_custom' => $dimensions['custom'],
             'description' => $artwork->getAttribute('description'),
             'primary_media_asset_id' => $primary?->getAttribute('media_asset_id'),
             'primary_alt_text' => $primary?->getAttribute('alt_text_override'),
@@ -58,6 +57,11 @@ final class ArtworkEditDialog
             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/');
         if ($creating) {
             $slug->unique('artworks', 'slug');
+        }
+
+        $material = ArtworkMaterialSelect::make();
+        if ($positionCount === null) {
+            $material->columnSpanFull();
         }
 
         return [
@@ -80,7 +84,8 @@ final class ArtworkEditDialog
                             ->options(static fn (): array => ArtworkCategory::query()->orderBy('name')->pluck('name', 'id')->all())
                             ->required()
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->columnSpanFull(),
                     ] : []),
                     MediaAssetSelect::makeId(
                         'primary_media_asset_id',
@@ -96,15 +101,11 @@ final class ArtworkEditDialog
                         ] : [], merge: true)
                         ->live()
                         ->afterStateUpdated(static function (mixed $state, callable $set) use ($onPrimaryMediaChanged): void {
-                            // Gallery Edit persists this discrete Media File choice at
-                            // the field boundary, not through a bubbled modal change.
-                            // Create and the standalone EditRecord keep their existing
-                            // full-form submission lifecycle.
+                            // One Media-file selection owns the Artwork association.
+                            // On Edit, persist only this mutation, independent of the modal form.
                             if ($onPrimaryMediaChanged instanceof Closure) {
                                 $onPrimaryMediaChanged(filled($state) ? (int) $state : null);
                             }
-
-                            // ALT belongs to the newly chosen file, not the old primary.
                             $set('primary_alt_text', null);
                         })
                         ->columnSpanFull(),
@@ -113,9 +114,19 @@ final class ArtworkEditDialog
                         ->maxLength(500)
                         ->nullable()
                         ->columnSpanFull(),
-                    ArtworkMaterialSelect::make(),
-                    TextInput::make('work_year')->label('Year')->numeric()->minValue(1000)->maxValue(9999)->nullable(),
-                    DatePicker::make('work_date')->label('Exact date')->nullable(),
+
+                    TextInput::make('work_year')
+                        ->label('Year')
+                        ->numeric()
+                        ->integer()
+                        ->minValue(1000)
+                        ->maxValue(9999)
+                        ->nullable(),
+                    DatePicker::make('work_date')
+                        ->label('Exact date')
+                        ->nullable(),
+
+                    $material,
                     ...($positionCount !== null ? [
                         TextInput::make('position')
                             ->label('Position')
@@ -126,6 +137,36 @@ final class ArtworkEditDialog
                             ->required()
                             ->disabled(! $positionEditable),
                     ] : []),
+
+                    Grid::make()
+                        ->columns(['default' => 2, 'md' => 4])
+                        ->columnSpanFull()
+                        ->schema([
+                            TextInput::make('dimension_height')
+                                ->label('Height')
+                                ->numeric()
+                                ->minValue(0.01)
+                                ->suffix('×')
+                                ->nullable(),
+                            TextInput::make('dimension_width')
+                                ->label('Width')
+                                ->numeric()
+                                ->minValue(0.01)
+                                ->suffix('×')
+                                ->nullable(),
+                            TextInput::make('dimension_depth')
+                                ->label('Depth')
+                                ->numeric()
+                                ->minValue(0.01)
+                                ->nullable(),
+                            Select::make('dimension_unit')
+                                ->label('Unit')
+                                ->options(['cm' => 'cm', 'mm' => 'mm', 'in' => 'in'])
+                                ->placeholder('Select unit')
+                                ->selectablePlaceholder()
+                                ->nullable(),
+                        ]),
+
                     Select::make('exclude_from_home')
                         ->label('Home eligibility')
                         ->options([
@@ -133,23 +174,10 @@ final class ArtworkEditDialog
                             1 => __('Exclude this Artwork from Home'),
                         ])
                         ->default(0)
-                        ->columnSpanFull(),
-
-                    TextInput::make('dimension_height')->label('Height (H)')->numeric()->minValue(0.01)->nullable(),
-                    TextInput::make('dimension_width')->label('Width (W)')->numeric()->minValue(0.01)->nullable(),
-                    TextInput::make('dimension_depth')->label('Depth (D)')->numeric()->minValue(0.01)->nullable(),
-                    Select::make('dimension_unit')
-                        ->label('Unit')
-                        ->options(['cm' => 'cm', 'mm' => 'mm', 'in' => 'in'])
-                        ->default('cm')
-                        ->required(),
-                    TextInput::make('dimension_custom')
-                        ->label('Custom dimensions')
-                        ->maxLength(240)
-                        ->nullable()
+                        ->native(false)
+                        ->selectablePlaceholder(false)
                         ->columnSpanFull(),
                     ...AdminRichText::schema('description', 'Description', 10000),
-
                 ]),
         ];
     }
@@ -225,7 +253,7 @@ final class ArtworkEditDialog
 
             app(ArtworkDraftService::class)->update(
                 $artwork,
-                $this->normalizeArtworkFormData($data, $requestedGalleryId),
+                $this->normalizeArtworkFormData($data, $requestedGalleryId, $artwork),
             );
 
             if ($savePrimaryMedia && array_key_exists('primary_media_asset_id', $data)) {
@@ -260,25 +288,36 @@ final class ArtworkEditDialog
     /** @param array<string, mixed> $data
      * @return array<string, mixed>
      */
-    private function normalizeArtworkFormData(array $data, ?int $galleryId): array
+    private function normalizeArtworkFormData(array $data, ?int $galleryId, ?Artwork $original = null): array
     {
         $data['artwork_category_id'] = $galleryId;
         $data['work_date'] = $data['work_date'] ?? null;
         $data['medium'] = filled($data['medium'] ?? null) ? trim((string) $data['medium']) : null;
-        $data['dimensions'] = ArtworkDimensions::compose(
-            $data['dimension_height'] ?? null,
-            $data['dimension_width'] ?? null,
-            $data['dimension_depth'] ?? null,
-            $data['dimension_unit'] ?? 'cm',
-            $data['dimension_custom'] ?? null,
-        );
+        $structuredDimensions = filled($data['dimension_height'] ?? null)
+            || filled($data['dimension_width'] ?? null)
+            || filled($data['dimension_depth'] ?? null);
+        $legacyDimensions = $original === null
+            ? null
+            : ArtworkDimensions::split((string) ($original->getAttribute('dimensions') ?? ''))['custom'];
+
+        // No separate custom-dimensions column exists. Preserve historical
+        // freeform text when the new numeric controls are untouched; never
+        // erase saved artist data as a side-effect of editing another field.
+        $data['dimensions'] = ! $structuredDimensions && $legacyDimensions !== null
+            ? $legacyDimensions
+            : ArtworkDimensions::compose(
+                $data['dimension_height'] ?? null,
+                $data['dimension_width'] ?? null,
+                $data['dimension_depth'] ?? null,
+                $data['dimension_unit'] ?? null,
+                null,
+            );
 
         foreach ([
             'dimension_height',
             'dimension_width',
             'dimension_depth',
             'dimension_unit',
-            'dimension_custom',
             'primary_media_asset_id',
             'primary_upload',
             'primary_alt_text',
