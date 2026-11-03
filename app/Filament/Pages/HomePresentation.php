@@ -1460,17 +1460,6 @@ final class HomePresentation extends Page
         return app(HomePresentationResolver::class)->settings();
     }
 
-    private function homeSection(): SiteSection
-    {
-        if ($this->homeSectionId <= 0) {
-            throw ValidationException::withMessages(['section' => 'Home site node is missing.']);
-        }
-        /** @var SiteSection $section */
-        $section = SiteSection::query()->whereKey($this->homeSectionId)->firstOrFail();
-
-        return $section;
-    }
-
     private function componentTemplate(): HomeTemplate
     {
         $template = HomeTemplate::from($this->template);

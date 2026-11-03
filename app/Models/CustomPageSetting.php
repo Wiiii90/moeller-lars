@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Domain\Content\DividerVariant;
-use App\Domain\Content\SafeLinkPolicy;
 use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SocialLinks;
 use App\Domain\Media\MediaPreviewVariant;
@@ -604,17 +603,5 @@ final class CustomPageSetting extends Model
         }
 
         app(SafeRichTextRenderer::class)->assertValid($value, allowEmbeddedMedia: true, requirePublicMedia: $requirePublicMedia);
-    }
-
-    private function validateUrl(mixed $value, string $field): void
-    {
-        if ($value === null || $value === '') {
-            return;
-        }
-        if (! is_string($value)
-            || ! in_array(strtolower((string) parse_url($value, PHP_URL_SCHEME)), ['http', 'https'], true)
-            || ! app(SafeLinkPolicy::class)->isAllowed($value)) {
-            throw ValidationException::withMessages([$field => 'Component links must be valid HTTP or HTTPS URLs.']);
-        }
     }
 }

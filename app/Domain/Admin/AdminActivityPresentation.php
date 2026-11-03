@@ -63,7 +63,7 @@ final class AdminActivityPresentation
      */
     private function changeDetails(string $target, ?array $summary): ?string
     {
-        if ($summary === null || ($summary['items'] ?? []) === []) {
+        if ($summary === null || $summary['items'] === []) {
             return $target === '' ? null : 'Affected “'.$target.'”.';
         }
 

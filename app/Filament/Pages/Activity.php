@@ -841,7 +841,7 @@ final class Activity extends Page
             ['label' => 'Committed changes', 'value' => number_format((int) ($commitSummary->changed_rows ?? 0)), 'description' => 'Rows in matching commits'],
             ['label' => 'Active days', 'value' => number_format($overview['active_days']), 'description' => 'Days with matching activity'],
             ['label' => 'Pending', 'value' => number_format((int) $publicationContext['staged']), 'description' => 'Working changes not LIVE yet'],
-            ['label' => 'Latest', 'value' => $latestAt?->diffForHumans() ?? '—', 'description' => $latestAt instanceof CarbonInterface ? RegionalFormats::adminDateTime($latestAt) : null ?? 'No matching activity'],
+            ['label' => 'Latest', 'value' => $latestAt?->diffForHumans() ?? '—', 'description' => $latestAt instanceof CarbonInterface ? RegionalFormats::adminDateTime($latestAt) : 'No matching activity'],
         ];
 
         $timeline = $this->timelinePresentation(

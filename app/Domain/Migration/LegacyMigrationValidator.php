@@ -462,19 +462,6 @@ final class LegacyMigrationValidator
         return $value;
     }
 
-    private function nullableString(array $data, string $key): ?string
-    {
-        $value = $data[$key] ?? null;
-        if ($value === null) {
-            return null;
-        }
-        if (is_string($value) === false) {
-            throw new RuntimeException("Legacy manifest field {$key} must be a string or null.");
-        }
-
-        return $value;
-    }
-
     private function requiredInteger(array $data, string $key): int
     {
         $value = $data[$key] ?? null;
