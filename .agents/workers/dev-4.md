@@ -72,4 +72,4 @@
 - No historical records or checkpoint hashes rewritten, no validation deployment, no restore executed. New source code requires local preview refresh and read-only check for checkpoints 9 and 10; a disposable database+media copy is still mandatory for a full destructive stage verification.
 
 ## Next
-- Migration not executed. Review exact source and have user run safe local migration, then browser acceptance of Artwork/date/forms and outstanding image sizing. No tests authored, no CI or deployment.
+- Apply the newly committed read-only historical projection on local-preview using the existing script (no preliminary git pull). PHP lint, then check checkpoints 10 and 9 with verifyCheckpointReadOnly. If an error remains, inspect validation stage (projected shape / date / uniqueness / original content hash) without writing data. After both pass, test actual staging in a fully disposable database plus isolated media (never regular local preview), then finish Artwork browser acceptance. No CI or Validation deployment.

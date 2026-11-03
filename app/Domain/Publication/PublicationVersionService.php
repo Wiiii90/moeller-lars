@@ -265,10 +265,8 @@ SQL;
 
         return [
             'checkpoint_id' => (int) $checkpoint->getKey(),
-            'historical_date_projection' => ! hash_equals(
-                (string) $checkpoint->getAttribute('schema_hash'),
-                $this->schemaHash(),
-            ),
+            'historical_date_projection' => $this->hasOldArtworkDates($checkpoint)
+                || $this->hasOldExhibitionDates($checkpoint),
             'differences_from_working' => $this->pendingCountAgainstCheckpoint($checkpoint),
             'committed_artwork_differences' => $committedArtworkDifferences,
         ];
@@ -530,6 +528,35 @@ SQL,
         }
 
         try {
+            // A different schema hash alone is never sufficient: there
+            // must be real evidence of at least one specifically supported
+            // source-era transformation in this checkpoint's stored rows.
+            $knownCutover = DB::table('publication_version_rows')
+                ->where('publication_checkpoint_id', $id)
+                ->where(static function ($query): void {
+                    $query->where(static function ($rows): void {
+                        $rows->where('table_name', 'artworks')
+                            ->whereRaw("jsonb_exists_all(payload, ARRAY['work_year', 'work_date', 'date_precision'])");
+                    })->orWhere(static function ($rows): void {
+                        $rows->where('table_name', 'exhibitions')
+                            ->whereRaw("jsonb_exists(payload, 'date_text')");
+                    })->orWhere(static function ($rows): void {
+                        $rows->where('table_name', 'artwork_categories')
+                            ->whereRaw("NOT jsonb_exists(payload, 'artwork_menu_surface_wide')");
+                    })->orWhere(static function ($rows): void {
+                        $rows->where('table_name', 'site_sections')
+                            ->whereRaw("NOT jsonb_exists(payload, 'meta_description')");
+                    })->orWhere(static function ($rows): void {
+                        $rows->where('table_name', 'media_variants')
+                            ->whereRaw("jsonb_exists(payload, 'transform_profile')");
+                    });
+                })
+                ->exists();
+
+            if (! $knownCutover) {
+                return $this->compatibleHistoricalCheckpoints[$id] = false;
+            }
+
             $columns = DB::table('information_schema.columns')
                 ->where('table_schema', 'public')
                 ->whereIn('table_name', PublicationSnapshot::TABLES)
