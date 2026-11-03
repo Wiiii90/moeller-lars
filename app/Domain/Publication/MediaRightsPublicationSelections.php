@@ -2,11 +2,12 @@
 
 namespace App\Domain\Publication;
 
+use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaRightsArtifactRevision;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\PublicMedia;
-use App\Models\MediaRightsArtifact;
 use App\Models\MediaAsset;
+use App\Models\MediaRightsArtifact;
 use App\Models\MediaVariant;
 use App\Models\PublicationCheckpoint;
 use Illuminate\Support\Facades\DB;
@@ -124,21 +125,14 @@ final class MediaRightsPublicationSelections
             return ['state' => 'unavailable', 'label' => 'Image unavailable'];
         }
 
-        $variants = MediaVariant::query()
-            ->where('media_asset_id', $asset->getKey())
-            ->where('variant_kind', PublicMedia::THUMBNAIL_KIND)
-            ->where('transform_profile', \App\Domain\Media\MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE)
-            ->where('state', 'available')
-            ->limit(2)
-            ->get();
-
-        if ($variants->count() !== 1) {
+        $variant = MediaPreviewVariant::imageThumbnail($asset);
+        if ($variant === null) {
             return ['state' => 'missing', 'label' => 'Canonical thumbnail missing'];
         }
 
         try {
             $original = $this->selectedForWorking($asset);
-            $thumbnail = $this->selectedForWorking($variants->first());
+            $thumbnail = $this->selectedForWorking($variant);
         } catch (RuntimeException) {
             return ['state' => 'outdated', 'label' => 'File rights need preparation'];
         }
