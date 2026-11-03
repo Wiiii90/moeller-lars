@@ -32,5 +32,13 @@
 - Initial registration on dev at base `b5a7f186e3192e0e7739582ab03844b505b1b03a`.
 - No application changes, tests, browser review, deployment or workflow execution.
 
+## Deferred decisions / handoff
+- **Remove versus Delete:** user explicitly paused semantics for discussion. No further mutation without choice. Proposed: Unlink only the Artwork's primary media while retaining its Gallery slot; Delete removes Artwork slot and optionally (explicitly) deletes original media with reference review. Decide fate of existing unassigned Artwork slots and Restore selector once agreed.
+- **Global future refactor:** concurrent multiple-admin editing may overwrite newer changes across editors; revisit after Gallery work under a separately assigned worker. Consider version/conflict contracts globally, not a Gallery-local patch.
+- **Testing Worker (not yet requested):** reconcile previously created Gallery tests after rejected upload/extra-image actions, test Safari/WebKit sorting and Working/Committed public-link isolation. User explicitly does not want Testing handoff prompt yet.
+- **Upload Worker 2:** owns legacy media-profile cleanup, no work here.
+- **Public image sizing:** still reported visually broken across portrait/landscape and Menu/Page combinations; only empty-description divider corrected. Do not claim image geometry accepted without real browser evidence.
+- **Materials:** retain user screenshot as failed visual acceptance; after browser acceptance update canonical Dev method/table/dialog UI contract with specific checks against premature icon-only rows, column alignment and wrong spacing.
+
 ## Next action
 - Implement bounded root-cause slices, read/reconcile latest dev head before each guarded write. No CI/deploy. Browser/runtime acceptance remains unverified without an actual isolated environment.
