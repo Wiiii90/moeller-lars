@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 final class AdminOrderingState
 {
     /**
-     * @param  list<int|string>  $state
+     * @param  list<mixed>  $state
      * @return list<string>
      */
     public static function normalize(array $state): array

@@ -138,10 +138,10 @@ final class CustomPageEditorialService
             || ! in_array($source['type'] ?? null, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
             throw ValidationException::withMessages(['component' => 'Only a text-capable component can be moved into a decorative image.']);
         }
-        if (($source['type'] ?? null) === 'list' && ($source['media_asset_id'] ?? null) !== null) {
+        if ($source['type'] === 'list' && ($source['media_asset_id'] ?? null) !== null) {
             throw ValidationException::withMessages(['component' => 'A list containing an image cannot wrap another image.']);
         }
-        if (($source['type'] ?? null) === 'contact') {
+        if ($source['type'] === 'contact') {
             foreach ($source['children'] ?? [] as $child) {
                 if (is_array($child) && ($child['type'] ?? null) === 'contact_form'
                     && CustomPageSetting::contactChildPublished($child)) {
@@ -322,7 +322,7 @@ final class CustomPageEditorialService
             throw ValidationException::withMessages(['component' => 'Invalid component drag target.']);
         }
         $sourceIndex = (int) $match[1];
-        $sourceChild = isset($match[2]) && $match[2] !== '' ? (int) $match[2] : null;
+        $sourceChild = $match[2] !== '' ? (int) $match[2] : null;
         $expectedType = $match[3];
         $parent = $groupId === null || $groupId === 'root' ? null
             : filter_var($groupId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);

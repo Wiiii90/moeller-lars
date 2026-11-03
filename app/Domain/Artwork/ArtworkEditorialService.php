@@ -39,7 +39,7 @@ class ArtworkEditorialService
         $ready = $mediaAsset instanceof MediaAsset
             && app(ArtworkPublicationService::class)->mediaReady(
                 $mediaAsset,
-                $primary?->getAttribute('alt_text_override'),
+                $primary->getAttribute('alt_text_override'),
             );
 
         if (

@@ -70,7 +70,7 @@ final class RichTextMediaReference
     {
         $legacy = collect(self::references($source))->pluck('media_asset_id')->all();
         preg_match_all(self::HTML_IMAGE_PATTERN, $source, $matches);
-        $visual = array_map('intval', $matches[1] ?? []);
+        $visual = array_map('intval', $matches[1]);
 
         return array_values(array_unique(array_filter([...$legacy, ...$visual], static fn (int $id): bool => $id > 0)));
     }

@@ -31,7 +31,7 @@ final class RichTextEditorPlugin implements HasFileAttachmentProvider, RichConte
         return new self;
     }
 
-    public function getFileAttachmentProvider(): ?FileAttachmentProvider
+    public function getFileAttachmentProvider(): FileAttachmentProvider
     {
         return new MediaRichTextAttachmentProvider;
     }

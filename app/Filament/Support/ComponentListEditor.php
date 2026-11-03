@@ -24,7 +24,7 @@ final class ComponentListEditor
             ])
             ->columns(['md' => 2])
             ->defaultItems(0)
-            ->itemLabel(fn (array $state): ?string => is_string($state['title'] ?? null) && trim($state['title']) !== ''
+            ->itemLabel(fn (array $state): string => is_string($state['title'] ?? null) && trim($state['title']) !== ''
                 ? trim($state['title'])
                 : 'List item')
             ->collapsible()

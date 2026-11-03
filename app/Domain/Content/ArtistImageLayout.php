@@ -46,14 +46,14 @@ final class ArtistImageLayout extends Extension
     public static function decorateHtml(string $html, string $source): string
     {
         preg_match_all('/<img\\b[^>]*>/i', $source, $matches);
-        $sourceImages = $matches[0] ?? [];
+        $sourceImages = $matches[0];
         $index = 0;
         preg_match_all('/<img\\b[^>]*>/i', $html, $renderedImages);
 
         // Each displayed image must correspond to one submitted image.
         // Never attach the next image's caption when sanitization or
         // parsing has removed a node.
-        if (count($sourceImages) !== count($renderedImages[0] ?? [])) {
+        if (count($sourceImages) !== count($renderedImages[0])) {
             throw UnsafeRichTextException::unsupportedSyntax();
         }
 

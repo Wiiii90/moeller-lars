@@ -52,7 +52,7 @@ final class MediaRichTextAttachmentProvider implements FileAttachmentProvider
         throw new \LogicException('Rich Text uploads are disabled; select an existing Storage image.');
     }
 
-    public function getDefaultFileAttachmentVisibility(): ?string
+    public function getDefaultFileAttachmentVisibility(): string
     {
         return 'private';
     }
