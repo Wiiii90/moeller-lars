@@ -68,6 +68,8 @@ Route::prefix('admin/media-upload')
             ->whereUuid('id')->name('chunk');
         Route::post('/{id}/finish', [AdminResumableMediaUploadController::class, 'finish'])
             ->whereUuid('id')->name('finish');
+        Route::post('/{id}/cancel', [AdminResumableMediaUploadController::class, 'cancel'])
+            ->whereUuid('id')->name('cancel');
     });
 
 Route::get('/admin/media-preview/original/{mediaAsset}', [AdminMediaController::class, 'original'])

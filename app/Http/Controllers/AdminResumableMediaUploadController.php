@@ -57,6 +57,13 @@ final class AdminResumableMediaUploadController extends Controller
         return response()->json($uploads->finish($this->adminId(), $id));
     }
 
+    public function cancel(ResumableMediaUploadService $uploads, string $id): JsonResponse
+    {
+        $uploads->cancel($this->adminId(), $id);
+
+        return response()->json(['cancelled' => true]);
+    }
+
     /** Errors inside native Filament upload fields also use the canonical
      * durable Dashboard/header notification transport (no second UI store).
      */

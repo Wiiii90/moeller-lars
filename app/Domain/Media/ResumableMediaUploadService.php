@@ -41,6 +41,9 @@ final class ResumableMediaUploadService
                 }
 
                 $meta = $this->reconcileCompleted($resumeId, $meta);
+                if (! isset($meta['asset_id'])) {
+                    $meta = $this->ensureChunkHashes($resumeId, $meta);
+                }
 
                 return $this->status($resumeId, $meta);
             });
@@ -88,6 +91,7 @@ final class ResumableMediaUploadService
                     'size' => $size,
                     'created_at' => time(),
                     'updated_at' => time(),
+                    'chunks' => [],
                 ];
                 $this->writeManifest($id, $meta);
                 if (@file_put_contents($this->partPath($id), '') === false) {
@@ -111,7 +115,7 @@ final class ResumableMediaUploadService
                 return $this->status($id, $meta);
             }
 
-            $file = @fopen($this->partPath($id), 'c+b');
+            $file = @fopen($this->partPath($id), 'r+b');
             if (! is_resource($file)) {
                 throw $this->invalid('The staged media file is not available.');
             }
@@ -133,6 +137,7 @@ final class ResumableMediaUploadService
 
                 $remaining = min(self::CHUNK_BYTES, (int) $meta['size'] - $offset);
                 $received = 0;
+                $digest = hash_init('sha256');
                 try {
                     while (! feof($input)) {
                         $buffer = fread($input, min(1024 * 1024, $remaining - $received + 1));
@@ -148,6 +153,7 @@ final class ResumableMediaUploadService
                             throw $this->invalid('Unable to save the complete media chunk.');
                         }
                         $received += $written;
+                        hash_update($digest, $buffer);
                     }
 
                     if ($received === 0 || ($received !== self::CHUNK_BYTES && $offset + $received !== (int) $meta['size'])) {
@@ -156,6 +162,8 @@ final class ResumableMediaUploadService
                     if (! fflush($file)) {
                         throw $this->invalid('Unable to flush the saved media chunk.');
                     }
+                    $meta['chunks'] ??= [];
+                    $meta['chunks'][intdiv($offset, self::CHUNK_BYTES)] = hash_final($digest);
                     $meta['updated_at'] = time();
                     $this->writeManifest($id, $meta);
                 } catch (\Throwable $exception) {
@@ -260,6 +268,78 @@ final class ResumableMediaUploadService
         return $meta;
     }
 
+    /**
+     * Recover verifiable chunk digests for staged transfers created before
+     * the per-chunk metadata was introduced. Hashing streams bounded blocks.
+     *
+     * @param array<string,mixed> $meta
+     * @return array<string,mixed>
+     */
+    private function ensureChunkHashes(string $id, array $meta): array
+    {
+        if (isset($meta['chunks']) && is_array($meta['chunks'])) {
+            return $meta;
+        }
+
+        $path = $this->partPath($id);
+        if (! is_file($path)) {
+            throw $this->invalid('Previous upload staging is missing. Cancel it and upload the file again.');
+        }
+
+        $size = @filesize($path);
+        if (! is_int($size) || $size < 0 || $size > (int) $meta['size']
+            || ($size % self::CHUNK_BYTES !== 0 && $size !== (int) $meta['size'])) {
+            throw $this->invalid('Previous upload has an incomplete chunk. Cancel it and start again.');
+        }
+
+        $stream = @fopen($path, 'rb');
+        if (! is_resource($stream)) {
+            throw $this->invalid('Previous upload staging cannot be verified.');
+        }
+
+        try {
+            $hashes = [];
+            $offset = 0;
+            while ($offset < $size) {
+                $length = min(self::CHUNK_BYTES, $size - $offset);
+                $hash = hash_init('sha256');
+                $count = hash_update_stream($hash, $stream, $length);
+                if (! is_int($count) || $count !== $length) {
+                    throw $this->invalid('Previous upload staging could not be verified.');
+                }
+                $hashes[] = hash_final($hash);
+                $offset += $length;
+            }
+        } finally {
+            fclose($stream);
+        }
+
+        $meta['chunks'] = $hashes;
+        $this->writeManifest($id, $meta);
+
+        return $meta;
+    }
+
+    /** Explicitly abandon an uncompleted upload and release its reserved bytes. */
+    public function cancel(int $userId, string $id): void
+    {
+        $this->locked($id, function () use ($id, $userId): void {
+            $meta = $this->reconcileCompleted($id, $this->authorizedManifest($userId, $id));
+            if (isset($meta['asset_id'])) {
+                throw $this->invalid('This upload already completed. Its Storage original was not removed.');
+            }
+
+            // The session lock protects the manifest and staged bytes from
+            // simultaneous chunks. Never unlink the currently held lock inode;
+            // the existing staging pruner reclaims it after expiry.
+            foreach ([$this->partPath($id), $this->manifestPath($id), $this->manifestPath($id).'.tmp'] as $path) {
+                if (is_file($path) && ! @unlink($path)) {
+                    throw $this->invalid('Could not fully cancel this upload. Contact the site administrator.');
+                }
+            }
+        });
+    }
+
     /** @return array{id:string,offset:int,chunk_size:int,complete:bool,asset_id:int|null,duplicate:bool} */
     private function status(string $id, array $meta): array
     {
@@ -275,6 +355,7 @@ final class ResumableMediaUploadService
             'complete' => $assetId > 0,
             'asset_id' => $assetId > 0 ? $assetId : null,
             'duplicate' => (bool) ($meta['duplicate'] ?? false),
+            'chunk_hashes' => $assetId > 0 ? [] : array_values($meta['chunks'] ?? []),
         ];
     }
 

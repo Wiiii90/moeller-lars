@@ -107,6 +107,50 @@ function forget(key) {
     try { localStorage.removeItem(key); } catch {}
 }
 
+// On a resumed transfer verify EVERY already acknowledged chunk against the
+// selected local file. This is the canonical staging receipt, not a guess
+// based on filename, timestamp or a small beginning/end sample.
+async function resumedBytesMatch(file, session) {
+    const offset = Number(session.offset);
+    if (session.complete || offset === 0) return true;
+
+    const chunkSize = Number(session.chunk_size);
+    const hashes = session.chunk_hashes;
+    if (!Array.isArray(hashes) || chunkSize < 1
+        || hashes.length !== Math.ceil(offset / chunkSize)) return false;
+
+    for (let i = 0; i < hashes.length; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(offset, start + chunkSize);
+        if (end > file.size || !/^[a-f0-9]{64}$/.test(String(hashes[i]))) return false;
+        const digest = await crypto.subtle.digest('SHA-256', await file.slice(start, end).arrayBuffer());
+        const actual = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+        if (actual !== hashes[i]) return false;
+    }
+
+    return true;
+}
+
+async function verifyOrRestart(file, session, key, state) {
+    if (session.complete || !Number(session.offset)) return session;
+
+    state.result = 'Checking previously uploaded file data before resuming…';
+    if (await resumedBytesMatch(file, session)) {
+        state.result = '';
+        return session;
+    }
+
+    // Cancel only THIS user's incomplete session; the canonical server
+    // refuses cancellation if the original was already committed.
+    await jsonRequest('/' + session.id + '/cancel', {});
+    forget(key);
+    state.result = 'The selected file changed; starting a fresh verified transfer.';
+    const fresh = await jsonRequest('/start', { filename: file.name, size: file.size });
+    remember(key, fresh.id);
+
+    return fresh;
+}
+
 async function transfer(file, state, fileIndex, total) {
     const key = await fileIdentity(file);
     let resumeId = readResume(key);
@@ -122,6 +166,7 @@ async function transfer(file, state, fileIndex, total) {
         session = await jsonRequest('/start', { filename: file.name, size: file.size });
     }
 
+    session = await verifyOrRestart(file, session, key, state);
     remember(key, session.id);
     let failures = 0;
     while (!session.complete && session.offset < file.size) {
@@ -141,6 +186,7 @@ async function transfer(file, state, fileIndex, total) {
             session = await jsonRequest('/start', {
                 filename: file.name, size: file.size, resume_id: session.id,
             });
+            session = await verifyOrRestart(file, session, key, state);
         }
     }
 
