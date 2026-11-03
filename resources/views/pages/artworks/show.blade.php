@@ -30,6 +30,14 @@
     $fitLandscape = ! $isVideo && $thumbnailWidth > $thumbnailHeight && $presentation::enabled($category);
     $fitPortrait = ! $isVideo && $thumbnailHeight > $thumbnailWidth && $presentation::portraitEnabled($category);
     $fitArtwork = $fitLandscape || $fitPortrait;
+
+    // A saved Rich Text fragment such as <p></p> is not visible editorial
+    // content. Do not emit its decorative divider when the safe rendered body
+    // contains only empty paragraphs or whitespace.
+    $renderedDescription = (string) $richText->render((string) ($artwork->description ?? ''));
+    $plainDescription = html_entity_decode(strip_tags($renderedDescription), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $hasDescription = preg_match('/[^\\p{Z}\\s]/u', $plainDescription) === 1
+        || preg_match('/<(?:img|figure|video|audio|table|hr)\\b/i', $renderedDescription) === 1;
 @endphp
 
 {{-- Orientation is determined from the public image dimensions before decoding. --}}
@@ -125,8 +133,8 @@
             </div>
         </div>
 
-        @if (filled($artwork->description))
-            <div class="artwork-detail__narrative rich-text">{!! $richText->render((string) $artwork->description) !!}</div>
+        @if ($hasDescription)
+            <div class="artwork-detail__narrative rich-text">{!! $renderedDescription !!}</div>
         @endif
 
         @if ($primaryAsset->credit)
