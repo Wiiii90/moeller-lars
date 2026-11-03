@@ -22,9 +22,7 @@ class MediaIngestService
     // multi-shot composites, with headroom, while retaining a finite
     // decompression safety bound. Runtime resource limits still apply.
     public const MAX_PIXELS = 500_000_000;
-    public const IMAGE_THUMBNAIL_PROFILE = 'image-thumbnail';
     public const VIDEO_POSTER_KIND = 'poster';
-    public const VIDEO_POSTER_PROFILE = 'video-poster';
 
     public const THUMBNAIL_MAX_EDGE = 960;
 
@@ -221,9 +219,6 @@ class MediaIngestService
         $originalKey = 'originals/'.$uuid.'.'.$extension;
         $isVideo = MediaTypePolicy::isVideo($prepared['mime']);
         $variantKind = $isVideo ? self::VIDEO_POSTER_KIND : self::THUMBNAIL_KIND;
-        $transformProfile = $isVideo
-            ? self::VIDEO_POSTER_PROFILE
-            : self::IMAGE_THUMBNAIL_PROFILE;
         $thumbnailKey = $prepared['thumbnail_bytes'] === null
             ? null
             : 'variants/'.$uuid.'-'.$variantKind.'.webp';
@@ -273,7 +268,7 @@ class MediaIngestService
                 throw new RuntimeException('Unable to write media thumbnail.');
             }
 
-            return DB::transaction(function () use ($originalKey, $upload, $prepared, $thumbnailKey, $variantKind, $transformProfile): MediaAsset {
+            return DB::transaction(function () use ($originalKey, $upload, $prepared, $thumbnailKey, $variantKind): MediaAsset {
                 $asset = new MediaAsset;
                 $asset->fill([
                     'storage_key' => $originalKey,
@@ -295,7 +290,6 @@ class MediaIngestService
                         'mime_type' => 'image/webp',
                         'byte_size' => strlen($prepared['thumbnail_bytes']),
                         'sha256' => hash('sha256', $prepared['thumbnail_bytes']),
-                        'transform_profile' => $transformProfile,
                         'state' => 'available',
                         'width' => $prepared['thumbnail_width'],
                         'height' => $prepared['thumbnail_height'],

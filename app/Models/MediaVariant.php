@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['media_asset_id', 'variant_kind', 'storage_key', 'mime_type', 'byte_size', 'sha256', 'transform_profile', 'state', 'width', 'height'])]
+#[Fillable(['media_asset_id', 'variant_kind', 'storage_key', 'mime_type', 'byte_size', 'sha256', 'state', 'width', 'height'])]
 #[Guarded(['id'])]
 class MediaVariant extends Model
 {
