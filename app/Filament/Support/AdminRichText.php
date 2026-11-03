@@ -113,6 +113,7 @@ final class AdminRichText
                     $field->state(null);
                     $field->getLivewire()->dispatch(
                         'artist-rich-image-selected',
+                        livewireId: $field->getLivewire()->getId(),
                         editorKey: $editor->getKey(),
                         image: [
                             'type' => 'image',
@@ -446,22 +447,29 @@ final class AdminRichText
                                     this.closeRichPanel('image')
                                     return
                                 }
-                                this.richShell().__artistRichEditor = editor
                                 this.openRichPanel('image', event.detail?.anchor)
                             },
                             insertStorageImage(event) {
-                                if (this.activeRichPanel !== 'image') return
                                 const shell = this.richShell()
-                                const editor = shell?.__artistRichEditor
                                 const root = shell?.querySelector('[data-rich-editor-key]')
                                 const detail = event.detail
-                                if (!editor || editor.isDestroyed || !root
+                                const owner = shell?.closest('[wire\\:id]')
+                                // Livewire may re-render the picker before dispatching
+                                // its server-validated selection. A transient open
+                                // panel or DOM-attached editor reference is not a
+                                // reliable async identity.
+                                if (!root || !owner
+                                    || owner.getAttribute('wire:id') !== detail?.livewireId
                                     || root.dataset.richEditorKey !== detail?.editorKey
                                     || detail?.image?.type !== 'image'
-                                    || !/^[1-9]\d*$/.test(detail?.image?.attrs?.id ?? '')) return
+                                    || !/^[1-9]\d*$/.test(detail?.image?.attrs?.id ?? '')
+                                    || detail.handledByRichText === true) return
 
-                                // Consume the selection before changing content:
-                                // a repeated browser event cannot insert twice.
+                                // Use Filament's current editor instance after morph,
+                                // not a reference captured before the server response.
+                                const editor = window.Alpine?.$data(root)?.getEditor?.()
+                                if (!editor || editor.isDestroyed) return
+                                detail.handledByRichText = true
                                 this.closeRichPanel('image')
                                 if (editor.chain().focus(null, { scrollIntoView: false }).insertContent(detail.image).run()) {
                                     this.commitEditorChange()

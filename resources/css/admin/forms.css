@@ -586,9 +586,9 @@
 .admin-rich-text--visual .tiptap [data-resize-container][data-node="image"]:has(img[data-artist-placement="float-right"]) { float: right; margin: 0 0 .75rem 1rem; }
 
 .admin-rich-text--visual .tiptap::after { content: ''; display: table; clear: both; }
-/* A caption belongs to the resizable image node view, including floated
-   placements. Do not render it as a sibling in the paragraph text flow.
-   The node decoration carries the persisted image caption onto this root. */
+/* Captions are projected by the artist image extension onto Filament's
+   existing resizable image node view. The caption stays within the image's
+   alignment/float box instead of becoming a sibling in the text flow. */
 .admin-rich-text--visual .tiptap [data-resize-container][data-node="image"][data-artist-caption] {
     flex-direction: column;
 }

@@ -46,7 +46,6 @@ export default () => {
             .run();
     };
 
-    const { Decoration, DecorationSet } = tiptap.pmView;
     const placements = new Set(['inline', 'left', 'center', 'right', 'float-left', 'float-right']);
     const placement = value => placements.has(value) ? value : 'inline';
 
@@ -173,21 +172,32 @@ export default () => {
                         view.dispatch(transaction);
                         return true;
                     },
-                    decorations: state => {
-                        const captions = [];
-                        state.doc.descendants((node, position) => {
-                            if (node.type.name !== 'image' || !node.attrs.artistCaption) return;
-                            // Render the caption on the image node view itself.
-                            // A sibling widget after an inline/floated image enters
-                            // the paragraph flow and can appear beside the image.
-                            // The resizable image's outer container receives this
-                            // view-only attribute; the stored image remains unchanged.
-                            captions.push(Decoration.node(position, position + node.nodeSize, {
-                                'data-artist-caption': String(node.attrs.artistCaption),
-                            }));
+                },
+                // Filament's resizable image is a custom node view. ProseMirror
+                // passes node decorations to that view but does not copy their
+                // attributes onto its root element. Project the caption onto
+                // that existing root after each document/view update instead.
+                view: editorView => {
+                    const syncCaptions = view => {
+                        view.state.doc.descendants((node, position) => {
+                            if (node.type.name !== 'image') return;
+                            const container = view.nodeDOM(position);
+                            if (!(container instanceof HTMLElement)
+                                || container.dataset.resizeContainer === undefined
+                                || container.dataset.node !== 'image') return;
+                            const caption = typeof node.attrs.artistCaption === 'string'
+                                ? node.attrs.artistCaption : '';
+                            if (caption !== '') {
+                                if (container.getAttribute('data-artist-caption') !== caption) {
+                                    container.setAttribute('data-artist-caption', caption);
+                                }
+                            } else if (container.hasAttribute('data-artist-caption')) {
+                                container.removeAttribute('data-artist-caption');
+                            }
                         });
-                        return DecorationSet.create(state.doc, captions);
-                    },
+                    };
+                    syncCaptions(editorView);
+                    return { update: syncCaptions };
                 },
             })];
         },
