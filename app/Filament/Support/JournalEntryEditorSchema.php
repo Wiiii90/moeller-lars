@@ -133,8 +133,13 @@ final class JournalEntryEditorSchema
     private static function dateFields(): array
     {
         return [
-            DatePicker::make('starts_on')->label(__('Starts'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->nullable(),
-            DatePicker::make('ends_on')->label(__('Ends'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->afterOrEqual('starts_on')->nullable(),
+            Grid::make()
+                ->columns(['default' => 1, 'sm' => 2])
+                ->schema([
+                    DatePicker::make('starts_on')->label(__('Starts'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->nullable(),
+                    DatePicker::make('ends_on')->label(__('Ends'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->afterOrEqual('starts_on')->nullable(),
+                ])
+                ->columnSpanFull(),
             TextInput::make('date_text')->label(__('Display date override'))->maxLength(160)->nullable()->columnSpanFull(),
             Toggle::make('show_vernissage')->label(__('Show vernissage until it begins'))->default(false)->columnSpanFull(),
             DateTimePicker::make('vernissage_at')->label(__('Vernissage'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateTimeFormat())->seconds(false)->default(null)->nullable()->columnSpanFull(),
