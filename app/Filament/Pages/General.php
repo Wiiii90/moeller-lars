@@ -183,7 +183,6 @@ final class General extends Page
         $data['header_name_position'] = PublicAppearance::headerPosition($data['header_name_position'] ?? null);
         $data['header_name_caps'] = PublicAppearance::headerCaps($data['header_name_caps'] ?? null);
         $data['header_name_color'] = PublicAppearance::normalizeColor($data['header_name_color'] ?? null, 'header_name_color');
-        $data['header_name_mode'] ??= PublicAppearance::MODE_SOLID;
         $data['header_name_size'] = PublicAppearance::normalizeTitleSize($data['header_name_size'] ?? null);
         $data['header_name_min_size'] = PublicAppearance::normalizeTitleMinSize($data['header_name_min_size'] ?? null);
         $data['header_divider_mode'] = PublicAppearance::headerDivider($data['header_divider_mode'] ?? null);
