@@ -52,7 +52,7 @@ try {
         New-Item -ItemType Directory -Force (Join-Path $runtimeRoot $directory) | Out-Null
     }
     New-Item -ItemType File "$runtimeRoot/.env.testing" | Out-Null
-    $phpOptions = @('-d', 'variables_order=EGPCS', '-d', "sys_temp_dir=$runtimeRoot/php-temp", '-d', "upload_tmp_dir=$runtimeRoot/php-upload")
+    $phpOptions = @('-d', 'memory_limit=512M', '-d', 'variables_order=EGPCS', '-d', "sys_temp_dir=$runtimeRoot/php-temp", '-d', "upload_tmp_dir=$runtimeRoot/php-upload")
     if ($QualificationSuite) {
         if ((Test-Path -LiteralPath '.env') -or (Test-Path -LiteralPath '.env.testing')) {
             throw 'Qualification requires a checkout without application environment files.'

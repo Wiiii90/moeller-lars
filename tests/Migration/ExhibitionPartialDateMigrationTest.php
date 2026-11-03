@@ -50,10 +50,14 @@ function legacyExhibitionDraft(string $slug, ?string $authored, ?string $start =
     return $entry;
 }
 
+beforeEach(function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+});
+
 it('converts both publication schemas without rewriting a real immutable historical checkpoint', function (): void {
     previousExhibitionDateSchema();
     $entry = legacyExhibitionDraft('month-event', 'June 2014');
-    $actor = User::factory()->admin()->create();
+    $actor = auth()->user();
     $checkpoint = app(PublicationService::class)->commit($actor, 'Old authored Exhibition');
     expect($checkpoint)->not->toBeNull();
     $originalHash = $checkpoint->snapshot_hash;
@@ -110,7 +114,7 @@ it('aborts an invalid Committed conversion without changing either active public
 ): void {
     previousExhibitionDateSchema();
     $entry = legacyExhibitionDraft('source-conflict', null, '2027-06-01');
-    $actor = User::factory()->admin()->create();
+    $actor = auth()->user();
     expect(app(PublicationService::class)->commit($actor, 'Old valid draft'))->not->toBeNull();
     DB::table('committed.exhibitions')->where('id', $entry->id)->update([
         'starts_on' => $start,
@@ -137,7 +141,7 @@ it('aborts an invalid Committed conversion without changing either active public
 it('rejects an unconvertible immutable checkpoint even when Working and Committed are valid', function (): void {
     previousExhibitionDateSchema();
     $entry = legacyExhibitionDraft('bad-history', 'Unknown 2027');
-    $actor = User::factory()->admin()->create();
+    $actor = auth()->user();
     $checkpoint = app(PublicationService::class)->commit($actor, 'Source-era historical conflict');
     expect($checkpoint)->not->toBeNull();
     $hash = $checkpoint->snapshot_hash;
