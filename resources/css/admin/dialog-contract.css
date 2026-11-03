@@ -177,6 +177,13 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     }
 }
 
+/* A table-only Viewer has no explanatory form area between its heading and
+ * canonical column header. The dialog owns this vertical placement; table
+ * rows retain exactly the same geometry as elsewhere in Admin. */
+.admin-dialog--table-viewer .fi-modal-content {
+    padding-block-start: .35rem;
+}
+
 /* Canonical admin dialog width and header-action contract.
  *
  * Widths align to the same six-unit desktop workspace used by summary strips

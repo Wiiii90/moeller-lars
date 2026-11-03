@@ -169,7 +169,8 @@ trait GalleryWorkspaceUploadSettings
                 ['presets' => app(ArtworkMaterialPresetService::class)->ordered()],
             ));
 
-        return AdminDialog::viewer($action, AdminDialogSize::Default);
+        return AdminDialog::viewer($action, AdminDialogSize::Default)
+            ->extraModalWindowAttributes(['class' => 'admin-dialog--table-viewer'], merge: true);
     }
 
     public function addMaterialPreset(string $name): bool

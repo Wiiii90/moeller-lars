@@ -9,6 +9,7 @@
 - Scope: Gallery-workspace actions, Artwork assignment and presentation, material preset owners, directly affected views/styles, scoped browser tests. Do not touch Dev Worker 2 media ingest/feedback, Dev Worker 3 rich text or Dev Worker 1 exhibitions.
 
 ## Evidence and progress
+- Material dialog table-only Viewer now uses explicit central dialog spacing variant; no page-specific negative margins or wrapper overrides. Requires visual review.
 - Public Artwork description is now safely rendered once and its divider is omitted when only empty rich-text markup is present; other image/paper geometry remains unverified rather than patched speculatively.
 - Restored shared lockedTarget resolution in the simplified generic Undo path; no historical extra-media reversal remains available.
 - Retired secondary Artwork images: removed GalleryImagesRelationManager UI and all active additional-media commands. Legacy Audit labels remain readable; historical Undo receipts no longer offer the retired operation. Existing stored links and Storage media remain untouched pending data inventory. Generic audio upload untouched.
