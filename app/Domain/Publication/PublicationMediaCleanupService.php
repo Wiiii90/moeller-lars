@@ -101,7 +101,15 @@ final class PublicationMediaCleanupService
     public function deleteNow(array $storageKeys): bool
     {
         $mediaAssetId = $this->resolveMediaAssetId($storageKeys);
-        if ($mediaAssetId !== null && ! $this->canDeletePhysicalMedia($mediaAssetId)) {
+        if ($mediaAssetId === null) {
+            // Never physically delete keys without a single proven canonical
+            // owner. The separately guarded orphan sweep handles unowned
+            // paths; deleteNow cannot use a guessed owner from another key.
+            report(new RuntimeException('Media cleanup could not prove one owner for all requested storage keys.'));
+
+            return false;
+        }
+        if (! $this->canDeletePhysicalMedia($mediaAssetId)) {
             $this->queue($mediaAssetId, $storageKeys);
 
             return false;
@@ -430,18 +438,41 @@ final class PublicationMediaCleanupService
             return null;
         }
 
-        $assetId = DB::table('media_assets')->whereIn('storage_key', $keys)->value('id');
-        if (is_numeric($assetId)) {
-            return (int) $assetId;
+        // One deletion may include the original and multiple variants,
+        // but never files registered to different media assets. Missing keys
+        // are not silently granted the owner of the first matched file.
+        $owners = [];
+        foreach (['media_assets', 'committed.media_assets'] as $table) {
+            foreach (DB::table($table)->whereIn('storage_key', $keys)->get(['id', 'storage_key']) as $row) {
+                $owners[(string) $row->storage_key][] = (int) $row->id;
+            }
+        }
+        foreach (['media_variants', 'committed.media_variants'] as $table) {
+            foreach (DB::table($table)->whereIn('storage_key', $keys)->get(['media_asset_id', 'storage_key']) as $row) {
+                $owners[(string) $row->storage_key][] = (int) $row->media_asset_id;
+            }
         }
 
-        $variantAssetId = DB::table('media_variants')->whereIn('storage_key', $keys)->value('media_asset_id');
+        $assetIds = [];
+        foreach ($keys as $key) {
+            $keyOwners = array_values(array_unique($owners[$key] ?? []));
+            if (count($keyOwners) !== 1 || $keyOwners[0] < 1) {
+                return null;
+            }
+            $assetIds[] = $keyOwners[0];
+        }
 
-        return is_numeric($variantAssetId) ? (int) $variantAssetId : null;
+        $assetIds = array_values(array_unique($assetIds));
+
+        return count($assetIds) === 1 ? $assetIds[0] : null;
     }
 
     private function canDeletePhysicalMedia(int $mediaAssetId): bool
     {
+        if ($mediaAssetId < 1) {
+            return false;
+        }
+
         $committedRequiresAsset = DB::table('committed.media_assets')
             ->where('id', $mediaAssetId)
             ->where('state', '<>', 'deleted')

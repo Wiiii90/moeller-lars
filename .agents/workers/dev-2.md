@@ -101,3 +101,7 @@
 
 ### Identity safeguard (2026-11-03)
 - A matching SHA-256/size Registry row with missing, altered or truncated original/required preview is now a fail-closed existing-media integrity error, not permission to create a second MediaAsset. If any matching candidate is healthy it is reused; if all are damaged no duplicate original is written. Testing: corrupted original or missing preview does not create a second original, while valid identical upload reuses existing record.
+
+### Slice 10 (2026-11-03) — Fail-closed physical delete ownership
+- `PublicationMediaCleanupService::deleteNow` never deletes paths when the canonical owner cannot be resolved. `resolveMediaAssetId` now resolves **every requested storage key** against Working and Committed originals/variants and requires exactly one identical positive MediaAsset owner for all keys, rather than accepting an arbitrary first original or variant. Independently unowned paths are handled only by the guarded orphan sweep. Cleanup guard rejects invalid IDs; ensures a malformed outbox row cannot bypass Working/Committed/history checks.
+- **Testing group:** one original + own variants, unknown key, mix of two assets, duplicate/mismatched Working/Committed key, missing file, malformed queued id; never delete someone else's original.
