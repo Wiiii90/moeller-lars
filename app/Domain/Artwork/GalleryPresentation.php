@@ -72,17 +72,13 @@ final class GalleryPresentation
             : $query->orderBy('position')->orderBy('id');
     }
 
-    /**
-     * The same date order is used for live display and one-time Manual sorting.
-     *
-     * @template TModel of \Illuminate\Database\Eloquent\Model
+    /** Shared by Gallery, one-time Manual sorting and public Home candidates. */
+    public const DATE_ORDER_SQL = 'year DESC NULLS LAST, month DESC NULLS LAST, day DESC NULLS LAST, created_at DESC, id DESC';
+
+    /** @template TModel of \Illuminate\Database\Eloquent\Model
      * @param Builder<TModel> $query
      * @return Builder<TModel>
      */
-    // Shared by live Gallery, one-time manual sort and public Home candidates.
-    // Exact day precedes month-only; month-only precedes year-only.
-    public const DATE_ORDER_SQL = 'year DESC NULLS LAST, month DESC NULLS LAST, day DESC NULLS LAST, created_at DESC, id DESC';
-
     public static function orderArtworksByDate(Builder $query): Builder
     {
         return $query->orderByRaw(self::DATE_ORDER_SQL);

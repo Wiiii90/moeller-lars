@@ -12,9 +12,13 @@ final class ArtworkDate
     public static function fromArtwork(Artwork $artwork): ?string
     {
         $year = $artwork->getAttribute('year');
-        if ($year === null) return null;
+        if ($year === null) {
+            return null;
+        }
         $month = $artwork->getAttribute('month');
-        if ($month === null) return sprintf('%04d', (int) $year);
+        if ($month === null) {
+            return sprintf('%04d', (int) $year);
+        }
         $day = $artwork->getAttribute('day');
 
         return $day === null
@@ -27,12 +31,16 @@ final class ArtworkDate
         $year = $artwork->getAttribute('year');
         if ($year === null) return null;
         $month = $artwork->getAttribute('month');
-        if ($month === null) return (string) $year;
+        if ($month === null) {
+            return (string) $year;
+        }
         $region = RegionalFormats::region($region ?? RegionalFormats::publicRegion());
         $y = sprintf('%04d', (int) $year);
         $m = sprintf('%02d', (int) $month);
         $day = $artwork->getAttribute('day');
-        if ($day === null) return $region === 'de-DE' ? $m.'.'.$y : $m.'/'.$y;
+        if ($day === null) {
+            return $region === 'de-DE' ? $m.'.'.$y : $m.'/'.$y;
+        }
         $d = sprintf('%02d', (int) $day);
         return match ($region) {
             'de-DE' => $d.'.'.$m.'.'.$y,
@@ -44,7 +52,9 @@ final class ArtworkDate
     /** @return array{year:?int,month:?int,day:?int} */
     public static function normalize(mixed $value): array
     {
-        if ($value === null || $value === '') return ['year' => null, 'month' => null, 'day' => null];
+        if ($value === null || $value === '') {
+            return ['year' => null, 'month' => null, 'day' => null];
+        }
         if (! is_string($value) || preg_match('/^([1-9][0-9]{3})(?:-([0-9]{2})(?:-([0-9]{2}))?)?$/D', $value, $matches) !== 1) {
             throw ValidationException::withMessages(['artwork_date' => 'Choose a year, a month and year, or an exact date.']);
         }
@@ -60,7 +70,9 @@ final class ArtworkDate
     /** @param array{year:mixed,month:mixed,day:mixed} $parts */
     public static function validateParts(array $parts): void
     {
-        $year = $parts['year']; $month = $parts['month']; $day = $parts['day'];
+        $year = $parts['year'];
+        $month = $parts['month'];
+        $day = $parts['day'];
         if ($year !== null && ((int) $year < 1000 || (int) $year > 9999)) {
             throw ValidationException::withMessages(['year' => 'Choose a four-digit year.']);
         }
