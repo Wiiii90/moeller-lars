@@ -11,6 +11,7 @@ use App\Domain\Content\ExhibitionMapPresentation;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Media\MediaTypePolicy;
 use App\Models\Exhibition;
+use App\Models\MediaAsset;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
@@ -266,7 +267,7 @@ final class JournalEntryEditorSchema
         return AdminTableRepeater::make('gallery_images')
             ->label(__('Gallery media'))
             ->hiddenLabel()
-            ->table([TableColumn::make(__('Image or video')), TableColumn::make(__('Controls'))])
+            ->table([TableColumn::make(__('Image or video')), TableColumn::make(__('Video controls'))])
             ->compact()
             ->schema([
                 MediaAssetSelect::makeId(
@@ -286,7 +287,18 @@ final class JournalEntryEditorSchema
                             $livewire->callMountedAction();
                         }
                     }),
-                self::videoControlsToggle('video_controls_enabled')->hiddenLabel(),
+                self::videoControlsToggle('video_controls_enabled')
+                    ->hiddenLabel()
+                    ->visible(static function (Get $get): bool {
+                        $assetId = filter_var($get('media_asset_id'), FILTER_VALIDATE_INT);
+
+                        return $assetId !== false
+                            && $assetId > 0
+                            && MediaAsset::query()
+                                ->whereKey((int) $assetId)
+                                ->whereIn('mime_type', MediaTypePolicy::VIDEO_MIME_TYPES)
+                                ->exists();
+                    }),
             ])
             ->addActionLabel(__('Add media'))
             ->reorderableWithButtons()
