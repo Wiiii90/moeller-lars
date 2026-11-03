@@ -87,3 +87,5 @@
 - **Legacy Vita import inventory:** Extended ExhibitionDate Unit owner with a strict projection of every authored legacy public Vita Exhibition row exposed by the real LegacyPublicCvImporter. Verifies no unverifiable dates, no empty published starts and no backwards ranges, without requiring obsolete importer tables or another fixture. Source-only; not executed.
 
 - **Shared Admin partial-date controller:** Added a distinct Node Unit owner for real `adminPartialDateControl` state/ISO storage, no-op vs one `change` per selection, clear, German/English presentation, leap calendars and year-boundary navigation. No redundant UI framework or second date controller; no execution.
+
+- **Historical media checkpoint:** Extended the existing media schema migration owner with a genuine source-era `transform_profile` checkpoint captured before migration, verification of unchanged original version payload/hash, read-only preflight against a changed Working preview and restoration into the current schema. This tests the persisted historical media transition, not a new compatibility mechanism. Not executed.

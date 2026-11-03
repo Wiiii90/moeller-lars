@@ -117,3 +117,48 @@ it('migrates media independently of unrelated site_sections drift while the full
     expect(fn () => app(PublicationSchemaGuard::class)->assertParity())
         ->toThrow(RuntimeException::class, 'Publication snapshot schema drift detected for site_sections.');
 });
+
+it('keeps the historical media variant payload immutable and restores it through the new schema', function (): void {
+    preparePreviousMediaVariantSchema();
+    $asset = MediaAsset::query()->create([
+        'storage_key' => 'originals/retained-old-preview.jpg',
+        'original_filename' => 'retained-old-preview.jpg',
+        'mime_type' => 'image/jpeg',
+        'byte_size' => 8,
+        'sha256' => hash('sha256', 'retained-old-preview'),
+        'state' => 'available',
+    ]);
+    $variantId = (int) DB::table('media_variants')->insertGetId(
+        previousMediaVariantRow($asset->getKey(), 'thumbnail', 'public-v2', 'variants/retained-old-preview.webp'),
+    );
+    $actor = \App\Models\User::factory()->admin()->create();
+    $checkpoint = app(\App\Domain\Publication\PublicationService::class)
+        ->commit($actor, 'Historical preview checkpoint');
+    expect($checkpoint)->not->toBeNull();
+    $originalSnapshotHash = $checkpoint->snapshot_hash;
+
+    legacyVariantMigration()->up();
+
+    $payload = DB::table('publication_version_rows')
+        ->where('publication_checkpoint_id', $checkpoint->id)
+        ->where('table_name', 'media_variants')
+        ->where('row_key', (string) $variantId)
+        ->value('payload');
+    $payload = is_string($payload) ? json_decode($payload, true, 512, JSON_THROW_ON_ERROR) : (array) $payload;
+    expect($payload['transform_profile'])->toBe('public-v2')
+        ->and($checkpoint->fresh()->snapshot_hash)->toBe($originalSnapshotHash);
+
+    DB::table('media_variants')->where('id', $variantId)->delete();
+    $versions = app(PublicationVersionService::class);
+    $review = $versions->verifyCheckpointReadOnly($checkpoint->fresh());
+    expect($review['checkpoint_id'])->toBe((int) $checkpoint->id)
+        ->and($review['differences_from_working'])->toBeGreaterThan(0)
+        ->and(DB::table('media_variants')->where('id', $variantId)->exists())->toBeFalse();
+
+    $versions->stageVersion($checkpoint->fresh(), $actor);
+    expect(DB::table('media_variants')->where('id', $variantId)->value('storage_key'))
+        ->toBe('variants/retained-old-preview.webp')
+        ->and(DB::table('committed.media_variants')->where('id', $variantId)->exists())->toBeTrue()
+        ->and($checkpoint->fresh()->snapshot_hash)->toBe($originalSnapshotHash);
+    app(PublicationSchemaGuard::class)->assertParity();
+});
