@@ -38,3 +38,6 @@
 - Existing tests expecting deleted previews or direct UploadedFile values are likely stale and require Testing-owned reconciliation against current behavior rather than preservation of outdated expectations.
 
 **Isolation:** Dedicated disposable database/media volume and authenticated local browser; never destructive tests against artist's persistent Validation data. Validation only after explicit authorization with recoverable database+media backup and read-only inventory. Changes by other Dev workers are separate acceptance groups to be merged by Testing, not duplicated here.
+
+## 2026-11-03 — Local-web startup, unrelated Artwork migration
+- User's `docker logs moeller-lars-local-web` showed `The use statement with non-compound name 'RuntimeException' has no effect` in `2026_11_03_150000_replace_artwork_date_with_components.php` line 6. Artwork date migration belongs to Dev Worker 4 (lease 7); not caused by media upload changes. Unblocked the cross-worker local preview failure by removing the redundant global `use RuntimeException;` import only. The existing unqualified `throw new RuntimeException` remains valid in a namespace-free PHP migration. No other Artwork semantics changed. Worker 4 should include regression/migration verification in its ongoing handoff; no runtime execution from this chat.
