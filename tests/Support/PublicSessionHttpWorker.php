@@ -79,19 +79,22 @@ if (PHP_SAPI === 'cli') {
         $actor = User::factory()->admin()->create();
         auth()->login($actor);
         $editor = app(SiteSectionEditorialService::class);
-        Storage::disk('local')->put('originals/session.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='));
-        $attributes = ['storage_key' => 'originals/session.png', 'original_filename' => 'session.png',
-            'mime_type' => 'image/png', 'byte_size' => 68, 'sha256' => hash_file('sha256', Storage::disk('local')->path('originals/session.png')),
-            'state' => 'available', 'alt_text' => 'Session publication fixture', 'width' => 1, 'height' => 1];
-        $asset = MediaAsset::query()->create($attributes);
         $disk = Storage::disk('local');
+        $originalKey = 'originals/session.png';
         $thumbnailKey = 'variants/session.webp';
+        $disk->makeDirectory('originals');
         $disk->makeDirectory('variants');
-        $image = imagecreatefrompng($disk->path('originals/session.png'));
-        if ($image === false || ! imagewebp($image, $disk->path($thumbnailKey))) {
-            throw new RuntimeException('Unable to encode the session fixture thumbnail.');
+        $image = imagecreatetruecolor(1, 1);
+        if ($image === false || ! imagepng($image, $disk->path($originalKey))
+            || ! imagewebp($image, $disk->path($thumbnailKey))) {
+            throw new RuntimeException('Unable to encode the session fixture images.');
         }
         imagedestroy($image);
+        $attributes = ['storage_key' => $originalKey, 'original_filename' => 'session.png',
+            'mime_type' => 'image/png', 'byte_size' => $disk->size($originalKey),
+            'sha256' => hash_file('sha256', $disk->path($originalKey)),
+            'state' => 'available', 'alt_text' => 'Session publication fixture', 'width' => 1, 'height' => 1];
+        $asset = MediaAsset::query()->create($attributes);
         $variant = MediaVariant::query()->create([
             'media_asset_id' => $asset->id, 'variant_kind' => 'thumbnail',
             'storage_key' => $thumbnailKey, 'mime_type' => 'image/webp', 'byte_size' => $disk->size($thumbnailKey),
