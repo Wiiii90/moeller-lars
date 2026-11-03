@@ -16,6 +16,10 @@
 - Material presets use canonical Admin table with direct Add/Rename/Move/Delete persistence and stable positions. No extra redundant heading.
 - Additional Artwork images were never an intended feature. Active Gallery Images relation, editors, extra media commands removed; historical database references and audit records preserved until inventory. Generic audio uploads are retained.
 
+## Artwork date consumers completed in source
+- Home Candidate listing, published-year aggregates, Gallery actions, public captions and hidden Artwork read model use year/month/day. Legacy importer/exporter/verification switched from work_year/work_date/precision fields to the same canonical names. No alias or second runtime date format. Database migration still MUST be applied in a safe environment before runtime use.
+- Old migration files remain frozen historical evidence. Historical CV `date_precision` is a different domain and remains Dev Worker 1 scope. Existing user browser checklist and Testing Worker backlog still required.
+
 ## Artwork date schema cutover in progress
 - Canonical date storage: year, nullable month, nullable day. First-day placeholder and precision flags retired. Working and Committed forward migration checks old data before dropping columns, transactionally.
 - Model/Draft/Gallery/Preview/Public caption and date filters updated to canonical three-part fields. Follow-up immediate commit must synchronize Home, legacy importer/exporter/validator and hidden Artwork view; this initial source commit is NOT a runtime-verified release. Old publication-version payloads remain immutable; schema-hash restore gate remains.

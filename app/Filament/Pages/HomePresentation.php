@@ -981,7 +981,7 @@ final class HomePresentation extends Page
         /** @var Builder<ArtworkCategory> $query */
         $query = ArtworkCategory::query()->whereHas('siteSection')->with('siteSection')
             ->withCount(['artworks as published_artworks_count' => static fn ($query) => $query->where('state', 'published')])
-            ->withMax(['artworks as newest_published_year' => static fn ($query) => $query->where('state', 'published')->whereNotNull('work_year')], 'work_year');
+            ->withMax(['artworks as newest_published_year' => static fn ($query) => $query->where('state', 'published')->whereNotNull('year')], 'year');
 
         $search = trim($this->sourceSearch);
         if ($search !== '') {
@@ -1354,13 +1354,12 @@ final class HomePresentation extends Page
             $artwork->loadMissing('category');
             $gallery = $artwork->getRelationValue('category');
         }
-        $workDate = $artwork->getAttribute('work_date');
 
         return [
             'id' => (int) $artwork->getKey(),
             'title' => (string) $artwork->getAttribute('title'),
-            'year' => $artwork->getAttribute('work_year'),
-            'date' => $workDate instanceof DateTimeInterface ? $workDate->format('Y-m-d') : null,
+            'year' => $artwork->getAttribute('year'),
+            'date' => \App\Domain\Artwork\ArtworkDate::fromArtwork($artwork),
             'gallery' => $gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : null,
             'thumbnail_url' => ArtworkResource::thumbnailUrl($artwork),
             'gallery_url' => $gallery instanceof ArtworkCategory ? GalleryWorkspace::getUrl( ['gallery' => $gallery->getKey()]) : null,
@@ -1417,7 +1416,7 @@ final class HomePresentation extends Page
     {
         $gallery = $artwork->getRelationValue('category');
         $galleryName = $gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : 'Gallery';
-        $year = $artwork->getAttribute('work_year');
+        $year = $artwork->getAttribute('year');
 
         return (string) $artwork->getAttribute('title').' · '.$galleryName.($year === null ? '' : ' · '.$year);
     }
