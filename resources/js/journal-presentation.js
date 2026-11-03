@@ -76,6 +76,7 @@ function initializeExhibitionMap(button) {
     let map = null;
     let opening = false;
     let disposed = false;
+    let unavailable = false;
     // Observe the map viewport rather than guessing device breakpoints or
     // polling after a device rotation / dialog layout change.
     const resizeObserver = typeof ResizeObserver !== 'undefined'
@@ -84,22 +85,38 @@ function initializeExhibitionMap(button) {
         })
         : null;
 
-    button.addEventListener('click', async () => {
-        if (!dialog.open) dialog.showModal();
-        closeButton.focus({ preventScroll: true });
-
+    // A failed optional map must never change Exhibition data or leave a
+    // broken map in the public layout. Hide only this map's UI for this visit.
+    const retireUnavailableMap = () => {
+        if (unavailable || disposed) return;
+        unavailable = true;
+        resizeObserver?.disconnect();
         if (map) {
-            map.invalidateSize({ pan: false });
-            return;
+            map.remove();
+            map = null;
         }
-        if (opening) return;
-        opening = true;
-        status.hidden = false;
-        status.textContent = 'Loading map…';
+        if (dialog.open) dialog.close();
+        button.remove();
+        dialog.remove();
+    };
 
+    const openMap = async () => {
+        if (unavailable || disposed) return;
         try {
+            if (!dialog.open) dialog.showModal();
+            closeButton.focus({ preventScroll: true });
+
+            if (map) {
+                map.invalidateSize({ pan: false });
+                return;
+            }
+            if (opening) return;
+            opening = true;
+            status.hidden = false;
+            status.textContent = 'Loading map…';
+
             const L = await loadLeaflet(canvas.dataset.leafletScript, canvas.dataset.leafletStyle);
-            if (disposed || !dialog.isConnected || !dialog.open) return;
+            if (disposed || unavailable || !dialog.isConnected || !dialog.open) return;
 
             const latitude = Number(canvas.dataset.latitude);
             const longitude = Number(canvas.dataset.longitude);
@@ -113,11 +130,9 @@ function initializeExhibitionMap(button) {
                 scrollWheelZoom: false,
             }).setView([latitude, longitude], 15);
 
-            // A successful Leaflet initialization does not mean the external
-            // tile server is reachable. Observe the actual visible tile batch
-            // so a complete provider outage never leaves an empty, silent map.
             let loadedTiles = 0;
             let failedTiles = 0;
+            let hasDisplayedTiles = false;
             L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
@@ -125,15 +140,18 @@ function initializeExhibitionMap(button) {
                 loading: () => {
                     loadedTiles = 0;
                     failedTiles = 0;
+                    // Keep the neutral loading surface until a real tile arrived;
+                    // initializing Leaflet alone is not a successful map load.
+                    if (!hasDisplayedTiles) status.hidden = false;
+                },
+                tileload: () => {
+                    loadedTiles++;
+                    hasDisplayedTiles = true;
                     status.hidden = true;
                 },
-                tileload: () => { loadedTiles++; },
                 tileerror: () => { failedTiles++; },
                 load: () => {
-                    if (failedTiles > 0 && loadedTiles === 0) {
-                        status.textContent = 'Map tiles unavailable. Try the OpenStreetMap link below.';
-                        status.hidden = false;
-                    }
+                    if (failedTiles > 0 && loadedTiles === 0) retireUnavailableMap();
                 },
             }).addTo(map);
 
@@ -142,29 +160,30 @@ function initializeExhibitionMap(button) {
                 radius: 7, weight: 2, color: '#fff', fillColor: '#4b443d', fillOpacity: 1,
             }).addTo(map);
             map.attributionControl.setPrefix(false);
-            status.hidden = true;
             resizeObserver?.observe(canvas);
             map.invalidateSize({ pan: false });
         } catch {
-            if (map) {
-                resizeObserver?.unobserve(canvas);
-                map.remove();
-                map = null;
-            }
-            status.hidden = false;
-            status.textContent = 'Map unavailable. Open in OpenStreetMap instead.';
+            // Browser network diagnostics are not suppressible, but a failed
+            // optional map must not produce an unhandled application error.
+            retireUnavailableMap();
         } finally {
             opening = false;
         }
-    });
+    };
 
-    closeButton.addEventListener('click', () => dialog.close());
-    dialog.addEventListener('click', (event) => {
+    const closeMap = () => dialog.close();
+    const closeOnBackdrop = (event) => {
         if (event.target === dialog) dialog.close();
-    });
+    };
+    button.addEventListener('click', openMap);
+    closeButton.addEventListener('click', closeMap);
+    dialog.addEventListener('click', closeOnBackdrop);
 
     return () => {
         disposed = true;
+        button.removeEventListener('click', openMap);
+        closeButton.removeEventListener('click', closeMap);
+        dialog.removeEventListener('click', closeOnBackdrop);
         resizeObserver?.disconnect();
         if (map) map.remove();
         if (dialog.open) dialog.close();
