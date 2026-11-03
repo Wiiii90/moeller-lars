@@ -97,6 +97,13 @@ test('one Rich Text popover remains active; Escape, outside click and focus pres
     await url.fill('https://example.org/');
     await url.press('Enter');
     await expect(editable.locator('a[href="https://example.org/"]')).toHaveCount(1);
+    await editable.locator('a[href="https://example.org/"]').click();
+    await shell.getByRole('button', { name: 'Link', exact: true }).click();
+    const editedUrl = panel(modal, 'Link').getByRole('textbox', { name: 'Link URL' });
+    await expect(editedUrl).toHaveValue('https://example.org/');
+    await editedUrl.fill('https://example.net/studio');
+    await editedUrl.press('Enter');
+    await expect(editable.locator('a[href="https://example.net/studio"]')).toHaveCount(1);
     await panel(modal, 'Link').getByRole('button', { name: 'Remove link' }).click();
     await expect(editable.locator('a')).toHaveCount(0);
 });
@@ -107,7 +114,7 @@ test('each native Storage selection inserts exactly one image and the saved edit
     for (let count = 1; count <= 2; count++) {
         await shell.getByRole('button', { name: 'Insert image from Storage', exact: true }).click();
         await expect(panel(modal, 'Image from Storage')).toBeVisible();
-        const item = page.getByRole('option', { name: /browser-gallery-1\.jpg/ }).first();
+        const item = page.getByRole('option', { name: /browser-viewer-1\.jpg/ }).first();
         await expect(item).toBeVisible();
         await item.click();
         await expect(editable.locator('img[data-id]')).toHaveCount(count);
@@ -124,6 +131,14 @@ test('each native Storage selection inserts exactly one image and the saved edit
     await expect(visiblePanels(modal)).toHaveCount(0);
     await expect(editable.locator('[data-artist-caption="Studio image and detail"]')).toHaveCount(1);
 
+    await editable.locator('img[data-id]').first().click();
+    await modal.getByRole('button', { name: 'Image caption', exact: true }).click();
+    const editedCaption = panel(modal, 'Image caption').getByRole('textbox', { name: 'Image caption' });
+    await expect(editedCaption).toHaveValue('Studio image and detail');
+    await editedCaption.fill('Revised caption');
+    await editedCaption.press('Enter');
+    await expect(editable.locator('[data-artist-caption="Revised caption"]')).toHaveCount(1);
+
     // Edit dialogs persist on native change/focusout; browser navigation must
     // discard any editor-only state and reconstruct the two saved image nodes.
     await modal.getByRole('heading', { name: 'Edit component' }).click();
@@ -133,7 +148,7 @@ test('each native Storage selection inserts exactly one image and the saved edit
 
     ({ modal, shell, editable } = await openExistingEditor(page));
     await expect(editable.locator('img[data-id]')).toHaveCount(2);
-    await expect(editable.locator('[data-artist-caption="Studio image and detail"]')).toHaveCount(1);
+    await expect(editable.locator('[data-artist-caption="Revised caption"]')).toHaveCount(1);
 
     // Removing the caption is an ordinary editor mutation, not an image deletion.
     await editable.locator('img[data-id]').first().click();
