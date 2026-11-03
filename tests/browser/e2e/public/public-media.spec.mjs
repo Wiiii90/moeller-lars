@@ -56,3 +56,47 @@ test('stored but unreferenced and Working-only media stay private for both publi
         }
     }
 });
+
+test('keeps public Rich Text captions below images with real desktop wrap and mobile reflow', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/browser-public-spa-2');
+
+    const wrapper = page.locator('#content .rich-text__image--float-left');
+    const image = wrapper.getByRole('img', { name: 'Browser caption illustration' });
+    const caption = wrapper.getByText('Synthetic studio caption', { exact: true });
+    await expect(wrapper).toHaveCount(1);
+    await expect(caption).toBeVisible();
+    await image.evaluate(element => element.decode());
+
+    const measure = async () => wrapper.evaluate(element => {
+        const image = element.querySelector('img').getBoundingClientRect();
+        const caption = element.querySelector('.rich-text__image-caption').getBoundingClientRect();
+        return {
+            imageBottom: image.bottom,
+            captionTop: caption.top,
+            float: getComputedStyle(element).float,
+            captionWidth: caption.width,
+        };
+    });
+
+    const wide = await measure();
+    expect(wide.float).toBe('left');
+    expect(wide.captionTop).toBeGreaterThanOrEqual(wide.imageBottom - 1);
+    expect(wide.captionWidth).toBeGreaterThan(0);
+
+    const paragraph = page.locator('#content .rich-text [data-artist-line-spacing="2.0"]');
+    const ratio = await paragraph.evaluate(element => {
+        const css = getComputedStyle(element);
+        return Number.parseFloat(css.lineHeight) / Number.parseFloat(css.fontSize);
+    });
+    expect(ratio).toBeCloseTo(2, 1);
+    await expect(page.locator('#content .rich-text [data-color="#245889"]')).toBeVisible();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const narrow = await measure();
+    expect(narrow.float).toBe('none');
+    expect(narrow.captionTop).toBeGreaterThanOrEqual(narrow.imageBottom - 1);
+    expect(narrow.captionWidth).toBeGreaterThan(0);
+    await expect(caption).toBeVisible();
+});
+

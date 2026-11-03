@@ -96,7 +96,14 @@ final class BrowserProfilingSeeder extends Seeder
                     'type' => 'text',
                     'published' => true,
                     'title' => 'Public SPA content '.$number,
-                    'body' => null,
+                    // One committed Rich Text layout fixture uses the same canonical
+                    // media already exercised by the public original/thumbnail tests.
+                    'body' => $number === 2
+                        ? '<p data-artist-line-spacing="2.0">An <span class="color" data-color="#245889">authored</span> caption example.</p>'
+                            .'<p><img data-id="'.$media['committed']['id'].'" alt="Browser caption illustration"'
+                            .' data-artist-placement="float-left" data-artist-caption="Synthetic studio caption"></p>'
+                            .'<p>Text beside the floated image on wide screens.</p>'
+                        : null,
                 ], [
                     'type' => 'image',
                     'published' => true,
