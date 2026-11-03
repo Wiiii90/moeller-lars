@@ -17,6 +17,10 @@
 - Additional Artwork images were never an intended feature. Active Gallery Images relation, editors, extra media commands removed; historical database references and audit records preserved until inventory. Generic audio uploads are retained.
 
 ## Source implementation (NOT runtime/browser acceptance)
+- Global border regression 389b078: removed invalid .admin-table + .admin-add-row border suppression in 2271aad; Exhibitions and other Admin tables were affected. Dev skill now requires checking both seam-owning borders and other consumers before global CSS changes.
+- Media unlink InvalidArgumentException root cause: artwork.primary_media_detached absent in AdminActionCatalog; corrected d83e920. Requires browser verification.
+- Artwork form restructured 6510dc1: Year/date, Material/Position, grouped dimensions, Unit optional, Home eligibility default, no Custom field; preserved existing unstructured dimensions until inventory.
+- Gallery Settings b54fcbf: clarified mode labels and help, one-time sort of Manual positions from date ordering, full-width Gallery title and removed inline helper.
 - Gallery Settings: Gallery title full row; illegal Menu helper text removed; Artwork order options now Manual / Newest artwork date with lightbulb help. One-time date-sort action writes Manual positions using the identical comparator and canonical audited reorder owner, only when already saved in Manual. Browser unverified.
 - Root cause of Edit → clearing Media file InvalidArgumentException: ArtworkPrimaryMediaService::detachPrimary wrote artwork.primary_media_detached audit event absent from AdminActionCatalog; registered missing canonical action. The database transaction previously rolled back when audit validation threw. Source fix committed; retest needed.
 - Artwork form reorganized: Title/slug; Media file; ALT override; Year/Exact date; Material/Position; four-column Height × Width × Depth / Unit; Home eligibility with no blank choice; custom freeform field retired from UI, existing raw dimensions preserved unless numeric replacements supplied. Year and Exact date remain optional. No migration/data audit claimed.
@@ -33,6 +37,7 @@
 6. Public Artwork detail: user still sees distorted/oversized portrait and landscape images, wrong upper whitespace and mixed Menu/Paper/Divider behaviors; empty-description divider root cause corrected only. Obtain example existing Artwork titles, settings and screenshots before any further formula changes.
 
 ## Testing Worker backlog — requested later, NOT NOW
+- Shared table Add-row border checks across Exhibitions, Gallery and Materials after rollback of bad global selector, and media detach audit success/notifier count; plus one-time date sort and current edit form behavior.
 - Source reconciliation: previous GalleryAssignmentTest tests expect retired Remove/Restore workflow and need replacement; earlier temporary Dev-edited tests for Material/Upload/secondary images must be reconciled to current source.
 - Real Safari/macOS and automated Playwright WebKit desktop/mobile sorting and drag-handle behavior; test configuration was added but never executed. Chromium mobile cross-check. Include disabled-with-filters behavior.
 - Verify Working/Preview and Committed public links/visibility isolation and retained historical media; slot-only and optional-file deletion with reference cascades, refresh and no-op/validation diagnostics; Add artwork slug and image-less drafts; Material ordering migration; portrait/landscape image geometry across layout combinations.
