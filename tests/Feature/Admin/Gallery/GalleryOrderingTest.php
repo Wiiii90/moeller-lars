@@ -155,3 +155,24 @@ it('protects an already mounted Gallery sort after admin access is revoked', fun
         ->and(AuditEvent::query()->count())->toBe($audits)
         ->and(AdminNotification::query()->count())->toBe(0);
 });
+
+it('places artworks with an exact date before year-only artworks in the same year', function (): void {
+    $gallery = galleryFixtureCategory();
+    $yearOnly = galleryFixtureArtwork($gallery, [
+        'work_date' => null, 'work_year' => 2026, 'position' => 0,
+    ]);
+    $exactOlder = galleryFixtureArtwork($gallery, [
+        'work_date' => '2026-02-15', 'work_year' => 2026, 'position' => 1,
+    ]);
+    $exactNewer = galleryFixtureArtwork($gallery, [
+        'work_date' => '2026-10-03', 'work_year' => 2026, 'position' => 2,
+    ]);
+    $gallery->forceFill(['sort_mode' => 'newest'])->save();
+
+    $actual = \App\Domain\Artwork\GalleryPresentation::orderArtworks(
+        Artwork::query()->where('artwork_category_id', $gallery->getKey()),
+        $gallery->fresh(),
+    )->pluck('id')->all();
+
+    expect($actual)->toBe([$exactNewer->getKey(), $exactOlder->getKey(), $yearOnly->getKey()]);
+});

@@ -300,3 +300,41 @@ it('rolls back every selected Gallery move when a published artwork cannot enter
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1)
         ->and(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
 });
+
+it('restores a removed artwork through Add existing without changing its slug or primary media', function (): void {
+    $source = galleryFixtureCategory();
+    $target = galleryFixtureCategory();
+    $asset = galleryFixtureAsset();
+    $artwork = galleryFixtureArtwork($source, ['slug' => 'ungebetener-besuch', 'title' => 'Ungebetener Besuch']);
+    galleryFixturePrimary($artwork, $asset);
+    galleryFixtureUnavailableAnalytics();
+
+    app(ArtworkGalleryAssignmentService::class)->detach($artwork);
+    expect($artwork->fresh()->artwork_category_id)->toBeNull();
+    expect(Artwork::query()->where('slug', 'ungebetener-besuch')->count())->toBe(1);
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $target->getKey()])
+        ->mountAction('addExistingArtwork')
+        ->fillForm(['artwork_id' => $artwork->getKey()])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    expect((int) $artwork->fresh()->artwork_category_id)->toBe((int) $target->getKey())
+        ->and($artwork->fresh()->slug)->toBe('ungebetener-besuch')
+        ->and((int) $artwork->artworkMedia()->where('role', 'primary')->value('media_asset_id'))->toBe((int) $asset->getKey())
+        ->and(Artwork::query()->where('slug', 'ungebetener-besuch')->count())->toBe(1);
+});
+
+it('prunes hidden Gallery selections when the artist changes search filters', function (): void {
+    $gallery = galleryFixtureCategory();
+    $visible = galleryFixtureArtwork($gallery, ['title' => 'Visible canvas']);
+    $hidden = galleryFixtureArtwork($gallery, ['title' => 'Other canvas']);
+    galleryFixtureUnavailableAnalytics();
+
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->set('selectedArtworkIds', [$visible->getKey(), $hidden->getKey()])
+        ->set('search', 'Visible');
+
+    expect(array_map('intval', $editor->get('selectedArtworkIds')))->toBe([(int) $visible->getKey()])
+        ->and($hidden->fresh()->artwork_category_id)->toBe($gallery->getKey());
+});
