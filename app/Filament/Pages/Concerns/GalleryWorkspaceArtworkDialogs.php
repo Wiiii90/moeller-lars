@@ -18,6 +18,7 @@ use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 trait GalleryWorkspaceArtworkDialogs
@@ -83,6 +84,12 @@ trait GalleryWorkspaceArtworkDialogs
                     ]);
                 }
 
+                // The optional visual slug suggestion can still be pending if
+                // a title blur and modal submission arrive together. Persist a
+                // deterministic slug from the submitted title in that case.
+                if (blank($data['slug'] ?? null)) {
+                    $data['slug'] = Str::slug((string) ($data['title'] ?? ''));
+                }
                 $payload = $this->normalizeArtworkFormData($data);
                 DB::transaction(function () use ($payload, $asset, $data): void {
                     $artwork = app(ArtworkDraftService::class)->create($payload);

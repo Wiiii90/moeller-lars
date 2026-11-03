@@ -53,7 +53,7 @@ final class ArtworkEditDialog
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
-            ->required()
+            ->required(! $creating)
             ->maxLength(180)
             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/');
         if ($creating) {
@@ -203,6 +203,11 @@ final class ArtworkEditDialog
             'primary_alt_text' => $currentPrimary?->getAttribute('alt_text_override'),
         ];
         $assetId = (int) ($data['primary_media_asset_id'] ?? 0);
+        $currentGalleryId = $artwork->getAttribute('artwork_category_id');
+        $currentGalleryId = $currentGalleryId === null ? null : (int) $currentGalleryId;
+        $requestedGalleryId = $allowGalleryAssignment && filled($data['artwork_category_id'] ?? null)
+            ? (int) $data['artwork_category_id']
+            : ($allowGalleryAssignment ? null : $currentGalleryId);
 
         DB::transaction(function () use ($artwork, $data, $assetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment, $savePrimaryMedia): void {
             if ($allowGalleryAssignment && $requestedGalleryId !== $currentGalleryId) {
@@ -221,7 +226,6 @@ final class ArtworkEditDialog
                 $this->normalizeArtworkFormData($data, $requestedGalleryId),
             );
 
-            $primaryMedia = app(ArtworkPrimaryMediaService::class);
             if ($savePrimaryMedia && array_key_exists('primary_media_asset_id', $data)) {
                 $this->changePrimaryMedia($artwork, $assetId > 0 ? $assetId : null);
             }

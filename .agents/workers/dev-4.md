@@ -9,6 +9,7 @@
 - Scope: Gallery-workspace actions, Artwork assignment and presentation, material preset owners, directly affected views/styles, scoped browser tests. Do not touch Dev Worker 2 media ingest/feedback, Dev Worker 3 rich text or Dev Worker 1 exhibitions.
 
 ## Evidence and progress
+- Corrected reconstructed Edit save request's gallery assignment inputs immediately; the create action now derives a missing slug from the submitted title, avoiding a race with the title-blur suggestion. Neither behavior is browser verified.
 - User browser feedback: removed unrequested Add existing toolbar action and the extra Artwork upload action (row/editor/form). Existing Media file picker now precedes Material/Year; ALT text override renamed. Only Gallery dropzone/Storage upload media; Add artwork creates media-less drafts or reuses an unassigned slot via optional select inside same dialog. Bulk Unpublish now direct, as bulk Publish. Runtime not verified.
 - Public Gallery action links now derive exclusively from Committed publication state/slug rather than Working. Added Working → Commit → pending Unpublish regression sequence; browser still unverified.
 - Scoped lifecycle tests now cover remove → reassign same Artwork slug/media, filter-pruned selections and exact-date versus year-only ordering.
