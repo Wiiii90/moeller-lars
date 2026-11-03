@@ -212,7 +212,7 @@ SQL;
      * by Stage Version, but does not truncate Working, restore file rights,
      * enqueue cleanup, or change publication history.
      *
-     * @return array{checkpoint_id:int, historical_date_projection:bool, differences_from_working:int}
+     * @return array{checkpoint_id:int, historical_date_projection:bool, differences_from_working:int, committed_artwork_differences:?int}
      */
     public function verifyCheckpointReadOnly(PublicationCheckpoint $checkpoint): array
     {
@@ -228,6 +228,27 @@ SQL;
             ]);
         }
 
+        $committedArtworkDifferences = null;
+        if ($this->currentLiveCheckpoint()?->getKey() === $checkpoint->getKey()) {
+            // The current LIVE checkpoint must represent Committed exactly.
+            // A nonzero result identifies a failed or incomplete historical
+            // Artwork conversion without changing any database state.
+            $payload = $this->versionPayloadExpression($checkpoint, 'artworks');
+            $row = DB::selectOne(
+                "WITH target AS (
+                    SELECT (jsonb_populate_record(NULL::committed.artworks, {$payload})).*
+                    FROM publication_version_rows AS version_row
+                    WHERE version_row.publication_checkpoint_id = ? AND version_row.table_name = 'artworks'
+                )
+                SELECT COUNT(*)::int AS aggregate
+                FROM committed.artworks AS working
+                FULL OUTER JOIN target AS committed USING (id)
+                WHERE ".PublicationSnapshot::ROW_DIFFERENCE_SQL,
+                [(int) $checkpoint->getKey()],
+            );
+            $committedArtworkDifferences = (int) ($row->aggregate ?? -1);
+        }
+
         return [
             'checkpoint_id' => (int) $checkpoint->getKey(),
             'historical_date_projection' => ! hash_equals(
@@ -235,6 +256,7 @@ SQL;
                 $this->schemaHash(),
             ),
             'differences_from_working' => $this->pendingCountAgainstCheckpoint($checkpoint),
+            'committed_artwork_differences' => $committedArtworkDifferences,
         ];
     }
 

@@ -47,6 +47,7 @@
 - No runtime or database-copy restore executed here. Use local read-only inventory and *disposable database copy* before any real staging. Validation remains out of scope.
 
 ## Local migration read-only follow-up (2026-11-03)
+- Read-only checkpoint verification additionally compares the current LIVE checkpoint's projected Artwork rows against Committed Artwork rows field-by-field (excluding framework timestamps), reporting committed_artwork_differences. Zero means the live published Artworks survived the schema cutover; Working edits remain separately unverified without a pre-migration backup.
 - User's `docker exec moeller-lars-local-web php artisan migrate:status` reports `2026_11_03_150000_replace_artwork_date_with_components` as **[76] Ran**. This confirms local execution, not semantic parity or historic snapshot restore.
 - User asked for local-only qualification; gave two read-only Tinker checks for public/committed columns and date counts. Await outputs. New `PublicationVersionService::verifyCheckpointReadOnly()` can check retained historical payload hash + the projected full row diff without staging/clearing Working.
 - Explicitly DO NOT stage a historical restore on normal local preview: it overwrites Working and can queue media cleanup. Test actual restore only in a fully isolated database AND media store, following independent verification and user decision. No Validation deployment or migration.
