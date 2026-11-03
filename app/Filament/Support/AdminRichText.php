@@ -463,7 +463,7 @@ final class AdminRichText
                                 // Consume the selection before changing content:
                                 // a repeated browser event cannot insert twice.
                                 this.closeRichPanel('image')
-                                if (editor.chain().focus().insertContent(detail.image).run()) {
+                                if (editor.chain().focus(null, { scrollIntoView: false }).insertContent(detail.image).run()) {
                                     this.commitEditorChange()
                                 }
                             },
