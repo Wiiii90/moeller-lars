@@ -1,9 +1,12 @@
 <?php
 
 use App\Models\ArtworkCategory;
+use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 pest()->group('unit')->in('Unit');
@@ -55,4 +58,38 @@ function testGallerySection(ArtworkCategory $category, array $overrides = []): S
         'parent_id' => $parentId,
         'artwork_category_id' => (int) $category->getKey(),
     ], $overrides));
+}
+
+function testStoredImageThumbnail(MediaAsset $asset): MediaVariant
+{
+    $key = 'variants/test-'.fake()->uuid().'.webp';
+    $image = imagecreatetruecolor(2, 2);
+    if ($image === false) {
+        throw new RuntimeException('Unable to create the test thumbnail.');
+    }
+    ob_start();
+    try {
+        if (! imagewebp($image)) {
+            throw new RuntimeException('Unable to encode the test thumbnail.');
+        }
+        $bytes = ob_get_contents();
+    } finally {
+        ob_end_clean();
+        imagedestroy($image);
+    }
+    if (! is_string($bytes) || $bytes === '' || ! Storage::disk(config('media.disk'))->put($key, $bytes)) {
+        throw new RuntimeException('Unable to store the test thumbnail.');
+    }
+
+    return MediaVariant::query()->create([
+        'media_asset_id' => $asset->getKey(),
+        'variant_kind' => 'thumbnail',
+        'storage_key' => $key,
+        'mime_type' => 'image/webp',
+        'byte_size' => strlen($bytes),
+        'sha256' => hash('sha256', $bytes),
+        'state' => 'available',
+        'width' => 2,
+        'height' => 2,
+    ]);
 }

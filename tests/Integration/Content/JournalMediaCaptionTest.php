@@ -4,7 +4,6 @@ use App\Domain\Content\JournalMediaRenderer;
 use App\Domain\Content\SafeRichTextRenderer;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\PublicContentSetting;
 use Illuminate\Support\Facades\Storage;
 
@@ -21,15 +20,7 @@ function journalImageUsage(): array
         'credit' => 'Photograph by Studio',
         'copyright_notice_mode' => MediaAsset::COPYRIGHT_INHERIT,
     ]);
-    MediaVariant::query()->create([
-        'media_asset_id' => $asset->getKey(),
-        'variant_kind' => 'thumbnail',
-        'storage_key' => 'variants/blog-caption.webp',
-        'mime_type' => 'image/webp',
-        'byte_size' => 10,
-        'sha256' => hash('sha256', 'caption-variant'),
-        'state' => 'available',
-    ]);
+    testStoredImageThumbnail($asset);
 
     $usage = new JournalEntryMedia;
     $usage->setRelation('mediaAsset', $asset);

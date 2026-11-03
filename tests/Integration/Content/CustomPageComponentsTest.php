@@ -6,7 +6,6 @@ use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Models\CustomPageSetting;
 use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\PublicContentSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\Blade;
@@ -30,17 +29,7 @@ function customPageComponentAsset(string $suffix): MediaAsset
         'height' => 2,
     ]);
 
-    MediaVariant::query()->create([
-        'media_asset_id' => $asset->getKey(),
-        'variant_kind' => 'thumbnail',
-        'storage_key' => 'variants/custom-page-component-'.$suffix.'.webp',
-        'mime_type' => 'image/webp',
-        'byte_size' => 4,
-        'sha256' => hash('sha256', 'custom-preview-'.$suffix),
-        'state' => 'available',
-        'width' => 2,
-        'height' => 2,
-    ]);
+    testStoredImageThumbnail($asset);
 
     return $asset;
 }

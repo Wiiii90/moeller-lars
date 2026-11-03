@@ -16,7 +16,6 @@ it('refuses offline image preparation unless separately enabled', function (): v
     expect(fn () => $service->prepare(101))
         ->toThrow(RuntimeException::class, 'authorized separately');
 
-    config()->set('media.rights_preparation_enabled', true);
     config()->set('media.rights_delivery_enabled', true);
     expect(fn () => $service->prepare(101))
         ->toThrow(RuntimeException::class, 'authorized separately');
