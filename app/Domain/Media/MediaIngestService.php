@@ -268,10 +268,13 @@ class MediaIngestService
             if ($movedStagedOriginal && $disk->exists($originalKey)
                 && ! @rename($disk->path($originalKey), $prepared['path'])) {
                 // Preserve the sole surviving copy for explicit recovery.
-                throw new RuntimeException(
+                report(new RuntimeException(
                     'Media ingest failed; its staged original could not be restored from '.$originalKey,
                     0,
                     $exception,
+                ));
+                throw $this->validationFailure(
+                    'The server could not save the media or restore its temporary original automatically. The file may require recovery. Contact the site administrator before retrying.'
                 );
             }
             foreach ($storageKeys as $key) {
@@ -290,14 +293,24 @@ class MediaIngestService
             }
 
             if ($failed !== []) {
-                throw new RuntimeException(
+                report(new RuntimeException(
                     'Media ingest failed and storage cleanup also failed for: '.implode(', ', array_unique($failed)).'. Original failure: '.$exception->getMessage(),
                     0,
                     $exception,
+                ));
+                throw $this->validationFailure(
+                    'The server could not finish saving the media and could not clean up all temporary files. Contact the site administrator before retrying.'
                 );
             }
 
-            throw $exception;
+            if ($exception instanceof ValidationException) {
+                throw $exception;
+            }
+
+            report($exception);
+            throw $this->validationFailure(
+                'The file was transferred and processed, but the server could not finish saving it to Storage. It was not registered as available. Please try again or contact the site administrator.'
+            );
         }
     }
 

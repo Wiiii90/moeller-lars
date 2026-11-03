@@ -223,9 +223,19 @@ export async function adminMediaUploader(state, input, wire, context) {
             const result = await wire.finishDirectPrimaryMediaBatch(failed, duplicates, errors);
             state.result = result?.summary || 'The Gallery upload finished. Review your Artwork selection.';
         } else {
-            if (added > 0) await wire.refreshAfterResumableMediaUpload();
+            let refreshWarning = '';
+            if (added > 0) {
+                try {
+                    await wire.refreshAfterResumableMediaUpload();
+                } catch {
+                    // Upload acceptance precedes the library refresh.
+                    // A stale view is not evidence that the upload failed.
+                    refreshWarning = ' The Storage list did not refresh. Reload the page to see the saved files.';
+                }
+            }
             notificationAttempted = true;
             state.result = await wire.notifyDirectMediaBatch(added, duplicates, failed, errors.join('\n'));
+            state.result += refreshWarning;
         }
     } catch (error) {
         if (notificationAttempted) {

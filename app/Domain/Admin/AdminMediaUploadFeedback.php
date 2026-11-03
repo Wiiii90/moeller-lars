@@ -80,7 +80,9 @@ final class AdminMediaUploadFeedback
 
         $this->notifier->notification(
             title: $failed > 0
-                ? ($accepted > 0 ? 'Upload completed with issues' : 'Upload failed')
+                ? ($destination === 'gallery'
+                    ? ($accepted > 0 ? 'Artwork media ready with issues' : 'Artwork media preparation failed')
+                    : ($accepted > 0 ? 'Upload completed with issues' : 'Upload failed'))
                 : ($ready > 0
                     ? ($destination === 'gallery' ? 'Media ready for Artwork' : 'Media uploaded')
                     : 'Already in Storage'),
