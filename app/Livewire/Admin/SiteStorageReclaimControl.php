@@ -25,24 +25,29 @@ final class SiteStorageReclaimControl extends Component implements HasActions, H
             ->color('danger')
             ->action(function (): void {
                 $result = app(SiteStorageReclaimService::class)->reclaim();
-                if (! $result['changed']) {
+                if (! $result['changed'] && ! $result['cleanup_incomplete']) {
                     return;
                 }
 
                 app(AdminNotifier::class)->notification(
-                    title: 'Storage reclaimed',
+                    title: $result['cleanup_incomplete'] ? 'Storage cleanup incomplete' : 'Storage reclaimed',
                     body: sprintf(
-                        'Cleared %d Undo entries and released %d older restore snapshots. Removed %d previously deleted files, %d orphaned media files and %d expired upload staging artifacts. Existing originals and previews stay available.',
+                        'Cleared %d Undo entries and released %d older restore snapshots. Removed %d previously deleted files, %d orphaned media files and %d expired upload staging artifacts. Existing originals and previews stay available.%s',
                         $result['undo_receipts'],
                         $result['publication_snapshots'],
                         $result['removed_files'],
                         $result['orphan_files'],
                         $result['expired_staging'],
+                        $result['cleanup_incomplete']
+                            ? ' Some cleanup work could not finish and must be retried; no incomplete operation is counted as removed.'
+                            : '',
                     ),
-                    status: 'success',
+                    status: $result['cleanup_incomplete'] ? 'warning' : 'success',
                 );
 
-                $this->dispatch('storage-reclaimed');
+                if ($result['changed']) {
+                    $this->dispatch('storage-reclaimed');
+                }
             });
 
         return AdminDialog::confirm(

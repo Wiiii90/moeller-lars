@@ -188,7 +188,7 @@ final class PublicationMediaCleanupService
      * pending publication cleanup. Unassigned but registered media is NEVER
      * a candidate. Preserve recent files and serialize against all ingests.
      *
-     * @return array{files:int,bytes:int}
+     * @return array{files:int,bytes:int,failed:int}
      */
     public function reclaimUncataloguedMedia(int $limit = 100): array
     {
@@ -247,9 +247,11 @@ final class PublicationMediaCleanupService
                 // Any unexpected DB/schema failure therefore fails closed.
                 $files = 0;
                 $bytes = 0;
+                $failed = 0;
                 foreach ($orphans as $candidate) {
                     $removed = false;
                     if (! $this->deleteKey($candidate['key'], $removed)) {
+                        $failed++;
                         report(new RuntimeException('Cannot remove orphaned media key: '.$candidate['key']));
                         continue;
                     }
@@ -259,7 +261,7 @@ final class PublicationMediaCleanupService
                     }
                 }
 
-                return ['files' => $files, 'bytes' => $bytes];
+                return ['files' => $files, 'bytes' => $bytes, 'failed' => $failed];
             }, attempts: 1);
         } finally {
             $lock->release();

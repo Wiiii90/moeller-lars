@@ -10,6 +10,7 @@ use App\Domain\Publication\PublicationMediaCleanupService;
 use App\Domain\Publication\PublicationSnapshot;
 use App\Models\AdminActionReceipt;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 final class SiteStorageReclaimService
 {
@@ -21,7 +22,7 @@ final class SiteStorageReclaimService
         private readonly MediaCapacityService $capacity,
     ) {}
 
-    /** @return array{undo_receipts:int,publication_snapshots:int,publication_rows:int,protected_snapshots:int,removed_files:int,orphan_files:int,orphan_bytes:int,expired_staging:int,changed:bool} */
+    /** @return array{undo_receipts:int,publication_snapshots:int,publication_rows:int,protected_snapshots:int,removed_files:int,orphan_files:int,orphan_bytes:int,expired_staging:int,cleanup_incomplete:bool,changed:bool} */
     public function reclaim(): array
     {
         $actor = $this->audit->requireActor();
@@ -83,14 +84,44 @@ final class SiteStorageReclaimService
         // Retiring recovery roots and their required audit must be durable
         // before irreversible filesystem deletion. A rollback must never bring
         // back a restorable snapshot whose original has already been destroyed.
-        $removedFiles = $this->mediaCleanup->drain();
-        $orphans = $this->mediaCleanup->reclaimUncataloguedMedia();
-        $expiredStaging = $this->uploads->pruneExpired();
+        $removedFiles = 0;
+        $orphans = ['files' => 0, 'bytes' => 0, 'failed' => 0];
+        $expiredStaging = 0;
+        $incomplete = false;
+
+        // The Undo/restore transaction is already committed. These
+        // filesystem operations are independently retryable; a failure must
+        // never be reported as if that database transaction was rolled back.
+        try {
+            $removedFiles = $this->mediaCleanup->drain();
+        } catch (Throwable $exception) {
+            report($exception);
+            $incomplete = true;
+        }
+        try {
+            $orphans = $this->mediaCleanup->reclaimUncataloguedMedia();
+            $incomplete = $incomplete || $orphans['failed'] > 0;
+        } catch (Throwable $exception) {
+            report($exception);
+            $incomplete = true;
+        }
+        try {
+            $expiredStaging = $this->uploads->pruneExpired();
+        } catch (Throwable $exception) {
+            report($exception);
+            $incomplete = true;
+        }
 
         // Generated previews are mandatory, even for unused originals.
         // Only genuinely unowned canonical files and expired private staging
         // are eligible for the extra physical sweep.
-        $this->capacity->refreshCachedSnapshot();
+        try {
+            $this->capacity->refreshCachedSnapshot();
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->capacity->forgetCachedSnapshot();
+            $incomplete = true;
+        }
         $changed = $result['changed'] || $removedFiles > 0
             || $orphans['files'] > 0 || $expiredStaging > 0;
         if ($changed && ! $result['changed']) {
@@ -103,6 +134,7 @@ final class SiteStorageReclaimService
             'orphan_files' => $orphans['files'],
             'orphan_bytes' => $orphans['bytes'],
             'expired_staging' => $expiredStaging,
+            'cleanup_incomplete' => $incomplete,
             'changed' => $changed,
         ];
     }
