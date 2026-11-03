@@ -447,6 +447,20 @@ Current durable local interface assumptions:
 - the helper reloads the existing local `storage/app/analytics-demo.php` fixture after the preview container is healthy; do not fold the old large analytics-normalization block back into the Docker build;
 - canonical private media mount destination: `/var/www/html/storage/app/private`.
 
+**Local preview Git synchronization — no redundant commands:** The canonical
+`scripts/local-preview.ps1` first verifies a clean worktree, switches explicitly
+to `dev`, then executes `git fetch origin dev` and
+`git merge --ff-only FETCH_HEAD` before building the preview. **Never**
+recommend an additional `git pull`, `git fetch` or `git merge` as a
+prerequisite to running that script. A standalone
+`git pull --ff-only origin dev` is particularly unsafe as generic advice:
+it updates the **currently checked-out branch**, which need not be `dev`.
+Fast-forward-only rejects divergence; it does not remove the hazards of
+updating the wrong checkout or needlessly synchronizing source during a
+running database operation. When explaining a standalone Artisan migration,
+do not invent an extra Git synchronization step; use the known project
+workflow and distinguish source state from the already built preview image.
+
 **Local Laravel command execution — mandatory for all workers:** Do not tell the user
 to run bare `php artisan …` (or other application commands that depend on the
 container's PHP extensions, environment or database) in Windows PowerShell.
@@ -457,7 +471,12 @@ command for a verified running target, for example
 `docker compose exec app php artisan exhibitions:audit-dates --all`
 when the Compose `app` service is running, or
 `docker exec moeller-lars-local-web php artisan exhibitions:audit-dates --all`
-when the local preview container is running. Do not suggest starting or
+when the local preview container is running. If `app` is stopped and the
+local source tree must be executed, use `docker compose run --rm app php
+artisan …`: this starts a one-off application container and removes
+**that temporary container** afterward, not the persistent PostgreSQL
+volume or existing images. Compose may create/build the application image
+if it is absent; do not promise otherwise. Do not suggest starting or
 rebuilding an additional stack if the appropriate container is already
 available. A command shown without its `docker compose exec` / `docker exec`
 prefix is acceptable only when **explicitly identified as already inside
