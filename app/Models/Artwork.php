@@ -37,8 +37,6 @@ class Artwork extends Model
                 $artwork->setAttribute('analytics_key', (string) Str::uuid());
             }
         });
-
-
     }
 
     public function category(): BelongsTo
