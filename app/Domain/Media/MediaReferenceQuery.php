@@ -62,18 +62,60 @@ final class MediaReferenceQuery
     /** @return list<int> */
     public function mediaIdsForCustomPage(CustomPageSetting $settings): array
     {
-        $blocks = $settings->components();
-        $mediaIds = collect($blocks)
-            ->filter(static fn (array $component): bool => in_array($component['type'] ?? null, ['image', 'list'], true))
-            ->pluck('media_asset_id')
-            ->filter(static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->all();
+        return $this->componentMediaIds($settings->components());
+    }
 
-        return array_values(array_unique(array_merge(
-            $mediaIds,
-            RichTextMediaReference::idsFromCustomPageBlocks($blocks),
-        )));
+    /**
+     * One canonical reader for direct media and Rich Text references across
+     * Custom Page and Home components, including decorative Image children.
+     * Public delivery applies publication flags to precisely the same tree.
+     *
+     * @param list<array<string,mixed>> $components
+     * @return list<int>
+     */
+    public function componentMediaIds(array $components, bool $publishedOnly = false): array
+    {
+        $ids = [];
+        foreach ($components as $component) {
+            if (! is_array($component) || ($publishedOnly && ! CustomPageSetting::componentPublished($component))) {
+                continue;
+            }
+
+            $type = $component['type'] ?? null;
+            if (in_array($type, ['image', 'list'], true)) {
+                $mediaId = $component['media_asset_id'] ?? null;
+                if (is_numeric($mediaId) && (int) $mediaId > 0) {
+                    $ids[] = (int) $mediaId;
+                }
+            }
+
+            if ($type === 'text' && is_string($component['body'] ?? null)) {
+                $ids = array_merge($ids, RichTextMediaReference::ids($component['body']));
+            }
+
+            if ($type === 'list' && is_array($component['items'] ?? null)) {
+                foreach ($component['items'] as $item) {
+                    if (! is_array($item) || ($publishedOnly && ! CustomPageSetting::listItemPublished($item))) {
+                        continue;
+                    }
+                    if (is_string($item['body'] ?? null)) {
+                        $ids = array_merge($ids, RichTextMediaReference::ids($item['body']));
+                    }
+                }
+            }
+
+            if ($type === 'image' && is_array($component['children'] ?? null)) {
+                $ids = array_merge($ids, $this->componentMediaIds($component['children'], $publishedOnly));
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /** Refresh content-derived references after an in-transaction content mutation. */
+    public function forgetContentReferences(): void
+    {
+        $this->directContentMediaIds = null;
     }
 
     public function customPageReferencesAsset(CustomPageSetting $settings, int $mediaAssetId): bool
@@ -139,19 +181,8 @@ final class MediaReferenceQuery
     public function mediaIdsForHome(HomePresentationSetting $settings): array
     {
         $ids = [];
-
         foreach ([HomeTemplate::UnderConstruction, HomeTemplate::Custom] as $template) {
-            foreach ($settings->components($template) as $component) {
-                if (($component['type'] ?? null) === 'image'
-                    && is_numeric($component['media_asset_id'] ?? null)
-                    && (int) $component['media_asset_id'] > 0) {
-                    $ids[] = (int) $component['media_asset_id'];
-                }
-
-                if (($component['type'] ?? null) === 'text' && is_string($component['body'] ?? null)) {
-                    $ids = array_merge($ids, RichTextMediaReference::ids($component['body']));
-                }
-            }
+            $ids = array_merge($ids, $this->componentMediaIds($settings->components($template)));
         }
 
         return array_values(array_unique($ids));
