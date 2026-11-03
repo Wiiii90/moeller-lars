@@ -189,7 +189,7 @@ test('initial Gallery images report decode, cached readiness and failure', async
     const scene = fixture();
     try {
         const original = scene.root.querySelectorAll;
-        scene.root.querySelectorAll = () => original().slice(0, 2);
+        scene.root.querySelectorAll = selector => original(selector).slice(0, 2);
         let finish;
         const image = scene.images[0];
         image.decode = () => new Promise(resolve => { finish = resolve; });
