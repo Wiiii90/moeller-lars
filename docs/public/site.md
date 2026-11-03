@@ -573,46 +573,45 @@ closed-state preview; the preview's Play action opens the existing detail and
 requests playback. The expanded video retains native controls for manual
 playback and does not join the automatic muted/looping observer.
 
-#### Exhibition design decisions and rejected trials (reviewed 2026-11-03)
+#### Exhibition design iteration: process failure and current baseline (reviewed 2026-11-03)
 
-This is **user-reviewed context for future design work**, not a permanent
-prohibition on revisiting Exhibitions. The current catalogue is acceptable
-with real artist content **for now**, but is not a fully approved final
-composition. Default background is plain white through the shared Public
-appearance setting, not an Exhibitions-only override. Small previews remain
-unframed and unshadowed. The artist controls exhibition order; no visual
-importance is inferred from whether an entry has an image.
+The artist has provisionally accepted the existing public Exhibitions layout
+with real content, **not** declared the design complete or its current
+composition the final artistic direction. The major failure of prior iterations
+was **concept-to-implementation mismatch**: a substantial redesign and
+noticeably different editorial rhythm were discussed and illustrated with
+references, but the committed changes often amounted to a background,
+decoration rollback, or the conditional `margin-top: 1.35rem` after one
+image/no-image transition. The user did **not** request such a minor adjustment
+as the final answer to a fundamental redesign. That rule was withdrawn.
+This failure was **not solved** through a successful alternate composition;
+do not claim a proven design improvement or a completed large redesign.
 
-Previous proposals that were tried and **rejected or rolled back**:
+**Mandatory process correction for any future redesign:** first decide what
+will *materially change* in the actual closed overview and expanded layout,
+showing normal, coverless, long-text and gallery/video cases. Implement those
+concrete structural decisions at the existing layout owner; review the diff
+and a browser representation against the agreed concept, not just against
+passing syntax or unchanged functionality. If the implementation amounts to
+a minor spacing or color tweak, report it only as that and explicitly say
+the redesign is **not delivered**. User constraints (artist-controlled
+ordering, small previews, no extra page height, preserved workflows) are
+boundaries for real design, not grounds for silently reducing the scope.
+Do not introduce arbitrary per-item spacing based on the presence of media
+or inferred exhibition importance; only the artist may supply an editorial
+priority.
 
-- **Dark "Night Gallery" area:** the dark visual island did not fit the
-  otherwise light Public site. Do not revive it as a default redesign.
-- **Separate interactive image stage with narrower exhibition list:**
-  required another visual/interaction hierarchy and did not convince in
-  browser review. Do not recreate a stage, hover preview or second player
-  merely to make the page look different.
-- **Numbered catalogue/timeline and brick-red ornaments:** numbering,
-  red accent bars, persistent separators and double lines were rejected.
-  Keep the simple opened-only shared separators unless the user specifies
-  a genuinely different design.
-- **Warm "Soft Paper" washes and pasted-on image mounts:** extra gradients,
-  strong open-entry tints, white mats and decorative shadows did not survive
-  visual review. Background color belongs to the existing site setting;
-  individual miniature and cover images need no fake physical frame.
-- **"Editorial rhythm" as an arbitrary `margin-top: 1.35rem` after a
-  cover-bearing entry followed by a coverless one:** this was not a delivered
-  composition. It introduced inconsistent gaps without an artistic criterion
-  and was explicitly removed. Never infer exhibition significance or
-  spacing priorities from incidental media presence.
-
-**Required approach if redesign resumes:** inspect these failed outcomes,
-then compare an actual proposed composition against the existing rendered
-overview and at least one expanded entry **with and without a cover**, using
-realistic long Rich Text, video and gallery cases. Specify visible layout
-differences before implementation and verify that the resulting code actually
-delivers those differences. References or aesthetic terminology alone do not
-count as an implemented redesign. Do not disturb an accepted behavior simply
-to make a design experiment more extensive.
+**Prior trials to avoid repeating mechanically:** a separate interactive
+image stage with a secondary list, numbered catalogue with red accents,
+persistent/double separator lines, and an isolated dark "Night Gallery"
+were tried and not accepted in their presented form. They do not prohibit
+future distinctly reviewed proposals. In particular, the warm
+"Soft Paper" background gradients were **not intrinsically rejected**:
+the user found them potentially attractive, but chose to return the default
+to the site's centrally configurable white background. It was the pasted-on
+image mats and shadows that the user wanted removed. Do not misrepresent
+the earlier visual variants as the lesson; the central lesson concerns
+unfulfilled design promises and misleading completion claims.
 
 The existing MediaAsset copyright modes remain authoritative. Exhibition
 index images retain authored credits and explicit per-asset copyright overrides
