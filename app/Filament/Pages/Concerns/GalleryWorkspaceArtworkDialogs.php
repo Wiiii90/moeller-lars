@@ -192,6 +192,15 @@ trait GalleryWorkspaceArtworkDialogs
             ->label(fn (): string => $publicationRole()->label())
             ->icon(fn (): string => $publicationRole()->icon()->value);
 
+        // Edit keeps the same Delete action and impact-review dialog as the card.
+        $actions[] = AdminDialog::headerAction(
+            'dialogDeleteArtwork',
+            AdminRowAction::Delete,
+            function () use ($target): void {
+                $this->replaceMountedAction('deleteArtwork', $target);
+            },
+        )->disabled($isPublished);
+
         return $actions;
     }
 

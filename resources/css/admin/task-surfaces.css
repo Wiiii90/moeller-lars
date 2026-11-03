@@ -577,12 +577,6 @@
     cursor: pointer;
 }
 
-/* The last table row already draws the shared seam; Add Row must not
-   paint a second line on top of that same boundary. */
-.admin-table + .admin-add-row {
-    border-top: 0;
-}
-
 .admin-add-row:hover,
 .custom-page-component-add-row:hover {
     background: var(--admin-subtle);
