@@ -5,7 +5,6 @@ namespace App\Domain\Storage;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminUndoContext;
 use App\Domain\Media\MediaCapacityService;
-use App\Domain\Media\MediaVariantRegenerationService;
 use App\Domain\Publication\PublicationMediaCleanupService;
 use App\Domain\Publication\PublicationSnapshot;
 use App\Models\AdminActionReceipt;
@@ -17,11 +16,10 @@ final class SiteStorageReclaimService
         private readonly AdminAuditService $audit,
         private readonly AdminUndoContext $undoContext,
         private readonly PublicationMediaCleanupService $mediaCleanup,
-        private readonly MediaVariantRegenerationService $variantRegeneration,
         private readonly MediaCapacityService $capacity,
     ) {}
 
-    /** @return array{undo_receipts:int,publication_snapshots:int,publication_rows:int,protected_snapshots:int,generated_files:int,generated_bytes:int,removed_files:int,changed:bool} */
+    /** @return array{undo_receipts:int,publication_snapshots:int,publication_rows:int,protected_snapshots:int,removed_files:int,changed:bool} */
     public function reclaim(): array
     {
         $actor = $this->audit->requireActor();
@@ -84,17 +82,16 @@ final class SiteStorageReclaimService
         // before irreversible filesystem deletion. A rollback must never bring
         // back a restorable snapshot whose original has already been destroyed.
         $removedFiles = $this->mediaCleanup->drain();
-        $generated = $this->variantRegeneration->reclaimRebuildableFiles();
+        // Generated previews are mandatory, even for unused originals.
+        // Recovery-space reclamation must never remove them.
         $this->capacity->refreshCachedSnapshot();
-        $changed = $result['changed'] || $removedFiles > 0 || $generated['files'] > 0;
+        $changed = $result['changed'] || $removedFiles > 0;
         if ($changed && ! $result['changed']) {
             DB::transaction($recordAudit);
         }
 
         return [
             ...$result,
-            'generated_files' => $generated['files'],
-            'generated_bytes' => $generated['bytes'],
             'removed_files' => $removedFiles,
             'changed' => $changed,
         ];

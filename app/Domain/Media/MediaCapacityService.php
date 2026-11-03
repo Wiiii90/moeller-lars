@@ -107,7 +107,7 @@ final class MediaCapacityService
             'reserved_upload_bytes' => $reservedUploadBytes,
             'database_bytes' => $databaseBytes,
             'site_used_bytes' => $siteUsedBytes,
-            'reclaimable_bytes' => $generatedBytes,
+            'reclaimable_bytes' => 0,
             'remaining_bytes' => $remaining,
             'site_used_ratio' => $ratio,
             'authoritative_ratio' => $ratio,

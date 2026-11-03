@@ -32,11 +32,10 @@ final class SiteStorageReclaimControl extends Component implements HasActions, H
                 app(AdminNotifier::class)->notification(
                     title: 'Storage reclaimed',
                     body: sprintf(
-                        'Cleared %d Undo entries, released %d older publication restore snapshots, and removed %d obsolete media files and %d rebuildable generated files. Activity remains available.',
+                        'Cleared %d Undo entries, released %d older publication restore snapshots, and removed %d obsolete media files. All active originals and previews remain available.',
                         $result['undo_receipts'],
                         $result['publication_snapshots'],
                         $result['removed_files'],
-                        $result['generated_files'],
                     ),
                     status: 'success',
                 );
@@ -47,7 +46,7 @@ final class SiteStorageReclaimControl extends Component implements HasActions, H
         return AdminDialog::confirm(
             $action,
             'Free storage?',
-            'Clears Undo history, older restore data and rebuildable thumbnails. The current LIVE restore snapshot and active restore/revert sources stay protected.',
+            'Clears Undo history and older restore data, then removes only obsolete media files no longer needed by Working, LIVE or protected restore states. Existing originals and thumbnails remain intact.',
             submitLabel: 'Free storage',
             danger: true,
         );
