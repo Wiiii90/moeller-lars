@@ -7,6 +7,7 @@ use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\MediaReferenceQuery;
 use App\Models\MediaAsset;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -180,6 +181,105 @@ final class PublicationMediaCleanupService
         return $removedFiles;
     }
 
+
+    /**
+     * Reclaim only genuine filesystem orphans: canonical-looking originals or
+     * previews with no registry entry, committed owner, history owner or
+     * pending publication cleanup. Unassigned but registered media is NEVER
+     * a candidate. Preserve recent files and serialize against all ingests.
+     *
+     * @return array{files:int,bytes:int}
+     */
+    public function reclaimUncataloguedMedia(int $limit = 100): array
+    {
+        if ($limit < 1 || $limit > 100) {
+            throw new \InvalidArgumentException('Orphan recovery is limited to 1-100 files.');
+        }
+
+        $lock = Cache::lock('media-ingest', 420);
+        if (! $lock->get()) {
+            throw new RuntimeException('A media upload is in progress. Free storage can be retried later.');
+        }
+
+        try {
+            return DB::transaction(function () use ($limit): array {
+                DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
+
+                $disk = Storage::disk((string) config('media.disk'));
+                $now = time();
+                $orphans = [];
+
+                // Flat canonical directories only. Never inspect private
+                // upload staging, rights artifacts or arbitrary operator files.
+                foreach (['originals', 'variants'] as $folder) {
+                    $directory = $disk->path($folder);
+                    if (! is_dir($directory)) {
+                        continue;
+                    }
+
+                    foreach (new \DirectoryIterator($directory) as $entry) {
+                        if ($entry->isDot() || ! $entry->isFile()) {
+                            continue;
+                        }
+
+                        $name = $entry->getFilename();
+                        $isCanonical = $folder === 'originals'
+                            ? preg_match('/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}\\.(?:jpg|jpeg|png|webp|mp4|webm|mp3|m4a|ogg|wav)$/D', $name) === 1
+                            : (preg_match('/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}-(?:thumbnail|poster)\\.webp$/D', $name) === 1
+                                || preg_match('/^cutover-[1-9][0-9]*-[a-f0-9]{64}\\.webp$/D', $name) === 1);
+                        if (! $isCanonical || $entry->getMTime() >= $now - 600) {
+                            continue;
+                        }
+
+                        $key = $folder.'/'.$name;
+                        if ($this->storageKeyHasOwner($key)) {
+                            continue;
+                        }
+
+                        $orphans[] = ['key' => $key, 'size' => max(0, (int) $entry->getSize())];
+                        if (count($orphans) >= $limit) {
+                            break 2;
+                        }
+                    }
+                }
+
+                // All ownership checks have succeeded BEFORE the first write.
+                // Any unexpected DB/schema failure therefore fails closed.
+                $files = 0;
+                $bytes = 0;
+                foreach ($orphans as $candidate) {
+                    $removed = false;
+                    if (! $this->deleteKey($candidate['key'], $removed)) {
+                        report(new RuntimeException('Cannot remove orphaned media key: '.$candidate['key']));
+                        continue;
+                    }
+                    if ($removed) {
+                        $files++;
+                        $bytes += $candidate['size'];
+                    }
+                }
+
+                return ['files' => $files, 'bytes' => $bytes];
+            }, attempts: 1);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function storageKeyHasOwner(string $key): bool
+    {
+        foreach (['media_assets', 'media_variants', 'committed.media_assets', 'committed.media_variants'] as $table) {
+            if (DB::table($table)->where('storage_key', $key)->exists()) {
+                return true;
+            }
+        }
+
+        return DB::table('publication_version_rows')
+            ->whereIn('table_name', ['media_assets', 'media_variants'])
+            ->whereRaw("payload->>'storage_key' = ?", [$key])
+            ->exists()
+            || DB::table('publication_media_cleanups')->where('storage_key', $key)->exists();
+    }
 
     /**
      * Generated rights files have a different retention rule from originals:

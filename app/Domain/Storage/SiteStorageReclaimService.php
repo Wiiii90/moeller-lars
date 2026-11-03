@@ -5,6 +5,7 @@ namespace App\Domain\Storage;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminUndoContext;
 use App\Domain\Media\MediaCapacityService;
+use App\Domain\Media\ResumableMediaUploadService;
 use App\Domain\Publication\PublicationMediaCleanupService;
 use App\Domain\Publication\PublicationSnapshot;
 use App\Models\AdminActionReceipt;
@@ -16,10 +17,11 @@ final class SiteStorageReclaimService
         private readonly AdminAuditService $audit,
         private readonly AdminUndoContext $undoContext,
         private readonly PublicationMediaCleanupService $mediaCleanup,
+        private readonly ResumableMediaUploadService $uploads,
         private readonly MediaCapacityService $capacity,
     ) {}
 
-    /** @return array{undo_receipts:int,publication_snapshots:int,publication_rows:int,protected_snapshots:int,removed_files:int,changed:bool} */
+    /** @return array{undo_receipts:int,publication_snapshots:int,publication_rows:int,protected_snapshots:int,removed_files:int,orphan_files:int,orphan_bytes:int,expired_staging:int,changed:bool} */
     public function reclaim(): array
     {
         $actor = $this->audit->requireActor();
@@ -82,10 +84,15 @@ final class SiteStorageReclaimService
         // before irreversible filesystem deletion. A rollback must never bring
         // back a restorable snapshot whose original has already been destroyed.
         $removedFiles = $this->mediaCleanup->drain();
+        $orphans = $this->mediaCleanup->reclaimUncataloguedMedia();
+        $expiredStaging = $this->uploads->pruneExpired();
+
         // Generated previews are mandatory, even for unused originals.
-        // Recovery-space reclamation must never remove them.
+        // Only genuinely unowned canonical files and expired private staging
+        // are eligible for the extra physical sweep.
         $this->capacity->refreshCachedSnapshot();
-        $changed = $result['changed'] || $removedFiles > 0;
+        $changed = $result['changed'] || $removedFiles > 0
+            || $orphans['files'] > 0 || $expiredStaging > 0;
         if ($changed && ! $result['changed']) {
             DB::transaction($recordAudit);
         }
@@ -93,6 +100,9 @@ final class SiteStorageReclaimService
         return [
             ...$result,
             'removed_files' => $removedFiles,
+            'orphan_files' => $orphans['files'],
+            'orphan_bytes' => $orphans['bytes'],
+            'expired_staging' => $expiredStaging,
             'changed' => $changed,
         ];
     }
