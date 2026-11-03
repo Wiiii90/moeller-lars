@@ -22,7 +22,7 @@ function git(array $args): string
         $pipes,
     );
 
-    if (!is_resource($process)) {
+    if (! is_resource($process)) {
         failure('Git could not be started.');
     }
 
@@ -40,14 +40,14 @@ function git(array $args): string
 }
 
 foreach (['base' => $base, 'candidate' => $candidate] as $label => $value) {
-    if (!is_string($value) || preg_match('/\A[0-9a-f]{40}\z/i', $value) !== 1) {
+    if (! is_string($value) || preg_match('/\A[0-9a-f]{40}\z/i', $value) !== 1) {
         failure("{$label} must be a full 40-character commit SHA.");
     }
 
     git(['cat-file', '-e', "{$value}^{commit}"]);
 }
 
-if (!is_string($target) || !in_array($target, $allowed, true)) {
+if (! is_string($target) || ! in_array($target, $allowed, true)) {
     failure('target must be dev, docs, testing, refactor or main.');
 }
 

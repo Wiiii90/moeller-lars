@@ -10,8 +10,8 @@ use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\PublicImageViewer;
-use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SitePageHeading;
+use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Support\Controls\AdminControl;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -22,8 +22,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 final class HomeSettingsDialog
 {

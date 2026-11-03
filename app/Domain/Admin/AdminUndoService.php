@@ -7,6 +7,7 @@ use App\Models\AdminActionReceipt;
 use App\Models\AdminActivityOrderingEvent;
 use App\Models\AdminActivityOrderingProjection;
 use App\Models\Artwork;
+use App\Models\AuditEvent;
 use App\Models\Exhibition;
 use App\Models\PublicationCheckpointEvent;
 use App\Models\User;
@@ -65,7 +66,7 @@ final class AdminUndoService
                     $after = $projection->beforeState();
                     $this->orderingState->restore($scope, $before, $after);
 
-                    /** @var \App\Models\AuditEvent $sourceEvent */
+                    /** @var AuditEvent $sourceEvent */
                     $sourceEvent = $orderingEvent->auditEvent()->firstOrFail();
                     $this->audit->recordOrdering(
                         $actor,
@@ -162,6 +163,4 @@ final class AdminUndoService
 
         return $target;
     }
-
-
 }

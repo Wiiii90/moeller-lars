@@ -14,8 +14,8 @@ return new class extends Migration
         });
 
         if (DB::connection()->getDriverName() === 'pgsql') {
-            DB::statement("ALTER TABLE committed.artwork_categories
-                ADD COLUMN video_sound_enabled boolean NOT NULL DEFAULT false");
+            DB::statement('ALTER TABLE committed.artwork_categories
+                ADD COLUMN video_sound_enabled boolean NOT NULL DEFAULT false');
         }
     }
 

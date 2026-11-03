@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
 final class JournalMosaicColumns
 {
     /**
-     * @param Collection<int, JournalEntryMedia> $usages In editorial order.
+     * @param  Collection<int, JournalEntryMedia>  $usages  In editorial order.
      * @return array{0: list<JournalEntryMedia>, 1: list<JournalEntryMedia>}
      */
     public function arrange(Collection $usages): array

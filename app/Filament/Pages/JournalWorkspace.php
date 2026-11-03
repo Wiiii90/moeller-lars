@@ -5,18 +5,18 @@ namespace App\Filament\Pages;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Content\BlogEditorialService;
-use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\ExhibitionDate;
+use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalEntryOrderService;
 use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\RegionalFormats;
-use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SitePreviewContext;
-use App\Domain\Media\PublicMedia;
+use App\Domain\Content\SiteSectionType;
+use App\Domain\Media\MediaPreviewVariant;
+use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
-use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
@@ -26,11 +26,11 @@ use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
 use App\Models\User;
-use Filament\Facades\Filament;
 use App\Routing\SiteNodeRoute;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -39,11 +39,11 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Livewire\Attributes\Session;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Session;
 use Throwable;
 
 final class JournalWorkspace extends Page
@@ -513,6 +513,7 @@ final class JournalWorkspace extends Page
                 $post = $this->post((int) ($arguments['post'] ?? 0));
 
                 $this->entryEditorOriginal = $this->journalEntryMutationState($post);
+
                 return [...$post->attributesToArray(), ...app(JournalEntryEditorState::class)->for($post)];
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
@@ -620,6 +621,7 @@ final class JournalWorkspace extends Page
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
 
                 $this->entryEditorOriginal = $this->journalEntryMutationState($entry);
+
                 return [...$entry->attributesToArray(), ...app(JournalEntryEditorState::class)->for($entry)];
             })
             ->schema(fn (Schema $schema, array $arguments): Schema => JournalEntryEditorSchema::exhibition(
@@ -663,7 +665,7 @@ final class JournalWorkspace extends Page
      * Edit headers reuse the same domain mutations, roles and modal tasks
      * as their table rows. Only the native Edit dialog owns autosave.
      *
-     * @param array<string,mixed> $arguments
+     * @param  array<string,mixed>  $arguments
      * @return list<Action>
      */
     private function journalEditHeaderActions(array $arguments, string $kind): array
@@ -1069,7 +1071,7 @@ final class JournalWorkspace extends Page
         if (! $asset instanceof MediaAsset) {
             return null;
         }
-        $variant = \App\Domain\Media\MediaPreviewVariant::preview($asset);
+        $variant = MediaPreviewVariant::preview($asset);
 
         return $variant instanceof MediaVariant ? route('admin.media.variant', $variant) : null;
     }
@@ -1247,21 +1249,17 @@ final class JournalWorkspace extends Page
     {
         $isBlog = $this->journalTemplate() === JournalTemplate::Blog;
         $records = $isBlog ? $this->selectedPosts() : $this->selectedExhibitions();
-        $states = $records->map(static fn (BlogPost|Exhibition $entry): string =>
-            (string) $entry->getAttribute('state')
+        $states = $records->map(static fn (BlogPost|Exhibition $entry): string => (string) $entry->getAttribute('state')
         );
 
         return [
-            'publish' => $isBlog && $states->contains(static fn (string $state): bool =>
-                in_array($state, ['draft', 'scheduled', 'unpublished'], true)
+            'publish' => $isBlog && $states->contains(static fn (string $state): bool => in_array($state, ['draft', 'scheduled', 'unpublished'], true)
             ),
             'unpublish' => $isBlog && $states->contains('published'),
             'archive' => $isBlog && $states->contains(static fn (string $state): bool => $state !== 'archived'),
-            'restore' => $isBlog && $states->contains(static fn (string $state): bool =>
-                in_array($state, ['scheduled', 'unpublished', 'archived'], true)
+            'restore' => $isBlog && $states->contains(static fn (string $state): bool => in_array($state, ['scheduled', 'unpublished', 'archived'], true)
             ),
-            'delete' => $states->contains(static fn (string $state): bool =>
-                $isBlog ? ! in_array($state, ['published', 'scheduled'], true) : $state !== 'published'
+            'delete' => $states->contains(static fn (string $state): bool => $isBlog ? ! in_array($state, ['published', 'scheduled'], true) : $state !== 'published'
             ),
         ];
     }

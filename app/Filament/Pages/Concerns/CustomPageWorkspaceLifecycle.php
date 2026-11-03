@@ -19,7 +19,6 @@ use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceLifecycle
 {
-
     public function mount(int|string $section): void
     {
         /** @var SiteSection $siteSection */
@@ -61,6 +60,7 @@ trait CustomPageWorkspaceLifecycle
                 || ! array_key_exists('can_move_down', $component)
                 || ! is_array($component['children'] ?? null)) {
                 $this->loadComponentProjection();
+
                 return;
             }
 
@@ -77,6 +77,7 @@ trait CustomPageWorkspaceLifecycle
                     || ! array_key_exists('can_move_up', $child)
                     || ! array_key_exists('can_move_down', $child)) {
                     $this->loadComponentProjection();
+
                     return;
                 }
             }

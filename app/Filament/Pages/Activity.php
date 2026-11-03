@@ -6,8 +6,8 @@ use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminUndoService;
-use App\Domain\Publication\PublicationService;
 use App\Domain\Content\RegionalFormats;
+use App\Domain\Publication\PublicationService;
 use App\Domain\Publication\PublicationVersionService;
 use App\Filament\Support\ActivityClockProjection;
 use App\Filament\Support\AdminActivityFeed;
@@ -1119,7 +1119,6 @@ final class Activity extends Page
                 icon: AdminIcon::Undo,
             );
         }
-
 
         return $actions;
     }

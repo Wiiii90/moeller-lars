@@ -78,5 +78,4 @@ final class PublicImageViewer
             .' data-viewer-title="'.e($alt !== '' ? $alt : 'Image').'"'
             .' role="button" tabindex="0" aria-label="'.e('Enlarge image'.($alt !== '' ? ': '.$alt : '')).'"';
     }
-
 }

@@ -4,8 +4,8 @@ namespace App\Domain\Media;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminUndoContext;
-use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkDraftService;
+use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
@@ -386,7 +386,7 @@ class MediaAssetEditorialService
      * Image can be removed automatically; Image children require explicit
      * editorial action rather than silently destroying their text.
      *
-     * @param array<string,mixed> $component
+     * @param  array<string,mixed>  $component
      * @return array<string,mixed>|null
      */
     private function withoutMediaReference(array $component, int $assetId): ?array
@@ -401,6 +401,7 @@ class MediaAssetEditorialService
                     'media' => 'This image contains other content. Move or remove its child components before deleting the image from Storage.',
                 ]);
             }
+
             return null;
         }
 

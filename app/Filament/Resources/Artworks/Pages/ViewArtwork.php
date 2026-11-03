@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\Artworks\Pages;
 
 use App\Domain\Artwork\ArtworkDate;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
+use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -47,8 +49,8 @@ class ViewArtwork extends ViewRecord
                     $primary = $artworkMedia->firstWhere('role', 'primary');
                     $asset = $primary?->getRelationValue('mediaAsset');
                     /** @var MediaVariant|null $variant */
-                    $variant = $asset instanceof \App\Models\MediaAsset
-                        ? \App\Domain\Media\MediaPreviewVariant::preview($asset)
+                    $variant = $asset instanceof MediaAsset
+                        ? MediaPreviewVariant::preview($asset)
                         : null;
 
                     return $variant && app(PublicMedia::class)->isPublicVariant($variant) ? route('media.variant', $variant) : null;

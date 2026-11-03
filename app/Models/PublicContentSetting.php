@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Domain\Content\PublicAppearance;
+use App\Domain\Content\PublicLegalContent;
 use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\SocialLinks;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -374,7 +375,7 @@ class PublicContentSetting extends Model
             }
         }
 
-        foreach (\App\Domain\Content\PublicLegalContent::EDITORIAL_FIELDS as $field => $label) {
+        foreach (PublicLegalContent::EDITORIAL_FIELDS as $field => $label) {
             $value = $setting->getAttribute($field);
             if ($value === null) {
                 continue;

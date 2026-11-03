@@ -3,8 +3,8 @@
 namespace App\Filament\Resources\Artworks\Pages;
 
 use App\Filament\Concerns\UsesAdminEditor;
-use App\Filament\Pages\SitePages;
 use App\Filament\Pages\GalleryWorkspace;
+use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\ArtworkEditDialog;
 use App\Models\Artwork;

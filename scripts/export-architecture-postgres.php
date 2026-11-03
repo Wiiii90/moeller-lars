@@ -11,7 +11,6 @@ declare(strict_types=1);
  * php scripts/export-architecture-postgres.php --write
  * php scripts/export-architecture-postgres.php --check
  */
-
 $root = dirname(__DIR__);
 $mode = $argv[1] ?? '--summary';
 if (count($argv) > 2 || ! in_array($mode, ['--summary', '--write', '--check'], true)) {
@@ -105,7 +104,9 @@ foreach (array_keys($byName) as $fullName) {
     $mermaid[] = '    '.$id.'["'.str_replace('"', '', $fullName).'"]';
 }
 foreach ($result['constraints'] as $item) {
-    if ($item['kind'] !== 'f') continue;
+    if ($item['kind'] !== 'f') {
+        continue;
+    }
     $from = $item['schema_name'].'.'.$item['relation_name'];
     $to = $item['target_schema'].'.'.$item['target_relation'];
     if (isset($ids[$from], $ids[$to])) {
@@ -122,16 +123,18 @@ foreach ($generated as $name => $content) {
     $path = $directory.'/'.$name;
     if ($mode === '--write') {
         if (! is_dir($directory) && ! mkdir($directory, 0775, true) && ! is_dir($directory)) {
-            throw new RuntimeException("Cannot create generated directory");
+            throw new RuntimeException('Cannot create generated directory');
         }
-        if (file_put_contents($path, $content) === false) throw new RuntimeException("Cannot write {$name}");
+        if (file_put_contents($path, $content) === false) {
+            throw new RuntimeException("Cannot write {$name}");
+        }
     } elseif ($mode === '--check' && (! is_file($path) || file_get_contents($path) !== $content)) {
         fwrite(STDERR, "Stale or missing {$name}; run --write on the isolated database.\n");
         exit(1);
     }
 }
 $counts = [];
-foreach (['relations','columns','constraints','indexes','views','triggers'] as $section) {
+foreach (['relations', 'columns', 'constraints', 'indexes', 'views', 'triggers'] as $section) {
     $counts[$section] = count($result[$section]);
 }
 echo json_encode($counts, JSON_THROW_ON_ERROR)."\n";

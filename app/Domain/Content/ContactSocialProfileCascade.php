@@ -71,8 +71,8 @@ final class ContactSocialProfileCascade
      * Preserve everything except removed profile keys; keep component,
      * child, platform and publication order unchanged.
      *
-     * @param list<array<string, mixed>> $components
-     * @param list<string> $removed
+     * @param  list<array<string, mixed>>  $components
+     * @param  list<string>  $removed
      * @return list<array<string, mixed>>
      */
     private function withoutPlatforms(array $components, array $removed): array

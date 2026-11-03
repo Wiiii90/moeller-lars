@@ -2,7 +2,7 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Filament\Support\Controls\AdminControl;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -243,7 +243,7 @@ final class MediaAssetSelect
         $filename = e((string) $asset->getAttribute('original_filename'));
 
         /** @var Collection<int, MediaVariant> $variants */
-        $variant = \App\Domain\Media\MediaPreviewVariant::preview($asset);
+        $variant = MediaPreviewVariant::preview($asset);
 
         if ($visual) {
             $preview = $variant instanceof MediaVariant

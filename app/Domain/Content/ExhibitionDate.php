@@ -26,6 +26,7 @@ final class ExhibitionDate
         if (isset($parts[3]) && ! checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1])) {
             throw new InvalidArgumentException("Invalid calendar day in {$field}.");
         }
+
         return $value;
     }
 
@@ -90,6 +91,7 @@ final class ExhibitionDate
             || ($structuredEnd !== null && $structuredEnd !== $endDate)) {
             throw new InvalidArgumentException('Authored date conflicts with already stored structured dates.');
         }
+
         return ['starts_on' => $startDate, 'ends_on' => $endDate];
     }
 
@@ -134,7 +136,7 @@ final class ExhibitionDate
         return self::earliest($start) <= self::latest($end);
     }
 
-    public static function temporalState(?string $start, ?string $end, \DateTimeInterface $now): string
+    public static function temporalState(?string $start, ?string $end, DateTimeInterface $now): string
     {
         if ($start === null) {
             return 'unknown';
@@ -176,6 +178,7 @@ final class ExhibitionDate
             || ! checkdate((int) $parts[2], (int) $parts[1], (int) $parts[3])) {
             throw new InvalidArgumentException('Invalid German day-month-year date.');
         }
+
         return sprintf('%04d-%02d-%02d', (int) $parts[3], (int) $parts[2], (int) $parts[1]);
     }
 }

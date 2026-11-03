@@ -11,15 +11,21 @@ if (count($argv) > 2 || ! in_array($mode, ['--summary', '--write', '--check'], t
 }
 $manifest = $root.'/docs/architecture/admin-publication-calls.json';
 $input = file_get_contents($manifest);
-if ($input === false) throw new RuntimeException('Missing call manifest');
+if ($input === false) {
+    throw new RuntimeException('Missing call manifest');
+}
 $spec = json_decode($input, true, 512, JSON_THROW_ON_ERROR);
-if (($spec['format'] ?? '') !== 'curated-method-calls-v1') throw new RuntimeException('Unsupported manifest format');
+if (($spec['format'] ?? '') !== 'curated-method-calls-v1') {
+    throw new RuntimeException('Unsupported manifest format');
+}
 $nodes = [];
 $edges = [];
 $sourceCache = [];
 foreach ($spec['edges'] as $edge) {
     foreach (['from', 'to', 'method', 'path', 'line', 'anchor'] as $field) {
-        if (! isset($edge[$field])) throw new RuntimeException("Missing edge field: {$field}");
+        if (! isset($edge[$field])) {
+            throw new RuntimeException("Missing edge field: {$field}");
+        }
     }
     $path = $edge['path'];
     if (! is_string($path) || ! str_starts_with($path, 'app/') || ! str_ends_with($path, '.php')
@@ -36,7 +42,9 @@ foreach ($spec['edges'] as $edge) {
     }
     if (! isset($sourceCache[$path])) {
         $contents = file_get_contents($root.'/'.$path);
-        if (! is_string($contents)) throw new RuntimeException("Missing source: {$path}");
+        if (! is_string($contents)) {
+            throw new RuntimeException("Missing source: {$path}");
+        }
         $sourceCache[$path] = $contents;
     }
     $lines = explode("\n", $sourceCache[$path]);
@@ -65,7 +73,9 @@ if ($mode === '--write') {
     if (! is_dir(dirname($target)) && ! mkdir(dirname($target), 0775, true) && ! is_dir(dirname($target))) {
         throw new RuntimeException('Cannot create output directory');
     }
-    if (file_put_contents($target, $output) === false) throw new RuntimeException('Cannot write output');
+    if (file_put_contents($target, $output) === false) {
+        throw new RuntimeException('Cannot write output');
+    }
 } elseif ($mode === '--check' && (! is_file($target) || file_get_contents($target) !== $output)) {
     fwrite(STDERR, "Source call-graph output is missing or stale; run --write.\n");
     exit(1);

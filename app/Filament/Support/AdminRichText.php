@@ -5,11 +5,11 @@ namespace App\Filament\Support;
 use App\Domain\Content\RichTextDocument;
 use App\Domain\Media\MediaPreviewVariant;
 use App\Models\MediaAsset;
-use Filament\Forms\Components\Select;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\RichEditor\EditorCommand;
+use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\View;
-use Filament\Forms\Components\RichEditor;
 
 final class AdminRichText
 {
@@ -37,8 +37,7 @@ final class AdminRichText
             ->label($label)
             ->plugins([RichTextEditorPlugin::make()])
             ->json(false)
-            ->formatStateUsing(static fn (mixed $state): mixed =>
-                is_string($state) ? RichTextDocument::forEditor($state) : $state
+            ->formatStateUsing(static fn (mixed $state): mixed => is_string($state) ? RichTextDocument::forEditor($state) : $state
             )
             ->toolbarButtons($toolbar)
             ->floatingToolbars($allowEmbeddedMedia ? [

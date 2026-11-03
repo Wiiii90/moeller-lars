@@ -16,7 +16,7 @@ final class AdminMediaUploadFeedback
      * Storage: ready means newly saved originals; reused is disjoint.
      * Gallery: ready means media selected for Artwork, including reused.
      *
-     * @param list<string> $errors Each entry includes the filename and the actual reason.
+     * @param  list<string>  $errors  Each entry includes the filename and the actual reason.
      */
     public function batch(int $ready, int $reused, int $failed, array $errors, string $destination): string
     {

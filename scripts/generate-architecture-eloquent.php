@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 $root = dirname(__DIR__);
 $mode = $argv[1] ?? '--summary';
-if (count($argv) > 2 || ! in_array($mode, ['--summary','--write','--check','--self-test'], true)) {
+if (count($argv) > 2 || ! in_array($mode, ['--summary', '--write', '--check', '--self-test'], true)) {
     fwrite(STDERR, "Usage: php scripts/generate-architecture-eloquent.php [--write|--check|--self-test]\n");
     exit(2);
 }
@@ -29,6 +29,7 @@ function eloquentTokens(string $source): array
         ];
         $line += substr_count($value, "\n");
     }
+
     return $tokens;
 }
 
@@ -40,6 +41,7 @@ function eloquentNext(array $tokens, int $start): ?int
             return $i;
         }
     }
+
     return null;
 }
 
@@ -47,6 +49,7 @@ function eloquentNext(array $tokens, int $start): ?int
  * Deliberately narrow: direct parameterless public methods, matching explicit
  * return type and method, with a literal first model::class argument.
  * Skipped forms are not inferred as SQL constraints or runtime relations.
+ *
  * @return list<array{method:string,kind:string,target:string,line:int}>
  */
 function eloquentRelationsIn(string $source, string $model): array
@@ -121,6 +124,7 @@ function eloquentRelationsIn(string $source, string $model): array
             'line' => $tokens[$thisToken]['line'],
         ];
     }
+
     return $relations;
 }
 
@@ -136,13 +140,13 @@ class Entry {
             ->belongsTo(Owner::class, 'owner_id');
     }
 }
-CODE, [['method'=>'owner','kind'=>'belongsTo','target'=>'Owner','line'=>6]]],
+CODE, [['method' => 'owner', 'kind' => 'belongsTo', 'target' => 'Owner', 'line' => 6]]],
         ['self relation', <<<'CODE'
 <?php
 class Node {
     public function children(): HasMany { return $this->hasMany(self::class, 'parent_id'); }
 }
-CODE, [['method'=>'children','kind'=>'hasMany','target'=>'Node','line'=>3]]],
+CODE, [['method' => 'children', 'kind' => 'hasMany', 'target' => 'Node', 'line' => 3]]],
         ['chained direct relation', <<<'CODE'
 <?php
 class Media {
@@ -150,7 +154,7 @@ class Media {
         return $this->belongsToMany(Entry::class)->withPivot('rank');
     }
 }
-CODE, [['method'=>'entries','kind'=>'belongsToMany','target'=>'Entry','line'=>4]]],
+CODE, [['method' => 'entries', 'kind' => 'belongsToMany', 'target' => 'Entry', 'line' => 4]]],
         ['mismatched return and dynamic target', <<<'CODE'
 <?php
 class Broken {
@@ -177,7 +181,9 @@ CODE, []],
 }
 
 $paths = glob($root.'/app/Models/*.php');
-if (! is_array($paths) || $paths === []) throw new RuntimeException('No Eloquent model sources');
+if (! is_array($paths) || $paths === []) {
+    throw new RuntimeException('No Eloquent model sources');
+}
 sort($paths, SORT_STRING);
 $models = [];
 $relations = [];
@@ -185,7 +191,9 @@ foreach ($paths as $path) {
     $name = pathinfo($path, PATHINFO_FILENAME);
     $relative = 'app/Models/'.$name.'.php';
     $source = file_get_contents($path);
-    if (! is_string($source)) throw new RuntimeException("Cannot read {$relative}");
+    if (! is_string($source)) {
+        throw new RuntimeException("Cannot read {$relative}");
+    }
     $models[] = ['name' => $name, 'path' => $relative];
     foreach (eloquentRelationsIn($source, $name) as $rel) {
         $relations[] = [
@@ -194,7 +202,7 @@ foreach ($paths as $path) {
         ];
     }
 }
-usort($relations, static fn (array $a, array $b): int => [$a['model'],$a['method'],$a['target']] <=> [$b['model'],$b['method'],$b['target']]);
+usort($relations, static fn (array $a, array $b): int => [$a['model'], $a['method'], $a['target']] <=> [$b['model'], $b['method'], $b['target']]);
 $data = [
     'format' => 'eloquent-relationships-v1',
     'scope' => 'Exact Eloquent relations declared in app/Models/*.php; not database foreign-key evidence.',
@@ -203,11 +211,17 @@ $data = [
     'relations' => $relations,
 ];
 $ids = [];
-foreach ($models as $i => $model) $ids[$model['name']] = 'M'.($i + 1);
+foreach ($models as $i => $model) {
+    $ids[$model['name']] = 'M'.($i + 1);
+}
 $graph = ['%% Generated from explicit Eloquent relation methods, NOT pg_catalog foreign keys', 'flowchart LR'];
-foreach ($models as $model) $graph[] = '    '.$ids[$model['name']].'["'.$model['name'].'"]';
+foreach ($models as $model) {
+    $graph[] = '    '.$ids[$model['name']].'["'.$model['name'].'"]';
+}
 foreach ($relations as $rel) {
-    if (! isset($ids[$rel['target']])) throw new RuntimeException("Unknown model target: {$rel['target']}");
+    if (! isset($ids[$rel['target']])) {
+        throw new RuntimeException("Unknown model target: {$rel['target']}");
+    }
     $graph[] = '    '.$ids[$rel['model']].' -->|'.$rel['method'].'| '.$ids[$rel['target']];
 }
 $outputs = [
@@ -218,8 +232,12 @@ $out = $root.'/docs/architecture/generated';
 foreach ($outputs as $name => $content) {
     $destination = $out.'/'.$name;
     if ($mode === '--write') {
-        if (! is_dir($out) && ! mkdir($out, 0775, true) && ! is_dir($out)) throw new RuntimeException('Cannot create output dir');
-        if (file_put_contents($destination, $content) === false) throw new RuntimeException("Cannot write {$name}");
+        if (! is_dir($out) && ! mkdir($out, 0775, true) && ! is_dir($out)) {
+            throw new RuntimeException('Cannot create output dir');
+        }
+        if (file_put_contents($destination, $content) === false) {
+            throw new RuntimeException("Cannot write {$name}");
+        }
     } elseif ($mode === '--check' && (! is_file($destination) || file_get_contents($destination) !== $content)) {
         fwrite(STDERR, "Missing/stale Eloquent inventory: {$name}\n");
         exit(1);

@@ -14,8 +14,8 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\User;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Select;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Contracts\View\View;
@@ -24,7 +24,6 @@ use Livewire\Attributes\Session;
 
 final class Dashboard extends Page
 {
-
     private const PAGE_SIZES = [25, 50, 100];
 
     private const DEFAULT_PAGE_SIZE = 50;
@@ -556,11 +555,9 @@ final class Dashboard extends Page
 
         return [
             'has_selection' => $entries !== [],
-            'can_pin' => collect($entries)->contains(static fn (array $entry): bool =>
-                ! in_array($entry['key'] ?? null, $pinnedKeys, true)
+            'can_pin' => collect($entries)->contains(static fn (array $entry): bool => ! in_array($entry['key'] ?? null, $pinnedKeys, true)
             ),
-            'can_unpin' => collect($entries)->contains(static fn (array $entry): bool =>
-                in_array($entry['key'] ?? null, $pinnedKeys, true)
+            'can_unpin' => collect($entries)->contains(static fn (array $entry): bool => in_array($entry['key'] ?? null, $pinnedKeys, true)
             ),
             'all_readable' => $entries !== [] && collect($entries)->every(
                 fn (array $entry): bool => $this->isReadableFeedEntry($entry),

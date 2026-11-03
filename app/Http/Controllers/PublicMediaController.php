@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\PublicMedia;
 use App\Domain\Publication\MediaRightsPublicationSelections;
-use App\Models\MediaRightsArtifact;
 use App\Models\MediaAsset;
+use App\Models\MediaRightsArtifact;
 use App\Models\MediaVariant;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,7 +22,7 @@ class PublicMediaController extends Controller
     {
         abort_unless($this->publicMedia->isPublicAsset($mediaAsset), 404);
 
-        $artifact = \App\Domain\Media\MediaTypePolicy::isImage((string) $mediaAsset->getAttribute('mime_type'))
+        $artifact = MediaTypePolicy::isImage((string) $mediaAsset->getAttribute('mime_type'))
             ? $this->rightsSelections->selectedForPublic($mediaAsset)
             : null;
         abort_unless($artifact === null ? $revision === null : $revision === $artifact->getAttribute('revision'), 404);

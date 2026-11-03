@@ -31,19 +31,26 @@ function uiMatches(string $source, string $pattern, int $capture = 1): array
             'line' => substr_count(substr($source, 0, $match[0][1]), "\n") + 1,
         ];
     }
+
     return $found;
 }
 $records = [];
 foreach ($patterns as $kind => $pattern) {
     $paths = glob($root.'/'.$pattern);
-    if (! is_array($paths)) throw new RuntimeException("Cannot list {$pattern}");
+    if (! is_array($paths)) {
+        throw new RuntimeException("Cannot list {$pattern}");
+    }
     sort($paths, SORT_STRING);
     foreach ($paths as $path) {
         $source = file_get_contents($path);
-        if (! is_string($source)) throw new RuntimeException("Cannot read {$path}");
+        if (! is_string($source)) {
+            throw new RuntimeException("Cannot read {$path}");
+        }
         $relative = str_replace('\\', '/', substr($path, strlen($root) + 1));
         $types = uiMatches($source, '/^[ \t]*(?:(?:final|abstract)\s+)?(?:class|trait)\s+([A-Za-z_]\w*)\b/m');
-        if (count($types) !== 1) throw new RuntimeException("Ambiguous declaration in {$relative}");
+        if (count($types) !== 1) {
+            throw new RuntimeException("Ambiguous declaration in {$relative}");
+        }
         $name = $types[0]['name'];
         $slugMatches = uiMatches($source, '/^[ \t]*protected\s+static\s+\?string\s+\$slug\s*=\s*\'([^\']*)\'/m');
         $viewMatches = uiMatches($source, '/^[ \t]*protected\s+string\s+\$view\s*=\s*\'([^\']*)\'/m');
@@ -51,7 +58,9 @@ foreach ($patterns as $kind => $pattern) {
             throw new RuntimeException("Cannot locate type body in {$relative}");
         }
         $bodyStart = $declaration[0][1] + strlen($declaration[0][0]) - 1;
-        if ($bodyStart === false) throw new RuntimeException("Missing type body in {$relative}");
+        if ($bodyStart === false) {
+            throw new RuntimeException("Missing type body in {$relative}");
+        }
         $body = substr($source, $bodyStart + 1);
         $bodyTraits = uiMatches($body, '/^[ \t]*use\s+([A-Za-z_]\w*)\s*;/m');
         foreach ($bodyTraits as &$trait) {
@@ -71,10 +80,16 @@ foreach ($patterns as $kind => $pattern) {
     }
 }
 $knownTraits = [];
-foreach ($records as $record) if ($record['kind'] === 'concern') $knownTraits[$record['name']] = $record;
+foreach ($records as $record) {
+    if ($record['kind'] === 'concern') {
+        $knownTraits[$record['name']] = $record;
+    }
+}
 $edges = [];
 foreach ($records as $record) {
-    if (! in_array($record['kind'], ['page', 'concern'], true)) continue;
+    if (! in_array($record['kind'], ['page', 'concern'], true)) {
+        continue;
+    }
     foreach ($record['traits'] as $use) {
         if (isset($knownTraits[$use['name']])) {
             $edges[] = ['from' => $record['name'], 'to' => $use['name'],
@@ -82,7 +97,7 @@ foreach ($records as $record) {
         }
     }
 }
-usort($edges, static fn (array $a, array $b): int => [$a['from'],$a['to']] <=> [$b['from'],$b['to']]);
+usort($edges, static fn (array $a, array $b): int => [$a['from'], $a['to']] <=> [$b['from'], $b['to']]);
 $counts = ['pages' => 0, 'concerns' => 0, 'livewire' => 0, 'trait_uses' => count($edges), 'literal_actions' => 0];
 foreach ($records as $record) {
     $counts[$record['kind'] === 'page' ? 'pages' : ($record['kind'] === 'concern' ? 'concerns' : 'livewire')]++;
@@ -94,7 +109,10 @@ $data = [
     'counts' => $counts, 'units' => $records, 'trait_composition_edges' => $edges,
 ];
 $nodes = [];
-foreach ($edges as $edge) { $nodes[$edge['from']] = true; $nodes[$edge['to']] = true; }
+foreach ($edges as $edge) {
+    $nodes[$edge['from']] = true;
+    $nodes[$edge['to']] = true;
+}
 ksort($nodes, SORT_STRING);
 $ids = [];
 $diagram = ['%% Direct Page/Concern -> Concern trait use; not HTTP or runtime call paths.', 'flowchart LR'];
@@ -102,7 +120,9 @@ foreach (array_keys($nodes) as $name) {
     $ids[$name] = 'U'.(count($ids) + 1);
     $diagram[] = '    '.$ids[$name].'["'.$name.'"]';
 }
-foreach ($edges as $edge) $diagram[] = '    '.$ids[$edge['from']].' -->|trait| '.$ids[$edge['to']];
+foreach ($edges as $edge) {
+    $diagram[] = '    '.$ids[$edge['from']].' -->|trait| '.$ids[$edge['to']];
+}
 $generated = [
     'ui-surfaces.json' => json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n",
     'ui-composition.mmd' => implode("\n", $diagram)."\n",
@@ -111,8 +131,12 @@ $out = $root.'/docs/architecture/generated';
 foreach ($generated as $name => $content) {
     $path = $out.'/'.$name;
     if ($mode === '--write') {
-        if (! is_dir($out) && ! mkdir($out, 0775, true) && ! is_dir($out)) throw new RuntimeException('Cannot create output directory');
-        if (file_put_contents($path, $content) === false) throw new RuntimeException("Cannot write {$name}");
+        if (! is_dir($out) && ! mkdir($out, 0775, true) && ! is_dir($out)) {
+            throw new RuntimeException('Cannot create output directory');
+        }
+        if (file_put_contents($path, $content) === false) {
+            throw new RuntimeException("Cannot write {$name}");
+        }
     } elseif ($mode === '--check' && (! is_file($path) || file_get_contents($path) !== $content)) {
         fwrite(STDERR, "Stale output: {$name}\n");
         exit(1);

@@ -2,8 +2,8 @@
 
 namespace App\Domain\Migration;
 
-use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaIntegrityService;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Models\CvEntry;
 use App\Models\MediaAsset;
 use JsonException;

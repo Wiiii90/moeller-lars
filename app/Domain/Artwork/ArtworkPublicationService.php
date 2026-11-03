@@ -3,7 +3,7 @@
 namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
-use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaTypePolicy;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -91,6 +91,6 @@ final class ArtworkPublicationService
             return false;
         }
 
-        return \App\Domain\Media\MediaPreviewVariant::imageThumbnail($asset) !== null;
+        return MediaPreviewVariant::imageThumbnail($asset) !== null;
     }
 }

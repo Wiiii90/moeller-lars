@@ -290,7 +290,7 @@ final class HomePresentationEditorialService
      * component sequence and Custom Page validation. Contact targets use
      * stable type keys; List entries use explicit order indices.
      *
-     * @param array<string,mixed> $payload
+     * @param  array<string,mixed>  $payload
      */
     public function mutateChild(
         HomePresentationSetting $settings, HomeTemplate $mode,
@@ -356,8 +356,8 @@ final class HomePresentationEditorialService
      * Atomically apply selection commands to Home parent components and their
      * List/Contact children. Stale targets fail before any mutation is saved.
      *
-     * @param list<array{index:int,type:string}> $parents
-     * @param list<array{index:int,type:string,child:int|string}> $children
+     * @param  list<array{index:int,type:string}>  $parents
+     * @param  list<array{index:int,type:string,child:int|string}>  $children
      */
     public function changeSelection(
         HomePresentationSetting $settings, HomeTemplate $mode,

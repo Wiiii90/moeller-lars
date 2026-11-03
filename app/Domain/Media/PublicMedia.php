@@ -7,6 +7,7 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionType;
+use App\Domain\Publication\MediaRightsPublicationSelections;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
@@ -25,10 +26,9 @@ class PublicMedia
 {
     public const THUMBNAIL_KIND = 'thumbnail';
 
-
     public function __construct(
         private readonly SitePreviewContext $preview,
-        private readonly \App\Domain\Publication\MediaRightsPublicationSelections $rightsSelections,
+        private readonly MediaRightsPublicationSelections $rightsSelections,
         private readonly MediaReferenceQuery $referenceQuery,
     ) {}
 

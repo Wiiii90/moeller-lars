@@ -79,7 +79,9 @@ final class AdminDialog
                 // itself. The workspace behind it must reflect moves and
                 // publication changes in the same Livewire response.
                 $action->getLivewire()->forceRender();
-                if (! $role->isDangerAction()) $action->halt();
+                if (! $role->isDangerAction()) {
+                    $action->halt();
+                }
             });
     }
 

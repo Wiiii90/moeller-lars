@@ -60,6 +60,7 @@ final class JournalSettingsService
             if ((string) $updated->getAttribute('template') !== $templateValue) {
                 $updated = $this->sections->updateJournalTemplate($updated, $templateValue);
             }
+
             return $updated;
         });
     }

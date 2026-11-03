@@ -5,7 +5,6 @@ namespace App\Domain\Admin;
 use App\Models\AdminActionReceipt;
 use App\Models\AdminActivityOrderingEvent;
 use App\Models\AdminActivityOrderingProjection;
-use App\Models\Artwork;
 use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -284,6 +283,4 @@ final class AdminActionReceiptService
 
         return $this->lifecycle->loadStates($idsByEntityType);
     }
-
-
 }

@@ -19,6 +19,7 @@ final class ResumableMediaUploadService
     public const CHUNK_BYTES = 16 * 1024 * 1024;
 
     private const EXPIRY_SECONDS = 48 * 60 * 60;
+
     private const MIN_FREE_RESERVE = 256 * 1024 * 1024;
 
     /** @return array{id:string,offset:int,chunk_size:int,complete:bool,asset_id:int|null,duplicate:bool} */
@@ -235,7 +236,7 @@ final class ResumableMediaUploadService
      * Only the already-persisted checksum and an intact original/required
      * preview can convert a pending session to complete.
      *
-     * @param array<string,mixed> $meta
+     * @param  array<string,mixed>  $meta
      * @return array<string,mixed>
      */
     private function reconcileCompleted(string $id, array $meta): array
@@ -274,7 +275,7 @@ final class ResumableMediaUploadService
      * Recover verifiable chunk digests for staged transfers created before
      * the per-chunk metadata was introduced. Hashing streams bounded blocks.
      *
-     * @param array<string,mixed> $meta
+     * @param  array<string,mixed>  $meta
      * @return array<string,mixed>
      */
     private function ensureChunkHashes(string $id, array $meta): array
@@ -416,6 +417,7 @@ final class ResumableMediaUploadService
         if ($meta === null || (int) $meta['user_id'] !== $userId) {
             throw $this->invalid('Upload session not found or expired.');
         }
+
         return $meta;
     }
 
@@ -423,6 +425,7 @@ final class ResumableMediaUploadService
     {
         $raw = @file_get_contents($this->manifestPath($id));
         $meta = is_string($raw) ? json_decode($raw, true) : null;
+
         return is_array($meta) ? $meta : null;
     }
 
@@ -449,6 +452,7 @@ final class ResumableMediaUploadService
             if (! is_file($this->manifestPath($id))) {
                 throw $this->invalid('Upload session not found or expired.');
             }
+
             return $this->withLock($this->directory().'/'.$id.'.lock', $action);
         }, exclusive: false);
     }

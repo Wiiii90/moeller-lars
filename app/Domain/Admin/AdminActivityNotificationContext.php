@@ -11,7 +11,7 @@ final class AdminActivityNotificationContext
     private const MAX_MESSAGES = 9;
 
     /**
-     * @param array{change:string,details:?string} $presentation
+     * @param  array{change:string,details:?string}  $presentation
      */
     public function push(int $auditEventId, array $presentation): void
     {

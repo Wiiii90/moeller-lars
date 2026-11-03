@@ -41,8 +41,8 @@ class AdminAuditService
     /**
      * Record one logical ordering mutation while preserving the immutable raw Audit event.
      *
-     * @param list<int|string> $beforeState
-     * @param list<int|string> $afterState
+     * @param  list<int|string>  $beforeState
+     * @param  list<int|string>  $afterState
      */
     public function recordOrdering(
         User $actor,

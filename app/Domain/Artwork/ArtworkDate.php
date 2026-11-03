@@ -29,7 +29,9 @@ final class ArtworkDate
     public static function display(Artwork $artwork, ?string $region = null): ?string
     {
         $year = $artwork->getAttribute('year');
-        if ($year === null) return null;
+        if ($year === null) {
+            return null;
+        }
         $month = $artwork->getAttribute('month');
         if ($month === null) {
             return (string) $year;
@@ -42,6 +44,7 @@ final class ArtworkDate
             return $region === 'de-DE' ? $m.'.'.$y : $m.'/'.$y;
         }
         $d = sprintf('%02d', (int) $day);
+
         return match ($region) {
             'de-DE' => $d.'.'.$m.'.'.$y,
             'en-GB' => $d.'/'.$m.'/'.$y,
@@ -64,6 +67,7 @@ final class ArtworkDate
             'day' => isset($matches[3]) ? (int) $matches[3] : null,
         ];
         self::validateParts($parts);
+
         return $parts;
     }
 

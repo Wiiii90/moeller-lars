@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Artworks;
 
-use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Resources\Artworks\Pages\ViewArtwork;
 use App\Filament\Support\AdminIcon;
@@ -72,7 +72,7 @@ class ArtworkResource extends Resource
         }
 
         /** @var MediaVariant|null $variant */
-        $variant = \App\Domain\Media\MediaPreviewVariant::preview($asset);
+        $variant = MediaPreviewVariant::preview($asset);
 
         return $variant === null ? null : route('admin.media.variant', $variant);
     }

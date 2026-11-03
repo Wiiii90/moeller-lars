@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SitePageHeading;
 use App\Domain\Content\SiteSectionType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
@@ -78,7 +79,7 @@ final class SiteSection extends Model
                 }
             }
 
-            $heading = \App\Domain\Content\SitePageHeading::validated([
+            $heading = SitePageHeading::validated([
                 'content_heading_enabled' => (bool) $section->getAttribute('content_heading_enabled'),
                 'content_heading_override' => $section->getAttribute('content_heading_override'),
                 'content_heading_alignment' => $section->getAttribute('content_heading_alignment') ?: 'left',

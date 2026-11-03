@@ -4,8 +4,8 @@ namespace App\Domain\Content;
 
 use App\Domain\Media\PublicMedia;
 use App\Models\HomePresentationSetting;
-use App\Models\PublicContentSetting;
 use App\Models\MediaAsset;
+use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;

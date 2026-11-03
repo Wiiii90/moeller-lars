@@ -2,20 +2,18 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Artwork\ArtworkDate;
-use App\Filament\Support\AdminDimensionsControl;
-use App\Filament\Support\AdminPartialDateControl;
+use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
-use Closure;
 use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
+use Closure;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
@@ -132,7 +130,6 @@ final class ArtworkEditDialog
 
                     AdminDimensionsControl::make(),
 
-
                     Select::make('exclude_from_home')
                         ->label('Home eligibility')
                         ->options([
@@ -203,7 +200,7 @@ final class ArtworkEditDialog
             ? (int) $data['artwork_category_id']
             : ($allowGalleryAssignment ? null : $currentGalleryId);
 
-        DB::transaction(function () use ($artwork, $data, $assetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment, $savePrimaryMedia): void {
+        DB::transaction(function () use ($artwork, $data, $assetId, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment, $savePrimaryMedia): void {
             if ($allowGalleryAssignment && $requestedGalleryId !== $currentGalleryId) {
                 $assignments = app(ArtworkGalleryAssignmentService::class);
                 if ($requestedGalleryId === null) {
@@ -300,5 +297,4 @@ final class ArtworkEditDialog
     {
         return [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES];
     }
-
 }

@@ -2,7 +2,7 @@
 
 namespace App\Domain\Analytics;
 
-use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
@@ -189,7 +189,7 @@ final class ArtworkAttentionReport
         /** @var EloquentCollection<int, MediaVariant> $variants */
         $variants = $asset->getRelation('variants');
         /** @var MediaVariant|null $variant */
-        $variant = \App\Domain\Media\MediaPreviewVariant::preview($asset);
+        $variant = MediaPreviewVariant::preview($asset);
 
         return $variant instanceof MediaVariant ? route('admin.media.variant', $variant) : null;
     }

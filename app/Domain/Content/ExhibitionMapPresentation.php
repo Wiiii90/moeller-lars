@@ -37,5 +37,4 @@ final class ExhibitionMapPresentation
             'longitude' => $longitude,
         ];
     }
-
 }

@@ -14,10 +14,10 @@ use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
-use App\Models\Artwork;
-use App\Models\ArtworkCategory;
 use App\Models\AdminActivityOrderingEvent;
 use App\Models\AdminActivityOrderingProjection;
+use App\Models\Artwork;
+use App\Models\ArtworkCategory;
 use App\Models\ArtworkMaterialPreset;
 use App\Models\AuditEvent;
 use App\Models\BlogPost;
@@ -356,7 +356,7 @@ final class AdminActivityFeed
     }
 
     /**
-     * @param list<int> $checkpointIds
+     * @param  list<int>  $checkpointIds
      * @return array<int, int>
      */
     public function countsForCheckpoints(array $checkpointIds): array
@@ -708,7 +708,7 @@ final class AdminActivityFeed
 
         return match ($entityType) {
             'artwork' => ArtworkResource::getUrl('edit', ['record' => $entityId]),
-            'artwork_category' => GalleryWorkspace::getUrl( ['gallery' => $entityId]),
+            'artwork_category' => GalleryWorkspace::getUrl(['gallery' => $entityId]),
             'site_section' => SitePages::getUrl(),
             'media_asset' => MediaAssetResource::getUrl('index'),
             'cv_entry' => SitePages::getUrl(),

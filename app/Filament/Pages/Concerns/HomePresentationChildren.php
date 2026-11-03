@@ -90,7 +90,7 @@ trait HomePresentationChildren
     }
 
     /** @param array<string,mixed> $args
-     * @param array<string,mixed> $payload
+     * @param  array<string,mixed>  $payload
      */
     private function persistHomeChild(array $args, string $operation, array $payload = []): void
     {
@@ -138,6 +138,7 @@ trait HomePresentationChildren
         $action = Action::make('editHomeChild')->label('Edit')
             ->fillForm(function (array $arguments): array {
                 [, , $child] = $this->homeActionChild($arguments);
+
                 return [
                     ...$child,
                     'child_type' => $child['type'] ?? null,
@@ -157,8 +158,9 @@ trait HomePresentationChildren
         return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
-    /** @return list<Action>
-     * @param array<string,mixed> $arguments
+    /**
+     * @param  array<string,mixed>  $arguments
+/** @return list<Action>
      */
     private function homeChildHeaderActions(array $arguments): array
     {
@@ -285,7 +287,9 @@ trait HomePresentationChildren
      * consistently capture Filament's multiple-select and conditional fields. */
     private function homeContactEditField(mixed $field, bool $creating, array $arguments, string $key, bool $blur = false): mixed
     {
-        if ($creating) return $field;
+        if ($creating) {
+            return $field;
+        }
 
         return $field->live(onBlur: $blur)
             ->afterStateUpdated(fn (mixed $state) => $this->persistHomeChildEditField($arguments, $key, $state));
@@ -311,14 +315,18 @@ trait HomePresentationChildren
                 ? $value : ($form['status_text'] ?? $data['status_text']);
             // Keep the unfinished presentation in the mounted form until
             // status text is entered; save both values in one mutation.
-            if ($data['form_state'] === 'under_construction' && blank($data['status_text'])) return;
+            if ($data['form_state'] === 'under_construction' && blank($data['status_text'])) {
+                return;
+            }
         }
         try {
             $this->persistHomeChild($this->homeChildArgs($arguments), 'update', $this->homeContactPayload($data));
         } catch (ValidationException $exception) {
             $path = $this->getMountedActionSchema()->getStatePath();
             $errors = [];
-            foreach ($exception->errors() as $field => $messages) $errors[$path.'.'.$field] = $messages;
+            foreach ($exception->errors() as $field => $messages) {
+                $errors[$path.'.'.$field] = $messages;
+            }
             throw ValidationException::withMessages($errors);
         }
     }

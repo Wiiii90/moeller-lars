@@ -10,16 +10,15 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\ArtworkCategory;
 use Filament\Actions\Action;
-use Illuminate\Contracts\View\View;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
+use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 
 trait GalleryWorkspaceUploadSettings
 {
-
     public function gallerySettingsAction(): Action
     {
         $action = Action::make('gallerySettings')
@@ -145,21 +144,21 @@ trait GalleryWorkspaceUploadSettings
 
                 try {
                     $updated = $service->update($gallery, [
-                            'name' => $data['name'],
-                            'show_on_home' => (bool) ($data['show_on_home'] ?? false),
-                            'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? false,
-                            'portrait_detail_enabled' => $data['portrait_detail_enabled'] ?? false,
-                            'artwork_page_surface_mode' => $data['artwork_page_surface_mode'] ?? GalleryPresentation::ARTWORK_SURFACE_INHERIT,
-                            'artwork_menu_surface_wide' => $data['artwork_menu_surface_wide'] ?? false,
-                            'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
-                            'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
-                            'sort_mode' => $data['sort_mode'] ?? GalleryPresentation::SORT_MANUAL,
-                            'video_sound_enabled' => $data['video_sound_enabled'] ?? false,
-                            'show_artwork_information' => $data['show_artwork_information'] ?? true,
-                            'show_media_credits' => $data['show_media_credits'] ?? false,
-                            'show_media_copyright' => $data['show_media_copyright'] ?? false,
-                            'caption_layout' => $data['caption_layout'] ?? GalleryPresentation::CAPTION_RIGHTS_LEFT,
-                        ]);
+                        'name' => $data['name'],
+                        'show_on_home' => (bool) ($data['show_on_home'] ?? false),
+                        'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? false,
+                        'portrait_detail_enabled' => $data['portrait_detail_enabled'] ?? false,
+                        'artwork_page_surface_mode' => $data['artwork_page_surface_mode'] ?? GalleryPresentation::ARTWORK_SURFACE_INHERIT,
+                        'artwork_menu_surface_wide' => $data['artwork_menu_surface_wide'] ?? false,
+                        'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
+                        'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
+                        'sort_mode' => $data['sort_mode'] ?? GalleryPresentation::SORT_MANUAL,
+                        'video_sound_enabled' => $data['video_sound_enabled'] ?? false,
+                        'show_artwork_information' => $data['show_artwork_information'] ?? true,
+                        'show_media_credits' => $data['show_media_credits'] ?? false,
+                        'show_media_copyright' => $data['show_media_copyright'] ?? false,
+                        'caption_layout' => $data['caption_layout'] ?? GalleryPresentation::CAPTION_RIGHTS_LEFT,
+                    ]);
                     $changed = $updated->wasChanged();
                 } catch (ValidationException $exception) {
                     // Domain errors use field names; the mounted Filament form

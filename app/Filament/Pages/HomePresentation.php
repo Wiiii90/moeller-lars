@@ -4,34 +4,37 @@ namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Analytics\ArtistReportingService;
+use App\Domain\Artwork\ArtworkDate;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\PublicArtworkQuery;
+use App\Domain\Content\DividerVariant;
 use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomeHeroResolver;
 use App\Domain\Content\HomePresentationEditorialService;
-use App\Domain\Content\DividerVariant;
-use App\Domain\Content\SocialLinks;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\HomeTemplate;
+use App\Domain\Content\PublicLegalContent;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SitePreviewContext;
+use App\Domain\Content\SocialLinks;
+use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Pages\Concerns\HomePresentationChildren;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
-use App\Filament\Support\ComponentListEditor;
 use App\Filament\Support\AdminRowAction;
+use App\Filament\Support\ComponentListEditor;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\Artwork;
-use App\Models\CustomPageSetting;
-use App\Models\PublicContentSetting;
 use App\Models\ArtworkCategory;
+use App\Models\CustomPageSetting;
 use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
+use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
 use Filament\Actions\Action;
@@ -43,16 +46,17 @@ use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Session;
 use Livewire\WithFileUploads;
 
 final class HomePresentation extends Page
 {
-    use WithFileUploads;
     use HomePresentationChildren;
+    use WithFileUploads;
 
     protected static bool $shouldRegisterNavigation = false;
 
@@ -80,9 +84,8 @@ final class HomePresentation extends Page
 
     public int $homeSectionId = 0;
 
-    #[\Livewire\Attributes\Locked]
+    #[Locked]
     public ?array $editingHomeComponentOriginal = null;
-
 
     public bool $artworkShowDetails = true;
 
@@ -475,7 +478,7 @@ final class HomePresentation extends Page
                         ->required(fn (callable $get): bool => $get('kind') === 'heading')
                         ->visible(fn (callable $get): bool => $get('kind') === 'heading'),
                     ...$this->homeRichTextFields('kind', 'rich_text', required: true),
-                    MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES])
+                    MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
                         ->required(fn (callable $get): bool => $get('kind') === 'image')
                         ->visible(fn (callable $get): bool => $get('kind') === 'image'),
                     Toggle::make('image_decorative')->label('Decorative image')
@@ -589,7 +592,7 @@ final class HomePresentation extends Page
                     ->required(fn (callable $get): bool => $get('editor_kind') === 'heading')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'heading'),
                 ...$this->homeRichTextFields('editor_kind', 'rich_text', required: true),
-                MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES])
+                MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
                     ->required(fn (callable $get): bool => $get('editor_kind') === 'image')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
                 Toggle::make('image_decorative')->label('Decorative image')
@@ -602,7 +605,7 @@ final class HomePresentation extends Page
                 TextInput::make('list_title')->label('List heading')->maxLength(160)
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
                 MediaAssetSelect::makeId('list_media_asset_id', 'Optional list image', true)
-                        ->nullable()->placeholder('No list image')
+                    ->nullable()->placeholder('No list image')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
                 ComponentListEditor::make()
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
@@ -1030,7 +1033,7 @@ final class HomePresentation extends Page
                 'status_label' => $state === 'published' ? 'Published' : 'Unpublished',
                 'published_artworks' => (int) $gallery->getAttribute('published_artworks_count'),
                 'newest_year' => $gallery->getAttribute('newest_published_year'),
-                'workspace_url' => GalleryWorkspace::getUrl( ['gallery' => $gallery->getKey()]),
+                'workspace_url' => GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()]),
                 'candidates' => $galleryCandidates->take(5)->map(fn (Artwork $artwork): array => $this->candidateRow($artwork))->values()->all(),
             ];
         })->all();
@@ -1238,7 +1241,7 @@ final class HomePresentation extends Page
                 'divider' => [DividerVariant::LABELS[$component['variant'] ?? 'thin'] ?? 'Thin', ''],
                 'list' => [$title !== '' ? $title : 'List', count($component['items'] ?? []).' entries'],
                 'contact' => ['Contact', count($component['children'] ?? []).' items'],
-                'legal_disclaimer' => ['Legal Disclaimer from General', \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general())],
+                'legal_disclaimer' => ['Legal Disclaimer from General', PublicLegalContent::editorSummary(PublicContentSetting::general())],
                 default => ['Unsupported component', ''],
             };
             $dataset[] = [
@@ -1358,10 +1361,10 @@ final class HomePresentation extends Page
             'id' => (int) $artwork->getKey(),
             'title' => (string) $artwork->getAttribute('title'),
             'year' => $artwork->getAttribute('year'),
-            'date' => \App\Domain\Artwork\ArtworkDate::fromArtwork($artwork),
+            'date' => ArtworkDate::fromArtwork($artwork),
             'gallery' => $gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : null,
             'thumbnail_url' => ArtworkResource::thumbnailUrl($artwork),
-            'gallery_url' => $gallery instanceof ArtworkCategory ? GalleryWorkspace::getUrl( ['gallery' => $gallery->getKey()]) : null,
+            'gallery_url' => $gallery instanceof ArtworkCategory ? GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()]) : null,
         ];
     }
 

@@ -2,8 +2,10 @@
 
 namespace App\Domain\Migration;
 
-use App\Domain\Media\MediaPreviewVariant;
+use App\Domain\Content\ExhibitionAddressNormalizer;
+use App\Domain\Content\ExhibitionDate;
 use App\Domain\Media\MediaIntegrityService;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
@@ -356,7 +358,7 @@ final class LegacyMigrationValidator
                 continue;
             }
 
-            $dates = \App\Domain\Content\ExhibitionDate::fromLegacy(
+            $dates = ExhibitionDate::fromLegacy(
                 $expected['starts_on'],
                 $expected['ends_on'],
                 $expected['year_text'],
@@ -375,7 +377,7 @@ final class LegacyMigrationValidator
             ];
             foreach ($checks as $field => $value) {
                 if ($field === 'location_text') {
-                    $normalized = app(\App\Domain\Content\ExhibitionAddressNormalizer::class)->parse($value);
+                    $normalized = app(ExhibitionAddressNormalizer::class)->parse($value);
                     $matchesLegacy = ($actual->location_text ?? null) === $value;
                     $matchesStructured = $normalized !== null
                         && ($actual->location_text ?? null) === $normalized['location_text']

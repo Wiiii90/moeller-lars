@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Publication\PublicationSnapshot;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -16,7 +17,7 @@ return new class extends Migration
         }
 
         DB::transaction(function (): void {
-            DB::select('SELECT pg_advisory_xact_lock(?)', [\App\Domain\Publication\PublicationSnapshot::LOCK_KEY]);
+            DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
 
             $workingHasColumn = DB::table('information_schema.columns')
                 ->where('table_schema', 'public')
@@ -25,7 +26,7 @@ return new class extends Migration
                 ->exists();
 
             if (! $workingHasColumn) {
-                throw new \RuntimeException('Working site_sections.meta_description is missing; restore the owning migration before aligning Committed.');
+                throw new RuntimeException('Working site_sections.meta_description is missing; restore the owning migration before aligning Committed.');
             }
 
             DB::statement('ALTER TABLE committed.site_sections ADD COLUMN IF NOT EXISTS meta_description TEXT NULL');
@@ -52,7 +53,7 @@ SQL);
         }
 
         DB::transaction(function (): void {
-            DB::select('SELECT pg_advisory_xact_lock(?)', [\App\Domain\Publication\PublicationSnapshot::LOCK_KEY]);
+            DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
             DB::statement('ALTER TABLE committed.site_sections DROP COLUMN IF EXISTS meta_description');
         });
     }

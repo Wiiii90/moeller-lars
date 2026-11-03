@@ -10,8 +10,8 @@ use App\Models\User;
 use BackedEnum;
 use Filament\Facades\Filament;
 use Filament\Pages\Page;
-use UnitEnum;
 use Livewire\Attributes\Session;
+use UnitEnum;
 
 final class Analytics extends Page
 {

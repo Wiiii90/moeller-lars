@@ -3,8 +3,8 @@
 namespace App\Domain\Publication;
 
 use App\Domain\Media\MediaCapacityService;
-use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\MediaReferenceQuery;
+use App\Domain\Media\MediaTypePolicy;
 use App\Models\MediaAsset;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Cache;
@@ -44,7 +44,7 @@ final class PublicationMediaCleanupService
      * Acknowledge only physically completed files. If deletion failed,
      * retain the same outbox rows so drain() can retry idempotently.
      *
-     * @param list<string> $storageKeys
+     * @param  list<string>  $storageKeys
      */
     public function acknowledgeRemoved(int $mediaAssetId, array $storageKeys): void
     {
@@ -94,7 +94,7 @@ final class PublicationMediaCleanupService
     }
 
     /**
-     * @param list<string> $storageKeys
+     * @param  list<string>  $storageKeys
      * @return bool True only if physical cleanup completed; false if a
      *              committed or historical Publication owner requires deferral.
      */
@@ -166,6 +166,7 @@ final class PublicationMediaCleanupService
             // another asset must never lose its file because of a stale row.
             if ($key === '' || $this->storageKeyOwners($key) !== [$mediaAssetId]) {
                 report(new RuntimeException('Media cleanup ownership conflict; retaining queued file: '.$key));
+
                 continue;
             }
 
@@ -199,7 +200,6 @@ final class PublicationMediaCleanupService
 
         return $removedFiles;
     }
-
 
     /**
      * Reclaim only genuine filesystem orphans: canonical-looking originals or
@@ -272,6 +272,7 @@ final class PublicationMediaCleanupService
                     if (! $this->deleteKey($candidate['key'], $removed)) {
                         $failed++;
                         report(new RuntimeException('Cannot remove orphaned media key: '.$candidate['key']));
+
                         continue;
                     }
                     if ($removed) {

@@ -2,9 +2,10 @@
 
 namespace App\Filament\Pages\Concerns;
 
-use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Artwork\ArtworkDate;
+use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Media\MediaTypePolicy;
+use App\Filament\Support\ArtworkEditDialog;
 
 trait GalleryWorkspaceFormSupport
 {
@@ -13,7 +14,7 @@ trait GalleryWorkspaceFormSupport
     {
         // Create and Edit share one semantic field schema. Create alone checks
         // slug uniqueness before committing a new artwork.
-        return app(\App\Filament\Support\ArtworkEditDialog::class)->schema(creating: true);
+        return app(ArtworkEditDialog::class)->schema(creating: true);
     }
 
     /** @return array<string, mixed> */
@@ -51,5 +52,4 @@ trait GalleryWorkspaceFormSupport
     {
         return [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES];
     }
-
 }

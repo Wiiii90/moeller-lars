@@ -72,6 +72,7 @@ final class AdminResumableMediaUploadController extends Controller
         $this->adminId();
         $data = $request->validate(['message' => ['required', 'string', 'max:400']]);
         $feedback->failure($data['message']);
+
         return response()->json(['reported' => true]);
     }
 

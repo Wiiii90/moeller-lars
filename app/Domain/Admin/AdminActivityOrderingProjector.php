@@ -13,7 +13,7 @@ use RuntimeException;
 final class AdminActivityOrderingProjector
 {
     /**
-     * @param array{scope:string,target_label:?string,before_state:list<string>,after_state:list<string>,item_count:int} $ordering
+     * @param  array{scope:string,target_label:?string,before_state:list<string>,after_state:list<string>,item_count:int}  $ordering
      */
     public function record(AuditEvent $event, array $ordering): AdminActivityOrderingProjection
     {

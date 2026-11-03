@@ -26,6 +26,7 @@ final class RichTextDocument
             static function (array $match) use (&$references): string {
                 $key = 'RICHTEXTMEDIAREF'.count($references).'TOKEN';
                 $references[$key] = '<img data-id="'.(int) $match[2].'" alt="'.e($match[1]).'">';
+
                 return $key;
             },
             $source,

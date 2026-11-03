@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Publication\MediaRightsPublicationSelections;
 use App\Models\MediaAsset;
 use App\Models\MediaRightsArtifact;
-use App\Domain\Publication\MediaRightsPublicationSelections;
 use App\Models\MediaVariant;
 use App\Models\User;
 use Illuminate\Http\Request;

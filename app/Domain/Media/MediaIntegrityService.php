@@ -38,6 +38,7 @@ class MediaIntegrityService
                 if ($this->exists($disk, $variantKey)) {
                     $issues = [...$issues, ...$this->checkFile($disk, $variantKey, $variant, $key)];
                 }
+
                 continue;
             }
             if ($state === 'stale' && ! $this->exists($disk, $variantKey)) {

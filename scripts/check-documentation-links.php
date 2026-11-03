@@ -32,6 +32,7 @@ function documentationFiles(string $root): array
         }
     }
     sort($files, SORT_STRING);
+
     return $files;
 }
 
@@ -43,11 +44,17 @@ function markdownDestinations(string $source): array
     foreach (preg_split('/\r\n|\r|\n/', $source) ?: [] as $i => $line) {
         if (preg_match('/^\s{0,3}(`{3,}|~{3,})/', $line, $match)) {
             $token = $match[1];
-            if ($fence === null) $fence = [$token[0], strlen($token)];
-            elseif ($fence[0] === $token[0] && strlen($token) >= $fence[1]) $fence = null;
+            if ($fence === null) {
+                $fence = [$token[0], strlen($token)];
+            } elseif ($fence[0] === $token[0] && strlen($token) >= $fence[1]) {
+                $fence = null;
+            }
+
             continue;
         }
-        if ($fence !== null) continue;
+        if ($fence !== null) {
+            continue;
+        }
         // Inline code may contain literal Markdown syntax used as an example.
         $line = preg_replace('/(`+)(.*?)\1/u', '', $line) ?? $line;
         preg_match_all('/!?\[[^\]]*\]\(\s*(?:<([^>]+)>|([^\s)]+))/', $line, $matches, PREG_SET_ORDER);
@@ -58,6 +65,7 @@ function markdownDestinations(string $source): array
             $links[] = ['destination' => ($match[1] ?? '') !== '' ? $match[1] : ($match[2] ?? ''), 'line' => $i + 1];
         }
     }
+
     return $links;
 }
 
@@ -70,6 +78,7 @@ function githubHeadingSlug(string $heading): string
         ? mb_strtolower($heading, 'UTF-8')
         : strtolower(strtr($heading, ['Ä' => 'ä', 'Ö' => 'ö', 'Ü' => 'ü', 'ẞ' => 'ß']));
     $heading = preg_replace('/[^\p{L}\p{N}_\- ]/u', '', $heading) ?? $heading;
+
     return str_replace(' ', '-', $heading);
 }
 
@@ -82,31 +91,44 @@ function markdownAnchors(string $source): array
     foreach (preg_split('/\r\n|\r|\n/', $source) ?: [] as $line) {
         if (preg_match('/^\s{0,3}(`{3,}|~{3,})/', $line, $match)) {
             $token = $match[1];
-            if ($fence === null) $fence = [$token[0], strlen($token)];
-            elseif ($fence[0] === $token[0] && strlen($token) >= $fence[1]) $fence = null;
+            if ($fence === null) {
+                $fence = [$token[0], strlen($token)];
+            } elseif ($fence[0] === $token[0] && strlen($token) >= $fence[1]) {
+                $fence = null;
+            }
+
             continue;
         }
-        if ($fence !== null || ! preg_match('/^#{1,6}\s+(.+?)\s*#*\s*$/u', $line, $match)) continue;
+        if ($fence !== null || ! preg_match('/^#{1,6}\s+(.+?)\s*#*\s*$/u', $line, $match)) {
+            continue;
+        }
         $slug = githubHeadingSlug($match[1]);
         $suffix = $duplicates[$slug] ?? 0;
         $anchors[$suffix === 0 ? $slug : $slug.'-'.$suffix] = true;
         $duplicates[$slug] = $suffix + 1;
     }
+
     return $anchors;
 }
 
 /** @return array{file:?string,anchor:?string}|null */
 function localDestination(string $root, string $from, string $destination): ?array
 {
-    if (preg_match('/^[a-z][a-z0-9+.-]*:/i', $destination) || str_starts_with($destination, '//')) return null;
+    if (preg_match('/^[a-z][a-z0-9+.-]*:/i', $destination) || str_starts_with($destination, '//')) {
+        return null;
+    }
     [$path, $fragment] = array_pad(explode('#', $destination, 2), 2, null);
     $path = rawurldecode(explode('?', $path, 2)[0]);
-    if ($path === '') $target = $from;
-    else $target = str_starts_with($path, '/') ? $root.'/'.ltrim($path, '/') : dirname($from).'/'.$path;
+    if ($path === '') {
+        $target = $from;
+    } else {
+        $target = str_starts_with($path, '/') ? $root.'/'.ltrim($path, '/') : dirname($from).'/'.$path;
+    }
     $resolved = realpath($target);
     if ($resolved !== false && ($resolved === $root || str_starts_with($resolved, $root.DIRECTORY_SEPARATOR))) {
         return ['file' => $resolved, 'anchor' => $fragment === null ? null : rawurldecode($fragment)];
     }
+
     return ['file' => null, 'anchor' => $fragment];
 }
 
@@ -119,10 +141,14 @@ function checkDocumentation(string $root): array
     $anchorCache = [];
     foreach ($files as $file) {
         $source = file_get_contents($file);
-        if ($source === false) throw new RuntimeException("Cannot read {$file}");
+        if ($source === false) {
+            throw new RuntimeException("Cannot read {$file}");
+        }
         foreach (markdownDestinations($source) as $link) {
             $dest = localDestination($root, $file, $link['destination']);
-            if ($dest === null) continue;
+            if ($dest === null) {
+                continue;
+            }
             $checked++;
             $display = substr($file, strlen($root) + 1).':'.$link['line'];
             if ($dest['file'] === null) {
@@ -136,6 +162,7 @@ function checkDocumentation(string $root): array
             }
         }
     }
+
     return ['files' => count($files), 'links' => $checked, 'anchors' => $anchorsChecked, 'errors' => $errors];
 }
 
@@ -155,9 +182,15 @@ if ($mode === '--self-test') {
 }
 
 $root = realpath(dirname(__DIR__));
-if ($root === false) throw new RuntimeException('Cannot resolve repository root');
+if ($root === false) {
+    throw new RuntimeException('Cannot resolve repository root');
+}
 $result = checkDocumentation($root);
 printf("Markdown files: %d; checked local links: %d; checked headings: %d; errors: %d\n",
     $result['files'], $result['links'], $result['anchors'], count($result['errors']));
-foreach ($result['errors'] as $error) fwrite(STDERR, $error."\n");
-if ($mode === '--check' && $result['errors'] !== []) exit(1);
+foreach ($result['errors'] as $error) {
+    fwrite(STDERR, $error."\n");
+}
+if ($mode === '--check' && $result['errors'] !== []) {
+    exit(1);
+}

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Migration;
 
+use App\Domain\Content\ExhibitionDate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -60,7 +61,7 @@ final class LegacyPublicCvImporter
                     continue;
                 }
 
-                $dates = \App\Domain\Content\ExhibitionDate::fromLegacy(
+                $dates = ExhibitionDate::fromLegacy(
                     $row['starts_on'],
                     $row['ends_on'],
                     $row['year_text'],

@@ -44,7 +44,7 @@ class ResetPassword extends BaseResetPassword
 
         $status = Password::broker(Filament::getAuthPasswordBroker())->reset(
             $this->getCredentialsFromFormData($data),
-            function (CanResetPassword | Model | Authenticatable $user) use ($data, &$hasPanelAccess): void {
+            function (CanResetPassword|Model|Authenticatable $user) use ($data, &$hasPanelAccess): void {
                 if (
                     ($user instanceof FilamentUser) &&
                     (! $user->canAccessPanel(Filament::getCurrentOrDefaultPanel()))

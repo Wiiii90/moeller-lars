@@ -61,7 +61,7 @@ final class CustomPageEditorialService
      * copying, dropping, or reauthoring its content. The source disappears
      * from the top-level sequence in the same audited transaction.
      *
-     * @param array<string,mixed> $image
+     * @param  array<string,mixed>  $image
      */
     public function updateImageAndNest(
         CustomPageSetting $settings, int $imageIndex, array $image, int $sourceIndex, ?array $expectedBlock = null,
@@ -109,6 +109,7 @@ final class CustomPageEditorialService
         return DB::transaction(function () use ($settings, $sourceIndex, $type, $updated, $imageIndex, $expectedBlock): bool {
             $saved = $this->updateBlock($settings, $sourceIndex, $type, $updated, $expectedBlock);
             $nested = $this->nestBlock($settings, $sourceIndex, $type, $imageIndex);
+
             return $saved || $nested;
         });
     }
@@ -187,6 +188,7 @@ final class CustomPageEditorialService
         if ($fromImage === $toImage) {
             return false;
         }
+
         return DB::transaction(function () use ($settings, $fromImage, $childIndex, $toImage): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
@@ -207,6 +209,7 @@ final class CustomPageEditorialService
                 $blocks[$fromImage]['children'] = $children;
             }
             $blocks[$toImage]['children'] = [...($blocks[$toImage]['children'] ?? []), $child];
+
             return $this->persist($fresh, $blocks);
         });
     }
@@ -226,6 +229,7 @@ final class CustomPageEditorialService
             $this->assertUnchangedBlock($children[$childIndex], $expectedBlock);
             $children[$childIndex] = $updated;
             $blocks[$imageIndex]['children'] = $children;
+
             return $this->persist($fresh, $blocks);
         });
     }
@@ -246,6 +250,7 @@ final class CustomPageEditorialService
             } else {
                 $blocks[$imageIndex]['children'] = $children;
             }
+
             return $this->persist($fresh, $blocks);
         });
     }
@@ -253,6 +258,7 @@ final class CustomPageEditorialService
     public function moveImageChildByDirection(CustomPageSetting $settings, int $imageIndex, int $childIndex, string $type, string $direction): bool
     {
         $this->assertDirection($direction);
+
         return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type, $direction): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
@@ -267,6 +273,7 @@ final class CustomPageEditorialService
             }
             [$children[$childIndex], $children[$other]] = [$children[$other], $children[$childIndex]];
             $blocks[$imageIndex]['children'] = $children;
+
             return $this->persist($fresh, $blocks);
         });
     }
@@ -276,6 +283,7 @@ final class CustomPageEditorialService
         if (! in_array($targetType, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
             throw ValidationException::withMessages(['component' => 'Choose a text-capable component.']);
         }
+
         return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type, $targetType): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
@@ -284,7 +292,9 @@ final class CustomPageEditorialService
             if (($children[$childIndex]['type'] ?? null) !== $type) {
                 throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
             }
-            if ($targetType === $type) return false;
+            if ($targetType === $type) {
+                return false;
+            }
             // Nested Contact is details-only, never an implicit Contact Form.
             $converted = $this->convertedBlock($children[$childIndex], $targetType);
             if ($targetType === 'contact') {
@@ -295,6 +305,7 @@ final class CustomPageEditorialService
             }
             $children[$childIndex] = $converted;
             $blocks[$imageIndex]['children'] = $children;
+
             return $this->persist($fresh, $blocks);
         });
     }
@@ -318,6 +329,7 @@ final class CustomPageEditorialService
         if ($parent === false) {
             throw ValidationException::withMessages(['component' => 'Invalid parent for component.']);
         }
+
         return DB::transaction(function () use ($settings, $sourceIndex, $sourceChild, $expectedType, $parent, $position): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
@@ -342,8 +354,11 @@ final class CustomPageEditorialService
                 }
                 $item = $children[$sourceChild];
                 array_splice($children, $sourceChild, 1);
-                if ($children === []) unset($blocks[$sourceIndex]['children']);
-                else $blocks[$sourceIndex]['children'] = $children;
+                if ($children === []) {
+                    unset($blocks[$sourceIndex]['children']);
+                } else {
+                    $blocks[$sourceIndex]['children'] = $children;
+                }
             }
 
             if ($parent === null) {
@@ -367,6 +382,7 @@ final class CustomPageEditorialService
                 array_splice($children, max(0, min($position, count($children))), 0, [$item]);
                 $blocks[$parent]['children'] = $children;
             }
+
             return $this->persist($fresh, $blocks, $sourceChild === null && $parent === null ? [
                 'action' => 'site_section.page_components_reordered',
                 'scope' => 'page-components:'.(int) $fresh->getAttribute('site_section_id'),
@@ -812,8 +828,8 @@ final class CustomPageEditorialService
     }
 
     /**
-     * @param list<array<string,mixed>> $blocks
-     * @param array{action:string,scope:string,before:list<string>,after:list<string>}|null $orderingState
+     * @param  list<array<string,mixed>>  $blocks
+     * @param  array{action:string,scope:string,before:list<string>,after:list<string>}|null  $orderingState
      */
     private function persist(CustomPageSetting $settings, array $blocks, ?array $orderingState = null): bool
     {

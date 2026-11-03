@@ -3,10 +3,10 @@
 namespace App\Domain\Content;
 
 use App\Domain\Media\PublicMedia;
-use App\Http\Middleware\SecurityHeaders;
 use App\Filament\Support\RichTextEditorPlugin;
-use Filament\Forms\Components\RichEditor\RichContentRenderer;
+use App\Http\Middleware\SecurityHeaders;
 use App\Models\MediaAsset;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Illuminate\Support\HtmlString;
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;

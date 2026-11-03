@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use App\Domain\Content\ExhibitionMapPresentation;
 use App\Domain\Content\ExhibitionDate;
-use App\Domain\Content\SafeLinkPolicy;
+use App\Domain\Content\ExhibitionMapPresentation;
 use App\Domain\Content\RegionalFormats;
+use App\Domain\Content\SafeLinkPolicy;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;

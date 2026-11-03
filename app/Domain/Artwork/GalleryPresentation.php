@@ -10,6 +10,7 @@ use Illuminate\Validation\ValidationException;
 final class GalleryPresentation
 {
     public const CAPTION_RIGHTS_LEFT = 'rights_left';
+
     public const CAPTION_RIGHTS_RIGHT = 'rights_right';
 
     public const CAPTION_LAYOUTS = [
@@ -46,6 +47,7 @@ final class GalleryPresentation
     {
         return (bool) $gallery->getAttribute('video_sound_enabled');
     }
+
     public const SORT_NEWEST = 'newest';
 
     public const SORT_OPTIONS = [
@@ -62,7 +64,7 @@ final class GalleryPresentation
     }
 
     /** @template TModel of \Illuminate\Database\Eloquent\Model
-     * @param Builder<TModel> $query
+     * @param  Builder<TModel>  $query
      * @return Builder<TModel>
      */
     public static function orderArtworks(Builder $query, ArtworkCategory $gallery): Builder
@@ -76,7 +78,7 @@ final class GalleryPresentation
     public const DATE_ORDER_SQL = 'year DESC NULLS LAST, month DESC NULLS LAST, day DESC NULLS LAST, created_at DESC, id DESC';
 
     /** @template TModel of \Illuminate\Database\Eloquent\Model
-     * @param Builder<TModel> $query
+     * @param  Builder<TModel>  $query
      * @return Builder<TModel>
      */
     public static function orderArtworksByDate(Builder $query): Builder
@@ -85,13 +87,17 @@ final class GalleryPresentation
     }
 
     public const EDGE_DISABLED = 'disabled';
+
     public const EDGE_HIDDEN = 'hidden';
+
     public const EDGE_CYCLIC = 'cyclic';
 
     public const EDGE_MODES = [self::EDGE_DISABLED, self::EDGE_HIDDEN, self::EDGE_CYCLIC];
 
     public const ARTWORK_SURFACE_INHERIT = 'inherit';
+
     public const ARTWORK_SURFACE_JOINED = 'joined';
+
     public const ARTWORK_SURFACE_SEPARATE = 'separate';
 
     public const ARTWORK_SURFACE_OPTIONS = [
@@ -200,6 +206,7 @@ final class GalleryPresentation
             }
             $values['edge_navigation_mode'] = $data['edge_navigation_mode'];
         }
+
         return $values;
     }
 

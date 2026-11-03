@@ -104,8 +104,8 @@ final class MediaDerivativeGenerator
      * failures. Keep detailed diagnostics in the server log; show the artist
      * a truthful processing stage and a safe, actionable error.
      *
-     * @param list<string> $command
-     * @param array<string,string> $environment
+     * @param  list<string>  $command
+     * @param  array<string,string>  $environment
      * @return array{bytes:string,width:int,height:int}
      */
     private function generate(array $command, array $environment, string $kind): array
