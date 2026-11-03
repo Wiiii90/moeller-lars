@@ -112,7 +112,11 @@ Every active state file is a **current-state projection, never an append-only di
 
 A worker must not say “history has it” for a reusable rule that future workers are expected to obey. **Git history preserves chronology, not active project memory.** If branch ownership prevents immediate durable publication, the live record keeps one short pending-consolidation entry naming the intended owner until that transfer is actually completed.
 
-If a live record has accumulated repeated dated sections, stale baselines, resolved failures or old next steps, its **owning chat must compact it before or together with its next substantive update**, applying the promotion gate above first. Do not copy that history into another live file to avoid cleanup. Org audits both live-file size **and knowledge-promotion completeness** but does not rewrite another active worker's private record; the owning worker performs its own compaction and role-skill update. This keeps startup bounded without turning deletion into knowledge loss.
+If a live record has accumulated repeated dated sections, stale baselines, resolved failures or old next steps, its **owning chat must compact it before or together with its next substantive update**, applying the promotion gate above first. Do not copy that history into another live file to avoid cleanup.
+
+**Single-current-state invariant:** after every substantive update, the live record must be internally consistent. Its identity/scope header, current state, accepted baseline, unresolved gates and final `Next` section must describe the **same present reality**. A superseded scope, old lease/takeover statement, completed migration marked elsewhere as pending, obsolete browser failure, or stale `Next` instruction must be removed or rewritten in the same update. A replacement chat must never need to decide which of two contradictory sections is newer. Historical chronology belongs in Git, not as competing "current" statements.
+
+Org audits live-file size, internal current-state consistency **and knowledge-promotion completeness** but does not rewrite another active worker's private record; the owning worker performs its own compaction and role-skill update. This keeps startup bounded without turning deletion into knowledge loss.
 
 ## Knowledge and ownership
 
