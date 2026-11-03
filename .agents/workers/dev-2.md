@@ -87,3 +87,6 @@
 
 ### Slice 7 (2026-11-03) — Never show false Free Storage success
 - Cleanup execution follows an already committed Undo/restore transaction. The caller now treats canonical outbox drain, strict orphan sweep, staging prune and final capacity refresh as individually retryable stages, reports errors to logs, and surfaces one `Storage cleanup incomplete` warning when any stage fails. Physical orphan deletion failures are counted rather than silently reported as completed; existing original/thumbnail registry remains untouched. Required test-worker cases: each stage throws after transaction, partial unlink returns false, capacity refresh failure, and no-change/no-error notification cardinality.
+
+### Slice 8 (2026-11-03) — Required preview presence
+- The one `MediaPreviewVariant::findUnique` reader now checks that exactly one available preview kind exists **and** its physical bytes exist with recorded file size. A missing/truncated thumbnail or poster is not considered a healthy selection in Admin/Public/Publication; no HTTP regeneration is performed. `MediaIntegrityService` continues to report detailed file checksum/MIME issues when explicitly invoked. Testing handoff: available row with missing/truncated preview blocks eligibility; normal unassigned image with intact preview continues to be readable; no tests changed on Dev.
