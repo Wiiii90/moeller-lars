@@ -62,7 +62,9 @@ Schedule::command('contact:purge --apply')->daily()->withoutOverlapping()->onOne
 // checkpoint payloads. Never infer precision or update artist content here.
 Artisan::command('exhibitions:audit-dates {--all : Include structured rows without an authored override}', function (): int {
     if (DB::getDriverName() !== 'pgsql') {
-        $this->error('Exhibition date inventory requires PostgreSQL publication schemas.');
+        $this->error('Exhibition date inventory requires the PostgreSQL publication database; current driver: '.DB::getDriverName().'.');
+        $this->comment('Run it inside the local application container: docker compose exec app php artisan exhibitions:audit-dates --all');
+        $this->comment('Or, if the local preview is running: docker exec moeller-lars-local-web php artisan exhibitions:audit-dates --all');
 
         return 1;
     }

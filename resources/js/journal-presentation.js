@@ -113,9 +113,28 @@ function initializeExhibitionMap(button) {
                 scrollWheelZoom: false,
             }).setView([latitude, longitude], 15);
 
+            // A successful Leaflet initialization does not mean the external
+            // tile server is reachable. Observe the actual visible tile batch
+            // so a complete provider outage never leaves an empty, silent map.
+            let loadedTiles = 0;
+            let failedTiles = 0;
             L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+            }).on({
+                loading: () => {
+                    loadedTiles = 0;
+                    failedTiles = 0;
+                    status.hidden = true;
+                },
+                tileload: () => { loadedTiles++; },
+                tileerror: () => { failedTiles++; },
+                load: () => {
+                    if (failedTiles > 0 && loadedTiles === 0) {
+                        status.textContent = 'Map tiles unavailable. Try the OpenStreetMap link below.';
+                        status.hidden = false;
+                    }
+                },
             }).addTo(map);
 
             L.control.zoom({ position: 'topright', zoomInTitle: 'Zoom in', zoomOutTitle: 'Zoom out' }).addTo(map);
