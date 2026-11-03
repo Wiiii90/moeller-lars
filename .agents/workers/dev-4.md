@@ -41,6 +41,7 @@
 - **Docs:** Publish accepted Artwork date and UI contracts after runtime/browser qualification; no UI acceptance claimed from source inspection.
 
 ## Historical snapshot compatibility
+- `PublicationVersionService::verifyCheckpointReadOnly()` reuses schema checks, original checksum and complete restored-row diff without mutating Working/Committed/media/history; invoke via Tinker for a local checkpoint preflight. No Stage Version action run.
 - One guarded read-time projection now maps ONLY immutable pre-change Artwork date payloads into current year/month/day during staged restore and pending-count calculations; shared `history_payloads`, checkpoint hashes and source rows remain unchanged. Verifies precise field sets for all historical rows, permitted date values and original snapshot hash before touching Working; unknown schema differences fail closed.
 - Admin Publication History now uses the same VersionService eligibility check for staged restore and Revert, instead of separate schema-hash-only UI logic.
 - No runtime or database-copy restore executed here. Use local read-only inventory and *disposable database copy* before any real staging. Validation remains out of scope.

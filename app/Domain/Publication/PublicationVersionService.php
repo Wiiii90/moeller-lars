@@ -206,6 +206,38 @@ SQL;
         );
     }
 
+    /**
+     * Non-destructive verification of a checkpoint against today's schema.
+     * Runs the same schema projection and full row-difference calculation used
+     * by Stage Version, but does not truncate Working, restore file rights,
+     * enqueue cleanup, or change publication history.
+     *
+     * @return array{checkpoint_id:int, historical_date_projection:bool, differences_from_working:int}
+     */
+    public function verifyCheckpointReadOnly(PublicationCheckpoint $checkpoint): array
+    {
+        $this->schemaGuard->assertParity();
+        $checkpoint->refresh();
+        $this->assertRestorable($checkpoint);
+
+        // A matching schema hash alone is not proof that its stored rows are
+        // intact; the explicit audit also checks their original content hash.
+        if (! $this->originalSnapshotHashValid($checkpoint)) {
+            throw ValidationException::withMessages([
+                'publication' => 'This checkpoint does not match its original snapshot checksum.',
+            ]);
+        }
+
+        return [
+            'checkpoint_id' => (int) $checkpoint->getKey(),
+            'historical_date_projection' => ! hash_equals(
+                (string) $checkpoint->getAttribute('schema_hash'),
+                $this->schemaHash(),
+            ),
+            'differences_from_working' => $this->pendingCountAgainstCheckpoint($checkpoint),
+        ];
+    }
+
     public function currentLiveCheckpoint(): ?PublicationCheckpoint
     {
         /** @var PublicationCheckpoint|null $checkpoint */
