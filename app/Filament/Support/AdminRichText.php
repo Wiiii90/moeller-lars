@@ -91,6 +91,10 @@ final class AdminRichText
                 ->nullable()
                 ->dehydrated(false)
                 ->live()
+                // The picker is transient, not an edit-dialog form mutation.
+                // A full Livewire morph here destroys the current Tiptap
+                // instance before the selected-image event is consumed.
+                ->skipRenderAfterStateUpdated()
                 ->afterStateUpdated(static function (mixed $state, Select $field) use ($editor): void {
                     $id = filter_var($state, FILTER_VALIDATE_INT);
                     if ($id === false || $id <= 0) {
