@@ -63,7 +63,9 @@ Current hygiene audit: several active records have accumulated too much chronolo
 
 Testing Worker 1 is smaller but should also replace superseded reconciliation history rather than continue appending dated batches. Dev Worker 4 and Refactor Worker 1 are currently compact.
 
-Org must re-audit this periodically without copying worker histories into this file.
+Org must re-audit this periodically without copying worker histories into this file. Compaction is accepted only when reusable lessons have already reached the appropriate shared protocol/role skill/canonical documentation owner, or the worker retains one concise pending-durable-consolidation gate.
+
+Current promotion audit: the mechanism exists and is being used (recent Dev skill/protocol changes and Docs-branch canonical document reconciliations provide concrete evidence), but the shared compaction rule previously did not explicitly forbid deleting an unpromoted reusable lesson. That gap is now closed by the promotion-before-deletion gate in `.agents/README.md`.
 
 ## Immediate organizational objective
 

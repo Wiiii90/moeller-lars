@@ -102,7 +102,17 @@ A completed task handoff reports the **working branch, checked base/head commits
 
 Every active state file is a **current-state projection, never an append-only diary**. This includes `.agents/workers/*.md`, `.agents/org.md` and temporary living workstream/handoff files. On every substantive write, remove or merge superseded sections and keep only what a replacement chat needs now: current assignment/scope, accepted decisions, latest relevant source/evidence, unresolved blockers or acceptance gates, and the next action. Git history already preserves prior attempts, intermediate commits and dated incident detail.
 
-If a live record has accumulated repeated dated sections, stale baselines, resolved failures or old next steps, its **owning chat must compact it before or together with its next substantive update**. Do not copy that history into another live file to avoid cleanup. Org audits live-file hygiene but does not rewrite another active worker's private record; it records the need for compaction and the owning worker performs it. This keeps startup bounded and prevents worker records from becoming token sinks.
+**Promotion-before-deletion gate:** compaction may remove chronology, but it must never discard reusable knowledge. Before deleting a substantive item from a live record, classify it:
+1. **temporary/resolved task detail** → remove; Git history is sufficient;
+2. **reusable cross-role process lesson** → first amend the existing shared protocol;
+3. **reusable role-specific method lesson** → first amend the existing role skill on that worker's branch;
+4. **accepted product/UI/domain/architecture invariant** → first ensure it is in the single canonical product/architecture document, or retain a concise `pending durable consolidation` item until Docs has reconciled it;
+5. **testing/release/operations contract** → first route it to the existing canonical testing/release/operations owner;
+6. **still-unverified hypothesis** → do not promote it as fact; either keep the current blocker/evidence succinctly or delete it when no longer relevant.
+
+A worker must not say “history has it” for a reusable rule that future workers are expected to obey. **Git history preserves chronology, not active project memory.** If branch ownership prevents immediate durable publication, the live record keeps one short pending-consolidation entry naming the intended owner until that transfer is actually completed.
+
+If a live record has accumulated repeated dated sections, stale baselines, resolved failures or old next steps, its **owning chat must compact it before or together with its next substantive update**, applying the promotion gate above first. Do not copy that history into another live file to avoid cleanup. Org audits both live-file size **and knowledge-promotion completeness** but does not rewrite another active worker's private record; the owning worker performs its own compaction and role-skill update. This keeps startup bounded without turning deletion into knowledge loss.
 
 ## Knowledge and ownership
 

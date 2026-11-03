@@ -51,7 +51,7 @@ Org keeps organizational/release/process facts coherent. Durable product/archite
 ### Live-file hygiene
 `.agents/org.md` is rewritten as a compact current snapshot, never appended indefinitely. Preserve only current milestone state, accepted decisions, active gates, deferred organizational obligations and the next organizational action. Historical details are recoverable in Git.
 
-Org may audit whether worker/living records are becoming append-only token sinks. It must not rewrite another active worker's private file; the owning worker compacts it on its next substantive write under the shared protocol.
+Org audits both whether worker/living records are becoming append-only token sinks **and whether reusable lessons were promoted before compaction**. For a worker being compacted, Org may inspect the relevant role skill/shared protocol and canonical Docs owner to verify that recurring user corrections and accepted invariants did not disappear with the diary text. It must not rewrite another active worker's private file; the owning worker compacts it and updates its own role skill. If durable product/documentation ownership is still pending, Org records that short gate until Docs actually reconciles it.
 
 ## What Org must never do
 
