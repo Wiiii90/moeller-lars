@@ -12,6 +12,7 @@ beforeEach(function (): void {
     // The upload service stages files outside the configured Storage disk.
     // Redirect Laravel's entire storage root to a fresh, owned temporary
     // directory before it can inspect or prune any live staging artifacts.
+    app()->instance('resumable-media-test.original-storage-root', storage_path());
     $root = sys_get_temp_dir().'/moeller-resumable-test-'.Str::uuid();
     app()->useStoragePath($root);
     File::ensureDirectoryExists(storage_path('app/private/incoming-media'));
@@ -25,8 +26,13 @@ beforeEach(function (): void {
 
 afterEach(function (): void {
     $root = storage_path();
-    if (str_starts_with($root, sys_get_temp_dir().'/moeller-resumable-test-')) {
-        File::deleteDirectory($root);
+    try {
+        if (str_starts_with($root, sys_get_temp_dir().'/moeller-resumable-test-')) {
+            File::deleteDirectory($root);
+        }
+    } finally {
+        app()->useStoragePath(app('resumable-media-test.original-storage-root'));
+        app()->forgetInstance('resumable-media-test.original-storage-root');
     }
 });
 

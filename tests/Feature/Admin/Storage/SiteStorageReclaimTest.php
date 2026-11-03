@@ -19,11 +19,29 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
+    // Free Storage also prunes resumable private staging; never point it at
+    // the operator's real incoming-media directory during tests.
+    app()->instance('reclaim-media-test.original-storage-root', storage_path());
+    $root = sys_get_temp_dir().'/moeller-reclaim-test-'.\Illuminate\Support\Str::uuid();
+    app()->useStoragePath($root);
+    \Illuminate\Support\Facades\File::ensureDirectoryExists(storage_path('app/private/incoming-media'));
     Storage::fake('site-storage-reclaim-test');
     config([
         'media.disk' => 'site-storage-reclaim-test',
         'media.quota_bytes' => 10_000_000_000,
     ]);
+});
+
+afterEach(function (): void {
+    $root = storage_path();
+    try {
+        if (str_starts_with($root, sys_get_temp_dir().'/moeller-reclaim-test-')) {
+            \Illuminate\Support\Facades\File::deleteDirectory($root);
+        }
+    } finally {
+        app()->useStoragePath(app('reclaim-media-test.original-storage-root'));
+        app()->forgetInstance('reclaim-media-test.original-storage-root');
+    }
 });
 
 it('frees recovery roots while preserving Activity and protected publication snapshots', function (): void {

@@ -58,3 +58,5 @@
 - **User feedback:** Extended canonical notification feature suite with status, title and truthful saved/reused/failed summaries for Storage/Gallery and a no-op batch; no new notification implementation or runner. Not executed.
 
 - **Safari/macOS browser coverage:** Broadened existing WebKit desktop/iPhone projects to exercise real media delivery, Gallery reordering, touch navigation and desktop public SPA flows; updated Testing commands and caveat. Native Safari on macOS remains a separate real-device gate; none executed yet.
+
+- **Isolation hardening:** Redirected Free Storage's private incoming-upload staging to a uniquely owned disposable directory and restored the original Laravel storage root in both resumable and Free Storage suites after teardown. No user/Preview files may be pruned by these tests. Not executed.
