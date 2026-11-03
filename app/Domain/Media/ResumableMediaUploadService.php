@@ -510,21 +510,30 @@ final class ResumableMediaUploadService
             $removed = 0;
             $cutoff = time() - self::EXPIRY_SECONDS;
 
-            foreach (glob($this->directory().'/*.json') ?: [] as $manifest) {
+            // Stream directory entries instead of glob() materializing every
+            // abandoned multi-part session path in PHP memory. Keep at most
+            // 100 deletions per pass, even for completed session artifacts.
+            foreach (new \DirectoryIterator($this->directory()) as $entry) {
                 if ($removed >= 100) {
                     break;
                 }
+                if ($entry->isDot() || ! $entry->isFile()
+                    || ! str_ends_with($entry->getFilename(), '.json')) {
+                    continue;
+                }
 
-                $id = basename($manifest, '.json');
+                $id = substr($entry->getFilename(), 0, -5);
                 if (! Str::isUuid($id)) {
                     continue;
                 }
 
-                // Completed sessions are kept for recovery of a lost final
-                // response, but their staged multi-GB copy can go immediately.
+                $manifest = $entry->getPathname();
+                $part = $this->partPath($id);
                 $meta = $this->readManifest($id);
-                if (is_array($meta) && isset($meta['asset_id']) && is_file($this->partPath($id))) {
-                    @unlink($this->partPath($id));
+                if (is_array($meta) && isset($meta['asset_id']) && is_file($part) && @unlink($part)) {
+                    // A completed canonical original owns its registered
+                    // bytes; the staged copy is no longer needed.
+                    $removed++;
                 }
 
                 $modified = @filemtime($manifest);
@@ -532,35 +541,46 @@ final class ResumableMediaUploadService
                     continue;
                 }
 
-                // The exclusive gate ensures nobody is currently using the
-                // per-session lock or writing this manifest.
+                // All upload writers are excluded by the admission gate.
                 if (@unlink($manifest)) {
-                    @unlink($this->partPath($id));
+                    @unlink($part);
                     @unlink($manifest.'.tmp');
                     @unlink($this->directory().'/'.$id.'.lock');
                     $removed++;
                 }
             }
 
-            // A crash between manifest creation, atomic replacement and
-            // writing can orphan .part, .json.tmp or .lock individually.
-            // Match only our own UUID-based names; never touch media originals.
-            foreach (['part', 'json.tmp', 'lock'] as $suffix) {
-                foreach (glob($this->directory().'/*.'.$suffix) ?: [] as $path) {
-                    if ($removed >= 100) {
-                        break 2;
+            // A crash can strand separate .part, .json.tmp and .lock files.
+            // Never sweep registered originals, generated previews or files
+            // whose manifest still owns an in-progress upload.
+            foreach (new \DirectoryIterator($this->directory()) as $entry) {
+                if ($removed >= 100) {
+                    break;
+                }
+                if ($entry->isDot() || ! $entry->isFile()) {
+                    continue;
+                }
+
+                $name = $entry->getFilename();
+                $suffix = null;
+                foreach (['.json.tmp', '.part', '.lock'] as $candidate) {
+                    if (str_ends_with($name, $candidate)) {
+                        $suffix = $candidate;
+                        break;
                     }
-                    $id = basename($path, '.'.$suffix);
-                    // An expired .json.tmp is disposable even when its
-                    // corresponding committed manifest remains in use.
-                    if (! Str::isUuid($id)
-                        || ($suffix !== 'json.tmp' && is_file($this->manifestPath($id)))) {
-                        continue;
-                    }
-                    $modified = @filemtime($path);
-                    if ($modified !== false && $modified < $cutoff && @unlink($path)) {
-                        $removed++;
-                    }
+                }
+                if ($suffix === null) {
+                    continue;
+                }
+                $id = substr($name, 0, -strlen($suffix));
+                if (! Str::isUuid($id)
+                    || ($suffix !== '.json.tmp' && is_file($this->manifestPath($id)))) {
+                    continue;
+                }
+                $modified = @filemtime($entry->getPathname());
+                if ($modified !== false && $modified < $cutoff
+                    && @unlink($entry->getPathname())) {
+                    $removed++;
                 }
             }
 

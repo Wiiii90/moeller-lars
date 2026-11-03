@@ -145,9 +145,12 @@ final class PublicationMediaCleanupService
 
     public function drain(): int
     {
+        // Seek by ID in bounded batches. A protected Publication may leave
+        // a large outbox waiting for its restore owner to expire; never load
+        // the whole queue into the web worker's memory.
         $rows = DB::table('publication_media_cleanups')
-            ->orderBy('id')
-            ->get(['id', 'media_asset_id', 'storage_key']);
+            ->select(['id', 'media_asset_id', 'storage_key'])
+            ->lazyById(100);
         $changed = false;
         $removedFiles = 0;
 
