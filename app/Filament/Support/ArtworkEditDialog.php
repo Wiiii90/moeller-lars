@@ -3,7 +3,9 @@
 namespace App\Filament\Support;
 
 use App\Domain\Artwork\ArtworkDimensions;
+use App\Domain\Artwork\ArtworkDate;
 use App\Filament\Support\AdminDimensionsControl;
+use App\Filament\Support\AdminPartialDateControl;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
@@ -14,7 +16,6 @@ use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
@@ -42,8 +43,7 @@ final class ArtworkEditDialog
             'description' => $artwork->getAttribute('description'),
             'primary_media_asset_id' => $primary?->getAttribute('media_asset_id'),
             'primary_alt_text' => $primary?->getAttribute('alt_text_override'),
-            'work_year' => $artwork->getAttribute('work_year'),
-            'work_date' => $artwork->getAttribute('work_date'),
+            'artwork_date' => ArtworkDate::fromArtwork($artwork),
             'exclude_from_home' => (int) (bool) $artwork->getAttribute('exclude_from_home'),
         ];
     }
@@ -116,22 +116,7 @@ final class ArtworkEditDialog
                         ->nullable()
                         ->columnSpanFull(),
 
-                    TextInput::make('work_year')
-                        ->label('Year')
-                        ->numeric()
-                        ->integer()
-                        ->minValue(1000)
-                        ->maxValue(9999)
-                        ->nullable(),
-                    DatePicker::make('work_date')
-                        ->label('Exact date')
-                        ->nullable()
-                        ->live()
-                        ->afterStateUpdated(static function (mixed $state, callable $set): void {
-                            if (is_string($state) && preg_match('/^(\\d{4})-\\d{2}-\\d{2}$/', $state, $matches) === 1) {
-                                $set('work_year', (int) $matches[1]);
-                            }
-                        }),
+                    AdminPartialDateControl::make()->columnSpanFull(),
 
                     $material,
                     ...($positionCount !== null ? [
@@ -272,7 +257,8 @@ final class ArtworkEditDialog
     private function normalizeArtworkFormData(array $data, ?int $galleryId, ?Artwork $original = null): array
     {
         $data['artwork_category_id'] = $galleryId;
-        $data['work_date'] = $data['work_date'] ?? null;
+        $data = array_merge($data, ArtworkDate::normalize($data['artwork_date'] ?? null));
+        unset($data['artwork_date']);
         $data['medium'] = filled($data['medium'] ?? null) ? trim((string) $data['medium']) : null;
         $structuredDimensions = filled($data['dimension_height'] ?? null)
             || filled($data['dimension_width'] ?? null)

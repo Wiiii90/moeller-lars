@@ -35,7 +35,7 @@ final class ArtworkDraftService
         $data['artwork_category_id'] = $galleryId;
         $data['state'] = 'draft';
         $data['published_at'] = null;
-        $data['date_precision'] = filled($data['work_date']) ? 'day' : 'unknown';
+        $data['date_precision'] = ArtworkDate::precisionFromFields($data);
 
         $actor = $this->audit->requireActor();
 
@@ -96,7 +96,9 @@ final class ArtworkDraftService
                 ]);
             }
 
-            $payload['date_precision'] = filled($payload['work_date'] ?? null) ? 'day' : 'unknown';
+            if (array_key_exists('work_date', $payload) || array_key_exists('work_year', $payload) || array_key_exists('date_precision', $payload)) {
+                $payload['date_precision'] = ArtworkDate::precisionFromFields($payload);
+            }
             $fresh->fill($payload);
 
             if ($fresh->isDirty()) {
@@ -149,6 +151,7 @@ final class ArtworkDraftService
             'description',
             'work_date',
             'work_year',
+            'date_precision',
             'exclude_from_home',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
@@ -168,6 +171,7 @@ final class ArtworkDraftService
             'description' => ['nullable', 'string', 'max:10000'],
             'work_date' => ['nullable', 'date'],
             'work_year' => ['nullable', 'integer', 'min:1000', 'max:9999'],
+            'date_precision' => ['sometimes', Rule::in(['unknown', 'year', 'month', 'day'])],
             'exclude_from_home' => ['sometimes', 'boolean'],
         ]);
         $validator->validate();

@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Artwork\ArtworkDimensions;
+use App\Domain\Artwork\ArtworkDate;
 use App\Domain\Media\MediaTypePolicy;
 
 trait GalleryWorkspaceFormSupport
@@ -19,7 +20,8 @@ trait GalleryWorkspaceFormSupport
     private function normalizeArtworkFormData(array $data): array
     {
         $data['artwork_category_id'] = (int) $this->galleryContext['id'];
-        $data['work_date'] = $data['work_date'] ?? null;
+        $data = array_merge($data, ArtworkDate::normalize($data['artwork_date'] ?? null));
+        unset($data['artwork_date']);
         $data['medium'] = filled($data['medium'] ?? null) ? trim((string) $data['medium']) : null;
         $data['dimensions'] = ArtworkDimensions::compose(
             $data['dimension_height'] ?? null,

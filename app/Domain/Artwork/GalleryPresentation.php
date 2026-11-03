@@ -85,6 +85,9 @@ final class GalleryPresentation
             ->orderByRaw('CASE WHEN work_year IS NULL THEN 1 ELSE 0 END')
             ->orderByDesc('work_year')
             ->orderByRaw('CASE WHEN work_date IS NULL THEN 1 ELSE 0 END')
+            ->orderByRaw('EXTRACT(MONTH FROM work_date) DESC NULLS LAST')
+            // Exact day dates rank ahead of month-only dates in the same month.
+            ->orderByRaw("CASE WHEN date_precision = 'month' THEN 1 ELSE 0 END")
             ->orderByDesc('work_date')
             ->orderByDesc('created_at')
             ->orderByDesc('id');
