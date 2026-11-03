@@ -38,7 +38,7 @@ it('deletes an unreferenced file through the Files delete action', function (): 
         'media_asset_id' => $asset->id, 'variant_kind' => 'thumbnail',
         'storage_key' => 'variants/delete-me.webp', 'mime_type' => 'image/webp',
         'byte_size' => 4, 'sha256' => hash('sha256', 'delete-me-variant'),
-        'transform_profile' => 'public-v1', 'state' => 'available',
+        'state' => 'available',
         'width' => 10, 'height' => 5,
     ]);
     $disk = Storage::disk(config('media.disk'));

@@ -6,7 +6,7 @@ use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaIntegrityService;
-use App\Domain\Media\MediaVariantRegenerationService;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\PublicMedia;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Storage\SiteStorageDatabaseUsageService;
@@ -75,7 +75,6 @@ function lifecycleAsset(): MediaAsset
         'mime_type' => 'image/webp',
         'byte_size' => 4,
         'sha256' => hash('sha256', 'variant-fixture-'.$suffix),
-        'transform_profile' => 'public-v1',
         'state' => 'available',
     ]);
 
@@ -97,7 +96,7 @@ function lifecycleJournal(string $template, string $slug): SiteSection
     ]);
 }
 
-it('ingests canonical media with durable checksums and a rebuildable public thumbnail', function (): void {
+it('ingests canonical media with durable checksums and a required public thumbnail', function (): void {
     $asset = lifecycleIngestService()->ingest(lifecycleImageUpload('image/jpeg'));
     $variant = $asset->variants()->sole();
     $disk = Storage::disk(config('media.disk'));
@@ -108,23 +107,17 @@ it('ingests canonical media with durable checksums and a rebuildable public thum
         ->and($asset->mime_type)->toBe('image/jpeg')
         ->and($asset->byte_size)->toBe(strlen($originalBytes))
         ->and($asset->sha256)->toBe(hash('sha256', $originalBytes))
-        ->and($variant->transform_profile)->toBe(MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE)
         ->and($variant->state)->toBe('available')
         ->and($variant->byte_size)->toBe(strlen($thumbnailBytes))
         ->and($variant->sha256)->toBe(hash('sha256', $thumbnailBytes));
 
-    $removed = app(MediaVariantRegenerationService::class)->reclaimRebuildableFiles();
-    expect($removed['files'])->toBeGreaterThanOrEqual(1)
-        ->and($removed['bytes'])->toBeGreaterThanOrEqual(strlen($thumbnailBytes))
-        ->and($disk->exists($variant->storage_key))->toBeFalse()
-        ->and($disk->get($asset->storage_key))->toBe($originalBytes)
-        ->and($variant->fresh()->sha256)->toBe(hash('sha256', $thumbnailBytes));
+    expect(MediaPreviewVariant::imageThumbnail($asset)?->getKey())->toBe($variant->getKey())
+        ->and($disk->get($variant->storage_key))->toBe($thumbnailBytes)
+        ->and($disk->get($asset->storage_key))->toBe($originalBytes);
 
-    expect(app(MediaVariantRegenerationService::class)->ensureFile($variant))->toBeTrue()
-        ->and($disk->get($variant->storage_key))->toBe($thumbnailBytes);
 });
 
-it('ingests an image above the legacy GD cap through bounded libvips and regenerates its exact variant', function (): void {
+it('ingests an image above the legacy GD cap through bounded libvips and retains its thumbnail', function (): void {
     $ingest = lifecycleIngestService();
     $placeholder = tempnam(sys_get_temp_dir(), 'large-media-test-');
     expect($placeholder)->not->toBeFalse();
@@ -144,22 +137,20 @@ it('ingests an image above the legacy GD cap through bounded libvips and regener
             ->and($asset->height)->toBe(4000)
             ->and($asset->sha256)->toBe(hash_file('sha256', $path))
             ->and($variant->variant_kind)->toBe('thumbnail')
-            ->and($variant->transform_profile)->toBe(MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE)
             ->and(max((int) $variant->width, (int) $variant->height))->toBeLessThanOrEqual(960)
             ->and(app(PublicMedia::class)->thumbnailVariantForAsset($asset)->getKey())->toBe($variant->getKey())
             ->and(app(\App\Domain\Artwork\ArtworkPublicationService::class)->mediaReady($asset, 'Large artwork preview'))->toBeTrue();
 
-        $bytesBefore = $disk->get($variant->storage_key);
-        $disk->delete($variant->storage_key);
-        expect(app(MediaVariantRegenerationService::class)->ensureFile($variant))->toBeTrue()
-            ->and($disk->get($variant->storage_key))->toBe($bytesBefore);
+        expect($disk->exists($variant->storage_key))->toBeTrue()
+            ->and(hash('sha256', $disk->get($variant->storage_key)))->toBe($variant->sha256);
+
     } finally {
         @unlink($path);
         @unlink($placeholder);
     }
 });
 
-it('generates a versioned immutable WebP poster for a real H.264 video and regenerates exact bytes', function (): void {
+it('generates and retains the immutable WebP poster for a real H.264 video', function (): void {
     $ingest = lifecycleIngestService();
     $placeholder = tempnam(sys_get_temp_dir(), 'video-media-test-');
     expect($placeholder)->not->toBeFalse();
@@ -181,13 +172,11 @@ it('generates a versioned immutable WebP poster for a real H.264 video and regen
 
         expect($asset->mime_type)->toBe('video/mp4')
             ->and($variant->variant_kind)->toBe(MediaIngestService::VIDEO_POSTER_KIND)
-            ->and($variant->transform_profile)->toBe(MediaIngestService::VIDEO_POSTER_PROFILE)
             ->and($variant->sha256)->toBe(hash('sha256', $posterBefore))
             ->and(app(PublicMedia::class)->posterUrlForAsset($asset))->not->toBeNull();
 
-        $disk->delete($variant->storage_key);
-        expect(app(MediaVariantRegenerationService::class)->ensureFile($variant))->toBeTrue()
-            ->and($disk->get($variant->storage_key))->toBe($posterBefore);
+        expect($disk->get($variant->storage_key))->toBe($posterBefore);
+
     } finally {
         @unlink($path);
         @unlink($placeholder);
