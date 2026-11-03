@@ -523,8 +523,9 @@ The closed entry presents the authored date, exhibition title and venue/place
 as an open **exhibition catalogue**, not a timeline or a set of rectangular
 cards. Dates and titles share the measured reading area with generous whitespace
 and no fabricated image substitutes, vertical date spine or connection nodes.
-Only opened entries may expose the restrained shared-boundary separator. The artist's manual exhibition order and
-the fixed typography remain authoritative.
+Closed entries have no permanent separators; opened neighboring entries share
+one restrained boundary line, without an extra line at the outer list edges.
+The artist's manual exhibition order and fixed typography remain authoritative.
 
 Optional material is exposed through independent native `details` disclosures
 with the plain **Open / Close** control. Entries without additional material
@@ -538,25 +539,26 @@ Gallery presentations (grid, mosaic or slideshow), vernissage, address and
 external link contracts. Opened Exhibition folios compose their available
 content rather than alternate images by row parity:
 
-- A cover paired with vernissage, address or map/external actions uses a
-  responsive, two-column image-and-visit composition if the actual content
-  width supports it. At narrower widths those items stack naturally.
-- An unaccompanied cover stands alone without a fabricated empty partner
-  column. Text-only entries align their information with the title column.
-- When a cover and long-form text coexist, prose starts beside the image
-  on a sufficiently wide content surface and continues underneath it. The
-  float is limited to a readable 41%-wide image rather than forcing text
-  into a very narrow parallel column. At narrow content widths the complete
-  feature stacks. In other cases description text retains a full-width
-  reading measure. The optional Map action stays with visit information
-  and opens the established on-demand dialog; only external destinations
-  carry the external-link icon.
+- With a cover, a single flow-root feature contains that cover, visit
+  information and rich description. At sufficiently wide content sizes the
+  cover floats at the left (up to 14rem, bounded by the existing title-axis
+  tracks); text starts beside it and continues across the available reading
+  width below the image. Below the content-fit threshold, the cover stacks
+  naturally. No second rigid editorial column or fabricated placeholder.
+- Without a cover, **all expanded content** (venue, address, actions,
+  description and embedded Rich Text) begins at the existing detail body's
+  left edge and uses its available width. The closed date/title overview
+  retains its stable tracks even without a preview image.
+- The optional Map action stays with visit information and opens the
+  established on-demand dialog; only external destinations carry the
+  external-link icon.
 - Grid preserves the authored row-wise order. Mosaic uses stored source
   width/height to distribute images across two balanced vertical lanes
-  before rendering. A modest offset and unequal column widths distinguish
-  Mosaic as a deliberate editorial arrangement. Images and captions remain
-  uncropped and are not moved by client-side JavaScript. Within each lane
-  authored order is retained, but the visual composition is not a strict
+  before rendering. The two lanes begin **flush at their upper edges**;
+  their unequal widths and independent image heights provide the composition,
+  not an artificial top offset. Images and captions remain uncropped and are
+  not moved by client-side JavaScript. Within each lane authored order is
+  retained, but the visual composition is not a strict
   left-to-right reading of the global image sequence.
 - Slideshow retains the authored sequence, has compact arrow navigation and
   the position centered above the image, consistent with the site's Artwork
@@ -566,7 +568,51 @@ content rather than alternate images by row parity:
   The authored `position` values and editorial workflows remain unchanged.
 
 No new Administration customization, Exhibition detail route or duplicate
-media source of truth is introduced.
+media source of truth is introduced. Exhibition cover videos have an inert
+closed-state preview; the preview's Play action opens the existing detail and
+requests playback. The expanded video retains native controls for manual
+playback and does not join the automatic muted/looping observer.
+
+#### Exhibition design decisions and rejected trials (reviewed 2026-11-03)
+
+This is **user-reviewed context for future design work**, not a permanent
+prohibition on revisiting Exhibitions. The current catalogue is acceptable
+with real artist content **for now**, but is not a fully approved final
+composition. Default background is plain white through the shared Public
+appearance setting, not an Exhibitions-only override. Small previews remain
+unframed and unshadowed. The artist controls exhibition order; no visual
+importance is inferred from whether an entry has an image.
+
+Previous proposals that were tried and **rejected or rolled back**:
+
+- **Dark "Night Gallery" area:** the dark visual island did not fit the
+  otherwise light Public site. Do not revive it as a default redesign.
+- **Separate interactive image stage with narrower exhibition list:**
+  required another visual/interaction hierarchy and did not convince in
+  browser review. Do not recreate a stage, hover preview or second player
+  merely to make the page look different.
+- **Numbered catalogue/timeline and brick-red ornaments:** numbering,
+  red accent bars, persistent separators and double lines were rejected.
+  Keep the simple opened-only shared separators unless the user specifies
+  a genuinely different design.
+- **Warm "Soft Paper" washes and pasted-on image mounts:** extra gradients,
+  strong open-entry tints, white mats and decorative shadows did not survive
+  visual review. Background color belongs to the existing site setting;
+  individual miniature and cover images need no fake physical frame.
+- **"Editorial rhythm" as an arbitrary `margin-top: 1.35rem` after a
+  cover-bearing entry followed by a coverless one:** this was not a delivered
+  composition. It introduced inconsistent gaps without an artistic criterion
+  and was explicitly removed. Never infer exhibition significance or
+  spacing priorities from incidental media presence.
+
+**Required approach if redesign resumes:** inspect these failed outcomes,
+then compare an actual proposed composition against the existing rendered
+overview and at least one expanded entry **with and without a cover**, using
+realistic long Rich Text, video and gallery cases. Specify visible layout
+differences before implementation and verify that the resulting code actually
+delivers those differences. References or aesthetic terminology alone do not
+count as an implemented redesign. Do not disturb an accepted behavior simply
+to make a design experiment more extensive.
 
 The existing MediaAsset copyright modes remain authoritative. Exhibition
 index images retain authored credits and explicit per-asset copyright overrides
