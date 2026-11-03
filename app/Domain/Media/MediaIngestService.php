@@ -139,6 +139,15 @@ class MediaIngestService
             return $asset;
         }
 
+        if ($candidates->isNotEmpty()) {
+            // An existing byte-identical canonical asset must not be
+            // duplicated merely because its registered original/preview
+            // is missing or corrupt. Repair the registry first.
+            throw ValidationException::withMessages([
+                'media' => 'This file is already registered in Storage, but its saved original or required preview is incomplete. No duplicate was created. Contact the site administrator to repair that media record.',
+            ]);
+        }
+
         return null;
     }
 

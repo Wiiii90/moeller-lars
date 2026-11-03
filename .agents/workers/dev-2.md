@@ -98,3 +98,6 @@
 
 ### Resume identity precision (2026-11-03)
 - A completed upload session is also verified against the current local file via all recorded chunk hashes; previously completed metadata-only matches cannot silently link a changed middle section. On mismatch, the client creates a new upload session without canceling/deleting the already stored original. Single-field failure abbreviates a pathological filename so the actual actionable reason survives notification truncation. Testing: completed receipt selected with changed bytes, old completed receipt without chunk digests, and normal unchanged complete upload.
+
+### Identity safeguard (2026-11-03)
+- A matching SHA-256/size Registry row with missing, altered or truncated original/required preview is now a fail-closed existing-media integrity error, not permission to create a second MediaAsset. If any matching candidate is healthy it is reused; if all are damaged no duplicate original is written. Testing: corrupted original or missing preview does not create a second original, while valid identical upload reuses existing record.
