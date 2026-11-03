@@ -55,17 +55,18 @@ The shared protocol now also forbids concrete private operational topology/acces
 
 Org does not duplicate active worker assignments; inspect the owning branch roster when needed.
 
-Current hygiene audit: several active records have accumulated too much chronology and should be compacted by their **owning worker on its next substantive write**, preserving only current scope/state/evidence/gates:
-- Dev Worker 1;
-- Dev Worker 2;
-- Dev Worker 3;
-- Docs Worker 1.
+Current audit (2026-11-03):
+- **Dev Worker 1:** knowledge promotion is good (Exhibitions/design-process lessons reached durable Docs/Dev method), but the live file is still an oversized chronology with obsolete lease/design states. It needs real compaction before retirement/sign-out.
+- **Dev Worker 2:** strong durable-method promotion into the Dev skill and clear owner boundaries, but the live file still appends many dated follow-up sections and implementation commits. Compact to current invariants, current implementation state, grouped Testing handoff and remaining gates.
+- **Dev Worker 3:** substantially improved. The live file is now reasonably compact and current, but still contains some stale screenshot/rejected-state evidence that conflicts with later accepted popover/caption state; one further cleanup pass is appropriate.
+- **Dev Worker 4:** healthy for a complex active assignment. It is longer than ideal but mostly contains current product semantics, browser backlog, Testing handoff and cross-worker deferred ownership rather than pure chronology. Continue replacing duplicated implementation bullets as acceptance advances.
+- **Testing Worker 1:** structurally sound but stale/chronological; multiple old reconciliation batches and obsolete Dev baselines should be collapsed before its next substantive reconciliation.
+- **Docs Worker 1:** largest remaining token sink. Its record preserves extensive October publication history that already belongs in Git/durable docs. Before the next Docs work it needs aggressive promotion-aware compaction to current reconciled baseline, unpublished durable changes, verification limits and next transfer gate.
+- **Refactor Worker 1:** healthy and compact; no substantive assignment yet.
 
-Testing Worker 1 is smaller but should also replace superseded reconciliation history rather than continue appending dated batches. Dev Worker 4 and Refactor Worker 1 are currently compact.
+Knowledge-promotion evidence is real: recent Dev work repeatedly amended the Dev skill/shared protocol, and Docs has reconciled accepted Admin/Public/Rich-Text/release behavior into canonical documents. The promotion-before-deletion rule is now explicit on `dev`.
 
-Org must re-audit this periodically without copying worker histories into this file. Compaction is accepted only when reusable lessons have already reached the appropriate shared protocol/role skill/canonical documentation owner, or the worker retains one concise pending-durable-consolidation gate.
-
-Current promotion audit: the mechanism exists and is being used (recent Dev skill/protocol changes and Docs-branch canonical document reconciliations provide concrete evidence), but the shared compaction rule previously did not explicitly forbid deleting an unpromoted reusable lesson. That gap is now closed by the promotion-before-deletion gate in `.agents/README.md`.
+**Pending workflow synchronization:** the exact new Shared Protocol compaction/promotion gate is currently present on `dev` only. Testing/Docs/Refactor already have role-specific durable-feedback rules, so this is not an immediate knowledge-loss hole, but their branch-local `.agents/README.md` snapshots must receive the reviewed shared update before relying on the new compaction contract there. Do not assume `dev` publication automatically propagated.
 
 ## Immediate organizational objective
 
