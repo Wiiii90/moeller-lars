@@ -355,7 +355,7 @@ final class ResumableMediaUploadService
             'complete' => $assetId > 0,
             'asset_id' => $assetId > 0 ? $assetId : null,
             'duplicate' => (bool) ($meta['duplicate'] ?? false),
-            'chunk_hashes' => $assetId > 0 ? [] : array_values($meta['chunks'] ?? []),
+            'chunk_hashes' => array_values($meta['chunks'] ?? []),
         ];
     }
 

@@ -112,7 +112,7 @@ function forget(key) {
 // based on filename, timestamp or a small beginning/end sample.
 async function resumedBytesMatch(file, session) {
     const offset = Number(session.offset);
-    if (session.complete || offset === 0) return true;
+    if (offset === 0) return !session.complete;
 
     const chunkSize = Number(session.chunk_size);
     const hashes = session.chunk_hashes;
@@ -132,7 +132,7 @@ async function resumedBytesMatch(file, session) {
 }
 
 async function verifyOrRestart(file, session, key, state) {
-    if (session.complete || !Number(session.offset)) return session;
+    if (!Number(session.offset) && !session.complete) return session;
 
     state.result = 'Checking previously uploaded file data before resuming…';
     if (await resumedBytesMatch(file, session)) {
@@ -140,9 +140,12 @@ async function verifyOrRestart(file, session, key, state) {
         return session;
     }
 
-    // Cancel only THIS user's incomplete session; the canonical server
-    // refuses cancellation if the original was already committed.
-    await jsonRequest('/' + session.id + '/cancel', {});
+    // A completed upload is immutable and belongs to Storage. If a file
+    // selected later has the same metadata but different bytes, do not reuse
+    // its receipt and NEVER attempt to delete the completed Storage asset.
+    if (!session.complete) {
+        await jsonRequest('/' + session.id + '/cancel', {});
+    }
     forget(key);
     state.result = 'The selected file changed; starting a fresh verified transfer.';
     const fresh = await jsonRequest('/start', { filename: file.name, size: file.size });
@@ -330,7 +333,8 @@ export async function adminMediaUploadField(state, input, wire, statePath, image
         forget(outcome.resumeKey);
         state.result = file.name + ' — uploaded to Storage and ready to save with the Artwork';
     } catch (error) {
-        state.result = file.name + ' — ' + (error?.message || 'Upload failed. Re-select the same file to resume.');
+        const displayName = file.name.length > 140 ? file.name.slice(0, 137) + '…' : file.name;
+        state.result = displayName + ' — ' + (error?.message || 'Upload failed. Re-select the same file to resume.');
         try { await jsonRequest('/failure', { message: state.result.slice(0, 400) }); } catch {
             // The inline message remains accessible if the connection is down.
         }
