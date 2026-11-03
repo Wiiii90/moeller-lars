@@ -1,8 +1,8 @@
 # Dev Worker 4 — Gallery/Artwork
 
-**Lease:** 7
+**Lease:** 8
 **Branch:** dev
-**State:** Active; local schema migration reported successful (Batch 76), data parity and historical restore acceptance outstanding.
+**State:** Active — replacement chat took over on 2026-11-03; local schema parity passed; checkpoint 10 read-only preflight passed; checkpoint 9 pending.
 
 ## Ownership and hard limits
 - Own Gallery/Artwork controls, metadata and sorting; Materials and Artwork public presentation. Do not change Dev Worker 1's Exhibition date/address, Dev Worker 2's Storage/media lifecycle or Dev Worker 3's Rich Text controls.
@@ -71,5 +71,15 @@
 - VersionService now projects these **specific immutable source-era values** at snapshot-read time: Gallery menu wide defaults false, old Gallery description supplies older Gallery SiteSection meta description, retired transform_profile is removed only from restored projection, Artwork year/month/day projection and Dev-1 Exhibition date handling retained. Projection used by stage and read-only row differences; exact projected-key validation still blocks unexpected schema changes; original stored SHA-256 checked, historical media variant uniqueness validated. Admin UI retains the shared eligibility rule.
 - No historical records or checkpoint hashes rewritten, no validation deployment, no restore executed. New source code requires local preview refresh and read-only check for checkpoints 9 and 10; a disposable database+media copy is still mandatory for a full destructive stage verification.
 
+## Current takeover checkpoint — 2026-11-03
+- New Dev Worker 4 chat explicitly replaces lease 7 under lease 8. Current owner scope and all safety restrictions continue unchanged.
+- User confirmed PHP syntax check: `PublicationVersionService.php` has no syntax errors. `verifyCheckpointReadOnly(PublicationCheckpoint::findOrFail(10))` returned `checkpoint_id=10`, `historical_date_projection=true`, `differences_from_working=98`, `committed_artwork_differences=0`. This is a successful read-only preflight for checkpoint 10, **not** a destructive stage/restore acceptance.
+- User's `verifyCheckpointReadOnly(9)` call was interrupted using Ctrl+C; no conclusive result. Examine the method's expected cost before another local read-only attempt.
+- Previous checkpoint-10 failure in the historic sections below is superseded by the successful result. Previous statements that the final projection was awaiting application are also superseded. Local schema parity already passed for all 15 tables.
+- The 98 restored-row differences are against current Working; zero Committed Artwork differences confirms the projected checkpoint artworks match current published artworks according to the verifier. Do not equate Working differences with checkpoint corruption.
+- Never stage/revert on persistent local-preview; only a fully isolated database and media store can qualify destructive staging. No Validation deploy or migration. Do not recommend standalone git pull/reset/stash; the local-preview script handles source refresh.
+
 ## Next
-- Apply the newly committed read-only historical projection on local-preview using the existing script (no preliminary git pull). PHP lint, then check checkpoints 10 and 9 with verifyCheckpointReadOnly. If an error remains, inspect validation stage (projected shape / date / uniqueness / original content hash) without writing data. After both pass, test actual staging in a fully disposable database plus isolated media (never regular local preview), then finish Artwork browser acceptance. No CI or Validation deployment.
+- Inspect the current `PublicationVersionService::verifyCheckpointReadOnly` implementation and direct validators to determine why checkpoint 9 may be slow. Request the smallest safe **read-only** local diagnostic; preserve the existing local-preview state and user data.
+- Evaluate checkpoint 9 from actual execution evidence; do not infer failure from Ctrl+C. Stage historical restore only on a verified isolated database **and** media store, separately authorized.
+- Resume the already listed Gallery/Artwork browser acceptance and delegated Testing/Docs work within branch ownership.
