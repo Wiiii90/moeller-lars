@@ -79,18 +79,18 @@ final class GalleryPresentation
      * @param Builder<TModel> $query
      * @return Builder<TModel>
      */
+    // Shared by live Gallery, one-time manual sort and public Home candidates.
+    // A month-only date ranks after all exact days within its month.
+    public const DATE_ORDER_SQL = 'CASE WHEN work_year IS NULL THEN 1 ELSE 0 END, '
+        .'work_year DESC, '
+        .'CASE WHEN work_date IS NULL THEN 1 ELSE 0 END, '
+        .'EXTRACT(MONTH FROM work_date) DESC NULLS LAST, '
+        ."CASE WHEN date_precision = 'month' THEN 1 ELSE 0 END, "
+        .'work_date DESC, created_at DESC, id DESC';
+
     public static function orderArtworksByDate(Builder $query): Builder
     {
-        return $query
-            ->orderByRaw('CASE WHEN work_year IS NULL THEN 1 ELSE 0 END')
-            ->orderByDesc('work_year')
-            ->orderByRaw('CASE WHEN work_date IS NULL THEN 1 ELSE 0 END')
-            ->orderByRaw('EXTRACT(MONTH FROM work_date) DESC NULLS LAST')
-            // Exact day dates rank ahead of month-only dates in the same month.
-            ->orderByRaw("CASE WHEN date_precision = 'month' THEN 1 ELSE 0 END")
-            ->orderByDesc('work_date')
-            ->orderByDesc('created_at')
-            ->orderByDesc('id');
+        return $query->orderByRaw(self::DATE_ORDER_SQL);
     }
 
     public const EDGE_DISABLED = 'disabled';
