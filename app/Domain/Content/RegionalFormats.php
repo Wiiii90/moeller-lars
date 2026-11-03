@@ -21,6 +21,7 @@ final class RegionalFormats
 
     public const DEFAULT = 'de-DE';
 
+    /** @return key-of<self::OPTIONS> */
     public static function publicRegion(): string
     {
         return self::region(PublicContentSetting::general()->getAttribute('regional_format'));
@@ -38,6 +39,7 @@ final class RegionalFormats
             : self::DEFAULT;
     }
 
+    /** @return key-of<self::OPTIONS> */
     public static function adminRegion(): string
     {
         return self::region(Auth::user()?->getAttribute('admin_region'));
@@ -106,6 +108,7 @@ final class RegionalFormats
         if ($start->format('Y-m-d') === $end->format('Y-m-d')) {
             return self::date($start, $region);
         }
+
         return self::date($start, $region).' – '.self::date($end, $region);
     }
 
@@ -117,6 +120,7 @@ final class RegionalFormats
         };
     }
 
+    /** @return key-of<self::OPTIONS> */
     public static function region(mixed $value): string
     {
         return is_string($value) && array_key_exists($value, self::OPTIONS)
