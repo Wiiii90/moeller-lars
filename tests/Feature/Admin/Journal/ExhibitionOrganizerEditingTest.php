@@ -60,3 +60,27 @@ it('persists independent organizer, physical venue and vernissage visibility via
         ->and(AuditEvent::query()->count())->toBe($initialAudits + 1)
         ->and(AdminNotification::query()->count())->toBe($initialNotifications + 1);
 });
+
+it('round-trips formatted Exhibition descriptions through the actual mounted Journal editor', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createJournal(
+        'Exhibition rich description', 'exhibition-rich-description', JournalTemplate::Exhibitions->value,
+    );
+    $entry = app(ExhibitionEditorialService::class)->createDraft([
+        'site_section_id' => $section->getKey(),
+        'title' => 'A synthetic exhibition',
+        'slug' => 'synthetic-rich-exhibition',
+    ]);
+    $body = '<p data-artist-line-spacing="1.15"><a href="https://example.org/exhibition">Exhibition information</a></p>'
+        .'<table><tbody><tr><th>Venue</th></tr><tr><td>Gallery</td></tr></tbody></table>';
+
+    Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editExhibition', ['exhibition' => $entry->getKey()])
+        ->set('mountedActions.0.data.description', $body)
+        ->callMountedAction()->assertHasNoFormErrors();
+
+    expect($entry->fresh()->description)->toBe($body);
+    Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editExhibition', ['exhibition' => $entry->getKey()])
+        ->assertActionDataSet(['description' => $body]);
+});
+

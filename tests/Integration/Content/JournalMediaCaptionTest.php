@@ -124,3 +124,29 @@ it('respects per-media video playback controls while keeping the existing defaul
     $usage->setAttribute('video_controls_enabled', true);
     expect($renderer->render($usage)->toHtml())->toContain(' controls muted loop playsinline');
 });
+
+it('renders one public caption below the correct repeated Rich Text image without losing placement', function (): void {
+    \Illuminate\Support\Facades\Storage::fake('rich-text-public-caption');
+    config(['media.disk' => 'rich-text-public-caption']);
+    [$asset] = journalImageUsage();
+    $variant = $asset->variants()->sole();
+    $disk = \Illuminate\Support\Facades\Storage::disk(config('media.disk'));
+    $disk->put($asset->storage_key, str_repeat('o', 10));
+    $disk->put($variant->storage_key, str_repeat('v', 10));
+    PublicContentSetting::general()->update(['favicon_media_asset_id' => $asset->getKey()]);
+
+    $rich = '<p><img data-id="'.$asset->getKey().'" data-artist-placement="float-left"'
+        .' data-artist-caption="Studio &amp; archive" alt="First image"></p>'
+        .'<p><img data-id="'.$asset->getKey().'" data-artist-placement="center" alt="Second image"></p>';
+
+    $html = app(\App\Domain\Content\SafeRichTextRenderer::class)->render($rich)->toHtml();
+
+    expect(substr_count($html, 'rich-text__image-caption'))->toBe(1)
+        ->and(substr_count($html, '<img'))->toBe(2)
+        ->and($html)->toContain('rich-text__image--float-left')
+        ->toContain('rich-text__image--center')
+        ->toContain('Studio &amp; archive')
+        ->not->toContain('<script');
+    expect($html)->toMatch('/<img[^>]+><span class="rich-text__image-caption">Studio &amp; archive<\/span><\/span>/');
+});
+

@@ -273,4 +273,22 @@ it('does not rename artwork belonging to another Gallery through the inline edit
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore);
 });
 
+it('keeps Artwork detail Rich Text formatting through the owning Edit dialog and reopening', function (): void {
+    $gallery = galleryFixtureCategory();
+    $draft = galleryFixtureArtwork($gallery);
+    galleryFixtureUnavailableAnalytics();
+    $body = '<p data-artist-line-spacing="2.0"><span class="color" data-color="#2468a0">Painting notes</span></p>'
+        .'<table><tbody><tr><th>Support</th></tr><tr><td>Canvas</td></tr></tbody></table>';
+
+    $dialog = app(ArtworkEditDialog::class);
+    $form = $dialog->fill($draft);
+    $form['description'] = $body;
+    expect($dialog->save($draft, $form))->toBeTrue()
+        ->and($draft->fresh()->description)->toBe($body);
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('editArtwork', ['artwork' => $draft->getKey()])
+        ->assertActionDataSet(['description' => $body]);
+    expect($dialog->save($draft->fresh(), $form))->toBeFalse();
+});
 
