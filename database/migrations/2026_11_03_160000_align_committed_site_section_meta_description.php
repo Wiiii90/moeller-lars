@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use RuntimeException as MigrationRuntimeException;
 
 return new class extends Migration
 {
@@ -26,7 +25,7 @@ return new class extends Migration
                 ->exists();
 
             if (! $workingHasColumn) {
-                throw new MigrationRuntimeException('Working site_sections.meta_description is missing; restore the owning migration before aligning Committed.');
+                throw new \RuntimeException('Working site_sections.meta_description is missing; restore the owning migration before aligning Committed.');
             }
 
             DB::statement('ALTER TABLE committed.site_sections ADD COLUMN IF NOT EXISTS meta_description TEXT NULL');
