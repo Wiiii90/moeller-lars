@@ -18,6 +18,12 @@ return new class extends Migration
         }
 
         DB::transaction(function (): void {
+            // Lock before inventorying artist values. Otherwise a concurrent
+            // Admin edit could arrive between our preflight and the update
+            // and be overwritten by an older normalized date. The checkpoint
+            // table must also stay unchanged until the scan and DDL finish.
+            DB::statement('LOCK TABLE public.exhibitions, committed.exhibitions, publication_version_rows IN ACCESS EXCLUSIVE MODE');
+
             $sources = ['public.exhibitions', 'committed.exhibitions'];
             $planned = [];
             foreach ($sources as $table) {

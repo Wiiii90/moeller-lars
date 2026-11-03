@@ -4,6 +4,10 @@
 
 **Aktueller Public-Exhibitions-Stil:** Heller, ungerahmter Katalog auf der normalen konfigurierbaren Public-Content-Fläche (Standard weiß), ohne Schatten und zusätzliche Farbverläufe. Miniaturen, Bild-Text-Fluss mit Cover, redaktionelle Reihenfolge und einzelne Separatoren bei geöffneten Einträgen bleiben wie zuvor. Neu: ohne Cover beginnt der vollständige geöffnete Inhalt links. Keine inhaltsabhängigen Sonderabstände. Browserabnahme für die neue Korrektur ausstehend.
 
+## Exhibition migration transaction lock (03.11.2026)
+- Guarded the before-DDL source audit against concurrent editorial writes: immediately lock Working and Committed Exhibition tables and publication version rows inside the same PostgreSQL transaction, before reading any artist values. A simultaneous Autosave/Commit can no longer change a reviewed date between inventory and conversion. Unknown Validation strings still abort the entire transaction and release locks without publishing any partial state.
+- This only edits the already committed forward migration, not persistent data or immutable snapshot payloads. Local runtime migration, smoke, browser and historical restore acceptance remain to be verified outside this repository connector.
+
 ## Exhibition date cutover source review (03.11.2026)
 - After the interruption, the guarded date cutover had already reached `dev` as `eb92b60`. Re-read the current branch, lease and owning code rather than replaying the unpublished draft.
 - Strict conversion now checks chronological validity even when the old authored override is empty, using the same precision-aware `ExhibitionDate::validRange()` owner used by the active editor. A malformed end-only or reversed historical range must fail migration before destructive DDL.
