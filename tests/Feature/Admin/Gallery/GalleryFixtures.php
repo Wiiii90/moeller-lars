@@ -5,7 +5,6 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 
 function galleryFixtureCategory(string $state = 'published'): ArtworkCategory
 {
@@ -61,24 +60,6 @@ function galleryFixturePrimary(Artwork $artwork, MediaAsset $asset): ArtworkMedi
         'media_asset_id' => $asset->getKey(),
         'role' => 'primary',
         'position' => 0,
-    ]);
-}
-
-function galleryFixtureThumbnail(MediaAsset $asset): MediaVariant
-{
-    static $sequence = 0;
-    $sequence++;
-
-    return MediaVariant::query()->create([
-        'media_asset_id' => $asset->getKey(),
-        'variant_kind' => 'thumbnail',
-        'storage_key' => 'variants/gallery-thumbnail-fixture-'.$sequence.'.webp',
-        'mime_type' => 'image/webp',
-        'byte_size' => 8,
-        'sha256' => hash('sha256', 'gallery-thumbnail-fixture-'.$sequence),
-        'state' => 'available',
-        'width' => 10,
-        'height' => 5,
     ]);
 }
 

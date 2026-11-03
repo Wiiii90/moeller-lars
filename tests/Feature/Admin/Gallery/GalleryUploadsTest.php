@@ -85,7 +85,7 @@ it('replaces primary media through a committed Gallery command instead of Edit a
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
     $oldAsset = galleryFixtureAsset('image/jpeg', 'Previous file description');
-    galleryFixtureThumbnail($oldAsset);
+    testStoredImageThumbnail($oldAsset);
     $previousPrimary = galleryFixturePrimary($artwork, $oldAsset);
     $previousPrimary->forceFill(['alt_text_override' => 'Previous artwork description'])->save();
     galleryFixtureUnavailableAnalytics();

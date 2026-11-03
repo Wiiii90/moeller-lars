@@ -24,7 +24,7 @@ require_once __DIR__.'/GalleryFixtures.php';
 it('offers per-artwork ALT text in the Gallery create and edit dialogs without changing the shared file', function (): void {
     $gallery = galleryFixtureCategory();
     $asset = galleryFixtureAsset('image/jpeg', '');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     galleryFixtureUnavailableAnalytics();
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
@@ -52,7 +52,7 @@ it('clears a draft primary Media File from Edit without deleting the shared Stor
     $gallery = galleryFixtureCategory();
     $draft = galleryFixtureArtwork($gallery);
     $shared = galleryFixtureAsset();
-    galleryFixtureThumbnail($shared);
+    testStoredImageThumbnail($shared);
     galleryFixturePrimary($draft, $shared);
     galleryFixtureUnavailableAnalytics();
 
@@ -74,7 +74,7 @@ it('refuses to clear primary media from a published Artwork without touching the
     $gallery = galleryFixtureCategory();
     $draft = galleryFixtureArtwork($gallery);
     $shared = galleryFixtureAsset();
-    galleryFixtureThumbnail($shared);
+    testStoredImageThumbnail($shared);
     galleryFixturePrimary($draft, $shared);
     app(ArtworkPublicationService::class)->publish($draft);
 
@@ -93,8 +93,8 @@ it('saves a changed existing Storage Media File through the Gallery field update
     $artwork = galleryFixtureArtwork($gallery);
     $old = galleryFixtureAsset();
     $replacement = galleryFixtureAsset();
-    galleryFixtureThumbnail($old);
-    galleryFixtureThumbnail($replacement);
+    testStoredImageThumbnail($old);
+    testStoredImageThumbnail($replacement);
     galleryFixturePrimary($artwork, $old);
     galleryFixtureUnavailableAnalytics();
 
@@ -135,7 +135,7 @@ it('repairs an existing media-less Gallery draft using the same Edit form and th
     $gallery = galleryFixtureCategory();
     $draft = galleryFixtureArtwork($gallery);
     $asset = galleryFixtureAsset('image/jpeg', '');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     $dialog = app(ArtworkEditDialog::class);
 
     $form = $dialog->fill($draft);
@@ -153,7 +153,7 @@ it('repairs an existing media-less Gallery draft using the same Edit form and th
 it('stores per-artwork ALT for all images in the existing batch direct-upload action', function (): void {
     $gallery = galleryFixtureCategory();
     $asset = galleryFixtureAsset('image/jpeg', '');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     galleryFixtureUnavailableAnalytics();
 
     $row = ['media_asset_id' => (int) $asset->getKey(), 'title' => 'A Batch Artwork'];
@@ -179,7 +179,7 @@ it('edits the ALT description through the Gallery Edit action while retaining sh
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
     $asset = galleryFixtureAsset('image/jpeg', 'Storage-level description');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     galleryFixturePrimary($artwork, $asset);
     galleryFixtureUnavailableAnalytics();
 
@@ -202,7 +202,7 @@ it('routes the Artwork EditRecord page through the same ALT-aware editing servic
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
     $asset = galleryFixtureAsset('image/jpeg', '');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     galleryFixturePrimary($artwork, $asset);
     galleryFixtureUnavailableAnalytics();
 

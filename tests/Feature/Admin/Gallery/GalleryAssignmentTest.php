@@ -111,7 +111,7 @@ it('edits per-artwork ALT text and publishes an uploaded image without changing 
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
     $image = galleryFixtureAsset('image/jpeg', '');
-    galleryFixtureThumbnail($image);
+    testStoredImageThumbnail($image);
     galleryFixturePrimary($artwork, $image);
     $publication = app(ArtworkPublicationService::class);
 
@@ -146,7 +146,7 @@ it('saves a combined Gallery artwork edit once and preserves no-op silence after
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
     $image = galleryFixtureAsset();
-    galleryFixtureThumbnail($image);
+    testStoredImageThumbnail($image);
     galleryFixturePrimary($artwork, $image);
     galleryFixtureUnavailableAnalytics();
     $auditsBefore = AuditEvent::query()->count();
@@ -185,7 +185,7 @@ it('edits an unassigned draft and reassigns it using the shared Artwork editor',
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork(null);
     $asset = galleryFixtureAsset('image/jpeg', '');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     galleryFixturePrimary($artwork, $asset);
     $dialog = app(ArtworkEditDialog::class);
 
@@ -217,7 +217,7 @@ it('rejects detaching a published artwork through the shared editor without chan
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
     $asset = galleryFixtureAsset('image/jpeg', 'A monochrome photograph of a sculpture');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     galleryFixturePrimary($artwork, $asset);
     app(ArtworkPublicationService::class)->publish($artwork);
 

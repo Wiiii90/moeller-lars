@@ -42,7 +42,7 @@ it('still requires the canonical public thumbnail for image publication', functi
 
     expect(app(ArtworkPublicationService::class)->mediaReady($image))->toBeFalse();
 
-    galleryFixtureThumbnail($image);
+    testStoredImageThumbnail($image);
 
     expect(app(ArtworkPublicationService::class)->mediaReady($image->fresh('variants')))->toBeTrue();
 });

@@ -213,10 +213,10 @@ it('cleans Gallery membership when a shared primary file is deleted directly fro
     galleryFixturePrimary($first, $shared);
     galleryFixturePrimary($second, $shared);
     galleryFixturePrimary($kept, $other);
-    $sharedThumbnail = galleryFixtureThumbnail($shared);
-    $otherThumbnail = galleryFixtureThumbnail($other);
+    $sharedThumbnail = testStoredImageThumbnail($shared);
+    $otherThumbnail = testStoredImageThumbnail($other);
     $disk = Storage::disk(config('media.disk'));
-    foreach ([$shared, $other, $sharedThumbnail, $otherThumbnail] as $file) {
+    foreach ([$shared, $other] as $file) {
         $disk->put($file->storage_key, 'Media lifecycle fixture');
         expect($disk->exists($file->storage_key))->toBeTrue();
     }

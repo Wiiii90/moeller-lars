@@ -8,7 +8,6 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -48,17 +47,7 @@ function homePreviewImage(): MediaAsset
     ]);
     $asset->save();
 
-    MediaVariant::query()->create([
-        'media_asset_id' => $asset->getKey(),
-        'variant_kind' => 'thumbnail',
-        'storage_key' => 'variants/home-preview.webp',
-        'mime_type' => 'image/webp',
-        'byte_size' => 4,
-        'sha256' => hash('sha256', 'home-preview'),
-        'state' => 'available',
-        'width' => 2,
-        'height' => 2,
-    ]);
+    testStoredImageThumbnail($asset);
 
     return $asset;
 }
