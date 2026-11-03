@@ -27,6 +27,7 @@ trait GalleryWorkspaceArtworkDialogs
             ->fillForm(fn (): array => [
                 'primary_media_asset_id' => $this->pendingPrimaryMediaAssetId,
                 'artwork_date' => null,
+                'exclude_from_home' => 0,
             ])
             ->schema($this->artworkCreateFormSchema())
             ->modalHeading('Add artwork')

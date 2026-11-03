@@ -116,10 +116,11 @@ it('updates separate persisted solid and gradient colors through the shared cont
 
     $component = Livewire::test(General::class)
         ->assertSet('data.background_primary_color', '#123456')
-        ->assertSet('data.background_secondary_color', '#445566')
+        ->assertSet('data.background_secondary_color', null)
         ->set('data.background_mode', 'gradient')
         ->call('syncAppearanceControlState')
         ->assertSet('data.background_primary_color', '#112233')
+        ->assertSet('data.background_secondary_color', '#445566')
         ->call('persistAppearanceColor', 'primary', '#AABBCC')
         ->call('persistAppearanceColor', 'secondary', '#DDEEFF');
 
@@ -439,7 +440,7 @@ it('leaves legacy two-color gradients unchanged until the new stops are edited',
     expect(PublicAppearance::backgroundCss(PublicContentSetting::general()))
         ->toBe('linear-gradient(24deg, #123456, #AABBCC) fixed');
     Livewire::test(General::class)
-        ->assertSet('data.background_gradient_stops', [
+        ->assertSet('data.background_gradient_stops', static fn (array $state): bool => array_values($state) === [
             ['color' => '#123456', 'position' => 0],
             ['color' => '#AABBCC', 'position' => 100],
         ]);
@@ -468,7 +469,7 @@ it('keeps Working multi-stop appearance distinct from Committed until publicatio
 it('keeps Appearance gradient actions on the shared line-based admin control contract', function (): void {
     $component = Livewire::test(General::class);
     $component
-        ->assertSet('data.background_gradient_stops', [
+        ->assertSet('data.background_gradient_stops', static fn (array $state): bool => array_values($state) === [
             ['color' => '#777777', 'position' => 0],
             ['color' => '#777777', 'position' => 100],
         ])
@@ -557,7 +558,7 @@ it('round-trips each Solid paint and a multi-stop gradient through fresh General
     expect(PublicContentSetting::general()->getAttribute('menu_background_gradient_stops'))->toBe($stops);
     Livewire::test(General::class)
         ->assertSet('data.menu_background_mode', 'gradient')
-        ->assertSet('data.menu_background_gradient_stops', $stops);
+        ->assertSet('data.menu_background_gradient_stops', static fn (array $state): bool => array_values($state) === $stops);
 });
 
 it('saves color table rows sorted by the chosen numeric position', function (): void {
@@ -586,7 +587,7 @@ it('preserves the inherited title color until the artist explicitly sets a title
 
     Livewire::test(General::class)
         ->assertSet('data.header_name_mode', 'solid')
-        ->assertSet('data.header_name_gradient_stops', [
+        ->assertSet('data.header_name_gradient_stops', static fn (array $state): bool => array_values($state) === [
             ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 0],
             ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 100],
         ]);
@@ -720,7 +721,7 @@ it('uses the same gradient controls and stops for every global paint including D
 
     Livewire::test(General::class)
         ->assertSet('data.header_divider_paint_mode', 'radial')
-        ->assertSet('data.header_divider_paint_gradient_stops', [
+        ->assertSet('data.header_divider_paint_gradient_stops', static fn (array $state): bool => array_values($state) === [
             ['color' => '#112233', 'position' => 0],
             ['color' => '#445566', 'position' => 100],
         ])
