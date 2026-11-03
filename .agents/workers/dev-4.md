@@ -39,10 +39,12 @@
 2. Single Delete: absent Remove/Restore controls; default deletes only a disposable draft slot while Storage image survives. Optional file deletion requires separate disposable non-shared asset and impact dialog review, no live destructive tests.
 3. Filtered selection: user ALREADY confirmed selecting two, filtering down to one, then only one remains selected and targeted Publish/Unpublish works. Do not make user retest without regression.
 4. Material dialog: previous screenshot FAILED visually (columns, labeled actions, top whitespace, Add row and divider, drag cursor); new code pending visual acceptance. Test Add/Rename/Move Up/Down/drag/Delete persist after reopen, correct display of etching & aquatinta, responsive layout and new migration.
-5. Artwork ordering: use existing Artworks, Manual drag and absolute Edit Position even with filters; newest-date sort exact dates before year-only records within year. New slots first only under Manual.
+5. Artwork ordering: use existing Artworks, Manual drag and absolute Edit Position even with filters; precision-aware Newest and Sort once compare exact day, month/year and year-only, with date-only first within same month and year-only last within year. New slots first only under Manual.
 6. Public Artwork detail: user still sees distorted/oversized portrait and landscape images, wrong upper whitespace and mixed Menu/Paper/Divider behaviors; empty-description divider root cause corrected only. Obtain example existing Artwork titles, settings and screenshots before any further formula changes.
 
 ## Testing Worker backlog — requested later, NOT NOW
+- One partial-date picker: Year, Month/year, Exact day; valid/leap-day handling and Clear; General Germany 03.11.2026/11.2026/2026 format versus British/US; edit/save/reopen, legacy year/date state, Preview/Committed publishing, Home and Gallery exact-day > month-only > year-only ordering and one-time manual sort; inspect modal narrow/wide and Alpine change/autosave event semantics.
+- Central dimensions control: actual single-row four controls, × characters BETWEEN Height/Width and Width/Depth rather than suffixes; responsive widths, numeric input, optional unit and canonical public dimensions rendering.
 - Shared table Add-row border checks across Exhibitions, Gallery and Materials after rollback of bad global selector, and media detach audit success/notifier count; plus one-time date sort and current edit form behavior.
 - Source reconciliation: previous GalleryAssignmentTest tests expect retired Remove/Restore workflow and need replacement; earlier temporary Dev-edited tests for Material/Upload/secondary images must be reconciled to current source.
 - Real Safari/macOS and automated Playwright WebKit desktop/mobile sorting and drag-handle behavior; test configuration was added but never executed. Chromium mobile cross-check. Include disabled-with-filters behavior.
@@ -50,6 +52,7 @@
 - User explicitly wants Testing Worker prompt only upon later request. Do not issue one automatically.
 
 ## Cross-worker and later global work — MUST NOT LOSE
+- Dev Worker 1 currently owns Exhibition date precision/editing concurrently. The new shared AdminPartialDateControl may inform its work, but Dev Worker 4 did not touch Exhibition editors or migration. Any reuse needs an explicit coordinated handoff, not simultaneous edits.
 - **Dev Worker 2 owns media deletion:** MediaAssetEditorialService::removeCanonicalReferences() currently detaches other Artwork records from Galleries when their primary original is deleted. Check whether these other slots should instead remain as image-less draft Artworks under accepted product semantics. Do not change their currently owned media service in parallel.
 - **Dev Worker 2 owns prior public-v1/public-v2 media profile removal.** User requested that topic remain with Upload worker, not this Gallery chat.
 - **Global multi-admin refactor:** simultaneous editors/admins may overwrite more recent field changes via stale complete form saves. Design an application-wide concurrency/version/conflict contract after Gallery work; no local patch.
