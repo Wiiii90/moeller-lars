@@ -27,6 +27,7 @@ final class AdminActionCatalog
         'artwork_category.gallery_reordered' => ['label' => 'Reordered artworks', 'area' => 'Galleries', 'family' => 'ordering'],
         'artwork_material_preset.created' => ['label' => 'Created material preset', 'area' => 'Galleries', 'family' => 'create'],
         'artwork_material_preset.renamed' => ['label' => 'Renamed material preset', 'area' => 'Galleries', 'family' => 'settings'],
+        'artwork_material_preset.reordered' => ['label' => 'Reordered material presets', 'area' => 'Galleries', 'family' => 'ordering'],
         'artwork_material_preset.deleted' => ['label' => 'Deleted material preset', 'area' => 'Galleries', 'family' => 'lifecycle'],
         'site_section.created' => ['label' => 'Created website page', 'area' => 'Website', 'family' => 'create'],
         'site_section.updated' => ['label' => 'Edited website page', 'area' => 'Website', 'family' => 'settings'],

@@ -6,6 +6,7 @@ use App\Models\Artwork;
 use App\Models\ArtworkMaterialPreset;
 use App\Models\AuditEvent;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
@@ -15,67 +16,57 @@ beforeEach(function (): void {
 
 require_once __DIR__.'/GalleryFixtures.php';
 
-it('stores reusable Material presets without rewriting historical Artwork material text', function (): void {
+it('keeps material presets ranked without rewriting historical Artwork text', function (): void {
     $artwork = galleryFixtureArtwork(galleryFixtureCategory(), ['medium' => 'Oil on linen']);
+    $service = app(ArtworkMaterialPresetService::class);
 
-    expect(app(ArtworkMaterialPresetService::class)->sync(['Oil on linen', 'Graphite']))->toBeTrue()
-        ->and(app(ArtworkMaterialPresetService::class)->sync(['Oil on linen', 'Graphite']))->toBeFalse();
-    expect(ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all())
-        ->toBe(['Graphite', 'Oil on linen']);
+    expect($service->add('Oil on linen'))->toBeTrue()
+        ->and($service->add('Graphite'))->toBeTrue();
+    $oil = ArtworkMaterialPreset::query()->where('name', 'Oil on linen')->firstOrFail();
+    $graphite = ArtworkMaterialPreset::query()->where('name', 'Graphite')->firstOrFail();
 
-    expect(app(ArtworkMaterialPresetService::class)->sync(['Graphite']))->toBeTrue()
-        ->and(app(ArtworkMaterialPresetService::class)->sync(['Graphite']))->toBeFalse();
+    expect($service->ordered()->pluck('name')->all())->toBe(['Oil on linen', 'Graphite']);
+    expect($service->rename((int) $oil->getKey(), 'Oil on canvas'))->toBeTrue();
+    expect($service->move((int) $graphite->getKey(), 0))->toBeTrue();
+    expect($service->ordered()->pluck('name')->all())->toBe(['Graphite', 'Oil on canvas']);
+    expect($service->delete((int) $oil->getKey()))->toBeTrue();
 
-    expect(ArtworkMaterialPreset::query()->pluck('name')->all())->toBe(['Graphite'])
-        ->and($artwork->fresh()->medium)->toBe('Oil on linen');
+    expect($service->ordered()->pluck('name')->all())->toBe(['Graphite'])
+        ->and($artwork->fresh()->medium)->toBe('Oil on linen')
+        ->and((int) $graphite->fresh()->position)->toBe(0);
 });
 
-
-it('records Material preset mutations precisely and keeps no-op preset writes silent', function (): void {
+it('audits material creation, rename, sorting and deletion while rejecting duplicate names', function (): void {
     $service = app(ArtworkMaterialPresetService::class);
     $eventsBefore = AuditEvent::query()->count();
 
-    expect($service->add('Tempera'))->toBeInstanceOf(ArtworkMaterialPreset::class);
+    expect($service->add('Tempera'))->toBeTrue();
+    $tempera = ArtworkMaterialPreset::query()->where('name', 'Tempera')->firstOrFail();
     $created = AuditEvent::query()->latest('id')->firstOrFail();
-    $afterCreate = AuditEvent::query()->count();
+    expect($created->action)->toBe('artwork_material_preset.created')
+        ->and($created->getAttribute('metadata')['target_label'] ?? null)->toBe('Tempera');
 
-    expect($created->getAttribute('action'))->toBe('artwork_material_preset.created')
-        ->and($created->getAttribute('entity_type'))->toBe('artwork_material_preset')
-        ->and($created->getAttribute('metadata')['target_label'] ?? null)->toBe('Tempera')
-        ->and($afterCreate)->toBe($eventsBefore + 1);
-
-    expect((int) $service->add('Tempera')->getKey())->toBe((int) $created->getAttribute('entity_id'))
-        ->and(AuditEvent::query()->count())->toBe($afterCreate);
-
-    expect($service->sync(['TEMPERA', 'Graphite']))->toBeTrue();
-    $renamed = AuditEvent::query()->where('action', 'artwork_material_preset.renamed')->latest('id')->firstOrFail();
-    $createdGraphite = AuditEvent::query()
-        ->where('action', 'artwork_material_preset.created')
-        ->where('id', '>', $created->getKey())
-        ->latest('id')
-        ->firstOrFail();
-    $afterSync = AuditEvent::query()->count();
-
+    expect($service->rename((int) $tempera->getKey(), 'TEMPERA'))->toBeTrue();
+    $renamed = AuditEvent::query()->latest('id')->firstOrFail();
+    expect($renamed->action)->toBe('artwork_material_preset.renamed');
     $renamedActivity = app(AdminActivityFeed::class)->event((int) $renamed->getKey(), auth('web')->user());
-
-    expect($renamed->getAttribute('metadata')['target_label'] ?? null)->toBe('TEMPERA')
-        ->and($renamedActivity['action_key'])->toBe('artwork_material_preset.renamed')
+    expect($renamedActivity['action_key'])->toBe('artwork_material_preset.renamed')
         ->and(collect($renamedActivity['change_summary']['items'])->firstWhere('field', 'name'))
-        ->toMatchArray(['before' => 'Tempera', 'after' => 'TEMPERA'])
-        ->and($renamedActivity['details'])->toContain('Tempera', 'TEMPERA')
-        ->and($renamedActivity['target'] ?? null)->toBe('TEMPERA')
-        ->and($createdGraphite->getAttribute('metadata')['target_label'] ?? null)->toBe('Graphite');
+        ->toMatchArray(['before' => 'Tempera', 'after' => 'TEMPERA']);
 
-    expect($service->sync(['TEMPERA', 'Graphite']))->toBeFalse()
-        ->and(AuditEvent::query()->count())->toBe($afterSync);
+    expect($service->add('Graphite'))->toBeTrue();
+    $graphite = ArtworkMaterialPreset::query()->where('name', 'Graphite')->firstOrFail();
+    expect($service->move((int) $graphite->getKey(), 0))->toBeTrue();
+    expect(AuditEvent::query()->latest('id')->value('action'))->toBe('artwork_material_preset.reordered');
 
-    expect($service->sync(['Graphite']))->toBeTrue();
-    $deleted = AuditEvent::query()->where('action', 'artwork_material_preset.deleted')->latest('id')->firstOrFail();
-    $deletedActivity = app(AdminActivityFeed::class)->event((int) $deleted->getKey(), auth('web')->user());
+    $afterReorder = AuditEvent::query()->count();
+    expect($service->move((int) $graphite->getKey(), 0))->toBeFalse()
+        ->and($service->rename((int) $graphite->getKey(), 'Graphite'))->toBeFalse()
+        ->and(AuditEvent::query()->count())->toBe($afterReorder);
+    expect(fn () => $service->add('tempera'))->toThrow(ValidationException::class);
+    expect(AuditEvent::query()->count())->toBe($afterReorder);
 
-    expect($deleted->getAttribute('metadata')['target_label'] ?? null)->toBe('TEMPERA')
-        ->and($deletedActivity['target'] ?? null)->toBe('TEMPERA')
-        ->and($deletedActivity['action_key'])->toBe('artwork_material_preset.deleted')
-        ->and($deletedActivity['details'])->toContain('TEMPERA')
-        ->and($deletedActivity['url'] ?? null)->toBeNull();
+    expect($service->delete((int) $tempera->getKey()))->toBeTrue()
+        ->and(AuditEvent::query()->latest('id')->value('action'))->toBe('artwork_material_preset.deleted')
+        ->and(AuditEvent::query()->count())->toBe($eventsBefore + 5);
 });
