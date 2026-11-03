@@ -9,7 +9,6 @@ use App\Models\MediaVariant;
 use Closure;
 use Filament\Forms\Components\Select;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 final class MediaAssetSelect
@@ -139,7 +138,6 @@ final class MediaAssetSelect
                 ->orWhere('alt_text', 'ilike', '%'.$term.'%'));
         }
 
-        /** @var Collection<int, MediaAsset> $assets */
         if ($term === '') {
             $query->orderByDesc('created_at')->orderByDesc('id');
         } else {
@@ -242,7 +240,6 @@ final class MediaAssetSelect
         $asset->loadMissing('variants');
         $filename = e((string) $asset->getAttribute('original_filename'));
 
-        /** @var Collection<int, MediaVariant> $variants */
         $variant = MediaPreviewVariant::preview($asset);
 
         if ($visual) {

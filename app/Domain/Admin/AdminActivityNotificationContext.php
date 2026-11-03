@@ -88,7 +88,7 @@ final class AdminActivityNotificationContext
         ));
     }
 
-    /** @return list<array<string,mixed>> */
+    /** @return list<mixed> */
     private function messages(): array
     {
         $messages = request()->attributes->get(self::REQUEST_ATTRIBUTE, []);

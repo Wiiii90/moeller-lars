@@ -5,6 +5,7 @@ namespace App\Filament\Support;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\SitePageHeading;
 use Closure;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -66,7 +67,10 @@ final class PageHeadingFields
         if ($persist === null) {
             return; // Add Page persists heading fields only after creation.
         }
-        $schemaName = $livewire->getMountedActionSchemaName();
+        if (! $livewire instanceof HasActions || ($schemaName = $livewire->getMountedActionSchemaName()) === null) {
+            throw new \LogicException('Heading autosave requires a mounted action schema.');
+        }
+
         $path = $livewire->{$schemaName}->getStatePath();
         $livewire->resetErrorBag($path.'.'.$field);
         try {
