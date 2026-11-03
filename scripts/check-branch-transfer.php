@@ -64,6 +64,8 @@ foreach (array_filter(explode("\n", $history)) as $sha) {
     foreach (array_filter(explode("\n", $changed)) as $path) {
         if ($path === 'AGENTS.md'
             || $path === '.agents/roster.md'
+            || $path === '.agents/org.md'
+            || str_starts_with($path, '.agents/skills/org/')
             || str_starts_with($path, '.agents/areas/')
             || str_starts_with($path, '.agents/workers/')
             || str_starts_with($path, '.agents/topics/')) {
@@ -77,6 +79,10 @@ $files = git(['ls-tree', '-r', '--name-only', $candidate]);
 foreach (array_filter(explode("\n", $files)) as $path) {
     if ($target === 'main' && $path === '.agents/roster.md') {
         failure('Branch-local worker roster must not reach main.');
+    }
+
+    if ($target === 'main' && ($path === '.agents/org.md' || str_starts_with($path, '.agents/skills/org/'))) {
+        failure("Dev-local Org coordination {$path} must not reach main.");
     }
 
     if (str_starts_with($path, '.agents/areas/')) {
