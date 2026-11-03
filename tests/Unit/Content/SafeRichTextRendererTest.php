@@ -57,3 +57,27 @@ it('renders safe email links in visual rich text', function (): void {
     $html = contentRenderer()->render('<p><a href="mailto:artist@example.com">Email</a></p>')->toHtml();
     expect($html)->toContain('href="mailto:artist@example.com"');
 });
+
+it('keeps visual tables, line spacing, safe links and text color data through public rendering', function (): void {
+    $source = '<p data-artist-line-spacing="2.0">An <a href="https://example.org/notes">authored link</a>'
+        .' with <span class="color" data-color="#136ab9">colored words</span></p>'
+        .'<table><tbody><tr><th>Year</th><th>Work</th></tr>'
+        .'<tr><td>2025</td><td>Painting</td></tr></tbody></table>';
+
+    $html = contentRenderer()->render($source)->toHtml();
+
+    expect($html)->toContain('<table')
+        ->toContain('2025')
+        ->toContain('Painting')
+        ->toContain('href="https://example.org/notes"')
+        ->toContain('data-artist-line-spacing="2.0"')
+        ->toContain('data-color="#136ab9"');
+});
+
+it('rejects executable links in visual tables without replacing valid authored links', function (): void {
+    $unsafe = '<table><tbody><tr><td><a href="javascript:alert(1)">unsafe</a></td></tr></tbody></table>';
+
+    expect(fn () => contentRenderer()->render($unsafe))->toThrow(UnsafeRichTextException::class);
+    expect(contentRenderer()->render('<p><a href="mailto:studio@example.org">Mail</a></p>')->toHtml())
+        ->toContain('href="mailto:studio@example.org"');
+});

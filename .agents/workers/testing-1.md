@@ -27,3 +27,9 @@
 - **Final gate only upon user-declared Dev freeze:** check exact source parity at frozen SHA, positively verify independent disposable PostgreSQL 17, media/tmpfs and effective Laravel test connection, then authorize targeted/full Codex/Pest/Node/Playwright runs. Fix test defects here; report real product defects back to Dev. Transfer only curated tests/support after explicit approval. No CI, production/preview/validation database writes or protected storage access authorized.
 
 **Execution:** Only GitHub source/tree reviews and authored commits. No PHP/Pest, PostgreSQL, Node, Chromium/WebKit or native Safari tests executed. No coverage measured.
+
+## Current handoff — Rich Text / Dev Worker 3 (2026-11-03)
+
+- Resumed active lease 2 on `testing` after user-requested continuation; expressly **do not import later `dev` revisions** until the user requests the next reconciliation. Source baseline remains `570f9f987757022655003bea8fc73393880204e2`.
+- User-observed acceptance: native Storage insertion once, editor caption beneath image, popovers, tables, colors and spacing. Previously alleged duplicate insertion was **not reproducible**; abandoned alternate insertion implementation is not a contract.
+- Added pure output tests in canonical Rich Text Unit suites: repeated-image/caption association with all placements and escaping, intentional caption removal, image count mismatch, public table/spacing/color/link rendering and unsafe-link rejection. Source edits only, never executed.
