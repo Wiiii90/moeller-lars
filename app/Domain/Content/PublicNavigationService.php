@@ -16,7 +16,7 @@ final class PublicNavigationService
         private readonly HomePresentationResolver $home,
     ) {}
 
-    /** @return Collection<int, array{position: int, tie_breaker: int, label: string, url: ?string, current: bool, active: bool, children: list<array{label: string, url: ?string, current: bool}>}> */
+    /** @return Collection<int, covariant array{position: int, tie_breaker: int, label: string, url: ?string, current: bool, active: bool, children: list<array{label: string, url: ?string, current: bool}>}> */
     public function items(): Collection
     {
         /** @var Builder<SiteSection> $query */
