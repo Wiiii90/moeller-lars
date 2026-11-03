@@ -40,7 +40,7 @@ it('deletes an empty draft Gallery slot without requiring primary media', functi
 
     expect(Artwork::query()->whereKey($draft->getKey())->exists())->toBeFalse()
         ->and(AuditEvent::query()->where('action', 'artwork.deleted')->where('entity_id', $draft->getKey())->count())->toBe(1)
-        ->and(AdminNotification::query()->where('title', 'Artwork deleted')->count())->toBe(1);
+        ->and(AdminNotification::query()->where('status', 'success')->where('source_id', 'activity:'.AuditEvent::query()->where('action', 'artwork.deleted')->where('entity_id', $draft->getKey())->value('id'))->count())->toBe(1);
 });
 
 it('rejects direct deletion of a published Gallery artwork without destroying its media', function (): void {

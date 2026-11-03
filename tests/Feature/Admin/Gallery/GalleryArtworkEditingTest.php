@@ -4,12 +4,14 @@ use App\Domain\Artwork\ArtworkPublicationService;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Support\ArtworkEditDialog;
+use App\Filament\Support\RichTextEditorPlugin;
 use App\Models\AdminNotification;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\AuditEvent;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
@@ -67,7 +69,7 @@ it('clears a draft primary Media File from Edit without deleting the shared Stor
     expect(ArtworkMedia::query()->where('artwork_id', $draft->getKey())->where('role', 'primary')->exists())->toBeFalse()
         ->and((string) $shared->fresh()->state)->toBe('available')
         ->and(AuditEvent::query()->where('action', 'artwork.primary_media_detached')->where('entity_id', $draft->getKey())->count())->toBe(1)
-        ->and(AdminNotification::query()->where('title', 'Artwork primary media saved')->count())->toBe(1);
+        ->and(AdminNotification::query()->where('status', 'success')->where('source_id', 'activity:'.AuditEvent::query()->where('action', 'artwork.primary_media_detached')->where('entity_id', $draft->getKey())->value('id'))->count())->toBe(1);
 });
 
 it('refuses to clear primary media from a published Artwork without touching the Storage original', function (): void {
@@ -113,7 +115,7 @@ it('saves a changed existing Storage Media File through the Gallery field update
         ->value('media_asset_id'))->toBe((int) $replacement->getKey())
         ->and(AuditEvent::query()->where('action', 'artwork.primary_media_replaced')
             ->where('entity_id', $artwork->getKey())->count())->toBe(1)
-        ->and(AdminNotification::query()->where('title', 'Artwork primary media saved')->count())->toBe(1);
+        ->and(AdminNotification::query()->where('status', 'success')->where('source_id', 'activity:'.AuditEvent::query()->where('action', 'artwork.primary_media_replaced')->where('entity_id', $artwork->getKey())->value('id'))->count())->toBe(1);
 
     // A subsequent bubbled modal change must not undo the direct field save.
     $editor->call('callMountedAction')
@@ -128,7 +130,7 @@ it('saves a changed existing Storage Media File through the Gallery field update
         ->value('media_asset_id'))->toBe((int) $replacement->getKey())
         ->and(AuditEvent::query()->where('action', 'artwork.primary_media_replaced')
             ->where('entity_id', $artwork->getKey())->count())->toBe(1)
-        ->and(AdminNotification::query()->where('title', 'Artwork primary media saved')->count())->toBe(1);
+        ->and(AdminNotification::query()->where('status', 'success')->where('source_id', 'activity:'.AuditEvent::query()->where('action', 'artwork.primary_media_replaced')->where('entity_id', $artwork->getKey())->value('id'))->count())->toBe(1);
 });
 
 it('repairs an existing media-less Gallery draft using the same Edit form and then publishes it', function (): void {
@@ -279,9 +281,12 @@ it('keeps Artwork detail Rich Text formatting through the owning Edit dialog and
     expect($dialog->save($draft, $form))->toBeTrue()
         ->and($draft->fresh()->description)->toBe($body);
 
-    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->mountAction('editArtwork', ['artwork' => $draft->getKey()])
-        ->assertActionDataSet(['description' => $body]);
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('editArtwork', ['artwork' => $draft->getKey()]);
+    $rendered = RichContentRenderer::make(
+        $editor->get('mountedActions.0.data.description'),
+    )->plugins([RichTextEditorPlugin::make()])->toHtml();
+    expect($rendered)->toContain('Painting notes', 'Canvas', '<table', 'data-artist-line-spacing="2.0"', 'data-color="#2468a0"');
     expect($dialog->save($draft->fresh(), $form))->toBeFalse();
 });
 

@@ -114,7 +114,15 @@ final class ArtworkEditDialog
                         ->nullable()
                         ->columnSpanFull(),
 
-                    AdminPartialDateControl::make()->columnSpanFull(),
+                    AdminPartialDateControl::make()
+                        ->rule(static fn (): Closure => static function (string $attribute, mixed $value, Closure $fail): void {
+                            try {
+                                ArtworkDate::normalize($value);
+                            } catch (ValidationException $exception) {
+                                $fail($exception->getMessage());
+                            }
+                        })
+                        ->columnSpanFull(),
 
                     $material,
                     ...($positionCount !== null ? [
