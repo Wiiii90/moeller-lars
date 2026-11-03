@@ -40,5 +40,10 @@
 - **Dev Worker 1:** Owns separate Exhibition date precision work; potential shared picker reuse only by coordination.
 - **Docs:** Publish accepted Artwork date and UI contracts after runtime/browser qualification; no UI acceptance claimed from source inspection.
 
+## Historical snapshot compatibility
+- One guarded read-time projection now maps ONLY immutable pre-change Artwork date payloads into current year/month/day during staged restore and pending-count calculations; shared `history_payloads`, checkpoint hashes and source rows remain unchanged. Verifies precise field sets for all historical rows, permitted date values and original snapshot hash before touching Working; unknown schema differences fail closed.
+- Admin Publication History now uses the same VersionService eligibility check for staged restore and Revert, instead of separate schema-hash-only UI logic.
+- No runtime or database-copy restore executed here. Use local read-only inventory and *disposable database copy* before any real staging. Validation remains out of scope.
+
 ## Next
 - Migration not executed. Review exact source and have user run safe local migration, then browser acceptance of Artwork/date/forms and outstanding image sizing. No tests authored, no CI or deployment.
