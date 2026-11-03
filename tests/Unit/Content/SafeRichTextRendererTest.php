@@ -55,7 +55,7 @@ it('rejects scripts and unsafe links inside visual editor paragraphs', function 
 
 it('renders safe email links in visual rich text', function (): void {
     $html = contentRenderer()->render('<p><a href="mailto:artist@example.com">Email</a></p>')->toHtml();
-    expect($html)->toContain('href="mailto:artist@example.com"');
+    expect(html_entity_decode($html, ENT_QUOTES | ENT_HTML5))->toContain('href="mailto:artist@example.com"');
 });
 
 it('keeps visual tables, line spacing, safe links and text color data through public rendering', function (): void {
@@ -78,6 +78,7 @@ it('rejects executable links in visual tables without replacing valid authored l
     $unsafe = '<table><tbody><tr><td><a href="javascript:alert(1)">unsafe</a></td></tr></tbody></table>';
 
     expect(fn () => contentRenderer()->render($unsafe))->toThrow(UnsafeRichTextException::class);
-    expect(contentRenderer()->render('<p><a href="mailto:studio@example.org">Mail</a></p>')->toHtml())
+    $html = contentRenderer()->render('<p><a href="mailto:studio@example.org">Mail</a></p>')->toHtml();
+    expect(html_entity_decode($html, ENT_QUOTES | ENT_HTML5))
         ->toContain('href="mailto:studio@example.org"');
 });

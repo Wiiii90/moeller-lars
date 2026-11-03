@@ -8,6 +8,16 @@ use Tests\TestCase;
 
 pest()->group('unit')->in('Unit');
 
+// These cases use Laravel services and model casts without persisting records.
+pest()->extend(\Illuminate\Foundation\Testing\TestCase::class)->in(
+    'Unit/Artwork/ArtworkDateTest.php',
+    'Unit/Artwork/GalleryDividerPresentationTest.php',
+    'Unit/Artwork/GalleryPresentationTest.php',
+    'Unit/Content/ExhibitionPresentationTest.php',
+    'Unit/Content/RegionalFormatsTest.php',
+    'Unit/Content/SafeRichTextRendererTest.php',
+);
+
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->group('integration')
