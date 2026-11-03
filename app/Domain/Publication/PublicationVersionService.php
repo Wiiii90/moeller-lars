@@ -26,7 +26,7 @@ final class PublicationVersionService
 SQL;
 
     /** @var array<int, bool> */
-    private array $compatibleDateCheckpoints = [];
+    private array $compatibleHistoricalCheckpoints = [];
 
 
     public function __construct(
@@ -201,10 +201,23 @@ SQL;
 
         $schemaHash = $checkpoint->getAttribute('schema_hash');
 
-        return is_string($schemaHash) && (
-            hash_equals($schemaHash, $this->schemaHash())
-            || $this->isCompatibleDateCheckpoint($checkpoint)
-        );
+        if (! is_string($schemaHash)) {
+            return false;
+        }
+
+        if (hash_equals($schemaHash, $this->schemaHash())) {
+            return true;
+        }
+
+        // Historical snapshots are immutable. Only verified source-era
+        // schemas with known, lossless domain cutovers may be restored.
+        return $this->isCompatibleHistoricalCheckpoint($checkpoint)
+            && (! $this->hasOldArtworkDates($checkpoint)
+                || $this->historicalArtworkDatesValid((int) $checkpoint->getKey()))
+            && (! $this->hasOldExhibitionDates($checkpoint)
+                || $this->historicalExhibitionDatesValid($checkpoint))
+            && $this->historicalMediaVariantsValid((int) $checkpoint->getKey())
+            && $this->originalSnapshotHashValid($checkpoint);
     }
 
     /**
@@ -357,13 +370,9 @@ SQL;
             return;
         }
 
-        // A stale schema hash is not permission to rewrite immutable history.
-        // Require an exact payload-shape match, valid historical dates and
-        // original snapshot checksum before affecting Working.
-        if (! $this->isCompatibleDateCheckpoint($checkpoint)
-            || ($this->hasOldArtworkDates($checkpoint) && ! $this->historicalArtworkDatesValid((int) $checkpoint->getKey()))
-            || ($this->hasOldExhibitionDates($checkpoint) && ! $this->historicalExhibitionDatesValid($checkpoint))
-            || ! $this->originalSnapshotHashValid($checkpoint)) {
+        // This is the same eligibility decision used by Admin History.
+        // It validates original payload integrity before Working is touched.
+        if (! $this->isRestorable($checkpoint)) {
             throw ValidationException::withMessages([
                 'publication' => 'Historical snapshot validation failed; the original version remains preserved but cannot be restored safely.',
             ]);
@@ -468,34 +477,59 @@ SQL;
     }
 
 
-    /** A compatibility projection, not an alternative persistent Artwork model. */
+    /**
+     * Project immutable historical rows into the one current publication
+     * schema. Values are taken from source-era migrations, not guessed.
+     * Modern rows are unchanged by these idempotent expressions.
+     */
     private function versionPayloadExpression(PublicationCheckpoint $checkpoint, string $table): string
     {
-        return $table === 'artworks' && $this->hasOldArtworkDates($checkpoint)
-            ? self::HISTORICAL_ARTWORK_DATE_PAYLOAD
-            : 'version_row.payload';
+        return match ($table) {
+            'artworks' => $this->hasOldArtworkDates($checkpoint)
+                ? self::HISTORICAL_ARTWORK_DATE_PAYLOAD : 'version_row.payload',
+            'artwork_categories' => "(version_row.payload || jsonb_build_object(
+                'artwork_menu_surface_wide',
+                COALESCE((version_row.payload->>'artwork_menu_surface_wide')::boolean, false)
+            ))",
+            'site_sections' => <<<'SQL'
+(version_row.payload || jsonb_build_object(
+    'meta_description',
+    CASE
+        WHEN jsonb_exists(version_row.payload, 'meta_description')
+            THEN version_row.payload->>'meta_description'
+        WHEN version_row.payload->>'type' = 'gallery' THEN (
+            SELECT CASE WHEN btrim(gallery.payload->>'description') <> ''
+                THEN gallery.payload->>'description' ELSE NULL END
+            FROM publication_version_rows AS gallery
+            WHERE gallery.publication_checkpoint_id = version_row.publication_checkpoint_id
+              AND gallery.table_name = 'artwork_categories'
+              AND gallery.row_key = version_row.payload->>'artwork_category_id'
+            LIMIT 1
+        )
+        ELSE NULL
+    END
+))
+SQL,
+            'media_variants' => "(version_row.payload - 'transform_profile')",
+            'exhibitions' => $this->hasOldExhibitionDates($checkpoint)
+                ? "(version_row.payload - 'date_text')" : 'version_row.payload',
+            default => 'version_row.payload',
+        };
     }
 
     /**
-     * Admit only known persisted date-only schema transformations. Immutable
-     * snapshots retain their original payloads and checksums; unknown column
-     * changes in any table must block restore rather than silently turn values
-     * into NULL through jsonb_populate_record.
+     * Reject every unknown historical schema difference. Compare the exact
+     * keys AFTER applying only the known source-era cutovers; this is not an
+     * "ignore unknown columns" compatibility fallback.
      */
-    private function isCompatibleDateCheckpoint(PublicationCheckpoint $checkpoint): bool
+    private function isCompatibleHistoricalCheckpoint(PublicationCheckpoint $checkpoint): bool
     {
         $id = (int) $checkpoint->getKey();
-        if (array_key_exists($id, $this->compatibleDateCheckpoints)) {
-            return $this->compatibleDateCheckpoints[$id];
+        if (array_key_exists($id, $this->compatibleHistoricalCheckpoints)) {
+            return $this->compatibleHistoricalCheckpoints[$id];
         }
 
         try {
-            $hasOldArtwork = $this->hasOldArtworkDates($checkpoint);
-            $hasOldExhibition = $this->hasOldExhibitionDates($checkpoint);
-            if (! $hasOldArtwork && ! $hasOldExhibition) {
-                return $this->compatibleDateCheckpoints[$id] = false;
-            }
-
             $columns = DB::table('information_schema.columns')
                 ->where('table_schema', 'public')
                 ->whereIn('table_name', PublicationSnapshot::TABLES)
@@ -503,22 +537,16 @@ SQL;
                 ->groupBy('table_name');
 
             $expected = [];
+            $projectionCases = [];
             foreach (PublicationSnapshot::TABLES as $table) {
                 $current = $columns->get($table);
                 if ($current === null) {
-                    return $this->compatibleDateCheckpoints[$id] = false;
+                    return $this->compatibleHistoricalCheckpoints[$id] = false;
                 }
 
                 $names = $current->pluck('column_name')
                     ->map(static fn (mixed $name): string => (string) $name)
                     ->all();
-                if ($table === 'artworks' && $hasOldArtwork) {
-                    $names = array_values(array_diff($names, ['year', 'month', 'day']));
-                    array_push($names, 'work_year', 'work_date', 'date_precision');
-                }
-                if ($table === 'exhibitions' && $hasOldExhibition) {
-                    $names[] = 'date_text';
-                }
                 sort($names, SORT_STRING);
 
                 $literals = array_map(
@@ -526,7 +554,15 @@ SQL;
                     $names,
                 );
                 $expected[] = "('{$table}', ARRAY[".implode(', ', $literals)."]::text[])";
+
+                $projection = $this->versionPayloadExpression($checkpoint, $table);
+                if ($projection !== 'version_row.payload') {
+                    $projectionCases[] = "WHEN version_row.table_name = '{$table}' THEN {$projection}";
+                }
             }
+
+            $projectedPayload = '(CASE '.implode(' ', $projectionCases).
+                ' ELSE version_row.payload END)';
 
             $shape = DB::selectOne(
                 "WITH expected(table_name, column_names) AS (VALUES ".implode(', ', $expected).")
@@ -535,15 +571,19 @@ SQL;
                  LEFT JOIN expected ON expected.table_name = version_row.table_name
                  WHERE version_row.publication_checkpoint_id = ?
                    AND (expected.table_name IS NULL
-                        OR jsonb_typeof(version_row.payload) IS DISTINCT FROM 'object'
-                        OR ARRAY(SELECT name FROM jsonb_object_keys(version_row.payload) AS names(name) ORDER BY name)
-                           IS DISTINCT FROM expected.column_names)",
+                        OR jsonb_typeof({$projectedPayload}) IS DISTINCT FROM 'object'
+                        OR ARRAY(
+                            SELECT name
+                            FROM jsonb_object_keys({$projectedPayload}) AS keys(name)
+                            ORDER BY name
+                        ) IS DISTINCT FROM expected.column_names)",
                 [$id],
             );
 
-            return $this->compatibleDateCheckpoints[$id] = (int) ($shape->invalid ?? -1) === 0;
+            return $this->compatibleHistoricalCheckpoints[$id]
+                = (int) ($shape->invalid ?? -1) === 0;
         } catch (\Throwable) {
-            return $this->compatibleDateCheckpoints[$id] = false;
+            return $this->compatibleHistoricalCheckpoints[$id] = false;
         }
     }
 
@@ -686,6 +726,32 @@ WHERE publication_checkpoint_id = ?
 SQL, [$checkpointId]);
 
             return (int) ($row->invalid ?? -1) === 0;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * MediaVariant's retired transform_profile allowed several available
+     * variants of the same kind. Current schema permits exactly one; reject a
+     * historical snapshot that violates that constraint rather than choosing
+     * which media bytes to keep.
+     */
+    private function historicalMediaVariantsValid(int $checkpointId): bool
+    {
+        try {
+            $duplicate = DB::selectOne(<<<'SQL'
+SELECT 1 AS conflict
+FROM publication_version_rows
+WHERE publication_checkpoint_id = ?
+  AND table_name = 'media_variants'
+  AND payload->>'state' = 'available'
+GROUP BY payload->>'media_asset_id', payload->>'variant_kind'
+HAVING COUNT(*) > 1
+LIMIT 1
+SQL, [$checkpointId]);
+
+            return $duplicate === null;
         } catch (\Throwable) {
             return false;
         }
