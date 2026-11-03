@@ -587,7 +587,7 @@ SQL,
                         OR ARRAY(
                             SELECT name
                             FROM jsonb_object_keys({$projectedPayload}) AS keys(name)
-                            ORDER BY name
+                            ORDER BY name COLLATE \"C\"
                         ) IS DISTINCT FROM expected.column_names)",
                 [$id],
             );
