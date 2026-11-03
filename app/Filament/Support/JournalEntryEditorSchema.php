@@ -110,11 +110,16 @@ final class JournalEntryEditorSchema
     private static function venueFields(?Exhibition $exhibition): array
     {
         return [
-            self::publicLocationField('organizer', 'Organizer', 240, $exhibition)->columnSpanFull(),
-            self::publicLocationField('venue', 'Venue', 240, $exhibition)->columnSpanFull(),
+            Grid::make()
+                ->columns(['default' => 1, 'sm' => 2])
+                ->schema([
+                    self::publicLocationField('organizer', 'Organizer', 240, $exhibition),
+                    self::publicLocationField('venue', 'Venue', 240, $exhibition),
+                ])
+                ->columnSpanFull(),
             self::publicLocationField('external_url', 'Exhibition website', 2048, $exhibition)->url()->columnSpanFull(),
             Grid::make()
-                ->columns(['default' => 1, 'md' => 4])
+                ->columns(['default' => 2, 'sm' => 4])
                 ->schema([
                     self::publicLocationField('location_text', 'Street address', 500, $exhibition),
                     self::publicLocationField('city', 'City', 160, $exhibition),
