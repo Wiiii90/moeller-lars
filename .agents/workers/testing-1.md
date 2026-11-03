@@ -62,3 +62,5 @@
 - **Isolation hardening:** Redirected Free Storage's private incoming-upload staging to a uniquely owned disposable directory and restored the original Laravel storage root in both resumable and Free Storage suites after teardown. No user/Preview files may be pruned by these tests. Not executed.
 
 - **Dev delta:** Synchronized the four application sources from subsequent `dev` `570f9f987757022655003bea8fc73393880204e2` (ArtworkDate formatting, ordering declaration, Home and Artwork cleanups), excluding Dev Worker files. Additional Gallery/Artwork date test review remains pending later handoffs.
+
+- **Artwork date source follow-up:** Updated Gallery create-form, public caption and shared Home hero fixtures to current `artwork_date` UI and persisted `year`/optional `month`/`day` instead of defunct fields. The broader Gallery/Artwork date and migration tests still need separate full curation; none executed.

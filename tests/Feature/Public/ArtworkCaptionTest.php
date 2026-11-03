@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 it('renders complete authored Artwork captions without inventing missing facts', function (): void {
     foreach ([
         [
-            ['title' => 'Between Lines', 'medium' => 'Oil on linen', 'work_year' => 2025,
+            ['title' => 'Between Lines', 'medium' => 'Oil on linen', 'year' => 2025,
                 'dimensions' => '80 × 60 cm', 'description' => 'Narrative is shown separately.'],
             'Between Lines, 2025 80 × 60 cm, Oil on linen',
         ],
@@ -17,12 +17,12 @@ it('renders complete authored Artwork captions without inventing missing facts',
             'Unframed 12 × 8 × 4 mm, Bronze',
         ],
         [
-            ['title' => 'Klaus Timm', 'medium' => 'drawing', 'work_year' => 2018,
+            ['title' => 'Klaus Timm', 'medium' => 'drawing', 'year' => 2018,
                 'dimensions' => '33 x 24 x 0'],
             'Klaus Timm, 2018 33 × 24 cm, drawing',
         ],
         [
-            ['title' => 'Klaus Timm', 'medium' => 'drawing', 'work_year' => 2018,
+            ['title' => 'Klaus Timm', 'medium' => 'drawing', 'year' => 2018,
                 'dimensions' => '33 × 24 × 1.5 mm'],
             'Klaus Timm, 2018 33 × 24 × 1.5 mm, drawing',
         ],

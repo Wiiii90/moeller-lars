@@ -32,7 +32,7 @@ it('offers per-artwork ALT text in the Gallery create and edit dialogs without c
         ->fillForm([
             'title' => 'New publishable draft',
             'slug' => 'new-publishable-draft',
-            'work_date' => null,
+            'artwork_date' => null,
             'dimension_unit' => 'cm',
             'primary_media_asset_id' => $asset->getKey(),
             'primary_alt_text' => 'Painted landscape with bright green hills',

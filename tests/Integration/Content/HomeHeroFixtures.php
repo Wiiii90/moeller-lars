@@ -52,8 +52,7 @@ function heroDomainArtwork(ArtworkCategory $category, string $title, int $positi
         'title' => $title,
         'state' => 'published',
         'position' => $position,
-        'work_year' => 2026,
-        'date_precision' => 'year',
+        'year' => 2026,
     ]);
     $artwork->save();
 
