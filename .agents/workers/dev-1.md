@@ -4,6 +4,10 @@
 
 **Aktueller Public-Exhibitions-Stil:** Heller, ungerahmter Katalog auf der normalen konfigurierbaren Public-Content-Fläche (Standard weiß), ohne Schatten und zusätzliche Farbverläufe. Miniaturen, Bild-Text-Fluss mit Cover, redaktionelle Reihenfolge und einzelne Separatoren bei geöffneten Einträgen bleiben wie zuvor. Neu: ohne Cover beginnt der vollständige geöffnete Inhalt links. Keine inhaltsabhängigen Sonderabstände. Browserabnahme für die neue Korrektur ausstehend.
 
+## Exhibition published-content constraint cutover (03.11.2026)
+- Source-reviewed the 2026-08-16 and 2026-08-25 migrations. Both Working and Committed can retain `exhibitions_published_content_check` referencing `date_text`. The new forward migration now drops this exact retired check before dropping the old column and recreates the equivalent check against **canonical starts_on** plus nonblank title. This is required for the schema conversion to work at all; the earlier cutover code would otherwise fail PostgreSQL dependency checking.
+- Verification remains source-only; no local database, browser, CI or Validation mutation executed.
+
 ## Exhibition migration transaction lock (03.11.2026)
 - Guarded the before-DDL source audit against concurrent editorial writes: immediately lock Working and Committed Exhibition tables and publication version rows inside the same PostgreSQL transaction, before reading any artist values. A simultaneous Autosave/Commit can no longer change a reviewed date between inventory and conversion. Unknown Validation strings still abort the entire transaction and release locks without publishing any partial state.
 - This only edits the already committed forward migration, not persistent data or immutable snapshot payloads. Local runtime migration, smoke, browser and historical restore acceptance remain to be verified outside this repository connector.

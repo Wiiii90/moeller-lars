@@ -93,6 +93,11 @@ return new class extends Migration
 
             foreach ($sources as $table) {
                 DB::statement("ALTER TABLE {$table} DROP CONSTRAINT IF EXISTS exhibitions_dates_check");
+                // Older schema migrations used the authored free-text column
+                // to authorize a published Exhibition. Drop that exact check
+                // before removing its referenced column, then replace it with
+                // the new canonical Starts requirement below.
+                DB::statement("ALTER TABLE {$table} DROP CONSTRAINT IF EXISTS exhibitions_published_content_check");
                 foreach (['starts_on', 'ends_on'] as $field) {
                     DB::statement("ALTER TABLE {$table} ALTER COLUMN {$field} TYPE VARCHAR(10)
                         USING CASE WHEN {$field} IS NULL THEN NULL ELSE to_char({$field}, 'YYYY-MM-DD') END");
@@ -101,6 +106,8 @@ return new class extends Migration
                     DB::table($table)->where('id', $id)->update($dates);
                 }
                 DB::statement("ALTER TABLE {$table} DROP COLUMN date_text");
+                DB::statement("ALTER TABLE {$table} ADD CONSTRAINT exhibitions_published_content_check
+                    CHECK (state <> 'published' OR (btrim(title) <> '' AND starts_on IS NOT NULL))");
                 DB::statement("ALTER TABLE {$table} ADD CONSTRAINT exhibitions_partial_dates_check
                     CHECK (
                         (starts_on IS NULL OR starts_on ~ '^[1-9][0-9]{3}(-[0-9]{2}(-[0-9]{2})?)?$')
