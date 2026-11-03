@@ -158,12 +158,13 @@ final class ArtworkEditDialog
                                 ->label('Width')
                                 ->numeric()
                                 ->minValue(0.01)
-                                ->suffix('×')
+                                ->suffix(static fn (callable $get): ?string => filled($get('dimension_depth')) ? '×' : null)
                                 ->nullable(),
                             TextInput::make('dimension_depth')
                                 ->label('Depth')
                                 ->numeric()
                                 ->minValue(0.01)
+                                ->live(onBlur: true)
                                 ->nullable(),
                             Select::make('dimension_unit')
                                 ->label('Unit')
