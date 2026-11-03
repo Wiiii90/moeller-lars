@@ -12,6 +12,7 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaReferenceCatalog;
 use App\Models\Artwork;
+use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;

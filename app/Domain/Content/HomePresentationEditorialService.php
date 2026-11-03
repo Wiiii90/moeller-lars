@@ -252,6 +252,7 @@ final class HomePresentationEditorialService
                 'list' => ['type' => 'list', 'title' => null, 'media_asset_id' => null, 'items' => []],
                 'contact' => ['type' => 'contact', 'children' => []],
                 'legal_disclaimer' => ['type' => 'legal_disclaimer'],
+                default => throw new \LogicException('Expected a validated component kind.'),
             },
         ];
     }

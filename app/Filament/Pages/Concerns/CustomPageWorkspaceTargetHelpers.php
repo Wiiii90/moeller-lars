@@ -8,7 +8,7 @@ use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceTargetHelpers
 {
-    /** @return list<array{index:int,type:string}> */
+    /** @return list<array{index:int,type:string,child_index?:int}> */
     private function selectedComponentTargetData(): array
     {
         $targets = [];

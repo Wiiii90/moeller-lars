@@ -69,6 +69,7 @@ final class ExhibitionDate
                 'october', 'oktober' => 10,
                 'november' => 11,
                 'december', 'dezember' => 12,
+                default => throw new InvalidArgumentException('Unrecognized exhibition month: '.$groups[1]),
             };
             $startDate = sprintf('%04d-%02d', (int) $groups[2], $month);
             $endDate = null;
