@@ -2,6 +2,7 @@
 
 use App\Domain\Admin\AdminLocalHistoryResetService;
 use App\Domain\Content\ExhibitionAddressNormalizer;
+use App\Domain\Content\ExhibitionDate;
 use App\Domain\Contact\ContactMessageRetentionService;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\ResumableMediaUploadService;
@@ -60,7 +61,7 @@ Schedule::command('contact:purge --apply')->daily()->withoutOverlapping()->onOne
 // Read-only checkpoint before retiring the free-form Exhibition date field.
 // Scan the editable and committed records as well as immutable publication
 // checkpoint payloads. Never infer precision or update artist content here.
-Artisan::command('exhibitions:audit-dates {--all : Include structured rows without an authored override}', function (): int {
+Artisan::command('exhibitions:audit-dates {--all : Include structured rows without an authored override} {--verify-conversion : Verify lossless conversion of Working, Committed and retained checkpoints}', function (): int {
     if (DB::getDriverName() !== 'pgsql') {
         $this->error('Exhibition date inventory requires the PostgreSQL publication database; current driver: '.DB::getDriverName().'.');
         $this->comment('Run it inside the local application container: docker compose exec app php artisan exhibitions:audit-dates --all');
@@ -76,6 +77,17 @@ Artisan::command('exhibitions:audit-dates {--all : Include structured rows witho
     $review = [];
     $counts = [];
     $showAll = (bool) $this->option('all');
+    $verify = (bool) $this->option('verify-conversion');
+    $verified = 0;
+    $invalid = [];
+    $check = static function (string $source, string $id, string $title, mixed $start, mixed $end, mixed $authored) use (&$verified, &$invalid): void {
+        try {
+            ExhibitionDate::fromLegacy($start, $end, $authored);
+            $verified++;
+        } catch (\InvalidArgumentException $exception) {
+            $invalid[] = [$source, $id, $title, $exception->getMessage()];
+        }
+    };
     foreach ($sources as $name => $table) {
         if (DB::selectOne('SELECT to_regclass(?) AS relation_name', [$table])?->relation_name === null) {
             $this->error('Missing publication table: '.$table);
@@ -89,6 +101,9 @@ Artisan::command('exhibitions:audit-dates {--all : Include structured rows witho
         $counts[$name] = $rows->count();
         foreach ($rows as $row) {
             $original = trim((string) ($row->date_text ?? ''));
+            if ($verify) {
+                $check($name, (string) $row->id, (string) $row->title, $row->starts_on, $row->ends_on, $original);
+            }
             if ($original === '' && ! $showAll) {
                 continue;
             }
@@ -123,6 +138,9 @@ Artisan::command('exhibitions:audit-dates {--all : Include structured rows witho
             }
 
             $original = trim((string) ($payload['date_text'] ?? ''));
+            if ($verify) {
+                $check('checkpoint '.$row->publication_checkpoint_id, (string) $row->row_key, (string) ($payload['title'] ?? '—'), $payload['starts_on'] ?? null, $payload['ends_on'] ?? null, $original);
+            }
             if ($original === '' && ! $showAll) {
                 continue;
             }
@@ -148,6 +166,14 @@ Artisan::command('exhibitions:audit-dates {--all : Include structured rows witho
         $this->comment('Use --all to inspect structured dates even where no override was recorded.');
     }
     $this->comment('READ-ONLY. Do not drop date_text or infer missing day/month precision until every historical override has a lossless reviewed mapping.');
+    if ($verify) {
+        if ($invalid !== []) {
+            $this->error(count($invalid).' date records could not be converted without guessing.');
+            $this->table(['Source', 'ID', 'Exhibition', 'Reason'], $invalid);
+            return 1;
+        }
+        $this->info($verified.' source records passed strict date-conversion checks. No data were changed.');
+    }
 
     return 0;
 })->purpose('Inventory authored Exhibition dates without altering Working, Committed or history');
