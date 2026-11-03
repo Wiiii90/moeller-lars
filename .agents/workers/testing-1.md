@@ -2,7 +2,7 @@
 
 - **Branch:** testing
 - **Lease token:** 3 (explicit takeover by successor chat on 2026-11-03)
-- **State:** active; curated test source prepared, execution/qualification pending
+- **State:** active; suite prepared; user-confirmed Dev freeze and final isolated test execution authorized; execution pending
 - **Ownership:** Single behavior-based Pest/Node/Playwright suite on testing, no application changes on Dev and no CI/deploy or production writes.
 
 ## Reconciled source
@@ -28,7 +28,13 @@
 
 - **Checksum bypass, source-level finding:** PublicationVersionService::isRestorable and assertRestorable return early when schema_hash matches current schema without checking original snapshot_hash. verifyCheckpointReadOnly checks the checksum explicitly. A corrupted current-schema checkpoint can therefore appear restorable and enter Stage Version. The strict new negative test in tests/Integration/Publication/PublicationVersionHistoryTest.php is expected to fail until the canonical Dev owner repairs eligibility; do not weaken the test or modify production source on Testing. Not yet runtime-confirmed.
 
-## Only after user-declared Dev freeze and explicit execution authorization
+## Final qualification authorized by user — execute now
+
+- On 2026-11-03 the user explicitly confirmed that Dev had already been frozen and requested that the execution assistant run the full prepared test qualification now. **Do not ask for the freeze or test-execution authorization again.**
+- Last reviewed application-source commit: `fcd000455f292f03c32f2c2406d8fb291b776e9e`. GitHub comparison against Dev HEAD `33f598f94afd6717cc3bb234b0d85c14e758491f` found only four changed `.agents/` process/worker files since that baseline, and **no application-source changes**. This establishes application parity through that checked HEAD but is not itself executed qualification; recheck exact current Git source when starting.
+- A separate local execution assistant may run the authorized suites without taking or replacing Testing Worker 1's branch lease 3. This worker retains ownership of curation and integration; the executor must report exact commands, database/file isolation evidence, pass/fail/skipped results and real product defects.
+- The user did not specify a new full frozen commit SHA in this chat; treat the last reviewed application-source tree as the candidate where byte-equivalent, checking latest Git references. Do not invent a separate freeze SHA or use an outdated local branch as the source of truth.
+
 
 1. Record frozen Dev SHA, inspect any intervening source delta and reverify exact non-test source parity, preserving the intentional synthetic browser seeder exception.
 2. Positively verify independent disposable PostgreSQL 17 database/cluster/user/port, effective PDO and Laravel test connection, empty schema, temp media, sessions/cache and guards. Persistent local Compose moeller_lars_testing and moeller-lars_postgres_data are NOT disposable targets, nor Preview, Validation or Production.
