@@ -16,26 +16,28 @@ class MediaIntegrityService
             return ['original_missing'];
         }
 
-        // Deleted media may be physically retained by Committed or retained
-        // publication/Undo state. Such bytes are owned, not filesystem orphans.
-        // The canonical cleanup service, not this active-media integrity
-        // checker, determines when they can actually be reclaimed.
-        if ($fresh->getAttribute('state') === 'deleted') {
-            return [];
-        }
-
+        // A logically deleted original can legitimately remain while
+        // Publication still owns it. Verify retained bytes without reporting
+        // their presence as a zombie; missing deleted bytes can be normal.
+        $deleted = $fresh->getAttribute('state') === 'deleted';
         $disk = Storage::disk(config('media.disk'));
         $issues = [];
         $originalKey = (string) $fresh->getAttribute('storage_key');
-        $issues = [...$issues, ...$this->checkFile($disk, $originalKey, $fresh, 'original')];
+        if (! $deleted || $this->exists($disk, $originalKey)) {
+            $issues = [...$issues, ...$this->checkFile($disk, $originalKey, $fresh, 'original')];
+        }
 
         foreach ($fresh->getRelationValue('variants') as $variant) {
             $id = (int) $variant->getKey();
             $key = 'variant:'.$id.':';
             $state = (string) $variant->getAttribute('state');
             $variantKey = (string) $variant->getAttribute('storage_key');
-            if ($state === 'deleted') {
-                // A retained published checkpoint may still own this file.
+            if ($state === 'deleted' || $deleted) {
+                // Retained variant files still need a valid checksum, but
+                // their absence alone does not imply a broken active preview.
+                if ($this->exists($disk, $variantKey)) {
+                    $issues = [...$issues, ...$this->checkFile($disk, $variantKey, $variant, $key)];
+                }
                 continue;
             }
             if ($state === 'stale' && ! $this->exists($disk, $variantKey)) {

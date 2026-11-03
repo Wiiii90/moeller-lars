@@ -125,7 +125,14 @@ final class SiteStorageReclaimService
         $changed = $result['changed'] || $removedFiles > 0
             || $orphans['files'] > 0 || $expiredStaging > 0;
         if ($changed && ! $result['changed']) {
-            DB::transaction($recordAudit);
+            try {
+                DB::transaction($recordAudit);
+            } catch (Throwable $exception) {
+                // File cleanup has already occurred. Preserve the true
+                // outcome and report the independently failed audit write.
+                report($exception);
+                $incomplete = true;
+            }
         }
 
         return [

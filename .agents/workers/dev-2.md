@@ -76,3 +76,8 @@
 
 ## 2026-11-03 — Forward transform-profile retirement candidate
 - Model and upload writer no longer write the retired profile field; one transactionally guarded migration changes Working and Committed together and enforces unique available variant per media and kind. Duplicate available previews stop the migration before schema changes. Existing variants/originals/history payloads remain intact; previously compatible publication checkpoint schema fingerprints follow the structural change, incompatible checkpoints remain incompatible. No tests or deployments started. Verification remains pending.
+
+## Final Dev correction — cleanup feedback and retained-byte integrity (2026-11-03)
+- Free Storage now reports an independently failed post-cleanup audit write as an incomplete result rather than implying an already executed file removal was rolled back. The existing notification shows a warning and the actual removal counts.
+- MediaIntegrityService now verifies physically retained bytes for logically deleted originals and variants when they exist, without labeling valid Publication/Undo retention as a zombie or requiring removed preview bytes to exist.
+- Grouped Testing handoff B/D: post-cleanup audit failure with already removed orphan, deleted-but-retained corrupt original and poster, truly removed deleted original, and ordinary available original with required preview missing. No Dev-owned tests, no validation deployment.
