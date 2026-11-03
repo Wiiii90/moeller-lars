@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 6; active after re-registration by user; no change to other Dev workers' slots.  
-**Scope:** Canonical upload processing, native upload transport and upload-specific feedback. Dev Worker 4 currently owns Gallery/Artwork removal/recovery work, so deletion/reference changes require ownership coordination.
+**Scope (explicit takeover 2026-11-03):** Canonical domain media reference discovery, deletion safety, Storage free-space cleanup, thumbnail processing ownership and upload/zombie prevention. Dev Worker 4 continues Gallery/Artwork UI removal/recovery; no parallel Gallery-specific delete flow.
 
 ## Implemented before audit (source committed, NOT browser-accepted)
 - Progressive JPEG metadata check for images over 16 MP before newly ingested thumbnail generation; baseline/non-progressive re-export message (`MediaDerivativeGenerator`, `MediaIngestService`).
@@ -47,3 +47,8 @@
 - Visual/interaction acceptance belongs in local browser with a disposable media/database seed; real resource-pressure tests in an isolated 384 MiB container with comparable CPU/swap, **not** artist's protected Validation media. Validation can later receive user-authorized read-only presentation parity checks.
 - Recommended staged correction: unify preflight and resource limits for initial and regenerated previews; streaming bounded integrity verification; fix canonical reference/query/removal symmetry with Dev Worker 4; strengthen resumable identity, commit receipt and orphan inventory; address feedback truncation; Testing worker owns focused tests on `testing` before gated browser acceptance.
 - Never run whole-media integrity scans, re-generations, freespace reclamation or test fixtures on Validation merely to prove this audit. Read-only operator measurements are separately possible with explicit scope.
+
+## 2026-11-03 — User-ordered implementation takeover
+- Explicit user order: immediately fix missing references before deletes; Free Storage must never delete mandatory thumbnail bytes (including currently unassigned media); remove unneeded v1/v2 transition architecture after verifying persisted data; prevent true uncatalogued/orphan files and ambiguous upload outcomes; preserve generous user-approved file/pixel limits. No Dev-authored tests. Group test-worker handoff by invariants. This takes over lease 6 as current active Dev Worker 2.
+- Do not conflate deliberately protected Activity/Undo/Publication-retained files with unowned zombies. Working artist data must remain untouched in any server runtime.
+- Status: source correction in progress, no live deployment or tests.
