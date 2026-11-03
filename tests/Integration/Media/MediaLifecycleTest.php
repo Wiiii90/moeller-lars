@@ -183,6 +183,76 @@ it('generates and retains the immutable WebP poster for a real H.264 video', fun
     }
 });
 
+it('accepts WebM with a browser-native VP9 stream and stores its required poster', function (): void {
+    $ingest = lifecycleIngestService();
+    $placeholder = tempnam(sys_get_temp_dir(), 'webm-media-test-');
+    expect($placeholder)->not->toBeFalse();
+    $path = $placeholder.'.webm';
+
+    try {
+        $process = new Process([
+            'ffmpeg', '-hide_banner', '-loglevel', 'error', '-nostdin',
+            '-f', 'lavfi', '-i', 'color=c=blue:s=320x240:d=1',
+            '-an', '-c:v', 'libvpx-vp9', '-b:v', '300k',
+            '-deadline', 'realtime', '-cpu-used', '8', '-y', $path,
+        ]);
+        $process->setTimeout(120);
+        expect($process->run())->toBe(0);
+
+        $asset = $ingest->ingest(new UploadedFile($path, 'loop.webm', 'video/webm', null, true));
+        $poster = $asset->variants()->sole();
+        $disk = Storage::disk(config('media.disk'));
+
+        expect($asset->mime_type)->toBe('video/webm')
+            ->and($poster->variant_kind)->toBe(MediaIngestService::VIDEO_POSTER_KIND)
+            ->and($poster->state)->toBe('available')
+            ->and(hash_file('sha256', $disk->path($poster->storage_key)))->toBe($poster->sha256)
+            ->and(app(PublicMedia::class)->posterUrlForAsset($asset))->not->toBeNull();
+        $disk->assertExists([$asset->storage_key, $poster->storage_key]);
+    } finally {
+        @unlink($path);
+        @unlink($placeholder);
+    }
+});
+
+it('rejects large progressive JPEGs with actionable feedback but accepts the same size as baseline JPEG', function (): void {
+    Storage::fake(config('media.disk'));
+    $image = imagecreatetruecolor(4001, 4000);
+    expect($image)->not->toBeFalse();
+    $background = imagecolorallocate($image, 80, 120, 170);
+    imagefill($image, 0, 0, $background);
+
+    imageinterlace($image, true);
+    ob_start();
+    imagejpeg($image, null, 85);
+    $progressive = ob_get_clean();
+
+    imageinterlace($image, false);
+    ob_start();
+    imagejpeg($image, null, 85);
+    $baseline = ob_get_clean();
+    imagedestroy($image);
+
+    expect($progressive)->toBeString()
+        ->and($baseline)->toBeString();
+    expect(fn () => app(MediaIngestService::class)->ingest(
+        UploadedFile::fake()->createWithContent('high-resolution-progressive.jpg', $progressive),
+    ))->toThrow(ValidationException::class, 'High-resolution progressive JPEG');
+
+    expect(MediaAsset::query()->count())->toBe(0)
+        ->and(Storage::disk(config('media.disk'))->allFiles())->toBeEmpty();
+
+    $asset = app(MediaIngestService::class)->ingest(
+        UploadedFile::fake()->createWithContent('high-resolution-baseline.jpg', $baseline),
+    );
+    $thumbnail = $asset->variants()->sole();
+    expect($asset->width)->toBe(4001)
+        ->and($asset->height)->toBe(4000)
+        ->and($asset->state)->toBe('available')
+        ->and($thumbnail->state)->toBe('available');
+    Storage::disk(config('media.disk'))->assertExists([$asset->storage_key, $thumbnail->storage_key]);
+});
+
 it('accepts a valid MP4 with the H.264 track metadata outside both byte windows', function (): void {
     $ingest = lifecycleIngestService();
     $temp = tempnam(sys_get_temp_dir(), 'mp4-moov-middle-');

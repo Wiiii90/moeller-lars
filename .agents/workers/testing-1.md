@@ -50,3 +50,5 @@
 - **Migration coverage authored:** A dedicated PostgreSQL migration-contract file reconstructs the previous `media_variants` shape within disposable test transactions and verifies populated Working/Committed success, duplicate-preview rollback and unrelated `site_sections` drift isolation. Not executed; only eligible after separately verified disposable PostgreSQL qualification.
 
 - **JavaScript behavior:** Added a transport-level Node.js unit test that exercises the real upload module with changed interior file bytes but identical name, size, timestamp and first/last 64 KiB. It verifies the acknowledged staged chunk is rejected, canceled and replaced before a successful fresh transfer. Not run.
+
+- **Format matrix:** Extended the existing media lifecycle integration owner with real FFmpeg WebM/VP9 + poster verification and a high-resolution progressive JPEG rejection versus baseline JPEG acceptance test at identical pixel dimensions. These are runtime-dependent and unexecuted.
