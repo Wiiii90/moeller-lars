@@ -292,3 +292,57 @@ it('keeps Artwork detail Rich Text formatting through the owning Edit dialog and
     expect($dialog->save($draft->fresh(), $form))->toBeFalse();
 });
 
+it('round-trips Artwork year/month precision and exact dates through the mounted Gallery editor', function (): void {
+    $gallery = galleryFixtureCategory();
+    $draft = galleryFixtureArtwork($gallery);
+    galleryFixtureUnavailableAnalytics();
+
+    $before = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->id])
+        ->mountAction('editArtwork', ['artwork' => $draft->id])
+        ->set('mountedActions.0.data.artwork_date', '2027-06')
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    expect([$draft->fresh()->year, $draft->fresh()->month, $draft->fresh()->day])
+        ->toBe([2027, 6, null])
+        ->and(AuditEvent::query()->count())->toBe($before + 1)
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1);
+    $reopened = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->id])
+        ->mountAction('editArtwork', ['artwork' => $draft->id])
+        ->assertActionDataSet(['artwork_date' => '2027-06']);
+
+    $reopened->callMountedAction()->assertHasNoFormErrors()->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->count())->toBe($before + 1)
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1);
+
+    $reopened->set('mountedActions.0.data.artwork_date', '2028-02-29')
+        ->callMountedAction()->assertHasNoFormErrors();
+    expect([$draft->fresh()->year, $draft->fresh()->month, $draft->fresh()->day])
+        ->toBe([2028, 2, 29]);
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->id])
+        ->mountAction('editArtwork', ['artwork' => $draft->id])
+        ->assertActionDataSet(['artwork_date' => '2028-02-29']);
+});
+
+it('rejects invalid Artwork dates without altering the saved artwork or its audit history', function (string $invalid): void {
+    $gallery = galleryFixtureCategory();
+    $draft = galleryFixtureArtwork($gallery, ['year' => 2026, 'month' => null, 'day' => null]);
+    galleryFixtureUnavailableAnalytics();
+    $original = $draft->fresh()->getAttributes();
+    $audits = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->id])
+        ->mountAction('editArtwork', ['artwork' => $draft->id])
+        ->set('mountedActions.0.data.title', 'Rejected title')
+        ->set('mountedActions.0.data.artwork_date', $invalid)
+        ->callMountedAction()->assertHasFormErrors(['artwork_date'])
+        ->assertNotDispatched('admin-header-notification');
+
+    expect($draft->fresh()->getAttributes())->toBe($original)
+        ->and(AuditEvent::query()->count())->toBe($audits)
+        ->and(AdminNotification::query()->count())->toBe($notifications);
+})->with(['2027-02-29', '2027-00', '2027-04-31']);

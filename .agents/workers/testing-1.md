@@ -81,3 +81,5 @@
 - **Artwork date Unit owner:** Added the canonical pure `tests/Unit/Artwork/ArtworkDateTest.php` to validate exact `year/month/day` normalization, malformed or impossible values, missing-ancestor enforcement, reversible persisted string projection and locale formatting. No second abstraction; not executed.
 
 - **Artwork date migration contract:** Added dedicated source-era Migration suite using the existing migration's genuine `down()` to reconstruct historical `work_year/work_date/date_precision` in isolated transactional schemas. Tests conversion of year/month/day/unknown in Working and Committed and fail-atomic behavior on a conflicting Committed row. Production migration unchanged; no execution.
+
+- **Mounted Gallery date coverage:** Extended existing GalleryArtworkEditing Feature suite with partial/exact date round-trip, reopening, idempotent autosave, audit/notification cardinality and invalid-date rollback through the actual Artwork Edit dialog. Tests authored, no execution.
