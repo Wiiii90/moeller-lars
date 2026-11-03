@@ -7,15 +7,20 @@ use RuntimeException;
 
 final class PublicationSchemaGuard
 {
-    public function assertParity(): void
+    public function assertParity(?array $tables = null): void
     {
         if (DB::connection()->getDriverName() !== 'pgsql') {
             throw new RuntimeException('Publication snapshots require PostgreSQL schema parity checks.');
         }
 
+        $tables ??= PublicationSnapshot::TABLES;
+        if ($tables === [] || array_diff($tables, PublicationSnapshot::TABLES) !== []) {
+            throw new \InvalidArgumentException('Schema parity scope must select publication tables.');
+        }
+
         $rows = DB::table('information_schema.columns')
             ->whereIn('table_schema', ['public', 'committed'])
-            ->whereIn('table_name', PublicationSnapshot::TABLES)
+            ->whereIn('table_name', $tables)
             ->orderBy('table_name')
             ->orderBy('table_schema')
             ->orderBy('ordinal_position')
@@ -36,7 +41,7 @@ final class PublicationSchemaGuard
                 'is_generated',
             ]);
 
-        foreach (PublicationSnapshot::TABLES as $table) {
+        foreach ($tables as $table) {
             $public = $this->signature($rows->where('table_schema', 'public')->where('table_name', $table));
             $committed = $this->signature($rows->where('table_schema', 'committed')->where('table_name', $table));
 
