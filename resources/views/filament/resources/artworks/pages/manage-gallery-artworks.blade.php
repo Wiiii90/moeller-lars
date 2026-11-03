@@ -188,7 +188,6 @@
                                 <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('down')" @disabled(! $selectedCanMoveDown)>{{ __('Move selected down') }}</button>
                                 <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('publishSelectedArtworks')" @disabled(! $selectedCanPublish)>{{ __('Publish selected') }}</button>
                                 <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('unpublishSelectedArtworks')" @disabled(! $selectedHasPublished)>{{ __('Unpublish selected') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('removeSelectedArtworks')" @disabled(! $selectedAllDraft)>{{ __('Remove selected') }}</button>
                                 <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('deleteSelectedArtworks')" @disabled(! $selectedAllDraft)>{{ __('Delete selected') }}</button>
                             </div>
                         </div>
@@ -407,11 +406,6 @@
                                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveBetween->mini()" />
                                         </button>
                                     @endif
-                                    <button class="gallery-workspace__icon-action" type="button" wire:click="mountAction('removeArtwork', { artwork: {{ $artwork['id'] }} })"
-                                        @disabled($artwork['state'] !== 'draft')
-                                        title="{{ $artwork['state'] === 'draft' ? 'Remove from Gallery' : 'Unpublish artwork before removing from Gallery' }}" aria-label="Remove {{ $artwork['title'] }} from Gallery">
-                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Detach->mini()" />
-                                    </button>
                                     <button
                                         class="gallery-workspace__icon-action"
                                         type="button"

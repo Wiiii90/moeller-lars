@@ -78,7 +78,7 @@ final class ArtworkEditDialog
                         Select::make('artwork_category_id')
                             ->label('Gallery')
                             ->options(static fn (): array => ArtworkCategory::query()->orderBy('name')->pluck('name', 'id')->all())
-                            ->nullable()
+                            ->required()
                             ->searchable()
                             ->preload(),
                     ] : []),
@@ -213,12 +213,14 @@ final class ArtworkEditDialog
             if ($allowGalleryAssignment && $requestedGalleryId !== $currentGalleryId) {
                 $assignments = app(ArtworkGalleryAssignmentService::class);
                 if ($requestedGalleryId === null) {
-                    $assignments->detach($artwork);
-                } else {
-                    /** @var ArtworkCategory $gallery */
-                    $gallery = ArtworkCategory::query()->findOrFail($requestedGalleryId);
-                    $assignments->reassign($artwork, $gallery);
+                    throw ValidationException::withMessages([
+                        'artwork_category_id' => 'Choose a Gallery for this Artwork.',
+                    ]);
                 }
+
+                /** @var ArtworkCategory $gallery */
+                $gallery = ArtworkCategory::query()->findOrFail($requestedGalleryId);
+                $assignments->reassign($artwork, $gallery);
             }
 
             app(ArtworkDraftService::class)->update(

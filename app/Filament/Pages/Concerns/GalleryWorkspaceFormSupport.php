@@ -12,27 +12,7 @@ trait GalleryWorkspaceFormSupport
     {
         // Create and Edit share one semantic field schema. Create alone checks
         // slug uniqueness before committing a new artwork.
-        $fields = app(\App\Filament\Support\ArtworkEditDialog::class)->schema(creating: true);
-        foreach ($fields as $field) {
-            $field->hidden(static fn (callable $get): bool => filled($get('restore_artwork_id')));
-        }
-
-        return [
-            \Filament\Forms\Components\Select::make('restore_artwork_id')
-                ->label('Restore removed artwork')
-                ->placeholder('Create a new artwork slot')
-                ->options(static fn (): array => \App\Models\Artwork::query()
-                    ->whereNull('artwork_category_id')
-                    ->orderBy('title')
-                    ->pluck('title', 'id')
-                    ->all())
-                ->searchable()
-                ->preload()
-                ->live()
-                ->nullable()
-                ->visible(static fn (): bool => \App\Models\Artwork::query()->whereNull('artwork_category_id')->exists()),
-            ...$fields,
-        ];
+        return app(\App\Filament\Support\ArtworkEditDialog::class)->schema(creating: true);
     }
 
     /** @return array<string, mixed> */

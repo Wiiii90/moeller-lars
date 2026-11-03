@@ -4,9 +4,7 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
-use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPublicationService;
-use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use Filament\Actions\Action;
 use Illuminate\Support\Facades\DB;
@@ -14,42 +12,6 @@ use Illuminate\Validation\ValidationException;
 
 trait GalleryWorkspaceBatchActions
 {
-    public function removeSelectedArtworksAction(): Action
-    {
-        $action = Action::make('removeSelectedArtworks')
-            ->label('Remove')
-            ->action(function (): void {
-                try {
-                    $artworks = $this->selectedArtworks();
-                    DB::transaction(function () use ($artworks): void {
-                        foreach ($artworks as $artwork) {
-                            app(ArtworkGalleryAssignmentService::class)->detach($artwork);
-                        }
-                    });
-                } catch (ValidationException $exception) {
-                    $this->notifyValidationFailure('Selected artworks could not be removed', $exception);
-
-                    return;
-                }
-
-                $count = $artworks->count();
-                $this->clearSelection();
-                $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->notification(
-                    title: $count.' selected '.($count === 1 ? 'artwork was' : 'artworks were').' removed',
-                    status: 'success',
-                );
-            });
-
-        return AdminDialog::confirm(
-            $action,
-            'Remove artworks?',
-            'Artwork records and files in Storage remain. Published artworks must be unpublished first.',
-            'Remove',
-            icon: AdminIcon::Detach,
-        );
-    }
-
     public function deleteSelectedArtworksAction(): Action
     {
         $action = Action::make('deleteSelectedArtworks')

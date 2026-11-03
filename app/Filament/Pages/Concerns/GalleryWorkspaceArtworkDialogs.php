@@ -4,7 +4,6 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
-use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
@@ -14,7 +13,6 @@ use App\Filament\Support\ArtworkEditDialog;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\AdminRowAction;
 use App\Models\Artwork;
-use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +27,6 @@ trait GalleryWorkspaceArtworkDialogs
         $action = Action::make('addArtwork')
             ->label('Add artwork')
             ->fillForm(fn (): array => [
-                'restore_artwork_id' => null,
                 'primary_media_asset_id' => $this->pendingPrimaryMediaAssetId,
                 'dimension_unit' => 'cm',
                 'work_date' => null,
@@ -37,37 +34,6 @@ trait GalleryWorkspaceArtworkDialogs
             ->schema($this->artworkCreateFormSchema())
             ->modalHeading('Add artwork')
             ->action(function (array $data): void {
-                $restoreId = filter_var(
-                    $data['restore_artwork_id'] ?? null,
-                    FILTER_VALIDATE_INT,
-                    ['options' => ['min_range' => 1]],
-                );
-
-                if ($restoreId !== false) {
-                    $artwork = Artwork::query()
-                        ->whereKey($restoreId)
-                        ->whereNull('artwork_category_id')
-                        ->first();
-
-                    if (! $artwork instanceof Artwork) {
-                        throw ValidationException::withMessages([
-                            'restore_artwork_id' => 'This artwork is no longer unassigned.',
-                        ]);
-                    }
-
-                    /** @var ArtworkCategory $gallery */
-                    $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
-                    app(ArtworkGalleryAssignmentService::class)->reassign($artwork, $gallery);
-
-                    $this->refreshWorkspaceAfterMutation();
-                    app(AdminNotifier::class)->notification(
-                        title: 'Artwork restored to Gallery',
-                        status: 'success',
-                    );
-
-                    return;
-                }
-
                 $assetId = (int) ($data['primary_media_asset_id'] ?? 0);
                 $asset = $assetId > 0
                     ? MediaAsset::query()->whereKey($assetId)->where('state', 'available')->first()
@@ -225,19 +191,6 @@ trait GalleryWorkspaceArtworkDialogs
         )
             ->label(fn (): string => $publicationRole()->label())
             ->icon(fn (): string => $publicationRole()->icon()->value);
-
-        // The Gallery action detaches, rather than deletes, an artwork. Use
-        // its existing confirmation and semantic icon, never fake Delete.
-        $actions[] = Action::make('dialogRemoveArtwork')
-            ->label('Remove')
-            ->icon(AdminIcon::Detach->value)
-            ->iconButton()
-            ->color('gray')
-            ->disabled($isPublished)
-            ->extraAttributes(['class' => 'admin-dialog__header-action'])
-            ->action(function () use ($target): void {
-                $this->replaceMountedAction('removeArtwork', $target);
-            });
 
         return $actions;
     }

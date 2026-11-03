@@ -9,6 +9,8 @@
 - Scope: Gallery-workspace actions, Artwork assignment and presentation, material preset owners, directly affected views/styles, scoped browser tests. Do not touch Dev Worker 2 media ingest/feedback, Dev Worker 3 rich text or Dev Worker 1 exhibitions.
 
 ## Evidence and progress
+- Removed redundant Remove action from Gallery cards, Edit header and Selected; removed arbitrary Restore removed artwork selector from Add artwork. Gallery source now has one Delete dialog (slot-only default, original file optional), and Media file selection remains a separate unlink action. Hidden standalone Artwork resource no longer permits creating new unassigned records. Code source only, not runtime verified.
+
 - Material dialog table-only Viewer now uses explicit central dialog spacing variant; no page-specific negative margins or wrapper overrides. Requires visual review.
 - Public Artwork description is now safely rendered once and its divider is omitted when only empty rich-text markup is present; other image/paper geometry remains unverified rather than patched speculatively.
 - Restored shared lockedTarget resolution in the simplified generic Undo path; no historical extra-media reversal remains available.
@@ -33,7 +35,8 @@
 - No application changes, tests, browser review, deployment or workflow execution.
 
 ## Deferred decisions / handoff
-- **Remove versus Delete:** user explicitly paused semantics for discussion. No further mutation without choice. Proposed: Unlink only the Artwork's primary media while retaining its Gallery slot; Delete removes Artwork slot and optionally (explicitly) deletes original media with reference review. Decide fate of existing unassigned Artwork slots and Restore selector once agreed.
+- **Remove versus Delete — accepted and implemented in Gallery code:** Only Delete remains. It deletes a draft Artwork slot and keeps the source file by default; optional checkbox deletes the original through the media domain after reference-impact review. To unlink only the file while retaining the Artwork slot, clear Edit → Media file. Removed standalone/selected Remove and the artificial Restore selector. Existing previously detached, unassigned Artwork rows must be inventoried before deliberate data cleanup; never delete them silently.
+- **Delete cross-reference issue (Dev Worker 2 ownership):** The current MediaAssetEditorialService::removeCanonicalReferences() additionally detaches other Artworks when their primary file is deleted; review whether these other Artwork slots should instead remain as media-less drafts under the newly agreed semantics. Do not patch Dev Worker 2's active media domain here.
 - **Global future refactor:** concurrent multiple-admin editing may overwrite newer changes across editors; revisit after Gallery work under a separately assigned worker. Consider version/conflict contracts globally, not a Gallery-local patch.
 - **Testing Worker (not yet requested):** reconcile previously created Gallery tests after rejected upload/extra-image actions, test Safari/WebKit sorting and Working/Committed public-link isolation. User explicitly does not want Testing handoff prompt yet.
 - **Upload Worker 2:** owns legacy media-profile cleanup, no work here.
