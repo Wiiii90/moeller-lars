@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\MediaAssets\Pages;
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Admin\AdminMediaUploadFeedback;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaTypePolicy;
@@ -166,47 +167,13 @@ final class ListMediaAssets extends Page
         $this->loadStorageOverview();
     }
 
-    /** Send exactly one durable header notification for a completed Storage selection. */
-    public function notifyDirectMediaBatch(int $added, int $duplicates, int $failed, string $details = ''): void
+    /** One canonical Storage upload result, both for the header/mailbox and inline status. */
+    public function notifyDirectMediaBatch(int $added, int $duplicates, int $failed, string $details = ''): string
     {
-        $added = max(0, $added);
-        $duplicates = max(0, $duplicates);
-        $failed = max(0, $failed);
-        $details = trim($details);
-        $processed = $added + $duplicates;
+        $errors = trim($details) !== '' ? preg_split('/\\r?\\n/', trim($details)) : [];
 
-        $title = $failed > 0
-            ? ($processed > 0 ? 'Upload completed with issues' : 'Upload failed')
-            : ($added > 0 ? 'Media uploaded' : 'Already in Storage');
-
-        if ($failed > 0 && $processed === 0) {
-            // For one failed upload the cause and filename are the message,
-            // not a meaningless list of zero-valued counters.
-            $body = $details !== ''
-                ? $details
-                : ($failed === 1 ? 'The selected file was not saved.' : $failed.' files were not saved.');
-        } else {
-            $parts = [];
-            if ($added > 0) {
-                $parts[] = $added.' '.($added === 1 ? 'file' : 'files').' saved to Storage';
-            }
-            if ($duplicates > 0) {
-                $parts[] = $duplicates.' already in Storage';
-            }
-            if ($failed > 0) {
-                $parts[] = $failed.' '.($failed === 1 ? 'file' : 'files').' failed';
-            }
-
-            $body = implode('; ', $parts).'.';
-            if ($details !== '') {
-                $body .= "\n".$details;
-            }
-        }
-
-        app(AdminNotifier::class)->notification(
-            title: $title,
-            body: mb_substr($body, 0, 500),
-            status: $failed > 0 ? ($processed > 0 ? 'warning' : 'danger') : ($added > 0 ? 'success' : 'info'),
+        return app(AdminMediaUploadFeedback::class)->batch(
+            $added, $duplicates, $failed, is_array($errors) ? $errors : [], 'storage',
         );
     }
 
@@ -749,34 +716,6 @@ final class ListMediaAssets extends Page
         $pageSize = is_numeric($value) ? (int) $value : self::DEFAULT_PAGE_SIZE;
 
         return in_array($pageSize, self::PAGE_SIZES, true) ? $pageSize : self::DEFAULT_PAGE_SIZE;
-    }
-
-    private function directUploadSummary(int $total, int $added, int $duplicates, int $failed): string
-    {
-        if ($total === 1) {
-            if ($added === 1) {
-                return '1 file added to Storage';
-            }
-
-            if ($duplicates === 1) {
-                return 'Already in Storage';
-            }
-
-            return '1 failed';
-        }
-
-        $parts = [];
-        if ($added > 0) {
-            $parts[] = $added.' '.($added === 1 ? 'file' : 'files').' added'.($duplicates === 0 && $failed === 0 ? ' to Storage' : '');
-        }
-        if ($duplicates > 0) {
-            $parts[] = $duplicates.' already in Storage';
-        }
-        if ($failed > 0) {
-            $parts[] = $failed.' failed';
-        }
-
-        return implode(' · ', $parts);
     }
 
     private function validationMessage(ValidationException $exception): string

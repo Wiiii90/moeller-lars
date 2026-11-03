@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Admin\AdminMediaUploadFeedback;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -26,11 +27,7 @@ trait GalleryWorkspaceDirectUpload
     /** Report client transfer errors that never reach the ingest action. */
     public function notifyDirectPrimaryTransferFailure(string $message): void
     {
-        app(AdminNotifier::class)->notification(
-            title: 'Upload failed',
-            body: mb_substr($message, 0, 400),
-            status: 'danger',
-        );
+        app(AdminMediaUploadFeedback::class)->failure($message);
     }
 
     /** Begin a selected stack without retaining stale assets from an earlier upload. */
@@ -71,19 +68,9 @@ trait GalleryWorkspaceDirectUpload
         $duplicates = max(0, min(10000, $duplicates));
         $rows = $this->pendingBatchArtworkMedia;
         $added = count($rows);
-        $total = $added + $failed;
-        $summary = $this->directUploadSummary($total, $added, $duplicates, $failed);
-        $details = [];
-        foreach (array_slice($errors, 0, 4) as $message) {
-            if (is_string($message) && trim($message) !== '') {
-                $details[] = ['filename' => 'File', 'message' => mb_substr($message, 0, 240)];
-            }
-        }
-        if ($failed > count($details)) {
-            $details[] = ['filename' => 'Files', 'message' => ($failed - count($details)).' further failures'];
-        }
-
-        $this->notifyDirectUploadResult($summary, $added, $duplicates, $details);
+        $summary = app(AdminMediaUploadFeedback::class)->batch(
+            $added, $duplicates, $failed, $errors, 'gallery',
+        );
 
         if ($added === 1) {
             $this->pendingPrimaryMediaAssetId = (int) $rows[0]['media_asset_id'];
@@ -287,65 +274,5 @@ trait GalleryWorkspaceDirectUpload
         return $slug;
     }
 
-    /** @param list<array{filename:string,message:string}> $failures */
-    private function notifyDirectUploadResult(string $summary, int $added, int $duplicates, array $failures): void
-    {
-        if ($failures !== []) {
-            $details = array_map(
-                static fn (array $failure): string => $failure['filename'].' — '.$failure['message'],
-                array_slice($failures, 0, 4),
-            );
-            if (count($failures) > 4) {
-                $details[] = '+'.(count($failures) - 4).' more';
-            }
-
-            app(AdminNotifier::class)->notification(
-                title: ($added + $duplicates) > 0 ? 'Upload completed with issues' : 'Upload failed',
-                body: implode("\n", $details),
-                status: ($added + $duplicates) > 0 ? 'warning' : 'danger',
-            );
-
-            return;
-        }
-
-        if ($added > 0) {
-            app(AdminNotifier::class)->notification(
-                title: $added === 1 ? 'Media ready for Artwork' : 'Media ready for Artworks',
-                body: $summary,
-                status: 'success',
-            );
-
-            return;
-        }
-
-        if ($duplicates > 0) {
-            app(AdminNotifier::class)->notification(
-                title: 'Already in Storage',
-                body: $summary,
-                status: 'info',
-            );
-        }
-    }
-
-    private function directUploadSummary(int $total, int $ready, int $reused, int $failed): string
-    {
-        if ($ready === 0) {
-            return $failed > 0
-                ? ($total === 1 ? 'Upload failed' : 'Uploads failed')
-                : 'No new Artwork media selected';
-        }
-
-        $parts = [
-            $ready.' '.($ready === 1 ? 'Media File is' : 'Media Files are').' ready for Artwork creation',
-        ];
-        if ($reused > 0) {
-            $parts[] = $reused.' '.($reused === 1 ? 'existing original reused' : 'existing originals reused');
-        }
-        if ($failed > 0) {
-            $parts[] = $failed.' failed';
-        }
-
-        return implode(' · ', $parts);
-    }
 
 }

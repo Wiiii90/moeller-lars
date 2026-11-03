@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Admin\AdminNotifier;
+use App\Domain\Admin\AdminMediaUploadFeedback;
 use App\Domain\Media\ResumableMediaUploadService;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -60,15 +60,11 @@ final class AdminResumableMediaUploadController extends Controller
     /** Errors inside native Filament upload fields also use the canonical
      * durable Dashboard/header notification transport (no second UI store).
      */
-    public function reportFailure(Request $request, AdminNotifier $notifier): JsonResponse
+    public function reportFailure(Request $request, AdminMediaUploadFeedback $feedback): JsonResponse
     {
         $this->adminId();
         $data = $request->validate(['message' => ['required', 'string', 'max:400']]);
-        $notifier->notification(
-            title: 'Media upload failed',
-            body: $data['message'],
-            status: 'danger',
-        );
+        $feedback->failure($data['message']);
         return response()->json(['reported' => true]);
     }
 

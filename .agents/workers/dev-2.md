@@ -53,3 +53,8 @@ Check fresh `dev` HEAD, own lease and other claims before every write. Scope the
 - `MediaIngestService::prepare` calls this preflight after image MIME/dimension validation and before invoking the canonical derivative generator; existing deduplication and storage admission remain unchanged.
 - The 16 MP bound is a conservative operational policy for low-memory synchronous preview creation, not a proven upper bound on processing memory for all low-resolution images. No container memory settings changed.
 - **Verification:** source review only; no isolated execution or real JPEG/browser review in this tool session yet.
+
+## 2026-11-03 — Unified native media upload feedback
+- Added one cohesive `AdminMediaUploadFeedback` formatter under Domain/Admin, delegating all durable/immediate delivery through existing `AdminNotifier` (no extra notification store). It owns one truthful title/status/body for batch Storage and Gallery uploads and single-file failures, eliminates zero count summaries, includes up to three filename-specific reasons, reports additional failure counts, and distinguishes media already in Storage from media ready for Artwork creation.
+- Rewired Storage batch Livewire result, Gallery queued media/transfer failure, and native field `/admin/media-upload/failure` controller to the shared formatter. Deleted Gallery's duplicate notification/summary formatters and an unused Storage summary helper. Existing success-on-actual-edit flows and Artwork dialog ownership remain untouched.
+- **Verification:** source assertions and tracked-commit readback, not executed PHPUnit/Javascript/browser tests; dedicated Testing worker must own relevant new regression tests.
