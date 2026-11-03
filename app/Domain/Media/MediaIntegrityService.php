@@ -65,7 +65,6 @@ class MediaIntegrityService
     }
 
     /** @return list<string> */
-    /** @return list<string> */
     private function checkFile(mixed $disk, string $key, mixed $record, string $prefix): array
     {
         if (! $this->exists($disk, $key)) {

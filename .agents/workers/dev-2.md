@@ -1,7 +1,7 @@
 # Dev Worker 2 — canonical media / upload integrity
 
 **Branch:** `dev` | **Lease:** 6, active (claimed in branch-local roster).  
-**Current checked HEAD:** `d54be32ae8947f77e14470279f2254e185332f87` (other Dev workers may advance `dev` concurrently).  
+**Source baseline in grouped handoff:** `d54be32ae8947f77e14470279f2254e185332f87` (other Dev workers may advance `dev` concurrently).  
 **Ownership:** canonical media domain, upload transfer/failure feedback, physical deletion guard, Storage recovery/thumbnail lifecycle. **Dev Worker 4 owns Gallery/Artwork UI/removal/recovery**; avoid parallel Gallery UI work. No tests, CI, deployment, Validation/Production mutations.
 
 ## Required invariants (user-approved 2026-11-03)
