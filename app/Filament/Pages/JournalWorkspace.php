@@ -640,22 +640,11 @@ final class JournalWorkspace extends Page
                     $saved = $entry->fresh();
                     $schema->partialRawState([
                         'map_enabled' => (bool) $saved->getAttribute('map_enabled'),
-                        'latitude' => $saved->getAttribute('latitude'),
-                        'longitude' => $saved->getAttribute('longitude'),
-                        'geocoded_at' => $saved->getAttribute('geocoded_at')?->toIso8601String(),
                     ]);
                     $this->notifyValidationFailure('Exhibition unchanged', $exception);
                     $this->throwMountedValidation($exception);
                 }
                 $changed = $before !== $this->journalEntryMutationState($updated);
-                // Domain geocoding owns coordinate changes. Keep the mounted
-                // Editor schema synchronized with the committed coordinates
-                // without re-filling unrelated, possibly focused fields.
-                $schema->partialRawState([
-                    'latitude' => $updated->getAttribute('latitude'),
-                    'longitude' => $updated->getAttribute('longitude'),
-                    'geocoded_at' => $updated->getAttribute('geocoded_at')?->toIso8601String(),
-                ]);
                 $this->loadExhibitions(false);
                 if ($changed) {
                     $this->forceRender();
