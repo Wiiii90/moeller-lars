@@ -158,6 +158,14 @@ final class PublicationMediaCleanupService
             }
 
             $key = (string) $row->storage_key;
+            // The outbox records intent, not ownership authority. Check the
+            // actual key against all current, committed and retained owners:
+            // another asset must never lose its file because of a stale row.
+            if ($key === '' || $this->storageKeyOwners($key) !== [$mediaAssetId]) {
+                report(new RuntimeException('Media cleanup ownership conflict; retaining queued file: '.$key));
+                continue;
+            }
+
             $removed = false;
             if (! $this->deleteKey($key, $removed)) {
                 continue;
@@ -278,17 +286,60 @@ final class PublicationMediaCleanupService
 
     private function storageKeyHasOwner(string $key): bool
     {
-        foreach (['media_assets', 'media_variants', 'committed.media_assets', 'committed.media_variants'] as $table) {
-            if (DB::table($table)->where('storage_key', $key)->exists()) {
-                return true;
+        return $this->storageKeyOwners($key) !== [];
+    }
+
+    /**
+     * Return every known owner of one physical key across current, committed,
+     * historical and pending-deletion state. A malformed historical owner is
+     * represented by 0 so deletion always fails closed.
+     *
+     * @return list<int>
+     */
+    private function storageKeyOwners(string $key): array
+    {
+        if ($key === '') {
+            return [0];
+        }
+
+        $ids = [];
+        foreach (['media_assets', 'committed.media_assets'] as $table) {
+            foreach (DB::table($table)->where('storage_key', $key)->pluck('id') as $id) {
+                $ids[] = (int) $id;
             }
         }
 
-        return DB::table('publication_version_rows')
+        foreach (['media_variants', 'committed.media_variants'] as $table) {
+            foreach (DB::table($table)->where('storage_key', $key)->pluck('media_asset_id') as $id) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        // publication_version_rows transparently resolves the immutable
+        // historical payload store. No retired cutover path is required.
+        $historical = DB::table('publication_version_rows')
             ->whereIn('table_name', ['media_assets', 'media_variants'])
             ->whereRaw("payload->>'storage_key' = ?", [$key])
-            ->exists()
-            || DB::table('publication_media_cleanups')->where('storage_key', $key)->exists();
+            ->selectRaw("table_name, row_key, payload->>'id' AS original_id, payload->>'media_asset_id' AS variant_owner_id")
+            ->get();
+
+        foreach ($historical as $row) {
+            $value = (string) $row->table_name === 'media_assets'
+                ? ($row->original_id ?? $row->row_key)
+                : $row->variant_owner_id;
+            $ids[] = is_scalar($value) && ctype_digit((string) $value) && (int) $value > 0
+                ? (int) $value
+                : 0;
+        }
+
+        foreach (DB::table('publication_media_cleanups')->where('storage_key', $key)->pluck('media_asset_id') as $id) {
+            $ids[] = (int) $id;
+        }
+
+        return array_values(array_unique(array_map(
+            static fn (int $id): int => $id > 0 ? $id : 0,
+            $ids,
+        )));
     }
 
     /**
@@ -438,33 +489,19 @@ final class PublicationMediaCleanupService
             return null;
         }
 
-        // One deletion may include the original and multiple variants,
-        // but never files registered to different media assets. Missing keys
-        // are not silently granted the owner of the first matched file.
-        $owners = [];
-        foreach (['media_assets', 'committed.media_assets'] as $table) {
-            foreach (DB::table($table)->whereIn('storage_key', $keys)->get(['id', 'storage_key']) as $row) {
-                $owners[(string) $row->storage_key][] = (int) $row->id;
-            }
-        }
-        foreach (['media_variants', 'committed.media_variants'] as $table) {
-            foreach (DB::table($table)->whereIn('storage_key', $keys)->get(['media_asset_id', 'storage_key']) as $row) {
-                $owners[(string) $row->storage_key][] = (int) $row->media_asset_id;
-            }
-        }
-
-        $assetIds = [];
+        $assetId = null;
         foreach ($keys as $key) {
-            $keyOwners = array_values(array_unique($owners[$key] ?? []));
-            if (count($keyOwners) !== 1 || $keyOwners[0] < 1) {
+            $owners = $this->storageKeyOwners($key);
+            if (count($owners) !== 1 || $owners[0] < 1) {
                 return null;
             }
-            $assetIds[] = $keyOwners[0];
+            if ($assetId !== null && $assetId !== $owners[0]) {
+                return null;
+            }
+            $assetId = $owners[0];
         }
 
-        $assetIds = array_values(array_unique($assetIds));
-
-        return count($assetIds) === 1 ? $assetIds[0] : null;
+        return $assetId;
     }
 
     private function canDeletePhysicalMedia(int $mediaAssetId): bool

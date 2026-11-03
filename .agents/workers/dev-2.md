@@ -52,3 +52,7 @@
 - Current host scheduler activation, live orphan inventory, and historical duplicate preview-kind rows not independently established.
 - **Cross-store atomicity is not physically possible** between PostgreSQL and filesystem; durable manifest reconciliation, rollback and owner-verified orphan cleanup are the implemented recovery path, not a guarantee against arbitrary failed disks/OS crashes. Testing must qualify these.
 - Other workers may advance `dev`; refresh head/roster before further code edits, and coordinate with Dev Worker 4 on Gallery UI ownership.
+
+## Follow-up correction — owner-safe deferred cleanup (2026-11-03)
+- Closing the gap between immediate and queued physical cleanup: both now consult the same `storageKeyOwners` query over Working/Committed, resolved history payloads and pending delete outbox. `drain` refuses to delete an individual path if its owner differs from its queued MediaAsset id. `deleteNow` resolves every requested key through this same query, including legitimately queued deleted media whose Working row is gone; other or malformed owners fail closed. The strict orphan sweep shares the same owner notion.
+- Grouped Testing task B/A: queue for asset A points to asset B's path, old checkpoint retains key, outbox-only owner with no registry row, conflicting outbox owners, malformed historical variant owner; prove no cross-asset deletion and eventual legitimate cleanup.
