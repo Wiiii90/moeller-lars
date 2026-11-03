@@ -570,12 +570,15 @@
  * Its own construction root is the single styling owner.
  */
 .admin-dimensions-control {
+    --admin-dimensions-gap: clamp(.75rem, 2vw, 1.35rem);
     width: 100%;
-    max-width: 32rem;
     min-width: 0;
 }
 .admin-dimensions-control .fi-grid {
-    column-gap: 1.35rem;
+    column-gap: var(--admin-dimensions-gap);
+}
+.admin-dimensions-control .fi-grid > * {
+    min-width: 0;
 }
 .admin-dimensions-control__factor {
     position: relative;
@@ -584,7 +587,7 @@
 .admin-dimensions-control__factor::after {
     content: '×';
     position: absolute;
-    inset-inline-end: -.83rem;
+    inset-inline-end: calc(var(--admin-dimensions-gap) / -2);
     top: calc(50% + .3rem);
     transform: translate(50%, -50%);
     color: var(--admin-muted);
