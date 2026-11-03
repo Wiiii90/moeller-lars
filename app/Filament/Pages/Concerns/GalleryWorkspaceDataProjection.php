@@ -201,7 +201,7 @@ trait GalleryWorkspaceDataProjection
 
         return [
             ['label' => 'Artworks', 'value' => number_format($this->unfilteredArtworkCount), 'description' => 'In this Gallery'],
-            ['label' => 'Published', 'value' => number_format($this->publishedCount), 'description' => 'Currently public'],
+            ['label' => 'Published', 'value' => number_format($this->publishedCount), 'description' => 'Working state · Commit to go live'],
             ['label' => 'Visits', 'value' => $this->metricValue($analytics['page']['visits'] ?? null), 'description' => 'Gallery · 30d'],
             ['label' => 'Views', 'value' => $this->metricValue($analytics['page']['views'] ?? null), 'description' => 'Gallery · 30d'],
             ['label' => 'Artwork opens', 'value' => $opens === null ? '—' : number_format($opens), 'description' => 'Viewer opens · 30d'],

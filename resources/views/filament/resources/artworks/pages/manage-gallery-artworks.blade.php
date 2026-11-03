@@ -4,6 +4,9 @@
             && trim($search) === ''
             && $statusFilter === 'any'
             && $readinessFilter === 'any';
+        $reorderDisabledReason = ($galleryContext['sort_mode'] ?? 'manual') !== 'manual'
+            ? 'Switch to Manual sorting to reorder'
+            : 'Clear filters to reorder';
         $selectedIds = array_map('intval', $selectedArtworkIds);
         $selectedArtworks = collect($artworkDataset)->filter(static fn (array $row): bool =>
             in_array((int) $row['id'], $selectedIds, true)
@@ -269,8 +272,8 @@
                                     @if ($reorderEnabled) wire:sort:handle @endif
                                     @disabled(! $reorderEnabled)
                                     aria-disabled="{{ $reorderEnabled ? 'false' : 'true' }}"
-                                    title="{{ $reorderEnabled ? 'Drag to reorder' : 'Clear filters to reorder' }}"
-                                    aria-label="{{ $reorderEnabled ? 'Drag '.$artwork['title'].' to reorder' : 'Clear filters to reorder '.$artwork['title'] }}"
+                                    title="{{ $reorderEnabled ? 'Drag to reorder' : $reorderDisabledReason }}"
+                                    aria-label="{{ $reorderEnabled ? 'Drag '.$artwork['title'].' to reorder' : $reorderDisabledReason.' '.$artwork['title'] }}"
                                 >⋮⋮</button>
                             </div>
 
@@ -396,8 +399,8 @@
                                         class="gallery-workspace__icon-action gallery-workspace__order-action"
                                         type="button"
                                         wire:click="moveArtwork({{ $artwork['id'] }}, 'up')"
-                                        title="{{ $reorderEnabled ? 'Move artwork earlier' : 'Clear filters to reorder' }}"
-                                        aria-label="{{ $reorderEnabled ? 'Move '.$artwork['title'].' earlier' : 'Clear filters to reorder '.$artwork['title'] }}"
+                                        title="{{ $reorderEnabled ? 'Move artwork earlier' : $reorderDisabledReason }}"
+                                        aria-label="{{ $reorderEnabled ? 'Move '.$artwork['title'].' earlier' : $reorderDisabledReason.' '.$artwork['title'] }}"
                                         @disabled(! $reorderEnabled || ! $artwork['can_move_up'])
                                     >
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" />
@@ -406,8 +409,8 @@
                                         class="gallery-workspace__icon-action gallery-workspace__order-action"
                                         type="button"
                                         wire:click="moveArtwork({{ $artwork['id'] }}, 'down')"
-                                        title="{{ $reorderEnabled ? 'Move artwork later' : 'Clear filters to reorder' }}"
-                                        aria-label="{{ $reorderEnabled ? 'Move '.$artwork['title'].' later' : 'Clear filters to reorder '.$artwork['title'] }}"
+                                        title="{{ $reorderEnabled ? 'Move artwork later' : $reorderDisabledReason }}"
+                                        aria-label="{{ $reorderEnabled ? 'Move '.$artwork['title'].' later' : $reorderDisabledReason.' '.$artwork['title'] }}"
                                         @disabled(! $reorderEnabled || ! $artwork['can_move_down'])
                                     >
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" />

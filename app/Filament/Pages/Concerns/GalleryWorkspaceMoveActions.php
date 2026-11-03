@@ -25,7 +25,9 @@ trait GalleryWorkspaceMoveActions
 
         if (! $this->artworkReorderingAvailable()) {
             app(AdminNotifier::class)->notification(
-                title: 'Clear filters to reorder',
+                title: ($this->galleryContext['sort_mode'] ?? GalleryPresentation::SORT_MANUAL) !== GalleryPresentation::SORT_MANUAL
+                    ? 'Switch to Manual sorting to reorder'
+                    : 'Clear filters to reorder',
                 status: 'warning',
             );
 
@@ -124,7 +126,9 @@ trait GalleryWorkspaceMoveActions
 
         if (! $this->artworkReorderingAvailable()) {
             app(AdminNotifier::class)->notification(
-                title: 'Clear filters to reorder',
+                title: ($this->galleryContext['sort_mode'] ?? GalleryPresentation::SORT_MANUAL) !== GalleryPresentation::SORT_MANUAL
+                    ? 'Switch to Manual sorting to reorder'
+                    : 'Clear filters to reorder',
                 status: 'warning',
             );
 
