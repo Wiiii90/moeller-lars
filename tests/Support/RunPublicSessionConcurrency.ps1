@@ -55,6 +55,7 @@ try {
     php -d variables_order=EGPCS -d "sys_temp_dir=$runtimeRoot/php-temp" -d "upload_tmp_dir=$runtimeRoot/php-upload" tests/Support/PublicSessionHttpWorker.php prepare | Set-Content "$runtimeRoot/verified.json"
     if ($LASTEXITCODE -ne 0) { throw 'Positive Laravel/PDO/path verification or fixture preparation failed.' }
     if (-not (Test-Path "$runtimeRoot/fixture.json")) {
+        Get-Content "$runtimeRoot/verified.json" -Tail 12
         throw 'Fixture preparation did not complete; no HTTP tests may start.'
     }
     $verified = Get-Content "$runtimeRoot/verified.json" -Raw | ConvertFrom-Json

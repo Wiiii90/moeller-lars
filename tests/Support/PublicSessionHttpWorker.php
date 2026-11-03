@@ -84,10 +84,19 @@ if (PHP_SAPI === 'cli') {
             'mime_type' => 'image/png', 'byte_size' => 68, 'sha256' => hash_file('sha256', Storage::disk('local')->path('originals/session.png')),
             'state' => 'available', 'alt_text' => 'Session publication fixture', 'width' => 1, 'height' => 1];
         $asset = MediaAsset::query()->create($attributes);
-        Storage::disk('local')->copy('originals/session.png', 'variants/session.png');
-        $variant = MediaVariant::query()->create(['media_asset_id' => $asset->id, 'variant_kind' => 'thumbnail',
-            'storage_key' => 'variants/session.png', 'mime_type' => 'image/png', 'byte_size' => 68,
-            'sha256' => $asset->sha256, 'state' => 'available', 'width' => 1, 'height' => 1]);
+        $disk = Storage::disk('local');
+        $thumbnailKey = 'variants/session.webp';
+        $disk->makeDirectory('variants');
+        $image = imagecreatefrompng($disk->path('originals/session.png'));
+        if ($image === false || ! imagewebp($image, $disk->path($thumbnailKey))) {
+            throw new RuntimeException('Unable to encode the session fixture thumbnail.');
+        }
+        imagedestroy($image);
+        $variant = MediaVariant::query()->create([
+            'media_asset_id' => $asset->id, 'variant_kind' => 'thumbnail',
+            'storage_key' => $thumbnailKey, 'mime_type' => 'image/webp', 'byte_size' => $disk->size($thumbnailKey),
+            'sha256' => hash_file('sha256', $disk->path($thumbnailKey)), 'state' => 'available', 'width' => 1, 'height' => 1,
+        ]);
         Storage::disk('local')->copy('originals/session.png', 'originals/unreferenced.png');
         $private = MediaAsset::query()->create([...$attributes, 'storage_key' => 'originals/unreferenced.png', 'original_filename' => 'unreferenced.png']);
         foreach (['session-exhibitions', 'session-cv'] as $slug) {
