@@ -177,12 +177,14 @@ export default () => {
                         const captions = [];
                         state.doc.descendants((node, position) => {
                             if (node.type.name !== 'image' || !node.attrs.artistCaption) return;
-                            captions.push(Decoration.widget(position + node.nodeSize, () => {
-                                const caption = document.createElement('span');
-                                caption.className = 'admin-artist-image-caption';
-                                caption.textContent = String(node.attrs.artistCaption);
-                                return caption;
-                            }, { side: 1 }));
+                            // Render the caption on the image node view itself.
+                            // A sibling widget after an inline/floated image enters
+                            // the paragraph flow and can appear beside the image.
+                            // The resizable image's outer container receives this
+                            // view-only attribute; the stored image remains unchanged.
+                            captions.push(Decoration.node(position, position + node.nodeSize, {
+                                'data-artist-caption': String(node.attrs.artistCaption),
+                            }));
                         });
                         return DecorationSet.create(state.doc, captions);
                     },

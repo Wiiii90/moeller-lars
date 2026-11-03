@@ -586,7 +586,24 @@
 .admin-rich-text--visual .tiptap [data-resize-container][data-node="image"]:has(img[data-artist-placement="float-right"]) { float: right; margin: 0 0 .75rem 1rem; }
 
 .admin-rich-text--visual .tiptap::after { content: ''; display: table; clear: both; }
-.admin-artist-image-caption { display: block; font-size: .75rem; line-height: 1.5; color: var(--admin-muted); }
+/* A caption belongs to the resizable image node view, including floated
+   placements. Do not render it as a sibling in the paragraph text flow.
+   The node decoration carries the persisted image caption onto this root. */
+.admin-rich-text--visual .tiptap [data-resize-container][data-node="image"][data-artist-caption] {
+    flex-direction: column;
+}
+
+.admin-rich-text--visual .tiptap [data-resize-container][data-node="image"][data-artist-caption]::after {
+    content: attr(data-artist-caption);
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    color: var(--admin-muted);
+    font-size: .75rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
 
 /* All five editor popovers share exactly the accepted Admin dialog's
    circular header controls and native, underlined form fields. */
