@@ -2,11 +2,11 @@
 
 **Lease:** 7
 **Branch:** `dev`
-**State:** Active — awaiting first concrete development task.
+**State:** Active — implementing user-approved Gallery/Artwork corrections; source and browser acceptance separate.
 
 ## Assignment and scope
-- User activated Dev Worker 4 on 2026-11-03; no feature, file scope or implementation request assigned yet.
-- No ownership claims beyond this slot. Coordinate with active Dev Workers 1–3 before claiming overlapping code.
+- User commissioned corrections to Gallery/Artwork remove/recovery, bulk selection, Materials table/autosave, ordering/drag, public presentation; narrowly scoped tests are explicitly authorized for this worker.
+- Scope: Gallery-workspace actions, Artwork assignment and presentation, material preset owners, directly affected views/styles, scoped browser tests. Do not touch Dev Worker 2 media ingest/feedback, Dev Worker 3 rich text or Dev Worker 1 exhibitions.
 
 ## Evidence and progress
 - Read current `dev/AGENTS.md`, `dev/.agents/skills/dev/SKILL.md`, `dev/.agents/README.md` and `dev/.agents/roster.md` before registration.
@@ -14,4 +14,4 @@
 - No application changes, tests, browser review, deployment or workflow execution.
 
 ## Next action
-- Await user-provided development task, determine the canonical owner and direct consumers within the assigned scope, then update roster claim and this record under a fresh checked lease/head.
+- Implement bounded root-cause slices, read/reconcile latest dev head before each guarded write. No CI/deploy. Browser/runtime acceptance remains unverified without an actual isolated environment.
