@@ -136,7 +136,17 @@ final class JournalEntryEditorSchema
             Grid::make()
                 ->columns(['default' => 1, 'sm' => 2])
                 ->schema([
-                    DatePicker::make('starts_on')->label(__('Starts'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->nullable(),
+                    DatePicker::make('starts_on')
+                        ->label(new HtmlString(
+                            '<span class="admin-form-label-with-help">'.e(__('Starts'))
+                            .AdminHelp::make(
+                                __('Exhibition start date help'),
+                                __('For a one-day exhibition, enter only the start date and leave Ends empty.'),
+                            )->toHtml().'</span>',
+                        ))
+                        ->native(false)
+                        ->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())
+                        ->nullable(),
                     DatePicker::make('ends_on')->label(__('Ends'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->afterOrEqual('starts_on')->nullable(),
                 ])
                 ->columnSpanFull(),
