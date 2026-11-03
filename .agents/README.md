@@ -22,11 +22,25 @@ The `docs` branch is the **preparation workspace** for reusable documentation an
 
 **Never stop at an invented infrastructure limitation.** If source access succeeds, continue the authorized feature/code/docs task with that source. Distinguish source edits committed through the connector from local execution, browser checks and user acceptance; lack of a local runtime prevents runtime claims, **not source changes**. Before every write verify the worker lease and the latest branch head, reconcile concurrent commits, and use a non-forced expected-head update. Do not claim success until the remote ref update confirms it.
 
+## Registration write path — mandatory connector fallback
+
+Worker registration/replacement is a **two-path state change but one Git commit**: the branch-local `.agents/roster.md` and that worker's `.agents/workers/<role>-N.md` must publish together.
+
+When the connected GitHub writer rejects or errors on a batched multi-entry tree request, this is **not** evidence that GitHub, the repository or write permission is unavailable if reads and ordinary Git-object operations still work. Use this deterministic fallback:
+1. read the exact current branch HEAD, roster and existing worker record (if any);
+2. prepare the complete new roster text and complete worker-record text in memory;
+3. create their blobs individually;
+4. starting from the checked HEAD tree, create a tree changing **only the roster path**, then create a second tree based on that first tree changing **only the worker-record path**;
+5. create **one commit** from the final tree with the checked HEAD as parent;
+6. advance the branch with `force=false` and `expected_sha=<checked HEAD>`;
+7. read back the branch head, roster and worker record before claiming registration.
+
+If the expected-head update loses a race, reread/reconcile and retry. A failed batch/tree helper must not end registration. Report a GitHub-access blocker only after the minimal single-entry Git-object/write path itself fails with an actual permission/network/repository error; name that exact failing operation rather than saying “the GitHub connection blocked the shared commit.”
+
 ## Activation, takeover and sign-out
 
 1. The exact short assignment `du bist ein neuer dev worker` (case-insensitive, **no additional sentence required**) selects `dev`, finds the **lowest positive unoccupied Dev Worker number**, and registers it. The same applies to `du bist ein neuer testing worker` / `du bist ein testing worker` on `testing`, and to generic new-worker assignments on the other role branches. A slot is free only when neither an active roster row nor an active `.agents/workers/<area>-N.md` claims it. Reusing a retired *number* still consumes a **new** monotonic lease token, and never restores its old tasks automatically.
-2. `Du bist Testing Worker 1` selects or initializes slot 1 on `testing`; this may register an **already-running chat** using its own real current assignments and progress. It must not fabricate past tasks or automatically restart an old task. A second chat cannot silently take over an occupied slot.
-3. `Ersetze Testing Worker 1` deliberately supersedes that slot's current chat. Increment the **monotonic lease token** in the roster and worker file together. Continue previous work **only** on an explicit continuation instruction.
+2. A direct numbered assignment such as `du bist dev worker 1`, `du bist testing worker 1`, `du bist docs worker 1` or `du bist refactor worker 1` in a **new chat** is itself an explicit request to replace an existing occupant of that numbered slot. Do not ask the user to repeat the assignment with `ersetze`. If the slot is free, register it; if occupied, allocate the next monotonic lease and replace it. A repeated identity message inside the **same already registered chat** is not another replacement.\n3. An explicit command such as `Ersetze Testing Worker 1` has the same replacement semantics. Update roster and worker record together in one checked commit; the old lease immediately becomes stale. Continue previous feature work only when the user requests continuation.
 4. **Sign in:** create the own task/progress record and a corresponding active roster row in one concurrency-checked commit on the **working branch**. Record the actual user assignments, status, completed steps, current evidence, blockers and outstanding actions, not a chat transcript. Do not store another worker's private tasks in this file.
 5. **Sign out:** when a worker explicitly ends/retires, first consolidate verified durable findings into their owning product document or common workflow, and transfer any still-owned unfinished action to an explicitly identified owner. Then **delete the temporary worker file and remove its roster row/claims in one guarded commit**. Its number becomes free. A paused worker keeps its file and row until resumed or explicitly replaced/retired.
 6. If a chat reaches its context limit without sign-out, the user can deliberately assign a replacement chat to the **same numbered slot**. It reads only the persisted task state and current Git source; unsaved chat details cannot be recovered.
