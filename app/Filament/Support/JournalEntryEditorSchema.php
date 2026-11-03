@@ -11,7 +11,6 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Media\MediaTypePolicy;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Schemas\Components\Grid;
@@ -136,21 +135,15 @@ final class JournalEntryEditorSchema
             Grid::make()
                 ->columns(['default' => 1, 'sm' => 2])
                 ->schema([
-                    DatePicker::make('starts_on')
-                        ->label(new HtmlString(
-                            '<span class="admin-form-label-with-help">'.e(__('Starts'))
-                            .AdminHelp::make(
-                                __('Exhibition start date help'),
-                                __('For a one-day exhibition, enter only the start date and leave Ends empty.'),
-                            )->toHtml().'</span>',
-                        ))
-                        ->native(false)
-                        ->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())
-                        ->nullable(),
-                    DatePicker::make('ends_on')->label(__('Ends'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateFormat())->afterOrEqual('starts_on')->nullable(),
+                    AdminPartialDateControl::make(
+                        'starts_on',
+                        __('Starts'),
+                        __('For a one-day exhibition, enter only the start date and leave Ends empty.'),
+                        RegionalFormats::adminRegion(),
+                    ),
+                    AdminPartialDateControl::make('ends_on', __('Ends'), region: RegionalFormats::adminRegion()),
                 ])
                 ->columnSpanFull(),
-            TextInput::make('date_text')->label(__('Display date override'))->maxLength(160)->nullable()->columnSpanFull(),
             Toggle::make('show_vernissage')->label(__('Show vernissage until it begins'))->default(false)->columnSpanFull(),
             DateTimePicker::make('vernissage_at')->label(__('Vernissage'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateTimeFormat())->seconds(false)->default(null)->nullable()->columnSpanFull(),
         ];

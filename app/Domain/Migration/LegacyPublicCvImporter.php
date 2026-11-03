@@ -60,6 +60,11 @@ final class LegacyPublicCvImporter
                     continue;
                 }
 
+                $dates = \App\Domain\Content\ExhibitionDate::fromLegacy(
+                    $row['starts_on'],
+                    $row['ends_on'],
+                    $row['year_text'],
+                );
                 $slugBase = Str::slug($row['title']);
                 DB::table('exhibitions')->insert([
                     'slug' => ($slugBase !== '' ? $slugBase : 'exhibition').'-legacy-'.$legacyId,
@@ -74,9 +79,8 @@ final class LegacyPublicCvImporter
                     'description' => $row['body'],
                     'external_url' => null,
                     'directions_url' => null,
-                    'starts_on' => $row['starts_on'],
-                    'ends_on' => $row['ends_on'],
-                    'date_text' => $row['year_text'],
+                    'starts_on' => $dates['starts_on'],
+                    'ends_on' => $dates['ends_on'],
                     'opening_text' => $row['opening_text'],
                     'legacy_id' => $legacyId,
                     'legacy_source' => self::SOURCE,

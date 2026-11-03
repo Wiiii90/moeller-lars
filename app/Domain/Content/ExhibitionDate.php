@@ -77,7 +77,7 @@ final class ExhibitionDate
             throw new InvalidArgumentException('Unrecognized authored date expression: '.$text);
         }
 
-        $startDate = self::normalize($startDate, 'authored start');
+        $startDate = self::normalize($startDate, 'authored start') ?? throw new InvalidArgumentException('Missing authored exhibition start date.');
         $endDate = self::normalize($endDate, 'authored end');
         if ($endDate !== null && $startDate > $endDate) {
             throw new InvalidArgumentException('End date precedes start date.');
@@ -87,6 +87,83 @@ final class ExhibitionDate
             throw new InvalidArgumentException('Authored date conflicts with already stored structured dates.');
         }
         return ['starts_on' => $startDate, 'ends_on' => $endDate];
+    }
+
+    public static function format(?string $value, string $region): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $value = self::normalize($value) ?? throw new InvalidArgumentException('Missing exhibition date.');
+        $year = substr($value, 0, 4);
+        if (strlen($value) === 4) {
+            return $year;
+        }
+        $month = substr($value, 5, 2);
+        if (strlen($value) === 7) {
+            return $region === 'de-DE' ? $month.'.'.$year : $month.'/'.$year;
+        }
+
+        return RegionalFormats::date(new DateTimeImmutable($value), $region);
+    }
+
+    public static function display(?string $start, ?string $end, string $region): ?string
+    {
+        $first = self::format($start, $region);
+        if ($first === null) {
+            return null;
+        }
+        $last = self::format($end, $region);
+
+        return $last !== null && $last !== $first ? $first.' – '.$last : $first;
+    }
+
+    public static function validRange(?string $start, ?string $end): bool
+    {
+        if ($end === null) {
+            return true;
+        }
+        if ($start === null) {
+            return false;
+        }
+
+        return self::earliest($start) <= self::latest($end);
+    }
+
+    public static function temporalState(?string $start, ?string $end, \DateTimeInterface $now): string
+    {
+        if ($start === null) {
+            return 'unknown';
+        }
+        $today = $now->format('Y-m-d');
+        if ($today < self::earliest($start)) {
+            return 'upcoming';
+        }
+        if ($today > self::latest($end ?? $start)) {
+            return 'past';
+        }
+
+        return strlen($start) === 10 && ($end === null || strlen($end) === 10)
+            ? 'current' : 'unknown';
+    }
+
+    private static function earliest(string $value): string
+    {
+        return strlen($value) === 4
+            ? $value.'-01-01'
+            : (strlen($value) === 7 ? $value.'-01' : $value);
+    }
+
+    private static function latest(string $value): string
+    {
+        if (strlen($value) === 4) {
+            return $value.'-12-31';
+        }
+        if (strlen($value) === 7) {
+            return (new DateTimeImmutable($value.'-01'))->modify('last day of this month')->format('Y-m-d');
+        }
+
+        return $value;
     }
 
     private static function germanDay(string $value): string

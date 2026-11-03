@@ -4,8 +4,8 @@ namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Models\Exhibition;
+use InvalidArgumentException;
 use App\Models\SiteSection;
-use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -278,7 +278,7 @@ final class ExhibitionEditorialService
             || $entry->getAttribute('migrated_at') !== null
             || (is_string($legacySource) && trim($legacySource) !== '');
 
-        if (! $isLegacy && ! $startsOn instanceof CarbonInterface) {
+        if (! $isLegacy && (! is_string($startsOn) || $startsOn === '')) {
             throw ValidationException::withMessages(['starts_on' => 'Set the structured exhibition start date before publishing.']);
         }
         if ($entry->displayDate() === null) {
@@ -294,7 +294,7 @@ final class ExhibitionEditorialService
     private function validatedEditorialData(array $data, ?Exhibition $entry): array
     {
         $allowed = [
-            'site_section_id', 'slug', 'title', 'description', 'starts_on', 'ends_on', 'date_text', 'vernissage_at', 'show_vernissage',
+            'site_section_id', 'slug', 'title', 'description', 'starts_on', 'ends_on', 'vernissage_at', 'show_vernissage',
             'organizer', 'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url', 'gallery_enabled', 'gallery_presentation', 'image_viewer_enabled', 'map_enabled',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
@@ -308,9 +308,8 @@ final class ExhibitionEditorialService
             'slug' => ['required', 'string', 'max:180', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slugRule],
             'title' => ['required', 'string', 'max:240'],
             'description' => ['nullable', 'string'],
-            'starts_on' => ['nullable', 'date'],
-            'ends_on' => ['nullable', 'date', 'after_or_equal:starts_on'],
-            'date_text' => ['nullable', 'string', 'max:160'],
+            'starts_on' => ['nullable', 'string'],
+            'ends_on' => ['nullable', 'string'],
             'vernissage_at' => ['nullable', 'date'],
             'show_vernissage' => ['nullable', 'boolean'],
             'organizer' => ['nullable', 'string', 'max:240'],
@@ -326,10 +325,26 @@ final class ExhibitionEditorialService
             'map_enabled' => ['nullable', 'boolean'],
         ])->validate();
 
-        foreach (['date_text', 'organizer', 'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url'] as $field) {
+        foreach (['organizer', 'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url'] as $field) {
             if (array_key_exists($field, $payload) && is_string($payload[$field])) {
                 $payload[$field] = trim($payload[$field]) === '' ? null : trim($payload[$field]);
             }
+        }
+        foreach (['starts_on', 'ends_on'] as $field) {
+            if (array_key_exists($field, $payload)) {
+                try {
+                    $payload[$field] = ExhibitionDate::normalize($payload[$field], $field);
+                } catch (InvalidArgumentException $exception) {
+                    throw ValidationException::withMessages([$field => $exception->getMessage()]);
+                }
+            }
+        }
+        $start = array_key_exists('starts_on', $payload)
+            ? $payload['starts_on'] : $entry?->getAttribute('starts_on');
+        $end = array_key_exists('ends_on', $payload)
+            ? $payload['ends_on'] : $entry?->getAttribute('ends_on');
+        if (! ExhibitionDate::validRange($start, $end)) {
+            throw ValidationException::withMessages(['ends_on' => 'End must not precede the exhibition start.']);
         }
         if (array_key_exists('description', $payload) && is_string($payload['description'])) {
             $payload['description'] = trim($payload['description']) === '' ? null : trim($payload['description']);

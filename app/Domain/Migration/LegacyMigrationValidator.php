@@ -356,16 +356,20 @@ final class LegacyMigrationValidator
                 continue;
             }
 
+            $dates = \App\Domain\Content\ExhibitionDate::fromLegacy(
+                $expected['starts_on'],
+                $expected['ends_on'],
+                $expected['year_text'],
+            );
             $checks = [
                 'legacy_id' => $expected['legacy_id'],
                 'title' => $expected['title'],
-                'date_text' => $expected['year_text'],
                 'venue' => $expected['organisation'],
                 'location_text' => $expected['location'],
                 'description' => $expected['body'],
                 'opening_text' => $expected['opening_text'],
-                'starts_on' => $expected['starts_on'],
-                'ends_on' => $expected['ends_on'],
+                'starts_on' => $dates['starts_on'],
+                'ends_on' => $dates['ends_on'],
                 'position' => $position,
                 'state' => 'published',
             ];
