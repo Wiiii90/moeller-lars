@@ -1654,9 +1654,9 @@ body {
 @container (min-width: 27rem) {
     .exhibition-entry__feature--with-cover .exhibition-entry__cover {
         float: inline-start;
-        /* The cover and its margin fill precisely the columns before the
-           title, keeping Address on the same reading axis as no-cover rows.
-           Its physical right edge is capped by the catalogue's date track. */
+        /* Cover and gap occupy the columns before the title, keeping
+           adjacent text on the title axis. Without a cover, the detail
+           content instead begins at the body's left edge. */
         width: min(14rem, calc(var(--exhibition-title-offset) - var(--exhibition-column-gap)));
         margin: 0 var(--exhibition-column-gap) .85rem 0;
     }
