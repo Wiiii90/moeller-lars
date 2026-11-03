@@ -8,33 +8,38 @@ if ($args.Count -gt 0 -and $args[0] -eq '-QualificationSuite') {
     $args = @($args | Select-Object -Skip 2)
 }
 
-$linux = $QualificationSuite -ne 'Browser' -and $args.Count -gt 0 -and $args[0] -eq '-Linux'
+$linux = $args.Count -gt 0 -and $args[0] -eq '-Linux'
 if ($linux) { $args = @($args | Select-Object -Skip 1) }
+$linux = $linux -or $QualificationSuite -eq 'Browser'
 $ErrorActionPreference = 'Stop'
 $repoPath = (Get-Location).Path
 if ((git branch --show-current) -notin @('dev', 'testing') -or (git rev-parse --show-toplevel).Replace('/', '\') -ne $repoPath) {
     throw 'Run from the root of the dev or testing checkout; only disposable PostgreSQL and isolated runtime paths are permitted.'
 }
+function Get-IsolatedContainerArguments {
+    $options = @('--network', "container:$containerId", '--workdir', $containerApp,
+        '--mount', "type=bind,source=$repoPath,target=$containerApp,readonly",
+        '--mount', "type=bind,source=$runtimeRoot,target=$containerRoot")
+    foreach ($entry in $values.GetEnumerator()) {
+        $value = [Environment]::GetEnvironmentVariable($entry.Key, 'Process')
+        if ($null -eq $value) { continue }
+        $value = $value.Replace($runtimeRoot, $containerRoot)
+        if ($entry.Key -in @('DB_PORT', 'CONCURRENCY_PORT')) { $value = '5432' }
+        $options += @('--env', "$($entry.Key)=$value")
+    }
+    return $options
+}
+
 function Invoke-QualificationPhp {
     if (-not $linux) {
         php @phpOptions @args
         return
     }
 
-    $containerRoot = "/app/$relativeRoot"
-    $containerEnv = @()
-    foreach ($entry in $values.GetEnumerator()) {
-        $value = [Environment]::GetEnvironmentVariable($entry.Key, 'Process')
-        if ($null -eq $value) { continue }
-        $value = $value.Replace($runtimeRoot, $containerRoot)
-        if ($entry.Key -in @('DB_PORT', 'CONCURRENCY_PORT')) { $value = '5432' }
-        $containerEnv += @('--env', "$($entry.Key)=$value")
-    }
+    $containerArgs = Get-IsolatedContainerArguments
+    if ($QualificationSuite -eq 'Browser') { $containerArgs += @('--user', 'www-data') }
     $linuxArgs = @($args | ForEach-Object { $_.Replace($runtimeRoot, $containerRoot) })
-    docker run --rm --network "container:$containerId" --entrypoint php --workdir /app `
-        --mount "type=bind,source=$repoPath,target=/app,readonly" `
-        --mount "type=bind,source=$runtimeRoot,target=$containerRoot" `
-        @containerEnv moeller-lars-local-preview:latest `
+    docker run --rm --entrypoint php @containerArgs moeller-lars-local-preview:latest `
         -d memory_limit=512M -d variables_order=EGPCS `
         -d "sys_temp_dir=$containerRoot/php-temp" -d "upload_tmp_dir=$containerRoot/php-upload" @linuxArgs
 }
@@ -42,6 +47,8 @@ function Invoke-QualificationPhp {
 $token = [guid]::NewGuid().ToString('N')
 $relativeRoot = "storage/framework/testing/concurrency-$token"
 $runtimeRoot = Join-Path $repoPath $relativeRoot
+$containerApp = '/var/www/html'
+$containerRoot = "$containerApp/$relativeRoot"
 $containerName = "moeller-concurrency-$token"
 $databaseName = "concurrency_$token"
 $passwordValue = [guid]::NewGuid().ToString('N')
@@ -50,7 +57,9 @@ $createdContainer = $false
 $browserServer = $null
 New-Item -ItemType Directory -Path $runtimeRoot | Out-Null
 try {
-    $containerId = docker run -d --name $containerName --publish '127.0.0.1::5432' --tmpfs '/var/lib/postgresql/data:rw,noexec,nosuid,size=1073741824' --env "POSTGRES_DB=$databaseName" --env "POSTGRES_USER=$databaseName" --env "POSTGRES_PASSWORD=$passwordValue" postgres:17
+    $ports = @('--publish', '127.0.0.1::5432')
+    if ($QualificationSuite -eq 'Browser') { $ports += @('--publish', '127.0.0.1::8080') }
+    $containerId = docker run -d --name $containerName @ports --tmpfs '/var/lib/postgresql/data:rw,noexec,nosuid,size=1073741824' --env "POSTGRES_DB=$databaseName" --env "POSTGRES_USER=$databaseName" --env "POSTGRES_PASSWORD=$passwordValue" postgres:17
     if ($LASTEXITCODE -ne 0) { throw 'Disposable PostgreSQL launch failed.' }
     $createdContainer = $true
     $details = (docker inspect $containerId | ConvertFrom-Json)[0]
@@ -79,10 +88,9 @@ try {
         GITHUB_ACTIONS=$null; MOELLER_LARS_DISPOSABLE_TEST_DATABASE=$null; MOELLER_LARS_PERSISTENT_PREVIEW=$null
     }
     if ($QualificationSuite -eq 'Browser') {
-        $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
-        $listener.Start()
-        try { $browserPort = $listener.LocalEndpoint.Port } finally { $listener.Stop() }
-        $browserUrl = "http://127.0.0.1:$browserPort"
+        $browserBinding = $details.NetworkSettings.Ports.'8080/tcp'[0]
+        if ($browserBinding.HostIp -ne '127.0.0.1') { throw 'Browser binding is not loopback.' }
+        $browserUrl = "http://127.0.0.1:$($browserBinding.HostPort)"
         $values.APP_URL = $browserUrl
         $values.PLAYWRIGHT_BASE_URL = $browserUrl
         $values.SESSION_DRIVER = 'file'
@@ -124,26 +132,32 @@ try {
         $env:GITHUB_ACTIONS = 'true'
         $env:MOELLER_LARS_DISPOSABLE_TEST_DATABASE = '1'
         if ($QualificationSuite -eq 'Browser') {
-            php @phpOptions artisan migrate --force
+            Invoke-QualificationPhp artisan migrate --force
             if ($LASTEXITCODE -ne 0) { throw 'Browser database migration failed.' }
-            php @phpOptions artisan db:seed '--class=Database\Seeders\BrowserProfilingSeeder' --force
+            Invoke-QualificationPhp artisan db:seed '--class=Database\Seeders\BrowserProfilingSeeder' --force
             if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $env:PLAYWRIGHT_PUBLIC_MEDIA_FIXTURE_FILE)) {
                 throw 'Browser fixture preparation failed.'
             }
-            $php = (Get-Command php -CommandType Application).Source
-            $router = Join-Path $repoPath 'vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php'
-            $serverArgs = @($phpOptions | ForEach-Object { '"' + $_ + '"' }) + @('-S', "127.0.0.1:$browserPort", ('"' + $router + '"'))
-            $browserServer = Start-Process -FilePath $php -ArgumentList $serverArgs -WorkingDirectory (Join-Path $repoPath 'public') -WindowStyle Hidden -PassThru -RedirectStandardError "$runtimeRoot/browser-server.log"
+            $vhost = (Get-Content -LiteralPath 'docker/apache-vhost.conf' -Raw).Replace(
+                'XSendFilePath /var/www/html/storage/app/private',
+                "XSendFilePath $containerRoot/storage/app/private"
+            )
+            Set-Content -LiteralPath "$runtimeRoot/browser-vhost.conf" -Value $vhost -Encoding ascii
+            $containerArgs = Get-IsolatedContainerArguments
+            $browserServer = docker run -d --entrypoint apache2-foreground @containerArgs `
+                --mount "type=bind,source=$runtimeRoot/browser-vhost.conf,target=/etc/apache2/sites-available/000-default.conf,readonly" `
+                moeller-lars-local-preview:latest
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to start isolated Apache.' }
             $ready = $false
             for ($attempt = 0; $attempt -lt 30; $attempt++) {
-                if ($browserServer.HasExited) { break }
+
                 try {
                     $ready = (Invoke-WebRequest "$browserUrl/up" -TimeoutSec 2).StatusCode -eq 200
                     if ($ready) { break }
                 } catch { Start-Sleep -Seconds 1 }
             }
-            if (-not $ready -or $browserServer.HasExited) {
-                Get-Content "$runtimeRoot/browser-server.log" -Tail 15
+            if (-not $ready) {
+                docker logs --tail 15 $browserServer
                 throw 'The isolated browser server did not become ready.'
             }
             npm.cmd run test:browser -- @args
@@ -156,7 +170,7 @@ try {
     }
     $testExit = $LASTEXITCODE
 } finally {
-    if ($browserServer -and -not $browserServer.HasExited) { Stop-Process -InputObject $browserServer; $browserServer.WaitForExit() }
+    if ($browserServer) { docker rm -f $browserServer | Out-Null }
     foreach ($entry in $oldEnvironment.GetEnumerator()) { [Environment]::SetEnvironmentVariable($entry.Key, $entry.Value, 'Process') }
     if ($createdContainer) { docker rm -f $containerId | Out-Null }
     $resolvedRoot = (Resolve-Path -LiteralPath $runtimeRoot).Path
