@@ -14,7 +14,7 @@
 **Source baseline inspected:** `dev@d54d2afb184cc7f6f01db0d8a28ca9d7b0ffefab` (other Dev workers continue changing disjoint files). No application code, test files, docs, deployments, or artist media changed during audit.
 
 **Verified design:**
-- One `MediaIngestService` stores immutable UUID-named private originals and separate checksum-addressed/recorded 960px WebP image thumbnails/video posters; authoritative SHA-256 deduplication checks plus DB transaction and best-effort filesystem rollback; private `incoming-media` stages 16 MiB chunks and reserves remaining bytes against whole-site quota.
+- One `MediaIngestService` stores immutable UUID-named private originals and separately stored 960px WebP image thumbnails/video posters, each recorded with SHA-256 checksums; authoritative SHA-256 deduplication checks plus DB transaction and best-effort filesystem rollback; private `incoming-media` stages 16 MiB chunks and reserves remaining bytes against whole-site quota.
 - `MediaCapacityService` counts all private media including staged parts/variants and persistent PostgreSQL footprint, plus open-session remaining-byte reservations; separate host free-space reserve 256 MiB. Current operator quota controls byte admission. A standalone original's file byte-size is **not** a memory guarantee.
 - Image formats JPEG/PNG/WebP, video H.264-MP4 and VP8/VP9/AV1-WebM, audio MP3/M4A/Ogg/WAV. Original remains intact, image/WebP preview max edge 960; video poster 960, original video not transcoded.
 - `ResumableMediaUploadService` has 48-hour expiry, bounded cleanup batch, run on new `begin()`, plus daily `routes/console.php` schedule declaration; deployment activation of Laravel scheduler remains unverified.
