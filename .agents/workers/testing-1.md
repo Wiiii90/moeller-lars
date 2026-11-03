@@ -48,3 +48,5 @@
 - **Resumable transport:** Added one dedicated HTTP feature test suite covering authenticated staging, real image ingest, final receipt replay, deduplication, incomplete chunks and offset recovery, owner-bound cancellation and required-preview fail-closed behavior. The suite redirects `storage_path()` to a uniquely owned temporary directory and deletes only that directory on teardown. Execution is pending.
 
 - **Migration coverage authored:** A dedicated PostgreSQL migration-contract file reconstructs the previous `media_variants` shape within disposable test transactions and verifies populated Working/Committed success, duplicate-preview rollback and unrelated `site_sections` drift isolation. Not executed; only eligible after separately verified disposable PostgreSQL qualification.
+
+- **JavaScript behavior:** Added a transport-level Node.js unit test that exercises the real upload module with changed interior file bytes but identical name, size, timestamp and first/last 64 KiB. It verifies the acknowledged staged chunk is rejected, canceled and replaced before a successful fresh transfer. Not run.
