@@ -84,3 +84,49 @@ it('round-trips formatted Exhibition descriptions through the actual mounted Jou
         ->assertActionDataSet(['description' => $body]);
 });
 
+it('shows Exhibition Gallery video controls only when the selected Storage media is video', function (): void {
+    $undoRepeaterFake = \Filament\Forms\Components\Repeater::fake();
+
+    try {
+        $section = app(SiteSectionEditorialService::class)->createJournal(
+            'Gallery video controls', 'gallery-video-controls', JournalTemplate::Exhibitions->value,
+        );
+        $image = \App\Models\MediaAsset::query()->create([
+            'storage_key' => 'originals/gallery-control-photo.jpg',
+            'original_filename' => 'gallery-control-photo.jpg',
+            'mime_type' => 'image/jpeg',
+            'byte_size' => 4,
+            'sha256' => hash('sha256', 'gallery-control-photo'),
+            'state' => 'available',
+        ]);
+        $video = \App\Models\MediaAsset::query()->create([
+            'storage_key' => 'originals/gallery-control-motion.mp4',
+            'original_filename' => 'gallery-control-motion.mp4',
+            'mime_type' => 'video/mp4',
+            'byte_size' => 4,
+            'sha256' => hash('sha256', 'gallery-control-motion'),
+            'state' => 'available',
+        ]);
+
+        $editor = Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+            ->mountAction('addExhibition')
+            ->set('mountedActions.0.data.gallery_enabled', true)
+            ->set('mountedActions.0.data.gallery_images', [[
+                'media_asset_id' => $image->getKey(),
+                'video_controls_enabled' => true,
+            ]]);
+        $editor->assertFormFieldHidden('gallery_images.0.video_controls_enabled');
+
+        $editor->set('mountedActions.0.data.gallery_images', [[
+            'media_asset_id' => $video->getKey(),
+            'video_controls_enabled' => true,
+        ]])->assertFormFieldVisible('gallery_images.0.video_controls_enabled');
+
+        $editor->set('mountedActions.0.data.gallery_images', [[
+            'media_asset_id' => $image->getKey(),
+            'video_controls_enabled' => true,
+        ]])->assertFormFieldHidden('gallery_images.0.video_controls_enabled');
+    } finally {
+        $undoRepeaterFake();
+    }
+});
