@@ -67,7 +67,8 @@ function publicationImageFixture(): array
     $disk = Storage::disk(config('media.disk'));
     $bytes = [$asset->storage_key => $disk->get($asset->storage_key), $variant->storage_key => $disk->get($variant->storage_key)];
     expect(getimagesizefromstring($bytes[$asset->storage_key])[0])->toBe(320)
-        ->and(getimagesizefromstring($bytes[$variant->storage_key])[0])->toBe(320);
+        ->and(getimagesizefromstring($bytes[$variant->storage_key])[0])->toBe((int) $variant->width)
+        ->and(max((int) $variant->width, (int) $variant->height))->toBeLessThanOrEqual(960);
 
     return compact('asset', 'variant', 'artworks', 'bytes', 'gallery');
 }

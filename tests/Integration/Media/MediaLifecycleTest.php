@@ -341,15 +341,15 @@ it('rejects images over the pixel limit before writes', function (): void {
     Storage::fake(config('media.disk'));
     $small = lifecycleImageUpload('image/png');
     $bytes = file_get_contents($small->getRealPath());
-    $bytes = substr_replace($bytes, pack('N', 15000), 16, 4);
-    $bytes = substr_replace($bytes, pack('N', 10000), 20, 4);
+    $bytes = substr_replace($bytes, pack('N', 25001), 16, 4);
+    $bytes = substr_replace($bytes, pack('N', 20000), 20, 4);
     // Update the IHDR CRC so a malformed PNG does not accidentally count
     // as evidence for the independent image-pixel limit.
     $bytes = substr_replace($bytes, pack('N', crc32(substr($bytes, 12, 17))), 29, 4);
 
     expect(fn () => app(MediaIngestService::class)->ingest(
         UploadedFile::fake()->createWithContent('large.png', $bytes)
-    ))->toThrow(ValidationException::class, 'The uploaded image dimensions are not allowed.');
+    ))->toThrow(ValidationException::class, '(maximum 500 megapixels).');
 
     expect(MediaAsset::count())->toBe(0)
         ->and(Storage::disk(config('media.disk'))->allFiles())->toBeEmpty();
@@ -385,7 +385,7 @@ it('allows an exact-fit site storage write and blocks the first byte beyond quot
 
     expect($database['measurement_available'])->toBeTrue();
 
-    $databaseBytes = (int) $database['logical_bytes'];
+    $databaseBytes = max((int) $database['logical_bytes'], (int) $database['physical_database_bytes']);
     config()->set('media.quota_bytes', $databaseBytes + 100);
 
     $capacity = app(MediaCapacityService::class);

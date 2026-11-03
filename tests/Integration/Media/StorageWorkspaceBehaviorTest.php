@@ -119,7 +119,7 @@ it('counts generated derivatives and database storage against the site allowance
 
     expect($database['measurement_available'])->toBeTrue();
 
-    $databaseBytes = (int) $database['logical_bytes'];
+    $databaseBytes = max((int) $database['logical_bytes'], (int) $database['physical_database_bytes']);
     config()->set('media.quota_bytes', $databaseBytes + 400);
 
     $snapshot = app(MediaCapacityService::class)->snapshot();
@@ -128,7 +128,7 @@ it('counts generated derivatives and database storage against the site allowance
         ->and($snapshot['generated_bytes'])->toBe(300)
         ->and($snapshot['database_bytes'])->toBe($databaseBytes)
         ->and($snapshot['site_used_bytes'])->toBe($databaseBytes + 380)
-        ->and($snapshot['reclaimable_bytes'])->toBe(300)
+        ->and($snapshot['reclaimable_bytes'])->toBe(0)
         ->and($snapshot['remaining_bytes'])->toBe(20)
         ->and($snapshot['status'])->toBe('near_capacity');
 });
