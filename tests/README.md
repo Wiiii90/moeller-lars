@@ -82,3 +82,15 @@ Each invocation owns a fresh PostgreSQL cluster and runtime directory. Relative 
 paths resolve inside that runtime on Windows. The runner checks the effective Laravel connection,
 cluster identifier, empty schema and runtime paths before enabling the existing disposable
 database guard flags and launching Pest.
+
+
+For media-dependent suites, append `-Linux` after the suite name or use it
+as the first argument for the dedicated Publication runner. The runner uses
+the locally built runtime image with libvips, ExifTool and FFmpeg, mounts the
+checkout read-only, and verifies the new database through the application's
+effective connection before starting a regular Pest suite.
+
+Run seeded browser projects with `npm run build` followed by
+`.\tests\Support\RunPublicationConcurrency.ps1 -QualificationSuite Browser`.
+Browser mode starts Apache on a loopback port and seeds media as Apache's
+worker user. Install Chromium and WebKit for the locked Playwright version.
