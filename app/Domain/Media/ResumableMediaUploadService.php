@@ -114,6 +114,7 @@ final class ResumableMediaUploadService
             if (isset($meta['asset_id'])) {
                 return $this->status($id, $meta);
             }
+            $meta = $this->ensureChunkHashes($id, $meta);
 
             $file = @fopen($this->partPath($id), 'r+b');
             if (! is_resource($file)) {
@@ -192,6 +193,7 @@ final class ResumableMediaUploadService
             if (isset($meta['asset_id'])) {
                 return $this->status($id, $meta);
             }
+            $meta = $this->ensureChunkHashes($id, $meta);
 
             $path = $this->partPath($id);
             if (! is_file($path) || filesize($path) !== (int) $meta['size']) {
@@ -277,19 +279,68 @@ final class ResumableMediaUploadService
      */
     private function ensureChunkHashes(string $id, array $meta): array
     {
-        if (isset($meta['chunks']) && is_array($meta['chunks'])) {
-            return $meta;
-        }
-
         $path = $this->partPath($id);
         if (! is_file($path)) {
             throw $this->invalid('Previous upload staging is missing. Cancel it and upload the file again.');
         }
 
         $size = @filesize($path);
-        if (! is_int($size) || $size < 0 || $size > (int) $meta['size']
-            || ($size % self::CHUNK_BYTES !== 0 && $size !== (int) $meta['size'])) {
-            throw $this->invalid('Previous upload has an incomplete chunk. Cancel it and start again.');
+        $declared = (int) $meta['size'];
+        if (! is_int($size) || $size < 0 || $size > $declared) {
+            throw $this->invalid('Previous upload staging has an invalid size. Cancel it and start again.');
+        }
+
+        if (isset($meta['chunks']) && is_array($meta['chunks'])) {
+            $chunks = $meta['chunks'];
+            if (! array_is_list($chunks) || count($chunks) > (int) ceil($declared / self::CHUNK_BYTES)) {
+                throw $this->invalid('Previous upload chunk receipt is inconsistent. Cancel it and start again.');
+            }
+            foreach ($chunks as $digest) {
+                if (! is_string($digest) || preg_match('/^[a-f0-9]{64}$/D', $digest) !== 1) {
+                    throw $this->invalid('Previous upload chunk receipt is invalid. Cancel it and start again.');
+                }
+            }
+
+            // The manifest is the durable receipt. A process can be killed
+            // after writing part of the next chunk but before committing its
+            // digest. Never use those unacknowledged bytes as a resume offset.
+            $confirmed = min($declared, count($chunks) * self::CHUNK_BYTES);
+            if ($size < $confirmed) {
+                throw $this->invalid('Previous upload staging is shorter than its verified receipt. Cancel it and start again.');
+            }
+            if ($size > $confirmed) {
+                $stream = @fopen($path, 'r+b');
+                if (! is_resource($stream)) {
+                    throw $this->invalid('Previous upload staging cannot be restored.');
+                }
+                try {
+                    if (! @ftruncate($stream, $confirmed) || ! @fflush($stream)) {
+                        throw $this->invalid('Previous upload staging could not be rolled back safely.');
+                    }
+                } finally {
+                    fclose($stream);
+                }
+            }
+
+            return $meta;
+        }
+
+        // Historical staging manifests predate per-chunk receipts. Do not
+        // silently accept an unacknowledged tail fragment as a valid chunk.
+        $confirmed = $size === $declared ? $size
+            : intdiv($size, self::CHUNK_BYTES) * self::CHUNK_BYTES;
+        if ($size > $confirmed) {
+            $stream = @fopen($path, 'r+b');
+            if (! is_resource($stream)) {
+                throw $this->invalid('Previous upload staging cannot be restored.');
+            }
+            try {
+                if (! @ftruncate($stream, $confirmed) || ! @fflush($stream)) {
+                    throw $this->invalid('Previous upload staging could not be rolled back safely.');
+                }
+            } finally {
+                fclose($stream);
+            }
         }
 
         $stream = @fopen($path, 'rb');
@@ -300,8 +351,8 @@ final class ResumableMediaUploadService
         try {
             $hashes = [];
             $offset = 0;
-            while ($offset < $size) {
-                $length = min(self::CHUNK_BYTES, $size - $offset);
+            while ($offset < $confirmed) {
+                $length = min(self::CHUNK_BYTES, $confirmed - $offset);
                 $hash = hash_init('sha256');
                 $count = hash_update_stream($hash, $stream, $length);
                 if (! is_int($count) || $count !== $length) {

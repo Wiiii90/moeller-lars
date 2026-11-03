@@ -16,16 +16,18 @@ class MediaIntegrityService
             return ['original_missing'];
         }
 
+        // Deleted media may be physically retained by Committed or retained
+        // publication/Undo state. Such bytes are owned, not filesystem orphans.
+        // The canonical cleanup service, not this active-media integrity
+        // checker, determines when they can actually be reclaimed.
+        if ($fresh->getAttribute('state') === 'deleted') {
+            return [];
+        }
+
         $disk = Storage::disk(config('media.disk'));
         $issues = [];
         $originalKey = (string) $fresh->getAttribute('storage_key');
-        if ($fresh->getAttribute('state') === 'deleted') {
-            if ($this->exists($disk, $originalKey)) {
-                $issues[] = 'deleted_original_present';
-            }
-        } else {
-            $issues = [...$issues, ...$this->checkFile($disk, $originalKey, $fresh, 'original')];
-        }
+        $issues = [...$issues, ...$this->checkFile($disk, $originalKey, $fresh, 'original')];
 
         foreach ($fresh->getRelationValue('variants') as $variant) {
             $id = (int) $variant->getKey();
@@ -33,10 +35,7 @@ class MediaIntegrityService
             $state = (string) $variant->getAttribute('state');
             $variantKey = (string) $variant->getAttribute('storage_key');
             if ($state === 'deleted') {
-                if ($this->exists($disk, $variantKey)) {
-                    $issues[] = $key.'deleted_file_present';
-                }
-
+                // A retained published checkpoint may still own this file.
                 continue;
             }
             if ($state === 'stale' && ! $this->exists($disk, $variantKey)) {
@@ -61,7 +60,17 @@ class MediaIntegrityService
             }
         }
 
-        return $issues;
+        $mime = (string) $fresh->getAttribute('mime_type');
+        if ($fresh->getAttribute('state') === 'available' && MediaTypePolicy::isImage($mime)
+            && MediaPreviewVariant::imageThumbnail($fresh) === null) {
+            $issues[] = 'required_image_thumbnail_unavailable';
+        }
+        if ($fresh->getAttribute('state') === 'available' && MediaTypePolicy::isVideo($mime)
+            && MediaPreviewVariant::videoPoster($fresh) === null) {
+            $issues[] = 'required_video_poster_unavailable';
+        }
+
+        return array_values(array_unique($issues));
     }
 
     /** @return list<string> */
