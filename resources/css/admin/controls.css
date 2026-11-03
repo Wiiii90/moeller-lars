@@ -564,3 +564,31 @@
     background: var(--admin-accent);
     content: "";
 }
+
+/* Shared dimensions control: three compact numeric values and their Unit.
+ * The multipliers are BETWEEN fields, not part of an input's suffix or value.
+ * Its own construction root is the single styling owner.
+ */
+.admin-dimensions-control {
+    width: 100%;
+    max-width: 32rem;
+    min-width: 0;
+}
+.admin-dimensions-control .fi-grid {
+    column-gap: 1.35rem;
+}
+.admin-dimensions-control__factor {
+    position: relative;
+    min-width: 0;
+}
+.admin-dimensions-control__factor::after {
+    content: '×';
+    position: absolute;
+    inset-inline-end: -.83rem;
+    top: calc(50% + .3rem);
+    transform: translate(50%, -50%);
+    color: var(--admin-muted);
+    font-size: .9rem;
+    line-height: 1;
+    pointer-events: none;
+}

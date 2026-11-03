@@ -3,6 +3,7 @@
 namespace App\Filament\Support;
 
 use App\Domain\Artwork\ArtworkDimensions;
+use App\Filament\Support\AdminDimensionsControl;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
@@ -144,35 +145,8 @@ final class ArtworkEditDialog
                             ->disabled(! $positionEditable),
                     ] : []),
 
-                    Grid::make()
-                        ->columns(['default' => 2, 'md' => 4])
-                        ->columnSpanFull()
-                        ->schema([
-                            TextInput::make('dimension_height')
-                                ->label('Height')
-                                ->numeric()
-                                ->minValue(0.01)
-                                ->suffix('×')
-                                ->nullable(),
-                            TextInput::make('dimension_width')
-                                ->label('Width')
-                                ->numeric()
-                                ->minValue(0.01)
-                                ->suffix(static fn (callable $get): ?string => filled($get('dimension_depth')) ? '×' : null)
-                                ->nullable(),
-                            TextInput::make('dimension_depth')
-                                ->label('Depth')
-                                ->numeric()
-                                ->minValue(0.01)
-                                ->live(onBlur: true)
-                                ->nullable(),
-                            Select::make('dimension_unit')
-                                ->label('Unit')
-                                ->options(['cm' => 'cm', 'mm' => 'mm', 'in' => 'in'])
-                                ->placeholder('Select unit')
-                                ->selectablePlaceholder()
-                                ->nullable(),
-                        ]),
+                    AdminDimensionsControl::make(),
+
 
                     Select::make('exclude_from_home')
                         ->label('Home eligibility')
