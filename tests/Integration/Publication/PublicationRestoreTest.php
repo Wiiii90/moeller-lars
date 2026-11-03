@@ -115,7 +115,6 @@ it('restores media parents before artwork media when reverting the current LIVE 
         'title' => 'Revert media artwork',
         'state' => 'published',
         'position' => 0,
-        'date_precision' => 'unknown',
     ]);
     $asset = MediaAsset::query()->create([
         'storage_key' => 'media/revert-parent.jpg',

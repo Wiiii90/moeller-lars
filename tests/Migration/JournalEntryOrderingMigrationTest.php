@@ -3,8 +3,12 @@
 use App\Models\BlogPost;
 use App\Models\Exhibition;
 use App\Models\SiteSection;
+use Illuminate\Support\Facades\DB;
 
 it('re-sequences existing Blog and Exhibition journals to newest-first defaults', function (): void {
+    // This historical migration runs before the partial-date schema cutover.
+    // Recreate only its removed authored field inside the isolated test transaction.
+    DB::statement('ALTER TABLE public.exhibitions ADD COLUMN date_text VARCHAR(160) NULL');
     $blog = SiteSection::query()->create([
         'type' => SiteSection::TYPE_JOURNAL,
         'template' => SiteSection::JOURNAL_TEMPLATE_BLOG,
@@ -62,7 +66,7 @@ it('re-sequences existing Blog and Exhibition journals to newest-first defaults'
         'title' => 'Event 2012',
         'state' => 'draft',
         'position' => 0,
-        'date_text' => '2012',
+        'starts_on' => null,
     ]);
     Exhibition::query()->create([
         'site_section_id' => $exhibitions->getKey(),
@@ -70,7 +74,7 @@ it('re-sequences existing Blog and Exhibition journals to newest-first defaults'
         'title' => 'Event 2014',
         'state' => 'draft',
         'position' => 1,
-        'date_text' => 'June 2014',
+        'starts_on' => null,
     ]);
     Exhibition::query()->create([
         'site_section_id' => $exhibitions->getKey(),
@@ -78,8 +82,12 @@ it('re-sequences existing Blog and Exhibition journals to newest-first defaults'
         'title' => 'Event 2015',
         'state' => 'draft',
         'position' => 2,
-        'date_text' => '30.04.2015 – 27.06.2015',
+        'starts_on' => null,
     ]);
+
+    DB::table('exhibitions')->where('slug', 'event-2012')->update(['date_text' => '2012']);
+    DB::table('exhibitions')->where('slug', 'event-2014')->update(['date_text' => 'June 2014']);
+    DB::table('exhibitions')->where('slug', 'event-2015')->update(['date_text' => '30.04.2015 – 27.06.2015']);
 
     $migration = require database_path('migrations/2026_09_17_000001_resequence_journal_entries_newest_first.php');
     $migration->up();

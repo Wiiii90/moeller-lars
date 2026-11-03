@@ -36,7 +36,6 @@ function editorialArtwork(ArtworkCategory $category, array $attributes = []): Ar
         'title' => 'Test artwork',
         'state' => 'draft',
         'position' => 0,
-        'date_precision' => 'unknown',
     ], $attributes));
     $artwork->save();
 

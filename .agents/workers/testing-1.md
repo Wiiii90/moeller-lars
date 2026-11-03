@@ -59,3 +59,5 @@
 - This is source preparation only, not executed qualification or a user-declared freeze. Remain on lease 2; no `dev`, main, CI, validation or production mutations.
 
 - **Canonical Exhibition partial-date Unit contract:** Added one distinct pure Unit test owner for date normalization, impossible dates, exact/partial formatting, legacy authored conversion, ambiguity/contradiction failure, temporal uncertainty and overlapping ranges. No database touched, no runtime execution.
+
+- **Removed obsolete date fixture fields:** Artwork/publication fixtures now use canonical `year/month/day` nullable columns rather than retired `date_precision`. The old Journal ordering migration is tested against its authentic source-era schema by temporarily restoring the retired `date_text` column inside the isolated PostgreSQL Migration test, not by changing production code. Not executed.
