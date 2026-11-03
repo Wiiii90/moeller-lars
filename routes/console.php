@@ -60,7 +60,7 @@ Schedule::command('contact:purge --apply')->daily()->withoutOverlapping()->onOne
 // Read-only checkpoint before retiring the free-form Exhibition date field.
 // Scan the editable and committed records as well as immutable publication
 // checkpoint payloads. Never infer precision or update artist content here.
-Artisan::command('exhibitions:audit-dates', function (): int {
+Artisan::command('exhibitions:audit-dates {--all : Include structured rows without an authored override}', function (): int {
     if (DB::getDriverName() !== 'pgsql') {
         $this->error('Exhibition date inventory requires PostgreSQL publication schemas.');
 
@@ -73,6 +73,7 @@ Artisan::command('exhibitions:audit-dates', function (): int {
     ];
     $review = [];
     $counts = [];
+    $showAll = (bool) $this->option('all');
     foreach ($sources as $name => $table) {
         if (DB::selectOne('SELECT to_regclass(?) AS relation_name', [$table])?->relation_name === null) {
             $this->error('Missing publication table: '.$table);
@@ -86,7 +87,7 @@ Artisan::command('exhibitions:audit-dates', function (): int {
         $counts[$name] = $rows->count();
         foreach ($rows as $row) {
             $original = trim((string) ($row->date_text ?? ''));
-            if ($original === '') {
+            if ($original === '' && ! $showAll) {
                 continue;
             }
 
@@ -120,7 +121,7 @@ Artisan::command('exhibitions:audit-dates', function (): int {
             }
 
             $original = trim((string) ($payload['date_text'] ?? ''));
-            if ($original === '') {
+            if ($original === '' && ! $showAll) {
                 continue;
             }
 
@@ -139,7 +140,11 @@ Artisan::command('exhibitions:audit-dates', function (): int {
     foreach ($counts as $name => $count) {
         $this->line($name.': '.$count.' records');
     }
-    $this->info(count($review).' authored date overrides found across current and retained states.');
+    $this->info(count($review).' date records listed across current and retained states'
+        .($showAll ? ' (including those without an override).' : ' (only authored overrides).'));
+    if (! $showAll) {
+        $this->comment('Use --all to inspect structured dates even where no override was recorded.');
+    }
     $this->comment('READ-ONLY. Do not drop date_text or infer missing day/month precision until every historical override has a lossless reviewed mapping.');
 
     return 0;
