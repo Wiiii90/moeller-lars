@@ -1,5 +1,4 @@
-{{-- The only overlay surface for the shared Rich Text editor. Its
-     canonical Filament Select remains a child schema for Livewire state. --}}
+{{-- The single out-of-flow panel owner; the Storage Select remains a native Filament child schema. --}}
 <div class="admin-rich-text-panel-layer">
     @include('filament.schemas.components.rich-text-link-picker')
     @include('filament.schemas.components.rich-text-color-picker')
@@ -9,7 +8,7 @@
         @include('filament.schemas.components.rich-text-image-caption-picker')
         <div
             x-ref="richImagePicker"
-            class="admin-rich-text-storage-dropdown"
+            class="admin-rich-text-popover admin-rich-text-popover--storage"
             x-show="activeRichPanel === 'image'"
             x-cloak
             x-bind:style="{ top: richPanelTop + 'px', left: richPanelLeft + 'px' }"
@@ -19,7 +18,10 @@
             role="group"
             aria-label="{{ __('Image from Storage') }}"
         >
-            @include('filament.schemas.components.rich-text-image-picker-header')
+            @include('filament.schemas.components.rich-text-popover-header', [
+                'title' => __('Image from Storage'),
+                'closeAction' => "closeRichPanel('image')",
+            ])
             {{ $getChildSchema() }}
         </div>
     @endif

@@ -1,6 +1,6 @@
 <div
     x-ref="richSpacingPanel"
-    class="admin-rich-text-link-dropdown"
+    class="admin-rich-text-popover"
     x-show="activeRichPanel === 'spacing'"
     x-cloak
     x-on:change.stop
@@ -10,15 +10,17 @@
     role="group"
     aria-label="{{ __('Line spacing') }}"
 >
-    <div class="admin-rich-text-link-dropdown__form">
-        <label class="admin-rich-text-link-dropdown__label">
-            {{ __('Line spacing') }}
-            <select x-model="spacingValue" class="admin-rich-text-link-dropdown__input" x-on:change="applySpacing()">
-                <option value="1.0">1,0</option>
-                <option value="1.15">1,15</option>
-                <option value="1.5">1,5</option>
-                <option value="2.0">2,0</option>
-            </select>
-        </label>
+    @include('filament.schemas.components.rich-text-popover-header', [
+        'title' => __('Line spacing'),
+        'closeAction' => "closeRichPanel('spacing')",
+    ])
+    <div class="admin-rich-text-popover__form">
+        <select x-model="spacingValue" class="admin-form-control"
+            aria-label="{{ __('Line spacing') }}" x-on:change="applySpacing()">
+            <option value="1.0">1,0</option>
+            <option value="1.15">1,15</option>
+            <option value="1.5">1,5</option>
+            <option value="2.0">2,0</option>
+        </select>
     </div>
 </div>

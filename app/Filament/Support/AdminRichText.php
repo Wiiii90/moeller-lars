@@ -6,7 +6,6 @@ use App\Domain\Content\RichTextDocument;
 use App\Domain\Media\MediaPreviewVariant;
 use App\Models\MediaAsset;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\RichEditor\EditorCommand;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\View;
 use Filament\Forms\Components\RichEditor;
@@ -109,22 +108,21 @@ final class AdminRichText
                         return;
                     }
 
-                    // Use the owning editor object from this shared schema.
-                    // The former root-schema search could resolve the wrong
-                    // component during Livewire morphs and break Edit dialogs.
-                    $editor->runCommands([
-                        EditorCommand::make('insertContent', arguments: [[
+                    // Server validates the Storage asset; the active editor shell
+                    // owns the sole insertion, not a broadcast Filament command.
+                    $field->state(null);
+                    $field->getLivewire()->dispatch(
+                        'artist-rich-image-selected',
+                        editorKey: $editor->getKey(),
+                        image: [
                             'type' => 'image',
                             'attrs' => [
                                 'id' => (string) $id,
                                 'src' => route('admin.media.variant', $variant),
                                 'alt' => (string) ($asset->getAttribute('alt_text') ?: ''),
                             ],
-                        ]]),
-                    ]);
-
-                    $field->state(null);
-                    $field->getLivewire()->dispatch('artist-rich-image-inserted');
+                        ],
+                    );
                 });
 
             // Keep the canonical Filament Select in the same nested schema.
@@ -442,12 +440,32 @@ final class AdminRichText
                                 })
                             },
                             toggleImagePicker(event) {
+                                const editor = event.detail?.editor
+                                if (!editor || editor.isDestroyed) return
                                 if (this.activeRichPanel === 'image') {
                                     this.closeRichPanel('image')
                                     return
                                 }
-                                const trigger = event.target.closest('.fi-fo-rich-editor-tool')
-                                if (trigger) this.openRichPanel('image', trigger)
+                                this.richShell().__artistRichEditor = editor
+                                this.openRichPanel('image', event.detail?.anchor)
+                            },
+                            insertStorageImage(event) {
+                                if (this.activeRichPanel !== 'image') return
+                                const shell = this.richShell()
+                                const editor = shell?.__artistRichEditor
+                                const root = shell?.querySelector('[data-rich-editor-key]')
+                                const detail = event.detail
+                                if (!editor || editor.isDestroyed || !root
+                                    || root.dataset.richEditorKey !== detail?.editorKey
+                                    || detail?.image?.type !== 'image'
+                                    || !/^[1-9]\d*$/.test(detail?.image?.attrs?.id ?? '')) return
+
+                                // Consume the selection before changing content:
+                                // a repeated browser event cannot insert twice.
+                                this.closeRichPanel('image')
+                                if (editor.chain().focus().insertContent(detail.image).run()) {
+                                    this.commitEditorChange()
+                                }
                             },
                         }
                         JS,
@@ -463,7 +481,7 @@ final class AdminRichText
                     'x-on:artist-rich-content-changed' => 'commitEditorChange()',
                     'x-on:artist-rich-caption-toggle' => 'openCaptionEditor($event)',
                     'x-on:artist-rich-image-toggle' => 'toggleImagePicker($event)',
-                    'x-on:artist-rich-image-inserted.window' => "closeRichPanel('image')",
+                    'x-on:artist-rich-image-selected.window' => 'insertStorageImage($event)',
                     'x-on:keydown.escape.window' => 'closeRichPanel()',
                 ])
                 ->columnSpanFull(),

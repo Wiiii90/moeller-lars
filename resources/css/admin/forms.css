@@ -535,15 +535,8 @@
     pointer-events: none;
 }
 
-.admin-rich-text-panel-layer > :is(
-    .admin-rich-text-link-dropdown,
-    .admin-rich-text-storage-dropdown
-) {
+.admin-rich-text-panel-layer > .admin-rich-text-popover {
     pointer-events: auto;
-}
-
-.admin-rich-text-storage-dropdown {
-    width: min(38rem, calc(100% - 1rem));
 }
 
 .admin-rich-text--visual .fi-fo-rich-editor-tool:is(:hover, :focus-visible, .fi-active) {
@@ -595,22 +588,23 @@
 .admin-rich-text--visual .tiptap::after { content: ''; display: table; clear: both; }
 .admin-artist-image-caption { display: block; font-size: .75rem; line-height: 1.5; color: var(--admin-muted); }
 
-/* In-editor link entry: stays inside the owning Edit dialog, never a nested modal. */
-.admin-rich-text-link-dropdown,
-.admin-rich-text-storage-dropdown {
+/* All five editor popovers share exactly the accepted Admin dialog's
+   circular header controls and native, underlined form fields. */
+.admin-rich-text-popover {
     position: absolute;
     z-index: 45;
+    width: min(20rem, 100%);
     padding: .75rem;
-    border: 1px solid var(--admin-line);
-    border-radius: var(--admin-radius, .35rem);
+    border: 1px solid var(--admin-line-strong);
+    border-radius: 0;
     background: var(--admin-control-popover-surface, #fff);
     color: var(--admin-text);
-    box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
+    box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / .12);
 }
-.admin-rich-text-link-dropdown { width: min(20rem, 100%); }
-.admin-rich-text-link-dropdown__header {
+.admin-rich-text-popover--storage { width: min(38rem, calc(100% - 1rem)); }
+.admin-rich-text-popover__header {
     display: flex;
-    min-height: 2rem;
+    min-height: var(--admin-dialog-header-action-size);
     margin-bottom: .55rem;
     align-items: center;
     justify-content: space-between;
@@ -618,33 +612,24 @@
     font-size: .8125rem;
     font-weight: 600;
 }
-.admin-rich-text-link-dropdown__header-actions {
+.admin-rich-text-popover__header-actions {
     display: inline-flex;
-    gap: .25rem;
+    gap: var(--admin-dialog-header-action-gap);
     align-items: center;
 }
-.admin-rich-text-link-dropdown__header-actions .fi-icon-btn { border-radius: 50%; }
-.admin-rich-text-link-dropdown__form { display: grid; gap: .65rem; }
-.admin-rich-text-link-dropdown__label { display: grid; gap: .25rem; font-size: .8125rem; font-weight: 500; }
-.admin-rich-text-link-dropdown__input {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    border: 1px solid var(--admin-line);
-    border-radius: .25rem;
-    background: var(--admin-surface);
-    color: var(--admin-text);
-    padding: .45rem .6rem;
-    font: inherit;
-    font-weight: 400;
+.admin-rich-text-popover__form { display: grid; gap: .65rem; }
+.admin-rich-text-popover__label {
+    display: grid;
+    gap: .25rem;
+    color: var(--admin-control-label-color);
+    font-size: var(--admin-control-label-size);
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
 }
-.admin-rich-text-link-dropdown__input:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 1px;
-}
-.admin-rich-text-link-dropdown__input[aria-invalid="true"] { border-color: var(--admin-danger, #b33); }
-.admin-rich-text-link-dropdown__checkbox { display: flex; align-items: center; gap: .45rem; font-size: .8125rem; }
-.admin-rich-text-link-dropdown__error { font-size: .75rem; color: var(--admin-danger, #b33); }
+.admin-rich-text-popover__checkbox { display: flex; align-items: center; gap: .45rem; font-size: .8125rem; }
+.admin-rich-text-popover__error { font-size: .75rem; color: var(--admin-danger, #b33); }
+
 .admin-rich-text--visual .fi-fo-rich-editor-floating-toolbar {
     flex-wrap: wrap;
     justify-content: center;
@@ -674,10 +659,6 @@
 .admin-rich-text-color-picker__swatch::-webkit-color-swatch { border: 0; border-radius: 50%; }
 .admin-rich-text-color-picker__swatch::-moz-color-swatch { border: 0; border-radius: 50%; }
 .admin-rich-text-color-picker__value { flex: 1; min-width: 0; }
-.admin-rich-text-color-picker__value .admin-rich-text-link-dropdown__input {
-    min-height: var(--admin-control-height);
-}
-
 .admin-rich-text--visual .tiptap table {
     width: 100%;
     margin-block: .75rem;

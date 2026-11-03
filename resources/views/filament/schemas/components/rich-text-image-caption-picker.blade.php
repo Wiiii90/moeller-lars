@@ -1,6 +1,6 @@
 <div
     x-ref="richCaptionPanel"
-    class="admin-rich-text-link-dropdown"
+    class="admin-rich-text-popover"
     x-show="activeRichPanel === 'caption'"
     x-cloak
     x-bind:style="{ top: richPanelTop + 'px', left: richPanelLeft + 'px' }"
@@ -10,30 +10,17 @@
     role="group"
     aria-label="{{ __('Image caption') }}"
 >
-    <div class="admin-rich-text-link-dropdown__header">
-        <span>{{ __('Image caption') }}</span>
-        <div class="admin-rich-text-link-dropdown__header-actions">
-            <x-filament::icon-button
-                icon="heroicon-o-x-mark"
-                size="sm"
-                color="gray"
-                :label="__('Close')"
-                x-on:click.stop="applyCaption(); closeRichPanel('caption')"
-            />
-        </div>
-    </div>
-    <div class="admin-rich-text-link-dropdown__form">
-        <label class="admin-rich-text-link-dropdown__label">
-            {{ __('Image caption') }}
-            <input
-                x-ref="richCaptionInput"
-                x-model="captionText"
-                x-on:blur="applyCaptionOnExit($event)"
-                x-on:keydown.enter.prevent="applyCaption(); closeRichPanel('caption')"
-                type="text"
-                maxlength="500"
-                class="admin-rich-text-link-dropdown__input"
-            />
-        </label>
+    @include('filament.schemas.components.rich-text-popover-header', [
+        'title' => __('Image caption'),
+        'closeAction' => "applyCaption(); closeRichPanel('caption')",
+    ])
+    <div class="admin-rich-text-popover__form">
+        <input
+            x-ref="richCaptionInput" x-model="captionText"
+            x-on:blur="applyCaptionOnExit($event)"
+            x-on:keydown.enter.prevent="applyCaption(); closeRichPanel('caption')"
+            type="text" maxlength="500" class="admin-form-control"
+            aria-label="{{ __('Image caption') }}"
+        />
     </div>
 </div>
