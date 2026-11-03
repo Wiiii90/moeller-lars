@@ -74,7 +74,6 @@ it('serves a page image only while its reference is part of the committed public
         'mime_type' => 'image/webp',
         'byte_size' => strlen('thumbnail-image'),
         'sha256' => hash('sha256', 'thumbnail-image'),
-        'transform_profile' => 'public-v1',
         'state' => 'available',
         'width' => 20,
         'height' => 20,

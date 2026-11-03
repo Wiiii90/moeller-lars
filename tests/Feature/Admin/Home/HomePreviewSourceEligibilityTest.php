@@ -53,7 +53,6 @@ function homePreviewImage(): MediaAsset
         'mime_type' => 'image/webp',
         'byte_size' => 4,
         'sha256' => hash('sha256', 'home-preview'),
-        'transform_profile' => 'public-v1',
         'state' => 'available',
         'width' => 2,
         'height' => 2,

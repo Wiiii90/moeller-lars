@@ -44,7 +44,6 @@ it('roundtrips a media-only Blog update as one atomic snapshot Undo', function (
         'mime_type' => 'image/jpeg',
         'byte_size' => 4,
         'sha256' => hash('sha256', 'activity-undo-replacement-thumbnail'),
-        'transform_profile' => 'public-v1',
         'state' => 'available',
     ]);
 

@@ -176,7 +176,6 @@ it('rejects original, thumbnail and bulk downloads for guests and non-administra
         'mime_type' => 'image/webp',
         'byte_size' => strlen('private-thumbnail'),
         'sha256' => hash('sha256', 'private-thumbnail'),
-        'transform_profile' => 'public-v1',
         'state' => 'available',
     ]);
 

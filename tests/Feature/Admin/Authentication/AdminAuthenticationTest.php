@@ -31,7 +31,6 @@ function authPreviewAsset(): array
         'mime_type' => 'image/webp',
         'byte_size' => 9,
         'sha256' => hash('sha256', 'thumbnail'),
-        'transform_profile' => 'public-v1',
         'state' => 'available',
     ]);
 
