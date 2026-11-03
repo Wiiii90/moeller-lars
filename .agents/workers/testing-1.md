@@ -44,3 +44,5 @@
 - **Immediate test work:** Retire obsolete `MediaVariantRegenerationService` expectations; Free Storage must retain required variants/registered unassigned assets; test resumable transfer protocol and migration guard behavior, media references, dedup, error feedback. No database execution or CI authorized; authored tests do not imply passed tests.
 
 - **Media test curation (source-only):** Removed obsolete preview-regeneration assertions/fixture column; transferred mandatory preview retention and genuine orphan reclamation to the existing Free Storage suite; deleted the obsolete dedicated regeneration test. This is authored test source, not runtime validation.
+
+- **Resumable transport:** Added one dedicated HTTP feature test suite covering authenticated staging, real image ingest, final receipt replay, deduplication, incomplete chunks and offset recovery, owner-bound cancellation and required-preview fail-closed behavior. The suite redirects `storage_path()` to a uniquely owned temporary directory and deletes only that directory on teardown. Execution is pending.
