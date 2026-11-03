@@ -368,7 +368,9 @@ class MediaIngestService
             ));
         }
 
-        $preview = app(MediaDerivativeGenerator::class)->imageThumbnail($path);
+        $generator = app(MediaDerivativeGenerator::class);
+        $generator->assertImagePreviewCompatible($path, $mime, $width, $height);
+        $preview = $generator->imageThumbnail($path);
         $thumbnailBytes = $preview['bytes'];
         $thumbnailWidth = $preview['width'];
         $thumbnailHeight = $preview['height'];

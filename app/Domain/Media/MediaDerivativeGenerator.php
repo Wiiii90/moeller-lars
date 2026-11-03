@@ -16,6 +16,67 @@ final class MediaDerivativeGenerator
 {
     private const MAX_DERIVATIVE_BYTES = 8 * 1024 * 1024;
 
+    // A progressive JPEG cannot be decoded in the streaming manner used for
+    // ordinary JPEGs. Restrict high-resolution examples before thumbnailing
+    // in the memory-constrained web container. This is a conservative safety
+    // admission bound, not a guarantee that smaller files cannot exhaust RAM.
+    private const MAX_PROGRESSIVE_JPEG_PIXELS = 16_000_000;
+
+    /**
+     * Reject high-resolution progressive JPEGs before thumbnail decoding can
+     * exhaust the web container. vipsheader reads JPEG metadata only; it does
+     * not build a raster or modify the staged immutable original.
+     */
+    public function assertImagePreviewCompatible(string $originalPath, string $mime, int $width, int $height): void
+    {
+        if ($mime !== 'image/jpeg' || ($width * $height) <= self::MAX_PROGRESSIVE_JPEG_PIXELS) {
+            return;
+        }
+
+        $process = new Process(
+            ['vipsheader', '-f', 'jpeg-multiscan', $originalPath],
+            null,
+            ['VIPS_CONCURRENCY' => '1'],
+        );
+        $process->setTimeout(15);
+
+        try {
+            $exitCode = $process->run();
+        } catch (ProcessTimedOutException $exception) {
+            report(new RuntimeException('JPEG encoding metadata probe exceeded its 15-second deadline.', 0, $exception));
+            throw ValidationException::withMessages([
+                'media' => 'The server could not check whether this high-resolution JPEG uses progressive encoding. The file was not saved. Please re-export it as a standard (baseline) JPEG and retry.',
+            ]);
+        } catch (Throwable $exception) {
+            report(new RuntimeException('JPEG encoding metadata probe could not be started.', 0, $exception));
+            throw ValidationException::withMessages([
+                'media' => 'The server could not inspect this high-resolution JPEG. The file was not saved. Please re-export it as a standard (baseline) JPEG and retry or contact the site administrator.',
+            ]);
+        }
+
+        $multiscan = trim($process->getOutput());
+        if ($exitCode !== 0 || ! in_array($multiscan, ['0', '1'], true)) {
+            report(new RuntimeException(sprintf(
+                'JPEG encoding metadata probe failed (exit %s): %s',
+                (string) $exitCode,
+                substr(trim($process->getErrorOutput()), 0, 2000),
+            )));
+            throw ValidationException::withMessages([
+                'media' => 'The server could not determine the encoding of this high-resolution JPEG. The file was not saved. Please re-export it as a standard (baseline) JPEG and retry or contact the site administrator.',
+            ]);
+        }
+
+        if ($multiscan === '1') {
+            throw ValidationException::withMessages([
+                'media' => sprintf(
+                    'This high-resolution JPEG (%d × %d pixels) uses progressive encoding, which needs too much server memory for preview generation. The file was not saved to Storage. Please export it as a standard (baseline/non-progressive) JPEG and upload it again. Keep the original resolution.',
+                    $width,
+                    $height,
+                ),
+            ]);
+        }
+    }
+
     /** @return array{bytes:string,width:int,height:int} */
     public function imageThumbnail(string $originalPath): array
     {
