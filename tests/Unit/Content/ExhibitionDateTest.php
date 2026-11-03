@@ -81,3 +81,22 @@ it('formats the authored precision and protects unknown temporal certainty', fun
         ->and(ExhibitionDate::temporalState('2027-05', null, $now))->toBe('past')
         ->and(ExhibitionDate::temporalState(null, null, $now))->toBe('unknown');
 });
+
+it('can losslessly map every factual Exhibition row in the legacy public Vita inventory', function (): void {
+    $source = new \App\Domain\Migration\LegacyPublicCvImporter;
+    $rows = array_values(array_filter(
+        $source->expectedRows(),
+        static fn (array $row): bool => $row['section'] === 'Exhibitions',
+    ));
+    expect($rows)->not->toBeEmpty();
+    foreach ($rows as $row) {
+        $mapped = ExhibitionDate::fromLegacy(
+            $row['starts_on'],
+            $row['ends_on'],
+            $row['year_text'],
+        );
+        expect($mapped['starts_on'])->not->toBeNull();
+        expect(ExhibitionDate::validRange($mapped['starts_on'], $mapped['ends_on']))->toBeTrue();
+        expect(ExhibitionDate::display($mapped['starts_on'], $mapped['ends_on'], 'de-DE'))->not->toBeNull();
+    }
+});

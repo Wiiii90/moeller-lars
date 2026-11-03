@@ -83,3 +83,5 @@
 - **Artwork date migration contract:** Added dedicated source-era Migration suite using the existing migration's genuine `down()` to reconstruct historical `work_year/work_date/date_precision` in isolated transactional schemas. Tests conversion of year/month/day/unknown in Working and Committed and fail-atomic behavior on a conflicting Committed row. Production migration unchanged; no execution.
 
 - **Mounted Gallery date coverage:** Extended existing GalleryArtworkEditing Feature suite with partial/exact date round-trip, reopening, idempotent autosave, audit/notification cardinality and invalid-date rollback through the actual Artwork Edit dialog. Tests authored, no execution.
+
+- **Legacy Vita import inventory:** Extended ExhibitionDate Unit owner with a strict projection of every authored legacy public Vita Exhibition row exposed by the real LegacyPublicCvImporter. Verifies no unverifiable dates, no empty published starts and no backwards ranges, without requiring obsolete importer tables or another fixture. Source-only; not executed.
