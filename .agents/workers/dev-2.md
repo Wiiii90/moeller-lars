@@ -3,7 +3,7 @@
 **Working branch:** `dev`  
 **Lease:** 6 (previous Dev Worker 2 session retired with lease 2)  
 **State:** Active; registered 2026-10-31 by explicit user assignment.  
-**Current assignment (2026-10-31):** Investigate a reported 28 MB JPEG upload failure on the artist's site; own only canonical media ingest/derivative-processing diagnosis and any subsequently evidenced correction. Do not alter adjacent Admin dialogs, Public display or other worker claims.
+**Current assignment (2026-11-03):** Complete high-resolution progressive-JPEG preflight/rejection, precise and consistent upload status/notification messages across Storage, Gallery, Artwork and video. No Admin dialog lifecycle, Public presentation, testing-owned sources, CI or deployments.
 
 ## Startup completed
 - Read `AGENTS.md`, `.agents/skills/dev/SKILL.md`, `.agents/README.md`, `.agents/roster.md` on `dev` and the previous Dev Worker 2 handoff record.
@@ -43,3 +43,7 @@ Check fresh `dev` HEAD, own lease and other claims before every write. Scope the
 - User's read-only server output: Validation app hard RAM 402653184 bytes (384 MiB), RAM+swap cap 805306368 bytes (768 MiB); current app baseline 81.28 MiB, host 445 MiB available RAM, 511/511 MiB swap consumed. Previously observed `vipsthumbnail` anon RSS at OOM 301696 KiB. This confirms a hard container-memory failure during poster JPEG thumbnail generation, **not** that PHP's 128M heap or file-byte limit caused it.
 - Official libvips documentation: ordinary JPEG thumbnail uses shrink-on-load already; progressive/multiscan JPEG forces substantially more memory because scanlines cannot be streamed. Thus a progressive JPEG is a strong but **unverified** suspect, not a proven description of this image. Determine via read-only `vipsheader -f jpeg-multiscan <staged-file>`, executed against the existing private staged JPEG (avoid actual thumbnail generation on the active 384 MiB service).
 - Stop condition: no magic cache tweaks, arbitrary lower resolution/quality, silent source rejection, container-limit increase, or extra processor path until actual file scan mode is known; if progressive, investigate canonical safe bounded decode or explicit user-approved format policy with artist experience, rather than a redundant post-decode resize. Do not mutate Production or Validation infrastructure as part of code-only triage.
+
+## 2026-11-03 — Reassigned scope and verification obligations
+- User explicitly requests a complete upload feedback correction across existing Storage/Gallery/Artwork/replacement/video entrypoints and tests/browser acceptance. Dev Worker 2 keeps lease 6 and claims only the shared media domain, native upload transport and media-specific notification calls; no blanket Gallery/Admin dialog work (Dev Worker 1) or Rich Text (Dev Worker 3).
+- Per `dev/AGENTS.md` Test owns new/modified test sources and isolated suite on `testing`; Dev may run only existing focused non-destructive checks with verified safe isolation. Connector-only environment currently has no repository checkout or browser attached; do not claim actual test run/browser acceptance without a runnable capability. Complete production fix and provide exact test/browser acceptance handoff to Test/user.
