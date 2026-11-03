@@ -9,9 +9,8 @@ use App\Domain\Artwork\GalleryPresentation;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\ArtworkCategory;
-use App\Models\ArtworkMaterialPreset;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Repeater;
+use Illuminate\Contracts\View\View;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -164,33 +163,74 @@ trait GalleryWorkspaceUploadSettings
     {
         $action = Action::make('materialPresets')
             ->label('Materials')
-            ->fillForm(fn (): array => [
-                'presets' => ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all(),
-            ])
-            ->schema([
-                Repeater::make('presets')
-                    ->label('Reusable material presets')
-                    ->simple(
-                        TextInput::make('name')
-                            ->label('Material')
-                            ->required()
-                            ->maxLength(240),
-                    )
-                    ->addActionLabel('Add material'),
-            ])
             ->modalHeading('Material presets')
-            ->action(function (array $data): void {
-                $changed = app(ArtworkMaterialPresetService::class)->sync(is_array($data['presets'] ?? null) ? $data['presets'] : []);
-                if ($changed) {
-                    app(AdminNotifier::class)->notification(
-                        title: 'Material presets saved',
-                        status: 'success',
-                    );
-                }
-            });
+            ->modalContent(fn (): View => view(
+                'filament.resources.artworks.partials.material-presets-table',
+                ['presets' => app(ArtworkMaterialPresetService::class)->ordered()],
+            ));
 
-        // Repeater add/delete/reorder operations are a draft collection.
-        // Commit once using the shared Command lifecycle, not Edit blur events.
-        return AdminDialog::command($action, 'Apply changes', AdminDialogSize::Default);
+        return AdminDialog::viewer($action, AdminDialogSize::Default);
+    }
+
+    public function addMaterialPreset(string $name): void
+    {
+        $this->saveMaterialChange(
+            fn (): bool => app(ArtworkMaterialPresetService::class)->add($name),
+            'Material added',
+        );
+    }
+
+    public function renameMaterialPreset(int $id, string $name): void
+    {
+        $this->saveMaterialChange(
+            fn (): bool => app(ArtworkMaterialPresetService::class)->rename($id, $name),
+            'Material renamed',
+        );
+    }
+
+    public function deleteMaterialPreset(int $id): void
+    {
+        $this->saveMaterialChange(
+            fn (): bool => app(ArtworkMaterialPresetService::class)->delete($id),
+            'Material deleted',
+        );
+    }
+
+    public function moveMaterialPreset(int $id, string $direction): void
+    {
+        if (! in_array($direction, ['up', 'down'], true)) {
+            return;
+        }
+
+        $rows = app(ArtworkMaterialPresetService::class)->ordered();
+        $current = $rows->search(static fn ($row): bool => (int) $row->getKey() === $id);
+        if ($current === false) {
+            return;
+        }
+
+        $this->sortMaterialPreset($id, $current + ($direction === 'up' ? -1 : 1));
+    }
+
+    public function sortMaterialPreset(int $id, int $position): void
+    {
+        $this->saveMaterialChange(
+            fn (): bool => app(ArtworkMaterialPresetService::class)->move($id, $position),
+            'Material order updated',
+        );
+    }
+
+    private function saveMaterialChange(\Closure $mutation, string $title): void
+    {
+        try {
+            $changed = $mutation();
+        } catch (ValidationException $exception) {
+            $this->notifyValidationFailure('Material not saved', $exception);
+
+            return;
+        }
+
+        if ($changed) {
+            app(AdminNotifier::class)->notification(title: $title, status: 'success');
+        }
     }
 }

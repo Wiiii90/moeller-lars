@@ -6,6 +6,6 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['name'])]
+#[Fillable(['name', 'position'])]
 #[Guarded(['id'])]
 class ArtworkMaterialPreset extends Model {}

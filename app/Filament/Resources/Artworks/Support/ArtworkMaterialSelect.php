@@ -12,7 +12,7 @@ final class ArtworkMaterialSelect
         return Select::make($name)
             ->label('Material')
             ->options(fn (): array => ArtworkMaterialPreset::query()
-                ->orderBy('name')
+                ->orderBy('position')->orderBy('id')
                 ->pluck('name', 'name')
                 ->map(static fn (string $label): string => html_entity_decode($label, ENT_QUOTES | ENT_HTML5, 'UTF-8'))
                 ->all())
