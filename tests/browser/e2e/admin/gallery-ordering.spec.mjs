@@ -84,9 +84,13 @@ test.beforeEach(async ({ page }) => {
     expect(state.working).toHaveLength(3);
     await page.goto(`/admin/pages/gallery/${state.gallery}`);
     await projection(page, state);
-    await expect(grid(page).locator('img')).toHaveCount(3);
-    await expect.poll(() => grid(page).locator('img').evaluateAll(images =>
-        images.every(image => image.complete && image.naturalWidth > 0))).toBe(true);
+    const images = grid(page).locator('img');
+    await expect(images).toHaveCount(3);
+    for (const image of await images.all()) {
+        await image.scrollIntoViewIfNeeded();
+        await expect.poll(() => image.evaluate(element => element.complete && element.naturalWidth > 0)).toBe(true);
+    }
+    await grid(page).scrollIntoViewIfNeeded();
 });
 
 test('Gallery native handle drag persists Working order with one feedback and silent boundaries', async ({ page }) => {
