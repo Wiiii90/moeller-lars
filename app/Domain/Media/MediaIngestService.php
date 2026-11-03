@@ -4,6 +4,7 @@ namespace App\Domain\Media;
 
 use App\Jobs\PrepareMediaRightsImage;
 use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -79,35 +80,67 @@ class MediaIngestService
                 'duplicate' => false,
             ];
         } finally {
-            $lock->release();
-        }
-    }
-
-    private function findReusableOriginal(UploadedFile $upload): ?MediaAsset
+            $lock-    private function findReusableOriginal(UploadedFile $upload): ?MediaAsset
     {
         $path = $upload->getRealPath();
         $size = $upload->getSize();
         if (! $upload->isValid() || ! is_string($path) || ! is_file($path) || ! is_int($size) || $size <= 0) {
             return null;
         }
+
         $sha = @hash_file('sha256', $path);
-        if (! is_string($sha) || strlen($sha) !== 64) {
+
+        return is_string($sha) ? $this->reusableOriginalByFingerprint($sha, $size) : null;
+    }
+
+    /**
+     * Shared canonical identity check for deduplication and crash recovery.
+     * Never acknowledge success solely from a stale upload manifest or a
+     * registry row if the actual original/required preview is missing.
+     */
+    public function reusableOriginalByFingerprint(string $sha256, int $size): ?MediaAsset
+    {
+        if (! preg_match('/^[a-f0-9]{64}$/D', $sha256) || $size <= 0) {
             return null;
         }
-        $asset = MediaAsset::query()->with('variants')
-            ->where('state', 'available')->where('sha256', $sha)->where('byte_size', $size)->first();
-        if (! $asset instanceof MediaAsset
-            || $size > MediaTypePolicy::maxBytesFor((string) $asset->getAttribute('mime_type'))
-            || ! Storage::disk((string) config('media.disk'))->exists((string) $asset->getAttribute('storage_key'))) {
-            return null;
+
+        $disk = Storage::disk((string) config('media.disk'));
+        $candidates = MediaAsset::query()->with('variants')
+            ->where('state', 'available')
+            ->where('sha256', $sha256)
+            ->where('byte_size', $size)
+            ->orderBy('id')
+            ->get();
+
+        foreach ($candidates as $asset) {
+            $mime = (string) $asset->getAttribute('mime_type');
+            if ($size > MediaTypePolicy::maxBytesFor($mime)) {
+                continue;
+            }
+
+            $original = (string) $asset->getAttribute('storage_key');
+            if ($original === '' || ! $disk->exists($original)
+                || (int) $disk->size($original) !== $size
+                || ! hash_equals($sha256, (string) @hash_file('sha256', $disk->path($original)))) {
+                continue;
+            }
+
+            $preview = MediaTypePolicy::isImage($mime)
+                ? MediaPreviewVariant::imageThumbnail($asset)
+                : (MediaTypePolicy::isVideo($mime) ? MediaPreviewVariant::videoPoster($asset) : null);
+            if ((MediaTypePolicy::isImage($mime) || MediaTypePolicy::isVideo($mime))
+                && (! $preview instanceof MediaVariant
+                    || ! $disk->exists((string) $preview->getAttribute('storage_key'))
+                    || (int) $disk->size((string) $preview->getAttribute('storage_key')) !== (int) $preview->getAttribute('byte_size'))) {
+                continue;
+            }
+
+            return $asset;
         }
-        $mime = (string) $asset->getAttribute('mime_type');
-        if (MediaTypePolicy::isImage($mime) && MediaPreviewVariant::imageThumbnail($asset) === null) {
-            return null;
-        }
-        if (MediaTypePolicy::isVideo($mime) && MediaPreviewVariant::videoPoster($asset) === null) {
-            return null;
-        }
+
+        return null;
+    }
+
         return $asset;
     }
     private function acquireIngestLock(): mixed

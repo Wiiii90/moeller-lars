@@ -40,6 +40,8 @@ final class ResumableMediaUploadService
                     throw $this->invalid('Previous upload does not match this file.');
                 }
 
+                $meta = $this->reconcileCompleted($resumeId, $meta);
+
                 return $this->status($resumeId, $meta);
             });
 
@@ -104,7 +106,7 @@ final class ResumableMediaUploadService
     public function append(int $userId, string $id, int $offset, mixed $input): array
     {
         return $this->locked($id, function () use ($userId, $id, $offset, $input): array {
-            $meta = $this->authorizedManifest($userId, $id);
+            $meta = $this->reconcileCompleted($id, $this->authorizedManifest($userId, $id));
             if (isset($meta['asset_id'])) {
                 return $this->status($id, $meta);
             }
@@ -131,28 +133,42 @@ final class ResumableMediaUploadService
 
                 $remaining = min(self::CHUNK_BYTES, (int) $meta['size'] - $offset);
                 $received = 0;
-                while (! feof($input)) {
-                    $buffer = fread($input, min(1024 * 1024, $remaining - $received + 1));
-                    if ($buffer === false || $buffer === '') {
-                        break;
+                try {
+                    while (! feof($input)) {
+                        $buffer = fread($input, min(1024 * 1024, $remaining - $received + 1));
+                        if ($buffer === false || $buffer === '') {
+                            break;
+                        }
+                        $length = strlen($buffer);
+                        if ($received + $length > $remaining) {
+                            throw $this->invalid('Media chunk exceeds its declared boundary.');
+                        }
+                        $written = fwrite($file, $buffer);
+                        if ($written !== $length) {
+                            throw $this->invalid('Unable to save the complete media chunk.');
+                        }
+                        $received += $written;
                     }
-                    $length = strlen($buffer);
-                    if ($received + $length > $remaining) {
-                        throw $this->invalid('Media chunk exceeds its declared boundary.');
+
+                    if ($received === 0 || ($received !== self::CHUNK_BYTES && $offset + $received !== (int) $meta['size'])) {
+                        throw $this->invalid('Incomplete media chunk; resume the upload.');
                     }
-                    $written = fwrite($file, $buffer);
-                    if ($written !== $length) {
-                        throw $this->invalid('Unable to save the complete media chunk.');
+                    if (! fflush($file)) {
+                        throw $this->invalid('Unable to flush the saved media chunk.');
                     }
-                    $received += $written;
+                    $meta['updated_at'] = time();
+                    $this->writeManifest($id, $meta);
+                } catch (\Throwable $exception) {
+                    // A failed chunk must not advance the durable file offset.
+                    // Otherwise resumption can concatenate unrelated/truncated
+                    // bytes into a seemingly valid new original.
+                    if (! @ftruncate($file, $offset) || ! @fflush($file)) {
+                        report(new RuntimeException('Incomplete upload chunk could not be rolled back.', 0, $exception));
+                        throw $this->invalid('Upload staging could not restore the previous safe offset. Contact the site administrator before retrying.');
+                    }
+                    throw $exception;
                 }
 
-                if ($received === 0 || ($received !== self::CHUNK_BYTES && $offset + $received !== (int) $meta['size'])) {
-                    throw $this->invalid('Incomplete media chunk; resume the upload.');
-                }
-                fflush($file);
-                $meta['updated_at'] = time();
-                $this->writeManifest($id, $meta);
                 return $this->status($id, $meta);
             } finally {
                 fclose($file);
@@ -164,17 +180,32 @@ final class ResumableMediaUploadService
     public function finish(int $userId, string $id): array
     {
         return $this->locked($id, function () use ($id, $userId): array {
-            $meta = $this->authorizedManifest($userId, $id);
+            $meta = $this->reconcileCompleted($id, $this->authorizedManifest($userId, $id));
             if (isset($meta['asset_id'])) {
                 return $this->status($id, $meta);
             }
+
             $path = $this->partPath($id);
             if (! is_file($path) || filesize($path) !== (int) $meta['size']) {
-                throw $this->invalid('The media transfer is incomplete; resume it before processing.');
+                throw $this->invalid('The upload is incomplete or could not be recovered from its original. Contact the site administrator before retrying.');
             }
 
+            // Persist the checksum BEFORE moving the staging file. A crash
+            // after a successful DB/FS commit but before recording asset_id
+            // can then recover the canonical identity without duplicating it.
+            $hash = @hash_file('sha256', $path);
+            if (! is_string($hash) || strlen($hash) !== 64) {
+                throw $this->invalid('The completed upload could not be verified.');
+            }
+            if (isset($meta['sha256']) && ! hash_equals((string) $meta['sha256'], $hash)) {
+                throw $this->invalid('The staged upload changed since finalization began. Restart the transfer.');
+            }
+            $meta['sha256'] = $hash;
+            $meta['updated_at'] = time();
+            $this->writeManifest($id, $meta);
+
             $upload = new UploadedFile($path, (string) $meta['filename'], null, UPLOAD_ERR_OK, true);
-            // This service is the ONLY canonical ingest/persistence owner.
+            // MediaIngestService alone owns canonical original and preview.
             $result = app(MediaIngestService::class)->ingestUnique($upload, fromPrivateStaging: true);
             /** @var MediaAsset $asset */
             $asset = $result['asset'];
@@ -184,8 +215,49 @@ final class ResumableMediaUploadService
             $this->writeManifest($id, $meta);
             @unlink($path);
             app(MediaCapacityService::class)->refreshCachedSnapshot();
+
             return $this->status($id, $meta);
         });
+    }
+
+    /**
+     * Reconcile the canonical media write with an interrupted upload receipt.
+     * Only the already-persisted checksum and an intact original/required
+     * preview can convert a pending session to complete.
+     *
+     * @param array<string,mixed> $meta
+     * @return array<string,mixed>
+     */
+    private function reconcileCompleted(string $id, array $meta): array
+    {
+        if (isset($meta['asset_id']) || ! is_string($meta['sha256'] ?? null)) {
+            return $meta;
+        }
+
+        $part = $this->partPath($id);
+        if (is_file($part)) {
+            $stagedSha = @hash_file('sha256', $part);
+            if (! is_string($stagedSha) || ! hash_equals($meta['sha256'], $stagedSha)
+                || (int) filesize($part) !== (int) $meta['size']) {
+                // Do not acknowledge a different or partial upload.
+                return $meta;
+            }
+        }
+
+        $asset = app(MediaIngestService::class)->reusableOriginalByFingerprint(
+            $meta['sha256'], (int) $meta['size'],
+        );
+        if (! $asset instanceof MediaAsset) {
+            return $meta;
+        }
+
+        $meta['asset_id'] = (int) $asset->getKey();
+        $meta['duplicate'] = is_file($part);
+        $meta['updated_at'] = time();
+        $this->writeManifest($id, $meta);
+        @unlink($part);
+
+        return $meta;
     }
 
     /** @return array{id:string,offset:int,chunk_size:int,complete:bool,asset_id:int|null,duplicate:bool} */
