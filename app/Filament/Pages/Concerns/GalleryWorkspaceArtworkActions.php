@@ -4,7 +4,6 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
-use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
@@ -105,35 +104,6 @@ trait GalleryWorkspaceArtworkActions
             'Delete the Artwork slot. Optionally delete its independent Storage file and every remaining reference.',
             'Delete artwork',
             danger: true,
-        );
-    }
-
-    public function removeArtworkAction(): Action
-    {
-        $action = Action::make('removeArtwork')
-            ->label('Remove')
-            ->action(function (array $arguments): void {
-                try {
-                    app(ArtworkGalleryAssignmentService::class)->detach($this->actionArtwork($arguments));
-                } catch (ValidationException $exception) {
-                    $this->notifyValidationFailure('Artwork could not be removed', $exception);
-
-                    return;
-                }
-
-                $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->notification(
-                    title: 'Artwork removed from Gallery',
-                    status: 'success',
-                );
-            });
-
-        return AdminDialog::confirm(
-            $action,
-            'Remove artwork?',
-            'The artwork becomes unassigned. Its files in Storage stay intact and reusable.',
-            'Remove',
-            icon: AdminIcon::Detach,
         );
     }
 
@@ -266,7 +236,7 @@ trait GalleryWorkspaceArtworkActions
                 'title' => (string) $artwork->getAttribute('title'),
                 'medium' => (string) ($artwork->getAttribute('medium') ?? ''),
                 'dimensions' => (string) ($artwork->getAttribute('dimensions') ?? ''),
-                'year' => $artwork->getAttribute('work_year'),
+                'year' => $artwork->getAttribute('year'),
                 'state' => $state,
                 'state_label' => (string) ($row['state_label'] ?? ucfirst($state)),
                 'readiness_label' => (string) ($row['readiness_label'] ?? '—'),

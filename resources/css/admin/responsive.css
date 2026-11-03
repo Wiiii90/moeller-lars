@@ -326,13 +326,6 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .admin-rich-text-image-insert{
-        width: 100%;
-    }
-
-    .admin-rich-text-image-insert__external-row{
-        grid-template-columns: minmax(0, 1fr);
-    }
 }
 
 /* Dialogs live outside the workspace container. Their responsive geometry is

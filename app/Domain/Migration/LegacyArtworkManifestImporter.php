@@ -41,7 +41,6 @@ final class LegacyArtworkManifestImporter
                         'slug' => $categoryData['slug'],
                         'name' => $categoryData['name'],
                         'show_on_home' => $categoryData['show_on_home'],
-                        'description' => $categoryData['description'],
                         'legacy_source' => $categoryData['legacy_source'],
                         'migration_batch_id' => $batch,
                         'migrated_at' => $now,
@@ -57,6 +56,7 @@ final class LegacyArtworkManifestImporter
                         'position' => $categoryData['position'],
                         'parent_id' => null,
                         'artwork_category_id' => (int) $category->getKey(),
+                        'meta_description' => $categoryData['description'],
                     ]);
 
                     foreach ($categoryData['artworks'] as $artworkData) {
@@ -71,10 +71,10 @@ final class LegacyArtworkManifestImporter
                             'state' => 'published',
                             'position' => $artworkData['position'],
                             'legacy_date_raw' => $artworkData['legacy_date_raw'],
-                            'work_date' => $artworkData['work_date'],
-                            'work_year' => $artworkData['work_year'],
+                            'year' => $artworkData['year'],
+                            'month' => $artworkData['month'],
+                            'day' => $artworkData['day'],
                             'featured_on_home' => $artworkData['featured_on_home'],
-                            'date_precision' => $artworkData['date_precision'],
                             'legacy_id' => $artworkData['legacy_id'],
                             'legacy_source' => $categoryData['legacy_source'],
                             'migration_batch_id' => $batch,
@@ -231,22 +231,13 @@ final class LegacyArtworkManifestImporter
                 }
                 $legacyIds[$legacyId] = true;
 
-                $workYear = $this->integer($artwork, 'work_year');
-                if ($workYear < 1000 || $workYear > 9999) {
-                    throw new RuntimeException("Artwork {$artworkSlug} has an invalid work year.");
-                }
-                $datePrecision = $this->string($artwork, 'date_precision');
-                if (! in_array($datePrecision, ['year', 'day'], true)) {
-                    throw new RuntimeException("Artwork {$artworkSlug} uses an unsupported normalized date precision.");
-                }
-                $workDate = $this->nullableString($artwork, 'work_date');
-                if ($datePrecision === 'year' && $workDate !== null) {
-                    throw new RuntimeException("Year-precision artwork {$artworkSlug} must not invent a month or day.");
-                }
-                if ($datePrecision === 'day') {
-                    if ($workDate === null || preg_match('/^\d{4}-\d{2}-\d{2}$/', $workDate) !== 1 || (int) substr($workDate, 0, 4) !== $workYear) {
-                        throw new RuntimeException("Day-precision artwork {$artworkSlug} has inconsistent normalized date data.");
-                    }
+                $year = $this->integer($artwork, 'year');
+                $month = $this->nullableInteger($artwork, 'month');
+                $day = $this->nullableInteger($artwork, 'day');
+                if ($year < 1000 || $year > 9999
+                    || ($month !== null && ($month < 1 || $month > 12))
+                    || ($day !== null && ($month === null || ! checkdate($month, $day, $year)))) {
+                    throw new RuntimeException("Artwork {$artworkSlug} has invalid date components.");
                 }
 
                 $mediaPath = $this->string($artwork, 'media_path');
@@ -277,9 +268,9 @@ final class LegacyArtworkManifestImporter
                     'title' => $this->string($artwork, 'title'),
                     'position' => $artworkPosition,
                     'legacy_date_raw' => $this->nullableString($artwork, 'legacy_date_raw'),
-                    'work_year' => $workYear,
-                    'work_date' => $workDate,
-                    'date_precision' => $datePrecision,
+                    'year' => $year,
+                    'month' => $month,
+                    'day' => $day,
                     'medium' => $this->nullableString($artwork, 'medium'),
                     'dimensions' => $this->nullableString($artwork, 'dimensions'),
                     'description' => $this->nullableString($artwork, 'description'),
@@ -404,6 +395,15 @@ final class LegacyArtworkManifestImporter
     {
         if (! array_key_exists($key, $data) || ! is_int($data[$key])) {
             throw new RuntimeException("Manifest field {$key} must be an integer.");
+        }
+
+        return $data[$key];
+    }
+
+    private function nullableInteger(array $data, string $key): ?int
+    {
+        if (! array_key_exists($key, $data) || ($data[$key] !== null && ! is_int($data[$key]))) {
+            throw new RuntimeException("Manifest field {$key} must be an explicit integer or null.");
         }
 
         return $data[$key];

@@ -7,15 +7,14 @@ use App\Filament\Support\AdminIcon;
 use Filament\Actions\Action;
 use Livewire\Component;
 use App\Domain\Content\RegionalFormats;
-use App\Domain\Content\ExhibitionMapPresentation;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Media\MediaTypePolicy;
 use App\Models\Exhibition;
+use App\Models\MediaAsset;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
+use Filament\Schemas\Components\Grid;
 use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -48,9 +47,9 @@ final class JournalEntryEditorSchema
                     ...self::dateFields(),
                     self::imageViewerField(),
                     ...self::venueFields($exhibition),
+                    ...self::mapFields(),
                     ...AdminRichText::schema('description', __('Text'), 50000, allowEmbeddedMedia: true),
                     ...self::exhibitionGalleryFields(),
-                    ...self::mapFields(),
                 ])
                 ->columns(['md' => 2]);
         }
@@ -114,10 +113,15 @@ final class JournalEntryEditorSchema
             self::publicLocationField('organizer', 'Organizer', 240, $exhibition)->columnSpanFull(),
             self::publicLocationField('venue', 'Venue', 240, $exhibition)->columnSpanFull(),
             self::publicLocationField('external_url', 'Exhibition website', 2048, $exhibition)->url()->columnSpanFull(),
-            self::publicLocationField('location_text', 'Street address', 500, $exhibition)->columnSpanFull(),
-            self::publicLocationField('city', 'City', 160, $exhibition),
-            self::publicLocationField('postal_code', 'Postal code', 16, $exhibition),
-            self::publicLocationField('country', 'Country', 160, $exhibition)->columnSpanFull(),
+            Grid::make()
+                ->columns(['default' => 1, 'md' => 4])
+                ->schema([
+                    self::publicLocationField('location_text', 'Street address', 500, $exhibition),
+                    self::publicLocationField('city', 'City', 160, $exhibition),
+                    self::publicLocationField('postal_code', 'Postal code', 16, $exhibition),
+                    self::publicLocationField('country', 'Country', 160, $exhibition),
+                ])
+                ->columnSpanFull(),
         ];
     }
 
@@ -197,14 +201,6 @@ final class JournalEntryEditorSchema
                         'country' => $get('country'),
                     ]))
                 ->columnSpanFull(),
-            Hidden::make('latitude')->dehydrated(false),
-            Hidden::make('longitude')->dehydrated(false),
-            Hidden::make('geocoded_at')->dehydrated(false),
-            Placeholder::make('map_preview')
-                ->label(__('Preview'))
-                ->content(fn (Get $get): HtmlString => self::mapPreview($get))
-                ->visible(fn (Get $get): bool => (bool) $get('map_enabled'))
-                ->columnSpanFull(),
         ];
     }
 
@@ -266,7 +262,7 @@ final class JournalEntryEditorSchema
         return AdminTableRepeater::make('gallery_images')
             ->label(__('Gallery media'))
             ->hiddenLabel()
-            ->table([TableColumn::make(__('Image or video')), TableColumn::make(__('Controls'))])
+            ->table([TableColumn::make(__('Image or video')), TableColumn::make(__('Video controls'))])
             ->compact()
             ->schema([
                 MediaAssetSelect::makeId(
@@ -286,7 +282,18 @@ final class JournalEntryEditorSchema
                             $livewire->callMountedAction();
                         }
                     }),
-                self::videoControlsToggle('video_controls_enabled')->hiddenLabel(),
+                self::videoControlsToggle('video_controls_enabled')
+                    ->hiddenLabel()
+                    ->visible(static function (Get $get): bool {
+                        $assetId = filter_var($get('media_asset_id'), FILTER_VALIDATE_INT);
+
+                        return $assetId !== false
+                            && $assetId > 0
+                            && MediaAsset::query()
+                                ->whereKey((int) $assetId)
+                                ->whereIn('mime_type', MediaTypePolicy::VIDEO_MIME_TYPES)
+                                ->exists();
+                    }),
             ])
             ->addActionLabel(__('Add media'))
             ->reorderableWithButtons()
@@ -337,31 +344,4 @@ final class JournalEntryEditorSchema
         );
     }
 
-    private static function mapPreview(Get $get): HtmlString
-    {
-        $latitude = filter_var($get('latitude'), FILTER_VALIDATE_FLOAT);
-        $longitude = filter_var($get('longitude'), FILTER_VALIDATE_FLOAT);
-        if ($latitude === false || $longitude === false || $latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
-            return new HtmlString(
-                '<div class="journal-entry-editor__map is-empty">'
-                .'<p>Map location will appear once the address has been resolved.</p>'
-                .'</div>',
-            );
-        }
-
-        $preview = new Exhibition;
-        $preview->setAttribute('latitude', (float) $latitude);
-        $preview->setAttribute('longitude', (float) $longitude);
-        $presentation = app(ExhibitionMapPresentation::class)->for($preview);
-        if ($presentation === null) {
-            return new HtmlString('<div class="journal-entry-editor__map is-empty"><p>Map preview unavailable.</p></div>');
-        }
-        return new HtmlString(
-            '<div class="journal-entry-editor__map">'
-            .'<iframe src="'.e($presentation['embed_url']).'" title="Venue map preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
-            .'<div class="journal-entry-editor__map-meta">'
-            .'<a href="'.e($presentation['public_url']).'" target="_blank" rel="noopener noreferrer">Open map</a></div>'
-            .'</div>',
-        );
-    }
 }

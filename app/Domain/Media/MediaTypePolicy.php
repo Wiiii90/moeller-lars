@@ -109,36 +109,37 @@ final class MediaTypePolicy
         };
     }
 
+    /**
+     * The configured site-wide storage quota is the only authored file-byte
+     * ceiling. Container/codec validation and decompression limits remain.
+     * An unconfigured quota is not permission for unrestricted resumable
+     * staging: ResumableMediaUploadService rejects start until it is set.
+     */
     public static function maxBytesFor(string $mimeType): int
     {
-        if (self::isVideo($mimeType)) {
-            return self::videoMaxBytes();
-        }
-
-        if (self::isAudio($mimeType)) {
-            return self::audioMaxBytes();
-        }
-
-        return self::imageMaxBytes();
+        $configured = config('media.quota_bytes');
+        return is_numeric($configured) && (int) $configured > 0
+            ? (int) $configured
+            : PHP_INT_MAX;
     }
 
     public static function maxUploadBytes(): int
     {
-        return max(self::imageMaxBytes(), self::videoMaxBytes(), self::audioMaxBytes());
+        return self::maxBytesFor('application/octet-stream');
     }
 
     public static function imageMaxBytes(): int
     {
-        return max(1, (int) config('media.upload.image_max_bytes', 20 * 1024 * 1024));
+        return self::maxUploadBytes();
     }
 
     public static function videoMaxBytes(): int
     {
-        return max(1, (int) config('media.upload.video_max_bytes', 100 * 1024 * 1024));
+        return self::maxUploadBytes();
     }
 
     public static function audioMaxBytes(): int
     {
-        return max(1, (int) config('media.upload.audio_max_bytes', 100 * 1024 * 1024));
+        return self::maxUploadBytes();
     }
 }

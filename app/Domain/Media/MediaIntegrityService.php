@@ -16,14 +16,14 @@ class MediaIntegrityService
             return ['original_missing'];
         }
 
+        // A logically deleted original can legitimately remain while
+        // Publication still owns it. Verify retained bytes without reporting
+        // their presence as a zombie; missing deleted bytes can be normal.
+        $deleted = $fresh->getAttribute('state') === 'deleted';
         $disk = Storage::disk(config('media.disk'));
         $issues = [];
         $originalKey = (string) $fresh->getAttribute('storage_key');
-        if ($fresh->getAttribute('state') === 'deleted') {
-            if ($this->exists($disk, $originalKey)) {
-                $issues[] = 'deleted_original_present';
-            }
-        } else {
+        if (! $deleted || $this->exists($disk, $originalKey)) {
             $issues = [...$issues, ...$this->checkFile($disk, $originalKey, $fresh, 'original')];
         }
 
@@ -32,11 +32,12 @@ class MediaIntegrityService
             $key = 'variant:'.$id.':';
             $state = (string) $variant->getAttribute('state');
             $variantKey = (string) $variant->getAttribute('storage_key');
-            if ($state === 'deleted') {
+            if ($state === 'deleted' || $deleted) {
+                // Retained variant files still need a valid checksum, but
+                // their absence alone does not imply a broken active preview.
                 if ($this->exists($disk, $variantKey)) {
-                    $issues[] = $key.'deleted_file_present';
+                    $issues = [...$issues, ...$this->checkFile($disk, $variantKey, $variant, $key)];
                 }
-
                 continue;
             }
             if ($state === 'stale' && ! $this->exists($disk, $variantKey)) {
@@ -45,15 +46,10 @@ class MediaIntegrityService
             $issues = [...$issues, ...$this->checkFile($disk, $variantKey, $variant, $key)];
             if (
                 $state === 'available'
-                && (
-                    ($variant->getAttribute('variant_kind') === MediaIngestService::THUMBNAIL_KIND
-                        && in_array($variant->getAttribute('transform_profile'), [
-                            MediaIngestService::TRANSFORM_PROFILE,
-                            MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
-                        ], true))
-                    || ($variant->getAttribute('variant_kind') === MediaIngestService::VIDEO_POSTER_KIND
-                        && $variant->getAttribute('transform_profile') === MediaIngestService::VIDEO_POSTER_PROFILE)
-                )
+                && in_array((string) $variant->getAttribute('variant_kind'), [
+                    MediaIngestService::THUMBNAIL_KIND,
+                    MediaIngestService::VIDEO_POSTER_KIND,
+                ], true)
             ) {
                 if ($variant->getAttribute('mime_type') !== 'image/webp') {
                     $issues[] = $key.'public_thumbnail_mime_invalid';
@@ -66,7 +62,17 @@ class MediaIntegrityService
             }
         }
 
-        return $issues;
+        $mime = (string) $fresh->getAttribute('mime_type');
+        if ($fresh->getAttribute('state') === 'available' && MediaTypePolicy::isImage($mime)
+            && MediaPreviewVariant::imageThumbnail($fresh) === null) {
+            $issues[] = 'required_image_thumbnail_unavailable';
+        }
+        if ($fresh->getAttribute('state') === 'available' && MediaTypePolicy::isVideo($mime)
+            && MediaPreviewVariant::videoPoster($fresh) === null) {
+            $issues[] = 'required_video_poster_unavailable';
+        }
+
+        return array_values(array_unique($issues));
     }
 
     /** @return list<string> */
@@ -76,23 +82,35 @@ class MediaIntegrityService
             return [$prefix === 'original' ? 'original_missing' : $prefix.'missing'];
         }
 
+        $issues = [];
+        $readableError = $prefix === 'original' ? 'original_unreadable' : $prefix.'unreadable';
         try {
-            $bytes = $disk->get($key);
+            $size = $disk->size($key);
+            $stream = $disk->readStream($key);
+            if (! is_resource($stream)) {
+                return [$readableError];
+            }
+            try {
+                $hash = hash_init('sha256');
+                $hashed = hash_update_stream($hash, $stream);
+                if (! is_int($hashed) || $hashed !== (int) $size) {
+                    return [$readableError];
+                }
+                $sha256 = hash_final($hash);
+            } finally {
+                fclose($stream);
+            }
+            $mime = $this->mimeFromPath($disk->path($key));
         } catch (Throwable) {
-            return [$prefix === 'original' ? 'original_unreadable' : $prefix.'unreadable'];
-        }
-        if (! is_string($bytes)) {
-            return [$prefix === 'original' ? 'original_unreadable' : $prefix.'unreadable'];
+            return [$readableError];
         }
 
-        $issues = [];
-        if (strlen($bytes) !== (int) $record->getAttribute('byte_size')) {
+        if ($size !== (int) $record->getAttribute('byte_size')) {
             $issues[] = $prefix === 'original' ? 'original_size_mismatch' : $prefix.'size_mismatch';
         }
-        if (hash('sha256', $bytes) !== (string) $record->getAttribute('sha256')) {
+        if (! hash_equals((string) $record->getAttribute('sha256'), $sha256)) {
             $issues[] = $prefix === 'original' ? 'original_checksum_mismatch' : $prefix.'checksum_mismatch';
         }
-        $mime = $this->mime($bytes);
         if ($mime !== (string) $record->getAttribute('mime_type')) {
             $issues[] = $prefix === 'original' ? 'original_mime_mismatch' : $prefix.'mime_mismatch';
         }
@@ -109,14 +127,14 @@ class MediaIntegrityService
         }
     }
 
-    private function mime(string $bytes): ?string
+    private function mimeFromPath(string $path): ?string
     {
         $info = finfo_open(FILEINFO_MIME_TYPE);
         if ($info === false) {
             return null;
         }
         try {
-            $mime = finfo_buffer($info, $bytes);
+            $mime = finfo_file($info, $path);
         } finally {
             finfo_close($info);
         }

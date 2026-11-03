@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminMediaController;
+use App\Http\Controllers\AdminResumableMediaUploadController;
 use App\Http\Controllers\PublicArtworkController;
 use App\Http\Controllers\PublicContactController;
 use App\Http\Controllers\PublicHomeController;
@@ -8,7 +9,6 @@ use App\Http\Controllers\PublicMediaController;
 use App\Http\Controllers\PublicSeoController;
 use App\Http\Controllers\PublicSiteSectionController;
 use App\Http\Middleware\EnforceHomePresentationGate;
-use App\Http\Middleware\EnsureMediaVariantFile;
 use App\Http\Middleware\ProtectArtistPreview;
 use Illuminate\Support\Facades\Route;
 use Livewire\Mechanisms\FrontendAssets\FrontendAssets;
@@ -45,7 +45,6 @@ Route::middleware(ProtectArtistPreview::class)
         Route::get('/', [PublicHomeController::class, 'show'])->name('home');
         Route::get('/media/original/{mediaAsset}/{revision?}', [AdminMediaController::class, 'original'])->where('revision', '[a-f0-9]{64}')->name('media.original');
         Route::get('/media/variant/{mediaVariant}/{revision?}', [AdminMediaController::class, 'variant'])->where('revision', '[a-f0-9]{64}')
-            ->middleware(EnsureMediaVariantFile::class)
             ->name('media.variant');
         Route::get('/artworks/{slug}', [PublicArtworkController::class, 'show'])->name('artworks.show');
         Route::get('/{section}/{slug}', [PublicSiteSectionController::class, 'journalEntry'])
@@ -56,10 +55,26 @@ Route::middleware(ProtectArtistPreview::class)
             ->name('site.section');
     });
 
+// Authenticated, CSRF-protected private staging. Each request contains at most
+// one 16 MiB chunk. Durable identity, offset and quota checks live in the service.
+Route::prefix('admin/media-upload')
+    ->middleware('auth')
+    ->name('admin.media-upload.')
+    ->group(function (): void {
+        Route::post('/start', [AdminResumableMediaUploadController::class, 'start'])->name('start');
+        Route::post('/failure', [AdminResumableMediaUploadController::class, 'reportFailure'])
+            ->middleware('throttle:30,1')->name('failure');
+        Route::post('/{id}/chunk', [AdminResumableMediaUploadController::class, 'chunk'])
+            ->whereUuid('id')->name('chunk');
+        Route::post('/{id}/finish', [AdminResumableMediaUploadController::class, 'finish'])
+            ->whereUuid('id')->name('finish');
+        Route::post('/{id}/cancel', [AdminResumableMediaUploadController::class, 'cancel'])
+            ->whereUuid('id')->name('cancel');
+    });
+
 Route::get('/admin/media-preview/original/{mediaAsset}', [AdminMediaController::class, 'original'])
     ->name('admin.media.original');
 Route::get('/admin/media-preview/variant/{mediaVariant}', [AdminMediaController::class, 'variant'])
-    ->middleware(EnsureMediaVariantFile::class)
     ->name('admin.media.variant');
 Route::get('/admin/media-download/original/{mediaAsset}', [AdminMediaController::class, 'download'])
     ->name('admin.media.download');
@@ -68,7 +83,6 @@ Route::get('/admin/media-download/selected', [AdminMediaController::class, 'down
 
 Route::get('/media/original/{mediaAsset}/{revision?}', [PublicMediaController::class, 'original'])->where('revision', '[a-f0-9]{64}')->name('media.original');
 Route::get('/media/variant/{mediaVariant}/{revision?}', [PublicMediaController::class, 'variant'])->where('revision', '[a-f0-9]{64}')
-    ->middleware(EnsureMediaVariantFile::class)
     ->name('media.variant');
 
 Route::middleware(EnforceHomePresentationGate::class)->group(function (): void {

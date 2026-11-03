@@ -235,6 +235,38 @@ final class JournalWorkspace extends Page
         return (is_int($id) || ctype_digit($id)) && (int) $id > 0;
     }
 
+    public function sortExhibitionGalleryMedia(string $itemKey, int $position): void
+    {
+        if ($this->journalTemplate() !== JournalTemplate::Exhibitions
+            || $this->getMountedAction()?->getName() !== 'editExhibition') {
+            return;
+        }
+
+        $schema = $this->getMountedActionSchema();
+        $state = $schema->getRawState();
+        $items = $state['gallery_images'] ?? null;
+        if (! is_array($items) || count($items) < 2) {
+            return;
+        }
+
+        $keys = array_keys($items);
+        $source = array_search($itemKey, array_map(strval(...), $keys), true);
+        if ($source === false || $position < 0 || $position >= count($keys) || $source === $position) {
+            return;
+        }
+
+        $moved = array_splice($keys, $source, 1);
+        array_splice($keys, $position, 0, $moved);
+
+        $ordered = [];
+        foreach ($keys as $key) {
+            $ordered[$key] = $items[$key];
+        }
+
+        $schema->partialRawState(['gallery_images' => $ordered]);
+        $this->callMountedAction();
+    }
+
     public function togglePostSelection(int $id): void
     {
         $this->selectedPostIds = $this->toggleSelection($this->selectedPostIds, $id);
@@ -608,22 +640,11 @@ final class JournalWorkspace extends Page
                     $saved = $entry->fresh();
                     $schema->partialRawState([
                         'map_enabled' => (bool) $saved->getAttribute('map_enabled'),
-                        'latitude' => $saved->getAttribute('latitude'),
-                        'longitude' => $saved->getAttribute('longitude'),
-                        'geocoded_at' => $saved->getAttribute('geocoded_at')?->toIso8601String(),
                     ]);
                     $this->notifyValidationFailure('Exhibition unchanged', $exception);
                     $this->throwMountedValidation($exception);
                 }
                 $changed = $before !== $this->journalEntryMutationState($updated);
-                // Domain geocoding owns coordinate changes. Keep the mounted
-                // Editor schema synchronized with the committed coordinates
-                // without re-filling unrelated, possibly focused fields.
-                $schema->partialRawState([
-                    'latitude' => $updated->getAttribute('latitude'),
-                    'longitude' => $updated->getAttribute('longitude'),
-                    'geocoded_at' => $updated->getAttribute('geocoded_at')?->toIso8601String(),
-                ]);
                 $this->loadExhibitions(false);
                 if ($changed) {
                     $this->forceRender();

@@ -213,6 +213,14 @@ class MediaAssetEditorialService
             $this->undoContext->withoutReceipts(function () use ($locked, $actor, $draftToDelete): void {
                 if ($this->referenceQuery->isReferenced($locked)) {
                     $this->removeCanonicalReferences($locked, $actor);
+                    // A missing reference-detach path must never make a still
+                    // used original eligible for physical cleanup.
+                    $this->referenceQuery->forgetContentReferences();
+                    if ($this->referenceQuery->isReferenced($locked)) {
+                        throw ValidationException::withMessages([
+                            'media' => 'This media is still referenced by site content. Its file was not deleted. Remove the remaining content references first.',
+                        ]);
+                    }
                 }
 
                 if ($draftToDelete instanceof Artwork) {
@@ -319,71 +327,24 @@ class MediaAssetEditorialService
     private function removeCustomPageReferences(int $assetId): void
     {
         /** @var EloquentCollection<int, CustomPageSetting> $customPages */
-        $customPages = CustomPageSetting::query()
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->get();
-
-        foreach ($customPages as $customPage) {
-            if (! $this->referenceQuery->customPageReferencesAsset($customPage, $assetId)) {
+        $customPages = CustomPageSetting::query()->orderBy('id')->lockForUpdate()->get();
+        foreach ($customPages as $settings) {
+            if (! $this->referenceQuery->customPageReferencesAsset($settings, $assetId)) {
                 continue;
             }
 
-            $blocks = $customPage->components();
+            $blocks = $settings->components();
             for ($index = count($blocks) - 1; $index >= 0; $index--) {
                 $block = $blocks[$index] ?? null;
                 if (! is_array($block)) {
                     continue;
                 }
 
-                $type = $block['type'] ?? null;
-                if ($type === 'image'
-                    && is_numeric($block['media_asset_id'] ?? null)
-                    && (int) $block['media_asset_id'] === $assetId) {
-                    $this->customPages->deleteBlock($customPage, $index, 'image');
-
-                    continue;
-                }
-
-                if ($type === 'text') {
-                    $body = $block['body'] ?? null;
-                    $clean = $this->removeRichTextReference($body, $assetId);
-                    if ($clean !== $body) {
-                        $block['body'] = $clean;
-                        $this->customPages->updateBlock($customPage, $index, 'text', $block);
-                    }
-
-                    continue;
-                }
-
-                if ($type !== 'list') {
-                    continue;
-                }
-
-                $changed = false;
-                if (is_numeric($block['media_asset_id'] ?? null)
-                    && (int) $block['media_asset_id'] === $assetId) {
-                    $block['media_asset_id'] = null;
-                    $changed = true;
-                }
-
-                $items = is_array($block['items'] ?? null) ? array_values($block['items']) : [];
-                foreach ($items as $itemIndex => $item) {
-                    if (! is_array($item)) {
-                        continue;
-                    }
-                    $body = $item['body'] ?? null;
-                    $clean = $this->removeRichTextReference($body, $assetId);
-                    if ($clean === $body) {
-                        continue;
-                    }
-                    $items[$itemIndex]['body'] = $clean;
-                    $changed = true;
-                }
-
-                if ($changed) {
-                    $block['items'] = $items;
-                    $this->customPages->updateBlock($customPage, $index, 'list', $block);
+                $result = $this->withoutMediaReference($block, $assetId);
+                if ($result === null) {
+                    $this->customPages->deleteBlock($settings, $index, (string) $block['type']);
+                } elseif ($result !== $block) {
+                    $this->customPages->updateBlock($settings, $index, (string) $block['type'], $result);
                 }
             }
         }
@@ -392,44 +353,92 @@ class MediaAssetEditorialService
     private function removeHomeReferences(int $assetId): void
     {
         /** @var EloquentCollection<int, HomePresentationSetting> $settingsRows */
-        $settingsRows = HomePresentationSetting::query()
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->get();
-
+        $settingsRows = HomePresentationSetting::query()->orderBy('id')->lockForUpdate()->get();
         foreach ($settingsRows as $settings) {
             if (! $this->referenceQuery->homeReferencesAsset($settings, $assetId)) {
                 continue;
             }
 
             foreach ([HomeTemplate::UnderConstruction, HomeTemplate::Custom] as $mode) {
-                $components = $settings->components($mode);
-                foreach ($components as $index => $component) {
-                    $type = $component['type'] ?? null;
-                    if ($type === 'image'
-                        && is_numeric($component['media_asset_id'] ?? null)
-                        && (int) $component['media_asset_id'] === $assetId) {
-                        $component['media_asset_id'] = null;
-                        $this->homePresentation->updateComponent($settings, $mode, $index, 'image', $component);
-
+                foreach ($settings->components($mode) as $index => $component) {
+                    if (! is_array($component)) {
                         continue;
                     }
-
-                    if ($type !== 'text') {
-                        continue;
+                    $result = $this->withoutMediaReference($component, $assetId);
+                    if ($result === null) {
+                        // Preserve the Home component identity and all its
+                        // presentation settings while clearing only the asset.
+                        $result = [...$component, 'media_asset_id' => null];
                     }
-
-                    $body = $component['body'] ?? null;
-                    $clean = $this->removeRichTextReference($body, $assetId);
-                    if ($clean === $body) {
-                        continue;
+                    if ($result !== $component) {
+                        $this->homePresentation->updateComponent(
+                            $settings, $mode, $index, (string) $component['type'], $result,
+                        );
                     }
-
-                    $component['body'] = $clean;
-                    $this->homePresentation->updateComponent($settings, $mode, $index, 'text', $component);
                 }
             }
         }
+    }
+
+    /**
+     * Canonical inverse of MediaReferenceQuery::componentMediaIds(). Leave
+     * unrelated nested editorial content intact. Only a leaf Custom Page
+     * Image can be removed automatically; Image children require explicit
+     * editorial action rather than silently destroying their text.
+     *
+     * @param array<string,mixed> $component
+     * @return array<string,mixed>|null
+     */
+    private function withoutMediaReference(array $component, int $assetId): ?array
+    {
+        $type = $component['type'] ?? null;
+
+        if ($type === 'image'
+            && is_numeric($component['media_asset_id'] ?? null)
+            && (int) $component['media_asset_id'] === $assetId) {
+            if (! empty($component['children'])) {
+                throw ValidationException::withMessages([
+                    'media' => 'This image contains other content. Move or remove its child components before deleting the image from Storage.',
+                ]);
+            }
+            return null;
+        }
+
+        if ($type === 'list' && is_numeric($component['media_asset_id'] ?? null)
+            && (int) $component['media_asset_id'] === $assetId) {
+            $component['media_asset_id'] = null;
+        }
+
+        if ($type === 'text') {
+            $component['body'] = $this->removeRichTextReference($component['body'] ?? null, $assetId);
+        }
+
+        if ($type === 'list' && is_array($component['items'] ?? null)) {
+            foreach ($component['items'] as $index => $item) {
+                if (is_array($item)) {
+                    $component['items'][$index]['body'] = $this->removeRichTextReference($item['body'] ?? null, $assetId);
+                }
+            }
+        }
+
+        if ($type === 'image' && is_array($component['children'] ?? null)) {
+            foreach ($component['children'] as $index => $child) {
+                if (! is_array($child)) {
+                    continue;
+                }
+                $updated = $this->withoutMediaReference($child, $assetId);
+                if ($updated === null) {
+                    // Image children may not be images by schema; fail closed
+                    // if malformed persisted data would require discarding one.
+                    throw ValidationException::withMessages([
+                        'media' => 'The nested image content could not be safely updated. Remove its media reference in the editor first.',
+                    ]);
+                }
+                $component['children'][$index] = $updated;
+            }
+        }
+
+        return $component;
     }
 
     private function removeRichTextReference(mixed $source, int $assetId): mixed

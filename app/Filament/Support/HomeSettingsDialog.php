@@ -361,7 +361,7 @@ final class HomeSettingsDialog
         $artwork->loadMissing('category');
         $gallery = $artwork->getRelationValue('category');
         $galleryName = $gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : 'Gallery';
-        $year = $artwork->getAttribute('work_year');
+        $year = $artwork->getAttribute('year');
 
         return (string) $artwork->getAttribute('title').' · '.$galleryName.($year === null ? '' : ' · '.$year);
     }

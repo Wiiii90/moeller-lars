@@ -51,9 +51,7 @@ class PublicArtworkQuery
     {
         /** @var Collection<int, Artwork> $artworks */
         $artworks = $this->homeQuery()
-            ->orderByDesc('work_year')
-            ->orderByDesc('work_date')
-            ->orderByDesc('id')
+            ->orderByRaw(GalleryPresentation::DATE_ORDER_SQL)
             ->limit(max(1, min($limit, 50)))
             ->get();
 
@@ -62,7 +60,7 @@ class PublicArtworkQuery
 
     /**
      * Return the bounded automatic Home candidate group from the canonical Home eligibility query.
-     * Artwork date ordering uses the Artwork's work year/date; Added ordering uses Artwork created_at.
+     * Artwork date ordering uses the Artwork's year, month and optional day; Added ordering uses Artwork created_at.
      * MediaAsset timestamps never participate in either ordering.
      *
      * @param  list<int>  $manualIncludeIds
@@ -89,16 +87,15 @@ class PublicArtworkQuery
     /** @return Collection<int, Artwork> */
     public function newestHomeCandidates(?int $latestYear = null): Collection
     {
-        $latestYear ??= $this->homeQuery()->max('work_year');
+        $latestYear ??= $this->homeQuery()->max('year');
         if ($latestYear === null) {
             return new Collection;
         }
 
         /** @var Collection<int, Artwork> $artworks */
         $artworks = $this->homeQuery()
-            ->where('work_year', $latestYear)
-            ->orderByDesc('work_date')
-            ->orderByDesc('id')
+            ->where('year', $latestYear)
+            ->orderByRaw(GalleryPresentation::DATE_ORDER_SQL)
             ->get();
 
         return $artworks;
@@ -148,9 +145,7 @@ class PublicArtworkQuery
 
         /** @var Collection<int, Artwork> $artworks */
         $artworks = $query
-            ->orderByDesc('work_year')
-            ->orderByDesc('work_date')
-            ->orderByDesc('id')
+            ->orderByRaw(GalleryPresentation::DATE_ORDER_SQL)
             ->limit(max(1, min($limit, 50)))
             ->get();
 
@@ -173,9 +168,7 @@ class PublicArtworkQuery
     ): Collection {
         /** @var Collection<int, Artwork> $artworks */
         $artworks = $this->homePoolQuery($rule, $year, $manualIncludeIds)
-            ->orderByDesc('work_year')
-            ->orderByDesc('work_date')
-            ->orderByDesc('id')
+            ->orderByRaw(GalleryPresentation::DATE_ORDER_SQL)
             ->limit(max(1, min($limit, 50)))
             ->get();
 
@@ -237,7 +230,7 @@ class PublicArtworkQuery
             ->whereIn('artwork_category_id', $galleryIds)
             ->select(['artworks.id', 'artworks.artwork_category_id'])
             ->selectRaw(
-                'ROW_NUMBER() OVER (PARTITION BY artwork_category_id ORDER BY work_year DESC, work_date DESC, id DESC) AS home_candidate_rank',
+                'ROW_NUMBER() OVER (PARTITION BY artwork_category_id ORDER BY '.GalleryPresentation::DATE_ORDER_SQL.') AS home_candidate_rank',
             );
 
         $ids = DB::query()
@@ -254,9 +247,7 @@ class PublicArtworkQuery
         /** @var Collection<int, Artwork> $artworks */
         $artworks = $this->homeQuery()
             ->whereIn('id', $ids)
-            ->orderByDesc('work_year')
-            ->orderByDesc('work_date')
-            ->orderByDesc('id')
+            ->orderByRaw(GalleryPresentation::DATE_ORDER_SQL)
             ->get();
 
         return $artworks;
@@ -269,7 +260,7 @@ class PublicArtworkQuery
         /** @var Artwork|null $summary */
         $summary = (clone $query)
             ->selectRaw('COUNT(*) AS eligible_count')
-            ->selectRaw('MAX(work_year) AS newest_year')
+            ->selectRaw('MAX(year) AS newest_year')
             ->first();
         $newestYear = $summary?->getAttribute('newest_year');
         $newestYear = is_numeric($newestYear) ? (int) $newestYear : null;
@@ -279,7 +270,7 @@ class PublicArtworkQuery
             'newest_year' => $newestYear,
             'newest_year_candidates' => $newestYear === null
                 ? 0
-                : (clone $query)->where('work_year', $newestYear)->count(),
+                : (clone $query)->where('year', $newestYear)->count(),
         ];
     }
 
@@ -315,7 +306,7 @@ class PublicArtworkQuery
 
         return $query->where(function (Builder $candidates) use ($year, $manualIncludeIds): void {
             if ($year !== null) {
-                $candidates->where('work_year', $year);
+                $candidates->where('year', $year);
             } else {
                 $candidates->whereRaw('1 = 0');
             }
@@ -337,12 +328,7 @@ class PublicArtworkQuery
             return;
         }
 
-        $query
-            ->orderByDesc('work_year')
-            ->orderByRaw('CASE WHEN work_date IS NULL THEN 1 ELSE 0 END')
-            ->orderByDesc('work_date')
-            ->orderByDesc('created_at')
-            ->orderByDesc('id');
+        GalleryPresentation::orderArtworksByDate($query);
     }
 
     /**
@@ -357,7 +343,7 @@ class PublicArtworkQuery
         if ($rule === 'year') {
             return $query->where(function (Builder $candidates) use ($year, $manualIncludeIds): void {
                 if ($year !== null) {
-                    $candidates->where('work_year', $year);
+                    $candidates->where('year', $year);
                 } else {
                     $candidates->whereRaw('1 = 0');
                 }
@@ -368,11 +354,11 @@ class PublicArtworkQuery
             });
         }
 
-        $latestYear = (clone $query)->withoutEagerLoads()->max('work_year');
+        $latestYear = (clone $query)->withoutEagerLoads()->max('year');
 
         return $query->where(function (Builder $candidates) use ($latestYear, $manualIncludeIds): void {
             if ($latestYear !== null) {
-                $candidates->where('work_year', $latestYear);
+                $candidates->where('year', $latestYear);
             } else {
                 $candidates->whereRaw('1 = 0');
             }
@@ -396,7 +382,7 @@ class PublicArtworkQuery
                 $query->where('show_on_home', true)
                     ->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', 'published'));
             })
-            ->whereNotNull('work_year');
+            ->whereNotNull('year');
 
         return $result;
     }
@@ -425,10 +411,6 @@ class PublicArtworkQuery
                                         $images->whereIn('mime_type', MediaTypePolicy::IMAGE_MIME_TYPES)
                                             ->whereHas('variants', fn (Builder $variants) => $variants
                                                 ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
-                                                ->whereIn('transform_profile', [
-                                                    MediaIngestService::TRANSFORM_PROFILE,
-                                                    MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
-                                                ])
                                                 ->where('mime_type', 'image/webp')
                                                 ->where('state', 'available'), '=', 1);
                                     });

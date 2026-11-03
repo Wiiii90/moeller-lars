@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Artworks\Pages;
 
+use App\Domain\Artwork\ArtworkDate;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
@@ -25,7 +26,8 @@ class ViewArtwork extends ViewRecord
             TextEntry::make('slug'),
             TextEntry::make('category.name')->label('Category'),
             TextEntry::make('state'),
-            TextEntry::make('work_date')->date(),
+            TextEntry::make('artwork_date')->label('Artwork date')
+                ->state(static fn (Artwork $record): ?string => ArtworkDate::display($record)),
             TextEntry::make('position'),
             TextEntry::make('medium'),
             TextEntry::make('dimensions'),

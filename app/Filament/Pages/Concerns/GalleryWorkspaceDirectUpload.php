@@ -3,10 +3,10 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Admin\AdminMediaUploadFeedback;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
-use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -22,108 +22,67 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Throwable;
 
 trait GalleryWorkspaceDirectUpload
 {
-    /** @return array{summary:string,added:int,duplicates:int,failed:int} */
-    public function processDirectPrimaryMedia(): array
+    /** Report client transfer errors that never reach the ingest action. */
+    public function notifyDirectPrimaryTransferFailure(string $message): void
     {
-        $uploads = $this->directPrimaryMedia;
-        $this->resetErrorBag('directPrimaryMedia');
+        app(AdminMediaUploadFeedback::class)->failure($message);
+    }
+
+    /** Begin a selected stack without retaining stale assets from an earlier upload. */
+    public function beginDirectPrimaryMediaBatch(): void
+    {
         $this->pendingPrimaryMediaAssetId = null;
         $this->pendingBatchArtworkMedia = [];
+    }
 
-        if ($uploads === []) {
-            $this->reset('directPrimaryMedia');
-
-            return [
-                'summary' => 'Upload failed',
-                'added' => 0,
-                'duplicates' => 0,
-                'failed' => 1,
-            ];
+    /**
+     * Queue the canonical available asset returned by the shared resumable
+     * ingest endpoint. Only images/videos can become Artwork primary media.
+     */
+    public function queueResumablePrimaryMediaAsset(int $assetId): void
+    {
+        $asset = MediaAsset::query()->whereKey($assetId)->where('state', 'available')->first();
+        if (! $asset instanceof MediaAsset || ! $this->isGalleryPrimaryVisual($asset)) {
+            throw ValidationException::withMessages(['media' => 'This media file is not a valid Artwork image or video.']);
         }
-
-        $ingest = app(MediaIngestService::class);
-        $addedAssets = [];
-        $queuedAssetIds = [];
-        $duplicates = 0;
-        $failures = [];
-
-        foreach ($uploads as $upload) {
-            try {
-                $result = $ingest->ingestUnique($upload);
-                /** @var MediaAsset $asset */
-                $asset = $result['asset'];
-                $duplicate = (bool) $result['duplicate'];
-
-                if (! $this->isGalleryPrimaryVisual($asset)) {
-                    if (! $duplicate) {
-                        app(MediaAssetEditorialService::class)->delete($asset);
-                    }
-
-                    $failures[] = [
-                        'filename' => $this->directUploadFilename($upload),
-                        'message' => 'Gallery direct upload supports images and videos only.',
-                    ];
-
-                    continue;
-                }
-
-                if ($duplicate) {
-                    // A file already in Storage is still a valid Artwork
-                    // primary. Reuse its canonical ID instead of leaving
-                    // the user with a successful upload and no Artwork form.
-                    $duplicates++;
-                }
-
-                $assetId = (int) $asset->getKey();
-                if (! in_array($assetId, $queuedAssetIds, true)) {
-                    $addedAssets[] = $asset;
-                    $queuedAssetIds[] = $assetId;
-                }
-            } catch (ValidationException $exception) {
-                $failures[] = [
-                    'filename' => $this->directUploadFilename($upload),
-                    'message' => $this->firstValidationMessage($exception),
-                ];
-            } catch (Throwable $exception) {
-                report($exception);
-                $failures[] = [
-                    'filename' => $this->directUploadFilename($upload),
-                    'message' => 'The file could not be uploaded.',
-                ];
+        foreach ($this->pendingBatchArtworkMedia as $row) {
+            if ((int) ($row['media_asset_id'] ?? 0) === $assetId) {
+                return;
             }
         }
+        $this->pendingBatchArtworkMedia[] = $this->pendingBatchArtworkRow($asset);
+    }
 
-        $added = count($addedAssets);
-        $failed = count($failures);
-        $total = count($uploads);
-        $summary = $this->directUploadSummary($total, $added, $duplicates, $failed);
-        $this->reset('directPrimaryMedia');
-
-        $this->notifyDirectUploadResult($summary, $added, $duplicates, $failures);
+    /**
+     * Finalize a multi-file queue after each file was transferred and ingested
+     * in its own bounded request. The existing Artwork dialogs remain the owner.
+     *
+     * @param list<string> $errors
+     * @return array{summary:string,added:int,failed:int,duplicates:int}
+     */
+    public function finishDirectPrimaryMediaBatch(int $failed = 0, int $duplicates = 0, array $errors = []): array
+    {
+        $failed = max(0, min(10000, $failed));
+        $duplicates = max(0, min(10000, $duplicates));
+        $rows = $this->pendingBatchArtworkMedia;
+        $added = count($rows);
+        $summary = app(AdminMediaUploadFeedback::class)->batch(
+            $added, $duplicates, $failed, $errors, 'gallery',
+        );
 
         if ($added === 1) {
-            $asset = $addedAssets[0];
-            $this->pendingPrimaryMediaAssetId = (int) $asset->getKey();
+            $this->pendingPrimaryMediaAssetId = (int) $rows[0]['media_asset_id'];
+            $this->pendingBatchArtworkMedia = [];
             $this->mountAction('addArtwork');
         } elseif ($added > 1) {
-            $this->pendingBatchArtworkMedia = array_map(
-                fn (MediaAsset $asset): array => $this->pendingBatchArtworkRow($asset),
-                $addedAssets,
-            );
             $this->mountAction('batchAddArtworks');
         }
 
-        return [
-            'summary' => $summary,
-            'added' => $added,
-            'duplicates' => $duplicates,
-            'failed' => $failed,
-        ];
+        return ['summary' => $summary, 'added' => $added, 'failed' => $failed, 'duplicates' => $duplicates];
     }
 
     public function batchAddArtworksAction(): Action
@@ -217,7 +176,6 @@ trait GalleryWorkspaceDirectUpload
                                 'artwork_category_id' => $galleryId,
                                 'slug' => $this->uniqueBatchArtworkSlug($title),
                                 'title' => $title,
-                                'work_date' => null,
                             ]);
                             app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
                             if (filled($row['primary_alt_text'] ?? null)) {
@@ -317,72 +275,5 @@ trait GalleryWorkspaceDirectUpload
         return $slug;
     }
 
-    /** @param list<array{filename:string,message:string}> $failures */
-    private function notifyDirectUploadResult(string $summary, int $added, int $duplicates, array $failures): void
-    {
-        if ($failures !== []) {
-            $details = array_map(
-                static fn (array $failure): string => $failure['filename'].' — '.$failure['message'],
-                array_slice($failures, 0, 4),
-            );
-            if (count($failures) > 4) {
-                $details[] = '+'.(count($failures) - 4).' more';
-            }
 
-            app(AdminNotifier::class)->notification(
-                title: ($added + $duplicates) > 0 ? 'Upload completed with issues' : 'Upload failed',
-                body: implode("\n", $details),
-                status: ($added + $duplicates) > 0 ? 'warning' : 'danger',
-            );
-
-            return;
-        }
-
-        if ($added > 0) {
-            app(AdminNotifier::class)->notification(
-                title: $added === 1 ? 'Media ready for Artwork' : 'Media ready for Artworks',
-                body: $summary,
-                status: 'success',
-            );
-
-            return;
-        }
-
-        if ($duplicates > 0) {
-            app(AdminNotifier::class)->notification(
-                title: 'Already in Storage',
-                body: $summary,
-                status: 'info',
-            );
-        }
-    }
-
-    private function directUploadSummary(int $total, int $ready, int $reused, int $failed): string
-    {
-        if ($ready === 0) {
-            return $failed > 0
-                ? ($total === 1 ? 'Upload failed' : 'Uploads failed')
-                : 'No new Artwork media selected';
-        }
-
-        $parts = [
-            $ready.' '.($ready === 1 ? 'Media File is' : 'Media Files are').' ready for Artwork creation',
-        ];
-        if ($reused > 0) {
-            $parts[] = $reused.' '.($reused === 1 ? 'existing original reused' : 'existing originals reused');
-        }
-        if ($failed > 0) {
-            $parts[] = $failed.' failed';
-        }
-
-        return implode(' · ', $parts);
-    }
-
-    private function directUploadFilename(TemporaryUploadedFile $upload): string
-    {
-        $filename = str_replace('\\', '/', $upload->getClientOriginalName());
-        $basename = basename($filename);
-
-        return $basename === '' ? 'upload' : $basename;
-    }
 }

@@ -1,9 +1,9 @@
 import '../css/app.css';
 import '../css/public-content.css';
-import '../css/rich-text-spacing.css';
 import '../css/public-presentation.css';
 import '../css/custom-pages.css';
 import '../css/journal-presentation.css';
+import '../css/rich-text-spacing.css';
 
 import { initializeArtworkViewer } from './artwork-viewer.js';
 import { initializeGalleryImageLoading } from './public-gallery-loading.js';

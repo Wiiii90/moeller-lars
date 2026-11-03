@@ -649,9 +649,20 @@ body {
     overflow-wrap: break-word;
 }
 
-/* Expanded details have one viewport-derived size on wide screens.
-   On narrow screens the original Gallery layout is left untouched. The
-   image, caption and paper have no mutually measured dimensions. */
+/* Fitted Artwork images keep their intrinsic aspect ratio at every viewport width.
+   The Menu and surrounding paper expand only on wide screens. */
+.site-content--fitted-artwork .artwork-detail__media {
+    width: min(100%, var(--public-fitted-image-width, var(--public-art-max)));
+    margin-inline: auto;
+}
+.site-content--fitted-artwork .artwork-detail__viewer-trigger,
+.site-content--fitted-artwork .artwork-detail__image,
+.site-content--fitted-artwork .artwork-detail__footer {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+}
+
 @media (min-width: 64.001rem) {
     #content.site-content--fitted-artwork {
         width: min(calc(100% - 2 * var(--public-gutter)),
@@ -661,19 +672,6 @@ body {
 
     .site-content--fitted-artwork .artwork-detail {
         width: 100%;
-    }
-
-    .site-content--fitted-artwork .artwork-detail__media {
-        width: min(100%, var(--public-fitted-image-width, var(--public-art-max)));
-        margin-inline: auto;
-    }
-
-    .site-content--fitted-artwork .artwork-detail__viewer-trigger,
-    .site-content--fitted-artwork .artwork-detail__image,
-    .site-content--fitted-artwork .artwork-detail__footer {
-        width: 100%;
-        max-width: 100%;
-        height: auto;
     }
 
     /* The Menu paper alone grows; its entire original title/navigation
@@ -1064,7 +1062,6 @@ body {
     line-height: 1.6;
 }
 
-.artwork-detail__narrative p,
 .artwork-detail__credits p {
     margin: 0;
 }
@@ -1455,83 +1452,112 @@ body {
     }
 }
 
-/* EXHIBITIONS — AN EDITORIAL CATALOGUE
-   An exhibition name is the only pointer toggle; the date and venue remain
-   informational. Native details provide keyboard and disclosure semantics. */
+/* EXHIBITIONS — EDITORIAL CATALOGUE.
+   The shared Public sheet owns its configurable background and padding;
+   the index supplies only the exhibition composition and native disclosure. */
 .exhibitions-page {
     width: 100%;
     min-width: 0;
     padding: .8rem 0 1.2rem;
     container-type: inline-size;
-    --exhibition-date-track: 7.25rem;
-    --exhibition-column-gap: 1.55rem;
+    --exhibition-media-track: 4.25rem;
+    --exhibition-date-track: 6.5rem;
+    --exhibition-column-gap: 1.2rem;
     --exhibition-rule: rgba(130, 116, 100, .35);
+    /* With a cover, the float and its right gap occupy the tracks before
+       the title. Without a cover, the detail body uses its full width. */
+    --exhibition-title-offset: calc(var(--exhibition-media-track) + var(--exhibition-date-track) + 2 * var(--exhibition-column-gap));
     color: var(--public-ink);
 }
 .exhibition-entry {
-    position: relative;
     min-width: 0;
-    margin: 0 0 2rem;
+    margin: 0 0 .7rem;
 }
-/* The catalogue thumbnail stays outside native details, so its media does not
-   become a second disclosure trigger or interfere with the original viewer. */
-.exhibition-entry--with-teaser > .exhibition-entry__disclosure:not([open]) {
-    min-height: 4.3rem;
-}
-.exhibition-entry--with-teaser > .exhibition-entry__disclosure:not([open]) > .exhibition-entry__summary {
-    padding-inline-end: 5.5rem;
-}
-.exhibition-entry__teaser {
-    position: absolute;
-    inset-block-start: .1rem;
-    inset-inline-end: 0;
-    width: 4.6rem;
-    max-width: 100%;
-    pointer-events: none;
-}
-.exhibition-entry__teaser-media {
-    display: flex;
-    justify-content: flex-end;
-    min-width: 0;
-    margin: 0;
-}
-.exhibition-entry__teaser img {
-    display: block;
-    width: auto;
-    max-width: 100%;
-    max-height: 4.25rem;
-    height: auto;
-    object-fit: contain;
-}
-.exhibition-entry__disclosure[open] ~ .exhibition-entry__teaser {
-    display: none;
-}
-.exhibition-entry:last-of-type { margin-bottom: 0; }
-.exhibition-entry__disclosure[open] {
-    padding-block: 1.2rem 1.4rem;
-}
-/* Give each expanded folio's neighboring boundary one rule, not two.
-   The first and last records never draw a rule outside the catalogue. */
+.exhibition-entry:last-child { margin-bottom: 0; }
+/* Only opened folios receive the restrained catalogue separators.
+   No line outside the first/last entry. Two adjacent opened folios share
+   exactly one border: the previous entry owns their common boundary. */
 .exhibition-entry:not(:first-child) > .exhibition-entry__disclosure[open] {
     border-top: 1px solid var(--exhibition-rule);
 }
 .exhibition-entry:not(:last-child) > .exhibition-entry__disclosure[open] {
     border-bottom: 1px solid var(--exhibition-rule);
 }
-.exhibition-entry:has(> .exhibition-entry__disclosure[open]) + .exhibition-entry > .exhibition-entry__disclosure[open] {
+.exhibition-entry:has(> .exhibition-entry__disclosure[open])
+    + .exhibition-entry > .exhibition-entry__disclosure[open] {
     border-top: 0;
 }
 .exhibition-entry__summary {
     display: grid;
     min-width: 0;
-    grid-template-columns: var(--exhibition-date-track) minmax(0, 1fr);
+    grid-template-columns: var(--exhibition-media-track) var(--exhibition-date-track) minmax(0, 1fr);
     column-gap: var(--exhibition-column-gap);
     align-items: start;
-    padding: .1rem 0 .2rem;
+    padding: 1.05rem 1.05rem 1.1rem;
     list-style: none;
     cursor: default;
-    /* Only the exhibition heading opens details on pointer devices.
-       The summary remains a native keyboard-operable disclosure. */
+    pointer-events: none;
+}
+/* Reserve the same discreet image track for every exhibition. No-cover
+   entries preserve the date and heading axes without a fake placeholder. */
+.exhibition-entry__schedule { grid-column: 2; grid-row: 1; }
+.exhibition-entry__heading { grid-column: 3; grid-row: 1; }
+.exhibition-entry__teaser {
+    display: block;
+    grid-column: 1;
+    grid-row: 1;
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    height: 3.7rem;
+    pointer-events: auto;
+    cursor: pointer;
+}
+.exhibition-entry__teaser-media,
+.exhibition-entry__teaser :is(img, video) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+}
+.exhibition-entry__teaser :is(img, video) {
+    object-fit: contain;
+}
+.exhibition-entry__teaser-media {
+    pointer-events: none;
+}
+.exhibition-entry__video-play {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+    pointer-events: auto;
+}
+.exhibition-entry__video-play svg {
+    display: block;
+    width: 1.85rem;
+    height: 1.85rem;
+    padding: .22rem;
+    border-radius: 50%;
+    background: rgba(31, 28, 25, .72);
+    transition: background-color 140ms ease;
+}
+.exhibition-entry__video-play:is(:hover, :focus-visible) svg {
+    background: rgba(31, 28, 25, .95);
+}
+.exhibition-entry__video-play:focus-visible {
+    outline: 2px solid var(--public-artwork-line-hover);
+    outline-offset: 2px;
+}
+.exhibition-entry__disclosure[open] .exhibition-entry__teaser {
+    visibility: hidden;
     pointer-events: none;
 }
 .exhibition-entry__summary::-webkit-details-marker { display: none; }
@@ -1548,7 +1574,7 @@ body {
     gap: .35rem;
 }
 .exhibition-entry__date {
-    color: #504941;
+    color: #746d65;
     font-family: var(--public-index-typeface);
     font-size: var(--journal-date-font-size);
     font-variant-numeric: tabular-nums;
@@ -1575,8 +1601,8 @@ body {
     color: #302b27;
     font-family: var(--public-index-typeface);
     font-size: var(--journal-exhibition-title-font-size);
-    font-weight: 400;
-    letter-spacing: .005em;
+    font-weight: 500;
+    letter-spacing: -.012em;
     line-height: 1.25;
     overflow-wrap: break-word;
     text-wrap: pretty;
@@ -1609,19 +1635,29 @@ body {
    adding an inner divider, card frame or state-specific control column. */
 .exhibition-entry__body {
     min-width: 0;
-    padding: 1.4rem 0 0;
+    padding: .45rem 1.05rem 1.4rem;
 }
 .exhibition-entry__feature {
     display: flow-root;
     min-width: 0;
 }
-.exhibition-entry__feature--text {
-    margin-inline-start: calc(var(--exhibition-date-track) + var(--exhibition-column-gap));
-}
+/* A cover floats within the shared content flow: text starts beside it and
+   continues full-width below. With no cover, info and prose start at the
+   existing body's left padding, without a reserved image column. */
 .exhibition-entry__cover {
-    width: min(100%, 17rem);
+    width: min(100%, 14rem);
     min-width: 0;
-    margin: 0;
+    margin: 0 0 1rem;
+}
+@container (min-width: 27rem) {
+    .exhibition-entry__feature--with-cover .exhibition-entry__cover {
+        float: inline-start;
+        /* Cover and gap occupy the columns before the title, keeping
+           adjacent text on the title axis. Without a cover, the detail
+           content instead begins at the body's left edge. */
+        width: min(14rem, calc(var(--exhibition-title-offset) - var(--exhibition-column-gap)));
+        margin: 0 var(--exhibition-column-gap) .85rem 0;
+    }
 }
 .exhibition-entry__cover img {
     display: block;
@@ -1631,13 +1667,14 @@ body {
     height: auto;
     object-fit: contain;
 }
-/* A brief entrance of the full cover suggests enlargement without moving
-   media nodes, duplicating viewer controls or animating overall page height. */
+/* The larger cover now opens from the same left image edge.
+   Transform-only entrance avoids costly height/position animation. */
 .exhibition-entry__disclosure[open] .exhibition-entry__cover {
+    transform-origin: top left;
     animation: exhibition-cover-enter 260ms ease-out both;
 }
 @keyframes exhibition-cover-enter {
-    from { opacity: 0; transform: translateY(.35rem) scale(.965); }
+    from { opacity: 0; transform: translateY(-.3rem) scale(.92); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1685,9 +1722,6 @@ body {
     line-height: 1.7;
     overflow-wrap: anywhere;
 }
-.exhibition-entry__feature--with-cover .exhibition-entry__description {
-    max-width: none;
-}
 .exhibition-entry__links {
     display: flex;
     min-width: 0;
@@ -1723,33 +1757,46 @@ body {
     outline-offset: 3px;
 }
 .exhibitions-page .journal-entry-gallery {
-    clear: both;
     margin: 1.7rem auto 0;
+    padding-block: .3rem .65rem;
 }
 .exhibitions-page .journal-entry-gallery img {
     max-height: 28rem;
     object-fit: contain;
 }
-@container (min-width: 27rem) {
-    .exhibition-entry__feature--with-cover .exhibition-entry__cover {
-        float: left;
-        width: min(37%, 15rem);
-        margin: 0 clamp(1rem, 3vw, 1.5rem) .85rem 0;
+@container (max-width: 34rem) {
+    .exhibition-entry {
+        --exhibition-media-track: 3.8rem;
+        --exhibition-date-track: 6.15rem;
+        --exhibition-column-gap: .95rem;
     }
+    .exhibition-entry__summary,
+    .exhibition-entry__body { padding-inline: .8rem; }
+    .exhibition-entry__teaser { height: 3.2rem; }
 }
 @container (max-width: 26.999rem) {
-    .exhibition-entry { margin-bottom: 1.7rem; }
-    .exhibition-entry--with-teaser > .exhibition-entry__disclosure:not([open]) > .exhibition-entry__summary {
-        padding-inline-end: 5.1rem;
+    .exhibition-entry {
+        --exhibition-media-track: 3.25rem;
+        --exhibition-column-gap: .85rem;
     }
-    .exhibition-entry__teaser { width: 4.1rem; }
     .exhibition-entry__summary {
-        grid-template-columns: minmax(0, 1fr);
-        row-gap: .4rem;
+        grid-template-columns: var(--exhibition-media-track) minmax(0, 1fr);
+        row-gap: .22rem;
     }
-    .exhibition-entry__body { padding-top: 1.15rem; }
-    .exhibition-entry__feature--text { margin-inline-start: 0; }
-    .exhibition-entry__cover { margin-bottom: 1rem; }
+    .exhibition-entry__teaser {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+        height: 3rem;
+    }
+    .exhibition-entry__schedule {
+        grid-column: 2;
+        grid-row: 1;
+    }
+    .exhibition-entry__heading {
+        grid-column: 2;
+        grid-row: 2;
+    }
+    .exhibition-entry__body { padding-top: .9rem; }
 }
 
 /* Blog only: reviewed angled corner strokes, with no color wash or

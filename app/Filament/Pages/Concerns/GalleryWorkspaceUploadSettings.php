@@ -9,15 +9,12 @@ use App\Domain\Artwork\GalleryPresentation;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\ArtworkCategory;
-use App\Models\ArtworkMaterialPreset;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Repeater;
+use Illuminate\Contracts\View\View;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 trait GalleryWorkspaceUploadSettings
@@ -33,8 +30,6 @@ trait GalleryWorkspaceUploadSettings
 
                 return [
                     'name' => (string) $gallery->getAttribute('name'),
-                    'slug' => (string) $gallery->getAttribute('slug'),
-                    'description' => $gallery->getAttribute('description'),
                     'show_on_home' => (bool) $gallery->getAttribute('show_on_home'),
                     'landscape_detail_enabled' => GalleryPresentation::enabled($gallery),
                     'portrait_detail_enabled' => GalleryPresentation::portraitEnabled($gallery),
@@ -54,16 +49,11 @@ trait GalleryWorkspaceUploadSettings
                 Grid::make()
                     ->columns(['md' => 2])
                     ->schema([
-                        TextInput::make('name')->label('Gallery title')->required()->maxLength(160),
-                        TextInput::make('slug')
-                            ->label('Public URL slug')
-                            ->required()
-                            ->maxLength(80)
-                            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
-                        Textarea::make('description')->rows(5)->maxLength(10000)->nullable()->columnSpanFull(),
+                        TextInput::make('name')->label('Gallery title')->required()->maxLength(160)->columnSpanFull(),
                         Toggle::make('show_on_home')->label('Eligible for homepage presentation')->columnSpanFull(),
                         Select::make('sort_mode')
                             ->label('Artwork order')
+                            ->hintIcon('heroicon-o-light-bulb', tooltip: 'Manual: drag or edit positions; new artworks appear first. Newest artwork date: the Gallery always displays works by date instead of manual position. To sort the manual positions only once, save Manual first and use Sort once by artwork date below.')
                             ->options(GalleryPresentation::SORT_OPTIONS)
                             ->default(GalleryPresentation::SORT_MANUAL)
                             ->required()
@@ -99,7 +89,6 @@ trait GalleryWorkspaceUploadSettings
                             ->columnSpanFull(),
                         Toggle::make('artwork_menu_surface_wide')
                             ->label('Match Menu surface to Artwork page width')
-                            ->helperText('Only the Menu background becomes wider. Navigation items keep their usual size and spacing.')
                             ->default(false)
                             ->columnSpanFull(),
                         Select::make('artwork_divider')
@@ -121,17 +110,42 @@ trait GalleryWorkspaceUploadSettings
                     ]),
             ])
             ->modalHeading('Gallery settings')
+            ->extraModalFooterActions([
+                Action::make('sortArtworksByDateOnce')
+                    ->label('Sort once by artwork date')
+                    ->color('gray')
+                    ->disabled(fn (): bool => ($this->galleryContext['sort_mode'] ?? GalleryPresentation::SORT_MANUAL) !== GalleryPresentation::SORT_MANUAL)
+                    ->tooltip('Save Manual ordering first. This replaces manual positions with a one-time date sort; future edits remain manual.')
+                    ->action(function (): void {
+                        /** @var ArtworkCategory $gallery */
+                        $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+                        if (GalleryPresentation::sortMode($gallery) !== GalleryPresentation::SORT_MANUAL) {
+                            throw ValidationException::withMessages(['sort_mode' => 'Save Manual ordering first.']);
+                        }
+                        $sortedIds = GalleryPresentation::orderArtworksByDate($gallery->artworks()->getQuery())
+                            ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
+                        $currentIds = $gallery->artworks()->orderBy('position')->orderBy('id')
+                            ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
+                        if ($sortedIds === $currentIds) {
+                            return;
+                        }
+                        app(GalleryEditorialService::class)->reorderArtworks($gallery, $sortedIds);
+                        $this->loadGallery((int) $gallery->getKey());
+                        $this->refreshWorkspaceAfterMutation();
+                        app(AdminNotifier::class)->notification(
+                            title: 'Manual artwork order sorted by date',
+                            status: 'success',
+                        );
+                    }),
+            ])
             ->action(function (array $data): void {
                 /** @var ArtworkCategory $gallery */
                 $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
-                $currentSlug = (string) $gallery->getAttribute('slug');
                 $service = app(GalleryEditorialService::class);
 
                 try {
-                    $changed = DB::transaction(function () use ($service, $gallery, $currentSlug, $data): bool {
-                        $updated = $service->update($gallery, [
+                    $updated = $service->update($gallery, [
                             'name' => $data['name'],
-                            'description' => $data['description'] ?? null,
                             'show_on_home' => (bool) ($data['show_on_home'] ?? false),
                             'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? false,
                             'portrait_detail_enabled' => $data['portrait_detail_enabled'] ?? false,
@@ -146,16 +160,7 @@ trait GalleryWorkspaceUploadSettings
                             'show_media_copyright' => $data['show_media_copyright'] ?? false,
                             'caption_layout' => $data['caption_layout'] ?? GalleryPresentation::CAPTION_RIGHTS_LEFT,
                         ]);
-                        $changed = $updated->wasChanged();
-
-                        $newSlug = trim((string) ($data['slug'] ?? ''));
-                        if ($newSlug !== $currentSlug) {
-                            $service->changeSlug($gallery, $newSlug);
-                            $changed = true;
-                        }
-
-                        return $changed;
-                    });
+                    $changed = $updated->wasChanged();
                 } catch (ValidationException $exception) {
                     // Domain errors use field names; the mounted Filament form
                     // owns their presentation path, including nested actions.
@@ -186,33 +191,77 @@ trait GalleryWorkspaceUploadSettings
     {
         $action = Action::make('materialPresets')
             ->label('Materials')
-            ->fillForm(fn (): array => [
-                'presets' => ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all(),
-            ])
-            ->schema([
-                Repeater::make('presets')
-                    ->label('Reusable material presets')
-                    ->simple(
-                        TextInput::make('name')
-                            ->label('Material')
-                            ->required()
-                            ->maxLength(240),
-                    )
-                    ->addActionLabel('Add material'),
-            ])
             ->modalHeading('Material presets')
-            ->action(function (array $data): void {
-                $changed = app(ArtworkMaterialPresetService::class)->sync(is_array($data['presets'] ?? null) ? $data['presets'] : []);
-                if ($changed) {
-                    app(AdminNotifier::class)->notification(
-                        title: 'Material presets saved',
-                        status: 'success',
-                    );
-                }
-            });
+            ->modalContent(fn (): View => view(
+                'filament.resources.artworks.partials.material-presets-table',
+                ['presets' => app(ArtworkMaterialPresetService::class)->ordered()],
+            ));
 
-        // Repeater add/delete/reorder operations are a draft collection.
-        // Commit once using the shared Command lifecycle, not Edit blur events.
-        return AdminDialog::command($action, 'Apply changes', AdminDialogSize::Default);
+        return AdminDialog::viewer($action, AdminDialogSize::Default)
+            ->extraModalWindowAttributes(['class' => 'admin-dialog--table-viewer'], merge: true);
+    }
+
+    public function addMaterialPreset(string $name): bool
+    {
+        return $this->saveMaterialChange(
+            fn (): bool => app(ArtworkMaterialPresetService::class)->add($name),
+            'Material added',
+        );
+    }
+
+    public function renameMaterialPreset(int $id, string $name): void
+    {
+        $this->saveMaterialChange(
+            fn (): bool => app(ArtworkMaterialPresetService::class)->rename($id, $name),
+            'Material renamed',
+        );
+    }
+
+    public function deleteMaterialPreset(int $id): void
+    {
+        $this->saveMaterialChange(
+            fn (): bool => app(ArtworkMaterialPresetService::class)->delete($id),
+            'Material deleted',
+        );
+    }
+
+    public function moveMaterialPreset(int $id, string $direction): void
+    {
+        if (! in_array($direction, ['up', 'down'], true)) {
+            return;
+        }
+
+        $rows = app(ArtworkMaterialPresetService::class)->ordered();
+        $current = $rows->search(static fn ($row): bool => (int) $row->getKey() === $id);
+        if ($current === false) {
+            return;
+        }
+
+        $this->sortMaterialPreset($id, $current + ($direction === 'up' ? -1 : 1));
+    }
+
+    public function sortMaterialPreset(int $id, int $position): void
+    {
+        $this->saveMaterialChange(
+            fn (): bool => app(ArtworkMaterialPresetService::class)->move($id, $position),
+            'Material order updated',
+        );
+    }
+
+    private function saveMaterialChange(\Closure $mutation, string $title): bool
+    {
+        try {
+            $changed = $mutation();
+        } catch (ValidationException $exception) {
+            $this->notifyValidationFailure('Material not saved', $exception);
+
+            return false;
+        }
+
+        if ($changed) {
+            app(AdminNotifier::class)->notification(title: $title, status: 'success');
+        }
+
+        return $changed;
     }
 }

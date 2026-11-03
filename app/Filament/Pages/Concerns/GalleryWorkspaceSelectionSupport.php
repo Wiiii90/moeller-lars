@@ -39,6 +39,12 @@ trait GalleryWorkspaceSelectionSupport
     private function selectedArtworks(): EloquentCollection
     {
         $ids = array_keys($this->selectedArtworkIdSet());
+        $visibleIds = array_column($this->artworks, 'id');
+        if (array_diff($ids, $visibleIds) !== []) {
+            throw ValidationException::withMessages([
+                'artworks' => 'The selection includes hidden artworks. Review the current results and select again.',
+            ]);
+        }
         if ($ids === []) {
             throw ValidationException::withMessages(['artworks' => 'Select at least one artwork.']);
         }

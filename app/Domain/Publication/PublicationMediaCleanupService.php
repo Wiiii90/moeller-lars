@@ -7,6 +7,7 @@ use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\MediaReferenceQuery;
 use App\Models\MediaAsset;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -100,7 +101,15 @@ final class PublicationMediaCleanupService
     public function deleteNow(array $storageKeys): bool
     {
         $mediaAssetId = $this->resolveMediaAssetId($storageKeys);
-        if ($mediaAssetId !== null && ! $this->canDeletePhysicalMedia($mediaAssetId)) {
+        if ($mediaAssetId === null) {
+            // Never physically delete keys without a single proven canonical
+            // owner. The separately guarded orphan sweep handles unowned
+            // paths; deleteNow cannot use a guessed owner from another key.
+            report(new RuntimeException('Media cleanup could not prove one owner for all requested storage keys.'));
+
+            return false;
+        }
+        if (! $this->canDeletePhysicalMedia($mediaAssetId)) {
             $this->queue($mediaAssetId, $storageKeys);
 
             return false;
@@ -136,9 +145,12 @@ final class PublicationMediaCleanupService
 
     public function drain(): int
     {
+        // Seek by ID in bounded batches. A protected Publication may leave
+        // a large outbox waiting for its restore owner to expire; never load
+        // the whole queue into the web worker's memory.
         $rows = DB::table('publication_media_cleanups')
-            ->orderBy('id')
-            ->get(['id', 'media_asset_id', 'storage_key']);
+            ->select(['id', 'media_asset_id', 'storage_key'])
+            ->lazyById(100);
         $changed = false;
         $removedFiles = 0;
 
@@ -149,6 +161,14 @@ final class PublicationMediaCleanupService
             }
 
             $key = (string) $row->storage_key;
+            // The outbox records intent, not ownership authority. Check the
+            // actual key against all current, committed and retained owners:
+            // another asset must never lose its file because of a stale row.
+            if ($key === '' || $this->storageKeyOwners($key) !== [$mediaAssetId]) {
+                report(new RuntimeException('Media cleanup ownership conflict; retaining queued file: '.$key));
+                continue;
+            }
+
             $removed = false;
             if (! $this->deleteKey($key, $removed)) {
                 continue;
@@ -180,6 +200,150 @@ final class PublicationMediaCleanupService
         return $removedFiles;
     }
 
+
+    /**
+     * Reclaim only genuine filesystem orphans: canonical-looking originals or
+     * previews with no registry entry, committed owner, history owner or
+     * pending publication cleanup. Unassigned but registered media is NEVER
+     * a candidate. Preserve recent files and serialize against all ingests.
+     *
+     * @return array{files:int,bytes:int,failed:int}
+     */
+    public function reclaimUncataloguedMedia(int $limit = 100): array
+    {
+        if ($limit < 1 || $limit > 100) {
+            throw new \InvalidArgumentException('Orphan recovery is limited to 1-100 files.');
+        }
+
+        $lock = Cache::lock('media-ingest', 420);
+        if (! $lock->get()) {
+            throw new RuntimeException('A media upload is in progress. Free storage can be retried later.');
+        }
+
+        try {
+            return DB::transaction(function () use ($limit): array {
+                DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
+
+                $disk = Storage::disk((string) config('media.disk'));
+                $now = time();
+                $orphans = [];
+
+                // Flat canonical directories only. Never inspect private
+                // upload staging, rights artifacts or arbitrary operator files.
+                foreach (['originals', 'variants'] as $folder) {
+                    $directory = $disk->path($folder);
+                    if (! is_dir($directory)) {
+                        continue;
+                    }
+
+                    foreach (new \DirectoryIterator($directory) as $entry) {
+                        if ($entry->isDot() || ! $entry->isFile()) {
+                            continue;
+                        }
+
+                        $name = $entry->getFilename();
+                        $isCanonical = $folder === 'originals'
+                            ? preg_match('/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}\\.(?:jpg|jpeg|png|webp|mp4|webm|mp3|m4a|ogg|wav)$/D', $name) === 1
+                            : (preg_match('/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}-(?:thumbnail|poster)\\.webp$/D', $name) === 1
+                                || preg_match('/^cutover-[1-9][0-9]*-[a-f0-9]{64}\\.webp$/D', $name) === 1);
+                        if (! $isCanonical || $entry->getMTime() >= $now - 600) {
+                            continue;
+                        }
+
+                        $key = $folder.'/'.$name;
+                        if ($this->storageKeyHasOwner($key)) {
+                            continue;
+                        }
+
+                        $orphans[] = ['key' => $key, 'size' => max(0, (int) $entry->getSize())];
+                        if (count($orphans) >= $limit) {
+                            break 2;
+                        }
+                    }
+                }
+
+                // All ownership checks have succeeded BEFORE the first write.
+                // Any unexpected DB/schema failure therefore fails closed.
+                $files = 0;
+                $bytes = 0;
+                $failed = 0;
+                foreach ($orphans as $candidate) {
+                    $removed = false;
+                    if (! $this->deleteKey($candidate['key'], $removed)) {
+                        $failed++;
+                        report(new RuntimeException('Cannot remove orphaned media key: '.$candidate['key']));
+                        continue;
+                    }
+                    if ($removed) {
+                        $files++;
+                        $bytes += $candidate['size'];
+                    }
+                }
+
+                return ['files' => $files, 'bytes' => $bytes, 'failed' => $failed];
+            }, attempts: 1);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function storageKeyHasOwner(string $key): bool
+    {
+        return $this->storageKeyOwners($key) !== [];
+    }
+
+    /**
+     * Return every known owner of one physical key across current, committed,
+     * historical and pending-deletion state. A malformed historical owner is
+     * represented by 0 so deletion always fails closed.
+     *
+     * @return list<int>
+     */
+    private function storageKeyOwners(string $key): array
+    {
+        if ($key === '') {
+            return [0];
+        }
+
+        $ids = [];
+        foreach (['media_assets', 'committed.media_assets'] as $table) {
+            foreach (DB::table($table)->where('storage_key', $key)->pluck('id') as $id) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        foreach (['media_variants', 'committed.media_variants'] as $table) {
+            foreach (DB::table($table)->where('storage_key', $key)->pluck('media_asset_id') as $id) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        // publication_version_rows transparently resolves the immutable
+        // historical payload store. No retired cutover path is required.
+        $historical = DB::table('publication_version_rows')
+            ->whereIn('table_name', ['media_assets', 'media_variants'])
+            ->whereRaw("payload->>'storage_key' = ?", [$key])
+            ->selectRaw("table_name, row_key, payload->>'id' AS original_id, payload->>'media_asset_id' AS variant_owner_id")
+            ->get();
+
+        foreach ($historical as $row) {
+            $value = (string) $row->table_name === 'media_assets'
+                ? ($row->original_id ?? $row->row_key)
+                : $row->variant_owner_id;
+            $ids[] = is_scalar($value) && ctype_digit((string) $value) && (int) $value > 0
+                ? (int) $value
+                : 0;
+        }
+
+        foreach (DB::table('publication_media_cleanups')->where('storage_key', $key)->pluck('media_asset_id') as $id) {
+            $ids[] = (int) $id;
+        }
+
+        return array_values(array_unique(array_map(
+            static fn (int $id): int => $id > 0 ? $id : 0,
+            $ids,
+        )));
+    }
 
     /**
      * Generated rights files have a different retention rule from originals:
@@ -328,18 +492,27 @@ final class PublicationMediaCleanupService
             return null;
         }
 
-        $assetId = DB::table('media_assets')->whereIn('storage_key', $keys)->value('id');
-        if (is_numeric($assetId)) {
-            return (int) $assetId;
+        $assetId = null;
+        foreach ($keys as $key) {
+            $owners = $this->storageKeyOwners($key);
+            if (count($owners) !== 1 || $owners[0] < 1) {
+                return null;
+            }
+            if ($assetId !== null && $assetId !== $owners[0]) {
+                return null;
+            }
+            $assetId = $owners[0];
         }
 
-        $variantAssetId = DB::table('media_variants')->whereIn('storage_key', $keys)->value('media_asset_id');
-
-        return is_numeric($variantAssetId) ? (int) $variantAssetId : null;
+        return $assetId;
     }
 
     private function canDeletePhysicalMedia(int $mediaAssetId): bool
     {
+        if ($mediaAssetId < 1) {
+            return false;
+        }
+
         $committedRequiresAsset = DB::table('committed.media_assets')
             ->where('id', $mediaAssetId)
             ->where('state', '<>', 'deleted')

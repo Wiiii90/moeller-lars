@@ -25,11 +25,11 @@ class PublicMedia
 {
     public const THUMBNAIL_KIND = 'thumbnail';
 
-    public const PUBLIC_TRANSFORM_PROFILE = MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE;
 
     public function __construct(
         private readonly SitePreviewContext $preview,
         private readonly \App\Domain\Publication\MediaRightsPublicationSelections $rightsSelections,
+        private readonly MediaReferenceQuery $referenceQuery,
     ) {}
 
     public function isPublicAsset(MediaAsset $asset): bool
@@ -258,42 +258,15 @@ class PublicMedia
 
     private function publishedCustomPageReferencesAsset(int $mediaAssetId): bool
     {
-        $publishedCustomPages = CustomPageSetting::query()
+        $settingsRows = CustomPageSetting::query()
             ->whereHas('siteSection', fn ($query) => $query
                 ->where('type', SiteSectionType::CustomPage->value)
                 ->where('state', 'published'))
             ->get(['id', 'blocks']);
 
-        foreach ($publishedCustomPages as $settings) {
-            foreach ($settings->components() as $block) {
-                if (! CustomPageSetting::componentPublished($block)) {
-                    continue;
-                }
-
-                $type = $block['type'] ?? null;
-                if ($type === 'image'
-                    && is_numeric($block['media_asset_id'] ?? null)
-                    && (int) $block['media_asset_id'] === $mediaAssetId) {
-                    return true;
-                }
-
-                if ($type === 'text'
-                    && is_string($block['body'] ?? null)
-                    && in_array($mediaAssetId, RichTextMediaReference::ids($block['body']), true)) {
-                    return true;
-                }
-
-                if ($type === 'list' && is_array($block['items'] ?? null)) {
-                    foreach ($block['items'] as $item) {
-                        if (! is_array($item) || ! CustomPageSetting::listItemPublished($item)) {
-                            continue;
-                        }
-                        if (is_string($item['body'] ?? null)
-                            && in_array($mediaAssetId, RichTextMediaReference::ids($item['body']), true)) {
-                            return true;
-                        }
-                    }
-                }
+        foreach ($settingsRows as $settings) {
+            if (in_array($mediaAssetId, $this->referenceQuery->componentMediaIds($settings->components(), true), true)) {
+                return true;
             }
         }
 
@@ -315,21 +288,11 @@ class PublicMedia
             return false;
         }
 
-        foreach ($settings->components($template) as $component) {
-            if (($component['type'] ?? null) === 'image'
-                && is_numeric($component['media_asset_id'] ?? null)
-                && (int) $component['media_asset_id'] === $mediaAssetId) {
-                return true;
-            }
-
-            if (($component['type'] ?? null) === 'text'
-                && is_string($component['body'] ?? null)
-                && in_array($mediaAssetId, RichTextMediaReference::ids($component['body']), true)) {
-                return true;
-            }
-        }
-
-        return false;
+        return in_array(
+            $mediaAssetId,
+            $this->referenceQuery->componentMediaIds($settings->components($template), true),
+            true,
+        );
     }
 
     private function publishedJournalRichTextReferencesAsset(int $mediaAssetId): bool

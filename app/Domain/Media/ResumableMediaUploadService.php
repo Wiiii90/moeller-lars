@@ -1,0 +1,595 @@
+<?php
+
+namespace App\Domain\Media;
+
+use App\Models\MediaAsset;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use RuntimeException;
+
+/**
+ * Transfer staging only. The immutable original, deduplication, derivatives,
+ * authoritative quota and audit remain owned by MediaIngestService.
+ * Staging lives on the persistent PRIVATE media volume, not the container overlay.
+ */
+final class ResumableMediaUploadService
+{
+    public const CHUNK_BYTES = 16 * 1024 * 1024;
+
+    private const EXPIRY_SECONDS = 48 * 60 * 60;
+    private const MIN_FREE_RESERVE = 256 * 1024 * 1024;
+
+    /** @return array{id:string,offset:int,chunk_size:int,complete:bool,asset_id:int|null,duplicate:bool} */
+    public function begin(int $userId, string $filename, int $size, ?string $resumeId): array
+    {
+        $filename = basename(str_replace('\\', '/', trim($filename)));
+        if ($filename === '' || mb_strlen($filename) > 240 || $size < 1) {
+            throw $this->invalid('Select a valid nonempty media file.');
+        }
+
+        $this->ensureDirectory();
+        $this->pruneExpired();
+
+        if (is_string($resumeId) && Str::isUuid($resumeId)) {
+            $existing = $this->locked($resumeId, function () use ($resumeId, $userId, $filename, $size): array {
+                $meta = $this->readManifest($resumeId);
+                if ($meta === null || (int) $meta['user_id'] !== $userId
+                    || $meta['filename'] !== $filename || (int) $meta['size'] !== $size) {
+                    throw $this->invalid('Previous upload does not match this file.');
+                }
+
+                $meta = $this->reconcileCompleted($resumeId, $meta);
+                if (! isset($meta['asset_id'])) {
+                    $meta = $this->ensureChunkHashes($resumeId, $meta);
+                }
+
+                return $this->status($resumeId, $meta);
+            });
+
+            return $existing;
+        }
+
+        // Admission is serialized so two simultaneous starts cannot both
+        // observe the same remaining capacity and oversubscribe the quota.
+        // Lock ordering is always admission -> canonical ingest, matching
+        // finish() (which already holds a shared admission lock). Inverting
+        // that order can deadlock begin and finish under concurrent requests.
+        return $this->admissionLock(function () use ($userId, $filename, $size): array {
+            $lock = Cache::lock('media-ingest', 420);
+            if (! $lock->get()) {
+                throw $this->invalid('Another media file is being finalized. Try again shortly.');
+            }
+
+            try {
+                $capacity = app(MediaCapacityService::class)->snapshot();
+                if (($capacity['configuration_valid'] ?? false) !== true
+                    || ($capacity['measurement_available'] ?? false) !== true
+                    || ! is_int($capacity['quota_bytes'] ?? null)
+                    || ! is_int($capacity['remaining_bytes'] ?? null)) {
+                    throw $this->invalid('The site storage allowance is not configured or cannot be measured.');
+                }
+                if ($size > (int) $capacity['remaining_bytes']) {
+                    throw $this->invalid('The selected file exceeds the remaining site storage allowance.');
+                }
+
+                $free = @disk_free_space($this->directory());
+                if (! is_float($free) && ! is_int($free)) {
+                    throw $this->invalid('Free temporary storage could not be verified.');
+                }
+                // Atomic rename retains one physical original, not two copies.
+                // Leave headroom for derivative generation and other server work.
+                if ($free < (int) ($capacity['reserved_upload_bytes'] ?? 0) + $size + self::MIN_FREE_RESERVE) {
+                    throw $this->invalid('Not enough physical space to safely stage and save this media file.');
+                }
+
+                $id = (string) Str::uuid();
+                $meta = [
+                    'user_id' => $userId,
+                    'filename' => $filename,
+                    'size' => $size,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                    'chunks' => [],
+                ];
+                $this->writeManifest($id, $meta);
+                if (@file_put_contents($this->partPath($id), '') === false) {
+                    @unlink($this->manifestPath($id));
+                    throw $this->invalid('Unable to reserve upload staging space.');
+                }
+
+                return $this->status($id, $meta);
+            } finally {
+                $lock->release();
+            }
+        });
+    }
+
+    /** @return array{id:string,offset:int,chunk_size:int,complete:bool,asset_id:int|null,duplicate:bool} */
+    public function append(int $userId, string $id, int $offset, mixed $input): array
+    {
+        return $this->locked($id, function () use ($userId, $id, $offset, $input): array {
+            $meta = $this->reconcileCompleted($id, $this->authorizedManifest($userId, $id));
+            if (isset($meta['asset_id'])) {
+                return $this->status($id, $meta);
+            }
+            $meta = $this->ensureChunkHashes($id, $meta);
+
+            $file = @fopen($this->partPath($id), 'r+b');
+            if (! is_resource($file)) {
+                throw $this->invalid('The staged media file is not available.');
+            }
+
+            try {
+                $current = fstat($file)['size'] ?? -1;
+                if (! is_int($current) || $current !== $offset) {
+                    // Caller can resume from the authoritative server offset.
+                    throw $this->invalid('Upload offset changed. Resume from the server position.');
+                }
+
+                if ($offset < 0 || $offset >= (int) $meta['size'] || ! is_resource($input)) {
+                    throw $this->invalid('Invalid media chunk.');
+                }
+
+                if (fseek($file, 0, SEEK_END) !== 0) {
+                    throw $this->invalid('Unable to seek the staged media file.');
+                }
+
+                $remaining = min(self::CHUNK_BYTES, (int) $meta['size'] - $offset);
+                $received = 0;
+                $digest = hash_init('sha256');
+                try {
+                    while (! feof($input)) {
+                        $buffer = fread($input, min(1024 * 1024, $remaining - $received + 1));
+                        if ($buffer === false || $buffer === '') {
+                            break;
+                        }
+                        $length = strlen($buffer);
+                        if ($received + $length > $remaining) {
+                            throw $this->invalid('Media chunk exceeds its declared boundary.');
+                        }
+                        $written = fwrite($file, $buffer);
+                        if ($written !== $length) {
+                            throw $this->invalid('Unable to save the complete media chunk.');
+                        }
+                        $received += $written;
+                        hash_update($digest, $buffer);
+                    }
+
+                    if ($received === 0 || ($received !== self::CHUNK_BYTES && $offset + $received !== (int) $meta['size'])) {
+                        throw $this->invalid('Incomplete media chunk; resume the upload.');
+                    }
+                    if (! fflush($file)) {
+                        throw $this->invalid('Unable to flush the saved media chunk.');
+                    }
+                    $meta['chunks'] ??= [];
+                    $meta['chunks'][intdiv($offset, self::CHUNK_BYTES)] = hash_final($digest);
+                    $meta['updated_at'] = time();
+                    $this->writeManifest($id, $meta);
+                } catch (\Throwable $exception) {
+                    // A failed chunk must not advance the durable file offset.
+                    // Otherwise resumption can concatenate unrelated/truncated
+                    // bytes into a seemingly valid new original.
+                    if (! @ftruncate($file, $offset) || ! @fflush($file)) {
+                        report(new RuntimeException('Incomplete upload chunk could not be rolled back.', 0, $exception));
+                        throw $this->invalid('Upload staging could not restore the previous safe offset. Contact the site administrator before retrying.');
+                    }
+                    throw $exception;
+                }
+
+                return $this->status($id, $meta);
+            } finally {
+                fclose($file);
+            }
+        });
+    }
+
+    /** @return array{id:string,offset:int,chunk_size:int,complete:bool,asset_id:int|null,duplicate:bool} */
+    public function finish(int $userId, string $id): array
+    {
+        return $this->locked($id, function () use ($id, $userId): array {
+            $meta = $this->reconcileCompleted($id, $this->authorizedManifest($userId, $id));
+            if (isset($meta['asset_id'])) {
+                return $this->status($id, $meta);
+            }
+            $meta = $this->ensureChunkHashes($id, $meta);
+
+            $path = $this->partPath($id);
+            if (! is_file($path) || filesize($path) !== (int) $meta['size']) {
+                throw $this->invalid('The upload is incomplete or could not be recovered from its original. Contact the site administrator before retrying.');
+            }
+
+            // Persist the checksum BEFORE moving the staging file. A crash
+            // after a successful DB/FS commit but before recording asset_id
+            // can then recover the canonical identity without duplicating it.
+            $hash = @hash_file('sha256', $path);
+            if (! is_string($hash) || strlen($hash) !== 64) {
+                throw $this->invalid('The completed upload could not be verified.');
+            }
+            if (isset($meta['sha256']) && ! hash_equals((string) $meta['sha256'], $hash)) {
+                throw $this->invalid('The staged upload changed since finalization began. Restart the transfer.');
+            }
+            $meta['sha256'] = $hash;
+            $meta['updated_at'] = time();
+            $this->writeManifest($id, $meta);
+
+            $upload = new UploadedFile($path, (string) $meta['filename'], null, UPLOAD_ERR_OK, true);
+            // MediaIngestService alone owns canonical original and preview.
+            $result = app(MediaIngestService::class)->ingestUnique($upload, fromPrivateStaging: true);
+            /** @var MediaAsset $asset */
+            $asset = $result['asset'];
+            $meta['asset_id'] = (int) $asset->getKey();
+            $meta['duplicate'] = (bool) $result['duplicate'];
+            $meta['updated_at'] = time();
+            $this->writeManifest($id, $meta);
+            @unlink($path);
+            app(MediaCapacityService::class)->refreshCachedSnapshot();
+
+            return $this->status($id, $meta);
+        });
+    }
+
+    /**
+     * Reconcile the canonical media write with an interrupted upload receipt.
+     * Only the already-persisted checksum and an intact original/required
+     * preview can convert a pending session to complete.
+     *
+     * @param array<string,mixed> $meta
+     * @return array<string,mixed>
+     */
+    private function reconcileCompleted(string $id, array $meta): array
+    {
+        if (isset($meta['asset_id']) || ! is_string($meta['sha256'] ?? null)) {
+            return $meta;
+        }
+
+        $part = $this->partPath($id);
+        if (is_file($part)) {
+            $stagedSha = @hash_file('sha256', $part);
+            if (! is_string($stagedSha) || ! hash_equals($meta['sha256'], $stagedSha)
+                || (int) filesize($part) !== (int) $meta['size']) {
+                // Do not acknowledge a different or partial upload.
+                return $meta;
+            }
+        }
+
+        $asset = app(MediaIngestService::class)->reusableOriginalByFingerprint(
+            $meta['sha256'], (int) $meta['size'],
+        );
+        if (! $asset instanceof MediaAsset) {
+            return $meta;
+        }
+
+        $meta['asset_id'] = (int) $asset->getKey();
+        $meta['duplicate'] = is_file($part);
+        $meta['updated_at'] = time();
+        $this->writeManifest($id, $meta);
+        @unlink($part);
+
+        return $meta;
+    }
+
+    /**
+     * Recover verifiable chunk digests for staged transfers created before
+     * the per-chunk metadata was introduced. Hashing streams bounded blocks.
+     *
+     * @param array<string,mixed> $meta
+     * @return array<string,mixed>
+     */
+    private function ensureChunkHashes(string $id, array $meta): array
+    {
+        $path = $this->partPath($id);
+        if (! is_file($path)) {
+            throw $this->invalid('Previous upload staging is missing. Cancel it and upload the file again.');
+        }
+
+        $size = @filesize($path);
+        $declared = (int) $meta['size'];
+        if (! is_int($size) || $size < 0 || $size > $declared) {
+            throw $this->invalid('Previous upload staging has an invalid size. Cancel it and start again.');
+        }
+
+        if (isset($meta['chunks']) && is_array($meta['chunks'])) {
+            $chunks = $meta['chunks'];
+            if (! array_is_list($chunks) || count($chunks) > (int) ceil($declared / self::CHUNK_BYTES)) {
+                throw $this->invalid('Previous upload chunk receipt is inconsistent. Cancel it and start again.');
+            }
+            foreach ($chunks as $digest) {
+                if (! is_string($digest) || preg_match('/^[a-f0-9]{64}$/D', $digest) !== 1) {
+                    throw $this->invalid('Previous upload chunk receipt is invalid. Cancel it and start again.');
+                }
+            }
+
+            // The manifest is the durable receipt. A process can be killed
+            // after writing part of the next chunk but before committing its
+            // digest. Never use those unacknowledged bytes as a resume offset.
+            $confirmed = min($declared, count($chunks) * self::CHUNK_BYTES);
+            if ($size < $confirmed) {
+                throw $this->invalid('Previous upload staging is shorter than its verified receipt. Cancel it and start again.');
+            }
+            if ($size > $confirmed) {
+                $stream = @fopen($path, 'r+b');
+                if (! is_resource($stream)) {
+                    throw $this->invalid('Previous upload staging cannot be restored.');
+                }
+                try {
+                    if (! @ftruncate($stream, $confirmed) || ! @fflush($stream)) {
+                        throw $this->invalid('Previous upload staging could not be rolled back safely.');
+                    }
+                } finally {
+                    fclose($stream);
+                }
+            }
+
+            return $meta;
+        }
+
+        // Historical staging manifests predate per-chunk receipts. Do not
+        // silently accept an unacknowledged tail fragment as a valid chunk.
+        $confirmed = $size === $declared ? $size
+            : intdiv($size, self::CHUNK_BYTES) * self::CHUNK_BYTES;
+        if ($size > $confirmed) {
+            $stream = @fopen($path, 'r+b');
+            if (! is_resource($stream)) {
+                throw $this->invalid('Previous upload staging cannot be restored.');
+            }
+            try {
+                if (! @ftruncate($stream, $confirmed) || ! @fflush($stream)) {
+                    throw $this->invalid('Previous upload staging could not be rolled back safely.');
+                }
+            } finally {
+                fclose($stream);
+            }
+        }
+
+        $stream = @fopen($path, 'rb');
+        if (! is_resource($stream)) {
+            throw $this->invalid('Previous upload staging cannot be verified.');
+        }
+
+        try {
+            $hashes = [];
+            $offset = 0;
+            while ($offset < $confirmed) {
+                $length = min(self::CHUNK_BYTES, $confirmed - $offset);
+                $hash = hash_init('sha256');
+                $count = hash_update_stream($hash, $stream, $length);
+                if (! is_int($count) || $count !== $length) {
+                    throw $this->invalid('Previous upload staging could not be verified.');
+                }
+                $hashes[] = hash_final($hash);
+                $offset += $length;
+            }
+        } finally {
+            fclose($stream);
+        }
+
+        $meta['chunks'] = $hashes;
+        $this->writeManifest($id, $meta);
+
+        return $meta;
+    }
+
+    /** Explicitly abandon an uncompleted upload and release its reserved bytes. */
+    public function cancel(int $userId, string $id): void
+    {
+        $this->locked($id, function () use ($id, $userId): void {
+            $meta = $this->reconcileCompleted($id, $this->authorizedManifest($userId, $id));
+            if (isset($meta['asset_id'])) {
+                throw $this->invalid('This upload already completed. Its Storage original was not removed.');
+            }
+
+            // The session lock protects the manifest and staged bytes from
+            // simultaneous chunks. Never unlink the currently held lock inode;
+            // the existing staging pruner reclaims it after expiry.
+            foreach ([$this->partPath($id), $this->manifestPath($id), $this->manifestPath($id).'.tmp'] as $path) {
+                if (is_file($path) && ! @unlink($path)) {
+                    throw $this->invalid('Could not fully cancel this upload. Contact the site administrator.');
+                }
+            }
+        });
+    }
+
+    /** @return array{id:string,offset:int,chunk_size:int,complete:bool,asset_id:int|null,duplicate:bool} */
+    private function status(string $id, array $meta): array
+    {
+        $assetId = (int) ($meta['asset_id'] ?? 0);
+        $offset = $assetId > 0
+            ? (int) $meta['size']
+            : (is_file($this->partPath($id)) ? (int) filesize($this->partPath($id)) : 0);
+
+        return [
+            'id' => $id,
+            'offset' => $offset,
+            'chunk_size' => self::CHUNK_BYTES,
+            'complete' => $assetId > 0,
+            'asset_id' => $assetId > 0 ? $assetId : null,
+            'duplicate' => (bool) ($meta['duplicate'] ?? false),
+            'chunk_hashes' => array_values($meta['chunks'] ?? []),
+        ];
+    }
+
+    private function authorizedManifest(int $userId, string $id): array
+    {
+        $meta = $this->readManifest($id);
+        if ($meta === null || (int) $meta['user_id'] !== $userId) {
+            throw $this->invalid('Upload session not found or expired.');
+        }
+        return $meta;
+    }
+
+    private function readManifest(string $id): ?array
+    {
+        $raw = @file_get_contents($this->manifestPath($id));
+        $meta = is_string($raw) ? json_decode($raw, true) : null;
+        return is_array($meta) ? $meta : null;
+    }
+
+    private function writeManifest(string $id, array $meta): void
+    {
+        $path = $this->manifestPath($id);
+        $temp = $path.'.tmp';
+        if (@file_put_contents($temp, json_encode($meta, JSON_THROW_ON_ERROR), LOCK_EX) === false
+            || ! @rename($temp, $path)) {
+            throw new RuntimeException('Cannot persist upload state.');
+        }
+    }
+
+    private function locked(string $id, callable $action): mixed
+    {
+        if (! Str::isUuid($id)) {
+            throw $this->invalid('Invalid upload identifier.');
+        }
+
+        // Shared global gate allows independent sessions to progress, while
+        // exclusive cleanup waits for ALL active writers before deleting an
+        // expired session's lock file. Never unlink a live flock inode.
+        return $this->withLock($this->directory().'/.admission.lock', function () use ($id, $action): mixed {
+            if (! is_file($this->manifestPath($id))) {
+                throw $this->invalid('Upload session not found or expired.');
+            }
+            return $this->withLock($this->directory().'/'.$id.'.lock', $action);
+        }, exclusive: false);
+    }
+
+    private function admissionLock(callable $action): mixed
+    {
+        return $this->withLock($this->directory().'/.admission.lock', $action);
+    }
+
+    private function withLock(string $path, callable $action, bool $exclusive = true): mixed
+    {
+        $lock = @fopen($path, 'c+');
+        if (! is_resource($lock) || ! flock($lock, $exclusive ? LOCK_EX : LOCK_SH)) {
+            throw $this->invalid('Upload storage is currently unavailable.');
+        }
+        try {
+            return $action();
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
+    private function directory(): string
+    {
+        return storage_path('app/private/incoming-media');
+    }
+
+    private function ensureDirectory(): void
+    {
+        if (! is_dir($this->directory()) && ! @mkdir($this->directory(), 0700, true) && ! is_dir($this->directory())) {
+            throw $this->invalid('Upload storage is not writable.');
+        }
+    }
+
+    private function manifestPath(string $id): string
+    {
+        return $this->directory().'/'.$id.'.json';
+    }
+
+    private function partPath(string $id): string
+    {
+        return $this->directory().'/'.$id.'.part';
+    }
+
+    /**
+     * Reclaim expired sessions and orphan artifacts with the global gate held
+     * exclusively. Shared upload locks prevent deleting a session or its lock
+     * while a chunk/finalization still uses it. One invocation removes at most
+     * 100 groups of artifacts; a subsequent run continues the sweep.
+     */
+    public function pruneExpired(): int
+    {
+        if (! is_dir($this->directory())) {
+            return 0;
+        }
+
+        return $this->admissionLock(function (): int {
+            $removed = 0;
+            $cutoff = time() - self::EXPIRY_SECONDS;
+
+            // Stream directory entries instead of glob() materializing every
+            // abandoned multi-part session path in PHP memory. Keep at most
+            // 100 deletions per pass, even for completed session artifacts.
+            foreach (new \DirectoryIterator($this->directory()) as $entry) {
+                if ($removed >= 100) {
+                    break;
+                }
+                if ($entry->isDot() || ! $entry->isFile()
+                    || ! str_ends_with($entry->getFilename(), '.json')) {
+                    continue;
+                }
+
+                $id = substr($entry->getFilename(), 0, -5);
+                if (! Str::isUuid($id)) {
+                    continue;
+                }
+
+                $manifest = $entry->getPathname();
+                $part = $this->partPath($id);
+                $meta = $this->readManifest($id);
+                if (is_array($meta) && isset($meta['asset_id']) && is_file($part) && @unlink($part)) {
+                    // A completed canonical original owns its registered
+                    // bytes; the staged copy is no longer needed.
+                    $removed++;
+                }
+
+                $modified = @filemtime($manifest);
+                if ($modified === false || $modified >= $cutoff) {
+                    continue;
+                }
+
+                // All upload writers are excluded by the admission gate.
+                if (@unlink($manifest)) {
+                    @unlink($part);
+                    @unlink($manifest.'.tmp');
+                    @unlink($this->directory().'/'.$id.'.lock');
+                    $removed++;
+                }
+            }
+
+            // A crash can strand separate .part, .json.tmp and .lock files.
+            // Never sweep registered originals, generated previews or files
+            // whose manifest still owns an in-progress upload.
+            foreach (new \DirectoryIterator($this->directory()) as $entry) {
+                if ($removed >= 100) {
+                    break;
+                }
+                if ($entry->isDot() || ! $entry->isFile()) {
+                    continue;
+                }
+
+                $name = $entry->getFilename();
+                $suffix = null;
+                foreach (['.json.tmp', '.part', '.lock'] as $candidate) {
+                    if (str_ends_with($name, $candidate)) {
+                        $suffix = $candidate;
+                        break;
+                    }
+                }
+                if ($suffix === null) {
+                    continue;
+                }
+                $id = substr($name, 0, -strlen($suffix));
+                if (! Str::isUuid($id)
+                    || ($suffix !== '.json.tmp' && is_file($this->manifestPath($id)))) {
+                    continue;
+                }
+                $modified = @filemtime($entry->getPathname());
+                if ($modified !== false && $modified < $cutoff
+                    && @unlink($entry->getPathname())) {
+                    $removed++;
+                }
+            }
+
+            return $removed;
+        });
+    }
+
+    private function invalid(string $message): ValidationException
+    {
+        return ValidationException::withMessages(['media' => $message]);
+    }
+}

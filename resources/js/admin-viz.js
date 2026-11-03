@@ -1,6 +1,10 @@
 import './admin-notifications.js';
+import { adminMediaUploader, adminMediaUploadField } from './admin-media-upload.js';
+window.adminMediaUploader = adminMediaUploader;
+window.adminMediaUploadField = adminMediaUploadField;
 import './admin-action-titles.js';
 import './admin-dialog-geometry.js';
+import './admin-partial-date.js';
 
 let storageRuntimePromise = null;
 let refreshFrame = null;

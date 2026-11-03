@@ -94,9 +94,9 @@ final class LegacyMigrationValidator
                 }
 
                 $legacyId = $this->requiredInteger($artworkData, 'legacy_id');
-                $date = $this->nullableString($artworkData, 'work_date');
-                if ($date !== null) {
-                    $dateGroups[$date][] = $legacyId;
+                if (isset($artworkData['year'], $artworkData['month'], $artworkData['day'])) {
+                    $dateKey = sprintf('%04d-%02d-%02d', (int) $artworkData['year'], (int) $artworkData['month'], (int) $artworkData['day']);
+                    $dateGroups[$dateKey][] = $legacyId;
                 }
                 if (($artworkData['featured_on_home'] ?? false) === true) {
                     if ($expectedHomeSlug !== null) {
@@ -219,16 +219,14 @@ final class LegacyMigrationValidator
             return;
         }
 
-        $expectedDate = $this->nullableString($expected, 'work_date');
-        $actualDate = $artwork->getAttribute('work_date');
-        $actualDateText = $actualDate instanceof \DateTimeInterface ? $actualDate->format('Y-m-d') : null;
         $checks = [
             'slug' => $expected['slug'] ?? null,
             'title' => $expected['title'] ?? null,
             'position' => $expected['position'] ?? null,
             'legacy_date_raw' => $expected['legacy_date_raw'] ?? null,
-            'work_year' => $expected['work_year'] ?? null,
-            'date_precision' => $expected['date_precision'] ?? null,
+            'year' => $expected['year'] ?? null,
+            'month' => $expected['month'] ?? null,
+            'day' => $expected['day'] ?? null,
             'medium' => $expected['medium'] ?? null,
             'dimensions' => $expected['dimensions'] ?? null,
             'description' => $expected['description'] ?? null,
@@ -244,9 +242,6 @@ final class LegacyMigrationValidator
             if ($actual !== $value) {
                 $errors[] = "Artwork {$source}#{$legacyId} field {$field} does not match the manifest.";
             }
-        }
-        if ($actualDateText !== $expectedDate) {
-            $errors[] = "Artwork {$source}#{$legacyId} normalized date does not match the manifest.";
         }
 
         $primary = $artwork->artworkMedia()->where('role', 'primary')->get();

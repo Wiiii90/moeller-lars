@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', $section->title.' · Lars Möller')
-@section('meta_description', $section->title.' by Lars Möller')
+@section('meta_description', $section->metaDescriptionOr($section->title.' by Lars Möller'))
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($siteNodeRoute->path($section)))
 
 @section('content')
@@ -23,20 +23,14 @@
                 $attribution = $exhibition->summaryAttribution();
                 $physicalVenue = $exhibition->publicVenue();
                 $location = $exhibition->mapLocationLabel();
-                $hasDescription = trim((string) ($exhibition->description ?? '')) !== ''
-                    && trim((string) $exhibition->description) !== trim((string) $exhibition->location_text);
+                $hasDescription = $exhibition->hasDistinctPublicDescription();
                 $hasCover = $cover instanceof \App\Models\JournalEntryMedia;
-                // Only image covers appear as quiet catalogue previews. Video
-                // covers keep their existing expanded playback behavior.
-                $hasCoverPreview = $hasCover && \App\Domain\Media\MediaTypePolicy::isImage(
-                    (string) $cover->mediaAsset?->getAttribute('mime_type')
-                );
                 $hasFacts = $vernissage !== null || $address !== null || $physicalVenue !== null;
                 $hasActions = $map !== null || ($exhibition->publicFieldVisible('external_url') && $exhibition->external_url !== null);
-                $hasDetails = $hasFacts || $hasDescription || $hasCover
-                    || $gallery->isNotEmpty() || $hasActions;
+                $hasFeature = $hasCover || $hasFacts || $hasActions || $hasDescription;
+                $hasDetails = $hasFeature || $gallery->isNotEmpty();
             @endphp
-            <article class="exhibition-entry {{ $hasCoverPreview ? 'exhibition-entry--with-teaser' : '' }}" @if ($exhibition->image_viewer_enabled) data-artwork-viewer-sequence @endif data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
+            <article class="exhibition-entry" @if ($exhibition->image_viewer_enabled) data-artwork-viewer-sequence @endif data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
                 @if ($hasDetails)
                     <details class="exhibition-entry__disclosure">
                         <summary class="exhibition-entry__summary">
@@ -51,6 +45,27 @@
                             <span class="exhibition-entry__timing">{{ $timing === 'current' ? 'Current' : 'Upcoming' }}</span>
                         @endif
                     </span>
+                    @if ($hasCover)
+                        @php
+                            $isVideoCover = \App\Domain\Media\MediaTypePolicy::isVideo(
+                                (string) $cover->mediaAsset?->getAttribute('mime_type')
+                            );
+                        @endphp
+                        <span class="exhibition-entry__teaser">
+                            <span class="exhibition-entry__teaser-media" aria-hidden="true">
+                                {!! $journalMedia->renderPreview($cover) !!}
+                            </span>
+                            @if ($isVideoCover)
+                                <button class="exhibition-entry__video-play" type="button"
+                                    data-exhibition-video-play
+                                    aria-label="Open and play video for {{ $exhibition->title }}">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                        <path d="M9 5.5 18 12l-9 6.5z" fill="currentColor" />
+                                    </svg>
+                                </button>
+                            @endif
+                        </span>
+                    @endif
                     <span class="exhibition-entry__heading">
                         <span class="exhibition-entry__title">{{ $exhibition->title }}</span>
                         @if ($attribution !== null)
@@ -64,10 +79,10 @@
                         <div class="exhibition-entry__body">
                             {{-- Cover, practical information and long-form prose each have a
                                  stable editorial place. No empty partner column is rendered. --}}
-                            @if ($hasCover || $hasFacts || $hasActions || $hasDescription)
-                                <div class="exhibition-entry__feature {{ $hasCover ? 'exhibition-entry__feature--with-cover' : 'exhibition-entry__feature--text' }}">
+                            @if ($hasFeature)
+                                <div class="exhibition-entry__feature{{ $hasCover ? ' exhibition-entry__feature--with-cover' : '' }}">
                                     @if ($hasCover)
-                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: true, enableViewer: (bool) $exhibition->image_viewer_enabled) !!}
+                                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: false, enableViewer: (bool) $exhibition->image_viewer_enabled, manualVideoPlayback: $isVideoCover) !!}
                                     @endif
                                     @if ($hasFacts || $hasActions)
                                         <div class="exhibition-entry__info">
@@ -165,13 +180,6 @@
                         </div>
                     </details>
                 @else
-                    </div>
-                @endif
-                @if ($hasCoverPreview)
-                    {{-- Decorative, small rendition of the same canonical variant;
-                         viewer and credits remain on the expanded cover only. --}}
-                    <div class="exhibition-entry__teaser" aria-hidden="true">
-                        {!! $journalMedia->render($cover, 'journal-entry-media exhibition-entry__teaser-media', includeInheritedCopyright: false, includeCopyrightNotice: false, showCaption: false) !!}
                     </div>
                 @endif
             </article>

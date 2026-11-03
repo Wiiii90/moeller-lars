@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Lars Möller')
-@section('meta_description', 'Lars Möller — artist')
+@section('meta_description', $pageSection->metaDescriptionOr('Lars Möller — artist'))
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/'))
 
 @if ($gateActive)

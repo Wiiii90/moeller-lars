@@ -121,71 +121,10 @@
         <div
             class="media-workspace__dropzone admin-storage__dropzone"
             x-data="{
-                phase: 'idle',
-                progress: 0,
-                fileCount: 0,
-                completed: 0,
-                result: '',
+                phase: 'idle', progress: 0, fileCount: 0,
+                completed: 0, result: '',
                 async uploadFiles(input) {
-                    if (this.phase === 'uploading' || this.phase === 'processing') return
-
-                    const files = Array.from(input.files ?? [])
-                    if (files.length === 0) return
-
-                    this.fileCount = files.length
-                    this.completed = 0
-                    this.progress = 0
-                    this.result = ''
-                    let added = 0
-                    let duplicates = 0
-                    let failed = 0
-                    const errors = []
-
-                    for (const file of files) {
-                        this.phase = 'uploading'
-
-                        const transferred = await new Promise((resolve) => {
-                            $wire.uploadMultiple(
-                                'directMedia',
-                                [file],
-                                () => resolve(true),
-                                () => resolve(false),
-                                (event) => {
-                                    const percent = Number(event?.detail?.progress ?? 0)
-                                    this.progress = Math.round(
-                                        (this.completed + percent / 100) * 100 / this.fileCount
-                                    )
-                                },
-                            )
-                        })
-
-                        if (!transferred) {
-                            failed++
-                            errors.push(file.name + ' — Transfer failed. Check the file size and connection.')
-                        } else {
-                            this.phase = 'processing'
-                            try {
-                                const outcome = await $wire.processDirectMedia(false)
-                                added += Number(outcome?.added ?? 0)
-                                duplicates += Number(outcome?.duplicates ?? 0)
-                                failed += Number(outcome?.failed ?? 0)
-                                for (const error of outcome?.errors ?? []) errors.push(error)
-                            } catch (error) {
-                                failed++
-                                errors.push(file.name + ' — Processing failed.')
-                                try { await $wire.set('directMedia', []) } catch {}
-                            }
-                        }
-
-                        this.completed++
-                        this.progress = Math.round(this.completed * 100 / this.fileCount)
-                    }
-
-                    input.value = ''
-                    const summary = added + ' uploaded, ' + duplicates + ' already in Storage, ' +
-                        failed + ' failed (' + this.fileCount + ' selected)'
-                    this.result = errors.length ? summary + ' · ' + errors.slice(0, 2).join('; ') : summary
-                    this.phase = 'result'
+                    await window.adminMediaUploader(this, input, $wire, 'storage')
                 },
             }"
             x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
@@ -206,23 +145,25 @@
                         phase === 'uploading'
                             ? `Uploading file ${completed + 1} of ${fileCount} · ${progress}%`
                             : phase === 'processing'
-                                ? `Processing file ${completed + 1} of ${fileCount}…`
+                                ? `Transfer complete · Checking and processing file ${completed + 1} of ${fileCount}…`
                                 : phase === 'result'
                                     ? result
                                     : 'Drop files here or choose from your device'
                     "
                 >{{ __('Drop files here or choose from your device') }}</strong>
-                <span x-show="phase === 'idle'">JPEG, PNG, WebP · {{ number_format(\App\Domain\Media\MediaTypePolicy::imageMaxBytes() / 1048576, 0) }} MiB / {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} MP; MP4, WebM · {{ number_format(\App\Domain\Media\MediaTypePolicy::videoMaxBytes() / 1048576, 0) }} MiB; MP3, M4A/AAC, Ogg, WAV · {{ number_format(\App\Domain\Media\MediaTypePolicy::audioMaxBytes() / 1048576, 0) }} MiB.</span>
+                <span x-show="phase === 'idle'">JPEG, PNG, WebP, MP4, WebM, MP3, M4A, Ogg, WAV. File size is limited by available site storage. Re-select an interrupted file to resume.</span>
             </div>
             <div
                 class="media-workspace__upload-progress"
-                x-show="phase === 'uploading'"
+                x-show="phase === 'uploading' || phase === 'processing'"
+                x-bind:class="{ 'is-processing': phase === 'processing' }"
                 x-cloak
                 role="progressbar"
-                aria-label="Upload progress"
+                aria-label="Media upload status"
                 aria-valuemin="0"
                 aria-valuemax="100"
-                x-bind:aria-valuenow="progress"
+                x-bind:aria-valuenow="phase === 'uploading' ? progress : null"
+                x-bind:aria-valuetext="phase === 'processing' ? 'File transfer finished; server processing in progress' : null"
             >
                 <span class="media-workspace__upload-progress-track" aria-hidden="true">
                     <span class="media-workspace__upload-progress-fill" x-bind:style="`width: ${progress}%`"></span>

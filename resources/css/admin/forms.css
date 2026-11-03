@@ -301,8 +301,9 @@
     box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / .12);
 }
 
-.admin-form-control,
-.admin-form-controls .fi-input-wrp {
+/* Native admin form controls. Filament's input wrapper chrome is owned by
+   controls.css; do not define it a second time in this stylesheet. */
+.admin-form-control {
     box-sizing: border-box;
     width: 100%;
     min-height: var(--admin-control-height);
@@ -313,17 +314,13 @@
     color: var(--admin-text);
     box-shadow: none !important;
     --tw-ring-shadow: 0 0 #0000 !important;
-}
-
-.admin-form-control {
     padding: .45rem var(--admin-control-text-inset, .25rem);
     font: inherit;
     font-size: .78rem;
     outline: none;
 }
 
-.admin-form-control:focus-visible,
-.admin-form-controls .fi-input-wrp:focus-within {
+.admin-form-control:focus-visible {
     border-bottom-color: var(--admin-accent) !important;
     outline: 0;
 }
@@ -465,21 +462,27 @@
     font-size: .7rem;
 }
 
-/* Canonical artist Rich Text surface — shared by all editorial dialogs.
-   Filament/Tiptap owns selection, focus, history and floating toolbars. */
-.admin-rich-text--visual .fi-fo-rich-editor {
-    border: 1px solid var(--admin-line);
-    border-radius: var(--admin-radius, .35rem);
-    background: var(--admin-surface);
+/* One square, complete frame on the Filament RichEditor root.
+   Other admin input fields keep their intentionally underlined controls.
+   The root class is set by AdminRichText for every shared editor. */
+.fi-fo-rich-editor.admin-rich-text-editor-frame {
+    border: 1px solid var(--admin-line-strong);
+    border-radius: 0;
+    background: transparent;
     color: var(--admin-text);
+    box-shadow: none;
+}
+
+.fi-fo-rich-editor.admin-rich-text-editor-frame:focus-within {
+    border-color: var(--admin-control-border-focus, var(--admin-accent));
 }
 
 .admin-rich-text--visual .fi-fo-rich-editor-toolbar {
     display: flex;
     align-items: center;
-    background: var(--admin-subtle);
+    background: transparent;
     border-bottom: 1px solid var(--admin-line);
-    padding: .25rem .35rem;
+    padding: .25rem var(--admin-control-text-inset, .25rem);
     gap: .25rem .375rem;
 }
 
@@ -521,66 +524,19 @@
     position: relative;
 }
 
-.admin-rich-text-editor-shell > .fi-sc > :not(:first-child) {
+/* The popover layer owns positioning without selecting Filament's schema
+   wrappers or relying on field order. Neither the layer nor its panels
+   participates in the editor's or dialog's document height. */
+.admin-rich-text-panel-layer {
     position: absolute;
     inset: 0 auto auto 0;
     width: 100%;
+    height: 0;
     pointer-events: none;
 }
 
-.admin-rich-text-editor-shell :is(
-    .admin-rich-text-link-dropdown,
-    .admin-rich-text-image-caption-dropdown,
-    .admin-rich-text-storage-dropdown
-) {
+.admin-rich-text-panel-layer > .admin-rich-text-popover {
     pointer-events: auto;
-}
-
-.admin-rich-text-storage-dropdown {
-    position: absolute;
-    z-index: 40;
-    width: min(38rem, calc(100% - 1rem));
-    padding: .65rem;
-    background: var(--admin-control-popover-surface, #fff);
-    color: var(--admin-text);
-    border: 1px solid var(--admin-line);
-    border-radius: var(--admin-radius, .35rem);
-    box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
-}
-
-.admin-rich-text-storage-dropdown__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .5rem;
-    margin-bottom: .5rem;
-    color: var(--admin-text);
-    font-size: .78rem;
-    font-weight: 600;
-}
-
-.admin-rich-text-storage-dropdown__close {
-    display: grid;
-    flex: none;
-    width: 1.75rem;
-    height: 1.75rem;
-    padding: 0;
-    place-items: center;
-    border: 0;
-    border-radius: var(--admin-radius, .35rem);
-    background: transparent;
-    color: var(--admin-muted);
-    cursor: pointer;
-}
-
-.admin-rich-text-storage-dropdown__close:is(:hover, :focus-visible) {
-    color: var(--admin-text);
-    background: var(--admin-subtle);
-}
-
-.admin-rich-text-storage-dropdown__close svg {
-    width: 1rem;
-    height: 1rem;
 }
 
 .admin-rich-text--visual .fi-fo-rich-editor-tool:is(:hover, :focus-visible, .fi-active) {
@@ -630,23 +586,42 @@
 .admin-rich-text--visual .tiptap [data-resize-container][data-node="image"]:has(img[data-artist-placement="float-right"]) { float: right; margin: 0 0 .75rem 1rem; }
 
 .admin-rich-text--visual .tiptap::after { content: ''; display: table; clear: both; }
-.admin-artist-image-caption { display: block; font-size: .75rem; line-height: 1.5; color: var(--admin-muted); }
+/* Captions are projected by the artist image extension onto Filament's
+   existing resizable image node view. The caption stays within the image's
+   alignment/float box instead of becoming a sibling in the text flow. */
+.admin-rich-text--visual .tiptap [data-resize-container][data-node="image"][data-artist-caption] {
+    flex-direction: column;
+}
 
-/* In-editor link entry: stays inside the owning Edit dialog, never a nested modal. */
-.admin-rich-text-link-dropdown {
+.admin-rich-text--visual .tiptap [data-resize-container][data-node="image"][data-artist-caption]::after {
+    content: attr(data-artist-caption);
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    color: var(--admin-muted);
+    font-size: .75rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+/* All five editor popovers share exactly the accepted Admin dialog's
+   circular header controls and native, underlined form fields. */
+.admin-rich-text-popover {
     position: absolute;
     z-index: 45;
     width: min(20rem, 100%);
     padding: .75rem;
-    border: 1px solid var(--admin-line);
-    border-radius: var(--admin-radius, .35rem);
+    border: 1px solid var(--admin-line-strong);
+    border-radius: 0;
     background: var(--admin-control-popover-surface, #fff);
     color: var(--admin-text);
-    box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
+    box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / .12);
 }
-.admin-rich-text-link-dropdown__header {
+.admin-rich-text-popover--storage { width: min(38rem, calc(100% - 1rem)); }
+.admin-rich-text-popover__header {
     display: flex;
-    min-height: 2rem;
+    min-height: var(--admin-dialog-header-action-size);
     margin-bottom: .55rem;
     align-items: center;
     justify-content: space-between;
@@ -654,42 +629,23 @@
     font-size: .8125rem;
     font-weight: 600;
 }
-.admin-rich-text-link-dropdown__header-actions {
+.admin-rich-text-popover__header-actions {
     display: inline-flex;
-    gap: .25rem;
+    gap: var(--admin-dialog-header-action-gap);
     align-items: center;
 }
-.admin-rich-text-link-dropdown__header-actions .fi-icon-btn { border-radius: 50%; }
-.admin-rich-text-link-dropdown__form { display: grid; gap: .65rem; }
-.admin-rich-text-link-dropdown__label { display: grid; gap: .25rem; font-size: .8125rem; font-weight: 500; }
-.admin-rich-text-link-dropdown__input {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    border: 1px solid var(--admin-line);
-    border-radius: .25rem;
-    background: var(--admin-surface);
-    color: var(--admin-text);
-    padding: .45rem .6rem;
-    font: inherit;
-    font-weight: 400;
+.admin-rich-text-popover__form { display: grid; gap: .65rem; }
+.admin-rich-text-popover__label {
+    display: grid;
+    gap: .25rem;
+    color: var(--admin-control-label-color);
+    font-size: var(--admin-control-label-size);
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
 }
-.admin-rich-text-link-dropdown__input:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 1px;
-}
-.admin-rich-text-link-dropdown__input[aria-invalid="true"] { border-color: var(--admin-danger, #b33); }
-.admin-rich-text-link-dropdown__checkbox { display: flex; align-items: center; gap: .45rem; font-size: .8125rem; }
-.admin-rich-text-link-dropdown__error { font-size: .75rem; color: var(--admin-danger, #b33); }
-.admin-rich-text-link-dropdown__actions { display: flex; gap: .35rem; flex-wrap: wrap; justify-content: flex-end; }
-.admin-rich-text-link-dropdown__button {
-    padding: .4rem .6rem;
-    border: 1px solid var(--admin-line);
-    border-radius: .25rem;
-    font-size: .8125rem;
-}
-.admin-rich-text-link-dropdown__button--apply { background: var(--admin-subtle); font-weight: 600; }
-.admin-rich-text-link-dropdown__button--remove { margin-right: auto; }
+.admin-rich-text-popover__checkbox { display: flex; align-items: center; gap: .45rem; font-size: .8125rem; }
+.admin-rich-text-popover__error { font-size: .75rem; color: var(--admin-danger, #b33); }
 
 .admin-rich-text--visual .fi-fo-rich-editor-floating-toolbar {
     flex-wrap: wrap;
@@ -699,18 +655,6 @@
 
 .admin-rich-text--visual .fi-fo-rich-editor-floating-toolbar .fi-fo-rich-editor-tool:not(:disabled) {
     color: var(--admin-text);
-}
-
-.admin-rich-text-image-caption-dropdown {
-    position: absolute;
-    z-index: 46;
-    width: min(20rem, 100%);
-    padding: .75rem;
-    border: 1px solid var(--admin-line);
-    border-radius: var(--admin-radius, .35rem);
-    background: var(--admin-control-popover-surface, #fff);
-    color: var(--admin-text);
-    box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .15);
 }
 
 .admin-rich-text-color-picker {
@@ -732,10 +676,6 @@
 .admin-rich-text-color-picker__swatch::-webkit-color-swatch { border: 0; border-radius: 50%; }
 .admin-rich-text-color-picker__swatch::-moz-color-swatch { border: 0; border-radius: 50%; }
 .admin-rich-text-color-picker__value { flex: 1; min-width: 0; }
-.admin-rich-text-color-picker__value .admin-rich-text-link-dropdown__input {
-    min-height: var(--admin-control-height);
-}
-
 .admin-rich-text--visual .tiptap table {
     width: 100%;
     margin-block: .75rem;

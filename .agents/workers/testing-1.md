@@ -36,3 +36,9 @@
 - **Checked head:** `testing` `aafafd295d3d00da8919e6dc6b55fa183aa97ed5`, latest previously reconciled `dev` source `478bccc1c8aa7cf119cae0f8f02647628877247f`.
 - **Current Dev observed at takeover:** `8351bea9f97952abf295cc3c718311178b2085d5`; branch comparison indicates 15 newer Dev commits not yet reconciled into Testing. No new Dev source transfer or test execution was performed during this registration.
 - **Resumption gate:** Retain the curated Testing-owned suite and previous deletions; wait for an explicit continuation/task instruction before reconciling newer Dev source. No continuous integration, destructive tests, production operations or integration are authorized by takeover alone.
+
+## Current assignment — Media and upload handoff (2026-11-03)
+
+- **User scope:** First consolidate media/upload regression requirements against canonical existing tests, then later handoffs and broad Dev changes. Native Safari/macOS validation is an eventual browser matrix requirement, not something Linux WebKit alone establishes.
+- **Source reconciliation:** `dev` baseline `f13ef2bc98942ccf3adb4a2a35a7fb30760c7368`; 137 differing non-test, non-worker paths synchronized on Testing while retaining Testing's curated tests, roster and root AGENTS. No Dev test edits copied blindly.
+- **Immediate test work:** Retire obsolete `MediaVariantRegenerationService` expectations; Free Storage must retain required variants/registered unassigned assets; test resumable transfer protocol and migration guard behavior, media references, dedup, error feedback. No database execution or CI authorized; authored tests do not imply passed tests.

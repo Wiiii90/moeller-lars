@@ -63,42 +63,41 @@ function initializeArtworkDetailImage(root) {
         if (lifetime.signal.aborted || !fitStyle || !page || !detail || !stage
             || sourceWidth <= 0 || sourceHeight <= 0) return;
 
-        // The small-screen presentation remains the existing native Artwork
-        // layout, even after repeated narrow/wide viewport transitions.
-        if (!window.matchMedia('(min-width: 64.001rem)').matches) {
-            clearFit();
-            return;
-        }
-
-        // The stage's document position is independent of its image height.
-        // Its top edge already includes the actual Menu height, optional
-        // Menu/Page gap, page top inset and Artwork navigation. Do not measure
-        // the stage's dimensions or any width derived from our own fit.
+        // Fit the image at every viewport width; only wide layouts resize the paper.
+        const wideLayout = window.matchMedia('(min-width: 64.001rem)').matches;
+        // The stage position and viewport height must share viewport coordinates.
         const viewportWidth = document.documentElement.clientWidth;
         const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
         const gutter = Math.min(1.5 * rem, Math.max(.65 * rem, .02 * viewportWidth));
         const inset = gutter;
         const availableWidth = Math.max(1, viewportWidth - 2 * gutter - 2 * inset);
         const pageStyle = getComputedStyle(page);
-        const imageTop = stage.getBoundingClientRect().top + window.scrollY;
+        const viewport = window.visualViewport;
+        const viewportHeight = viewport?.height ?? window.innerHeight;
+        const imageTop = Math.max(0, stage.getBoundingClientRect().top - (viewport?.offsetTop ?? 0));
+        // Only reserve the caption and paper inset; lengthy editorial text scrolls below.
         const reserveBelow = outerHeight(detail.querySelector('.artwork-detail__footer'))
-            + outerHeight(detail.querySelector('.artwork-detail__narrative'))
-            + outerHeight(detail.querySelector('.artwork-detail__credits'))
             + (Number.parseFloat(pageStyle.paddingBottom) || 0)
             + (Number.parseFloat(pageStyle.marginBottom) || 0);
-        const heightForImage = Math.max(0, window.innerHeight - imageTop - reserveBelow);
+        const remaining = viewportHeight - imageTop - reserveBelow;
+        // If the stage starts below the fold, visitors scroll to a viewport-fitted image.
+        const heightForImage = Math.max(1, remaining > 0 ? remaining : viewportHeight - reserveBelow);
         // The configured normal Artwork width is NOT a minimum: forcing it
         // after height fitting made portrait images taller than the viewport.
         const fittedWidth = Math.min(availableWidth, heightForImage * sourceWidth / sourceHeight);
 
-        const generalShellWidth = Number.parseFloat(getComputedStyle(document.documentElement)
-            .getPropertyValue('--public-shell-max')) || 0;
-        const paperWidth = Math.max(
-            fittedWidth + 2 * inset,
-            Math.min(viewportWidth - 2 * gutter, generalShellWidth),
-        );
-        fitStyle.setProperty('--public-fitted-image-width', Math.floor(fittedWidth) + 'px');
-        fitStyle.setProperty('--public-fitted-paper-width', Math.ceil(paperWidth) + 'px');
+        fitStyle.setProperty('--public-fitted-image-width', Math.max(1, Math.floor(fittedWidth)) + 'px');
+        if (wideLayout) {
+            const generalShellWidth = Number.parseFloat(getComputedStyle(document.documentElement)
+                .getPropertyValue('--public-shell-max')) || 0;
+            const paperWidth = Math.max(
+                fittedWidth + 2 * inset,
+                Math.min(viewportWidth - 2 * gutter, generalShellWidth),
+            );
+            fitStyle.setProperty('--public-fitted-paper-width', Math.ceil(paperWidth) + 'px');
+        } else {
+            fitStyle.removeProperty('--public-fitted-paper-width');
+        }
     };
 
     const scheduleFit = () => {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Artwork\PublicArtworkQuery;
+use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionPathPolicy;
 use App\Domain\Content\SiteSectionType;
@@ -18,6 +19,7 @@ class PublicArtworkController extends Controller
     public function __construct(
         private readonly PublicArtworkQuery $artworks,
         private readonly PublicMedia $media,
+        private readonly SafeRichTextRenderer $richText,
         private readonly SitePreviewContext $preview,
     ) {}
 
@@ -75,6 +77,7 @@ class PublicArtworkController extends Controller
         return view('pages.artworks.show', [
             'artwork' => $artwork,
             'media' => $this->media,
+            'richText' => $this->richText,
             'viewerArtworks' => $this->artworks->category($categoryRecord->getAttribute('slug')),
         ]);
     }

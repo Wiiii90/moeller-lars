@@ -8,11 +8,9 @@
             ->with('variants')
             ->find((int) $assetId)
         : null;
-    $faviconThumbnail = $faviconAsset?->getRelationValue('variants')->first(static function (\App\Models\MediaVariant $variant): bool {
-        return $variant->getAttribute('variant_kind') === \App\Domain\Media\MediaIngestService::THUMBNAIL_KIND
-            && $variant->getAttribute('transform_profile') === \App\Domain\Media\MediaIngestService::TRANSFORM_PROFILE
-            && $variant->getAttribute('state') === 'available';
-    });
+    $faviconThumbnail = $faviconAsset instanceof \App\Models\MediaAsset
+        ? \App\Domain\Media\MediaPreviewVariant::imageThumbnail($faviconAsset)
+        : null;
     $directPreviewUrl = route('preview.home');
     $previewHost = parse_url($directPreviewUrl, PHP_URL_HOST) ?: 'preview';
     $previewPath = parse_url($directPreviewUrl, PHP_URL_PATH) ?: '/preview';

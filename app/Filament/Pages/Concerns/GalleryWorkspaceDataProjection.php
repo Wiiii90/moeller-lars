@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Analytics\ArtistReportingService;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
@@ -12,6 +13,7 @@ use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Facades\DB;
 
 trait GalleryWorkspaceDataProjection
 {
@@ -35,7 +37,20 @@ trait GalleryWorkspaceDataProjection
         $galleryPublished = $this->galleryContext['state'] === 'published';
         $count = $records->count();
 
-        $this->artworkDataset = $records->values()->map(function (Artwork $artwork, int $index) use ($galleryPublished, $count): array {
+        // Live links must come from the actual Committed snapshot, never
+        // from Working publication flags. This also preserves the old public
+        // URL while a slug change or unpublication awaits Commit.
+        $committedSlugs = $records->isEmpty() ? [] : DB::table('committed.artworks as artwork')
+            ->join('committed.artwork_categories as gallery', 'gallery.id', '=', 'artwork.artwork_category_id')
+            ->join('committed.site_sections as section', 'section.artwork_category_id', '=', 'gallery.id')
+            ->where('section.type', SiteSectionType::Gallery->value)
+            ->where('section.state', 'published')
+            ->where('artwork.state', 'published')
+            ->whereIn('artwork.id', $records->modelKeys())
+            ->pluck('artwork.slug', 'artwork.id')
+            ->all();
+
+        $this->artworkDataset = $records->values()->map(function (Artwork $artwork, int $index) use ($galleryPublished, $count, $committedSlugs): array {
             /** @var EloquentCollection<int, ArtworkMedia> $primaries */
             $primaries = $artwork->getRelation('artworkMedia')->where('role', 'primary')->values();
             /** @var ArtworkMedia|null $primary */
@@ -58,7 +73,7 @@ trait GalleryWorkspaceDataProjection
                 'state_label' => ucfirst((string) $artwork->getAttribute('state')),
                 'readiness_label' => $this->readinessLabel($artwork, $galleryPublished, $primaries->count(), $primaryAsset, $primary),
                 'is_ready' => $this->isReadyToPublish($artwork, $galleryPublished, $primaries->count(), $primaryAsset, $primary),
-                'year' => $artwork->getAttribute('work_year'),
+                'year' => $artwork->getAttribute('year'),
                 'medium' => $artwork->getAttribute('medium'),
                 'dimensions' => $artwork->getAttribute('dimensions'),
                 'primary_kind' => $kind,
@@ -68,8 +83,8 @@ trait GalleryWorkspaceDataProjection
                 'primary_original_url' => $primaryAsset instanceof MediaAsset && $primaryAsset->getAttribute('state') === 'available'
                     ? route('admin.media.original', $primaryAsset)
                     : null,
-                'public_url' => $galleryPublished && $artwork->getAttribute('state') === 'published'
-                    ? route('artworks.show', ['slug' => $artwork->getAttribute('slug')])
+                'public_url' => isset($committedSlugs[(int) $artwork->getKey()])
+                    ? route('artworks.show', ['slug' => $committedSlugs[(int) $artwork->getKey()]])
                     : null,
                 'can_move_up' => $index > 0,
                 'can_move_down' => $index < $count - 1,
@@ -159,6 +174,14 @@ trait GalleryWorkspaceDataProjection
             })
             ->values()
             ->all();
+
+        // Selection is scoped to cards the artist can currently see. A filter,
+        // status change or mutation may remove cards from the visible set.
+        $visibleIds = array_column($this->artworks, 'id');
+        $this->selectedArtworkIds = array_values(array_filter(
+            $this->selectedArtworkIds,
+            static fn (int|string $id): bool => in_array((int) $id, $visibleIds, true),
+        ));
     }
 
     private function refreshWorkspaceAfterMutation(): void
@@ -193,7 +216,7 @@ trait GalleryWorkspaceDataProjection
 
         return [
             ['label' => 'Artworks', 'value' => number_format($this->unfilteredArtworkCount), 'description' => 'In this Gallery'],
-            ['label' => 'Published', 'value' => number_format($this->publishedCount), 'description' => 'Currently public'],
+            ['label' => 'Published', 'value' => number_format($this->publishedCount), 'description' => 'Working state · Commit to go live'],
             ['label' => 'Visits', 'value' => $this->metricValue($analytics['page']['visits'] ?? null), 'description' => 'Gallery · 30d'],
             ['label' => 'Views', 'value' => $this->metricValue($analytics['page']['views'] ?? null), 'description' => 'Gallery · 30d'],
             ['label' => 'Artwork opens', 'value' => $opens === null ? '—' : number_format($opens), 'description' => 'Viewer opens · 30d'],

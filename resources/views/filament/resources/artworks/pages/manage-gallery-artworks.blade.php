@@ -4,6 +4,9 @@
             && trim($search) === ''
             && $statusFilter === 'any'
             && $readinessFilter === 'any';
+        $reorderDisabledReason = ($galleryContext['sort_mode'] ?? 'manual') !== 'manual'
+            ? 'Switch to Manual sorting to reorder'
+            : 'Clear filters to reorder';
         $selectedIds = array_map('intval', $selectedArtworkIds);
         $selectedArtworks = collect($artworkDataset)->filter(static fn (array $row): bool =>
             in_array((int) $row['id'], $selectedIds, true)
@@ -44,32 +47,18 @@
             <div
                 class="admin-gallery-upload__dropzone"
                 x-data="{
-                    phase: 'idle',
-                    progress: 0,
-                    fileCount: 0,
-                    result: '',
-                    showResult(message) {
-                        this.result = message
-                        this.phase = 'result'
+                    phase: 'idle', progress: 0, fileCount: 0,
+                    completed: 0, result: '',
+                    async uploadFiles(input) {
+                        await window.adminMediaUploader(this, input, $wire, 'gallery')
                     },
                 }"
                 x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
-                x-on:livewire-upload-start="phase = 'uploading'; progress = 0; result = ''"
-                x-on:livewire-upload-progress="progress = $event.detail.progress"
-                x-on:livewire-upload-finish="
-                    progress = 100
-                    phase = 'processing'
-                    $wire.processDirectPrimaryMedia()
-                        .then((response) => showResult(response?.summary ?? 'Upload complete'))
-                        .catch(() => showResult('Upload failed'))
-                "
-                x-on:livewire-upload-error="$wire.set('directPrimaryMedia', []); showResult('Upload failed')"
             >
                 <input
                     class="admin-gallery-upload__input"
                     type="file"
-                    wire:model="directPrimaryMedia"
-                    x-on:change="fileCount = $event.target.files.length"
+                    x-on:change="uploadFiles($el)"
                     x-bind:disabled="phase === 'uploading' || phase === 'processing'"
                     accept="{{ implode(',', [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES]) }}"
                     aria-label="Upload primary images or videos for new artworks"
@@ -79,25 +68,27 @@
                     <strong
                         x-text="
                             phase === 'uploading'
-                                ? `Uploading ${fileCount} ${fileCount === 1 ? 'file' : 'files'} · ${progress}%`
+                                ? `Uploading file ${completed + 1} of ${fileCount} · ${progress}%`
                                 : phase === 'processing'
-                                    ? `Processing ${fileCount} ${fileCount === 1 ? 'file' : 'files'}…`
+                                    ? `Transfer complete · Checking and processing file ${completed + 1} of ${fileCount}…`
                                     : phase === 'result'
                                         ? result
                                         : 'Drop images or videos here or choose from your device'
                         "
                     >{{ __('Drop images or videos here or choose from your device') }}</strong>
-                    <span x-show="phase === 'idle'">JPEG, PNG, WebP · max {{ number_format(\App\Domain\Media\MediaTypePolicy::imageMaxBytes() / 1048576, 0) }} MiB · {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} MP; MP4, WebM · max {{ number_format(\App\Domain\Media\MediaTypePolicy::videoMaxBytes() / 1048576, 0) }} MiB.</span>
+                    <span x-show="phase === 'idle'">JPEG, PNG, WebP (max {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} megapixels); MP4, WebM. File size is limited by available site storage. Interrupted uploads can be resumed by selecting the same file.</span>
                 </div>
                 <div
                     class="admin-gallery-upload__progress"
-                    x-show="phase === 'uploading'"
+                    x-show="phase === 'uploading' || phase === 'processing'"
+                    x-bind:class="{ 'is-processing': phase === 'processing' }"
                     x-cloak
                     role="progressbar"
-                    aria-label="Upload progress"
+                    aria-label="Media upload status"
                     aria-valuemin="0"
                     aria-valuemax="100"
-                    x-bind:aria-valuenow="progress"
+                    x-bind:aria-valuenow="phase === 'uploading' ? progress : null"
+                    x-bind:aria-valuetext="phase === 'processing' ? 'File transfer finished; server processing in progress' : null"
                 >
                     <span class="admin-gallery-upload__progress-track" aria-hidden="true">
                         <span class="admin-gallery-upload__progress-fill" x-bind:style="`width: ${progress}%`"></span>
@@ -197,7 +188,6 @@
                                 <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('down')" @disabled(! $selectedCanMoveDown)>{{ __('Move selected down') }}</button>
                                 <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('publishSelectedArtworks')" @disabled(! $selectedCanPublish)>{{ __('Publish selected') }}</button>
                                 <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('unpublishSelectedArtworks')" @disabled(! $selectedHasPublished)>{{ __('Unpublish selected') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('removeSelectedArtworks')" @disabled(! $selectedAllDraft)>{{ __('Remove selected') }}</button>
                                 <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('deleteSelectedArtworks')" @disabled(! $selectedAllDraft)>{{ __('Delete selected') }}</button>
                             </div>
                         </div>
@@ -277,8 +267,8 @@
                                     @if ($reorderEnabled) wire:sort:handle @endif
                                     @disabled(! $reorderEnabled)
                                     aria-disabled="{{ $reorderEnabled ? 'false' : 'true' }}"
-                                    title="{{ $reorderEnabled ? 'Drag to reorder' : 'Clear filters to reorder' }}"
-                                    aria-label="{{ $reorderEnabled ? 'Drag '.$artwork['title'].' to reorder' : 'Clear filters to reorder '.$artwork['title'] }}"
+                                    title="{{ $reorderEnabled ? 'Drag to reorder' : $reorderDisabledReason }}"
+                                    aria-label="{{ $reorderEnabled ? 'Drag '.$artwork['title'].' to reorder' : $reorderDisabledReason.' '.$artwork['title'] }}"
                                 >⋮⋮</button>
                             </div>
 
@@ -389,23 +379,12 @@
                                     >
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" />
                                     </button>
-                                    @if ($artwork['state'] === 'draft')
-                                        <button
-                                            class="gallery-workspace__icon-action"
-                                            type="button"
-                                            wire:click="mountAction('uploadArtworkPrimaryMedia', { artwork: {{ $artwork['id'] }} })"
-                                            title="Replace primary image or video"
-                                            aria-label="Replace primary media for {{ $artwork['title'] }}"
-                                        >
-                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Upload->mini()" />
-                                        </button>
-                                    @endif
                                     <button
                                         class="gallery-workspace__icon-action gallery-workspace__order-action"
                                         type="button"
                                         wire:click="moveArtwork({{ $artwork['id'] }}, 'up')"
-                                        title="{{ $reorderEnabled ? 'Move artwork earlier' : 'Clear filters to reorder' }}"
-                                        aria-label="{{ $reorderEnabled ? 'Move '.$artwork['title'].' earlier' : 'Clear filters to reorder '.$artwork['title'] }}"
+                                        title="{{ $reorderEnabled ? 'Move artwork earlier' : $reorderDisabledReason }}"
+                                        aria-label="{{ $reorderEnabled ? 'Move '.$artwork['title'].' earlier' : $reorderDisabledReason.' '.$artwork['title'] }}"
                                         @disabled(! $reorderEnabled || ! $artwork['can_move_up'])
                                     >
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" />
@@ -414,8 +393,8 @@
                                         class="gallery-workspace__icon-action gallery-workspace__order-action"
                                         type="button"
                                         wire:click="moveArtwork({{ $artwork['id'] }}, 'down')"
-                                        title="{{ $reorderEnabled ? 'Move artwork later' : 'Clear filters to reorder' }}"
-                                        aria-label="{{ $reorderEnabled ? 'Move '.$artwork['title'].' later' : 'Clear filters to reorder '.$artwork['title'] }}"
+                                        title="{{ $reorderEnabled ? 'Move artwork later' : $reorderDisabledReason }}"
+                                        aria-label="{{ $reorderEnabled ? 'Move '.$artwork['title'].' later' : $reorderDisabledReason.' '.$artwork['title'] }}"
                                         @disabled(! $reorderEnabled || ! $artwork['can_move_down'])
                                     >
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" />
@@ -427,11 +406,6 @@
                                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveBetween->mini()" />
                                         </button>
                                     @endif
-                                    <button class="gallery-workspace__icon-action" type="button" wire:click="mountAction('removeArtwork', { artwork: {{ $artwork['id'] }} })"
-                                        @disabled($artwork['state'] !== 'draft')
-                                        title="{{ $artwork['state'] === 'draft' ? 'Remove from Gallery' : 'Unpublish artwork before removing from Gallery' }}" aria-label="Remove {{ $artwork['title'] }} from Gallery">
-                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Detach->mini()" />
-                                    </button>
                                     <button
                                         class="gallery-workspace__icon-action"
                                         type="button"

@@ -184,7 +184,6 @@ trait ManagesSitePageCreateDialog
             'name' => $name,
             'slug' => $slug,
             'parent_section_id' => null,
-            'description' => null,
             'show_on_home' => false,
         ]);
 

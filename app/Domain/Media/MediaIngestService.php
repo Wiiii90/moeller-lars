@@ -4,6 +4,7 @@ namespace App\Domain\Media;
 
 use App\Jobs\PrepareMediaRightsImage;
 use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -16,23 +17,21 @@ use Throwable;
 
 class MediaIngestService
 {
-    // All newly ingested images use bounded libvips. GD is retained only in
-    // MediaVariantRegenerationService for historical immutable thumbnails.
+    // All new image thumbnails use the one canonical libvips generator.
     // Allow native high-resolution camera images and approximately 400 MP
     // multi-shot composites, with headroom, while retaining a finite
     // decompression safety bound. Runtime resource limits still apply.
     public const MAX_PIXELS = 500_000_000;
-    public const LARGE_IMAGE_TRANSFORM_PROFILE = 'public-v2';
     public const VIDEO_POSTER_KIND = 'poster';
-    public const VIDEO_POSTER_PROFILE = 'video-poster-v1';
 
     public const THUMBNAIL_MAX_EDGE = 960;
 
     public const THUMBNAIL_KIND = 'thumbnail';
 
-    public const TRANSFORM_PROFILE = 'public-v1';
-
-    private const INGEST_LOCK_SECONDS = 240;
+    // A 512 MiB original may require hashing, container probing, poster generation
+    // and storage admission. Keep the atomic ingest lock beyond the bounded
+    // web request so concurrent uploads cannot race the shared storage quota.
+    private const INGEST_LOCK_SECONDS = 420;
 
     private const MEDIA_PROBE_BYTES = 1024 * 1024;
 
@@ -54,7 +53,7 @@ class MediaIngestService
     }
 
     /** @return array{asset:MediaAsset,duplicate:bool} */
-    public function ingestUnique(UploadedFile $upload): array
+    public function ingestUnique(UploadedFile $upload, bool $fromPrivateStaging = false): array
     {
         $lock = $this->acquireIngestLock();
 
@@ -65,7 +64,7 @@ class MediaIngestService
             }
 
             $prepared = $this->prepareForIngest($upload);
-            $asset = $this->storePreparedLocked($upload, $prepared);
+            $asset = $this->storePreparedLocked($upload, $prepared, $fromPrivateStaging);
             if (config('media.rights_preparation_enabled', false) === true) {
                 PrepareMediaRightsImage::dispatch((int) $asset->getKey())->afterCommit();
             }
@@ -87,26 +86,69 @@ class MediaIngestService
         if (! $upload->isValid() || ! is_string($path) || ! is_file($path) || ! is_int($size) || $size <= 0) {
             return null;
         }
+
         $sha = @hash_file('sha256', $path);
-        if (! is_string($sha) || strlen($sha) !== 64) {
-            return null;
-        }
-        $asset = MediaAsset::query()->with('variants')
-            ->where('state', 'available')->where('sha256', $sha)->where('byte_size', $size)->first();
-        if (! $asset instanceof MediaAsset
-            || $size > MediaTypePolicy::maxBytesFor((string) $asset->getAttribute('mime_type'))
-            || ! Storage::disk((string) config('media.disk'))->exists((string) $asset->getAttribute('storage_key'))) {
-            return null;
-        }
-        $mime = (string) $asset->getAttribute('mime_type');
-        if (MediaTypePolicy::isImage($mime) && MediaPreviewVariant::imageThumbnail($asset) === null) {
-            return null;
-        }
-        if (MediaTypePolicy::isVideo($mime) && MediaPreviewVariant::videoPoster($asset) === null) {
-            return null;
-        }
-        return $asset;
+
+        return is_string($sha) ? $this->reusableOriginalByFingerprint($sha, $size) : null;
     }
+
+    /**
+     * Shared canonical identity check for deduplication and crash recovery.
+     * Never acknowledge success solely from a stale upload manifest or a
+     * registry row if the actual original/required preview is missing.
+     */
+    public function reusableOriginalByFingerprint(string $sha256, int $size): ?MediaAsset
+    {
+        if (! preg_match('/^[a-f0-9]{64}$/D', $sha256) || $size <= 0) {
+            return null;
+        }
+
+        $disk = Storage::disk((string) config('media.disk'));
+        $candidates = MediaAsset::query()->with('variants')
+            ->where('state', 'available')
+            ->where('sha256', $sha256)
+            ->where('byte_size', $size)
+            ->orderBy('id')
+            ->get();
+
+        foreach ($candidates as $asset) {
+            $mime = (string) $asset->getAttribute('mime_type');
+            if ($size > MediaTypePolicy::maxBytesFor($mime)) {
+                continue;
+            }
+
+            $original = (string) $asset->getAttribute('storage_key');
+            if ($original === '' || ! $disk->exists($original)
+                || (int) $disk->size($original) !== $size
+                || ! hash_equals($sha256, (string) @hash_file('sha256', $disk->path($original)))) {
+                continue;
+            }
+
+            $preview = MediaTypePolicy::isImage($mime)
+                ? MediaPreviewVariant::imageThumbnail($asset)
+                : (MediaTypePolicy::isVideo($mime) ? MediaPreviewVariant::videoPoster($asset) : null);
+            if ((MediaTypePolicy::isImage($mime) || MediaTypePolicy::isVideo($mime))
+                && (! $preview instanceof MediaVariant
+                    || ! $disk->exists((string) $preview->getAttribute('storage_key'))
+                    || (int) $disk->size((string) $preview->getAttribute('storage_key')) !== (int) $preview->getAttribute('byte_size'))) {
+                continue;
+            }
+
+            return $asset;
+        }
+
+        if ($candidates->isNotEmpty()) {
+            // An existing byte-identical canonical asset must not be
+            // duplicated merely because its registered original/preview
+            // is missing or corrupt. Repair the registry first.
+            throw ValidationException::withMessages([
+                'media' => 'This file is already registered in Storage, but its saved original or required preview is incomplete. No duplicate was created. Contact the site administrator to repair that media record.',
+            ]);
+        }
+
+        return null;
+    }
+
     private function acquireIngestLock(): mixed
     {
         $lock = Cache::lock('media-ingest', self::INGEST_LOCK_SECONDS);
@@ -144,24 +186,27 @@ class MediaIngestService
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
-            throw $this->validationFailure('The uploaded media could not be processed.', $exception);
+            report($exception);
+            throw $this->validationFailure('The file reached the server, but media validation or processing failed unexpectedly. It was not saved. Contact the site administrator.');
         }
     }
 
     /**
      * @param  array{mime:string,width:?int,height:?int,path:string,size:int,sha256:string,thumbnail_bytes:?string,thumbnail_width:?int,thumbnail_height:?int}  $prepared
      */
-    private function storePreparedLocked(UploadedFile $upload, array $prepared): MediaAsset
+    private function storePreparedLocked(UploadedFile $upload, array $prepared, bool $fromPrivateStaging = false): MediaAsset
     {
         try {
             app(MediaCapacityService::class)->assertCanStoreOriginal(
                 $prepared['size'],
                 $prepared['thumbnail_bytes'] !== null ? strlen($prepared['thumbnail_bytes']) : 0,
+                originalAlreadyStaged: $fromPrivateStaging,
             );
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
-            throw $this->validationFailure('The uploaded media could not be processed.', $exception);
+            report($exception);
+            throw $this->validationFailure('The media was processed, but the server could not check storage capacity. It was not saved. Contact the site administrator.');
         }
 
         $extension = MediaTypePolicy::extensionFor($prepared['mime']);
@@ -174,9 +219,6 @@ class MediaIngestService
         $originalKey = 'originals/'.$uuid.'.'.$extension;
         $isVideo = MediaTypePolicy::isVideo($prepared['mime']);
         $variantKind = $isVideo ? self::VIDEO_POSTER_KIND : self::THUMBNAIL_KIND;
-        $transformProfile = $isVideo
-            ? self::VIDEO_POSTER_PROFILE
-            : self::LARGE_IMAGE_TRANSFORM_PROFILE;
         $thumbnailKey = $prepared['thumbnail_bytes'] === null
             ? null
             : 'variants/'.$uuid.'-'.$variantKind.'.webp';
@@ -191,25 +233,42 @@ class MediaIngestService
             }
         }
 
+        $movedStagedOriginal = false;
         try {
-            $originalStream = @fopen($prepared['path'], 'rb');
-            if (! is_resource($originalStream)) {
-                throw $this->validationFailure('The uploaded media could not be read completely.');
-            }
-
-            try {
-                if (! $disk->put($originalKey, $originalStream)) {
-                    throw new RuntimeException('Unable to write canonical media.');
+            if ($fromPrivateStaging) {
+                // A multi-gigabyte original is moved in-place on the private
+                // media volume; copying it would temporarily violate quota.
+                $source = realpath($prepared['path']);
+                $stagingDir = realpath(storage_path('app/private/incoming-media'));
+                $destination = $disk->path($originalKey);
+                if (! is_string($source) || ! is_string($stagingDir)
+                    || dirname($source) !== $stagingDir
+                    || (! is_dir(dirname($destination))
+                        && ! @mkdir(dirname($destination), 0700, true))
+                    || ! @rename($source, $destination)) {
+                    throw new RuntimeException('The staged original could not be moved into Storage.');
                 }
-            } finally {
-                fclose($originalStream);
+                $movedStagedOriginal = true;
+            } else {
+                $originalStream = @fopen($prepared['path'], 'rb');
+                if (! is_resource($originalStream)) {
+                    throw $this->validationFailure('The uploaded media could not be read completely.');
+                }
+
+                try {
+                    if (! $disk->put($originalKey, $originalStream)) {
+                        throw new RuntimeException('Unable to write canonical media.');
+                    }
+                } finally {
+                    fclose($originalStream);
+                }
             }
 
             if ($thumbnailKey !== null && ! $disk->put($thumbnailKey, $prepared['thumbnail_bytes'])) {
                 throw new RuntimeException('Unable to write media thumbnail.');
             }
 
-            return DB::transaction(function () use ($originalKey, $upload, $prepared, $thumbnailKey, $variantKind, $transformProfile): MediaAsset {
+            return DB::transaction(function () use ($originalKey, $upload, $prepared, $thumbnailKey, $variantKind): MediaAsset {
                 $asset = new MediaAsset;
                 $asset->fill([
                     'storage_key' => $originalKey,
@@ -231,7 +290,6 @@ class MediaIngestService
                         'mime_type' => 'image/webp',
                         'byte_size' => strlen($prepared['thumbnail_bytes']),
                         'sha256' => hash('sha256', $prepared['thumbnail_bytes']),
-                        'transform_profile' => $transformProfile,
                         'state' => 'available',
                         'width' => $prepared['thumbnail_width'],
                         'height' => $prepared['thumbnail_height'],
@@ -242,6 +300,18 @@ class MediaIngestService
             });
         } catch (Throwable $exception) {
             $failed = [];
+            if ($movedStagedOriginal && $disk->exists($originalKey)
+                && ! @rename($disk->path($originalKey), $prepared['path'])) {
+                // Preserve the sole surviving copy for explicit recovery.
+                report(new RuntimeException(
+                    'Media ingest failed; its staged original could not be restored from '.$originalKey,
+                    0,
+                    $exception,
+                ));
+                throw $this->validationFailure(
+                    'The server could not save the media or restore its temporary original automatically. The file may require recovery. Contact the site administrator before retrying.'
+                );
+            }
             foreach ($storageKeys as $key) {
                 try {
                     if ($disk->exists($key) && ! $disk->delete($key)) {
@@ -258,14 +328,24 @@ class MediaIngestService
             }
 
             if ($failed !== []) {
-                throw new RuntimeException(
+                report(new RuntimeException(
                     'Media ingest failed and storage cleanup also failed for: '.implode(', ', array_unique($failed)).'. Original failure: '.$exception->getMessage(),
                     0,
                     $exception,
+                ));
+                throw $this->validationFailure(
+                    'The server could not finish saving the media and could not clean up all temporary files. Contact the site administrator before retrying.'
                 );
             }
 
-            throw $exception;
+            if ($exception instanceof ValidationException) {
+                throw $exception;
+            }
+
+            report($exception);
+            throw $this->validationFailure(
+                'The file was transferred and processed, but the server could not finish saving it to Storage. It was not registered as available. Please try again or contact the site administrator.'
+            );
         }
     }
 
@@ -336,7 +416,9 @@ class MediaIngestService
             ));
         }
 
-        $preview = app(MediaDerivativeGenerator::class)->imageThumbnail($path);
+        $generator = app(MediaDerivativeGenerator::class);
+        $generator->assertImagePreviewCompatible($path, $mime, $width, $height);
+        $preview = $generator->imageThumbnail($path);
         $thumbnailBytes = $preview['bytes'];
         $thumbnailWidth = $preview['width'];
         $thumbnailHeight = $preview['height'];
@@ -684,7 +766,7 @@ class MediaIngestService
         return basename(str_replace('\\', '/', $filename));
     }
 
-    private function validationFailure(string $message, ?Throwable $previous = null): ValidationException
+    private function validationFailure(string $message): ValidationException
     {
         return ValidationException::withMessages(['media' => $message]);
     }

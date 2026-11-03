@@ -3,6 +3,7 @@
 namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\EditorialRichTextValidator;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ final class ArtworkDraftService
     /** @param array<string, mixed> $data */
     public function create(array $data): Artwork
     {
-        if (! array_key_exists('artwork_category_id', $data) || ! array_key_exists('work_date', $data)) {
+        if (! array_key_exists('artwork_category_id', $data)) {
             throw ValidationException::withMessages(['artwork' => 'Required artwork form data is missing.']);
         }
 
@@ -34,7 +35,6 @@ final class ArtworkDraftService
         $data['artwork_category_id'] = $galleryId;
         $data['state'] = 'draft';
         $data['published_at'] = null;
-        $data['date_precision'] = filled($data['work_date']) ? 'day' : 'unknown';
 
         $actor = $this->audit->requireActor();
 
@@ -95,7 +95,6 @@ final class ArtworkDraftService
                 ]);
             }
 
-            $payload['date_precision'] = filled($payload['work_date'] ?? null) ? 'day' : 'unknown';
             $fresh->fill($payload);
 
             if ($fresh->isDirty()) {
@@ -146,8 +145,9 @@ final class ArtworkDraftService
             'medium',
             'dimensions',
             'description',
-            'work_date',
-            'work_year',
+            'year',
+            'month',
+            'day',
             'exclude_from_home',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
@@ -165,11 +165,24 @@ final class ArtworkDraftService
             'medium' => ['nullable', 'string', 'max:240'],
             'dimensions' => ['nullable', 'string', 'max:240'],
             'description' => ['nullable', 'string', 'max:10000'],
-            'work_date' => ['nullable', 'date'],
-            'work_year' => ['nullable', 'integer', 'min:1000', 'max:9999'],
+            'year' => ['nullable', 'integer', 'min:1000', 'max:9999'],
+            'month' => ['nullable', 'integer', 'between:1,12'],
+            'day' => ['nullable', 'integer', 'between:1,31'],
             'exclude_from_home' => ['sometimes', 'boolean'],
         ]);
         $validator->validate();
+        ArtworkDate::validateParts(array_merge([
+            'year' => $artwork?->getAttribute('year'),
+            'month' => $artwork?->getAttribute('month'),
+            'day' => $artwork?->getAttribute('day'),
+        ], array_intersect_key($payload, array_flip(['year', 'month', 'day']))));
+        if (array_key_exists('description', $payload)) {
+            app(EditorialRichTextValidator::class)->validate(
+                $payload['description'],
+                'description',
+                allowEmbeddedMedia: true,
+            );
+        }
 
         return $payload;
     }

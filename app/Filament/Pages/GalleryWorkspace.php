@@ -20,7 +20,6 @@ use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Session;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
 
 final class GalleryWorkspace extends Page
@@ -74,9 +73,6 @@ final class GalleryWorkspace extends Page
 
     /** @var list<array{label:string,value:string,description:string}> */
     public array $metrics = [];
-
-    /** @var list<TemporaryUploadedFile> */
-    public array $directPrimaryMedia = [];
 
     public ?int $pendingPrimaryMediaAssetId = null;
 
@@ -168,7 +164,6 @@ final class GalleryWorkspace extends Page
                 'artwork_category_id' => (int) $artwork->getAttribute('artwork_category_id'),
                 'slug' => (string) $artwork->getAttribute('slug'),
                 'title' => $normalized,
-                'work_date' => $artwork->getAttribute('work_date'),
             ]);
         } catch (ValidationException $exception) {
             $this->notifyValidationFailure('Artwork title was not saved', $exception);

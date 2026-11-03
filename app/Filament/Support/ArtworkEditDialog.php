@@ -3,26 +3,25 @@
 namespace App\Filament\Support;
 
 use App\Domain\Artwork\ArtworkDimensions;
+use App\Domain\Artwork\ArtworkDate;
+use App\Filament\Support\AdminDimensionsControl;
+use App\Filament\Support\AdminPartialDateControl;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
-use App\Domain\Media\MediaIngestService;
 use Closure;
 use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 final class ArtworkEditDialog
 {
@@ -41,30 +40,34 @@ final class ArtworkEditDialog
             'dimension_width' => $dimensions['width'],
             'dimension_depth' => $dimensions['depth'],
             'dimension_unit' => $dimensions['unit'],
-            'dimension_custom' => $dimensions['custom'],
             'description' => $artwork->getAttribute('description'),
             'primary_media_asset_id' => $primary?->getAttribute('media_asset_id'),
             'primary_alt_text' => $primary?->getAttribute('alt_text_override'),
-            'work_year' => $artwork->getAttribute('work_year'),
-            'work_date' => $artwork->getAttribute('work_date'),
+            'artwork_date' => ArtworkDate::fromArtwork($artwork),
             'exclude_from_home' => (int) (bool) $artwork->getAttribute('exclude_from_home'),
         ];
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
-            ->required()
+            ->required(! $creating)
             ->maxLength(180)
             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/');
         if ($creating) {
             $slug->unique('artworks', 'slug');
         }
 
+        $material = ArtworkMaterialSelect::make();
+        if ($positionCount === null) {
+            $material->columnSpanFull();
+        }
+
         return [
-            AdminForm::section('Basics')
+            Grid::make()
+                ->columns(['md' => 2])
                 ->schema([
                     TextInput::make('title')
                         ->required()
@@ -80,44 +83,14 @@ final class ArtworkEditDialog
                         Select::make('artwork_category_id')
                             ->label('Gallery')
                             ->options(static fn (): array => ArtworkCategory::query()->orderBy('name')->pluck('name', 'id')->all())
-                            ->nullable()
+                            ->required()
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->columnSpanFull(),
                     ] : []),
-                    ArtworkMaterialSelect::make(),
-                    TextInput::make('work_year')->label('Year')->numeric()->minValue(1000)->maxValue(9999)->nullable(),
-                    DatePicker::make('work_date')->label('Exact date')->nullable(),
-                    Select::make('exclude_from_home')
-                        ->label('Home eligibility')
-                        ->options([
-                            0 => __('Follow Gallery setting'),
-                            1 => __('Exclude this Artwork from Home'),
-                        ])
-                        ->default(0)
-                        ->columnSpanFull(),
-                ])->columns(['md' => 2]),
-            AdminForm::section('Dimensions')->schema([
-                    TextInput::make('dimension_height')->label('Height (H)')->numeric()->minValue(0.01)->nullable(),
-                    TextInput::make('dimension_width')->label('Width (W)')->numeric()->minValue(0.01)->nullable(),
-                    TextInput::make('dimension_depth')->label('Depth (D)')->numeric()->minValue(0.01)->nullable(),
-                    Select::make('dimension_unit')
-                        ->label('Unit')
-                        ->options(['cm' => 'cm', 'mm' => 'mm', 'in' => 'in'])
-                        ->default('cm')
-                        ->required(),
-                    TextInput::make('dimension_custom')
-                        ->label('Custom dimensions')
-                        ->maxLength(240)
-                        ->nullable()
-                        ->columnSpanFull(),
-                ])->columns(['md' => 2]),
-            AdminForm::section('Content')->schema([
-                    Textarea::make('description')->nullable()->maxLength(10000)->columnSpanFull(),
-                ]),
-            AdminForm::section('Media')->schema([
                     MediaAssetSelect::makeId(
                         'primary_media_asset_id',
-                        'Existing Media File',
+                        'Media file',
                         allowedMimeTypes: self::primaryMimeTypes(),
                     )
                         ->placeholder(__('No primary media'))
@@ -126,43 +99,52 @@ final class ArtworkEditDialog
                         ->selectablePlaceholder(! $primaryReadOnly)
                         ->extraFieldWrapperAttributes($primaryReadOnly ? [
                             'title' => 'Unpublish this Artwork before changing or removing its primary Media File.',
-                        ] : [])
+                        ] : [], merge: true)
                         ->live()
                         ->afterStateUpdated(static function (mixed $state, callable $set) use ($onPrimaryMediaChanged): void {
-                            // Gallery Edit persists this discrete Media File choice at
-                            // the field boundary, not through a bubbled modal change.
-                            // Create and the standalone EditRecord keep their existing
-                            // full-form submission lifecycle.
+                            // One Media-file selection owns the Artwork association.
+                            // On Edit, persist only this mutation, independent of the modal form.
                             if ($onPrimaryMediaChanged instanceof Closure) {
                                 $onPrimaryMediaChanged(filled($state) ? (int) $state : null);
                             }
-
-                            // ALT belongs to the newly chosen file, not the old primary.
                             $set('primary_alt_text', null);
                         })
                         ->columnSpanFull(),
-                    ...(! $autosave ? [FileUpload::make('primary_upload')
-                        ->label('Or upload new primary media')
-                        ->storeFiles(false)
-                        ->disabled($primaryReadOnly)
-                        ->acceptedFileTypes(self::primaryMimeTypes())
-                        ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
-                        ->live()
-                        ->afterStateUpdated(static function (mixed $state, callable $set): void {
-                            if (filled($state)) {
-                                $set('primary_alt_text', null);
-                            }
-                        })
-                        ->extraFieldWrapperAttributes($primaryReadOnly ? [
-                            'title' => 'Unpublish this Artwork before uploading a different primary file.',
-                        ] : [])
-                        ->columnSpanFull()] : []),
-                    Textarea::make('primary_alt_text')
-                        ->label('Primary media ALT text')
+                    TextInput::make('primary_alt_text')
+                        ->label('ALT text override')
                         ->maxLength(500)
                         ->nullable()
                         ->columnSpanFull(),
-                ])->columns(['md' => 2]),
+
+                    AdminPartialDateControl::make()->columnSpanFull(),
+
+                    $material,
+                    ...($positionCount !== null ? [
+                        TextInput::make('position')
+                            ->label('Position')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(1)
+                            ->maxValue(max(1, $positionCount))
+                            ->required()
+                            ->disabled(! $positionEditable),
+                    ] : []),
+
+                    AdminDimensionsControl::make(),
+
+
+                    Select::make('exclude_from_home')
+                        ->label('Home eligibility')
+                        ->options([
+                            0 => __('Follow Gallery setting'),
+                            1 => __('Exclude this Artwork from Home'),
+                        ])
+                        ->default(0)
+                        ->native(false)
+                        ->selectablePlaceholder(false)
+                        ->columnSpanFull(),
+                    ...AdminRichText::schema('description', 'Description', 10000),
+                ]),
         ];
     }
 
@@ -215,63 +197,32 @@ final class ArtworkEditDialog
             'primary_alt_text' => $currentPrimary?->getAttribute('alt_text_override'),
         ];
         $assetId = (int) ($data['primary_media_asset_id'] ?? 0);
-        $upload = $data['primary_upload'] ?? null;
         $currentGalleryId = $artwork->getAttribute('artwork_category_id');
         $currentGalleryId = $currentGalleryId === null ? null : (int) $currentGalleryId;
         $requestedGalleryId = $allowGalleryAssignment && filled($data['artwork_category_id'] ?? null)
             ? (int) $data['artwork_category_id']
             : ($allowGalleryAssignment ? null : $currentGalleryId);
 
-        if ($upload !== null && ! $upload instanceof TemporaryUploadedFile) {
-            throw ValidationException::withMessages(['primary_upload' => 'Choose a valid image or video file.']);
-        }
-        if ($upload instanceof TemporaryUploadedFile && $assetId > 0 && $assetId !== $currentAssetId) {
-            throw ValidationException::withMessages(['primary_upload' => 'Choose either a new upload or an existing Media File, not both.']);
-        }
-        if ($upload instanceof TemporaryUploadedFile) {
-            $this->assertUploadIsPrimaryMedia($upload);
-        }
-
-        // Storage owns durable originals and variants. Ingest the new file
-        // before the Artwork database transaction so a later editorial failure
-        // cannot roll back the MediaAsset while leaving its files on disk.
-        // The successfully ingested file remains reusable in Storage.
-        try {
-            $uploadedAsset = $upload instanceof TemporaryUploadedFile
-                ? app(MediaIngestService::class)->ingest($upload)
-                : null;
-        } catch (ValidationException $exception) {
-            throw ValidationException::withMessages([
-                'primary_upload' => collect($exception->errors())->flatten()->first()
-                    ?? 'The selected image or video could not be processed.',
-            ]);
-        }
-
-        DB::transaction(function () use ($artwork, $data, $uploadedAsset, $assetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment, $savePrimaryMedia): void {
+        DB::transaction(function () use ($artwork, $data, $assetId, $currentPrimary, $currentGalleryId, $requestedGalleryId, $allowGalleryAssignment, $savePrimaryMedia): void {
             if ($allowGalleryAssignment && $requestedGalleryId !== $currentGalleryId) {
                 $assignments = app(ArtworkGalleryAssignmentService::class);
                 if ($requestedGalleryId === null) {
-                    $assignments->detach($artwork);
-                } else {
-                    /** @var ArtworkCategory $gallery */
-                    $gallery = ArtworkCategory::query()->findOrFail($requestedGalleryId);
-                    $assignments->reassign($artwork, $gallery);
+                    throw ValidationException::withMessages([
+                        'artwork_category_id' => 'Choose a Gallery for this Artwork.',
+                    ]);
                 }
+
+                /** @var ArtworkCategory $gallery */
+                $gallery = ArtworkCategory::query()->findOrFail($requestedGalleryId);
+                $assignments->reassign($artwork, $gallery);
             }
 
             app(ArtworkDraftService::class)->update(
                 $artwork,
-                $this->normalizeArtworkFormData($data, $requestedGalleryId),
+                $this->normalizeArtworkFormData($data, $requestedGalleryId, $artwork),
             );
 
-            $primaryMedia = app(ArtworkPrimaryMediaService::class);
-            if ($uploadedAsset instanceof MediaAsset) {
-                $currentPrimary === null
-                    ? $primaryMedia->attachAsset($artwork, $uploadedAsset, recordIngest: true)
-                    : $primaryMedia->replaceAsset($artwork, $uploadedAsset, recordIngest: true);
-            } elseif ($savePrimaryMedia && array_key_exists('primary_media_asset_id', $data)) {
-                // Gallery autosave persists this field in afterStateUpdated.
-                // This full-form path remains for standalone EditRecord.
+            if ($savePrimaryMedia && array_key_exists('primary_media_asset_id', $data)) {
                 $this->changePrimaryMedia($artwork, $assetId > 0 ? $assetId : null);
             }
 
@@ -283,7 +234,7 @@ final class ArtworkEditDialog
                 );
             } elseif (filled($data['primary_alt_text'] ?? null)) {
                 throw ValidationException::withMessages([
-                    'primary_alt_text' => 'Choose or upload primary media before entering ALT text.',
+                    'primary_alt_text' => 'Choose a Media file before entering an ALT text override.',
                 ]);
             }
         });
@@ -303,25 +254,37 @@ final class ArtworkEditDialog
     /** @param array<string, mixed> $data
      * @return array<string, mixed>
      */
-    private function normalizeArtworkFormData(array $data, ?int $galleryId): array
+    private function normalizeArtworkFormData(array $data, ?int $galleryId, ?Artwork $original = null): array
     {
         $data['artwork_category_id'] = $galleryId;
-        $data['work_date'] = $data['work_date'] ?? null;
+        $data = array_merge($data, ArtworkDate::normalize($data['artwork_date'] ?? null));
+        unset($data['artwork_date']);
         $data['medium'] = filled($data['medium'] ?? null) ? trim((string) $data['medium']) : null;
-        $data['dimensions'] = ArtworkDimensions::compose(
-            $data['dimension_height'] ?? null,
-            $data['dimension_width'] ?? null,
-            $data['dimension_depth'] ?? null,
-            $data['dimension_unit'] ?? 'cm',
-            $data['dimension_custom'] ?? null,
-        );
+        $structuredDimensions = filled($data['dimension_height'] ?? null)
+            || filled($data['dimension_width'] ?? null)
+            || filled($data['dimension_depth'] ?? null);
+        $legacyDimensions = $original === null
+            ? null
+            : ArtworkDimensions::split((string) ($original->getAttribute('dimensions') ?? ''))['custom'];
+
+        // No separate custom-dimensions column exists. Preserve historical
+        // freeform text when the new numeric controls are untouched; never
+        // erase saved artist data as a side-effect of editing another field.
+        $data['dimensions'] = ! $structuredDimensions && $legacyDimensions !== null
+            ? $legacyDimensions
+            : ArtworkDimensions::compose(
+                $data['dimension_height'] ?? null,
+                $data['dimension_width'] ?? null,
+                $data['dimension_depth'] ?? null,
+                $data['dimension_unit'] ?? null,
+                null,
+            );
 
         foreach ([
             'dimension_height',
             'dimension_width',
             'dimension_depth',
             'dimension_unit',
-            'dimension_custom',
             'primary_media_asset_id',
             'primary_upload',
             'primary_alt_text',
@@ -338,13 +301,4 @@ final class ArtworkEditDialog
         return [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES];
     }
 
-    private function assertUploadIsPrimaryMedia(TemporaryUploadedFile $upload): void
-    {
-        $mime = (string) $upload->getMimeType();
-        if (! MediaTypePolicy::isImage($mime) && ! MediaTypePolicy::isVideo($mime)) {
-            throw ValidationException::withMessages([
-                'primary_upload' => 'Primary media must be an image or video. Audio is not supported.',
-            ]);
-        }
-    }
 }

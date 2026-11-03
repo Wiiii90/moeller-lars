@@ -17,6 +17,7 @@ use Illuminate\Validation\ValidationException;
     'template',
     'title',
     'navigation_label',
+    'meta_description',
     'show_in_navigation',
     'slug',
     'state',
@@ -222,5 +223,13 @@ final class SiteSection extends Model
     public function hasPublicPage(): bool
     {
         return $this->nodeType()->hasPublicPage();
+    }
+
+    /** Page metadata has a single owner, regardless of Gallery/Journal template. */
+    public function metaDescriptionOr(string $fallback): string
+    {
+        $description = trim((string) ($this->getAttribute('meta_description') ?? ''));
+
+        return $description !== '' ? $description : $fallback;
     }
 }

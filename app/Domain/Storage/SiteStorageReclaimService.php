@@ -5,11 +5,12 @@ namespace App\Domain\Storage;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminUndoContext;
 use App\Domain\Media\MediaCapacityService;
-use App\Domain\Media\MediaVariantRegenerationService;
+use App\Domain\Media\ResumableMediaUploadService;
 use App\Domain\Publication\PublicationMediaCleanupService;
 use App\Domain\Publication\PublicationSnapshot;
 use App\Models\AdminActionReceipt;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 final class SiteStorageReclaimService
 {
@@ -17,11 +18,11 @@ final class SiteStorageReclaimService
         private readonly AdminAuditService $audit,
         private readonly AdminUndoContext $undoContext,
         private readonly PublicationMediaCleanupService $mediaCleanup,
-        private readonly MediaVariantRegenerationService $variantRegeneration,
+        private readonly ResumableMediaUploadService $uploads,
         private readonly MediaCapacityService $capacity,
     ) {}
 
-    /** @return array{undo_receipts:int,publication_snapshots:int,publication_rows:int,protected_snapshots:int,generated_files:int,generated_bytes:int,removed_files:int,changed:bool} */
+    /** @return array{undo_receipts:int,publication_snapshots:int,publication_rows:int,protected_snapshots:int,removed_files:int,orphan_files:int,orphan_bytes:int,expired_staging:int,cleanup_incomplete:bool,changed:bool} */
     public function reclaim(): array
     {
         $actor = $this->audit->requireActor();
@@ -83,19 +84,64 @@ final class SiteStorageReclaimService
         // Retiring recovery roots and their required audit must be durable
         // before irreversible filesystem deletion. A rollback must never bring
         // back a restorable snapshot whose original has already been destroyed.
-        $removedFiles = $this->mediaCleanup->drain();
-        $generated = $this->variantRegeneration->reclaimRebuildableFiles();
-        $this->capacity->refreshCachedSnapshot();
-        $changed = $result['changed'] || $removedFiles > 0 || $generated['files'] > 0;
+        $removedFiles = 0;
+        $orphans = ['files' => 0, 'bytes' => 0, 'failed' => 0];
+        $expiredStaging = 0;
+        $incomplete = false;
+
+        // The Undo/restore transaction is already committed. These
+        // filesystem operations are independently retryable; a failure must
+        // never be reported as if that database transaction was rolled back.
+        try {
+            $removedFiles = $this->mediaCleanup->drain();
+        } catch (Throwable $exception) {
+            report($exception);
+            $incomplete = true;
+        }
+        try {
+            $orphans = $this->mediaCleanup->reclaimUncataloguedMedia();
+            $incomplete = $incomplete || $orphans['failed'] > 0;
+        } catch (Throwable $exception) {
+            report($exception);
+            $incomplete = true;
+        }
+        try {
+            $expiredStaging = $this->uploads->pruneExpired();
+        } catch (Throwable $exception) {
+            report($exception);
+            $incomplete = true;
+        }
+
+        // Generated previews are mandatory, even for unused originals.
+        // Only genuinely unowned canonical files and expired private staging
+        // are eligible for the extra physical sweep.
+        try {
+            $this->capacity->refreshCachedSnapshot();
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->capacity->forgetCachedSnapshot();
+            $incomplete = true;
+        }
+        $changed = $result['changed'] || $removedFiles > 0
+            || $orphans['files'] > 0 || $expiredStaging > 0;
         if ($changed && ! $result['changed']) {
-            DB::transaction($recordAudit);
+            try {
+                DB::transaction($recordAudit);
+            } catch (Throwable $exception) {
+                // File cleanup has already occurred. Preserve the true
+                // outcome and report the independently failed audit write.
+                report($exception);
+                $incomplete = true;
+            }
         }
 
         return [
             ...$result,
-            'generated_files' => $generated['files'],
-            'generated_bytes' => $generated['bytes'],
             'removed_files' => $removedFiles,
+            'orphan_files' => $orphans['files'],
+            'orphan_bytes' => $orphans['bytes'],
+            'expired_staging' => $expiredStaging,
+            'cleanup_incomplete' => $incomplete,
             'changed' => $changed,
         ];
     }

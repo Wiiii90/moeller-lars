@@ -4,7 +4,7 @@ use App\Domain\Admin\AdminLocalHistoryResetService;
 use App\Domain\Content\ExhibitionAddressNormalizer;
 use App\Domain\Contact\ContactMessageRetentionService;
 use App\Domain\Media\MediaCapacityService;
-use App\Domain\Media\MediaThumbnailCutoverService;
+use App\Domain\Media\ResumableMediaUploadService;
 use App\Domain\Media\MediaIntegrityService;
 use App\Domain\Media\MediaRightsWorkingPreparation;
 use App\Domain\Migration\LegacyArtworkManifestImporter;
@@ -23,39 +23,15 @@ use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
-// Explicit offline thumbnail consolidation. Validation is allowed exclusively
-// from the platform's maintenance container, before the new web image starts.
-Artisan::command('media:thumbnails:consolidate {--apply : Convert GD thumbnails to libvips} {--rebaseline-checkpoints : Recompute pre-release checkpoint hashes while preserving their rows} {--invalidate-thumbnail-rights : Explicitly invalidate obsolete generated thumbnail rights selections} {--validation-offline : Dedicated guarded Validation maintenance mode}', function (MediaThumbnailCutoverService $cutover): int {
-    $validationOffline = (bool) $this->option('validation-offline');
-    if (! $cutover->authorized($validationOffline)) {
-        $this->error('Thumbnail consolidation requires local/testing or dedicated offline Validation maintenance.');
-        return 1;
-    }
-
-    $preview = $cutover->preview();
-    $this->info("Original images: {$preview['assets']} · Legacy thumbnails: {$preview['variants']} · Restorable checkpoints: {$preview['checkpoints']} · Rights selections: {$preview['rights_selections']}");
-
-    if (! $this->option('apply')) {
-        $this->comment('Preview only. --apply is required to convert the thumbnail registry.');
-        if ($preview['checkpoints'] > 0) {
-            $this->warn('--rebaseline-checkpoints is additionally required to preserve but rehash pre-release history.');
-        }
-        return 0;
-    }
-
-    try {
-        $result = $cutover->apply(
-            (bool) $this->option('rebaseline-checkpoints'),
-            (bool) $this->option('invalidate-thumbnail-rights'),
-            $validationOffline,
-        );
-        $this->info("Converted {$result['converted']} thumbnails. Rebaselined {$result['rebased']} checkpoints; invalidated {$result['invalidated_rights']} thumbnail rights selections for offline re-preparation; reclaimed {$result['reclaimed']} unreferenced old derivative files.");
-        return 0;
-    } catch (\Throwable $exception) {
-        $this->error($exception->getMessage());
-        return 1;
-    }
-})->purpose('Preview or execute guarded offline libvips thumbnail consolidation');
+// Expired unfinished private transfers are reclaimed without touching the
+// canonical media registry or completed files. The scheduler must be enabled
+// independently by the operator at deployment.
+Artisan::command('media:uploads:prune', function (ResumableMediaUploadService $uploads): int {
+    $removed = $uploads->pruneExpired();
+    $this->info($removed.' expired upload sessions reclaimed.');
+    return 0;
+})->purpose('Prune private resumable media staging older than 48 hours');
+Schedule::command('media:uploads:prune')->daily()->withoutOverlapping()->onOneServer();
 
 // Contact messages are retained in this database for 180 days. The command
 // is preview-only unless --apply is explicit. Existing mailboxes and backup
@@ -80,6 +56,101 @@ Artisan::command('contact:purge {--apply : Delete contact messages older than 18
 // Activated only where an operator runs Laravel's standard schedule:run.
 // That runtime scheduler has not been verified on the server.
 Schedule::command('contact:purge --apply')->daily()->withoutOverlapping()->onOneServer();
+
+// Read-only checkpoint before retiring the free-form Exhibition date field.
+// Scan the editable and committed records as well as immutable publication
+// checkpoint payloads. Never infer precision or update artist content here.
+Artisan::command('exhibitions:audit-dates {--all : Include structured rows without an authored override}', function (): int {
+    if (DB::getDriverName() !== 'pgsql') {
+        $this->error('Exhibition date inventory requires the PostgreSQL publication database; current driver: '.DB::getDriverName().'.');
+        $this->comment('Run it inside the local application container: docker compose exec app php artisan exhibitions:audit-dates --all');
+        $this->comment('Or, if the local preview is running: docker exec moeller-lars-local-web php artisan exhibitions:audit-dates --all');
+
+        return 1;
+    }
+
+    $sources = [
+        'working' => 'public.exhibitions',
+        'committed' => 'committed.exhibitions',
+    ];
+    $review = [];
+    $counts = [];
+    $showAll = (bool) $this->option('all');
+    foreach ($sources as $name => $table) {
+        if (DB::selectOne('SELECT to_regclass(?) AS relation_name', [$table])?->relation_name === null) {
+            $this->error('Missing publication table: '.$table);
+
+            return 1;
+        }
+
+        $rows = DB::table($table)
+            ->orderBy('id')
+            ->get(['id', 'title', 'state', 'starts_on', 'ends_on', 'date_text']);
+        $counts[$name] = $rows->count();
+        foreach ($rows as $row) {
+            $original = trim((string) ($row->date_text ?? ''));
+            if ($original === '' && ! $showAll) {
+                continue;
+            }
+
+            $review[] = [
+                $name,
+                (string) $row->id,
+                (string) $row->title,
+                (string) ($row->starts_on ?? '—'),
+                (string) ($row->ends_on ?? '—'),
+                $original,
+            ];
+        }
+    }
+
+    if (DB::selectOne("SELECT to_regclass('public.publication_version_rows') AS relation_name")?->relation_name !== null) {
+        $snapshots = DB::table('publication_version_rows')
+            ->where('table_name', 'exhibitions')
+            ->orderBy('publication_checkpoint_id')
+            ->orderBy('row_key')
+            ->get(['publication_checkpoint_id', 'row_key', 'payload']);
+        $counts['snapshot entries'] = $snapshots->count();
+
+        foreach ($snapshots as $row) {
+            $payload = is_string($row->payload)
+                ? json_decode($row->payload, true)
+                : (is_array($row->payload) ? $row->payload : json_decode((string) $row->payload, true));
+            if (! is_array($payload)) {
+                $this->error('Unparseable immutable publication checkpoint payload. Stopping inventory.');
+
+                return 1;
+            }
+
+            $original = trim((string) ($payload['date_text'] ?? ''));
+            if ($original === '' && ! $showAll) {
+                continue;
+            }
+
+            $review[] = [
+                'checkpoint '.$row->publication_checkpoint_id,
+                (string) $row->row_key,
+                (string) ($payload['title'] ?? '—'),
+                (string) ($payload['starts_on'] ?? '—'),
+                (string) ($payload['ends_on'] ?? '—'),
+                $original,
+            ];
+        }
+    }
+
+    $this->table(['Source', 'ID', 'Exhibition', 'Start', 'End', 'Authored date override'], $review);
+    foreach ($counts as $name => $count) {
+        $this->line($name.': '.$count.' records');
+    }
+    $this->info(count($review).' date records listed across current and retained states'
+        .($showAll ? ' (including those without an override).' : ' (only authored overrides).'));
+    if (! $showAll) {
+        $this->comment('Use --all to inspect structured dates even where no override was recorded.');
+    }
+    $this->comment('READ-ONLY. Do not drop date_text or infer missing day/month precision until every historical override has a lossless reviewed mapping.');
+
+    return 0;
+})->purpose('Inventory authored Exhibition dates without altering Working, Committed or history');
 
 // Legacy Exhibition addresses are normalised only by explicit local action:
 // the preview is the default; ambiguous strings and edited structured fields

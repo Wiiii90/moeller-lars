@@ -113,9 +113,28 @@ function initializeExhibitionMap(button) {
                 scrollWheelZoom: false,
             }).setView([latitude, longitude], 15);
 
+            // A successful Leaflet initialization does not mean the external
+            // tile server is reachable. Observe the actual visible tile batch
+            // so a complete provider outage never leaves an empty, silent map.
+            let loadedTiles = 0;
+            let failedTiles = 0;
             L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+            }).on({
+                loading: () => {
+                    loadedTiles = 0;
+                    failedTiles = 0;
+                    status.hidden = true;
+                },
+                tileload: () => { loadedTiles++; },
+                tileerror: () => { failedTiles++; },
+                load: () => {
+                    if (failedTiles > 0 && loadedTiles === 0) {
+                        status.textContent = 'Map tiles unavailable. Try the OpenStreetMap link below.';
+                        status.hidden = false;
+                    }
+                },
             }).addTo(map);
 
             L.control.zoom({ position: 'topright', zoomInTitle: 'Zoom in', zoomOutTitle: 'Zoom out' }).addTo(map);
@@ -152,9 +171,43 @@ function initializeExhibitionMap(button) {
     };
 }
 
+function initializeExhibitionVideoPreview(button) {
+    const details = button.closest('details.exhibition-entry__disclosure');
+    const video = details?.querySelector('.exhibition-entry__cover video');
+    if (!details || !(video instanceof HTMLVideoElement)) return null;
+
+    // The catalogue preview is a poster, not a miniature player. Clicking
+    // its play symbol opens the original Folio and plays the existing video.
+    const openAndPlay = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        details.open = true;
+        const result = video.play();
+        result?.catch(() => {
+            // Browser media policies can reject play(). The expanded Exhibition
+            // cover always has native controls for a manual start.
+        });
+    };
+    const pauseWhenClosed = () => {
+        if (!details.open) video.pause();
+    };
+    button.addEventListener('click', openAndPlay);
+    details.addEventListener('toggle', pauseWhenClosed);
+
+    return () => {
+        button.removeEventListener('click', openAndPlay);
+        details.removeEventListener('toggle', pauseWhenClosed);
+        video.pause();
+    };
+}
+
 export function initializeJournalPresentation() {
     document.querySelectorAll('[data-journal-slideshow]').forEach(initializeSlideshow);
-    const disposers = Array.from(document.querySelectorAll('[data-exhibition-map-open]'))
-        .map(initializeExhibitionMap).filter(Boolean);
+    const disposers = [
+        ...Array.from(document.querySelectorAll('[data-exhibition-map-open]'))
+            .map(initializeExhibitionMap),
+        ...Array.from(document.querySelectorAll('[data-exhibition-video-play]'))
+            .map(initializeExhibitionVideoPreview),
+    ].filter(Boolean);
     return () => disposers.forEach((dispose) => dispose());
 }

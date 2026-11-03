@@ -111,6 +111,7 @@ final class BrowserProfilingSeeder extends Seeder
             'name' => 'Browser Gallery', 'slug' => 'browser-gallery',
             // Disposable fixture opts in. Production Galleries default off.
             'landscape_detail_enabled' => true,
+            'portrait_detail_enabled' => true,
             'edge_navigation_mode' => 'cyclic',
         ]);
         SiteSection::query()->create([
@@ -121,7 +122,9 @@ final class BrowserProfilingSeeder extends Seeder
         ]);
         $media['gallery'] = ['url' => '/browser-gallery', 'artworks' => []];
         foreach ([1, 2] as $number) {
-            $fixture = $this->syntheticMedia('viewer-'.$number, $number - 1, 1600, 1200);
+            $fixture = $this->syntheticMedia('viewer-'.$number, $number - 1,
+                $number === 1 ? 1600 : 1200,
+                $number === 1 ? 1200 : 1600);
             $artwork = Artwork::query()->create([
                 'artwork_category_id' => $category->id, 'slug' => 'browser-artwork-'.$number,
                 'title' => 'Browser Artwork '.$number, 'state' => 'published',

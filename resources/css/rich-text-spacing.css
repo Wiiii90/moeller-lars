@@ -1,3 +1,10 @@
+/* Tiptap defaults to 1.5 on paragraphs and headings. A page's own
+   typography must not replace an unmarked Rich Text line-spacing value. */
+.admin-rich-text--visual .tiptap :is(p, h1, h2, h3, h4, h5, h6),
+.rich-text :is(p, h1, h2, h3, h4, h5, h6) {
+    line-height: 1.5;
+}
+
 .admin-rich-text--visual .tiptap [data-artist-line-spacing="1.0"],
 .rich-text [data-artist-line-spacing="1.0"] {
     line-height: 1;

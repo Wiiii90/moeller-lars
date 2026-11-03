@@ -3,6 +3,7 @@
 namespace App\Domain\Content;
 
 use App\Domain\Media\PublicMedia;
+use App\Http\Middleware\SecurityHeaders;
 use App\Filament\Support\RichTextEditorPlugin;
 use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use App\Models\MediaAsset;
@@ -90,7 +91,7 @@ final class SafeRichTextRenderer
                 })
                 ->toHtml();
 
-            return new HtmlString(ArtistImageLayout::decorateHtml($html, $source));
+            return $this->withPublicTextColors(ArtistImageLayout::decorateHtml($html, $source));
         }
 
         $document = $this->parse($source);
@@ -106,6 +107,48 @@ final class SafeRichTextRenderer
         }
 
         return new HtmlString((new HtmlRenderer($this->environment))->renderDocument($document));
+    }
+
+    /**
+     * Filament renders color marks with inline CSS variables, but Public CSP
+     * forbids style attributes. Only verified hexadecimal values from the
+     * already-sanitized editor HTML may become nonce-authorized color rules.
+     */
+    private function withPublicTextColors(string $html): HtmlString
+    {
+        $nonce = request()->attributes->get(SecurityHeaders::STYLE_NONCE_ATTRIBUTE);
+        if (! is_string($nonce) || $nonce === '') {
+            return new HtmlString($html);
+        }
+
+        $colors = [];
+        $html = preg_replace_callback(
+            '/<span\\b(?=[^>]*\\bclass="[^"]*\\bcolor\\b[^"]*")(?=[^>]*\\bdata-color="(#[0-9a-f]{6})")[^>]*>/i',
+            static function (array $matches) use (&$colors): string {
+                $color = strtolower($matches[1]);
+                $colors[$color] = true;
+
+                // Remove the unusable inline variable at the canonical output boundary.
+                return preg_replace('/\\sstyle="[^"]*"/i', '', $matches[0]) ?? $matches[0];
+            },
+            $html,
+        ) ?? $html;
+
+        if ($colors === []) {
+            return new HtmlString($html);
+        }
+
+        $rules = '';
+        foreach (array_keys($colors) as $color) {
+            $rules .= '.rich-text .color[data-color="'.$color.'" i]{color:'.$color.';}';
+        }
+
+        // Keep style elements in the existing public layout head stack, not
+        // inside Rich Text: inserting a style as the first or last child would
+        // change :first-child / :last-child paragraph spacing.
+        view()->startPush('public-component-styles', '<style nonce="'.e($nonce).'">'.$rules.'</style>');
+
+        return new HtmlString($html);
     }
 
     private function parse(string $source): Document
