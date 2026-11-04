@@ -59,6 +59,96 @@ async function openExistingEditor(page) {
 const panel = (modal, label) => modal.getByRole('group', { name: label, exact: true });
 const visiblePanels = modal => modal.locator('.admin-rich-text-popover:visible');
 
+test('a delayed Storage options response cannot revert an editor save', async ({ page }) => {
+    let { modal, shell, editable } = await openFreshEditor(page);
+    let releaseResponse;
+    let optionsReceived;
+    let responseReleased;
+    const held = new Promise(resolve => { releaseResponse = resolve; });
+    const received = new Promise(resolve => { optionsReceived = resolve; });
+    const released = new Promise(resolve => { responseReleased = resolve; });
+    let captured = false;
+    const containsCall = (request, method, argument) => {
+        if (request.method() !== 'POST') return false;
+        try {
+            return request.postDataJSON().components.some(component => component.calls.some(call =>
+                call.method === method && (argument === undefined || call.params[1] === argument)));
+        } catch {
+            return false;
+        }
+    };
+    const intercept = async route => {
+        if (captured || !containsCall(route.request(), 'callSchemaComponentMethod', 'getOptionsForJs')) {
+            return route.continue();
+        }
+        captured = true;
+        const response = await route.fetch();
+        optionsReceived();
+        await held;
+        await route.fulfill({ response });
+        responseReleased();
+    };
+    await page.route('**/livewire-*/update', intercept);
+
+    try {
+        await shell.getByRole('button', { name: 'Insert image from Storage', exact: true }).click();
+        await received;
+        await editable.fill('First saved edit');
+        const firstSave = page.waitForResponse(response => containsCall(response.request(), 'callMountedAction'));
+        await modal.getByRole('heading', { name: 'Edit component' }).click();
+        expect((await firstSave).ok()).toBe(true);
+        releaseResponse();
+        await released;
+        await page.waitForLoadState('networkidle');
+        await expect(panel(modal, 'Image from Storage')).toBeHidden();
+        await page.unroute('**/livewire-*/update', intercept);
+
+        await editable.fill('Second saved edit');
+        const secondSave = page.waitForResponse(response => containsCall(response.request(), 'callMountedAction'));
+        await modal.getByRole('heading', { name: 'Edit component' }).click();
+        expect((await secondSave).ok()).toBe(true);
+        await page.keyboard.press('Escape');
+        await expect(modal.getByRole('heading', { name: 'Edit component' })).toBeHidden();
+        await page.reload();
+        ({ modal, shell, editable } = await openExistingEditor(page));
+        await expect(editable).toHaveText('Second saved edit');
+    } finally {
+        releaseResponse();
+        await page.unroute('**/livewire-*/update', intercept);
+    }
+});
+
+test('independent editors reject a genuinely stale Rich Text save', async ({ page, context }) => {
+    let first = await openFreshEditor(page);
+    const otherPage = await context.newPage();
+    await otherPage.goto(page.url());
+    const second = await openExistingEditor(otherPage);
+    const savedAction = response => {
+        try {
+            return response.request().postDataJSON().components.some(component =>
+                component.calls.some(call => call.method === 'callMountedAction'));
+        } catch {
+            return false;
+        }
+    };
+
+    await first.editable.fill('First editor saved this');
+    const firstSave = page.waitForResponse(savedAction);
+    await first.modal.getByRole('heading', { name: 'Edit component' }).click();
+    expect((await firstSave).ok()).toBe(true);
+
+    await second.editable.fill('Second editor attempted this');
+    const secondSave = otherPage.waitForResponse(savedAction);
+    await second.modal.getByRole('heading', { name: 'Edit component' }).click();
+    expect((await secondSave).ok()).toBe(true);
+    await expect(second.modal.getByText('This component changed since the editor was opened. Reopen the editor.')).toBeVisible();
+
+    await page.reload();
+    first = await openExistingEditor(page);
+    await expect(first.editable).toHaveText('First editor saved this');
+    await otherPage.close();
+});
+
 test('one Rich Text popover remains active; Escape, outside click and focus preserve the owning edit dialog', async ({ page }) => {
     const { modal, shell, editable } = await openFreshEditor(page);
     const scrollport = modal.locator('.fi-modal-content').first();
