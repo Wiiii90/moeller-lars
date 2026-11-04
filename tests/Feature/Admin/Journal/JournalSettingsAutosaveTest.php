@@ -9,6 +9,7 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionPathPolicy;
 use App\Filament\Pages\JournalWorkspace;
+use App\Filament\Support\RichTextEditorPlugin;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\BlogPost;
@@ -18,6 +19,7 @@ use App\Models\Redirect;
 use App\Models\SiteSection;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Livewire\Livewire;
 
 it('saves a Journal template change with one audit and notification, and stays silent on no-op', function (): void {
@@ -156,15 +158,18 @@ it('persists Blog edits in the actual mounted editor refreshes its row and repea
         ->set('mountedActions.0.data.title', 'Current Blog title')
         ->set('mountedActions.0.data.body', $formatted)
         ->callMountedAction()->assertHasNoFormErrors()->assertSee('Current Blog title');
-    expect($post->fresh()->title)->toBe('Current Blog title')->and($post->fresh()->body)->toBe($formatted)
+    expect($post->fresh()->title)->toBe('Current Blog title')->and($post->fresh()->body)->toContain('data-artist-line-spacing="1.0"', 'data-color="#123456"', 'Studio entry', '<td>Oil</td>')
         ->and(AuditEvent::query()->count())->toBe($before + 1)
         ->and(AdminNotification::query()->count())->toBe(1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
     $editor->callMountedAction()->assertHasNoFormErrors()->assertNotDispatched('admin-header-notification');
     expect(AuditEvent::query()->count())->toBe($before + 1)->and(AdminNotification::query()->count())->toBe(1);
-    Livewire::test(JournalWorkspace::class, ['section' => $section->id])
-        ->mountAction('editPost', ['post' => $post->id])
-        ->assertActionDataSet(['body' => $formatted]);
+    $reopened = Livewire::test(JournalWorkspace::class, ['section' => $section->id])
+        ->mountAction('editPost', ['post' => $post->id]);
+    $rendered = RichContentRenderer::make(
+        $reopened->get('mountedActions.0.data.body'),
+    )->plugins([RichTextEditorPlugin::make()])->toHtml();
+    expect($rendered)->toContain('data-artist-line-spacing="1.0"', 'data-color="#123456"', 'Studio entry', '<td>Oil</td>');
 });
 
 it('keeps concurrent Blog content when a stale mounted editor attempts to save', function (): void {

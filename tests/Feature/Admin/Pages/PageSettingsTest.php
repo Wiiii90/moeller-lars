@@ -125,7 +125,7 @@ it('defaults Pages workflow preferences off and autosaves each new toggle once',
         ->assertSet('mountedActions.0.data.pages_auto_publish', true)
         ->assertSet('mountedActions.0.data.pages_delete_without_confirmation', true);
 
-    // The shared two-column Grid keeps all four toggles in row-major
+    // The shared two-column Grid keeps all five controls in row-major
     // order; Skip Home owns its optional destination in one stable cell.
     $mounted = Livewire::test(SitePages::class)->mountAction('pagesSettings')->instance();
     $schema = $mounted->{$mounted->getMountedActionSchemaName()}->getComponents();
@@ -133,8 +133,8 @@ it('defaults Pages workflow preferences off and autosaves each new toggle once',
         ->and($schema[0])->toBeInstanceOf(Grid::class);
 
     $cells = $schema[0]->getChildComponents();
-    expect($cells)->toHaveCount(4)
-        ->and($cells[1])->toBeInstanceOf(Group::class);
+    expect($cells)->toHaveCount(5)
+        ->and($cells[2])->toBeInstanceOf(Group::class);
 
     $fieldNames = [];
     foreach ($cells as $cell) {
@@ -149,6 +149,7 @@ it('defaults Pages workflow preferences off and autosaves each new toggle once',
 
     expect($fieldNames)->toBe([
         'navigation_nesting_enabled',
+        'navigation_hover_preview',
         'skip_home',
         'skip_target_section_id',
         'pages_auto_publish',

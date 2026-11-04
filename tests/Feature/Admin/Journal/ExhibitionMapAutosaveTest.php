@@ -48,7 +48,7 @@ function journalMapExhibition(array $overrides = []): array
     return [$section, $entry];
 }
 
-it('persists map switch on/off through normal Edit and hydrates coordinates without closing', function (): void {
+it('persists map switch on/off through normal Edit and stores coordinates without closing', function (): void {
     [$section, $entry] = journalMapExhibition();
     Http::fake(fn () => Http::response([[
         'lat' => '53.550341', 'lon' => '9.992477',
@@ -63,11 +63,11 @@ it('persists map switch on/off through normal Edit and hydrates coordinates with
         ->call('callMountedAction')
         ->assertHasNoFormErrors()
         ->assertDispatched('admin-header-notification')
-        ->assertSet('mountedActions.0.data.latitude', 53.550341)
-        ->assertSet('mountedActions.0.data.longitude', 9.992477);
+        ->assertSet('mountedActions.0.data.map_enabled', true);
 
     expect($entry->fresh()->getAttribute('map_enabled'))->toBeTrue()
-        ->and($entry->fresh()->hasCoordinates())->toBeTrue()
+        ->and((float) $entry->fresh()->latitude)->toBe(53.550341)
+        ->and((float) $entry->fresh()->longitude)->toBe(9.992477)
         ->and(AuditEvent::query()->count())->toBe($beforeAudit + 1)
         ->and(AdminNotification::query()->count())->toBe($beforeNotifications + 1);
 
@@ -103,15 +103,14 @@ it('enables an exhibition map after adding missing Country within the same open 
     $editor->set('mountedActions.0.data.map_enabled', true)
         ->call('callMountedAction')
         ->assertHasNoFormErrors()
-        ->assertSet('mountedActions.0.data.map_enabled', true)
-        ->assertSet('mountedActions.0.data.latitude', 53.550341);
+        ->assertSet('mountedActions.0.data.map_enabled', true);
 
     expect($entry->fresh()->getAttribute('map_enabled'))->toBeTrue()
         ->and(AdminNotification::query()->count())->toBe($initialNotifications + 2);
     Http::assertSentCount(1);
 });
 
-it('re-geocodes changed addresses once and updates the mounted map preview state', function (): void {
+it('re-geocodes changed addresses once and stores the new coordinates', function (): void {
     [$section, $entry] = journalMapExhibition();
     Http::fakeSequence()
         ->push([['lat' => '53.550341', 'lon' => '9.992477', 'display_name' => 'Hamburg, Germany']], 200)
@@ -125,11 +124,11 @@ it('re-geocodes changed addresses once and updates the mounted map preview state
         ->set('mountedActions.0.data.city', 'Berlin')
         ->call('callMountedAction')
         ->assertHasNoFormErrors()
-        ->assertSet('mountedActions.0.data.latitude', 52.520008)
-        ->assertSet('mountedActions.0.data.longitude', 13.404954);
+        ->assertSet('mountedActions.0.data.map_enabled', true);
 
     expect($entry->fresh()->getAttribute('city'))->toBe('Berlin')
-        ->and((float) $entry->fresh()->getAttribute('latitude'))->toBe(52.520008);
+        ->and((float) $entry->fresh()->getAttribute('latitude'))->toBe(52.520008)
+        ->and((float) $entry->fresh()->getAttribute('longitude'))->toBe(13.404954);
     Http::assertSentCount(2);
     $notificationCount = AdminNotification::query()->count();
     $auditCount = AuditEvent::query()->count();

@@ -5,6 +5,7 @@ use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Pages\JournalWorkspace;
+use App\Filament\Support\RichTextEditorPlugin;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\Exhibition;
@@ -13,6 +14,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
@@ -83,9 +85,12 @@ it('round-trips formatted Exhibition descriptions through the actual mounted Jou
         ->callMountedAction()->assertHasNoFormErrors();
 
     expect($entry->fresh()->description)->toBe($body);
-    Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
-        ->mountAction('editExhibition', ['exhibition' => $entry->getKey()])
-        ->assertActionDataSet(['description' => $body]);
+    $reopened = Livewire::test(JournalWorkspace::class, ['section' => $section->getKey()])
+        ->mountAction('editExhibition', ['exhibition' => $entry->getKey()]);
+    $rendered = RichContentRenderer::make(
+        $reopened->get('mountedActions.0.data.description'),
+    )->plugins([RichTextEditorPlugin::make()])->toHtml();
+    expect($rendered)->toContain('data-artist-line-spacing="1.15"', 'href="https://example.org/exhibition"', '<td>Gallery</td>');
 });
 
 it('shows Exhibition Gallery video controls only when the selected Storage media is video', function (): void {
@@ -199,11 +204,12 @@ it('rejects invalid or backwards Exhibition partial dates atomically in the moun
         ->set('mountedActions.0.data.starts_on', $start)
         ->set('mountedActions.0.data.ends_on', $end)
         ->callMountedAction()->assertHasFormErrors([$field])
-        ->assertNotDispatched('admin-header-notification');
+        ->assertDispatched('admin-header-notification', static fn (string $event, array $payload): bool => ($payload['notification']['status'] ?? null) === 'danger');
 
     expect($entry->fresh()->getAttributes())->toBe($before)
         ->and(AuditEvent::query()->count())->toBe($audits)
-        ->and(AdminNotification::query()->count())->toBe($notifications);
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1)
+        ->and(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
 })->with([
     'invalid calendar day' => ['2027-02-29', null, 'starts_on'],
     'backwards month range' => ['2027-07', '2027-05', 'ends_on'],
