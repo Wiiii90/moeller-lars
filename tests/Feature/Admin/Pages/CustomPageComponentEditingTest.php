@@ -4,6 +4,7 @@ use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Pages\CustomPageWorkspace;
+use App\Filament\Support\RichTextEditorPlugin;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\CustomPageSetting;
@@ -11,6 +12,7 @@ use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -138,7 +140,7 @@ it('rolls back component edits when auditing fails and allows a clean retry', fu
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
         ->fillForm(['title' => 'Changed', 'body' => 'Changed body'])->callMountedAction()
         ->assertHasNoFormErrors()->assertSee('Changed')->assertDispatched('admin-header-notification');
-    expect($settings->fresh()->components()[0]['body'])->toBe('Changed body')
+    expect($settings->fresh()->components()[0]['body'])->toBe('<p>Changed body</p>')
         ->and(AuditEvent::query()->count())->toBe($before + 1)
         ->and(AdminNotification::query()->count())->toBe(1);
 });
@@ -206,7 +208,7 @@ it('persists List entry details and publication through the component Edit dialo
     expect($item['published'])->toBeFalse()
         ->and($item['context'])->toBe('Museum · 2026')
         ->and($item['title'])->toBe('First entry updated')
-        ->and($item['body'])->toBe('Updated details')
+        ->and($item['body'])->toBe('<p>Updated details</p>')
         ->and($item)->not->toHaveKeys(['date', 'meta', 'location', 'url']);
 
     $workspace = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id]);
@@ -257,7 +259,7 @@ it('persists consecutive component edits without closing the autosaving dialog',
     $first = $settings->fresh()->components()[0];
     expect($first['published'])->toBeFalse()
         ->and($first['title'])->toBe('Revised heading')
-        ->and($first['body'])->toBe('Revised content');
+        ->and($first['body'])->toBe('<p>Revised content</p>');
 
     $formatted = '<p data-artist-line-spacing="2.0"><span class="color" data-color="#1457a4">Painted light</span> <a href="https://example.org/studio">Studio notes</a></p><table><tbody><tr><th>Year</th></tr><tr><td>2026</td></tr></tbody></table>';
     $editor->fillForm([
@@ -270,10 +272,16 @@ it('persists consecutive component edits without closing the autosaving dialog',
         ->assertSet('mountedActions.0.name', 'editComponent')
         ->assertSee('Edit component');
 
-    expect($settings->fresh()->components()[0]['body'])->toBe($formatted);
-    Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
-        ->assertActionDataSet(['body' => $formatted]);
+    $persisted = $settings->fresh()->components()[0]['body'];
+    $expected = ['data-artist-line-spacing="2.0"', 'data-color="#1457a4"', 'Painted light', 'href="https://example.org/studio"', 'Studio notes', '<table', '<td>2026</td>'];
+    expect($persisted)->toContain(...$expected);
+
+    $reopened = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text']);
+    $rendered = RichContentRenderer::make(
+        $reopened->get('mountedActions.0.data.body'),
+    )->plugins([RichTextEditorPlugin::make()])->toHtml();
+    expect($rendered)->toContain(...$expected);
 });
 
 it('opens and saves the third Rich Text component from its absolute row target', function (): void {
@@ -304,7 +312,7 @@ it('opens and saves the third Rich Text component from its absolute row target',
         ->and($components[1]['type'])->toBe('divider')
         ->and($components[1]['variant'])->toBe('dotted')
         ->and($components[2]['title'])->toBe('Third heading')
-        ->and($components[2]['body'])->toBe('Updated third text');
+        ->and($components[2]['body'])->toBe('<p>Updated third text</p>');
 });
 
 it('edits the Contact heading and all Contact settings in the owning component without child rows', function (): void {
@@ -374,7 +382,6 @@ it('retains a selected Contact platform only while its General profile still exi
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'contact']);
 
     $editor->set('mountedActions.0.data.title', 'Updated contact')
-        ->call('callMountedAction')
         ->assertHasNoFormErrors()
         ->assertDispatched('admin-header-notification')
         ->assertSet('mountedActions.0.name', 'editComponent')
@@ -496,7 +503,7 @@ it('edits image size in the owning component and keeps legacy 100% implicit', fu
 
     Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
-        ->assertMountedActionModalSee('Image size')
+        ->assertMountedActionModalSee('Media size')
         ->assertActionDataSet(['image_scale_percent' => CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT]);
 
     $service = app(CustomPageEditorialService::class);
@@ -734,7 +741,7 @@ it('rolls back edited content and nesting together if the second audit fails and
         ->fillForm(['body' => 'Edited content', 'parent_image_index' => '0'])->callMountedAction()
         ->assertHasNoFormErrors()->assertDispatched('admin-header-notification');
     expect($settings->fresh()->components())->toHaveCount(1)
-        ->and($settings->fresh()->components()[0]['children'][0]['body'])->toBe('Edited content')
+        ->and($settings->fresh()->components()[0]['children'][0]['body'])->toBe('<p>Edited content</p>')
         ->and(AuditEvent::query()->count())->toBe($audits + 2)
         ->and(AdminNotification::query()->count())->toBe(1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);

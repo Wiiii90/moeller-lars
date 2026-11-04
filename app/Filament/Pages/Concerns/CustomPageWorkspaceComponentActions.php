@@ -696,6 +696,13 @@ trait CustomPageWorkspaceComponentActions
         throw ValidationException::withMessages($errors);
     }
 
+    /** @param array<string,mixed> $target */
+    private function retargetComponentEditor(string $actionName, array $target): void
+    {
+        $this->cacheAction($this->componentEditingAction($actionName, committed: $actionName === 'editListComponent'));
+        $this->replaceMountedAction($actionName, $target);
+    }
+
     /** @param array<string,mixed> $arguments
      * @return list<Action>
      */
@@ -712,7 +719,7 @@ trait CustomPageWorkspaceComponentActions
             $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($index, $type, $direction, $actionName): void {
                 $this->moveComponent($index, $type, $direction);
                 $nextIndex = $index + ($direction === 'up' ? -1 : 1);
-                $this->replaceMountedAction($actionName, ['componentIndex' => $nextIndex, 'componentType' => $type]);
+                $this->retargetComponentEditor($actionName, ['componentIndex' => $nextIndex, 'componentType' => $type]);
             })->disabled(! $canMove);
         }
 
@@ -722,7 +729,7 @@ trait CustomPageWorkspaceComponentActions
             $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
             function () use ($index, $type, $published, $target, $actionName): void {
                 $this->setComponentPublished($index, $type, ! $published);
-                $this->replaceMountedAction($actionName, $target);
+                $this->retargetComponentEditor($actionName, $target);
             },
         );
         $actions[] = AdminDialog::headerAction('dialogDeleteComponent', AdminRowAction::Delete, function () use ($target): void {

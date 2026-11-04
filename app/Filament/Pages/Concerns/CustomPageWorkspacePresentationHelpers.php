@@ -92,7 +92,7 @@ trait CustomPageWorkspacePresentationHelpers
                 'index' => $childIndex,
                 'position' => ($imageIndex + 1).'.'.($childIndex + 1),
                 'type' => $type,
-                'type_label' => self::COMPONENT_LABELS[$type] ?? $type,
+                'type_label' => self::COMPONENT_LABELS[$type],
                 'content' => $this->componentContent($settings, $child, null),
                 'published' => $published,
                 'editable' => $type !== 'legal_disclaimer',
