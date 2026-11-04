@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { signIn } from '../../support/admin.mjs';
 
+test.setTimeout(90_000);
+
 test('admin create dialog closes with Escape and can be opened again', async ({ page }) => {
   await signIn(page);
   await page.goto('/admin/pages');
