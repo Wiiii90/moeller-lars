@@ -171,6 +171,16 @@ final class HomePresentationEditorialService
                 ]);
             }
 
+            if ($expectedType === 'list') {
+                // Compare using the shared List representation so opening a
+                // legacy empty Details field does not create a false change.
+                $existingList = new CustomPageSetting(['blocks' => [$components[$index]]]);
+                $editedList = new CustomPageSetting(['blocks' => [$component]]);
+                if ($existingList->normalizedBlocks() === $editedList->normalizedBlocks()) {
+                    return $components;
+                }
+            }
+
             $components[$index] = $component;
 
             return $components;

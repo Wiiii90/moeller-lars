@@ -138,6 +138,9 @@ final class CustomPageSetting extends Model
     public static function listItemDetails(array $item): ?string
     {
         $body = is_string($item['body'] ?? null) ? trim($item['body']) : '';
+        if ($body === '<p></p>') {
+            $body = '';
+        }
         $url = is_string($item['url'] ?? null) ? trim($item['url']) : '';
         if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL)
             && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {

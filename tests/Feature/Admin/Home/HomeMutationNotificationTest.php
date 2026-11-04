@@ -45,7 +45,7 @@ it('persists Home List entries in the parent component editor with one notificat
     $page->fillForm([
         'editor_kind' => 'list',
         'list_title' => 'CV',
-        'items' => [['title' => 'First revised', 'published' => false]],
+        'items' => [['title' => 'First revised', 'published' => false, 'body' => '<p></p>']],
     ])->callMountedAction()
         ->assertHasNoFormErrors()
         ->assertDispatched('admin-header-notification');
@@ -63,6 +63,23 @@ it('persists Home List entries in the parent component editor with one notificat
         ->assertHasNoFormErrors();
     expect(AuditEvent::query()->count())->toBe($activityCount)
         ->and(AdminNotification::query()->count())->toBe($notificationCount);
+});
+
+it('keeps an unchanged legacy empty List detail silent when reopened', function (): void {
+    $settings = homeNotificationSettings([[
+        'type' => 'list', 'title' => 'CV', 'published' => true, 'items' => [
+            ['title' => 'First', 'published' => true, 'body' => ''],
+        ],
+    ]]);
+    $before = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
+    Livewire::test(HomePresentation::class)
+        ->mountAction('editListComponent', ['index' => 0, 'type' => 'list'])
+        ->callMountedAction()->assertHasNoFormErrors()
+        ->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->count())->toBe($before)
+        ->and(AdminNotification::query()->count())->toBe($notifications)
+        ->and($settings->fresh()->components(HomeTemplate::Custom)[0]['items'][0]['body'])->toBe('');
 });
 
 it('reorders and removes Home List entries from its Edit dialog', function (): void {
