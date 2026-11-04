@@ -456,7 +456,8 @@ final class AdminActivityFeed
         $labels = $this->targetLabels($events);
         $undoReceipts = $actor instanceof User ? $this->receipts->availableForEvents($events, $actor) : [];
 
-        return $events->map(function (AuditEvent $event) use ($labels, $undoReceipts): array {
+        $rows = [];
+        foreach ($events as $event) {
             $actionKey = (string) $event->getAttribute('action');
             $entityType = (string) $event->getAttribute('entity_type');
             $entityId = (int) $event->getAttribute('entity_id');
@@ -521,7 +522,7 @@ final class AdminActivityFeed
                 ];
             }
 
-            return [
+            $rows[] = [
                 'id' => (int) $event->getKey(),
                 'action_key' => $actionKey,
                 'change' => $change,
@@ -553,7 +554,9 @@ final class AdminActivityFeed
                 'checkpoint_at' => $checkpoint?->getAttribute('published_at')?->format('Y-m-d H:i'),
                 'undo' => $undo,
             ];
-        })->values()->all();
+        }
+
+        return $rows;
     }
 
     /**
