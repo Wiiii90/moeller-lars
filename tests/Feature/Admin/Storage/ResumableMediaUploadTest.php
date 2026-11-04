@@ -39,8 +39,8 @@ afterEach(function (): void {
 /** One real image payload also exercises the canonical thumbnail and dedup owner. */
 function resumableTestImage(): string
 {
-    $path = UploadedFile::fake()->image('uploaded.jpg', 80, 64)->getRealPath();
-    $bytes = file_get_contents($path);
+    $upload = UploadedFile::fake()->image('uploaded.jpg', 80, 64);
+    $bytes = file_get_contents($upload->getRealPath());
     if (! is_string($bytes) || $bytes === '') {
         throw new RuntimeException('Could not prepare isolated upload fixture.');
     }
