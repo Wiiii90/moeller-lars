@@ -49,11 +49,11 @@ trait GalleryWorkspaceDirectUpload
         if (! $asset instanceof MediaAsset || ! $this->isGalleryPrimaryVisual($asset)) {
             throw ValidationException::withMessages(['media' => 'This media file is not a valid Artwork image or video.']);
         }
-        foreach ($this->pendingBatchArtworkMedia as $row) {
-            if ((int) ($row['media_asset_id'] ?? 0) === $assetId) {
-                return;
-            }
+        $pendingIds = array_map('intval', array_column($this->pendingBatchArtworkMedia, 'media_asset_id'));
+        if (in_array($assetId, $pendingIds, true)) {
+            return;
         }
+
         $this->pendingBatchArtworkMedia[] = $this->pendingBatchArtworkRow($asset);
     }
 
