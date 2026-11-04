@@ -55,7 +55,7 @@ final class HomePresentationSetting extends Model
         return is_array($mode) ? $mode : [];
     }
 
-    /** @return list<array<string, mixed>> */
+    /** @return list<mixed> Raw slots preserve original indexes for editorial actions. */
     public function components(HomeTemplate $template): array
     {
         $components = $this->modeConfiguration($template)['components'] ?? [];

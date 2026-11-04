@@ -49,7 +49,15 @@ trait CustomPageWorkspaceLifecycle
      */
     public function hydrate(): void
     {
-        foreach ($this->components as $component) {
+        if (! $this->hasCurrentComponentProjection($this->components)) {
+            $this->loadComponentProjection();
+        }
+    }
+
+    /** @param array<mixed> $components Hydrated browser snapshot. */
+    private function hasCurrentComponentProjection(array $components): bool
+    {
+        foreach ($components as $component) {
             if (! is_array($component)
                 || ! isset(
                     $component['target'], $component['content'],
@@ -59,9 +67,7 @@ trait CustomPageWorkspaceLifecycle
                 || ! array_key_exists('can_move_up', $component)
                 || ! array_key_exists('can_move_down', $component)
                 || ! is_array($component['children'] ?? null)) {
-                $this->loadComponentProjection();
-
-                return;
+                return false;
             }
 
             foreach ($component['children'] as $child) {
@@ -76,12 +82,12 @@ trait CustomPageWorkspaceLifecycle
                     )
                     || ! array_key_exists('can_move_up', $child)
                     || ! array_key_exists('can_move_down', $child)) {
-                    $this->loadComponentProjection();
-
-                    return;
+                    return false;
                 }
             }
         }
+
+        return true;
     }
 
     public function getBreadcrumbs(): array
