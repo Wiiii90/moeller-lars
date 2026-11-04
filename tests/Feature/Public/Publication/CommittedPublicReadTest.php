@@ -5,12 +5,14 @@ use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\General;
+use App\Models\MediaVariant;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 require_once __DIR__.'/../../Admin/Gallery/GalleryFixtures.php';
@@ -152,6 +154,8 @@ it('publishes a Gallery parent as a page even when it has child navigation', fun
 });
 
 it('publishes Artwork surface overrides only for their own Gallery detail pages', function (): void {
+    Storage::fake('publication-gallery-test');
+    config(['media.disk' => 'publication-gallery-test']);
     $actor = $this->actor;
 
     foreach (['public', 'committed'] as $schema) {
@@ -164,12 +168,24 @@ it('publishes Artwork surface overrides only for their own Gallery detail pages'
     $artworkA = galleryFixtureArtwork($first, ['state' => 'published', 'position' => 10]);
     $assetA = galleryFixtureAsset();
     galleryFixturePrimary($artworkA, $assetA);
-    galleryFixtureThumbnail($assetA);
 
     $artworkB = galleryFixtureArtwork($second, ['state' => 'published', 'position' => 10]);
     $assetB = galleryFixtureAsset();
     galleryFixturePrimary($artworkB, $assetB);
-    galleryFixtureThumbnail($assetB);
+    foreach ([$assetA, $assetB] as $asset) {
+        $key = 'gallery-thumbnail-'.$asset->getKey().'.webp';
+        $bytes = 'synthetic thumbnail '.$asset->getKey();
+        Storage::disk('publication-gallery-test')->put($key, $bytes);
+        MediaVariant::query()->create([
+            'media_asset_id' => $asset->getKey(),
+            'variant_kind' => 'thumbnail',
+            'storage_key' => $key,
+            'mime_type' => 'image/webp',
+            'byte_size' => strlen($bytes),
+            'sha256' => hash('sha256', $bytes),
+            'state' => 'available',
+        ]);
+    }
 
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'header_divider_mode' => 'fine',
