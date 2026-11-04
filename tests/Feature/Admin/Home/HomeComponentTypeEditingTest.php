@@ -3,12 +3,14 @@
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
 use App\Filament\Pages\HomePresentation;
+use App\Filament\Support\RichTextEditorPlugin;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
@@ -204,8 +206,11 @@ it('persists visual Rich Text as a Home component in both content modes and reop
 
     $saved = app(HomePresentationEditorialService::class)
         ->configuration($settings->fresh())[$template->value]['components'][0];
-    expect($saved['body'])->toBe($content);
-    Livewire::test(HomePresentation::class)
-        ->mountAction('editComponent', ['index' => 0, 'type' => 'text'])
-        ->assertActionDataSet(['body' => $content]);
+    $canonicalContent = '<p data-artist-line-spacing="1.15"><span data-color="#214365" class="color" style="--color: #214365; --dark-color: #214365">Home notes</span></p>';
+    expect($saved['body'])->toBe($canonicalContent);
+    $reopened = Livewire::test(HomePresentation::class)
+        ->mountAction('editComponent', ['index' => 0, 'type' => 'text']);
+    $rendered = RichContentRenderer::make($reopened->get('mountedActions.0.data.body'))
+        ->plugins([RichTextEditorPlugin::make()])->toHtml();
+    expect($rendered)->toBe($canonicalContent);
 })->with([HomeTemplate::Custom, HomeTemplate::UnderConstruction]);
