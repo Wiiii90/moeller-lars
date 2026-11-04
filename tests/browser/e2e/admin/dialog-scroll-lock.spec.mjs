@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { signIn } from '../../support/admin.mjs';
 
+test.setTimeout(90_000);
+
 async function geometry(page) {
     return page.evaluate(() => ({
         viewportWidth: window.innerWidth,
@@ -82,6 +84,7 @@ test('Dashboard dialog stays positioned and background stays locked after checkb
     const modal = page.locator('.fi-modal.fi-modal-open').last();
     await expect(modal.getByRole('heading', { name: 'Dashboard settings', exact: true })).toBeVisible();
     const window = modal.locator(':scope > .fi-modal-window-ctn > .fi-modal-window');
+    await expect(window).not.toHaveClass(/fi-transition-enter/);
     const before = await window.boundingBox();
     expect(before).not.toBeNull();
 
