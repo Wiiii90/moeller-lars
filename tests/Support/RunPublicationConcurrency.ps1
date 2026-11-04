@@ -94,6 +94,7 @@ try {
         $values.APP_URL = $browserUrl
         $values.PLAYWRIGHT_BASE_URL = $browserUrl
         $values.SESSION_DRIVER = 'file'
+        $values.BCRYPT_ROUNDS = '4'
         $values.MOELLER_LARS_BROWSER_PROFILE = '1'
         $values.PLAYWRIGHT_ADMIN_EMAIL = 'playwright-admin@example.test'
         $values.PLAYWRIGHT_ADMIN_PASSWORD = [guid]::NewGuid().ToString('N') + '!Aa7'
@@ -159,6 +160,10 @@ try {
             if (-not $ready) {
                 docker logs --tail 15 $browserServer
                 throw 'The isolated browser server did not become ready.'
+            }
+            $login = Invoke-WebRequest "$browserUrl/admin/login" -TimeoutSec 60
+            if ($login.StatusCode -ne 200 -or $login.Content -notmatch 'type="password"') {
+                throw 'The isolated Admin login form did not become ready.'
             }
             npm.cmd run test:browser -- @args
         } else {

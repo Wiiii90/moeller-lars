@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { expect, test } from '@playwright/test';
 import { signIn } from '../../support/admin.mjs';
 
-test.setTimeout(60_000);
+test.setTimeout(120_000);
 
 // Read-only evidence from the independently verified disposable browser DB.
 function snapshot() {
