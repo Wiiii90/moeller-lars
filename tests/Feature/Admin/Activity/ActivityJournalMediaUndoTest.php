@@ -8,8 +8,11 @@ use App\Models\AuditEvent;
 use App\Models\BlogPost;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 it('roundtrips a media-only Blog update as one atomic snapshot Undo', function (): void {
+    Storage::fake('activity-media-test');
+    config(['media.disk' => 'activity-media-test']);
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor);
 
@@ -37,15 +40,20 @@ it('roundtrips a media-only Blog update as one atomic snapshot Undo', function (
         'state' => 'available',
         'alt_text' => 'Replacement image',
     ]);
-    DB::table('media_variants')->insert([
-        'media_asset_id' => $replacementAssetId,
-        'variant_kind' => 'thumbnail',
-        'storage_key' => 'media/activity-undo-replacement-thumbnail.jpg',
-        'mime_type' => 'image/jpeg',
-        'byte_size' => 4,
-        'sha256' => hash('sha256', 'activity-undo-replacement-thumbnail'),
-        'state' => 'available',
-    ]);
+    foreach ([$originalAssetId, $replacementAssetId] as $assetId) {
+        $key = "media/activity-undo-thumbnail-{$assetId}.webp";
+        $bytes = 'synthetic thumbnail '.$assetId;
+        Storage::disk('activity-media-test')->put($key, $bytes);
+        DB::table('media_variants')->insert([
+            'media_asset_id' => $assetId,
+            'variant_kind' => 'thumbnail',
+            'storage_key' => $key,
+            'mime_type' => 'image/webp',
+            'byte_size' => strlen($bytes),
+            'sha256' => hash('sha256', $bytes),
+            'state' => 'available',
+        ]);
+    }
 
     $postId = (int) DB::table('blog_posts')->insertGetId([
         'site_section_id' => $sectionId,
