@@ -332,8 +332,7 @@ trait ManagesSitePageEditDialog
             foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
                 $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($id, $direction): void {
                     $this->moveSection($id, $direction);
-                    $this->dialogSectionCache = [];
-                    $this->replaceMountedAction('editPage', ['section' => $id]);
+                    $this->retargetPageEditor($id);
                 })->disabled(! $this->reorderEnabled || ! ($row['can_move_'.$direction] ?? false));
             }
         }
@@ -345,8 +344,7 @@ trait ManagesSitePageEditDialog
                 $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
                 function () use ($id): void {
                     $this->toggleSectionState($id);
-                    $this->dialogSectionCache = [];
-                    $this->replaceMountedAction('editPage', ['section' => $id]);
+                    $this->retargetPageEditor($id);
                 },
             );
         }
@@ -401,6 +399,13 @@ trait ManagesSitePageEditDialog
         }
 
         return (int) $value;
+    }
+
+    private function retargetPageEditor(int $sectionId): void
+    {
+        $this->dialogSectionCache = [];
+        $this->cacheAction($this->editPageAction());
+        $this->replaceMountedAction('editPage', ['section' => $sectionId]);
     }
 
     private function dialogDisplayPosition(SiteSection $section): int

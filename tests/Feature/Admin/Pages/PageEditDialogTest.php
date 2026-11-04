@@ -3,6 +3,7 @@
 use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionIdentityService;
+use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Pages\SitePages;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
@@ -148,6 +149,10 @@ it('reorders Pages through the mounted editor', function (): void {
     $first = $editorial->createCustomPage('First sibling', 'first-sibling');
     $second = $editorial->createCustomPage('Second sibling', 'second-sibling');
 
+    $order = app(SiteSectionOrderService::class);
+    $order->moveTo($first, null, 1);
+    $order->moveTo($second, null, 2);
+
     $dialog = Livewire::test(SitePages::class)
         ->mountAction('editPage', ['section' => $second->id])
         ->assertSet('mountedActions.0.name', 'editPage');
@@ -156,7 +161,7 @@ it('reorders Pages through the mounted editor', function (): void {
         ->assertHasNoErrors()
         ->assertSet('mountedActions.0.name', 'editPage')
         ->assertSet('mountedActions.0.arguments.section', $second->id)
-        ->assertSet('mountedActions.0.data.position', 1);
+        ->assertSet('mountedActions.0.data.position', 2);
     expect((int) $second->fresh()->position)->toBeLessThan((int) $first->fresh()->position);
     expect($dialog->instance()->getMountedAction()->getModalAction('dialogMoveUp')->isDisabled())->toBeTrue();
 
