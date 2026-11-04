@@ -1,13 +1,14 @@
 <div
     x-ref="richSpacingPanel"
     class="admin-rich-text-popover"
-    x-show="activeRichPanel === 'spacing'"
-    x-cloak
+    hidden
+    x-bind:hidden="activeRichPanel !== 'spacing'"
     x-on:change.stop
     x-bind:style="{ top: richPanelTop + 'px', left: richPanelLeft + 'px' }"
     x-on:click.outside="closeRichPanel('spacing')"
     x-on:keydown.escape.stop.prevent="closeRichPanel('spacing')"
     role="group"
+    tabindex="-1"
     aria-label="{{ __('Line spacing') }}"
 >
     @include('filament.schemas.components.rich-text-popover-header', [

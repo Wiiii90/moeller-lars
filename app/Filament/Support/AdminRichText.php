@@ -357,6 +357,7 @@ final class AdminRichText
                                     this.positionRichPanel(panel, anchor, kind)
                                     if (kind === 'link') this.richElement('richLinkUrl')?.focus({ preventScroll: true })
                                     if (kind === 'caption') this.richElement('richCaptionInput')?.focus({ preventScroll: true })
+                                    if (kind === 'color' || kind === 'spacing') panel.focus({ preventScroll: true })
                                     if (kind === 'image') panel.querySelector('.fi-select-input-btn')?.click()
                                 })
                             },
@@ -463,7 +464,7 @@ final class AdminRichText
                     'x-on:artist-rich-caption-toggle' => 'openCaptionEditor($event)',
                     'x-on:artist-rich-image-toggle' => 'toggleImagePicker($event)',
                     'x-on:artist-rich-image-inserted.window' => "closeRichPanel('image')",
-                    'x-on:keydown.escape.window' => 'closeRichPanel()',
+                    'x-on:keydown.escape.capture.window' => 'if (activeRichPanel !== null) { $event.preventDefault(); $event.stopImmediatePropagation(); closeRichPanel() }',
                 ])
                 ->columnSpanFull(),
         ];

@@ -1,13 +1,14 @@
 <div
     x-ref="richColorPanel"
     class="admin-rich-text-popover"
-    x-show="activeRichPanel === 'color'"
-    x-cloak
+    hidden
+    x-bind:hidden="activeRichPanel !== 'color'"
     x-on:change.stop
     x-bind:style="{ top: richPanelTop + 'px', left: richPanelLeft + 'px' }"
     x-on:click.outside="closeRichPanel('color')"
     x-on:keydown.escape.stop.prevent="closeRichPanel('color')"
     role="group"
+    tabindex="-1"
     aria-label="{{ __('Text color') }}"
 >
     @include('filament.schemas.components.rich-text-popover-header', [
