@@ -74,3 +74,11 @@ User-provided execution report, **not independently rerun by this chat**, at Tes
 - Verified 97 Unit cases, 43 JavaScript cases, 21 Migration cases, 4 focused checkpoint cases, 10 Publication concurrency cases, 3 Public Session concurrency cases, and 6 focused Apache media cases spanning Chromium and desktop/mobile WebKit. These are results at the tested checkpoints, not full qualification of a single final tree.
 - Windows lacked the necessary media commands. The isolated Linux runtime uses a read-only checkout, an independent runtime directory and an identified PostgreSQL 17.11 cluster. The isolated Apache browser setup uses the same file owner for seeding and serving.
 - Remaining: complete the Feature and final full-browser runs, resolve observed failures, complete PHPStan triage, and repeat all release checks on the exact stabilization candidate. No transfer to Dev, deployment, or GitHub workflow interaction.
+
+
+## Qualification evidence, 2026-11-04
+
+- Application and test candidate at 7e73000dde7b138b21167ab3b2c479d862dbf21b. Dev and the published Testing checkpoint remain unchanged.
+- Integration completed with 155 passed and 13 cases delegated to the two dedicated concurrency runners, which passed 10 and 3 respectively. The latest focused Gallery and General batch passed 57 cases.
+- The earlier full Feature run found 50 failures and 23 errors across 540 cases. It predates multiple fixture and application corrections. The full browser run finished with 42 passes and 22 failures, including a passing Chromium profiling case.
+- The local qualification report in storage/framework/testing/qualification-report.md lists commands, evidence and remaining failures. Final qualification and integration are open.
