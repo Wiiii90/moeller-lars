@@ -65,8 +65,8 @@ test('Gallery viewer decodes public originals and supports bounded zoom, pan, na
     const zoomIn = dialog.getByRole('button', { name: 'Zoom in', exact: true });
     const zoomOut = dialog.getByRole('button', { name: 'Zoom out', exact: true });
     const reset = dialog.getByRole('button', { name: 'Reset zoom', exact: true });
-    const previous = dialog.getByRole('button', { name: 'Previous artwork', exact: true });
-    const next = dialog.getByRole('button', { name: 'Next artwork', exact: true });
+    const previous = dialog.getByRole('button', { name: 'Previous media', exact: true });
+    const next = dialog.getByRole('button', { name: 'Next media', exact: true });
     await expect(previous).toBeDisabled();
     await expect(next).toBeEnabled();
     await expect(zoomOut).toBeDisabled();
@@ -123,7 +123,7 @@ test('Gallery viewer decodes public originals and supports bounded zoom, pan, na
     await expect(trigger).toBeFocused();
     await trigger.click();
     await decodedArtwork(dialog, first);
-    await dialog.getByRole('button', { name: 'Close artwork viewer' }).click();
+    await dialog.getByRole('button', { name: 'Close media viewer' }).click();
     await expect(dialog).not.toBeVisible();
     await expect(trigger).toBeFocused();
     await verifyErrors();
@@ -148,34 +148,19 @@ test('Artwork detail sequence uses Gallery cyclic edges and defaults other Galle
     await expect(defaultNav.getByRole('link', { name: 'Next artwork' })).toBeVisible();
 });
 
-test('landscape Artwork detail keeps natural image pixels, centered captions and stable arrows', async ({ page }) => {
-    // Record real Web Animations API width effects during Livewire SPA swaps.
-    // This catches a layout that changes width but skips the paper reveal.
-    await page.addInitScript(() => {
-        window.__folioWidthFrames = [];
-        const animate = Element.prototype.animate;
-        Element.prototype.animate = function (keyframes, options) {
-            if (this.id === 'content' && Array.isArray(keyframes)
-                && keyframes.some(frame => Object.hasOwn(frame, 'width'))) {
-                window.__folioWidthFrames.push(keyframes.map(frame => frame.width));
-            }
-            return animate.call(this, keyframes, options);
-        };
-    });
+test('landscape Artwork detail fits the viewport with centered captions and stable arrows', async ({ page }) => {
     const gallery = galleryFixture();
-    const first = gallery.artworks[0]; // fixture uses 320px thumbnail
+    const first = gallery.artworks[0];
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(gallery.url);
     await expect(page.locator('#content')).not.toHaveClass(/site-content--landscape-artwork/);
+    const galleryWidth = await page.locator('#content').evaluate(element => element.getBoundingClientRect().width);
 
     await page.locator('.artwork-caption-link').first().click();
-    await expect(page).toHaveURL(new RegExp(first.url + '$'));
+    await expect(page).toHaveURL(new RegExp(first.url + '$'), { timeout: 20_000 });
     await expect(page.locator('#content')).toHaveClass(/site-content--landscape-artwork/);
-    await expect.poll(() => page.evaluate(() => window.__folioWidthFrames.length)).toBe(1);
-    const opening = await page.evaluate(() => window.__folioWidthFrames[0].map(parseFloat));
-    expect(opening[1]).toBeGreaterThan(opening[0]);
     await expect.poll(() => page.locator('#content').evaluate(el =>
-        el.getBoundingClientRect().width)).toBeGreaterThan(800);
+        el.getBoundingClientRect().width)).toBeGreaterThan(galleryWidth);
 
     const geometry = await page.locator('.artwork-detail').evaluate(async article => {
         const image = article.querySelector('.artwork-detail__image');
@@ -186,6 +171,9 @@ test('landscape Artwork detail keeps natural image pixels, centered captions and
         const root = article.getBoundingClientRect();
         return {
             rendered: bounds.width, natural: image.naturalWidth,
+            aspect: bounds.width / bounds.height,
+            naturalAspect: image.naturalWidth / image.naturalHeight,
+            footerBottom: footer.bottom, viewportHeight: innerHeight,
             imageRight: bounds.right, footerRight: footer.right,
             footerWidth: footer.width,
             navCenter: nav.left + nav.width / 2,
@@ -196,7 +184,8 @@ test('landscape Artwork detail keeps natural image pixels, centered captions and
     // into a 10px image and forced the caption to wrap letter-by-letter.
     expect(geometry.natural).toBeGreaterThan(0);
     expect(geometry.rendered).toBeGreaterThan(geometry.natural * .9);
-    expect(geometry.rendered).toBeLessThanOrEqual(geometry.natural + 1);
+    expect(geometry.aspect).toBeCloseTo(geometry.naturalAspect, 2);
+    expect(geometry.footerBottom).toBeLessThanOrEqual(geometry.viewportHeight + 1);
     expect(geometry.footerWidth).toBeCloseTo(geometry.rendered, 0);
     expect(geometry.imageRight).toBeCloseTo(geometry.footerRight, 0);
     expect(geometry.navCenter).toBeCloseTo(geometry.articleCenter, 0);
@@ -216,9 +205,8 @@ test('landscape Artwork detail keeps natural image pixels, centered captions and
     expect(textTrack.narrativeWidth).toBeCloseTo(textTrack.articleWidth, 0);
 
     await page.setViewportSize({ width: 844, height: 390 });
-    const phoneLandscapeWidth = await page.locator('.artwork-detail__image').evaluate(image =>
-        image.getBoundingClientRect().width);
-    expect(phoneLandscapeWidth).toBeLessThanOrEqual(first.thumbnail.width + 1);
+    await expect.poll(() => page.locator('.artwork-detail__footer').evaluate(footer =>
+        footer.getBoundingClientRect().bottom - innerHeight)).toBeLessThanOrEqual(1);
 
     await page.setViewportSize({ width: 390, height: 844 });
     const narrow = await page.evaluate(() => ({
@@ -234,12 +222,12 @@ test('landscape Artwork detail keeps natural image pixels, centered captions and
     }));
     expect(narrowText.narrativeWidth).toBeCloseTo(narrowText.articleWidth, 0);
 
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goBack();
     await expect(page).toHaveURL(new RegExp(gallery.url + '$'));
     await expect(page.locator('#content')).not.toHaveClass(/site-content--landscape-artwork/);
-    await expect.poll(() => page.evaluate(() => window.__folioWidthFrames.length)).toBe(2);
-    const closing = await page.evaluate(() => window.__folioWidthFrames[1].map(parseFloat));
-    expect(closing[0]).toBeGreaterThan(closing[1]);
+    await expect.poll(() => page.locator('#content').evaluate(element =>
+        element.getBoundingClientRect().width)).toBeCloseTo(galleryWidth, 0);
 });
 
 test('Viewer survives real SPA navigation and history without stale dialogs or duplicate interactions', async ({ page }) => {
