@@ -69,9 +69,21 @@ async function changed(page, before, eventCount, expectedIds) {
 
 async function dragBefore(page, source, destination) {
     const target = card(page, destination);
+    const sourceHandle = handle(page, source);
+    await sourceHandle.scrollIntoViewIfNeeded();
+    const start = await sourceHandle.boundingBox();
     const box = await target.boundingBox();
+    expect(start).not.toBeNull();
     expect(box).not.toBeNull();
-    await handle(page, source).dragTo(target, { targetPosition: { x: box.width * 0.15, y: box.height * 0.25 } });
+    const x = start.x + start.width / 2;
+    const y = start.y + start.height / 2;
+    // Sortable's fallback needs a movement to start before the drop movement.
+    // These are real mouse events; mobile touch gestures need separate review.
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 10, y + 10, { steps: 5 });
+    await page.mouse.move(box.x + box.width * 0.15, box.y + box.height * 0.25, { steps: 10 });
+    await page.mouse.up();
 }
 
 test.beforeEach(async ({ page }) => {
