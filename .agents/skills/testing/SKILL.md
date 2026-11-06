@@ -47,7 +47,7 @@ The separate `testing` branch prepares the **eventual authoritative test suite**
 
 **Timing:** preparatory work may continue in small batches as Dev evolves. Repeated full-suite runs during that stage are wasteful and are not acceptance. Only the user-approved **Dev freeze** triggers exact non-test source parity verification and permitted final exhaustive qualification, followed by reviewed selective transfer. A test count or assertion count is never a source-coverage percentage and never a substitute for a demonstrated product behavior.
 
-## Mandatory isolation## Isolated Testing preview and manual product review
+## Isolated Testing preview and manual product review
 
 The user approves having the local Codex executor **prepare and start** an isolated preview of a pinned `testing` commit for review, even if a dedicated preview script or configuration must be added because the current `scripts/local-preview.ps1` is hardcoded to switch to `dev`. This is **local preview preparation, not deployment, CI or branch integration**. Keep the existing Dev preview and its persistent database/media untouched: use separate container/project names, ports, database volume, application storage, media, cache, sessions and temporary directories; never repurpose `moeller_lars_testing` or `moeller-lars_postgres_data`. Do not silently switch the main checkout branch or overwrite Dev containers or generated assets. Pin and display the exact source SHA; ensure the frontend bundle and PHP source are built from that same candidate. Review proposed script/config changes before accepting them.
 
