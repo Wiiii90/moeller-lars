@@ -9,6 +9,15 @@ description: Curate the single test suite on testing from cumulative dev changes
 
 Read `testing/AGENTS.md`, [the worker lifecycle](../../README.md), the existing [test strategy](../../../docs/operations/testing.md), `testing/tests/README.md` and `testing/tests/Pest.php` as relevant. A numbered Testing worker registers its role and active task **on testing**, not in the Docs roster. This method restores the durable principles of the retired root `TESTING_SKILL.md`; that old root file must **not** return. Registration is not blocked merely because a batched tree helper fails: follow the shared protocol's deterministic single-entry-tree fallback until the one guarded roster+worker commit is published or a real minimal write permission/network error is proven.
 
+## Accountable Testing Worker and delegated Codex executor
+
+The numbered Testing Worker is the **registered ChatGPT chat**, not its local Codex executor. Start each substantive user-facing answer with the registered identity (for example, **"Testing Worker 1"**). Testing Worker owns writing and maintaining the canonical tests, review of source/test changes, architectural consistency, acceptance assessment, and communication with the user. The helper only supplies the local environment for running authorized tests, gathering evidence/screenshots and executing bounded implementation where required.
+
+During the expressly authorized final stabilization exception, Codex may directly correct a **confirmed** application, test, fixture or harness defect without waiting for another chat round; this does not transfer ownership. The registered worker must review the actual changed files/diff, preserve security and concurrency checks, correct any unsound edits and correlate results to the tested commit before treating a helper checkpoint as accepted. Do not merely forward Codex's reports or ask the user to repeatedly supervise helper work. A failing test is evidence to investigate, not permission to change accepted product behavior or layout to satisfy an assertion.
+
+**Budget-conscious sequence:** Own and review the canonical test contracts first; delegate the genuinely local executable work. Correct and run narrowly targeted cases while stabilizing; request the full isolated qualification **once the focused candidate is ready**, rather than rerunning every broad suite after each small edit. The helper's inability to finish a complex redesign in one call does not justify unbounded analysis-only handoffs or declaring incomplete work accepted.
+
+
 ## Bounded cumulative-source procedure
 
 For an explicit end-to-end assignment, **continue automatically through subsequent already-authorized finite work batches after each result and report**; no interim success summary ends the assignment. Stop only on real completion, an external approval/blocker or insufficient safe session capacity, then preserve the exact resumable state. This follows the [shared continuous-work rule](../../README.md#continuous-work-and-integration-gates) and never authorizes unbounded audits, unsolicited exhaustive tests or CI polling.
@@ -37,6 +46,12 @@ The separate `testing` branch prepares the **eventual authoritative test suite**
 **Layer selection is deliberate:** pure logic to Unit, persisted domain/file/transaction behavior to Integration, user-facing HTTP/Filament/Livewire behavior and permission checks to Feature, real cutover contracts to Migration, JavaScript state/lifecycle to JavaScript, browser-only interactions to Chromium. Special Publication and Session races require their dedicated **real multi-process PostgreSQL** runners and positive isolation; ordinary in-memory feature tests cannot claim that coverage. Do not duplicate the same scenario at every layer just to increase counts.
 
 **Timing:** preparatory work may continue in small batches as Dev evolves. Repeated full-suite runs during that stage are wasteful and are not acceptance. Only the user-approved **Dev freeze** triggers exact non-test source parity verification and permitted final exhaustive qualification, followed by reviewed selective transfer. A test count or assertion count is never a source-coverage percentage and never a substitute for a demonstrated product behavior.
+
+## Mandatory isolation## Isolated Testing preview and manual product review
+
+The user approves having the local Codex executor **prepare and start** an isolated preview of a pinned `testing` commit for review, even if a dedicated preview script or configuration must be added because the current `scripts/local-preview.ps1` is hardcoded to switch to `dev`. This is **local preview preparation, not deployment, CI or branch integration**. Keep the existing Dev preview and its persistent database/media untouched: use separate container/project names, ports, database volume, application storage, media, cache, sessions and temporary directories; never repurpose `moeller_lars_testing` or `moeller-lars_postgres_data`. Do not silently switch the main checkout branch or overwrite Dev containers or generated assets. Pin and display the exact source SHA; ensure the frontend bundle and PHP source are built from that same candidate. Review proposed script/config changes before accepting them.
+
+The registered Testing Worker reviews the visual-impacting code differences and executor-run preview evidence; **the user performs the final manual visual acceptance** before any selective transfer. Browser emulator screenshots alone do not establish pixel/UX parity, and lack of a CSS file change does not imply an unchanged layout. Run this product review after a coherent candidate exists; it is not a prerequisite that justifies postponing the current focused defect fix.
 
 ## Mandatory isolation
 

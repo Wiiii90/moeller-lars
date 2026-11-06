@@ -23,3 +23,9 @@
 5. Before any Dev transfer, review UI-sensitive source changes for unintended behavior and arrange a **separate, isolated Testing preview** for manual visual acceptance. Do not let test-executor screenshots replace product acceptance.
 
 **Continuity:** This record replaces older lengthy, superseded investigative notes. Their exact evidence and history remain recoverable in preceding Git commits. The preceding chat's and local executor's reported tests are not newly rerun by this takeover.
+
+## User-approved preview review and execution discipline
+
+- The local Codex executor may prepare/run a separately isolated **Testing-only** preview at a pinned candidate SHA, including a dedicated script if necessary. The current `scripts/local-preview.ps1` forcibly checks out Dev and reuses the persistent Dev preview database/media; **do not invoke or repurpose it for Testing**. Preserve Dev preview and data, use separate project/containers/port/database/media and build assets from the same Testing SHA. This authorizes no remote Validation deployment, CI, production changes or Dev transfer.
+- Testing Worker 1 retains personal responsibility for **reviewing the Codex code/test changes** and the reported runtime evidence. The user, not the executor, ultimately accepts the visual product review. Focus limited Codex budget on necessary targeted verification and one stable final full run; avoid repeated full qualification cycles until the current fix is verified.
+

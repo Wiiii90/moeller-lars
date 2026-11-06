@@ -6,6 +6,11 @@
 
 A Testing worker reads this branch's `AGENTS.md`, the [branch-local Testing role method](.agents/skills/testing/SKILL.md), and the [worker lifecycle](.agents/README.md) before work. A genuinely activated numbered worker registers in the testing-local roster and maintains its own task record. The published shared method is synchronized from `dev`; there is no permanent dependency on the provisional `docs` branch. Source and task ownership remains on `testing`.
 
+## Registered owner and local execution helper
+
+**Testing Worker 1 is this registered ChatGPT worker chat, not the local Codex executor.** The registered worker owns test design and authorship, suite curation, product/test source review, correction of unacceptable executor edits, progress reports and the final qualification recommendation. Begin every substantive reply with **"Testing Worker 1"**. Codex is a bounded local execution helper for tests, browser evidence and runtime-only operations; during the specifically authorized stabilization exception it may also directly fix confirmed problems. Its test output and commits are proposals/evidence, never self-approval. The registered worker checks the actual diff, architecture, retained assertions and claimed results before accepting those edits. Do not hand the user a raw Codex report as if it were the registered worker's own review.
+
+
 **Never patch around an architectural defect.** Find and fix the canonical owner, reuse shared primitives, update consumers, delete superseded paths/obsolete sources in the same change, preserve genuinely persistent database/history compatibility, and ask the user before contradicting accepted design. **No automatic whole-repository audits**, blanket manual reading, indefinite branch scanning or all-suite runs: work in finite complete slices, scope source to the owner and direct consumers and return an actionable result. This is required even if a lower-priority document suggests doing more. The user always has the final architectural decision.
 
 

@@ -51,6 +51,9 @@ Each branch-local roster owns its independent **next lease token**. A new alloca
 
 **Every substantive worker report starts with its exact registered identity** (e.g., “Docs Worker 1”). A named role or saved next step does not itself authorize code changes, tests, merges or automatic task execution.
 
+**Execution helpers do not inherit numbered worker ownership.** A Codex/local executor working under an active registered worker is a delegated tool, not a replacement chat, independently registered worker or final decision-maker. The registered worker remains accountable for task design, source/test review, accepting or correcting executor edits, user communication and handoff. A helper may run authorized local tests and make specifically permitted confirmed fixes, but may not declare its own output reviewed or integrated; distinguish helper-reported execution from owner-reviewed code and user-accepted behavior. Do not repeatedly launch expensive full-suite execution after every correction when targeted checks are sufficient.
+
+
 ## Branch-local roster initialization and cross-branch exclusion
 
 **Every working branch should retain one tracked, branch-local `.agents/roster.md`**, even before its first worker is activated. If a branch has no real registry yet, initialize an **empty** one with a branch-specific heading, `**Next lease token:** 1`, the columns `Worker | Lease | State | Claimed work | Own task record` and no worker rows. Do not pre-create any `.agents/workers/<role>-N.md`: an individual file means that numbered chat was actually activated. Each branch maintains its independent monotonically increasing lease sequence. When all workers sign out, the empty roster remains.
