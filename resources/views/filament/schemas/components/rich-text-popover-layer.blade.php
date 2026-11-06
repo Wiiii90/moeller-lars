@@ -8,6 +8,7 @@
         @include('filament.schemas.components.rich-text-image-caption-picker')
         <div
             x-ref="richImagePicker"
+            data-rich-text-popover-key="{{ $getKey() }}"
             class="admin-rich-text-popover admin-rich-text-popover--storage"
             hidden
             x-bind:hidden="activeRichPanel !== 'image'"

@@ -3,13 +3,10 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\RichTextDocument;
-use App\Domain\Media\MediaPreviewVariant;
-use App\Models\MediaAsset;
+use App\Livewire\Admin\RichTextMediaPicker;
 use Filament\Forms\Components\RichEditor;
-use Filament\Forms\Components\RichEditor\EditorCommand;
-use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\View;
+use Filament\Schemas\Components\Livewire as LivewireComponent;
 
 final class AdminRichText
 {
@@ -78,57 +75,20 @@ final class AdminRichText
         // All tool popovers share one explicit, out-of-flow surface.
         // Filament may wrap schema components, but their order no longer
         // determines which elements are positioned over the editor.
-        $popovers = View::make('filament.schemas.components.rich-text-popover-layer')
+        $popovers = RichTextPopover::make('filament.schemas.components.rich-text-popover-layer')
+            ->key($editorKey.'-popovers')
+            ->statePath('__rich_opening_'.$name)
+            ->dehydrated(false)
             ->viewData(['allowEmbeddedMedia' => $allowEmbeddedMedia])
             ->liberatedFromContainerGrid();
 
         if ($allowEmbeddedMedia) {
-            $picker = MediaAssetSelect::makeId(
-                '__rich_image_'.$name,
-                'Image from Storage',
-                imagesOnly: true,
-            )
-                ->nullable()
-                ->dehydrated(false)
-                ->live()
-                ->afterStateUpdated(static function (mixed $state, Select $field) use ($editor): void {
-                    $id = filter_var($state, FILTER_VALIDATE_INT);
-                    if ($id === false || $id <= 0) {
-                        return;
-                    }
-
-                    $asset = MediaAsset::query()
-                        ->whereKey($id)
-                        ->where('state', 'available')
-                        ->where('mime_type', 'like', 'image/%')
-                        ->with('variants')
-                        ->firstOrFail();
-                    $variant = MediaPreviewVariant::imageThumbnail($asset);
-                    if ($variant === null) {
-                        return;
-                    }
-
-                    // Use the owning editor object from this shared schema.
-                    // The former root-schema search could resolve the wrong
-                    // component during Livewire morphs and break Edit dialogs.
-                    $editor->runCommands([
-                        EditorCommand::make('insertContent', arguments: [[
-                            'type' => 'image',
-                            'attrs' => [
-                                'id' => (string) $id,
-                                'src' => route('admin.media.variant', $variant),
-                                'alt' => (string) ($asset->getAttribute('alt_text') ?: ''),
-                            ],
-                        ]]),
-                    ]);
-
-                    $field->state(null);
-                    $field->getLivewire()->dispatch('artist-rich-image-inserted');
-                });
-
-            // Keep the canonical Filament Select in the same nested schema.
-            // It remains Livewire-owned and never becomes a second image picker.
-            $popovers->schema([$picker->hiddenLabel()]);
+            $popovers->schema(fn (RichTextPopover $component): array => [
+                LivewireComponent::make(RichTextMediaPicker::class, [
+                    'ownerId' => $component->getLivewire()->getId(),
+                    'editorKey' => $component->getKey(),
+                ])->key('media-picker'),
+            ]);
         }
 
         return [
@@ -142,6 +102,7 @@ final class AdminRichText
                     'x-data' => <<<'JS'
                         {
                             activeRichPanel: null,
+                            imageOpeningId: null,
                             richPanelLeft: 0,
                             richPanelTop: 0,
                             linkSelection: null,
@@ -343,7 +304,7 @@ final class AdminRichText
                             openRichPanel(kind, anchor) {
                                 this.closeRichPanel()
                                 this.activeRichPanel = kind
-                                this.$nextTick(() => {
+                                this.$nextTick(async () => {
                                     if (this.activeRichPanel !== kind) return
                                     const refs = {
                                         link: 'richLinkPanel',
@@ -358,12 +319,23 @@ final class AdminRichText
                                     if (kind === 'link') this.richElement('richLinkUrl')?.focus({ preventScroll: true })
                                     if (kind === 'caption') this.richElement('richCaptionInput')?.focus({ preventScroll: true })
                                     if (kind === 'color' || kind === 'spacing') panel.focus({ preventScroll: true })
-                                    if (kind === 'image') panel.querySelector('.fi-select-input-btn')?.click()
+                                    if (kind === 'image') {
+                                        const opening = this.imageOpeningId
+                                        const key = panel.dataset.richTextPopoverKey
+                                        const ready = await this.$wire.callSchemaComponentMethod(key, 'beginStorageSelection', { opening })
+                                        if (ready && this.activeRichPanel === 'image' && this.imageOpeningId === opening) {
+                                            panel.querySelector('.fi-select-input-btn')?.click()
+                                        }
+                                    }
                                 })
                             },
                             closeRichPanel(kind = null) {
                                 if (kind !== null && kind !== this.activeRichPanel) return
                                 if (this.activeRichPanel === 'image') {
+                                    const opening = this.imageOpeningId
+                                    const key = this.richElement('richImagePicker')?.dataset.richTextPopoverKey
+                                    this.imageOpeningId = null
+                                    if (opening && key) this.$wire.callSchemaComponentMethod(key, 'endStorageSelection', { opening })
                                     const input = this.richElement('richImagePicker')?.querySelector('.fi-select-input')
                                     const select = input ? window.Alpine?.$data(input)?.select : null
                                     if (select?.isOpen) select.closeDropdown()
@@ -447,7 +419,34 @@ final class AdminRichText
                                     return
                                 }
                                 const trigger = event.target.closest('.fi-fo-rich-editor-tool')
-                                if (trigger) this.openRichPanel('image', trigger)
+                                const editor = event.detail?.editor
+                                if (!trigger || !editor || editor.isDestroyed) return
+                                this.richShell().__artistRichEditor = editor
+                                this.openRichPanel('image', trigger)
+                                this.imageOpeningId = crypto.randomUUID()
+                                const picker = this.richElement('richImagePicker')?.querySelector('[data-rich-text-media-picker]')
+                                const child = picker?.closest('[wire\\:id]')
+                                if (!child) { this.closeRichPanel('image'); return }
+                                window.Livewire.find(child.getAttribute('wire:id')).$set('openingId', this.imageOpeningId, false)
+                            },
+                            async insertSelectedImage(event) {
+                                const shell = this.richShell()
+                                if (this.activeRichPanel !== 'image' || !shell?.isConnected
+                                    || event.target.closest('.admin-rich-text-editor-shell') !== shell
+                                    || event.detail?.opening !== this.imageOpeningId) return
+                                const opening = this.imageOpeningId
+                                const key = this.richElement('richImagePicker')?.dataset.richTextPopoverKey
+                                if (!key) return
+                                const attributes = await this.$wire.callSchemaComponentMethod(key, 'validateStorageImage', {
+                                    payload: event.detail.payload, opening,
+                                })
+                                const editor = shell.__artistRichEditor
+                                if (!attributes || !shell.isConnected || this.activeRichPanel !== 'image'
+                                    || this.imageOpeningId !== opening || !editor || editor.isDestroyed) return
+                                if (editor.chain().focus().insertContent({ type: 'image', attrs: attributes }).run()) {
+                                    this.commitEditorChange()
+                                    this.closeRichPanel('image')
+                                }
                             },
                         }
                         JS,
@@ -463,7 +462,7 @@ final class AdminRichText
                     'x-on:artist-rich-content-changed' => 'commitEditorChange()',
                     'x-on:artist-rich-caption-toggle' => 'openCaptionEditor($event)',
                     'x-on:artist-rich-image-toggle' => 'toggleImagePicker($event)',
-                    'x-on:artist-rich-image-inserted.window' => "closeRichPanel('image')",
+                    'x-on:artist-rich-media-selected' => 'insertSelectedImage($event)',
                     'x-on:keydown.escape.capture.window' => 'if (activeRichPanel !== null) { $event.preventDefault(); $event.stopImmediatePropagation(); closeRichPanel() }',
                 ])
                 ->columnSpanFull(),

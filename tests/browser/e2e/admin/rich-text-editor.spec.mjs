@@ -149,6 +149,70 @@ test('independent editors reject a genuinely stale Rich Text save', async ({ pag
     await otherPage.close();
 });
 
+test('closed picker openings and forged selections cannot insert an image', async ({ page }) => {
+    const { modal, shell, editable } = await openFreshEditor(page);
+    const picker = () => panel(modal, 'Image from Storage');
+    await shell.getByRole('button', { name: 'Insert image from Storage', exact: true }).click();
+    await expect(picker()).toBeVisible();
+
+    const validation = page.waitForResponse(response => {
+        try {
+            return response.request().postDataJSON().components.some(component => component.calls.some(call =>
+                call.method === 'callSchemaComponentMethod' && call.params[1] === 'validateStorageImage'));
+        } catch { return false; }
+    });
+    await picker().locator('[data-rich-text-media-picker]').evaluate(element => {
+        const shell = element.closest('.admin-rich-text-editor-shell');
+        const opening = window.Alpine.$data(shell).imageOpeningId;
+        element.dispatchEvent(new CustomEvent('artist-rich-media-selected', {
+            bubbles: true, detail: { opening, payload: 'forged' },
+        }));
+    });
+    expect((await validation).ok()).toBe(true);
+    await expect(editable.locator('img[data-id]')).toHaveCount(0);
+
+    let release;
+    let captured;
+    let delivered;
+    const held = new Promise(resolve => { release = resolve; });
+    const received = new Promise(resolve => { captured = resolve; });
+    const delivery = new Promise(resolve => { delivered = resolve; });
+    let intercepted = false;
+    const routeSelection = async route => {
+        let selection = false;
+        try {
+            selection = route.request().postDataJSON().components.some(component =>
+                Object.hasOwn(component.updates, 'mediaAssetId'));
+        } catch { /* Unrelated request. */ }
+        if (intercepted || !selection) return route.continue();
+        intercepted = true;
+        const response = await route.fetch();
+        captured();
+        await held;
+        await route.fulfill({ response });
+        delivered();
+    };
+    await page.route('**/livewire-*/update', routeSelection);
+    try {
+        await page.getByRole('option', { name: /browser-viewer-1\.jpg/ }).first().click();
+        await received;
+        await page.keyboard.press('Escape');
+        await expect(picker()).toBeHidden();
+        await shell.getByRole('button', { name: 'Insert image from Storage', exact: true }).click();
+        await expect(picker()).toBeVisible();
+        release();
+        await delivery;
+        await page.unroute('**/livewire-*/update', routeSelection);
+        await page.waitForLoadState('networkidle');
+        await expect(editable.locator('img[data-id]')).toHaveCount(0);
+        await page.getByRole('option', { name: /browser-viewer-1\.jpg/ }).first().click();
+        await expect(editable.locator('img[data-id]')).toHaveCount(1);
+    } finally {
+        release();
+        await page.unroute('**/livewire-*/update', routeSelection);
+    }
+});
+
 test('one Rich Text popover remains active; Escape, outside click and focus preserve the owning edit dialog', async ({ page }) => {
     const { modal, shell, editable } = await openFreshEditor(page);
     const scrollport = modal.locator('.fi-modal-content').first();
