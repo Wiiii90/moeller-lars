@@ -1,6 +1,6 @@
 # Testing worker instructions
 
-**Temporary final qualification exception:** Testing Worker 1 (lease 3) owns stabilization on `testing` and may correct confirmed application, migration, test, and test infrastructure defects there. The frozen `dev` tree is the baseline. Review each intentional divergence and qualify the resulting exact tree. Transfer the reviewed application and test changes selectively only after explicit approval, exclude branch-local records, and reverify the integrated tree. Existing isolation and architecture requirements still apply.
+**Temporary final qualification exception:** The Testing Worker 1 holding the active branch-local roster lease owns stabilization on `testing` and may correct confirmed application, migration, test, and test infrastructure defects there. The frozen `dev` tree is the baseline. Review each intentional divergence and qualify the resulting exact tree. Transfer the reviewed application and test changes selectively only after explicit approval, exclude branch-local records, and reverify the integrated tree. Existing isolation and architecture requirements still apply.
 
 ## Immediate numbered-worker bootstrap and non-negotiable method
 
