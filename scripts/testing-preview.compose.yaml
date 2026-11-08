@@ -1,0 +1,46 @@
+services:
+  preview:
+    image: moeller-lars-testing-preview:local
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: local-preview
+      args:
+        APP_GIT_SHA: ${TESTING_PREVIEW_SOURCE:?Missing qualified application commit}
+    ports:
+      - "127.0.0.1:8002:8080"
+    env_file:
+      - ${TESTING_PREVIEW_SHARED_ENV:?Missing existing local environment}
+    environment:
+      APP_ENV: local
+      APP_URL: http://127.0.0.1:8002
+      DB_CONNECTION: pgsql
+      DB_HOST: moeller-lars-postgres-1
+      DB_PORT: 5432
+      DB_DATABASE: moeller_lars_testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${TESTING_PREVIEW_SHARED_DB_PASSWORD:?Missing existing database password}
+      DB_URL: ""
+      CACHE_STORE: file
+      SESSION_DRIVER: file
+      SESSION_COOKIE: moeller_testing_preview_session
+      MEDIA_DISK: local
+      MATOMO_TRACKING_ENABLED: "false"
+      MATOMO_REPORTING_ENABLED: "false"
+      MOELLER_LARS_PERSISTENT_PREVIEW: "1"
+    volumes:
+      - storage:/var/www/html/storage
+      - ${TESTING_PREVIEW_MEDIA_PATH:?Missing existing media path}:/var/www/html/storage/app/private:ro
+    networks:
+      - default
+      - shared_database
+    entrypoint: ["docker-php-entrypoint"]
+    command: ["apache2-foreground"]
+
+volumes:
+  storage:
+
+networks:
+  shared_database:
+    external: true
+    name: moeller-lars_default
