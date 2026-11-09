@@ -39,7 +39,13 @@ test('General Preview stays mounted through Title saves and reloads with persist
     })).toBe(true);
   };
 
-  await chooseAndKeepFrame(visible, originalVisibility === '1' ? '0' : '1');
+  // Make Title visible before checking reduction, then exercise both
+  // directions. The first step is conditional so no unchanged selection is
+  // mistaken for an autosave that should issue a Livewire request.
+  if (originalVisibility === '0') {
+    await chooseAndKeepFrame(visible, '1');
+  }
+  await chooseAndKeepFrame(visible, '0');
   await chooseAndKeepFrame(visible, '1');
 
   const reduction = titleFields.getByRole('combobox', { name: 'Responsive size', exact: true });
@@ -47,7 +53,26 @@ test('General Preview stays mounted through Title saves and reloads with persist
   await chooseAndKeepFrame(reduction, originalReduction === '1' ? '0' : '1');
   await chooseAndKeepFrame(reduction, originalReduction);
 
-  await chooseAndKeepFrame(visible, originalVisibility);
+  await stage.getByRole('button', { name: 'Menu', exact: true }).click();
+  const divider = stage.locator('[data-appearance-panel="menu"]')
+    .getByRole('combobox', { name: 'Menu to page', exact: true });
+  const originalDivider = await divider.inputValue();
+  await chooseAndKeepFrame(divider, originalDivider === 'full' ? 'fine' : 'full');
+  await chooseAndKeepFrame(divider, originalDivider);
+
+  // Local tabs and expanded Stage controls must not remount the iframe.
+  await stage.getByRole('button', { name: 'More space' }).click();
+  for (const tab of ['Page', 'Global', 'Title']) {
+    await stage.getByRole('button', { name: tab, exact: true }).click();
+  }
+  await stage.getByRole('button', { name: 'Less space' }).click();
+  await expect.poll(() => page.evaluate(() =>
+    document.querySelector('.general-appearance-stage__preview iframe') === window.__generalBrowserFrame
+  )).toBe(true);
+
+  if (originalVisibility === '0') {
+    await chooseAndKeepFrame(visible, '0');
+  }
   await page.reload();
   await stage.getByRole('button', { name: 'Title', exact: true }).click();
   await expect(visible).toHaveValue(originalVisibility);
