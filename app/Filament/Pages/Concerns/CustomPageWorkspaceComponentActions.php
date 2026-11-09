@@ -3,7 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
-use App\Domain\Admin\AdminWorkflowPreferences;
+use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -213,7 +213,7 @@ trait CustomPageWorkspaceComponentActions
             ->label('Add component')
             ->fillForm(fn (): array => [
                 'type' => 'text',
-                'publication_state' => app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::CUSTOM_PAGE)
+                'publication_state' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::CUSTOM_PAGE)
                     ? 'published' : 'unpublished',
                 'image_decorative' => false,
                 'variant' => 'thin',
@@ -800,10 +800,6 @@ trait CustomPageWorkspaceComponentActions
             'Delete component?',
             submitLabel: 'Delete',
             danger: true,
-            condition: fn (array $arguments): bool => app(AdminWorkflowPreferences::class)->requiresDeletionConfirmation(
-                AdminWorkflowPreferences::CUSTOM_PAGE,
-                $this->pageComponentDeletionHasCascade($arguments),
-            ),
         );
     }
 
@@ -848,10 +844,6 @@ trait CustomPageWorkspaceComponentActions
             'Delete items?',
             submitLabel: 'Delete',
             danger: true,
-            condition: fn (): bool => app(AdminWorkflowPreferences::class)->requiresDeletionConfirmation(
-                AdminWorkflowPreferences::CUSTOM_PAGE,
-                $this->selectedPageComponentsHaveCascade(),
-            ),
         );
     }
 

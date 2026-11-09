@@ -3,7 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
-use App\Domain\Admin\AdminWorkflowPreferences;
+use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\GalleryPresentation;
@@ -44,7 +44,7 @@ trait GalleryWorkspaceUploadSettings
                     'show_media_credits' => GalleryPresentation::showMediaCredits($gallery),
                     'show_media_copyright' => GalleryPresentation::showMediaCopyright($gallery),
                     'caption_layout' => GalleryPresentation::captionLayout($gallery),
-                    'auto_publish_new_artworks' => app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::GALLERY),
+                    'auto_publish_new_artworks' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::GALLERY),
                 ];
             })
             ->schema([
@@ -81,8 +81,8 @@ trait GalleryWorkspaceUploadSettings
                             ->helperText('Only available media with suitable ALT text and a published Gallery can be published. If the checks fail, creation is rejected without keeping a partial draft.')
                             ->live()
                             ->afterStateUpdated(static function (mixed $state): void {
-                                if (app(AdminWorkflowPreferences::class)->updateAutoPublish(
-                                    AdminWorkflowPreferences::GALLERY, (bool) $state,
+                                if (app(AdminAutoPublishPreferences::class)->update(
+                                    AdminAutoPublishPreferences::GALLERY, (bool) $state,
                                 )) {
                                     app(AdminNotifier::class)->notification(title: 'Gallery settings saved', status: 'success');
                                 }
@@ -189,10 +189,10 @@ trait GalleryWorkspaceUploadSettings
                 $this->loadGallery((int) $gallery->getKey());
                 $this->loadMoveTargets();
                 $this->refreshWorkspaceAfterMutation();
-                $preferenceChanged = app(AdminWorkflowPreferences::class)->updateAutoPublish(
-                    AdminWorkflowPreferences::GALLERY,
+                $preferenceChanged = app(AdminAutoPublishPreferences::class)->update(
+                    AdminAutoPublishPreferences::GALLERY,
                     (bool) ($data['auto_publish_new_artworks']
-                        ?? app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::GALLERY)),
+                        ?? app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::GALLERY)),
                 );
                 if ($changed || $preferenceChanged) {
                     app(AdminNotifier::class)->notification(

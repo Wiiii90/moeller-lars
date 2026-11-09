@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Domain\Admin\AdminWorkflowPreferences;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\DashboardFeed;
 use App\Domain\Admin\DashboardFeedPins;
@@ -344,19 +343,16 @@ final class Dashboard extends Page
                 $user->forceFill([
                     'dashboard_notification_filter' => $this->notificationFilter,
                     'dashboard_notification_retention' => $retention,
+                    'dashboard_delete_without_confirmation' => (bool) ($data['delete_without_confirmation'] ?? false),
                 ]);
-                $dashboardChanged = $user->isDirty();
-                if ($dashboardChanged) {
-                    $user->save();
-                    app(DashboardNotificationRetention::class)->pruneFor($user);
+                if (! $user->isDirty()) {
+                    return false;
                 }
 
-                $deletionChanged = app(AdminWorkflowPreferences::class)->updateDeletion(
-                    AdminWorkflowPreferences::DASHBOARD,
-                    (bool) ($data['delete_without_confirmation'] ?? false),
-                );
+                $user->save();
+                app(DashboardNotificationRetention::class)->pruneFor($user);
 
-                return $dashboardChanged || $deletionChanged;
+                return true;
             });
 
             $this->refreshFeedFromFirstPage();
@@ -375,7 +371,7 @@ final class Dashboard extends Page
                     return [
                         'notification_filter' => $this->notificationFilter,
                         'notification_retention' => app(DashboardNotificationRetention::class)->limitFor($user instanceof User ? $user : 0),
-                        'delete_without_confirmation' => app(AdminWorkflowPreferences::class)->deletionWithoutConfirmation(AdminWorkflowPreferences::DASHBOARD),
+                        'delete_without_confirmation' => (bool) $user?->getAttribute('dashboard_delete_without_confirmation'),
                     ];
                 })
                 ->schema([
@@ -717,7 +713,7 @@ final class Dashboard extends Page
 
     private function deleteWithoutConfirmation(): bool
     {
-        return app(AdminWorkflowPreferences::class)->deletionWithoutConfirmation(AdminWorkflowPreferences::DASHBOARD);
+        return (bool) auth()->user()?->getAttribute('dashboard_delete_without_confirmation');
     }
 
     private function confirmationAction(Action $action, string $heading): Action
@@ -732,8 +728,7 @@ final class Dashboard extends Page
             heading: $heading,
             submitLabel: 'Delete',
             danger: true,
-            condition: fn (): bool => app(AdminWorkflowPreferences::class)
-                ->requiresDeletionConfirmation(AdminWorkflowPreferences::DASHBOARD, false),
+            condition: fn (): bool => ! $this->deleteWithoutConfirmation(),
         );
     }
 }

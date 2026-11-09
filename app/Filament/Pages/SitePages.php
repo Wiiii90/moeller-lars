@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Domain\Admin\AdminWorkflowPreferences;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\HomePresentationResolver;
@@ -357,10 +356,6 @@ final class SitePages extends Page
             description: 'The page is removed only when publication, child-page and content safety rules allow it.',
             submitLabel: 'Delete',
             danger: true,
-            condition: fn (array $arguments): bool => app(AdminWorkflowPreferences::class)->requiresDeletionConfirmation(
-                AdminWorkflowPreferences::PAGES,
-                $this->pageDeletionHasCascadingEffects((int) ($arguments['section'] ?? 0)),
-            ),
         );
     }
 
@@ -376,33 +371,7 @@ final class SitePages extends Page
             description: 'Only selected pages that satisfy the current safety rules are removed. Blocked pages are kept.',
             submitLabel: 'Delete',
             danger: true,
-            condition: fn (): bool => app(AdminWorkflowPreferences::class)->requiresDeletionConfirmation(
-                AdminWorkflowPreferences::PAGES,
-                $this->selectedPagesHaveCascadingEffects(),
-            ),
         );
-    }
-
-    private function pageDeletionHasCascadingEffects(int $sectionId): bool
-    {
-        // Only a hidden, childless Group Node deletes one editorial record.
-        // Gallery, Journal and Custom Page own linked configuration/content.
-        $section = $sectionId > 0 ? SiteSection::query()->find($sectionId) : null;
-        if (! $section instanceof SiteSection
-            || $section->nodeType() !== SiteSectionType::NavigationNode
-            || (string) $section->getAttribute('state') !== 'hidden') {
-            return true;
-        }
-
-        return SiteSection::query()->where('parent_id', $sectionId)->exists();
-    }
-
-    private function selectedPagesHaveCascadingEffects(): bool
-    {
-        $sections = $this->selectedSections();
-
-        return $sections->isEmpty()
-            || $sections->contains(fn (SiteSection $section): bool => $this->pageDeletionHasCascadingEffects((int) $section->getKey()));
     }
 
     private function deleteSection(int $sectionId): void

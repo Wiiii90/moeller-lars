@@ -3,7 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
-use App\Domain\Admin\AdminWorkflowPreferences;
+use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
@@ -57,7 +57,7 @@ trait GalleryWorkspaceArtworkDialogs
                     $data['slug'] = Str::slug((string) ($data['title'] ?? ''));
                 }
                 $payload = $this->normalizeArtworkFormData($data);
-                $autoPublish = app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::GALLERY);
+                $autoPublish = app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::GALLERY);
                 DB::transaction(function () use ($payload, $asset, $data, $autoPublish): void {
                     $artwork = app(ArtworkDraftService::class)->create($payload);
                     if ($asset instanceof MediaAsset) {
@@ -94,7 +94,7 @@ trait GalleryWorkspaceArtworkDialogs
 
         return AdminDialog::create(
             $action,
-            app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::GALLERY) ? 'Create and publish' : 'Create draft',
+            app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::GALLERY) ? 'Create and publish' : 'Create draft',
             AdminDialogSize::Large,
         );
     }

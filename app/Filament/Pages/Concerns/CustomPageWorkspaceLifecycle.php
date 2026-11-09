@@ -3,7 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
-use App\Domain\Admin\AdminWorkflowPreferences;
+use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\Controls\AdminControl;
@@ -181,8 +181,7 @@ trait CustomPageWorkspaceLifecycle
                     'slug' => (string) $section->getAttribute('slug'),
                     'publication_state' => (string) $section->getAttribute('state') === 'published' ? 'published' : 'unpublished',
                     'parent_id' => $section->getAttribute('parent_id'),
-                    'auto_publish_new_components' => app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::CUSTOM_PAGE),
-                    'delete_without_confirmation' => app(AdminWorkflowPreferences::class)->deletionWithoutConfirmation(AdminWorkflowPreferences::CUSTOM_PAGE),
+                    'auto_publish_new_components' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::CUSTOM_PAGE),
                 ];
             })
             ->schema([
@@ -214,18 +213,8 @@ trait CustomPageWorkspaceLifecycle
                         AdminControl::toggle('auto_publish_new_components', 'Auto-publish new components')
                             ->live()
                             ->afterStateUpdated(function (mixed $state): void {
-                                if (app(AdminWorkflowPreferences::class)->updateAutoPublish(
-                                    AdminWorkflowPreferences::CUSTOM_PAGE, (bool) $state,
-                                )) {
-                                    app(AdminNotifier::class)->notification(title: 'Page settings saved', status: 'success');
-                                }
-                            }),
-                        AdminControl::toggle('delete_without_confirmation', 'Delete simple components without confirmation')
-                            ->helperText('Only top-level Dividers can be deleted directly. Images, nested content and other components always require confirmation.')
-                            ->live()
-                            ->afterStateUpdated(function (mixed $state): void {
-                                if (app(AdminWorkflowPreferences::class)->updateDeletion(
-                                    AdminWorkflowPreferences::CUSTOM_PAGE, (bool) $state,
+                                if (app(AdminAutoPublishPreferences::class)->update(
+                                    AdminAutoPublishPreferences::CUSTOM_PAGE, (bool) $state,
                                 )) {
                                     app(AdminNotifier::class)->notification(title: 'Page settings saved', status: 'success');
                                 }

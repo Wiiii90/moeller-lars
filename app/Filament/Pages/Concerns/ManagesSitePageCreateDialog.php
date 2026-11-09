@@ -6,7 +6,7 @@ use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SitePageHeading;
-use App\Domain\Admin\AdminWorkflowPreferences;
+use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\AdminIcon;
@@ -165,7 +165,7 @@ trait ManagesSitePageCreateDialog
      */
     private function publishNewPageIfConfigured(SiteSection $section): SiteSection
     {
-        if (! app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::PAGES)) {
+        if (! app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::PAGES)) {
             return $section;
         }
 

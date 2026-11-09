@@ -3,7 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminNotifier;
-use App\Domain\Admin\AdminWorkflowPreferences;
+use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Artwork\ArtworkDate;
 use App\Domain\Artwork\GalleryEditorialService;
@@ -505,7 +505,7 @@ final class HomePresentation extends Page
                 'legal_disclaimer' => ['type' => 'legal_disclaimer'],
                 default => throw ValidationException::withMessages(['kind' => 'Choose a supported Home component.']),
             };
-            $component['published'] = app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::HOME);
+            $component['published'] = app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::HOME);
             app(HomePresentationEditorialService::class)->addComponent($this->settings(), $this->componentTemplate(), $component);
             $this->reloadWorkspace();
             app(AdminNotifier::class)->notification(
@@ -745,42 +745,6 @@ final class HomePresentation extends Page
         );
     }
 
-    private function homeComponentDeletionHasCascade(array $arguments): bool
-    {
-        $index = $arguments['index'] ?? null;
-        if (! is_numeric($index) || ($arguments['type'] ?? null) !== 'divider') {
-            return true;
-        }
-
-        $block = $this->settings()->components($this->componentTemplate())[(int) $index] ?? null;
-
-        return ! is_array($block) || ($block['type'] ?? null) !== 'divider';
-    }
-
-    private function selectedHomeComponentsHaveCascade(): bool
-    {
-        try {
-            $parents = $this->selectedComponentTargetData();
-            $children = $this->selectedHomeChildTargetData();
-        } catch (ValidationException) {
-            return true;
-        }
-
-        if ($children !== [] || $parents === []) {
-            return true;
-        }
-
-        $blocks = $this->settings()->components($this->componentTemplate());
-        foreach ($parents as $target) {
-            $block = $blocks[$target['index']] ?? null;
-            if ($target['type'] !== 'divider' || ! is_array($block) || ($block['type'] ?? null) !== 'divider') {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public function removeComponentAction(): Action
     {
         return AdminDialog::confirm(
@@ -789,10 +753,6 @@ final class HomePresentation extends Page
             description: 'The component is removed from this Home template. Other template configurations are unchanged.',
             submitLabel: 'Delete',
             danger: true,
-            condition: fn (array $arguments): bool => app(AdminWorkflowPreferences::class)->requiresDeletionConfirmation(
-                AdminWorkflowPreferences::HOME,
-                $this->homeComponentDeletionHasCascade($arguments),
-            ),
         )->action(function (array $arguments): void {
             $component = $this->componentFromArguments($arguments);
             app(HomePresentationEditorialService::class)->deleteComponent(
@@ -813,10 +773,6 @@ final class HomePresentation extends Page
             heading: 'Delete components?',
             submitLabel: 'Delete',
             danger: true,
-            condition: fn (): bool => app(AdminWorkflowPreferences::class)->requiresDeletionConfirmation(
-                AdminWorkflowPreferences::HOME,
-                $this->selectedHomeComponentsHaveCascade(),
-            ),
         )->action(function (): void {
             $targets = $this->selectedComponentTargetData();
             $children = $this->selectedHomeChildTargetData();

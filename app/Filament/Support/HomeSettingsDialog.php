@@ -3,7 +3,7 @@
 namespace App\Filament\Support;
 
 use App\Domain\Admin\AdminNotifier;
-use App\Domain\Admin\AdminWorkflowPreferences;
+use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Content\HomeHeroCandidate;
 use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomeHeroResolver;
@@ -62,8 +62,7 @@ final class HomeSettingsDialog
             'public_site_gate' => (bool) ($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? false),
             ...$this->routingDialog->fill($settings),
             'show_in_navigation' => (bool) $section->getAttribute('show_in_navigation'),
-            'auto_publish_new_components' => app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::HOME),
-            'delete_without_confirmation' => app(AdminWorkflowPreferences::class)->deletionWithoutConfirmation(AdminWorkflowPreferences::HOME),
+            'auto_publish_new_components' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::HOME),
             ...SitePageHeading::formState($section),
         ];
     }
@@ -172,19 +171,8 @@ final class HomeSettingsDialog
                         ->visible(fn (callable $get): bool => $get('template') !== HomeTemplate::Artwork->value)
                         ->live()
                         ->afterStateUpdated(static function (mixed $state): void {
-                            if (app(AdminWorkflowPreferences::class)->updateAutoPublish(
-                                AdminWorkflowPreferences::HOME, (bool) $state,
-                            )) {
-                                app(AdminNotifier::class)->notification(title: 'Home settings saved', status: 'success');
-                            }
-                        }),
-                    AdminControl::toggle('delete_without_confirmation', 'Delete simple components without confirmation')
-                        ->helperText('Only top-level Dividers can be deleted directly. Nested or media-related components always require confirmation.')
-                        ->visible(fn (callable $get): bool => $get('template') !== HomeTemplate::Artwork->value)
-                        ->live()
-                        ->afterStateUpdated(static function (mixed $state): void {
-                            if (app(AdminWorkflowPreferences::class)->updateDeletion(
-                                AdminWorkflowPreferences::HOME, (bool) $state,
+                            if (app(AdminAutoPublishPreferences::class)->update(
+                                AdminAutoPublishPreferences::HOME, (bool) $state,
                             )) {
                                 app(AdminNotifier::class)->notification(title: 'Home settings saved', status: 'success');
                             }
@@ -260,14 +248,10 @@ final class HomeSettingsDialog
         $section = $this->homeSection($settings);
         $section = app(SiteSectionEditorialService::class)->updatePlacement($section, 'published', null);
 
-        $preferences = app(AdminWorkflowPreferences::class);
-        $changed = $preferences->updateAutoPublish(
-            AdminWorkflowPreferences::HOME,
-            (bool) ($data['auto_publish_new_components'] ?? $preferences->autoPublish(AdminWorkflowPreferences::HOME)),
-        ) || $changed;
-        $changed = $preferences->updateDeletion(
-            AdminWorkflowPreferences::HOME,
-            (bool) ($data['delete_without_confirmation'] ?? $preferences->deletionWithoutConfirmation(AdminWorkflowPreferences::HOME)),
+        $preferences = app(AdminAutoPublishPreferences::class);
+        $changed = $preferences->update(
+            AdminAutoPublishPreferences::HOME,
+            (bool) ($data['auto_publish_new_components'] ?? $preferences->enabled(AdminAutoPublishPreferences::HOME)),
         ) || $changed;
 
         return $section->wasChanged(['state', 'parent_id', 'position']) || $changed;

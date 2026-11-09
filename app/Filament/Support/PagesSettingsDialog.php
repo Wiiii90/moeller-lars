@@ -2,7 +2,7 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Admin\AdminWorkflowPreferences;
+use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\Controls\AdminControl;
@@ -21,15 +21,14 @@ final class PagesSettingsDialog
         private readonly HomeRoutingDialog $homeRouting,
     ) {}
 
-    /** @return array{navigation_nesting_enabled:bool,navigation_hover_preview:bool,skip_home:bool,skip_target_section_id:?int,pages_auto_publish:bool,pages_delete_without_confirmation:bool} */
+    /** @return array{navigation_nesting_enabled:bool,navigation_hover_preview:bool,skip_home:bool,skip_target_section_id:?int,pages_auto_publish:bool} */
     public function fill(): array
     {
         return [
             'navigation_nesting_enabled' => PublicContentSetting::navigationNestingEnabled(),
             'navigation_hover_preview' => (bool) PublicContentSetting::general()->getAttribute('navigation_hover_preview'),
             ...$this->homeRouting->fill(),
-            'pages_auto_publish' => app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::PAGES),
-            'pages_delete_without_confirmation' => app(AdminWorkflowPreferences::class)->deletionWithoutConfirmation(AdminWorkflowPreferences::PAGES),
+            'pages_auto_publish' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::PAGES),
         ];
     }
 
@@ -48,7 +47,6 @@ final class PagesSettingsDialog
                     'skip_home' => $get('skip_home'),
                     'skip_target_section_id' => $get('skip_target_section_id'),
                     'pages_auto_publish' => $get('pages_auto_publish'),
-                    'pages_delete_without_confirmation' => $get('pages_delete_without_confirmation'),
                 ]);
             };
 
@@ -65,12 +63,8 @@ final class PagesSettingsDialog
         }
 
         $autoPublish = AdminControl::toggle('pages_auto_publish', 'Auto-publish new pages')->live();
-        $deleteWithoutConfirmation = AdminControl::toggle('pages_delete_without_confirmation', 'Skip confirmation for simple page deletions')
-            ->helperText('Linked content always requires confirmation. Only empty, unpublished Group Nodes can be deleted directly.')
-            ->live();
         if ($onToggleUpdated !== null) {
             $autoPublish->afterStateUpdated($onToggleUpdated);
-            $deleteWithoutConfirmation->afterStateUpdated($onToggleUpdated);
         }
 
         return [
@@ -81,7 +75,6 @@ final class PagesSettingsDialog
                     $hoverPreview,
                     Group::make($this->homeRouting->schema($onToggleUpdated)),
                     $autoPublish,
-                    $deleteWithoutConfirmation,
                 ]),
         ];
     }
@@ -105,18 +98,13 @@ final class PagesSettingsDialog
                 'navigation_hover_preview' => (bool) ($data['navigation_hover_preview'] ?? $settings->getAttribute('navigation_hover_preview')),
             ]);
 
-            $deletionChanged = app(AdminWorkflowPreferences::class)->updateDeletion(
-                AdminWorkflowPreferences::PAGES,
-                (bool) ($data['pages_delete_without_confirmation'] ?? app(AdminWorkflowPreferences::class)->deletionWithoutConfirmation(AdminWorkflowPreferences::PAGES)),
-            );
-
-            $publishChanged = app(AdminWorkflowPreferences::class)->updateAutoPublish(
-                AdminWorkflowPreferences::PAGES,
-                (bool) ($data['pages_auto_publish'] ?? app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::PAGES)),
+            $publishChanged = app(AdminAutoPublishPreferences::class)->update(
+                AdminAutoPublishPreferences::PAGES,
+                (bool) ($data['pages_auto_publish'] ?? app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::PAGES)),
             );
 
             return $updated->wasChanged(['navigation_nesting_enabled', 'navigation_hover_preview'])
-                || $changed || $deletionChanged || $publishChanged;
+                || $changed || $publishChanged;
         });
     }
 }
