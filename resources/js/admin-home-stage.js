@@ -16,14 +16,14 @@ export function adminHomeHeroStage(config = {}) {
     const intervalDays = Math.max(1, Number(config.rotationCount) || 1)
         * (config.rotationUnit === 'weeks' ? 7 : 1);
     const sampledAt = new Date(config.sampledAt);
-    const nextAt = new Date(config.nextRotationAt);
+    const nextAt = config.nextRotationAt ? new Date(config.nextRotationAt) : null;
 
     return {
         rows,
         strategy: config.strategy,
         activeIndex: initialIndex,
         simulatedAt: Number.isFinite(sampledAt.getTime()) ? sampledAt : new Date(),
-        nextAt: Number.isFinite(nextAt.getTime()) ? nextAt : null,
+        nextAt: nextAt && Number.isFinite(nextAt.getTime()) ? nextAt : null,
         timer: null,
         get activeId() { return this.rows[this.activeIndex]?.id ?? null; },
         get active() { return this.rows[this.activeIndex] ?? null; },
