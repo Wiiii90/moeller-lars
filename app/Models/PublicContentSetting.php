@@ -118,7 +118,6 @@ use LogicException;
     'public_content_padding',
     'navigation_nesting_enabled',
     'navigation_hover_preview',
-    'pages_auto_publish',
 ])]
 #[Guarded(['id', 'scope'])]
 class PublicContentSetting extends Model
@@ -177,7 +176,6 @@ class PublicContentSetting extends Model
             'public_content_padding' => 'integer',
             'navigation_nesting_enabled' => 'boolean',
             'navigation_hover_preview' => 'boolean',
-            'pages_auto_publish' => 'boolean',
         ];
     }
 
@@ -213,11 +211,6 @@ class PublicContentSetting extends Model
         $value = self::general()->getAttribute('navigation_nesting_enabled');
 
         return $value === null ? true : (bool) $value;
-    }
-
-    public static function pagesAutoPublish(): bool
-    {
-        return (bool) self::general()->getAttribute('pages_auto_publish');
     }
 
     /** @return BelongsTo<MediaAsset, $this> */

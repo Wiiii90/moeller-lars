@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages;
 
-use App\Domain\Admin\AdminDeletionPreferences;
+use App\Domain\Admin\AdminWorkflowPreferences;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\DashboardFeed;
 use App\Domain\Admin\DashboardFeedPins;
@@ -351,8 +351,8 @@ final class Dashboard extends Page
                     app(DashboardNotificationRetention::class)->pruneFor($user);
                 }
 
-                $deletionChanged = app(AdminDeletionPreferences::class)->update(
-                    AdminDeletionPreferences::DASHBOARD,
+                $deletionChanged = app(AdminWorkflowPreferences::class)->updateDeletion(
+                    AdminWorkflowPreferences::DASHBOARD,
                     (bool) ($data['delete_without_confirmation'] ?? false),
                 );
 
@@ -375,7 +375,7 @@ final class Dashboard extends Page
                     return [
                         'notification_filter' => $this->notificationFilter,
                         'notification_retention' => app(DashboardNotificationRetention::class)->limitFor($user instanceof User ? $user : 0),
-                        'delete_without_confirmation' => app(AdminDeletionPreferences::class)->withoutConfirmation(AdminDeletionPreferences::DASHBOARD),
+                        'delete_without_confirmation' => app(AdminWorkflowPreferences::class)->deletionWithoutConfirmation(AdminWorkflowPreferences::DASHBOARD),
                     ];
                 })
                 ->schema([
@@ -717,7 +717,7 @@ final class Dashboard extends Page
 
     private function deleteWithoutConfirmation(): bool
     {
-        return app(AdminDeletionPreferences::class)->withoutConfirmation(AdminDeletionPreferences::DASHBOARD);
+        return app(AdminWorkflowPreferences::class)->deletionWithoutConfirmation(AdminWorkflowPreferences::DASHBOARD);
     }
 
     private function confirmationAction(Action $action, string $heading): Action
@@ -732,8 +732,8 @@ final class Dashboard extends Page
             heading: $heading,
             submitLabel: 'Delete',
             danger: true,
-            condition: fn (): bool => app(AdminDeletionPreferences::class)
-                ->requiresConfirmation(AdminDeletionPreferences::DASHBOARD, false),
+            condition: fn (): bool => app(AdminWorkflowPreferences::class)
+                ->requiresDeletionConfirmation(AdminWorkflowPreferences::DASHBOARD, false),
         );
     }
 }

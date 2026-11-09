@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages;
 
-use App\Domain\Admin\AdminDeletionPreferences;
+use App\Domain\Admin\AdminWorkflowPreferences;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\HomePresentationResolver;
@@ -357,8 +357,8 @@ final class SitePages extends Page
             description: 'The page is removed only when publication, child-page and content safety rules allow it.',
             submitLabel: 'Delete',
             danger: true,
-            condition: fn (array $arguments): bool => app(AdminDeletionPreferences::class)->requiresConfirmation(
-                AdminDeletionPreferences::PAGES,
+            condition: fn (array $arguments): bool => app(AdminWorkflowPreferences::class)->requiresDeletionConfirmation(
+                AdminWorkflowPreferences::PAGES,
                 $this->pageDeletionHasCascadingEffects((int) ($arguments['section'] ?? 0)),
             ),
         );
@@ -376,8 +376,8 @@ final class SitePages extends Page
             description: 'Only selected pages that satisfy the current safety rules are removed. Blocked pages are kept.',
             submitLabel: 'Delete',
             danger: true,
-            condition: fn (): bool => app(AdminDeletionPreferences::class)->requiresConfirmation(
-                AdminDeletionPreferences::PAGES,
+            condition: fn (): bool => app(AdminWorkflowPreferences::class)->requiresDeletionConfirmation(
+                AdminWorkflowPreferences::PAGES,
                 $this->selectedPagesHaveCascadingEffects(),
             ),
         );

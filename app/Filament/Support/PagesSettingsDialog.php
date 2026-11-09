@@ -2,7 +2,7 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Admin\AdminDeletionPreferences;
+use App\Domain\Admin\AdminWorkflowPreferences;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\Controls\AdminControl;
@@ -28,8 +28,8 @@ final class PagesSettingsDialog
             'navigation_nesting_enabled' => PublicContentSetting::navigationNestingEnabled(),
             'navigation_hover_preview' => (bool) PublicContentSetting::general()->getAttribute('navigation_hover_preview'),
             ...$this->homeRouting->fill(),
-            'pages_auto_publish' => PublicContentSetting::pagesAutoPublish(),
-            'pages_delete_without_confirmation' => app(AdminDeletionPreferences::class)->withoutConfirmation(AdminDeletionPreferences::PAGES),
+            'pages_auto_publish' => app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::PAGES),
+            'pages_delete_without_confirmation' => app(AdminWorkflowPreferences::class)->deletionWithoutConfirmation(AdminWorkflowPreferences::PAGES),
         ];
     }
 
@@ -103,16 +103,20 @@ final class PagesSettingsDialog
             $updated = $this->settings->updatePublicContent($settings, [
                 'navigation_nesting_enabled' => $enabled,
                 'navigation_hover_preview' => (bool) ($data['navigation_hover_preview'] ?? $settings->getAttribute('navigation_hover_preview')),
-                'pages_auto_publish' => (bool) ($data['pages_auto_publish'] ?? $settings->getAttribute('pages_auto_publish')),
             ]);
 
-            $deletionChanged = app(AdminDeletionPreferences::class)->update(
-                AdminDeletionPreferences::PAGES,
-                (bool) ($data['pages_delete_without_confirmation'] ?? app(AdminDeletionPreferences::class)->withoutConfirmation(AdminDeletionPreferences::PAGES)),
+            $deletionChanged = app(AdminWorkflowPreferences::class)->updateDeletion(
+                AdminWorkflowPreferences::PAGES,
+                (bool) ($data['pages_delete_without_confirmation'] ?? app(AdminWorkflowPreferences::class)->deletionWithoutConfirmation(AdminWorkflowPreferences::PAGES)),
             );
 
-            return $updated->wasChanged(['navigation_nesting_enabled', 'navigation_hover_preview', 'pages_auto_publish'])
-                || $changed || $deletionChanged;
+            $publishChanged = app(AdminWorkflowPreferences::class)->updateAutoPublish(
+                AdminWorkflowPreferences::PAGES,
+                (bool) ($data['pages_auto_publish'] ?? app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::PAGES)),
+            );
+
+            return $updated->wasChanged(['navigation_nesting_enabled', 'navigation_hover_preview'])
+                || $changed || $deletionChanged || $publishChanged;
         });
     }
 }
