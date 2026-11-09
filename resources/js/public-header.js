@@ -16,19 +16,18 @@ export function headerShellGeometry(viewportWidth, shellMax, rem = 16) {
     return { gutter, menuWidth };
 }
 
+/* Beside receives the available exterior rail width, Inside receives the
+ * available Menu width. Both are measured from the same stable shell geometry. */
 export function headerNeedsStack(mode, availableWidth, titleWidth, rem = 16) {
-    const menuWidth = availableWidth;
     if (mode === 'outside') {
-        // The second argument is the width outside the centered Menu for
-        // Beside; for Inside it is the full Menu width.
-        return titleWidth + INSIDE_TITLE_PADDING_REM * rem > menuWidth;
+        return titleWidth + INSIDE_TITLE_PADDING_REM * rem > availableWidth;
     }
     if (mode === 'inside') {
         // The real title rail is minmax(15rem, 32%) in the unstacked menu.
         // The name must fit INSIDE it, and navigation retains its own rail.
-        const nameRail = Math.max(INSIDE_MIN_TITLE_RAIL_REM * rem, menuWidth * INSIDE_TITLE_SHARE);
+        const nameRail = Math.max(INSIDE_MIN_TITLE_RAIL_REM * rem, availableWidth * INSIDE_TITLE_SHARE);
         return titleWidth + INSIDE_TITLE_PADDING_REM * rem > nameRail
-            || menuWidth - nameRail < INSIDE_MIN_NAV_RAIL_REM * rem;
+            || availableWidth - nameRail < INSIDE_MIN_NAV_RAIL_REM * rem;
     }
     return false;
 }

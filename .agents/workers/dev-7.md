@@ -28,5 +28,10 @@
 
 - Kept persisted Title visibility and responsive-size toggle Select states in their native string-option representation after successful writes; public model remains boolean. This is a source-level correction to a confirmed state-type mismatch, not proof of the reported browser failure's entire cause.
 
+- Source inspection identifies the site-icon picker clipping boundary: searchable Filament dropdown inside the General pane's fixed overflow/scroll ancestors. Do not switch to a non-searchable native Select or disable the sole scroll owner as a workaround. The safe shared popup-layer solution still needs browser and framework-level verification; Dev Worker 3 also owns related Dashboard popover consistency.
+- Full-width Menu divider draws through the sticky header's `::after` already, but the reported stacking/artwork overlap is not reproducible from source alone. Do not apply speculative z-index changes.
+- Frame-style controls currently encode five composite variants in a single persisted field. A cleaner independent-contour/backing selection needs a deliberate unified domain/storage design, not appended parallel fields.
+- Existing `tests/js/public-header.test.mjs` Beside assertions describe the old inside-sized rail and must be reconciled by Testing for the new exterior geometry. Dev does not modify tests.
+
 ## Next
 - Browser-check title Hide/Show and responsive reduction selection persistence and Preview stability; the known Select string-option vs model-boolean state mismatch was corrected after autosave. Investigate any remaining Preview loss, full-width divider and picker clipping. Actual Legal text still requires verified operator/deployment facts and artist approval.
