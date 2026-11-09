@@ -3,11 +3,12 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Content\CustomPageEditorialService;
+use App\Models\CustomPageSetting;
 use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceTargetHelpers
 {
-    /** @return list<array{index:int,type:string}> */
+    /** @return list<array{index:int,type:string,child_index?:int}> */
     private function selectedComponentTargetData(): array
     {
         $targets = [];
@@ -16,12 +17,15 @@ trait CustomPageWorkspaceTargetHelpers
                 continue;
             }
             [$position, $type] = explode(':', $target, 2);
-            if (! array_key_exists($type, self::COMPONENT_LABELS)) continue;
+            if (! array_key_exists($type, self::COMPONENT_LABELS)) {
+                continue;
+            }
             if (preg_match('/^(\\d+)\\.(\\d+)$/', $position, $matches)) {
                 $targets[] = [
                     'index' => (int) $matches[1], 'child_index' => (int) $matches[2],
                     'type' => $type,
                 ];
+
                 continue;
             }
             if (ctype_digit($position)) {
@@ -70,9 +74,10 @@ trait CustomPageWorkspaceTargetHelpers
         $child = filter_var($arguments['childIndex'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
         $type = $arguments['componentType'] ?? null;
         if ($image === false || $child === false || ! is_string($type)
-            || ! in_array($type, \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+            || ! in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
             throw ValidationException::withMessages(['component' => 'The child component is invalid.']);
         }
+
         return [(int) $image, (int) $child, $type];
     }
 
@@ -82,6 +87,7 @@ trait CustomPageWorkspaceTargetHelpers
         if (! is_array($item) || ($item['type'] ?? null) !== $type) {
             throw ValidationException::withMessages(['component' => 'This child component changed. Reload and try again.']);
         }
+
         return $item;
     }
 
@@ -110,5 +116,4 @@ trait CustomPageWorkspaceTargetHelpers
 
         return $this->componentAt($index, $type);
     }
-
 }

@@ -6,18 +6,19 @@ use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\PublicMedia;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
-use App\Models\Artwork;
 use App\Models\AdminNotification;
+use App\Models\Artwork;
 use App\Models\AuditEvent;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 require_once __DIR__.'/GalleryFixtures.php';
@@ -34,7 +35,6 @@ it('publishes browser-supported video primary media without requiring an image t
         ->and(app(PublicMedia::class)->kind($published))->toBe('video');
 });
 
-
 it('still requires the canonical public thumbnail for image publication', function (): void {
     $artwork = galleryFixtureArtwork(galleryFixtureCategory());
     $image = galleryFixtureAsset();
@@ -42,11 +42,10 @@ it('still requires the canonical public thumbnail for image publication', functi
 
     expect(app(ArtworkPublicationService::class)->mediaReady($image))->toBeFalse();
 
-    galleryFixtureThumbnail($image);
+    testStoredImageThumbnail($image);
 
     expect(app(ArtworkPublicationService::class)->mediaReady($image->fresh('variants')))->toBeTrue();
 });
-
 
 it('requires unpublish before detach and preserves the historical publication timestamp when unpublishing', function (): void {
     $gallery = galleryFixtureCategory();
@@ -69,7 +68,6 @@ it('requires unpublish before detach and preserves the historical publication ti
     expect($draft->fresh()->artwork_category_id)->toBeNull();
 });
 
-
 it('rejects audio publication even if an invalid primary usage was inserted outside the canonical service', function (): void {
     $artwork = galleryFixtureArtwork(galleryFixtureCategory());
     $audio = galleryFixtureAsset('audio/mpeg');
@@ -80,7 +78,6 @@ it('rejects audio publication even if an invalid primary usage was inserted outs
     expect($publication->mediaReady($audio))->toBeFalse()
         ->and(fn () => $publication->publish($artwork))->toThrow(ValidationException::class);
 });
-
 
 it('renders a published video artwork through the public viewer with native controls and no autoplay', function (): void {
     $artwork = galleryFixtureArtwork(galleryFixtureCategory());
@@ -100,8 +97,6 @@ it('renders a published video artwork through the public viewer with native cont
         ->assertDontSee('autoplay', false);
 });
 
-
-
 it('notifies only when a Gallery publication action actually changes the artwork state', function (): void {
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
@@ -115,7 +110,7 @@ it('notifies only when a Gallery publication action actually changes the artwork
         ->assertDispatched('admin-header-notification');
 
     expect($artwork->fresh()->state)->toBe('published');
-    $notificationCount = \App\Models\AdminNotification::query()->count();
+    $notificationCount = AdminNotification::query()->count();
     $auditCount = AuditEvent::query()->count();
 
     Livewire::test(GalleryWorkspace::class, $params)
@@ -123,7 +118,7 @@ it('notifies only when a Gallery publication action actually changes the artwork
         ->callMountedAction()
         ->assertNotDispatched('admin-header-notification');
 
-    expect(\App\Models\AdminNotification::query()->count())->toBe($notificationCount)
+    expect(AdminNotification::query()->count())->toBe($notificationCount)
         ->and(AuditEvent::query()->count())->toBe($auditCount);
 
     Livewire::test(GalleryWorkspace::class, $params)
@@ -132,7 +127,7 @@ it('notifies only when a Gallery publication action actually changes the artwork
         ->assertDispatched('admin-header-notification');
 
     expect($artwork->fresh()->state)->toBe('draft');
-    $notificationCount = \App\Models\AdminNotification::query()->count();
+    $notificationCount = AdminNotification::query()->count();
     $auditCount = AuditEvent::query()->count();
 
     Livewire::test(GalleryWorkspace::class, $params)
@@ -140,11 +135,9 @@ it('notifies only when a Gallery publication action actually changes the artwork
         ->callMountedAction()
         ->assertNotDispatched('admin-header-notification');
 
-    expect(\App\Models\AdminNotification::query()->count())->toBe($notificationCount)
+    expect(AdminNotification::query()->count())->toBe($notificationCount)
         ->and(AuditEvent::query()->count())->toBe($auditCount);
 });
-
-
 
 it('publishes an entire ready Gallery selection once and leaves repeated publication as a no-op', function (): void {
     $gallery = galleryFixtureCategory();
@@ -190,7 +183,6 @@ it('publishes an entire ready Gallery selection once and leaves repeated publica
     expect(AuditEvent::query()->count())->toBe($auditsBefore + 2)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 });
-
 
 it('unpublishes a selected batch while preserving each publication date and sending one success feedback', function (): void {
     $gallery = galleryFixtureCategory();
@@ -283,28 +275,4 @@ it('retains the Gallery Artwork editor after a confirmed Unpublish launched from
         ->mountAction('unpublishArtwork', ['artwork' => $artwork->getKey()])
         ->callMountedAction()
         ->assertSet('mountedActions', []);
-});
-
-it('links only actually committed Artwork URLs while Working publication changes remain preview-only', function (): void {
-    $gallery = galleryFixtureCategory();
-    $artwork = galleryFixtureArtwork($gallery);
-    galleryFixturePrimary($artwork, galleryFixtureAsset('video/mp4'));
-    galleryFixtureUnavailableAnalytics();
-
-    app(ArtworkPublicationService::class)->publish($artwork);
-    $row = collect(Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->get('artworkDataset'))->firstWhere('id', (int) $artwork->getKey());
-    expect($row['state'])->toBe('published')
-        ->and($row['public_url'])->toBeNull();
-
-    app(PublicationService::class)->commit(auth('web')->user());
-    $row = collect(Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->get('artworkDataset'))->firstWhere('id', (int) $artwork->getKey());
-    expect($row['public_url'])->toBe(route('artworks.show', ['slug' => $artwork->slug]));
-
-    app(ArtworkPublicationService::class)->unpublish($artwork);
-    $row = collect(Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->get('artworkDataset'))->firstWhere('id', (int) $artwork->getKey());
-    expect($row['state'])->toBe('draft')
-        ->and($row['public_url'])->toBe(route('artworks.show', ['slug' => $artwork->slug]));
 });

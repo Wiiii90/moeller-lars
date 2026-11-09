@@ -3,27 +3,27 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\ExhibitionMapAddress;
-use App\Filament\Support\AdminIcon;
-use Filament\Actions\Action;
-use Livewire\Component;
-use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Media\MediaTypePolicy;
+use App\Filament\Pages\JournalWorkspace;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
-use Filament\Schemas\Components\Grid;
 use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
+use Livewire\Component;
 
 final class JournalEntryEditorSchema
 {
@@ -292,7 +292,7 @@ final class JournalEntryEditorSchema
                     ->skipRenderAfterStateUpdated()
                     ->afterStateUpdated(static function (mixed $state, Component $livewire): void {
                         if (filled($state)
-                            && $livewire instanceof \App\Filament\Pages\JournalWorkspace
+                            && $livewire instanceof JournalWorkspace
                             && $livewire->getMountedAction()?->getName() === 'editExhibition') {
                             $livewire->callMountedAction();
                         }
@@ -349,7 +349,7 @@ final class JournalEntryEditorSchema
                 ->color('gray')
                 ->iconButton()
                 ->action(static function (Component $livewire) use ($exhibition, $name, $visible): void {
-                    /** @var \App\Filament\Pages\JournalWorkspace $livewire */
+                    /** @var JournalWorkspace $livewire */
                     $livewire->setExhibitionFieldVisibility((int) $exhibition->getKey(), $name, ! $visible());
                 })
                 ->after(static function (Action $action): void {
@@ -358,5 +358,4 @@ final class JournalEntryEditorSchema
                 }),
         );
     }
-
 }

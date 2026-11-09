@@ -14,8 +14,7 @@ final class AdminPartialDateControl
         ?string $label = null,
         ?string $help = null,
         ?string $region = null,
-    ): ViewField
-    {
+    ): ViewField {
         $accessibleLabel = $label ?? 'Artwork date';
         $shownLabel = $help === null ? $accessibleLabel : new HtmlString(
             '<span class="admin-form-label-with-help">'.e($accessibleLabel)

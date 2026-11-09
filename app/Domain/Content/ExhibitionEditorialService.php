@@ -4,12 +4,12 @@ namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Models\Exhibition;
-use InvalidArgumentException;
 use App\Models\SiteSection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 final class ExhibitionEditorialService
 {
@@ -121,7 +121,7 @@ final class ExhibitionEditorialService
     public function setPublicFieldVisibility(Exhibition $entry, string $field, bool $visible): bool
     {
         if (! in_array($field, Exhibition::PUBLIC_VISIBILITY_FIELDS, true)) {
-            throw new \InvalidArgumentException('Unknown exhibition visibility field.');
+            throw new InvalidArgumentException('Unknown exhibition visibility field.');
         }
 
         $actor = $this->audit->requireActor();

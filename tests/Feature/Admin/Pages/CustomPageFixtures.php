@@ -2,7 +2,7 @@
 
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Models\CustomPageSetting;
-
+use App\Models\MediaAsset;
 
 function customPageWorkspaceRecord(string $title = 'Custom Page test', string $slug = 'custom-page-test'): array
 {
@@ -16,9 +16,9 @@ function customPageWorkspaceRecord(string $title = 'Custom Page test', string $s
     return [$section, $settings];
 }
 
-function customPageWorkspaceImage(string $suffix): \App\Models\MediaAsset
+function customPageWorkspaceImage(string $suffix): MediaAsset
 {
-    return \App\Models\MediaAsset::query()->create([
+    return MediaAsset::query()->create([
         'storage_key' => 'originals/'.$suffix.'.jpg', 'original_filename' => $suffix.'.jpg',
         'mime_type' => 'image/jpeg', 'byte_size' => 4, 'sha256' => hash('sha256', $suffix),
         'state' => 'available', 'alt_text' => 'Artist portrait', 'width' => 2, 'height' => 2,

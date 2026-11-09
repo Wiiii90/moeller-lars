@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Media\MediaRightsArtifactRevision;
 use App\Domain\Publication\MediaRightsPublicationSelections;
 use App\Domain\Publication\PublicationService;
 use App\Models\Artwork;
@@ -13,6 +14,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 it('renders selected rights thumbnail URLs for public and preview artwork detail pages', function (): void {
+    config()->set('media.rights_preparation_enabled', true);
+    config()->set('media.rights_delivery_enabled', true);
+
     Storage::fake('artwork-detail-test');
     config(['media.disk' => 'artwork-detail-test']);
     $actor = User::factory()->admin()->create();
@@ -30,21 +34,18 @@ it('renders selected rights thumbnail URLs for public and preview artwork detail
         'title' => 'Thumbnail rights artwork',
         'state' => 'published',
         'position' => 10,
-        'work_year' => 2024,
-        'date_precision' => 'year',
+        'year' => 2024,
     ]);
 
     $disk = Storage::disk(config('media.disk'));
     $originalBytes = 'original-bytes';
     $thumbnailBytes = 'thumbnail-bytes';
     $rightsBytes = 'rights-thumbnail-bytes';
+    $originalRightsBytes = 'rights-original-bytes';
     $originalKey = 'originals/thumbnail-rights.jpg';
     $thumbnailKey = 'variants/thumbnail-rights.webp';
-    $revision = hash('sha256', 'thumbnail-rights-revision');
-    $rightsKey = 'variants/rights/'.$revision.'.webp';
     $disk->put($originalKey, $originalBytes);
     $disk->put($thumbnailKey, $thumbnailBytes);
-    $disk->put($rightsKey, $rightsBytes);
 
     $asset = MediaAsset::query()->create([
         'storage_key' => $originalKey,
@@ -60,7 +61,6 @@ it('renders selected rights thumbnail URLs for public and preview artwork detail
     $variant = MediaVariant::query()->create([
         'media_asset_id' => $asset->getKey(),
         'variant_kind' => 'thumbnail',
-        'transform_profile' => 'public-v1',
         'state' => 'available',
         'storage_key' => $thumbnailKey,
         'mime_type' => 'image/webp',
@@ -69,6 +69,16 @@ it('renders selected rights thumbnail URLs for public and preview artwork detail
         'width' => 480,
         'height' => 720,
     ]);
+    $originalRevision = app(MediaRightsArtifactRevision::class)->forSource($asset, $asset);
+    $originalRightsKey = 'variants/rights/'.$originalRevision.'.jpg';
+    $disk->put($originalRightsKey, $originalRightsBytes);
+
+    // The selected immutable identity must match the real source and rights
+    // projection; a fabricated revision would be rejected as stale.
+    $revision = app(MediaRightsArtifactRevision::class)->forSource($asset, $variant);
+    $rightsKey = 'variants/rights/'.$revision.'.webp';
+    $disk->put($rightsKey, $rightsBytes);
+
     ArtworkMedia::query()->create([
         'artwork_id' => $artwork->getKey(),
         'media_asset_id' => $asset->getKey(),
@@ -86,7 +96,21 @@ it('renders selected rights thumbnail URLs for public and preview artwork detail
         'mime_type' => 'image/webp',
         'created_at' => now(),
     ]);
-    app(MediaRightsPublicationSelections::class)->selectWorking($artifact, 'thumbnail', (int) $variant->getKey());
+    $originalArtifact = MediaRightsArtifact::query()->create([
+        'media_asset_id' => $asset->getKey(),
+        'role' => 'original',
+        'revision' => $originalRevision,
+        'storage_key' => $originalRightsKey,
+        'source_sha256' => $asset->getAttribute('sha256'),
+        'sha256' => hash('sha256', $originalRightsBytes),
+        'byte_size' => strlen($originalRightsBytes),
+        'mime_type' => 'image/jpeg',
+        'created_at' => now(),
+    ]);
+    $selections = app(MediaRightsPublicationSelections::class);
+    $selections->selectWorking($originalArtifact, 'original', (int) $asset->getKey());
+    $selections->selectWorking($artifact, 'thumbnail', (int) $variant->getKey());
+    expect($selections->workingAssetReadiness($asset)['state'])->toBe('ready');
     expect(app(PublicationService::class)->commit($actor, 'Artwork rights URL test'))->not->toBeNull();
 
     $publicUrl = route('media.variant', ['mediaVariant' => $variant, 'revision' => $revision]);

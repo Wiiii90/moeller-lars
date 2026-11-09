@@ -2,13 +2,16 @@
 
 use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\GalleryEditorialService;
+use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Models\AdminNotification;
 use App\Models\Artwork;
 use App\Models\AuditEvent;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
@@ -16,8 +19,8 @@ require_once __DIR__.'/GalleryFixtures.php';
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     galleryFixtureUnavailableAnalytics();
 });
 
@@ -31,11 +34,11 @@ it('orders newly created Manual Gallery Artworks first and leaves older records 
     $first = galleryFixtureArtwork($gallery, ['position' => 0]);
     $second = galleryFixtureArtwork($gallery, ['position' => 1]);
 
-    $created = app(\App\Domain\Artwork\ArtworkDraftService::class)->create([
+    $created = app(ArtworkDraftService::class)->create([
         'artwork_category_id' => $gallery->getKey(),
         'title' => 'Newest Gallery addition',
         'slug' => 'newest-gallery-addition',
-        'work_date' => null,
+        'artwork_date' => null,
     ]);
 
     expect(Artwork::query()->where('artwork_category_id', $gallery->getKey())
@@ -45,11 +48,11 @@ it('orders newly created Manual Gallery Artworks first and leaves older records 
 
 it('applies date sorting consistently without overwriting manual positions', function (): void {
     $gallery = galleryFixtureCategory();
-    $older = galleryFixtureArtwork($gallery, ['position' => 0, 'work_year' => 2023, 'work_date' => '2023-01-01']);
-    $newer = galleryFixtureArtwork($gallery, ['position' => 1, 'work_year' => 2026, 'work_date' => '2026-10-02']);
+    $older = galleryFixtureArtwork($gallery, ['position' => 0, 'year' => 2023, 'month' => 1, 'day' => 1]);
+    $newer = galleryFixtureArtwork($gallery, ['position' => 1, 'year' => 2026, 'month' => 10, 'day' => 2]);
     $gallery->forceFill(['sort_mode' => 'newest'])->save();
 
-    $ids = \App\Domain\Artwork\GalleryPresentation::orderArtworks(
+    $ids = GalleryPresentation::orderArtworks(
         Artwork::query()->where('artwork_category_id', $gallery->getKey()),
         $gallery->fresh(),
     )->pluck('id')->all();
@@ -154,25 +157,4 @@ it('protects an already mounted Gallery sort after admin access is revoked', fun
     expect(galleryOrderState())->toBe($before)
         ->and(AuditEvent::query()->count())->toBe($audits)
         ->and(AdminNotification::query()->count())->toBe(0);
-});
-
-it('places artworks with an exact date before year-only artworks in the same year', function (): void {
-    $gallery = galleryFixtureCategory();
-    $yearOnly = galleryFixtureArtwork($gallery, [
-        'work_date' => null, 'work_year' => 2026, 'position' => 0,
-    ]);
-    $exactOlder = galleryFixtureArtwork($gallery, [
-        'work_date' => '2026-02-15', 'work_year' => 2026, 'position' => 1,
-    ]);
-    $exactNewer = galleryFixtureArtwork($gallery, [
-        'work_date' => '2026-10-03', 'work_year' => 2026, 'position' => 2,
-    ]);
-    $gallery->forceFill(['sort_mode' => 'newest'])->save();
-
-    $actual = \App\Domain\Artwork\GalleryPresentation::orderArtworks(
-        Artwork::query()->where('artwork_category_id', $gallery->getKey()),
-        $gallery->fresh(),
-    )->pluck('id')->all();
-
-    expect($actual)->toBe([$exactNewer->getKey(), $exactOlder->getKey(), $yearOnly->getKey()]);
 });

@@ -6,8 +6,8 @@ use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminUndoService;
-use App\Domain\Publication\PublicationService;
 use App\Domain\Content\RegionalFormats;
+use App\Domain\Publication\PublicationService;
 use App\Domain\Publication\PublicationVersionService;
 use App\Filament\Support\ActivityClockProjection;
 use App\Filament\Support\AdminActivityFeed;
@@ -566,7 +566,7 @@ final class Activity extends Page
                 ->label('Undo')
                 ->action(function (array $arguments): void {
                     $event = $this->activityDetails($arguments);
-                    $receiptId = is_array($event) && is_array($event['undo'] ?? null) && is_numeric($event['undo']['id'] ?? null)
+                    $receiptId = is_array($event['undo'] ?? null) && is_numeric($event['undo']['id'] ?? null)
                         ? (int) $event['undo']['id']
                         : 0;
 
@@ -582,7 +582,7 @@ final class Activity extends Page
             description: function (array $arguments): string {
                 $event = $this->activityDetails($arguments);
 
-                return is_array($event) && is_array($event['undo'] ?? null)
+                return is_array($event['undo'] ?? null)
                     ? (string) ($event['undo']['confirmation'] ?? 'Undo this change? Activity history remains available.')
                     : 'Undo this change? Activity history remains available.';
             },
@@ -841,7 +841,7 @@ final class Activity extends Page
             ['label' => 'Committed changes', 'value' => number_format((int) ($commitSummary->changed_rows ?? 0)), 'description' => 'Rows in matching commits'],
             ['label' => 'Active days', 'value' => number_format($overview['active_days']), 'description' => 'Days with matching activity'],
             ['label' => 'Pending', 'value' => number_format((int) $publicationContext['staged']), 'description' => 'Working changes not LIVE yet'],
-            ['label' => 'Latest', 'value' => $latestAt?->diffForHumans() ?? '—', 'description' => $latestAt instanceof CarbonInterface ? RegionalFormats::adminDateTime($latestAt) : null ?? 'No matching activity'],
+            ['label' => 'Latest', 'value' => $latestAt?->diffForHumans() ?? '—', 'description' => $latestAt instanceof CarbonInterface ? RegionalFormats::adminDateTime($latestAt) : 'No matching activity'],
         ];
 
         $timeline = $this->timelinePresentation(
@@ -1119,7 +1119,6 @@ final class Activity extends Page
                 icon: AdminIcon::Undo,
             );
         }
-
 
         return $actions;
     }

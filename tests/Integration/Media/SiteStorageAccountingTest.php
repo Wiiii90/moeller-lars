@@ -16,7 +16,7 @@ beforeEach(function (): void {
     app(MediaCapacityService::class)->forgetCachedSnapshot();
 });
 
-it('counts media variants and logical database data against the site allowance', function (): void {
+it('counts media variants and actual database usage against the site allowance', function (): void {
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor, 'web');
 
@@ -53,14 +53,14 @@ it('counts media variants and logical database data against the site allowance',
 
     expect($snapshot['authoritative_bytes'])->toBe(100)
         ->and($snapshot['generated_bytes'])->toBe(40)
-        ->and($snapshot['database_bytes'])->toBeGreaterThan(0)
+        ->and($snapshot['database_bytes'])->toBe(max($database['logical_bytes'], $database['physical_database_bytes']))
         ->and($snapshot['site_used_bytes'])->toBe(
             $snapshot['authoritative_bytes'] + $snapshot['generated_bytes'] + $snapshot['database_bytes'],
         )
         ->and($snapshot['remaining_bytes'])->toBe(
             $snapshot['quota_bytes'] - $snapshot['site_used_bytes'],
         )
-        ->and($snapshot['reclaimable_bytes'])->toBe(40)
+        ->and($snapshot['reclaimable_bytes'])->toBe(0)
         ->and($database['activity_bytes'])->toBeGreaterThan(0)
         ->and($database['undo_bytes'])->toBeGreaterThan(0);
 });

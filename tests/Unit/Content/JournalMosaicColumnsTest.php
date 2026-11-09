@@ -3,9 +3,7 @@
 use App\Domain\Content\JournalMosaicColumns;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
-use Illuminate\Support\Collection;
 
-/** @return JournalEntryMedia */
 function mosaicUsage(int $width, int $height, int $position): JournalEntryMedia
 {
     $asset = new MediaAsset;

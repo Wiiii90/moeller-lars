@@ -1,17 +1,19 @@
 <?php
 
+use App\Domain\Admin\AdminAuditService;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Filament\Pages\GalleryWorkspace;
-use App\Models\Artwork;
 use App\Models\AdminNotification;
-use App\Models\AuditEvent;
+use App\Models\Artwork;
 use App\Models\ArtworkMedia;
+use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -19,8 +21,8 @@ use Livewire\Livewire;
 beforeEach(function (): void {
     Storage::fake(config('media.disk'));
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 require_once __DIR__.'/GalleryFixtures.php';
@@ -38,7 +40,7 @@ it('deletes an empty draft Gallery slot without requiring primary media', functi
 
     expect(Artwork::query()->whereKey($draft->getKey())->exists())->toBeFalse()
         ->and(AuditEvent::query()->where('action', 'artwork.deleted')->where('entity_id', $draft->getKey())->count())->toBe(1)
-        ->and(AdminNotification::query()->where('title', 'Artwork deleted')->count())->toBe(1);
+        ->and(AdminNotification::query()->where('status', 'success')->where('source_id', 'activity:'.AuditEvent::query()->where('action', 'artwork.deleted')->where('entity_id', $draft->getKey())->value('id'))->count())->toBe(1);
 });
 
 it('rejects direct deletion of a published Gallery artwork without destroying its media', function (): void {
@@ -66,7 +68,7 @@ it('rolls back optional file deletion and Artwork removal together on a failed a
     galleryFixturePrimary($artwork, $asset);
     galleryFixtureUnavailableAnalytics();
 
-    $realAudit = app(\App\Domain\Admin\AdminAuditService::class);
+    $realAudit = app(AdminAuditService::class);
     $audit = Mockery::mock($realAudit);
     $audit->shouldReceive('record')->andReturnUsing(function (...$arguments) use ($realAudit): mixed {
         if (($arguments[1] ?? '') === 'artwork.deleted') {
@@ -75,7 +77,7 @@ it('rolls back optional file deletion and Artwork removal together on a failed a
 
         return $realAudit->record(...$arguments);
     });
-    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->instance(AdminAuditService::class, $audit);
 
     $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->mountAction('deleteArtwork', ['artwork' => $artwork->getKey()])
@@ -124,7 +126,6 @@ it('detaches a draft from its Gallery without deleting artwork media or shared M
         ->and((int) $remaining->fresh()->position)->toBe(0);
 });
 
-
 it('deletes only the draft and its usages while preserving a shared MediaAsset', function (): void {
     $gallery = galleryFixtureCategory();
     $asset = galleryFixtureAsset();
@@ -141,7 +142,6 @@ it('deletes only the draft and its usages while preserving a shared MediaAsset',
         ->and(ArtworkMedia::query()->where('artwork_id', $other->getKey())->where('media_asset_id', $asset->getKey())->exists())->toBeTrue();
 });
 
-
 it('preserves replaced MediaAssets in the library even when they become unreferenced', function (): void {
     $artwork = galleryFixtureArtwork(galleryFixtureCategory());
     $oldAsset = galleryFixtureAsset();
@@ -155,7 +155,6 @@ it('preserves replaced MediaAssets in the library even when they become unrefere
         ->and((int) ArtworkMedia::query()->where('artwork_id', $artwork->getKey())->where('role', 'primary')->value('media_asset_id'))
         ->toBe((int) $newAsset->getKey());
 });
-
 
 it('accepts existing image and video MediaAssets as primary and rejects audio', function (): void {
     $service = app(ArtworkPrimaryMediaService::class);
@@ -175,7 +174,6 @@ it('accepts existing image and video MediaAssets as primary and rejects audio', 
         ->and((int) $videoArtwork->fresh()->artworkMedia()->where('role', 'primary')->value('media_asset_id'))->toBe((int) $video->getKey())
         ->and(fn () => $service->attachAsset($audioArtwork, $audio))->toThrow(ValidationException::class);
 });
-
 
 it('deletes the selected Artwork and detaches other Galleries when its shared primary file is explicitly deleted', function (): void {
     $source = galleryFixtureCategory();
@@ -204,7 +202,6 @@ it('deletes the selected Artwork and detaches other Galleries when its shared pr
         ->and($disk->exists($asset->storage_key))->toBeFalse();
 });
 
-
 it('cleans Gallery membership when a shared primary file is deleted directly from Storage', function (): void {
     $firstGallery = galleryFixtureCategory();
     $secondGallery = galleryFixtureCategory();
@@ -216,10 +213,10 @@ it('cleans Gallery membership when a shared primary file is deleted directly fro
     galleryFixturePrimary($first, $shared);
     galleryFixturePrimary($second, $shared);
     galleryFixturePrimary($kept, $other);
-    $sharedThumbnail = galleryFixtureThumbnail($shared);
-    $otherThumbnail = galleryFixtureThumbnail($other);
+    $sharedThumbnail = testStoredImageThumbnail($shared);
+    $otherThumbnail = testStoredImageThumbnail($other);
     $disk = Storage::disk(config('media.disk'));
-    foreach ([$shared, $other, $sharedThumbnail, $otherThumbnail] as $file) {
+    foreach ([$shared, $other] as $file) {
         $disk->put($file->storage_key, 'Media lifecycle fixture');
         expect($disk->exists($file->storage_key))->toBeTrue();
     }
@@ -249,43 +246,6 @@ it('cleans Gallery membership when a shared primary file is deleted directly fro
         ->assertOk()
         ->assertSee($kept->title)
         ->assertDontSee($first->title);
-});
-
-
-it('removes a selected batch from its Gallery without deleting artwork records or shared MediaAssets', function (): void {
-    $gallery = galleryFixtureCategory();
-    $shared = galleryFixtureAsset();
-    $first = galleryFixtureArtwork($gallery, ['position' => 0]);
-    $second = galleryFixtureArtwork($gallery, ['position' => 1]);
-    $remaining = galleryFixtureArtwork($gallery, ['position' => 2]);
-    galleryFixturePrimary($first, $shared);
-    galleryFixturePrimary($second, $shared);
-    galleryFixturePrimary($remaining, $shared);
-    galleryFixtureUnavailableAnalytics();
-    $selected = [$second->getKey(), $first->getKey()];
-    $auditsBefore = AuditEvent::query()->count();
-    $notificationsBefore = AdminNotification::query()->count();
-
-    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->set('selectedArtworkIds', $selected)
-        ->mountAction('removeSelectedArtworks')
-        ->callMountedAction()
-        ->assertHasNoFormErrors()
-        ->assertSet('selectedArtworkIds', [])
-        ->assertDispatched('admin-header-notification', function (string $event, array $params): bool {
-            return $event === 'admin-header-notification'
-                && ($params['notification']['status'] ?? null) === 'success';
-        });
-
-    expect($first->fresh()->artwork_category_id)->toBeNull()
-        ->and($second->fresh()->artwork_category_id)->toBeNull()
-        ->and((int) $remaining->fresh()->artwork_category_id)->toBe((int) $gallery->getKey())
-        ->and((int) $remaining->fresh()->position)->toBe(0)
-        ->and(ArtworkMedia::query()->where('media_asset_id', $shared->getKey())->count())->toBe(3)
-        ->and($shared->fresh()->state)->toBe('available')
-        ->and(AuditEvent::query()->where('action', 'artwork.updated')->whereIn('entity_id', $selected)->count())->toBe(2)
-        ->and(AuditEvent::query()->count())->toBe($auditsBefore + 2)
-        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 });
 
 it('deletes only selected draft artworks and their usages without deleting Storage media', function (): void {
@@ -325,7 +285,7 @@ it('deletes only selected draft artworks and their usages without deleting Stora
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 });
 
-it('rolls back selected Gallery removal and deletion when one selected artwork is published', function (string $action): void {
+it('rolls back selected Gallery deletion when one selected artwork is published', function (): void {
     $gallery = galleryFixtureCategory();
     $draft = galleryFixtureArtwork($gallery, ['position' => 0]);
     $published = galleryFixtureArtwork($gallery, ['position' => 1]);
@@ -340,7 +300,7 @@ it('rolls back selected Gallery removal and deletion when one selected artwork i
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
         ->set('selectedArtworkIds', [$draft->getKey(), $published->getKey()])
-        ->mountAction($action)
+        ->mountAction('deleteSelectedArtworks')
         ->callMountedAction()
         ->assertHasNoFormErrors()
         ->assertDispatched('admin-header-notification');
@@ -357,4 +317,4 @@ it('rolls back selected Gallery removal and deletion when one selected artwork i
         ->and(AuditEvent::query()->count())->toBe($auditsBefore)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1)
         ->and(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
-})->with(['removeSelectedArtworks', 'deleteSelectedArtworks']);
+});

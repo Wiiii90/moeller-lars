@@ -92,6 +92,21 @@ try {
         }
     }
     emit(['phase' => 'verified', 'identity' => (array) $identity, 'paths' => $paths]);
+    $request = json_decode($argv[1], true, flags: JSON_THROW_ON_ERROR);
+    $operation = $request['operation'];
+    if ($operation === 'verify-qualification') {
+        $cluster = DB::selectOne('SELECT system_identifier::text AS id FROM pg_control_system()')->id;
+        $tables = DB::selectOne("SELECT count(*) AS total FROM information_schema.tables WHERE table_schema = 'public'")->total;
+        if ($cluster !== getenv('CONCURRENCY_CLUSTER') || (int) $tables !== 0
+            || config('cache.default') !== 'array' || config('session.driver') !== getenv('SESSION_DRIVER')
+            || config('media.disk') !== 'local') {
+            throw new RuntimeException('Qualification cluster, schema, cache, session, or media isolation mismatch.');
+        }
+
+        emit(['phase' => 'result', 'ok' => true, 'cluster' => $cluster]);
+        exit(0);
+    }
+
     foreach (['GITHUB_ACTIONS' => 'true', 'MOELLER_LARS_DISPOSABLE_TEST_DATABASE' => '1'] as $name => $value) {
         putenv($name.'='.$value);
         $_SERVER[$name] = $_ENV[$name] = $value;
@@ -99,8 +114,6 @@ try {
     LocalPreviewDatabaseGuard::assertDisposableTestContext();
     DB::statement("SET lock_timeout = '12s'");
     DB::statement("SET statement_timeout = '20s'");
-    $request = json_decode($argv[1], true, flags: JSON_THROW_ON_ERROR);
-    $operation = $request['operation'];
     if ($operation === 'prepare') {
         LocalPreviewDatabaseGuard::assertDestructiveCommandIsAllowed();
         Artisan::call('migrate:fresh', ['--force' => true]);

@@ -2,11 +2,13 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Content\PublicLegalContent;
+use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\ComponentListEditor;
 use App\Filament\Support\HierarchyParentField;
 use App\Filament\Support\MediaAssetSelect;
-use App\Domain\Media\MediaTypePolicy;
+use App\Models\CustomPageSetting;
 use App\Models\PublicContentSetting;
 use Closure;
 use Filament\Forms\Components\Placeholder;
@@ -57,7 +59,7 @@ trait CustomPageWorkspaceForms
                 ->schema([
                     $typeField,
                     $statusField,
-                    ...($onTypeChange !== null && in_array($editingType, \App\Models\CustomPageSetting::IMAGE_CHILD_TYPES, true)
+                    ...($onTypeChange !== null && in_array($editingType, CustomPageSetting::IMAGE_CHILD_TYPES, true)
                         && $editingType !== 'text'
                         ? [$this->componentParentField($editingType)]
                         : []),
@@ -76,11 +78,11 @@ trait CustomPageWorkspaceForms
                     ->label('Media size')
                     ->numeric()
                     ->rules(['integer'])
-                    ->minValue(\App\Models\CustomPageSetting::MIN_IMAGE_SCALE_PERCENT)
-                    ->maxValue(\App\Models\CustomPageSetting::MAX_IMAGE_SCALE_PERCENT)
+                    ->minValue(CustomPageSetting::MIN_IMAGE_SCALE_PERCENT)
+                    ->maxValue(CustomPageSetting::MAX_IMAGE_SCALE_PERCENT)
                     ->step(1)
                     ->suffix('%')
-                    ->default(\App\Models\CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT)
+                    ->default(CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT)
                     ->required(),
                 Select::make('image_alignment')
                     ->label('Image alignment')
@@ -126,12 +128,11 @@ trait CustomPageWorkspaceForms
                 Grid::make()
                     ->columns(['md' => 2])
                     ->schema(collect($this->availableSocialPlatforms)
-                        ->map(fn (string $label, string $platform): Toggle =>
-                            $this->contactEditorField(
-                                Toggle::make('contact_social_selected.'.$platform)
-                                    ->label($label)->default(true),
-                                'contact_social_selected.'.$platform, $onContactChange,
-                            )
+                        ->map(fn (string $label, string $platform): Toggle => $this->contactEditorField(
+                            Toggle::make('contact_social_selected.'.$platform)
+                                ->label($label)->default(true),
+                            'contact_social_selected.'.$platform, $onContactChange,
+                        )
                         )->values()->all())
                     ->visible(fn (Get $get): bool => (bool) $get('contact_social_enabled'))
                     ->columnSpanFull(),
@@ -158,7 +159,7 @@ trait CustomPageWorkspaceForms
             'legal_disclaimer' => [
                 Placeholder::make('legal_disclaimer_note')
                     ->label('Legal Disclaimer from General')
-                    ->content(fn (): string => \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general()))
+                    ->content(fn (): string => PublicLegalContent::editorSummary(PublicContentSetting::general()))
                     ->columnSpanFull(),
             ],
             default => [],
@@ -172,7 +173,9 @@ trait CustomPageWorkspaceForms
      */
     private function contactEditorField(mixed $field, string $key, ?Closure $save, bool $blur = false): mixed
     {
-        if ($save === null) return $field;
+        if ($save === null) {
+            return $field;
+        }
         if ($blur) {
             $field->live(onBlur: true);
         } else {
@@ -193,8 +196,7 @@ trait CustomPageWorkspaceForms
             fn (): array => $this->decorativeImageParentOptions(),
             'Parent', 'Page level',
         )
-            ->disabled(fn (Get $get): bool =>
-                ($editingType === 'list' && filled($get('media_asset_id')))
+            ->disabled(fn (Get $get): bool => ($editingType === 'list' && filled($get('media_asset_id')))
                 || ($editingType === 'contact' && (bool) $get('contact_form_enabled'))
             )
             ->columnSpanFull();
@@ -209,6 +211,7 @@ trait CustomPageWorkspaceForms
                 $options[$index] = 'Decorative Image '.($index + 1);
             }
         }
+
         return $options;
     }
 
@@ -227,5 +230,4 @@ trait CustomPageWorkspaceForms
 
         return $field;
     }
-
 }

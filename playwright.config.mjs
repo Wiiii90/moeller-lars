@@ -23,11 +23,26 @@ export default defineConfig({
   projects: [
     { name: 'component-chromium', testMatch: '**/component/**/*.spec.mjs', use: { ...devices['Desktop Chrome'] } },
     { name: 'e2e-chromium', testMatch: '**/e2e/**/*.spec.mjs', use: { ...devices['Desktop Chrome'] } },
-    // These projects qualify the Gallery's native Sortable handle under WebKit.
-    // Desktop WebKit approximates Safari; macOS Safari acceptance is a separate gate.
-    { name: 'e2e-gallery-webkit-desktop', testMatch: ['**/e2e/admin/gallery-ordering.spec.mjs', '**/e2e/public/artwork-fit.spec.mjs'], use: { ...devices['Desktop Safari'] } },
-    { name: 'e2e-gallery-webkit-mobile', testMatch: ['**/e2e/admin/gallery-ordering.spec.mjs', '**/e2e/public/artwork-fit.spec.mjs'], use: { ...devices['iPhone 13'] } },
-    { name: 'e2e-gallery-chromium-mobile', testMatch: ['**/e2e/admin/gallery-ordering.spec.mjs', '**/e2e/public/artwork-fit.spec.mjs'], use: { ...devices['Pixel 7'] } },
+    // Reuse canonical browser scenarios on WebKit without a parallel test suite.
+    // WebKit approximates Safari; native macOS Safari still needs a real-device gate.
+    { name: 'e2e-webkit-desktop', testMatch: [
+      '**/e2e/admin/gallery-ordering.spec.mjs',
+      '**/e2e/public/artwork-fit.spec.mjs',
+      '**/e2e/public/public-media.spec.mjs',
+      '**/e2e/public/public-spa-navigation.spec.mjs',
+      '**/e2e/public/public-menu-touch.spec.mjs',
+      '**/e2e/admin/rich-text-editor.spec.mjs',
+    ], use: { ...devices['Desktop Safari'] } },
+    { name: 'e2e-webkit-mobile', testMatch: [
+      '**/e2e/admin/gallery-ordering.spec.mjs',
+      '**/e2e/public/artwork-fit.spec.mjs',
+      '**/e2e/public/public-media.spec.mjs',
+      '**/e2e/public/public-menu-touch.spec.mjs',
+    ], use: { ...devices['iPhone 13'] } },
+    { name: 'e2e-chromium-mobile', testMatch: [
+      '**/e2e/admin/gallery-ordering.spec.mjs',
+      '**/e2e/public/artwork-fit.spec.mjs',
+    ], use: { ...devices['Pixel 7'] } },
     { name: 'profiling-chromium', testMatch: '**/profiling/**/*.spec.mjs', use: { ...devices['Desktop Chrome'] } },
   ],
 });

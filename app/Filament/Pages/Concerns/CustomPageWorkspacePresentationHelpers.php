@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Content\PublicLegalContent;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SocialLinks;
 use App\Models\CustomPageSetting;
@@ -63,7 +64,7 @@ trait CustomPageWorkspacePresentationHelpers
         if ($type === 'legal_disclaimer') {
             return [
                 'primary' => 'Legal Disclaimer from General',
-                'secondary' => \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general()),
+                'secondary' => PublicLegalContent::editorSummary(PublicContentSetting::general()),
                 'meta' => '',
             ];
         }
@@ -78,16 +79,20 @@ trait CustomPageWorkspacePresentationHelpers
         $children = $image['children'] ?? [];
         $summaries = [];
         foreach ($children as $childIndex => $child) {
-            if (! is_array($child)) continue;
+            if (! is_array($child)) {
+                continue;
+            }
             $type = (string) ($child['type'] ?? '');
-            if (! in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)) continue;
+            if (! in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+                continue;
+            }
             $published = CustomPageSetting::componentPublished($child);
             $summaries[] = [
                 'image_index' => $imageIndex,
                 'index' => $childIndex,
                 'position' => ($imageIndex + 1).'.'.($childIndex + 1),
                 'type' => $type,
-                'type_label' => self::COMPONENT_LABELS[$type] ?? $type,
+                'type_label' => self::COMPONENT_LABELS[$type],
                 'content' => $this->componentContent($settings, $child, null),
                 'published' => $published,
                 'editable' => $type !== 'legal_disclaimer',
@@ -96,6 +101,7 @@ trait CustomPageWorkspacePresentationHelpers
                 'target' => $imageIndex.'.'.$childIndex.':'.$type,
             ];
         }
+
         return $summaries;
     }
 
@@ -148,7 +154,7 @@ trait CustomPageWorkspacePresentationHelpers
                 $settings->contactChildren($block),
             ));
         } elseif ($type === 'legal_disclaimer') {
-            $parts[] = \App\Domain\Content\PublicLegalContent::editorSummary(PublicContentSetting::general());
+            $parts[] = PublicLegalContent::editorSummary(PublicContentSetting::general());
         }
 
         return implode(' ', array_filter($parts, static fn (mixed $part): bool => is_string($part) && trim($part) !== ''));
@@ -158,7 +164,7 @@ trait CustomPageWorkspacePresentationHelpers
      * New selections must be visible in General. An existing selection may
      * remain while its General profile is hidden, but never after deletion.
      *
-     * @param list<mixed> $previousPlatforms
+     * @param  list<mixed>  $previousPlatforms
      * @return list<string>
      */
     private function validatedSocialPlatforms(mixed $platforms, array $previousPlatforms = []): array
@@ -187,7 +193,7 @@ trait CustomPageWorkspacePresentationHelpers
     /** @return array<int,string> */
     private function parentOptions(): array
     {
-        if (! \App\Models\PublicContentSetting::navigationNestingEnabled()) {
+        if (! PublicContentSetting::navigationNestingEnabled()) {
             return [];
         }
 

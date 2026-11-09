@@ -28,10 +28,10 @@ it('opens Preview and Edit as workspace actions and saves canonical metadata in 
     $notificationsBefore = AdminNotification::query()->count();
     $metadata = [
 
-            'alt_text' => 'Updated canonical ALT',
-            'credit' => 'Studio credit',
-            'copyright_notice_mode' => MediaAsset::COPYRIGHT_OVERRIDE,
-            'copyright_notice' => 'All rights reserved',
+        'alt_text' => 'Updated canonical ALT',
+        'credit' => 'Studio credit',
+        'copyright_notice_mode' => MediaAsset::COPYRIGHT_OVERRIDE,
+        'copyright_notice' => 'All rights reserved',
     ];
 
     Livewire::test(ListMediaAssets::class)

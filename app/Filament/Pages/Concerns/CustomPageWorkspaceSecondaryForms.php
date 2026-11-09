@@ -100,6 +100,7 @@ trait CustomPageWorkspaceSecondaryForms
     private function imageChildrenPayload(array $data, ?array $existing): array
     {
         $children = $existing['children'] ?? [];
+
         return $children === [] ? [] : ['children' => $children];
     }
 
@@ -125,7 +126,7 @@ trait CustomPageWorkspaceSecondaryForms
     }
 
     /** @param array<string, mixed> $data
-     * @param array<string, mixed>|null $existing
+     * @param  array<string, mixed>|null  $existing
      * @return array<string, int>
      */
     private function imageScalePayload(array $data, ?array $existing): array
@@ -148,7 +149,7 @@ trait CustomPageWorkspaceSecondaryForms
     }
 
     /** @param array<string,mixed> $data
-     * @param array<string,mixed>|null $existing
+     * @param  array<string,mixed>|null  $existing
      * @return array<string,mixed>
      */
     private function contactComponentPayload(array $data, bool $published, ?array $existing): array

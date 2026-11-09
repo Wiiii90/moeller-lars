@@ -33,7 +33,7 @@ final class ActivityClockProjection
                     'count' => $count,
                 ],
                 array_keys($normalized),
-                array_values($normalized),
+                $normalized,
             ),
             'peak_hour' => $peakHour,
             'peak_count' => $peakCount,

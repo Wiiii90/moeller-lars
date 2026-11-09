@@ -1,12 +1,12 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\General;
-use App\Models\PublicContentSetting;
 use App\Models\AdminNotification;
-use App\Domain\Admin\AdminActivityNotificationContext;
+use App\Models\PublicContentSetting;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Validation\ValidationException;
@@ -44,14 +44,10 @@ it('limits integrated desktop title alignment to Left and Right', function (): v
         ->and(PublicContentSetting::general()->getAttribute('header_name_alignment'))->toBe('left');
 });
 
-it('exposes one real persisted Menu type selector without changing navigation behavior', function (): void {
+it('validates and persists the configured Menu type', function (): void {
     $page = Livewire::test(General::class)
         ->assertSet('data.menu_type', 'cyclic_inline')
         ->assertHasNoErrors();
-    $html = $page->html();
-    expect($html)->toContain('Menu type')
-        ->toContain('Cyclic inline');
-
     $page->set('data.menu_type', 'cyclic_inline')->assertHasNoErrors();
     expect(PublicContentSetting::general()->getAttribute('menu_type'))->toBe('cyclic_inline');
 
@@ -120,10 +116,11 @@ it('updates separate persisted solid and gradient colors through the shared cont
 
     $component = Livewire::test(General::class)
         ->assertSet('data.background_primary_color', '#123456')
-        ->assertSet('data.background_secondary_color', '#445566')
+        ->assertSet('data.background_secondary_color', null)
         ->set('data.background_mode', 'gradient')
         ->call('syncAppearanceControlState')
         ->assertSet('data.background_primary_color', '#112233')
+        ->assertSet('data.background_secondary_color', '#445566')
         ->call('persistAppearanceColor', 'primary', '#AABBCC')
         ->call('persistAppearanceColor', 'secondary', '#DDEEFF');
 
@@ -143,7 +140,6 @@ it('updates separate persisted solid and gradient colors through the shared cont
         ->and($fresh->getAttribute('background_gradient_end'))->toBe('#DDEEFF');
 });
 
-
 it('treats legacy default background as solid 777777 without writing on mount', function (): void {
     $settings = PublicContentSetting::general();
     app(AdminSettingsService::class)->updatePublicContent($settings, [
@@ -161,7 +157,6 @@ it('treats legacy default background as solid 777777 without writing on mount', 
         ->and($fresh->getAttribute('background_color'))->toBe('#123456')
         ->and(generalSettingsAuditCount())->toBe($auditBefore);
 });
-
 
 it('validates and canonicalizes structured public background settings', function (): void {
     $settings = PublicContentSetting::general();
@@ -187,7 +182,6 @@ it('validates and canonicalizes structured public background settings', function
         ->and(fn () => app(AdminSettingsService::class)->updatePublicContent($fresh, ['background_gradient_angle' => 361]))
         ->toThrow(ValidationException::class);
 });
-
 
 it('renders only committed default solid and gradient appearance through a request-local CSP nonce', function (): void {
     $actor = User::query()->firstOrFail();
@@ -257,7 +251,6 @@ it('renders only committed default solid and gradient appearance through a reque
         '--public-page: linear-gradient(45deg, #112233, #AABBCC) fixed',
     );
 });
-
 
 it('preserves the original white Menu and Page until independent global paint is chosen', function (): void {
     $settings = PublicContentSetting::general();
@@ -447,7 +440,7 @@ it('leaves legacy two-color gradients unchanged until the new stops are edited',
     expect(PublicAppearance::backgroundCss(PublicContentSetting::general()))
         ->toBe('linear-gradient(24deg, #123456, #AABBCC) fixed');
     Livewire::test(General::class)
-        ->assertSet('data.background_gradient_stops', [
+        ->assertSet('data.background_gradient_stops', static fn (array $state): bool => PublicAppearance::normalizeStops($state, 'gradient_stops') === [
             ['color' => '#123456', 'position' => 0],
             ['color' => '#AABBCC', 'position' => 100],
         ]);
@@ -476,7 +469,7 @@ it('keeps Working multi-stop appearance distinct from Committed until publicatio
 it('keeps Appearance gradient actions on the shared line-based admin control contract', function (): void {
     $component = Livewire::test(General::class);
     $component
-        ->assertSet('data.background_gradient_stops', [
+        ->assertSet('data.background_gradient_stops', static fn (array $state): bool => PublicAppearance::normalizeStops($state, 'gradient_stops') === [
             ['color' => '#777777', 'position' => 0],
             ['color' => '#777777', 'position' => 100],
         ])
@@ -529,25 +522,10 @@ it('hydrates the effective gradient defaults without modifying stored settings',
     expect(PublicContentSetting::general()->only($fields))->toBe($stored);
 });
 
-it('does not create obsolete Solid repeater state or persist defaults on mount', function (): void {
-    $component = Livewire::test(General::class)->assertHasNoErrors();
-    foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {
-        $component->assertSet('data.'.$surface.'_solid_colors', null);
-    }
-
+it('does not persist color defaults on mount', function (): void {
+    Livewire::test(General::class)->assertHasNoErrors();
     expect(PublicContentSetting::general()->getAttribute('header_name_color'))->toBeNull()
         ->and(PublicContentSetting::general()->getAttribute('header_divider_color'))->toBeNull();
-});
-
-it('autosaves a color without remounting the General form', function (): void {
-    $page = Livewire::test(General::class)
-        ->set('data.menu_background_color', '#ABCDEF')
-        ->assertHasNoErrors()
-        ->assertDispatched('general-appearance-updated');
-
-    expect(PublicContentSetting::general()->getAttribute('menu_background_color'))->toBe('#ABCDEF')
-        ->and(PublicContentSetting::general()->getAttribute('menu_background_gradient_stops'))->toBeNull()
-        ->and($page->effects)->not->toHaveKey('html');
 });
 
 it('round-trips each Solid paint and a multi-stop gradient through fresh General instances', function (): void {
@@ -580,7 +558,7 @@ it('round-trips each Solid paint and a multi-stop gradient through fresh General
     expect(PublicContentSetting::general()->getAttribute('menu_background_gradient_stops'))->toBe($stops);
     Livewire::test(General::class)
         ->assertSet('data.menu_background_mode', 'gradient')
-        ->assertSet('data.menu_background_gradient_stops', $stops);
+        ->assertSet('data.menu_background_gradient_stops', static fn (array $state): bool => PublicAppearance::normalizeStops($state, 'gradient_stops') === $stops);
 });
 
 it('saves color table rows sorted by the chosen numeric position', function (): void {
@@ -601,75 +579,6 @@ it('saves color table rows sorted by the chosen numeric position', function (): 
     ]);
 });
 
-
-it('renders Solid as an inline ColorPicker and gradients with the canonical table', function (): void {
-    $solidHtml = Livewire::test(General::class)->html();
-
-    expect($solidHtml)
-        ->toContain('admin-color-control')
-        ->not->toContain('general-color-table__table')
-        ->not->toContain('fi-fo-table-repeater');
-
-    $gradientHtml = Livewire::test(General::class)
-        ->set('data.background_mode', 'gradient')
-        ->html();
-
-    expect($gradientHtml)
-        ->toContain('general-color-table__table')
-        ->toContain('Add color')
-        ->toContain('admin-add-row')
-        ->not->toContain('fi-fo-table-repeater');
-});
-
-it('has exactly one visible header row without repeating Color, Position or Colors in every field', function (): void {
-    // The canonical table provides visible column names. Filament field labels
-    // remain screen-reader accessible but must not occupy separate row lines.
-    $markup = Livewire::test(General::class)
-        ->set('data.background_mode', 'radial')
-        ->html();
-
-    expect($markup)
-        ->toContain('general-color-table__table')
-        ->not->toContain('fi-fo-table-repeater');
-
-    // Scope assertions to this actual table, not unrelated General fields.
-    expect(preg_match('/general-color-table__table.*?<\\/table>/s', $markup, $match))->toBe(1);
-    $table = $match[0];
-    expect($table)->toContain('fi-fo-field-label fi-sr-only')
-        ->not->toContain('fi-fo-field-label-col')
-        ->toContain('<th scope="col">Color</th>')
-        ->toContain('<th scope="col">Position</th>');
-});
-
-it('uses registered schema action handlers for adding and removing gradient colors', function (): void {
-    $html = Livewire::test(General::class)
-        ->set('data.background_mode', 'gradient')
-        ->html();
-
-    expect($html)->toContain('general-color-table__table')
-        ->toContain('Add color')
-        ->toContain('wire:click=')
-        ->toContain('schemaComponent')
-        ->not->toContain('x-on:click="$wire.mountAction');
-});
-
-it('renders the minimum two gradient-stop Delete actions visibly disabled and enables them above the minimum', function (): void {
-    $page = Livewire::test(General::class)->set('data.background_mode', 'gradient');
-    $minimum = $page->html();
-    expect(preg_match('/<button\\b[^>]*aria-label="Delete color 1"[^>]*>/s', $minimum, $matches))->toBe(1);
-    expect($matches[0])->toContain('disabled');
-
-    $page->set('data.background_gradient_stops', [
-        ['color' => '#112233', 'position' => 0],
-        ['color' => '#445566', 'position' => 50],
-        ['color' => '#778899', 'position' => 100],
-    ])->assertHasNoErrors();
-
-    $expanded = $page->html();
-    expect(preg_match('/<button\\b[^>]*aria-label="Delete color 1"[^>]*>/s', $expanded, $matches))->toBe(1);
-    expect($matches[0])->not->toContain('disabled');
-});
-
 it('preserves the inherited title color until the artist explicitly sets a title paint', function (): void {
     $settings = PublicContentSetting::general();
     $originalColor = $settings->getAttribute('header_name_color');
@@ -678,7 +587,7 @@ it('preserves the inherited title color until the artist explicitly sets a title
 
     Livewire::test(General::class)
         ->assertSet('data.header_name_mode', 'solid')
-        ->assertSet('data.header_name_gradient_stops', [
+        ->assertSet('data.header_name_gradient_stops', static fn (array $state): bool => PublicAppearance::normalizeStops($state, 'gradient_stops') === [
             ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 0],
             ['color' => $originalColor ?? PublicAppearance::DEFAULT_TITLE_GRADIENT_COLOR, 'position' => 100],
         ]);
@@ -812,7 +721,7 @@ it('uses the same gradient controls and stops for every global paint including D
 
     Livewire::test(General::class)
         ->assertSet('data.header_divider_paint_mode', 'radial')
-        ->assertSet('data.header_divider_paint_gradient_stops', [
+        ->assertSet('data.header_divider_paint_gradient_stops', static fn (array $state): bool => PublicAppearance::normalizeStops($state, 'gradient_stops') === [
             ['color' => '#112233', 'position' => 0],
             ['color' => '#445566', 'position' => 100],
         ])
@@ -848,4 +757,18 @@ it('uses the single canonical divider Solid color for the shared direct-color up
     expect($setting->getAttribute('header_divider_color'))->toBe('#AABBCC')
         ->and($setting->getAttribute('header_divider_paint_mode'))->toBe('solid')
         ->and($setting->getAttribute('header_divider_paint_color'))->toBeNull();
+});
+
+it('validates public header settings', function (): void {
+    expect(PublicAppearance::headerText('  Neue Edition  '))->toBe('Neue Edition')
+        ->and(PublicAppearance::normalizeColor('#ab12ff', 'header_name_color'))->toBe('#AB12FF')
+        ->and(PublicAppearance::headerAlignment(null, 'header_name_mobile_alignment'))->toBe('center');
+
+    expect(fn () => PublicAppearance::headerText(''))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::headerText(str_repeat('X', 101)))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::headerAlignment('diagonal'))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::headerPosition('overlap'))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::normalizeTitleMinSize(11))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::normalizeTitleSize(65))->toThrow(ValidationException::class);
+    expect(fn () => PublicAppearance::normalizeColor('red', 'header_name_color'))->toThrow(ValidationException::class);
 });

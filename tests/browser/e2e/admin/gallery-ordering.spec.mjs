@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 import { signIn } from '../../support/admin.mjs';
 
 test.setTimeout(90_000);
+test.use({ viewport: { width: 1800, height: 1200 } });
 
 // Read-only assertions against the independently verified disposable DB.
 function snapshot() {
@@ -68,13 +69,24 @@ async function changed(page, before, eventCount, expectedIds) {
 
 async function dragBefore(page, source, destination) {
     const target = card(page, destination);
+    const sourceHandle = handle(page, source);
+    await sourceHandle.scrollIntoViewIfNeeded();
+    const start = await sourceHandle.boundingBox();
     const box = await target.boundingBox();
+    expect(start).not.toBeNull();
     expect(box).not.toBeNull();
-    await handle(page, source).dragTo(target, { targetPosition: { x: box.width * 0.15, y: box.height * 0.25 } });
+    const x = start.x + start.width / 2;
+    const y = start.y + start.height / 2;
+    // Sortable's fallback needs a movement to start before the drop movement.
+    // These are real mouse events; mobile touch gestures need separate review.
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 10, y + 10, { steps: 5 });
+    await page.mouse.move(box.x + box.width * 0.15, box.y + box.height * 0.25, { steps: 10 });
+    await page.mouse.up();
 }
 
-test.beforeEach(async ({ page, isMobile }) => {
-    if (!isMobile) await page.setViewportSize({ width: 1800, height: 1200 });
+test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
         window.galleryOrderFeedback = [];
         window.addEventListener('admin-header-notification', event => window.galleryOrderFeedback.push(event.detail));
@@ -84,9 +96,13 @@ test.beforeEach(async ({ page, isMobile }) => {
     expect(state.working).toHaveLength(3);
     await page.goto(`/admin/pages/gallery/${state.gallery}`);
     await projection(page, state);
-    await expect(grid(page).locator('img')).toHaveCount(3);
-    await expect.poll(() => grid(page).locator('img').evaluateAll(images =>
-        images.every(image => image.complete && image.naturalWidth > 0))).toBe(true);
+    const images = grid(page).locator('img');
+    await expect(images).toHaveCount(3);
+    for (const image of await images.all()) {
+        await image.scrollIntoViewIfNeeded();
+        await expect.poll(() => image.evaluate(element => element.complete && element.naturalWidth > 0)).toBe(true);
+    }
+    await grid(page).scrollIntoViewIfNeeded();
 });
 
 test('Gallery native handle drag persists Working order with one feedback and silent boundaries', async ({ page }) => {

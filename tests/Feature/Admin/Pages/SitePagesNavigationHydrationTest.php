@@ -5,15 +5,18 @@ use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\PublicNavigationService;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
+use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\SitePages;
 use App\Filament\Support\SiteNavigation;
 use App\Models\SiteSection;
 use App\Models\User;
+use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 function navigationLabels(): array
@@ -114,7 +117,6 @@ it('does not refresh the Sidebar for filter changes or an unchanged page mutatio
         ->assertNotDispatched('refresh-sidebar');
 });
 
-
 it('adds unpublished Pages via the real dialog and refreshes the editorial Sidebar immediately', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 
@@ -183,18 +185,18 @@ it('keeps anonymous navigation on its committed order until the reordered Workin
     $second = $pages->createCustomPage('Second committed navigation', 'second-committed-navigation');
     $pages->updatePlacement($first, 'published', null);
     $pages->updatePlacement($second, 'published', null);
-    app(\App\Domain\Publication\PublicationService::class)->commit($actor);
-    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    app(PublicationService::class)->commit($actor);
+    Auth::guard('web')->logout();
     $this->get('/')->assertOk()->assertSeeInOrder(['First committed navigation', 'Second committed navigation']);
     $this->actingAs($actor, 'web');
     Livewire::test(SitePages::class)->call('moveSection', $second->id, 'up')->assertDispatched('refresh-sidebar');
     $labels = navigationLabels();
     expect(array_search('Second committed navigation', $labels, true))
         ->toBeLessThan(array_search('First committed navigation', $labels, true));
-    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    Auth::guard('web')->logout();
     $this->get('/')->assertOk()->assertSeeInOrder(['First committed navigation', 'Second committed navigation']);
     $this->actingAs($actor, 'web');
-    app(\App\Domain\Publication\PublicationService::class)->commit($actor);
-    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+    app(PublicationService::class)->commit($actor);
+    Auth::guard('web')->logout();
     $this->get('/')->assertOk()->assertSeeInOrder(['Second committed navigation', 'First committed navigation']);
 });

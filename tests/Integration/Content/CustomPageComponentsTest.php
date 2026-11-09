@@ -1,12 +1,15 @@
 <?php
 
+use App\Domain\Content\CustomPageEditorialService;
+use App\Domain\Content\PublicLegalContent;
 use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Models\CustomPageSetting;
 use App\Models\MediaAsset;
-use App\Models\MediaVariant;
-use Illuminate\Validation\ValidationException;
+use App\Models\PublicContentSetting;
 use App\Models\User;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
@@ -26,18 +29,7 @@ function customPageComponentAsset(string $suffix): MediaAsset
         'height' => 2,
     ]);
 
-    MediaVariant::query()->create([
-        'media_asset_id' => $asset->getKey(),
-        'variant_kind' => 'thumbnail',
-        'transform_profile' => \App\Domain\Media\MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
-        'storage_key' => 'variants/custom-page-component-'.$suffix.'.webp',
-        'mime_type' => 'image/webp',
-        'byte_size' => 4,
-        'sha256' => hash('sha256', 'custom-preview-'.$suffix),
-        'state' => 'available',
-        'width' => 2,
-        'height' => 2,
-    ]);
+    testStoredImageThumbnail($asset);
 
     return $asset;
 }
@@ -105,7 +97,6 @@ it('accepts external HTTP image sources in Custom Page rich text without fetchin
         ->and($rendered)->toContain('src="http://images.example.com/archive.jpg"');
 });
 
-
 it('keeps decorative layout semantic and undated CV entries without inventing dates', function (): void {
     $section = app(SiteSectionEditorialService::class)->createCustomPage('About artist', 'about-artist-components');
     $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
@@ -169,12 +160,12 @@ it('stores ordered decorative Image children and rejects incompatible nested com
         expect(fn () => $settings->update(['blocks' => [[
             'type' => 'image', 'media_asset_id' => $asset->getKey(),
             'image_decorative' => true, 'children' => $invalid,
-        ]]]))->toThrow(\Illuminate\Validation\ValidationException::class);
+        ]]]))->toThrow(ValidationException::class);
     }
     expect(fn () => $settings->update(['blocks' => [[
         'type' => 'image', 'media_asset_id' => $asset->getKey(),
         'image_decorative' => false, 'children' => $children,
-    ]]]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    ]]]))->toThrow(ValidationException::class);
 });
 
 it('moves an existing CV list into an Image atomically without losing its entries', function (): void {
@@ -191,7 +182,7 @@ it('moves an existing CV list into an Image atomically without losing its entrie
         ]],
     ]]);
     $original = $settings->fresh()->components();
-    $changed = app(\App\Domain\Content\CustomPageEditorialService::class)->updateImageAndNest(
+    $changed = app(CustomPageEditorialService::class)->updateImageAndNest(
         $settings, 0, $original[0], 1,
     );
     expect($changed)->toBeTrue();
@@ -200,7 +191,6 @@ it('moves an existing CV list into an Image atomically without losing its entrie
         ->and($after[0]['children'][0])->toBe($original[1]);
 });
 
-
 it('preserves the existing disclaimer component while rendering separately authored legal sections', function (): void {
     $section = app(SiteSectionEditorialService::class)->createCustomPage('Artist legal', 'artist-legal');
     $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
@@ -208,7 +198,7 @@ it('preserves the existing disclaimer component while rendering separately autho
 
     expect($settings->fresh()->components()[0]['type'])->toBe('legal_disclaimer');
 
-    $general = \App\Models\PublicContentSetting::general();
+    $general = PublicContentSetting::general();
     $general->update([
         'legal_imprint' => "Artist\nStreet 3",
         'legal_privacy' => 'Data processing',
@@ -216,18 +206,18 @@ it('preserves the existing disclaimer component while rendering separately autho
         'legal_disclaimer' => 'Archived external links notice',
     ]);
 
-    $sections = \App\Domain\Content\PublicLegalContent::sections($general);
+    $sections = PublicLegalContent::sections($general);
     expect(array_column($sections, 'slug'))->toBe([
         'imprint', 'privacy', 'copyright-ai', 'external-links',
     ]);
 
     $general->update(['legal_privacy' => null]);
-    expect(array_column(\App\Domain\Content\PublicLegalContent::sections($general), 'slug'))
+    expect(array_column(PublicLegalContent::sections($general), 'slug'))
         ->toBe(['imprint', 'copyright-ai', 'external-links']);
 });
 
 it('renders legal copy as escaped disclosures and omits unpublished or blank content', function (): void {
-    $generalSettings = new \App\Models\PublicContentSetting;
+    $generalSettings = new PublicContentSetting;
     $generalSettings->setRawAttributes([
         'legal_imprint' => "Line A\nLine B",
         'legal_privacy' => '<script>alert(1)</script>',
@@ -241,7 +231,7 @@ it('renders legal copy as escaped disclosures and omits unpublished or blank con
     $isHome = false;
     $isPreview = false;
 
-    $html = \Illuminate\Support\Facades\Blade::render(
+    $html = Blade::render(
         "@include('pages.partials.component-sequence')",
         compact('generalSettings', 'blocks', 'assets', 'media', 'label', 'isHome', 'isPreview'),
     );
@@ -257,7 +247,7 @@ it('renders legal copy as escaped disclosures and omits unpublished or blank con
         ->toContain('<details');
 
     $blocks = [['type' => 'legal_disclaimer', 'published' => false]];
-    $hidden = \Illuminate\Support\Facades\Blade::render(
+    $hidden = Blade::render(
         "@include('pages.partials.component-sequence')",
         compact('generalSettings', 'blocks', 'assets', 'media', 'label', 'isHome', 'isPreview'),
     );
@@ -267,7 +257,7 @@ it('renders legal copy as escaped disclosures and omits unpublished or blank con
     foreach (['legal_imprint', 'legal_privacy', 'legal_usage_rights', 'legal_disclaimer'] as $field) {
         $generalSettings->setAttribute($field, null);
     }
-    $empty = \Illuminate\Support\Facades\Blade::render(
+    $empty = Blade::render(
         "@include('pages.partials.component-sequence')",
         compact('generalSettings', 'blocks', 'assets', 'media', 'label', 'isHome', 'isPreview'),
     );
@@ -284,16 +274,16 @@ it('nests and releases a CV list without data loss or implicit sibling changes',
         ['type' => 'list', 'title' => 'CV', 'items' => [['title' => 'Undated', 'context' => null]]],
         ['type' => 'text', 'title' => 'After', 'body' => 'After'],
     ]]);
-    $service = app(\App\Domain\Content\CustomPageEditorialService::class);
+    $service = app(CustomPageEditorialService::class);
     expect($service->nestBlock($settings, 2, 'list', 0))->toBeTrue();
     $nested = $settings->fresh()->components();
-    expect(array_column($nested, 'type'))->toBe(['image','text','text'])
+    expect(array_column($nested, 'type'))->toBe(['image', 'text', 'text'])
         ->and($nested[0]['children'][0]['items'][0]['context'])->toBeNull()
         ->and($nested[1]['title'])->toBe('Before');
 
     expect($service->unnestImageChild($settings, 0, 0))->toBeTrue();
     $restored = $settings->fresh()->components();
-    expect(array_column($restored, 'type'))->toBe(['image','list','text','text'])
+    expect(array_column($restored, 'type'))->toBe(['image', 'list', 'text', 'text'])
         ->and($restored[1]['items'][0]['title'])->toBe('Undated');
 });
 
@@ -308,7 +298,7 @@ it('sorts Image children only within their owner while preserving publication st
         ]],
         ['type' => 'text', 'title' => 'Outside', 'body' => 'C'],
     ]]);
-    $editor = app(\App\Domain\Content\CustomPageEditorialService::class);
+    $editor = app(CustomPageEditorialService::class);
     expect($editor->sortImageChild($settings, 0, 1, 0))->toBeTrue();
     $blocks = $settings->fresh()->components();
     expect(array_column($blocks[0]['children'], 'title'))->toBe(['Second', 'First'])
@@ -326,7 +316,7 @@ it('moves the edited CV content into its chosen Parent as a single operation', f
     ]]);
     $updated = $settings->fresh()->components()[1];
     $updated['items'][0]['title'] = 'Born in Hamburg, Germany';
-    expect(app(\App\Domain\Content\CustomPageEditorialService::class)->updateAndNestBlock(
+    expect(app(CustomPageEditorialService::class)->updateAndNestBlock(
         $settings, 1, 'list', $updated, 0,
     ))->toBeTrue();
     $blocks = $settings->fresh()->components();
@@ -345,7 +335,7 @@ it('moves Image children between decorative parents without changing sibling ord
         ['type' => 'text', 'title' => 'Unchanged', 'body' => 'Middle'],
         ['type' => 'image', 'media_asset_id' => $asset->getKey(), 'image_decorative' => true],
     ]]);
-    $editor = app(\App\Domain\Content\CustomPageEditorialService::class);
+    $editor = app(CustomPageEditorialService::class);
     expect($editor->moveImageChild($settings, 0, 0, 2))->toBeTrue();
     $blocks = $settings->fresh()->components();
     expect(array_column($blocks, 'type'))->toBe(['image', 'text', 'image'])

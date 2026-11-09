@@ -13,5 +13,10 @@ it('formats dates, intervals and numbers by regional convention', function (): v
         ->and(RegionalFormats::dateTime($date, 'de-DE'))->toBe('20.10.2026, 16:12')
         ->and(RegionalFormats::dateRange($start, $date, 'de-DE'))->toBe('01.10.2026 – 20.10.2026')
         ->and(RegionalFormats::number(1234.56, 2, 'de-DE'))->toBe('1.234,56')
-        ->and(RegionalFormats::number(1234.56, 2, 'en-GB'))->toBe('1,234.56');
+        ->and(RegionalFormats::number(1234.56, 2, 'en-GB'))->toBe('1,234.56')
+        ->and(RegionalFormats::number(1234.56, 2, 'en-US'))->toBe('1,234.56')
+        ->and(RegionalFormats::dateRange($start, $start, 'de-DE'))->toBe('01.10.2026')
+        ->and(RegionalFormats::region('invalid'))->toBe(RegionalFormats::DEFAULT)
+        ->and(RegionalFormats::numberRegion('en-GB'))->toBe(RegionalFormats::DEFAULT)
+        ->and(RegionalFormats::pickerDateFormat())->toBe('d.m.Y');
 });

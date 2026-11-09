@@ -32,6 +32,7 @@ function routeTokens(string $source): array
         $line += substr_count($text, "\n");
         $offset += strlen($text);
     }
+
     return $result;
 }
 
@@ -43,12 +44,14 @@ function routeNext(array $tokens, int $at): ?int
             return $i;
         }
     }
+
     return null;
 }
 
 /**
  * Extract only literal Route::get/post declarations from actual PHP tokens.
  * Dynamic router registrations remain outside this curated manifest.
+ *
  * @return list<array{method:string,declared:string,line:int,after_offset:int}>
  */
 function explicitRoutesIn(string $source): array
@@ -56,21 +59,29 @@ function explicitRoutesIn(string $source): array
     $tokens = routeTokens($source);
     $out = [];
     foreach ($tokens as $i => $token) {
-        if ($token['id'] !== T_STRING || $token['text'] !== 'Route') continue;
+        if ($token['id'] !== T_STRING || $token['text'] !== 'Route') {
+            continue;
+        }
         $scope = routeNext($tokens, $i + 1);
         $method = $scope === null ? null : routeNext($tokens, $scope + 1);
         $open = $method === null ? null : routeNext($tokens, $method + 1);
         $literal = $open === null ? null : routeNext($tokens, $open + 1);
         $comma = $literal === null ? null : routeNext($tokens, $literal + 1);
-        if ($scope === null || $method === null || $open === null || $literal === null || $comma === null) continue;
+        if ($scope === null || $method === null || $open === null || $literal === null || $comma === null) {
+            continue;
+        }
         if ($tokens[$scope]['id'] !== T_DOUBLE_COLON
             || $tokens[$method]['id'] !== T_STRING
             || ! in_array($tokens[$method]['text'], ['get', 'post'], true)
             || $tokens[$open]['text'] !== '('
             || $tokens[$literal]['id'] !== T_CONSTANT_ENCAPSED_STRING
-            || $tokens[$comma]['text'] !== ',') continue;
+            || $tokens[$comma]['text'] !== ',') {
+            continue;
+        }
         $quoted = $tokens[$literal]['text'];
-        if (! str_starts_with($quoted, "'") || ! str_ends_with($quoted, "'")) continue;
+        if (! str_starts_with($quoted, "'") || ! str_ends_with($quoted, "'")) {
+            continue;
+        }
         $out[] = [
             'method' => strtoupper($tokens[$method]['text']),
             'declared' => substr($quoted, 1, -1),
@@ -78,6 +89,7 @@ function explicitRoutesIn(string $source): array
             'after_offset' => $tokens[$comma]['offset'] + 1,
         ];
     }
+
     return $out;
 }
 

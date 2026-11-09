@@ -1,18 +1,20 @@
 <?php
 
 use App\Domain\Admin\AdminLocalHistoryResetService;
-use App\Domain\Content\ExhibitionAddressNormalizer;
 use App\Domain\Contact\ContactMessageRetentionService;
+use App\Domain\Content\ExhibitionAddressNormalizer;
 use App\Domain\Media\MediaCapacityService;
-use App\Domain\Media\ResumableMediaUploadService;
 use App\Domain\Media\MediaIntegrityService;
 use App\Domain\Media\MediaRightsWorkingPreparation;
+use App\Domain\Media\MediaTypePolicy;
+use App\Domain\Media\ResumableMediaUploadService;
 use App\Domain\Migration\LegacyArtworkManifestImporter;
 use App\Domain\Migration\LegacyMigrationValidator;
 use App\Domain\Migration\LegacyPublicCvImporter;
 use App\Domain\Migration\LegacyPublicProfileImporter;
 use App\Domain\Migration\LegacyPublicProfileMediaValidator;
 use App\Domain\Migration\SiteSectionMigrationValidator;
+use App\Domain\Publication\PublicationMediaCleanupService;
 use App\Models\MediaAsset;
 use App\Models\User;
 use App\Support\PulseReport;
@@ -29,6 +31,7 @@ use Illuminate\Validation\Rules\Password;
 Artisan::command('media:uploads:prune', function (ResumableMediaUploadService $uploads): int {
     $removed = $uploads->pruneExpired();
     $this->info($removed.' expired upload sessions reclaimed.');
+
     return 0;
 })->purpose('Prune private resumable media staging older than 48 hours');
 Schedule::command('media:uploads:prune')->daily()->withoutOverlapping()->onOneServer();
@@ -144,7 +147,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-
 Artisan::command('admin:reset-local-history {--force : Skip the confirmation prompt}', function (AdminLocalHistoryResetService $reset) {
     if (! app()->environment('local')) {
         $this->error('admin:reset-local-history is available only in the local environment.');
@@ -219,6 +221,7 @@ Artisan::command('pulse:report {--hours=24 : Lookback window in hours (1-168)} {
 Artisan::command('media:rights:prepare {--after=0 : Cursor media ID} {--limit=10 : Images per batch (1-20)} {--apply : Prepare selected Working image files}', function (MediaRightsWorkingPreparation $preparation): int {
     if (! app()->environment(['local', 'testing'])) {
         $this->error('Rights-file preparation is local/disposable-only.');
+
         return 1;
     }
 
@@ -226,18 +229,20 @@ Artisan::command('media:rights:prepare {--after=0 : Cursor media ID} {--limit=10
     $limit = filter_var($this->option('limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 20]]);
     if ($after === false || $limit === false) {
         $this->error('Use --after >= 0 and --limit from 1 to 20.');
+
         return 64;
     }
 
     $apply = (bool) $this->option('apply');
     if ($apply && (! config('media.rights_preparation_enabled', false) || config('media.rights_delivery_enabled', false))) {
         $this->error('Offline preparation must be explicitly enabled while public rights delivery remains disabled.');
+
         return 1;
     }
 
     $assets = MediaAsset::query()
         ->where('id', '>', $after)
-        ->whereIn('mime_type', \App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES)
+        ->whereIn('mime_type', MediaTypePolicy::IMAGE_MIME_TYPES)
         ->orderBy('id')
         ->limit($limit)
         ->get(['id', 'original_filename']);
@@ -251,7 +256,7 @@ Artisan::command('media:rights:prepare {--after=0 : Cursor media ID} {--limit=10
                 if ($preparation->prepare($id)) {
                     $prepared++;
                 }
-            } catch (\Throwable $exception) {
+            } catch (Throwable $exception) {
                 $this->error('Rights preparation stopped at media #'.$id.': '.$exception->getMessage());
                 $this->warn('Last completed cursor: --after='.$lastId.'. Re-run from that cursor after correcting the error.');
 
@@ -279,21 +284,24 @@ Artisan::command('media:rights:prepare {--after=0 : Cursor media ID} {--limit=10
 
 // Dedicated existing publication cleanup owner; no new scheduler/worker.
 // Dry run is the default and no ordinary HTTP request uses this operation.
-Artisan::command('media:rights:cleanup {--limit=10 : Maximum candidate count (1-20)} {--apply : Reclaim unreferenced generated rights files}', function (\App\Domain\Publication\PublicationMediaCleanupService $cleanup): int {
+Artisan::command('media:rights:cleanup {--limit=10 : Maximum candidate count (1-20)} {--apply : Reclaim unreferenced generated rights files}', function (PublicationMediaCleanupService $cleanup): int {
     if (! app()->environment(['local', 'testing'])) {
         $this->error('Rights artifact cleanup is restricted to local/disposable testing.');
+
         return 1;
     }
 
     $limit = filter_var($this->option('limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 20]]);
     if ($limit === false) {
         $this->error('Provide --limit between 1 and 20.');
+
         return 64;
     }
 
     if (! config('media.rights_preparation_enabled', false)
         || config('media.rights_delivery_enabled', false)) {
         $this->error('Rights artifact inspection requires offline preparation ON and public delivery OFF.');
+
         return 1;
     }
 
@@ -311,9 +319,11 @@ Artisan::command('media:rights:cleanup {--limit=10 : Maximum candidate count (1-
         if (! $this->option('apply')) {
             $this->comment('Preview only: no generated files or rights selections changed.');
         }
+
         return 0;
-    } catch (\Throwable $exception) {
+    } catch (Throwable $exception) {
         $this->error('Rights cleanup aborted: '.$exception->getMessage());
+
         return 1;
     }
 })->purpose('Preview or reclaim unreferenced rights copies without touching source media');

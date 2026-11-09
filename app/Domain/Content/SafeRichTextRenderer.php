@@ -3,10 +3,10 @@
 namespace App\Domain\Content;
 
 use App\Domain\Media\PublicMedia;
-use App\Http\Middleware\SecurityHeaders;
 use App\Filament\Support\RichTextEditorPlugin;
-use Filament\Forms\Components\RichEditor\RichContentRenderer;
+use App\Http\Middleware\SecurityHeaders;
 use App\Models\MediaAsset;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Illuminate\Support\HtmlString;
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
@@ -281,14 +281,14 @@ final class SafeRichTextRenderer
 
         preg_match_all('/<img\\b[^>]*>/i', $source, $visualImageTags);
         $images = RichTextMediaReference::ids($source);
-        if (! $allowEmbeddedMedia && ($visualImageTags[0] ?? []) !== []) {
+        if (! $allowEmbeddedMedia && $visualImageTags[0] !== []) {
             throw UnsafeRichTextException::unsupportedSyntax();
         }
 
         // Every visual-editor image must identify a canonical Storage asset.
         // A bare external <img> would bypass the asset's publication,
         // availability and ALT checks.
-        foreach ($visualImageTags[0] ?? [] as $imageTag) {
+        foreach ($visualImageTags[0] as $imageTag) {
             if (preg_match('/\\bdata-id\\s*=\\s*(["\\\'])([1-9]\\d*)\\1/i', $imageTag) !== 1) {
                 throw UnsafeRichTextException::unsupportedSyntax();
             }
@@ -310,7 +310,7 @@ final class SafeRichTextRenderer
             if ($requirePublicMedia) {
                 // Resolve in document order: repeated references to one asset
                 // may have different editorial ALT overrides.
-                foreach ($visualImageTags[0] ?? [] as $imageTag) {
+                foreach ($visualImageTags[0] as $imageTag) {
                     if (preg_match('/\\bdata-id\\s*=\\s*(["\\\'])([1-9]\\d*)\\1/i', $imageTag, $idMatch) !== 1) {
                         throw UnsafeRichTextException::unsupportedSyntax();
                     }

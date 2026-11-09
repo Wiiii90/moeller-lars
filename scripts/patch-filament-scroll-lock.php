@@ -11,7 +11,6 @@ declare(strict_types=1);
  *
  * Update and revalidate this patch when upgrading filament/support.
  */
-
 $root = dirname(__DIR__);
 $lockPath = $root.'/composer.lock';
 $bundlePath = $root.'/vendor/filament/support/dist/index.js';

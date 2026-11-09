@@ -17,7 +17,11 @@ beforeEach(function (): void {
 it('rejects General requests after administrative access is lost', function (bool $guest): void {
     $actor = Auth::user();
     $component = Livewire::test(General::class);
-    if ($guest) { Auth::guard('web')->logout(); } else { $actor->forceFill(['is_admin' => false])->save(); }
+    if ($guest) {
+        Auth::guard('web')->logout();
+    } else {
+        $actor->forceFill(['is_admin' => false])->save();
+    }
     $before = PublicContentSetting::general()->public_email;
     $component->set('data.public_email', 'unauthorized@example.invalid')->assertForbidden();
     expect(PublicContentSetting::query()->findOrFail(1)->public_email)->toBe($before);

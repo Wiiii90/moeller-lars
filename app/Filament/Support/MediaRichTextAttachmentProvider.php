@@ -3,10 +3,11 @@
 namespace App\Filament\Support;
 
 use App\Domain\Media\MediaPreviewVariant;
+use App\Domain\Media\PublicMedia;
 use App\Models\MediaAsset;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\RichEditor\FileAttachmentProviders\Contracts\FileAttachmentProvider;
 use Filament\Forms\Components\RichEditor\RichContentAttribute;
-use Filament\Facades\Filament;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 final class MediaRichTextAttachmentProvider implements FileAttachmentProvider
@@ -40,7 +41,8 @@ final class MediaRichTextAttachmentProvider implements FileAttachmentProvider
         if (Filament::getCurrentPanel()?->getId() === 'admin') {
             return route('admin.media.variant', $variant);
         }
-        return app(\App\Domain\Media\PublicMedia::class)->thumbnailUrlForAsset($asset);
+
+        return app(PublicMedia::class)->thumbnailUrlForAsset($asset);
     }
 
     public function saveUploadedFileAttachment(TemporaryUploadedFile $file): mixed
@@ -50,7 +52,7 @@ final class MediaRichTextAttachmentProvider implements FileAttachmentProvider
         throw new \LogicException('Rich Text uploads are disabled; select an existing Storage image.');
     }
 
-    public function getDefaultFileAttachmentVisibility(): ?string
+    public function getDefaultFileAttachmentVisibility(): string
     {
         return 'private';
     }

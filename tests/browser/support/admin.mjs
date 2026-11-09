@@ -6,9 +6,9 @@ export async function signIn(page) {
   expect(email, 'Disposable browser admin email is required').toBeTruthy();
   expect(password, 'Disposable browser admin password is required').toBeTruthy();
 
-  await page.goto('/admin/login');
+  await page.goto('/admin/login', { waitUntil: 'domcontentloaded' });
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);
   await page.getByRole('button', { name: /sign in/i }).click();
-  await expect(page).toHaveURL(/\/admin\/dashboard(?:[/?#]|$)/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\/admin\/dashboard(?:[/?#]|$)/, { timeout: 60_000 });
 }

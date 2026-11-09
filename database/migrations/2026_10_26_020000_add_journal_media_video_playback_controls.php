@@ -14,12 +14,10 @@ return new class extends Migration
         });
 
         if (DB::connection()->getDriverName() === 'pgsql') {
-            DB::statement("ALTER TABLE committed.journal_entry_media
-                ADD COLUMN video_controls_enabled boolean NOT NULL DEFAULT true");
+            DB::statement('ALTER TABLE committed.journal_entry_media
+                ADD COLUMN video_controls_enabled boolean NOT NULL DEFAULT true');
         }
     }
 
-    public function down(): void
-    {
-    }
+    public function down(): void {}
 };

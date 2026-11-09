@@ -5,28 +5,29 @@ namespace App\Providers;
 use App\Database\PublicationPostgresGrammar;
 use App\Domain\Admin\AdminMutationSnapshotBuffer;
 use App\Domain\Admin\AdminUndoContext;
-use Filament\Forms\Components\Field;
-use Filament\Actions\Action as FilamentAction;
-use Filament\Tables\Columns\Column as FilamentColumn;
 use App\Domain\Content\PublicSiteContext;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Publication\PublicationReadContext;
 use App\Models\User;
 use App\Support\AdminPasswordPolicy;
 use App\Support\LocalPreviewDatabaseGuard;
+use Filament\Actions\Action as FilamentAction;
+use Filament\Forms\Components\Field;
+use Filament\Tables\Columns\Column as FilamentColumn;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\PostgresConnection;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Vite;
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -55,6 +56,14 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->app->extend(
+            HtmlSanitizerConfig::class,
+            static fn (HtmlSanitizerConfig $config): HtmlSanitizerConfig => $config->allowAttribute(
+                'data-artist-line-spacing',
+                ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+            ),
+        );
+
         // Resolve labels at render time, after the authenticated request's
         // language has been selected. English remains the source language.
         Field::configureUsing(static fn (Field $field): Field => $field->translateLabel());

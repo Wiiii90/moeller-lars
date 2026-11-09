@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\MediaAssets\Pages;
 
-use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminMediaUploadFeedback;
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaCapacityService;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaTypePolicy;
+use App\Domain\Publication\MediaRightsPublicationSelections;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminForm;
 use App\Filament\Support\AdminHelp;
@@ -28,8 +30,8 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Validation\ValidationException;
-use Livewire\Attributes\Session;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Session;
 use Throwable;
 
 final class ListMediaAssets extends Page
@@ -512,7 +514,7 @@ final class ListMediaAssets extends Page
 
         $this->assets = $records->map(function (MediaAsset $asset) use ($catalog): array {
             /** @var MediaVariant|null $thumbnail */
-            $thumbnail = \App\Domain\Media\MediaPreviewVariant::preview($asset);
+            $thumbnail = MediaPreviewVariant::preview($asset);
             $references = $catalog->references($asset);
             $mime = (string) $asset->getAttribute('mime_type');
             $createdAt = $asset->getAttribute('created_at');
@@ -1066,7 +1068,7 @@ final class ListMediaAssets extends Page
                 'rights_usage_terms' => (string) ($asset->getAttribute('rights_usage_terms') ?? ''),
                 'license_inquiry_url' => (string) ($asset->getAttribute('license_inquiry_url') ?? ''),
                 'rights_file_status' => MediaTypePolicy::isImage($mime)
-                    ? app(\App\Domain\Publication\MediaRightsPublicationSelections::class)
+                    ? app(MediaRightsPublicationSelections::class)
                         ->workingAssetReadiness($asset)['label']
                     : null,
                 'dimensions' => $asset->getAttribute('width') && $asset->getAttribute('height')

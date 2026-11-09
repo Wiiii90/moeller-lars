@@ -5,6 +5,7 @@ namespace App\Domain\Media;
 use App\Domain\Storage\SiteStorageDatabaseUsageService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -317,7 +318,7 @@ final class MediaCapacityService
         $reserved = 0;
         foreach (glob($dir.'/*.json') ?: [] as $manifest) {
             $id = basename($manifest, '.json');
-            if (! \Illuminate\Support\Str::isUuid($id)) {
+            if (! Str::isUuid($id)) {
                 continue;
             }
             $raw = @file_get_contents($manifest);
@@ -331,11 +332,12 @@ final class MediaCapacityService
             $total = $meta['size'] ?? null;
             $part = $dir.'/'.$id.'.part';
             $onDisk = @filesize($part);
-            if (! is_int($total) || $total <= 0 || ! is_int($onDisk) || $onDisk < 0 || $onDisk > $total) {
+            if (! is_int($total) || $total <= 0 || $onDisk === false || $onDisk > $total) {
                 throw new \RuntimeException('Unfinished media reservation is inconsistent.');
             }
             $reserved += $total - $onDisk;
         }
+
         return $reserved;
     }
 

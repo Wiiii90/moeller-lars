@@ -126,7 +126,6 @@ it('does not create Activity for an unchanged page placement', function (): void
             ->count())->toBe($before);
 });
 
-
 it('rejects level three trees without introducing type pairing rules', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $service = app(SiteSectionEditorialService::class);

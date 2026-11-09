@@ -41,8 +41,8 @@ class AdminAuditService
     /**
      * Record one logical ordering mutation while preserving the immutable raw Audit event.
      *
-     * @param list<int|string> $beforeState
-     * @param list<int|string> $afterState
+     * @param  list<int|string>  $beforeState
+     * @param  list<int|string>  $afterState
      */
     public function recordOrdering(
         User $actor,
@@ -55,7 +55,7 @@ class AdminAuditService
         ?array $metadata = null,
     ): ?AuditEvent {
         $definition = AdminActionCatalog::definition($action);
-        if (($definition['family'] ?? null) !== 'ordering') {
+        if ($definition['family'] !== 'ordering') {
             throw new InvalidArgumentException('Ordering Activity requires an ordering action.');
         }
 
@@ -207,7 +207,7 @@ class AdminAuditService
         }
 
         foreach ($snapshots ?? [] as $snapshot) {
-            if (($snapshot['entity_type'] ?? null) !== $entityType || (int) ($snapshot['row_id'] ?? 0) !== $entityId) {
+            if ($snapshot['entity_type'] !== $entityType || $snapshot['row_id'] !== $entityId) {
                 continue;
             }
 

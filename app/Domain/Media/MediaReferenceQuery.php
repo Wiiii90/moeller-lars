@@ -70,7 +70,7 @@ final class MediaReferenceQuery
      * Custom Page and Home components, including decorative Image children.
      * Public delivery applies publication flags to precisely the same tree.
      *
-     * @param list<array<string,mixed>> $components
+     * @param  list<mixed>  $components
      * @return list<int>
      */
     public function componentMediaIds(array $components, bool $publishedOnly = false): array

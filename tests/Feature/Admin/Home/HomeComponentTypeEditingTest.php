@@ -2,10 +2,17 @@
 
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
+use App\Filament\Pages\HomePresentation;
+use App\Filament\Support\RichTextEditorPlugin;
+use App\Models\AdminNotification;
+use App\Models\AuditEvent;
 use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
 use App\Models\User;
+use Filament\Facades\Filament;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 
 function homeComponentTypeSettings(HomeTemplate $template, array $components): HomePresentationSetting
 {
@@ -166,20 +173,44 @@ it('updates mixed Home parent and child selection atomically', function (): void
 
 it('creates and converts a Home heading through the real editor without losing its content', function (HomeTemplate $template): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     $settings = homeComponentTypeSettings($template, []);
-    $editor = \Livewire\Livewire::test(\App\Filament\Pages\HomePresentation::class)
+    $editor = Livewire::test(HomePresentation::class)
         ->mountAction('addComponent')->fillForm(['kind' => 'heading', 'title' => 'Heading to preserve'])
         ->callMountedAction()->assertHasNoFormErrors();
     expect(app(HomePresentationEditorialService::class)->configuration($settings->fresh())[$template->value]['components'][0]['title'])->toBe('Heading to preserve');
-    $before = \App\Models\AuditEvent::query()->count();
-    $notifications = \App\Models\AdminNotification::query()->count();
+    $before = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
     $editor->mountAction('editComponent', ['index' => 0, 'type' => 'text'])
         ->set('mountedActions.0.data.editor_kind', 'rich_text')->assertHasNoErrors();
     $converted = app(HomePresentationEditorialService::class)->configuration($settings->fresh())[$template->value]['components'][0];
     expect($converted['body'])->toBe('Heading to preserve')->and($converted['title'])->toBeNull()
-        ->and(\App\Models\AuditEvent::query()->count())->toBe($before + 1)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe($notifications + 1)
+        ->and(AuditEvent::query()->count())->toBe($before + 1)
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
+})->with([HomeTemplate::Custom, HomeTemplate::UnderConstruction]);
+
+it('persists visual Rich Text as a Home component in both content modes and reopens it unchanged', function (HomeTemplate $template): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+    $settings = homeComponentTypeSettings($template, [
+        ['type' => 'text', 'published' => true, 'title' => null, 'body' => '<p>Original</p>'],
+    ]);
+    $content = '<p data-artist-line-spacing="1.15"><span class="color" data-color="#214365">Home notes</span></p>';
+    Livewire::test(HomePresentation::class)
+        ->mountAction('editComponent', ['index' => 0, 'type' => 'text'])
+        ->set('mountedActions.0.data.body', $content)
+        ->callMountedAction()->assertHasNoFormErrors();
+
+    $saved = app(HomePresentationEditorialService::class)
+        ->configuration($settings->fresh())[$template->value]['components'][0];
+    $canonicalContent = '<p data-artist-line-spacing="1.15"><span data-color="#214365" class="color" style="--color: #214365; --dark-color: #214365">Home notes</span></p>';
+    expect($saved['body'])->toBe($canonicalContent);
+    $reopened = Livewire::test(HomePresentation::class)
+        ->mountAction('editComponent', ['index' => 0, 'type' => 'text']);
+    $rendered = RichContentRenderer::make($reopened->get('mountedActions.0.data.body'))
+        ->plugins([RichTextEditorPlugin::make()])->toHtml();
+    expect($rendered)->toBe($canonicalContent);
 })->with([HomeTemplate::Custom, HomeTemplate::UnderConstruction]);

@@ -2,11 +2,13 @@
 
 use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Content\SiteSectionEditorialService;
+use App\Domain\Content\SiteSectionIdentityService;
+use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Pages\SitePages;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
-use Illuminate\Support\Facades\Auth;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Livewire;
 
 require_once __DIR__.'/PagesFixtures.php';
@@ -54,7 +56,8 @@ it('persists successive Pages Edit changes while preserving the mounted form and
 
 it('keeps duplicate slug errors on the mounted form and rolls back all earlier changes', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
-    Filament::setCurrentPanel('admin'); Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     $service = app(SiteSectionEditorialService::class);
     $section = $service->createCustomPage('Original', 'page-original');
     $service->createCustomPage('Reserved', 'page-reserved');
@@ -71,7 +74,8 @@ it('keeps duplicate slug errors on the mounted form and rolls back all earlier c
 
 it('persists a combined rename and placement with complete audit and one notification', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
-    Filament::setCurrentPanel('admin'); Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     $service = app(SiteSectionEditorialService::class);
     $group = $service->createNavigationGroup('Destination');
     $section = $service->createCustomPage('Before combined', 'before-combined');
@@ -90,10 +94,11 @@ it('persists a combined rename and placement with complete audit and one notific
 
 it('rejects a stale Page dialog without overwriting a concurrent identity change', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
-    Filament::setCurrentPanel('admin'); Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     $section = app(SiteSectionEditorialService::class)->createCustomPage('Before stale', 'before-stale');
     $component = Livewire::test(SitePages::class)->mountAction('editPage', ['section' => $section->id]);
-    app(\App\Domain\Content\SiteSectionIdentityService::class)->update($section, 'Concurrent name', 'concurrent-slug');
+    app(SiteSectionIdentityService::class)->update($section, 'Concurrent name', 'concurrent-slug');
     app(AdminActivityNotificationContext::class)->discard();
     $before = AuditEvent::query()->count();
     $component->set('mountedActions.0.data.name', 'Stale edit')->callMountedAction()
@@ -103,15 +108,20 @@ it('rejects a stale Page dialog without overwriting a concurrent identity change
 });
 
 it('rejects Pages Edit requests after administrative access is lost', function (bool $guest): void {
-    $actor = pagesTestAdmin(); $this->actingAs($actor, 'web');
-    Filament::setCurrentPanel('admin'); Filament::bootCurrentPanel();
+    $actor = pagesTestAdmin();
+    $this->actingAs($actor, 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     $section = app(SiteSectionEditorialService::class)->createCustomPage('Protected', 'protected-edit');
     $component = Livewire::test(SitePages::class)->mountAction('editPage', ['section' => $section->id]);
-    if ($guest) { Auth::guard('web')->logout(); } else { $actor->forceFill(['is_admin' => false])->save(); }
+    if ($guest) {
+        Auth::guard('web')->logout();
+    } else {
+        $actor->forceFill(['is_admin' => false])->save();
+    }
     $component->set('mountedActions.0.data.name', 'Unauthorized')->assertForbidden();
     expect($section->fresh()->title)->toBe('Protected');
 })->with(['guest' => true, 'revoked admin' => false]);
-
 
 it('rejects invalid Pages Edit inputs without partially persisting earlier fields', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
@@ -129,4 +139,38 @@ it('rejects invalid Pages Edit inputs without partially persisting earlier field
 
     expect($section->fresh()->title)->toBe('Validation Example')
         ->and($section->fresh()->slug)->toBe('validation-example');
+});
+
+it('reorders Pages through the mounted editor', function (): void {
+    $this->actingAs(pagesTestAdmin(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+    $editorial = app(SiteSectionEditorialService::class);
+    $first = $editorial->createCustomPage('First sibling', 'first-sibling');
+    $second = $editorial->createCustomPage('Second sibling', 'second-sibling');
+
+    $order = app(SiteSectionOrderService::class);
+    $order->moveTo($first, null, 1);
+    $order->moveTo($second, null, 2);
+
+    $dialog = Livewire::test(SitePages::class)
+        ->mountAction('editPage', ['section' => $second->id])
+        ->assertSet('mountedActions.0.name', 'editPage');
+
+    $dialog->mountAction('dialogMoveUp')
+        ->assertHasNoErrors()
+        ->assertSet('mountedActions.0.name', 'editPage')
+        ->assertSet('mountedActions.0.arguments.section', $second->id)
+        ->assertSet('mountedActions.0.data.position', 2);
+    expect((int) $second->fresh()->position)->toBeLessThan((int) $first->fresh()->position);
+    expect($dialog->instance()->getMountedAction()->getModalAction('dialogMoveUp')->isDisabled())->toBeTrue();
+
+    $auditCount = AuditEvent::query()->count();
+    $dialog->mountAction('dialogMoveUp')->assertSet('mountedActions.0.name', 'editPage');
+    expect(AuditEvent::query()->count())->toBe($auditCount);
+
+    $dialog->mountAction('toggleDialogPublication')
+        ->assertSet('mountedActions.0.name', 'editPage')
+        ->assertSet('mountedActions.0.arguments.section', $second->id);
+    expect($second->fresh()->state)->toBe('published');
 });

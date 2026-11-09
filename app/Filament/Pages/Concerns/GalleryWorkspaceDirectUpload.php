@@ -2,11 +2,12 @@
 
 namespace App\Filament\Pages\Concerns;
 
-use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminMediaUploadFeedback;
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -16,13 +17,12 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Throwable;
 
 trait GalleryWorkspaceDirectUpload
 {
@@ -49,11 +49,11 @@ trait GalleryWorkspaceDirectUpload
         if (! $asset instanceof MediaAsset || ! $this->isGalleryPrimaryVisual($asset)) {
             throw ValidationException::withMessages(['media' => 'This media file is not a valid Artwork image or video.']);
         }
-        foreach ($this->pendingBatchArtworkMedia as $row) {
-            if ((int) ($row['media_asset_id'] ?? 0) === $assetId) {
-                return;
-            }
+        $pendingIds = array_map('intval', array_column($this->pendingBatchArtworkMedia, 'media_asset_id'));
+        if (in_array($assetId, $pendingIds, true)) {
+            return;
         }
+
         $this->pendingBatchArtworkMedia[] = $this->pendingBatchArtworkRow($asset);
     }
 
@@ -61,7 +61,7 @@ trait GalleryWorkspaceDirectUpload
      * Finalize a multi-file queue after each file was transferred and ingested
      * in its own bounded request. The existing Artwork dialogs remain the owner.
      *
-     * @param list<string> $errors
+     * @param  list<string>  $errors
      * @return array{summary:string,added:int,failed:int,duplicates:int}
      */
     public function finishDirectPrimaryMediaBatch(int $failed = 0, int $duplicates = 0, array $errors = []): array
@@ -239,7 +239,7 @@ trait GalleryWorkspaceDirectUpload
         $mime = (string) $asset->getAttribute('mime_type');
         $filename = e((string) $asset->getAttribute('original_filename'));
         if (MediaTypePolicy::isImage($mime)) {
-            $variant = \App\Domain\Media\MediaPreviewVariant::imageThumbnail($asset);
+            $variant = MediaPreviewVariant::imageThumbnail($asset);
             $url = $variant === null
                 ? route('admin.media.original', $asset)
                 : route('admin.media.variant', $variant);
@@ -249,7 +249,7 @@ trait GalleryWorkspaceDirectUpload
 
         if (MediaTypePolicy::isVideo($mime)) {
             $url = route('admin.media.original', $asset);
-            $poster = \App\Domain\Media\MediaPreviewVariant::videoPoster($asset);
+            $poster = MediaPreviewVariant::videoPoster($asset);
             $posterAttribute = $poster !== null
                 ? ' poster="'.e(route('admin.media.variant', $poster)).'"'
                 : '';
@@ -274,6 +274,4 @@ trait GalleryWorkspaceDirectUpload
 
         return $slug;
     }
-
-
 }

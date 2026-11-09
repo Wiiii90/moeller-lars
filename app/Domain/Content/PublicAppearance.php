@@ -12,14 +12,21 @@ final class PublicAppearance
     public const MODE_SOLID = 'solid';
 
     public const MODE_GRADIENT = 'gradient';
+
     public const MODE_RADIAL = 'radial';
+
     public const MODE_CONIC = 'conic';
+
     public const MODE_TRANSPARENT = 'transparent';
+
     public const MAX_STOPS = 12;
+
     public const DEFAULT_REPEAT_SPAN = 120;
 
     public const DEFAULT_PAGE_COLOR = '#777777';
+
     public const DEFAULT_SURFACE_COLOR = '#FFFFFF';
+
     public const SURFACE_PREFIXES = ['background', 'menu_background', 'page_background', 'header_name', 'header_divider_paint'];
 
     public const DEFAULT_DIVIDER_COLOR = '#D8D5D2';
@@ -30,7 +37,9 @@ final class PublicAppearance
     public const DEFAULT_GRADIENT_ANGLE = 180;
 
     public const HEADER_POSITIONS = ['outside' => 'Beside menu', 'inside' => 'Inside menu', 'above' => 'Above menu', 'below' => 'Below menu'];
+
     public const HEADER_CAPS = ['small-caps' => 'Small caps', 'normal' => 'Original case'];
+
     public const HEADER_ALIGNMENT = ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'];
 
     public static function headerAlignmentOptions(string $position): array
@@ -48,6 +57,7 @@ final class PublicAppearance
             ? 'left'
             : $alignment;
     }
+
     public const DEFAULT_HEADER_TEXT = 'Lars Möller';
 
     public static function headerText(mixed $value): string
@@ -69,6 +79,7 @@ final class PublicAppearance
 
         return $value;
     }
+
     public const FRAME_STYLES = [
         'layered' => 'Layered paper',
         'continuous' => 'Layered paper · continuous contours',
@@ -141,9 +152,13 @@ final class PublicAppearance
     }
 
     public const DEFAULT_TITLE_SIZE = 25;
+
     public const DEFAULT_TITLE_MIN_SIZE = 18;
+
     public const MIN_RESPONSIVE_TITLE_SIZE = 12;
+
     public const MIN_TITLE_SIZE = 16;
+
     public const MAX_TITLE_SIZE = 64;
 
     public static function normalizeTitleSize(mixed $value): int
@@ -328,6 +343,7 @@ final class PublicAppearance
                 ?? self::DEFAULT_DIVIDER_COLOR,
             default => self::DEFAULT_SURFACE_COLOR,
         };
+
         return [
             ['color' => self::normalizeColor($settings->getAttribute($surface.'_gradient_start'), $surface.'_gradient_start') ?? $fallback, 'position' => 0],
             ['color' => self::normalizeColor($settings->getAttribute($surface.'_gradient_end'), $surface.'_gradient_end') ?? $fallback, 'position' => 100],
@@ -374,6 +390,7 @@ final class PublicAppearance
         if (! in_array($value, [true, false, 0, 1, '0', '1'], true)) {
             throw ValidationException::withMessages([$field => 'Repeating must be enabled or disabled.']);
         }
+
         return (bool) $value;
     }
 
@@ -395,6 +412,7 @@ final class PublicAppearance
         if (! is_string($value) || ! in_array($value, ['circle', 'ellipse'], true)) {
             throw ValidationException::withMessages([$field => 'Choose circle or ellipse.']);
         }
+
         return $value;
     }
 
@@ -407,6 +425,7 @@ final class PublicAppearance
         if ($number === false || $number < $min || $number > $max) {
             throw ValidationException::withMessages([$field => $label.' must be between '.$min.' and '.$max.'.']);
         }
+
         return $number;
     }
 
@@ -456,6 +475,7 @@ final class PublicAppearance
             } else {
                 $point = $position.'%';
             }
+
             return $stop['color'].' '.$point;
         }, $stops);
 

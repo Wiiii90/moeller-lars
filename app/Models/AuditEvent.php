@@ -47,5 +47,4 @@ class AuditEvent extends Model
     {
         return $this->hasOne(PublicationCheckpointEvent::class);
     }
-
 }

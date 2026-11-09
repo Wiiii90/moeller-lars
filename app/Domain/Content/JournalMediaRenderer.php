@@ -2,8 +2,9 @@
 
 namespace App\Domain\Content;
 
-use App\Domain\Media\PublicMedia;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaTypePolicy;
+use App\Domain\Media\PublicMedia;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use Illuminate\Support\HtmlString;
@@ -37,7 +38,7 @@ final class JournalMediaRenderer
         }
 
         $isVideo = MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type'));
-        $posterVariant = $isVideo ? \App\Domain\Media\MediaPreviewVariant::videoPoster($asset) : null;
+        $posterVariant = $isVideo ? MediaPreviewVariant::videoPoster($asset) : null;
         $posterUrl = $posterVariant ? $this->media->variantUrl($posterVariant) : null;
         $variant = $isVideo ? null : $this->media->thumbnailVariantForAsset($asset);
         $alt = $this->media->altTextForAsset($asset);
@@ -96,7 +97,7 @@ final class JournalMediaRenderer
             throw new LogicException('Journal media usage requires a media asset.');
         }
 
-        $variant = \App\Domain\Media\MediaPreviewVariant::preview($asset);
+        $variant = MediaPreviewVariant::preview($asset);
         if ($variant !== null) {
             $width = (int) $variant->getAttribute('width');
             $height = (int) $variant->getAttribute('height');

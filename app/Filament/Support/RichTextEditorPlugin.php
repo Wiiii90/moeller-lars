@@ -9,8 +9,9 @@ use Filament\Forms\Components\RichEditor\Plugins\Contracts\HasFileAttachmentProv
 use Filament\Forms\Components\RichEditor\Plugins\Contracts\RichContentPlugin;
 use Filament\Forms\Components\RichEditor\RichEditorTool;
 use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\Str;
 
-final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachmentProvider
+final class RichTextEditorPlugin implements HasFileAttachmentProvider, RichContentPlugin
 {
     private const TABLE_COMMANDS = [
         'table' => '$getEditor()?.commands.insertTable({ rows: 2, cols: 3, withHeaderRow: true })',
@@ -24,12 +25,13 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
         'tableSplitCell' => '$getEditor()?.chain().focus().splitCell().run()',
         'tableDelete' => '$getEditor()?.chain().focus().deleteTable().run()',
     ];
+
     public static function make(): static
     {
-        return new static;
+        return new self;
     }
 
-    public function getFileAttachmentProvider(): ?FileAttachmentProvider
+    public function getFileAttachmentProvider(): FileAttachmentProvider
     {
         return new MediaRichTextAttachmentProvider;
     }
@@ -57,24 +59,24 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                 ->icon('heroicon-o-link')
                 ->toggle()
                 ->activeStyling(false)
-                ->jsHandler("\$dispatch('artist-rich-link-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+                ->jsHandler("\$event.stopPropagation(); \$dispatch('artist-rich-link-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
             RichEditorTool::make('textColor')
                 ->label(__('Text color'))
                 ->icon('heroicon-o-swatch')
                 ->activeStyling(false)
-                ->jsHandler("\$dispatch('artist-rich-color-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+                ->jsHandler("\$event.stopPropagation(); \$dispatch('artist-rich-color-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
             RichEditorTool::make('lineSpacing')
                 ->label(__('Line spacing'))
                 ->icon('heroicon-o-bars-3-bottom-left')
                 ->activeStyling(false)
-                ->jsHandler("\$dispatch('artist-rich-spacing-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+                ->jsHandler("\$event.stopPropagation(); \$dispatch('artist-rich-spacing-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
             ...array_map(
                 static function (string $name, string $command): RichEditorTool {
-                    $suffix = \Illuminate\Support\Str::snake($name);
+                    $suffix = Str::snake($name);
 
                     return RichEditorTool::make($name)
                         ->label(__('filament-forms::components.rich_editor.tools.'.$suffix))
-                        ->icon('fi-o-'.\Illuminate\Support\Str::kebab($name))
+                        ->icon('fi-o-'.Str::kebab($name))
                         ->jsHandler("({$command}) && \$dispatch('artist-rich-content-changed')");
                 },
                 array_keys(self::TABLE_COMMANDS),
@@ -84,35 +86,34 @@ final class RichTextEditorPlugin implements RichContentPlugin, HasFileAttachment
                 ->label(__('Insert image from Storage'))
                 ->icon(AdminIcon::Storage->value)
                 ->activeStyling(false)
-                ->jsHandler("\$dispatch('artist-rich-image-toggle')"),
+                ->jsHandler("\$event.stopPropagation(); \$dispatch('artist-rich-image-toggle', { editor: \$getEditor() })"),
             ...array_map(
-                static fn (string $placement): RichEditorTool =>
-                    RichEditorTool::make('image'.str_replace('-', '', ucfirst($placement)))
-                        ->label(match ($placement) {
-                            'inline' => __('Inline image'),
-                            'left' => __('Align image left'),
-                            'center' => __('Center image'),
-                            'right' => __('Align image right'),
-                            'float-left' => __('Wrap text on right'),
-                            'float-right' => __('Wrap text on left'),
-                        })
-                        ->icon(match ($placement) {
-                            'inline' => 'heroicon-o-squares-2x2',
-                            'left' => 'heroicon-o-bars-3-bottom-left',
-                            'center' => 'heroicon-o-bars-3',
-                            'right' => 'heroicon-o-bars-3-bottom-right',
-                            'float-left' => 'heroicon-o-bars-arrow-down',
-                            'float-right' => 'heroicon-o-bars-arrow-up',
-                        })
-                        ->activeStyling()
-                        ->activeJsExpression("\$getEditor()?.isActive('image', { artistPlacement: '{$placement}' }) ?? false")
-                        ->jsHandler("\$getEditor()?.storage.artistImageLayout.setPlacement(\$getEditor(), '{$placement}')"),
+                static fn (string $placement): RichEditorTool => RichEditorTool::make('image'.str_replace('-', '', ucfirst($placement)))
+                    ->label(match ($placement) {
+                        'inline' => __('Inline image'),
+                        'left' => __('Align image left'),
+                        'center' => __('Center image'),
+                        'right' => __('Align image right'),
+                        'float-left' => __('Wrap text on right'),
+                        'float-right' => __('Wrap text on left'),
+                    })
+                    ->icon(match ($placement) {
+                        'inline' => 'heroicon-o-squares-2x2',
+                        'left' => 'heroicon-o-bars-3-bottom-left',
+                        'center' => 'heroicon-o-bars-3',
+                        'right' => 'heroicon-o-bars-3-bottom-right',
+                        'float-left' => 'heroicon-o-bars-arrow-down',
+                        'float-right' => 'heroicon-o-bars-arrow-up',
+                    })
+                    ->activeStyling()
+                    ->activeJsExpression("\$getEditor()?.isActive('image', { artistPlacement: '{$placement}' }) ?? false")
+                    ->jsHandler("\$getEditor()?.storage.artistImageLayout.setPlacement(\$getEditor(), '{$placement}')"),
                 ArtistImageLayout::PLACEMENTS,
             ),
             RichEditorTool::make('imageCaption')
                 ->label(__('Image caption'))
                 ->icon(AdminIcon::Details->value)
-                ->jsHandler("\$dispatch('artist-rich-caption-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
+                ->jsHandler("\$event.stopPropagation(); \$dispatch('artist-rich-caption-toggle', { editor: \$getEditor(), anchor: \$event.currentTarget })"),
 
         ];
     }

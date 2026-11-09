@@ -2,16 +2,14 @@
 
 use App\Domain\Content\SafeLinkPolicy;
 use App\Domain\Content\SafeRichTextRenderer;
-use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\UnsafeRichTextException;
 use App\Domain\Media\PublicMedia;
-use App\Routing\SiteNodeRoute;
 
 function contentRenderer(): SafeRichTextRenderer
 {
     return new SafeRichTextRenderer(
         new SafeLinkPolicy,
-        new PublicMedia(new SitePreviewContext(new SiteNodeRoute)),
+        Mockery::mock(PublicMedia::class),
     );
 }
 
@@ -54,24 +52,32 @@ it('rejects scripts and unsafe links inside visual editor paragraphs', function 
         ->toThrow(UnsafeRichTextException::class);
 });
 
-
 it('renders safe email links in visual rich text', function (): void {
     $html = contentRenderer()->render('<p><a href="mailto:artist@example.com">Email</a></p>')->toHtml();
-    expect($html)->toContain('href="mailto:artist@example.com"');
+    expect(html_entity_decode($html, ENT_QUOTES | ENT_HTML5))->toContain('href="mailto:artist@example.com"');
 });
 
-it('renders nested links, tables and text color in visual rich text', function (): void {
-    $html = contentRenderer()->render(
-        '<ul><li><p>See <a href="https://example.com/">documentation</a>.</p></li></ul>'
-        .'<table><tbody><tr><th><p>Title</p></th><td><p>Value</p></td></tr></tbody></table>'
-        .'<p><span class="color" data-color="#336699">Colored</span></p>'
-        .'<p data-artist-line-spacing="none">Single spaced</p>'
-    )->toHtml();
+it('keeps visual tables, line spacing, safe links and text color data through public rendering', function (): void {
+    $source = '<p data-artist-line-spacing="2.0">An <a href="https://example.org/notes">authored link</a>'
+        .' with <span class="color" data-color="#136ab9">colored words</span></p>'
+        .'<table><tbody><tr><th>Year</th><th>Work</th></tr>'
+        .'<tr><td>2025</td><td>Painting</td></tr></tbody></table>';
 
-    expect($html)->toContain('href="https://example.com/"')
-        ->toContain('<table')
-        ->toContain('<th')
-        ->toContain('<td')
-        ->toContain('data-color="#336699"')
-        ->toContain('data-artist-line-spacing="none"');
+    $html = contentRenderer()->render($source)->toHtml();
+
+    expect($html)->toContain('<table')
+        ->toContain('2025')
+        ->toContain('Painting')
+        ->toContain('href="https://example.org/notes"')
+        ->toContain('data-artist-line-spacing="2.0"')
+        ->toContain('data-color="#136ab9"');
+});
+
+it('rejects executable links in visual tables without replacing valid authored links', function (): void {
+    $unsafe = '<table><tbody><tr><td><a href="javascript:alert(1)">unsafe</a></td></tr></tbody></table>';
+
+    expect(fn () => contentRenderer()->render($unsafe))->toThrow(UnsafeRichTextException::class);
+    $html = contentRenderer()->render('<p><a href="mailto:studio@example.org">Mail</a></p>')->toHtml();
+    expect(html_entity_decode($html, ENT_QUOTES | ENT_HTML5))
+        ->toContain('href="mailto:studio@example.org"');
 });

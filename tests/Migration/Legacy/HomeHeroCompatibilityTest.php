@@ -30,7 +30,6 @@ it('maps legacy fixed Hero configuration to a one-member Manual ordered group', 
         ]);
 });
 
-
 it('maps legacy automatic newest Hero configuration to Automatic ordered', function (): void {
     $configuration = app(HomeHeroConfigurationService::class)->configuration(heroDomainSettings([
         'hero_mode' => 'automatic',
@@ -40,7 +39,6 @@ it('maps legacy automatic newest Hero configuration to Automatic ordered', funct
     expect($configuration['group_source'])->toBe('automatic')
         ->and($configuration['display_strategy'])->toBe('ordered');
 });
-
 
 it('maps legacy random Hero configuration to Automatic random', function (): void {
     $configuration = app(HomeHeroConfigurationService::class)->configuration(heroDomainSettings([

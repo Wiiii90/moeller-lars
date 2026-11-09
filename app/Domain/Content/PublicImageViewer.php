@@ -22,14 +22,14 @@ final class PublicImageViewer
 
         if (RichTextDocument::isVisual($source)) {
             preg_match_all('/<img\b[^>]*>/i', $source, $sourceImages);
-            foreach ($sourceImages[0] ?? [] as $tag) {
+            foreach ($sourceImages[0] as $tag) {
                 if (preg_match('/\bdata-id\s*=\s*(["\'])(\d+)\1/i', $tag, $match) === 1) {
                     $ids[] = (int) $match[2];
                 }
             }
         } else {
             preg_match_all('/!\[[^\r\n]*?\]\(([^)\r\n]+)\)/', $source, $sourceImages);
-            foreach ($sourceImages[1] ?? [] as $url) {
+            foreach ($sourceImages[1] as $url) {
                 $ids[] = RichTextMediaReference::idFromUrl($url);
             }
         }
@@ -78,5 +78,4 @@ final class PublicImageViewer
             .' data-viewer-title="'.e($alt !== '' ? $alt : 'Image').'"'
             .' role="button" tabindex="0" aria-label="'.e('Enlarge image'.($alt !== '' ? ': '.$alt : '')).'"';
     }
-
 }

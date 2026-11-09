@@ -2,7 +2,9 @@
 
 use App\Domain\Media\MediaIptcXmpWriter;
 use App\Domain\Media\MediaRightsProjection;
+use App\Domain\Media\PublicMedia;
 use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use Symfony\Component\Process\Process;
 
 // Real-file tests: no mocked ExifTool, no database or server mutations.
@@ -153,12 +155,11 @@ it('stages actual WebP thumbnails with their own hashes and the original asset r
             'copyright_notice_mode' => MediaAsset::COPYRIGHT_OVERRIDE,
             'copyright_notice' => 'Copyright Photo Studio',
         ], true);
-        $variant = new \App\Models\MediaVariant;
+        $variant = new MediaVariant;
         $variant->setRawAttributes([
             'id' => 247,
             'media_asset_id' => 142,
-            'variant_kind' => \App\Domain\Media\PublicMedia::THUMBNAIL_KIND,
-            'transform_profile' => \App\Domain\Media\PublicMedia::PUBLIC_TRANSFORM_PROFILE,
+            'variant_kind' => PublicMedia::THUMBNAIL_KIND,
             'state' => 'available',
             'mime_type' => 'image/webp',
             'byte_size' => filesize($source),

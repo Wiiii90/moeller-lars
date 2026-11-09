@@ -25,8 +25,8 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\View;
@@ -41,7 +41,6 @@ use UnitEnum;
  */
 final class General extends Page
 {
-
     private const PERSISTED_FIELDS = [
         'favicon_media_asset_id',
         'frame_style',
@@ -184,7 +183,6 @@ final class General extends Page
         $data['header_name_position'] = PublicAppearance::headerPosition($data['header_name_position'] ?? null);
         $data['header_name_caps'] = PublicAppearance::headerCaps($data['header_name_caps'] ?? null);
         $data['header_name_color'] = PublicAppearance::normalizeColor($data['header_name_color'] ?? null, 'header_name_color');
-        $data['header_name_mode'] ??= PublicAppearance::MODE_SOLID;
         $data['header_name_size'] = PublicAppearance::normalizeTitleSize($data['header_name_size'] ?? null);
         $data['header_name_min_size'] = PublicAppearance::normalizeTitleMinSize($data['header_name_min_size'] ?? null);
         $data['header_divider_mode'] = PublicAppearance::headerDivider($data['header_divider_mode'] ?? null);
@@ -247,261 +245,261 @@ final class General extends Page
                                 ->columnSpanFull(),
 
                             Group::make([
-                            Group::make([
-                                MediaAssetSelect::make(
-                                'favicon_media_asset_id',
-                                'faviconMediaAsset',
-                                'Site icon',
-                                imagesOnly: true,
-                                includeDimensions: false,
-                            )
-                                ->placeholder(__('Choose from Storage'))
-                                ->selectablePlaceholder(false)
-                                ->extraFieldWrapperAttributes(['class' => 'admin-favicon-control general-site-icon-control'])
-                                ->nullable()
-                                ->live()
-                                ->suffixAction(
-                                    Action::make('removeFavicon')
-                                        ->label('Remove site icon')
-                                        ->icon(AdminIcon::Remove->mini())
-                                        ->iconButton()
-                                        ->color('gray')
-                                        ->extraAttributes(['class' => 'general-site-icon-remove'])
-                                        ->visible(fn (callable $get): bool => filled($get('favicon_media_asset_id')))
-                                        ->action(function ($livewire): void {
-                                            if ($livewire instanceof self) {
-                                                $livewire->removeFavicon();
-                                            }
-                                        }),
-                                )
-                                ->afterStateUpdated(self::persist('favicon_media_asset_id')),
-
-                                Select::make('frame_style')
-                                    ->label('Frame style')
-                                    ->options(array_map('__', PublicAppearance::FRAME_STYLES))
-                                    ->native()
-                                    ->required()
-                                    ->live()
-                                    ->afterStateUpdated(self::persist('frame_style')),
-                                self::appearanceSurfaceControls('background', 'Background'),
-                            ])
-                                ->columns(1)
-                                ->extraAttributes([
-                                    'class' => 'admin-stage-panel-content general-appearance-stage__panel',
-                                    'data-appearance-panel' => 'global',
-                                    'x-bind:class' => "{ 'is-active': appearanceTab === 'global' }",
-                                    'x-bind:inert' => "appearanceTab !== 'global'",
-                                    'x-bind:aria-hidden' => "(appearanceTab !== 'global').toString()",
-                                ])
-                                ->columnSpanFull(),
-
-                            Group::make([
                                 Group::make([
-                                Select::make('header_name_visible')
-                                    ->label('Title')
-                                    ->options(['1' => __('Show'), '0' => __('Hide')])
-                                    ->native()
-                                    ->required()
-                                    ->live()
-                                    ->formatStateUsing(static fn (mixed $state): string => $state === null || (bool) $state ? '1' : '0')
-                                    ->afterStateUpdated(self::persist('header_name_visible')),
-                                TextInput::make('header_name_text')
-                                    ->label('Text')
-                                    ->required()
-                                    ->maxLength(100)
-                                    ->lazy()
-                                    ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
-                                    ->extraInputAttributes(self::commitOnEnterAttributes())
-                                    ->afterStateUpdated(self::persist('header_name_text')),
+                                    MediaAssetSelect::make(
+                                        'favicon_media_asset_id',
+                                        'faviconMediaAsset',
+                                        'Site icon',
+                                        imagesOnly: true,
+                                        includeDimensions: false,
+                                    )
+                                        ->placeholder(__('Choose from Storage'))
+                                        ->selectablePlaceholder(false)
+                                        ->extraFieldWrapperAttributes(['class' => 'admin-favicon-control general-site-icon-control'])
+                                        ->nullable()
+                                        ->live()
+                                        ->suffixAction(
+                                            Action::make('removeFavicon')
+                                                ->label('Remove site icon')
+                                                ->icon(AdminIcon::Remove->mini())
+                                                ->iconButton()
+                                                ->color('gray')
+                                                ->extraAttributes(['class' => 'general-site-icon-remove'])
+                                                ->visible(fn (callable $get): bool => filled($get('favicon_media_asset_id')))
+                                                ->action(function ($livewire): void {
+                                                    if ($livewire instanceof self) {
+                                                        $livewire->removeFavicon();
+                                                    }
+                                                }),
+                                        )
+                                        ->afterStateUpdated(self::persist('favicon_media_asset_id')),
+
+                                    Select::make('frame_style')
+                                        ->label('Frame style')
+                                        ->options(array_map('__', PublicAppearance::FRAME_STYLES))
+                                        ->native()
+                                        ->required()
+                                        ->live()
+                                        ->afterStateUpdated(self::persist('frame_style')),
+                                    self::appearanceSurfaceControls('background', 'Background'),
                                 ])
-                                    ->columns(2)
+                                    ->columns(1)
+                                    ->extraAttributes([
+                                        'class' => 'admin-stage-panel-content general-appearance-stage__panel',
+                                        'data-appearance-panel' => 'global',
+                                        'x-bind:class' => "{ 'is-active': appearanceTab === 'global' }",
+                                        'x-bind:inert' => "appearanceTab !== 'global'",
+                                        'x-bind:aria-hidden' => "(appearanceTab !== 'global').toString()",
+                                    ])
                                     ->columnSpanFull(),
+
                                 Group::make([
-                                Select::make('header_name_position')
-                                    ->label('Position')
-                                    ->options(array_map('__', PublicAppearance::HEADER_POSITIONS))
-                                    ->native()
-                                    ->required()
-                                    ->live()
-                                    ->afterStateUpdated(function ($livewire): void {
-                                        if (! $livewire instanceof self) {
-                                            return;
-                                        }
+                                    Group::make([
+                                        Select::make('header_name_visible')
+                                            ->label('Title')
+                                            ->options(['1' => __('Show'), '0' => __('Hide')])
+                                            ->native()
+                                            ->required()
+                                            ->live()
+                                            ->formatStateUsing(static fn (mixed $state): string => $state === null || (bool) $state ? '1' : '0')
+                                            ->afterStateUpdated(self::persist('header_name_visible')),
+                                        TextInput::make('header_name_text')
+                                            ->label('Text')
+                                            ->required()
+                                            ->maxLength(100)
+                                            ->lazy()
+                                            ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
+                                            ->extraInputAttributes(self::commitOnEnterAttributes())
+                                            ->afterStateUpdated(self::persist('header_name_text')),
+                                    ])
+                                        ->columns(2)
+                                        ->columnSpanFull(),
+                                    Group::make([
+                                        Select::make('header_name_position')
+                                            ->label('Position')
+                                            ->options(array_map('__', PublicAppearance::HEADER_POSITIONS))
+                                            ->native()
+                                            ->required()
+                                            ->live()
+                                            ->afterStateUpdated(function ($livewire): void {
+                                                if (! $livewire instanceof self) {
+                                                    return;
+                                                }
 
-                                        if (in_array($livewire->data['header_name_position'] ?? null, ['inside', 'outside'], true)
-                                            && ($livewire->data['header_name_alignment'] ?? null) === 'center') {
-                                            $livewire->data['header_name_alignment'] = 'left';
-                                            $livewire->persistChangedFields(['header_name_position', 'header_name_alignment']);
+                                                if (in_array($livewire->data['header_name_position'] ?? null, ['inside', 'outside'], true)
+                                                    && ($livewire->data['header_name_alignment'] ?? null) === 'center') {
+                                                    $livewire->data['header_name_alignment'] = 'left';
+                                                    $livewire->persistChangedFields(['header_name_position', 'header_name_alignment']);
 
-                                            return;
-                                        }
+                                                    return;
+                                                }
 
-                                        $livewire->persistChangedField('header_name_position');
-                                    }),
-                                Select::make('header_name_caps')
-                                    ->label('Lettering')
-                                    ->options(array_map('__', PublicAppearance::HEADER_CAPS))
-                                    ->native()
-                                    ->required()
-                                    ->live()
-                                    ->afterStateUpdated(self::persist('header_name_caps')),
-                            ])
-                                ->columns(2)
-                                ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
-                                ->columnSpanFull(),
+                                                $livewire->persistChangedField('header_name_position');
+                                            }),
+                                        Select::make('header_name_caps')
+                                            ->label('Lettering')
+                                            ->options(array_map('__', PublicAppearance::HEADER_CAPS))
+                                            ->native()
+                                            ->required()
+                                            ->live()
+                                            ->afterStateUpdated(self::persist('header_name_caps')),
+                                    ])
+                                        ->columns(2)
+                                        ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
+                                        ->columnSpanFull(),
 
-                            Group::make([
-                                Select::make('header_name_alignment')
-                                    ->label('Alignment')
-                                    ->options(fn (callable $get): array => array_map('__', PublicAppearance::headerAlignmentOptions((string) $get('header_name_position'))))
-                                    ->native()
-                                    ->required()
-                                    ->live()
-                                    ->afterStateUpdated(self::persist('header_name_alignment')),
-                                Select::make('header_name_mobile_alignment')
-                                    ->label('Responsive alignment')
-                                    ->options(array_map('__', PublicAppearance::HEADER_ALIGNMENT))
-                                    ->native()
-                                    ->required()
-                                    ->live()
-                                    ->afterStateUpdated(self::persist('header_name_mobile_alignment')),
-                            ])
-                                ->columns(2)
-                                ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
-                                ->columnSpanFull(),
+                                    Group::make([
+                                        Select::make('header_name_alignment')
+                                            ->label('Alignment')
+                                            ->options(fn (callable $get): array => array_map('__', PublicAppearance::headerAlignmentOptions((string) $get('header_name_position'))))
+                                            ->native()
+                                            ->required()
+                                            ->live()
+                                            ->afterStateUpdated(self::persist('header_name_alignment')),
+                                        Select::make('header_name_mobile_alignment')
+                                            ->label('Responsive alignment')
+                                            ->options(array_map('__', PublicAppearance::HEADER_ALIGNMENT))
+                                            ->native()
+                                            ->required()
+                                            ->live()
+                                            ->afterStateUpdated(self::persist('header_name_mobile_alignment')),
+                                    ])
+                                        ->columns(2)
+                                        ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
+                                        ->columnSpanFull(),
 
-                            Group::make([
-                                TextInput::make('header_name_size')
-                                    ->label('Size')
-                                    ->numeric()
-                                    ->integer()
-                                    ->minValue(PublicAppearance::MIN_TITLE_SIZE)
-                                    ->maxValue(PublicAppearance::MAX_TITLE_SIZE)
-                                    ->step(1)
-                                    ->suffix('px')
-                                    ->required()
-                                    ->lazy()
-                                    ->extraInputAttributes(self::commitOnEnterAttributes())
-                                    ->afterStateUpdated(self::persist('header_name_size')),
-                                Select::make('header_name_auto_scale')
-                                    ->label('Responsive size')
-                                    ->options(['1' => __('Allow reduction'), '0' => __('Keep selected size')])
-                                    ->native()
-                                    ->required()
-                                    ->live()
-                                    ->formatStateUsing(static fn (mixed $state): string => $state === null || (bool) $state ? '1' : '0')
-                                    ->afterStateUpdated(self::persist('header_name_auto_scale')),
-                                TextInput::make('header_name_min_size')
-                                    ->label('Minimum size')
-                                    ->numeric()
-                                    ->integer()
-                                    ->minValue(PublicAppearance::MIN_RESPONSIVE_TITLE_SIZE)
-                                    ->maxValue(PublicAppearance::MAX_TITLE_SIZE)
-                                    ->suffix('px')
-                                    ->required()
-                                    ->lazy()
-                                    ->visible(fn (callable $get): bool => (bool) $get('header_name_auto_scale'))
-                                    ->extraInputAttributes(self::commitOnEnterAttributes())
-                                    ->afterStateUpdated(self::persist('header_name_min_size')),
-                            ])
-                                ->columns(2)
-                                ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
-                                ->columnSpanFull(),
-                            self::appearanceSurfaceControls('header_name', 'Title color')
-                                ->visible(fn (callable $get): bool => (bool) $get('header_name_visible')),
+                                    Group::make([
+                                        TextInput::make('header_name_size')
+                                            ->label('Size')
+                                            ->numeric()
+                                            ->integer()
+                                            ->minValue(PublicAppearance::MIN_TITLE_SIZE)
+                                            ->maxValue(PublicAppearance::MAX_TITLE_SIZE)
+                                            ->step(1)
+                                            ->suffix('px')
+                                            ->required()
+                                            ->lazy()
+                                            ->extraInputAttributes(self::commitOnEnterAttributes())
+                                            ->afterStateUpdated(self::persist('header_name_size')),
+                                        Select::make('header_name_auto_scale')
+                                            ->label('Responsive size')
+                                            ->options(['1' => __('Allow reduction'), '0' => __('Keep selected size')])
+                                            ->native()
+                                            ->required()
+                                            ->live()
+                                            ->formatStateUsing(static fn (mixed $state): string => $state === null || (bool) $state ? '1' : '0')
+                                            ->afterStateUpdated(self::persist('header_name_auto_scale')),
+                                        TextInput::make('header_name_min_size')
+                                            ->label('Minimum size')
+                                            ->numeric()
+                                            ->integer()
+                                            ->minValue(PublicAppearance::MIN_RESPONSIVE_TITLE_SIZE)
+                                            ->maxValue(PublicAppearance::MAX_TITLE_SIZE)
+                                            ->suffix('px')
+                                            ->required()
+                                            ->lazy()
+                                            ->visible(fn (callable $get): bool => (bool) $get('header_name_auto_scale'))
+                                            ->extraInputAttributes(self::commitOnEnterAttributes())
+                                            ->afterStateUpdated(self::persist('header_name_min_size')),
+                                    ])
+                                        ->columns(2)
+                                        ->visible(fn (callable $get): bool => (bool) $get('header_name_visible'))
+                                        ->columnSpanFull(),
+                                    self::appearanceSurfaceControls('header_name', 'Title color')
+                                        ->visible(fn (callable $get): bool => (bool) $get('header_name_visible')),
 
-                            ])
-                                ->columns(1)
-                                ->extraAttributes([
-                                    'class' => 'admin-stage-panel-content general-appearance-stage__panel',
-                                    'data-appearance-panel' => 'title',
-                                    'x-bind:class' => "{ 'is-active': appearanceTab === 'title' }",
-                                    'x-bind:inert' => "appearanceTab !== 'title'",
-                                    'x-bind:aria-hidden' => "(appearanceTab !== 'title').toString()",
                                 ])
-                                ->columnSpanFull(),
-
-                            Group::make([
-                                Group::make([
-                                Select::make('menu_type')
-                                    ->label('Menu type')
-                                    ->options(array_map('__', PublicAppearance::MENU_TYPES))
-                                    ->native()
-                                    ->required()
-                                    ->live()
-                                    ->afterStateUpdated(self::persist('menu_type')),
-                                Select::make('header_divider_mode')
-                                    ->label('Menu to page')
-                                    ->options(array_map('__', PublicAppearance::HEADER_DIVIDERS))
-                                    ->native()
-                                    ->required()
-                                    ->live()
-                                    ->afterStateUpdated(self::persist('header_divider_mode')),
-                                ])
-                                    ->columns(2)
+                                    ->columns(1)
+                                    ->extraAttributes([
+                                        'class' => 'admin-stage-panel-content general-appearance-stage__panel',
+                                        'data-appearance-panel' => 'title',
+                                        'x-bind:class' => "{ 'is-active': appearanceTab === 'title' }",
+                                        'x-bind:inert' => "appearanceTab !== 'title'",
+                                        'x-bind:aria-hidden' => "(appearanceTab !== 'title').toString()",
+                                    ])
                                     ->columnSpanFull(),
-                                self::appearanceSurfaceControls('menu_background', 'Menu background'),
-                                self::appearanceSurfaceControls('header_divider_paint', 'Divider color'),
-                            ])
-                                ->columns(1)
-                                ->extraAttributes([
-                                    'class' => 'admin-stage-panel-content general-appearance-stage__panel',
-                                    'data-appearance-panel' => 'menu',
-                                    'x-bind:class' => "{ 'is-active': appearanceTab === 'menu' }",
-                                    'x-bind:inert' => "appearanceTab !== 'menu'",
-                                    'x-bind:aria-hidden' => "(appearanceTab !== 'menu').toString()",
-                                ])
-                                ->columnSpanFull(),
 
-                            Group::make([
                                 Group::make([
-                                TextInput::make('public_page_width')
-                                    ->label('Content width')
-                                    ->numeric()
-                                    ->integer()
-                                    ->minValue(PublicAppearance::MIN_PAGE_WIDTH)
-                                    ->maxValue(PublicAppearance::MAX_PAGE_WIDTH)
-                                    ->step(1)
-                                    ->suffix('px')
-                                    ->required()
-                                    ->lazy()
-                                    ->extraInputAttributes(self::commitOnEnterAttributes())
-                                    ->afterStateUpdated(self::persist('public_page_width')),
-                                TextInput::make('public_content_padding')
-                                    ->label('Content padding')
-                                    ->numeric()
-                                    ->integer()
-                                    ->minValue(PublicAppearance::MIN_CONTENT_PADDING)
-                                    ->maxValue(PublicAppearance::MAX_CONTENT_PADDING)
-                                    ->step(1)
-                                    ->suffix('px')
-                                    ->required()
-                                    ->lazy()
-                                    ->extraInputAttributes(self::commitOnEnterAttributes())
-                                    ->afterStateUpdated(self::persist('public_content_padding')),
-                            ])
-                                ->columns(2)
-                                ->extraAttributes(['class' => 'general-layout-row'])
-                                ->columnSpanFull(),
-
-                                self::appearanceSurfaceControls('page_background', 'Page background'),
-                            ])
-                                ->columns(1)
-                                ->extraAttributes([
-                                    'class' => 'admin-stage-panel-content general-appearance-stage__panel',
-                                    'data-appearance-panel' => 'page',
-                                    'x-bind:class' => "{ 'is-active': appearanceTab === 'page' }",
-                                    'x-bind:inert' => "appearanceTab !== 'page'",
-                                    'x-bind:aria-hidden' => "(appearanceTab !== 'page').toString()",
+                                    Group::make([
+                                        Select::make('menu_type')
+                                            ->label('Menu type')
+                                            ->options(array_map('__', PublicAppearance::MENU_TYPES))
+                                            ->native()
+                                            ->required()
+                                            ->live()
+                                            ->afterStateUpdated(self::persist('menu_type')),
+                                        Select::make('header_divider_mode')
+                                            ->label('Menu to page')
+                                            ->options(array_map('__', PublicAppearance::HEADER_DIVIDERS))
+                                            ->native()
+                                            ->required()
+                                            ->live()
+                                            ->afterStateUpdated(self::persist('header_divider_mode')),
+                                    ])
+                                        ->columns(2)
+                                        ->columnSpanFull(),
+                                    self::appearanceSurfaceControls('menu_background', 'Menu background'),
+                                    self::appearanceSurfaceControls('header_divider_paint', 'Divider color'),
                                 ])
-                                ->columnSpanFull(),
+                                    ->columns(1)
+                                    ->extraAttributes([
+                                        'class' => 'admin-stage-panel-content general-appearance-stage__panel',
+                                        'data-appearance-panel' => 'menu',
+                                        'x-bind:class' => "{ 'is-active': appearanceTab === 'menu' }",
+                                        'x-bind:inert' => "appearanceTab !== 'menu'",
+                                        'x-bind:aria-hidden' => "(appearanceTab !== 'menu').toString()",
+                                    ])
+                                    ->columnSpanFull(),
 
-                            Hidden::make('background_gradient_start'),
-                            Hidden::make('background_gradient_end'),
-                            Hidden::make('menu_background_gradient_start'),
-                            Hidden::make('menu_background_gradient_end'),
-                            Hidden::make('page_background_gradient_start'),
-                            Hidden::make('page_background_gradient_end'),
+                                Group::make([
+                                    Group::make([
+                                        TextInput::make('public_page_width')
+                                            ->label('Content width')
+                                            ->numeric()
+                                            ->integer()
+                                            ->minValue(PublicAppearance::MIN_PAGE_WIDTH)
+                                            ->maxValue(PublicAppearance::MAX_PAGE_WIDTH)
+                                            ->step(1)
+                                            ->suffix('px')
+                                            ->required()
+                                            ->lazy()
+                                            ->extraInputAttributes(self::commitOnEnterAttributes())
+                                            ->afterStateUpdated(self::persist('public_page_width')),
+                                        TextInput::make('public_content_padding')
+                                            ->label('Content padding')
+                                            ->numeric()
+                                            ->integer()
+                                            ->minValue(PublicAppearance::MIN_CONTENT_PADDING)
+                                            ->maxValue(PublicAppearance::MAX_CONTENT_PADDING)
+                                            ->step(1)
+                                            ->suffix('px')
+                                            ->required()
+                                            ->lazy()
+                                            ->extraInputAttributes(self::commitOnEnterAttributes())
+                                            ->afterStateUpdated(self::persist('public_content_padding')),
+                                    ])
+                                        ->columns(2)
+                                        ->extraAttributes(['class' => 'general-layout-row'])
+                                        ->columnSpanFull(),
+
+                                    self::appearanceSurfaceControls('page_background', 'Page background'),
+                                ])
+                                    ->columns(1)
+                                    ->extraAttributes([
+                                        'class' => 'admin-stage-panel-content general-appearance-stage__panel',
+                                        'data-appearance-panel' => 'page',
+                                        'x-bind:class' => "{ 'is-active': appearanceTab === 'page' }",
+                                        'x-bind:inert' => "appearanceTab !== 'page'",
+                                        'x-bind:aria-hidden' => "(appearanceTab !== 'page').toString()",
+                                    ])
+                                    ->columnSpanFull(),
+
+                                Hidden::make('background_gradient_start'),
+                                Hidden::make('background_gradient_end'),
+                                Hidden::make('menu_background_gradient_start'),
+                                Hidden::make('menu_background_gradient_end'),
+                                Hidden::make('page_background_gradient_start'),
+                                Hidden::make('page_background_gradient_end'),
                             ])
                                 ->columns(1)
                                 ->extraAttributes([
@@ -1286,7 +1284,7 @@ final class General extends Page
                 'header_divider_paint_gradient_center_y',
                 'header_divider_paint_gradient_shape',
                 'header_name_auto_scale',
-                        'public_page_width',
+                'public_page_width',
                 'public_content_padding',
             ]) !== []) {
                 $this->dispatch('general-appearance-updated');
@@ -1479,16 +1477,14 @@ final class General extends Page
             'header_name_color', 'header_name_gradient_start', 'header_name_gradient_end', 'header_divider_color',
             'header_divider_paint_gradient_start', 'header_divider_paint_gradient_end' => $this->normalizeColorCandidate($value),
             'background_gradient_angle', 'menu_background_gradient_angle', 'page_background_gradient_angle', 'header_name_gradient_angle', 'header_divider_paint_gradient_angle' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : ($value === '' ? null : $value),
-            'background_gradient_stops', 'menu_background_gradient_stops', 'page_background_gradient_stops', 'header_name_gradient_stops', 'header_divider_paint_gradient_stops' =>
-                is_array($value) ? array_map(static fn (mixed $stop): mixed => is_array($stop)
+            'background_gradient_stops', 'menu_background_gradient_stops', 'page_background_gradient_stops', 'header_name_gradient_stops', 'header_divider_paint_gradient_stops' => is_array($value) ? array_map(static fn (mixed $stop): mixed => is_array($stop)
                     ? ['color' => is_string($stop['color'] ?? null) ? strtoupper($stop['color']) : ($stop['color'] ?? null),
-                       'position' => is_numeric($stop['position'] ?? null) ? (int) $stop['position'] : ($stop['position'] ?? null)]
+                        'position' => is_numeric($stop['position'] ?? null) ? (int) $stop['position'] : ($stop['position'] ?? null)]
                     : $stop, array_values($value)) : $value,
             'background_gradient_repeating', 'menu_background_gradient_repeating', 'page_background_gradient_repeating', 'header_name_gradient_repeating', 'header_divider_paint_gradient_repeating' => (bool) $value,
             'background_gradient_repeat_span', 'menu_background_gradient_repeat_span', 'page_background_gradient_repeat_span', 'header_name_gradient_repeat_span', 'header_divider_paint_gradient_repeat_span',
             'background_gradient_center_x', 'menu_background_gradient_center_x', 'page_background_gradient_center_y', 'header_name_gradient_center_x', 'header_name_gradient_center_y', 'header_divider_paint_gradient_center_x', 'header_divider_paint_gradient_center_y',
-            'background_gradient_center_y', 'menu_background_gradient_center_y', 'page_background_gradient_center_x' =>
-                is_numeric($value) ? (int) $value : $value,
+            'background_gradient_center_y', 'menu_background_gradient_center_y', 'page_background_gradient_center_x' => is_numeric($value) ? (int) $value : $value,
             'header_name_visible', 'header_name_auto_scale' => (bool) $value,
             'header_name_size', 'header_name_min_size', 'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
             'social_links' => $this->normalizeSocialLinks($value),

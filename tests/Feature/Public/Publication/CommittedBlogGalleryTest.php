@@ -61,7 +61,6 @@ it('serves a committed Blog gallery without visual captions while retaining auth
             'mime_type' => 'image/webp',
             'byte_size' => strlen($thumbnail),
             'sha256' => hash('sha256', $thumbnail),
-            'transform_profile' => 'public-v1',
             'state' => 'available',
             'width' => 50,
             'height' => 50,

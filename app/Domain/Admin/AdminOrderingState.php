@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 final class AdminOrderingState
 {
     /**
-     * @param list<int|string> $state
+     * @param  list<mixed>  $state
      * @return list<string>
      */
     public static function normalize(array $state): array
@@ -34,7 +34,7 @@ final class AdminOrderingState
     }
 
     /**
-     * @param list<string> $state
+     * @param  list<string>  $state
      * @return list<int|string>
      */
     public static function denormalize(array $state): array
@@ -54,7 +54,7 @@ final class AdminOrderingState
     /**
      * Stable identities for structured list items whose payload remains unchanged while only order changes.
      *
-     * @param list<mixed> $items
+     * @param  list<mixed>  $items
      * @return list<string>
      */
     public static function fingerprints(array $items): array
@@ -206,8 +206,8 @@ final class AdminOrderingState
     /**
      * Restore one ordering scope only when its current canonical state still equals the expected projection end.
      *
-     * @param list<string> $expectedCurrent
-     * @param list<string> $target
+     * @param  list<string>  $expectedCurrent
+     * @param  list<string>  $target
      */
     public function restore(string $scope, array $expectedCurrent, array $target): void
     {
@@ -282,8 +282,8 @@ final class AdminOrderingState
     }
 
     /**
-     * @param list<string> $target
-     * @param array<string,mixed> $extraWhere
+     * @param  list<string>  $target
+     * @param  array<string,mixed>  $extraWhere
      */
     private function restoreIdOrder(
         string $table,
@@ -395,8 +395,8 @@ final class AdminOrderingState
     }
 
     /**
-     * @param list<mixed> $items
-     * @param list<string> $target
+     * @param  list<mixed>  $items
+     * @param  list<string>  $target
      * @return list<mixed>
      */
     private function reorderStructured(array $items, array $target): array

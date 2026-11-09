@@ -12,6 +12,7 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaReferenceCatalog;
 use App\Models\Artwork;
+use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
@@ -60,7 +61,7 @@ trait GalleryWorkspaceArtworkActions
                 }
 
                 try {
-                    if ($deleteFile && $asset instanceof MediaAsset) {
+                    if ($deleteFile) {
                         // One media-domain transaction owns both the optional
                         // original deletion and the Gallery Artwork removal.
                         app(MediaAssetEditorialService::class)->delete($asset, $artwork);
@@ -74,7 +75,7 @@ trait GalleryWorkspaceArtworkActions
                 } catch (\Throwable $exception) {
                     // Physical file cleanup can fail *after* a successful DB
                     // commit; distinguish that from an earlier failed mutation.
-                    if ($deleteFile && $asset instanceof MediaAsset
+                    if ($deleteFile
                         && ! Artwork::query()->whereKey($artwork->getKey())->exists()
                         && (string) $asset->fresh()?->getAttribute('state') === 'deleted') {
                         report($exception);

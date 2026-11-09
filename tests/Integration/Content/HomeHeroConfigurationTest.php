@@ -54,7 +54,6 @@ it('adds removes and reorders Manual group members while deriving Manual count f
         ->and(array_sum(array_column($configuration['manual_group'], 'weight')))->toBe(10000);
 });
 
-
 it('rejects duplicate Manual group members and an empty active Manual group', function (): void {
     $artwork = heroDomainArtwork(heroDomainCategory(), 'Only');
     $settings = heroDomainSettings();
@@ -69,7 +68,6 @@ it('rejects duplicate Manual group members and an empty active Manual group', fu
         ->and(fn () => $service->removeManualMember($settings, (int) $artwork->getKey()))
         ->toThrow(ValidationException::class);
 });
-
 
 it('retains temporarily unavailable Manual members while effective resolution skips and restores them', function (): void {
     $firstCategory = heroDomainCategory('First source');
@@ -99,7 +97,6 @@ it('retains temporarily unavailable Manual members while effective resolution sk
     ]);
 });
 
-
 it('normalizes Manual weights to exactly ten thousand basis points with deterministic largest remainder rounding', function (): void {
     $service = app(HomeHeroConfigurationService::class);
     $normalized = $service->normalizeManualGroup([
@@ -111,7 +108,6 @@ it('normalizes Manual weights to exactly ten thousand basis points with determin
     expect(array_column($normalized, 'weight'))->toBe([3334, 3333, 3333])
         ->and(array_sum(array_column($normalized, 'weight')))->toBe(10000);
 });
-
 
 it('normalizes the remaining Manual weights after an explicit percentage change', function (): void {
     $category = heroDomainCategory();
@@ -134,13 +130,11 @@ it('normalizes the remaining Manual weights after an explicit percentage change'
         ->and($weights[(int) $second->getKey()] + $weights[(int) $third->getKey()])->toBe(3000);
 });
 
-
 it('rejects invalid Manual weights', function (): void {
     expect(fn () => app(HomeHeroConfigurationService::class)->normalizeManualGroup([
         ['artwork_id' => 1, 'weight' => -1],
     ]))->toThrow(ValidationException::class);
 });
-
 
 it('resolves Automatic random with equal effective weights and no persisted per-ID weights', function (): void {
     $category = heroDomainCategory();

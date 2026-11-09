@@ -68,7 +68,6 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
         ->and($projectedUndo['change_summary']['items'][0]['after'] ?? null)->toBe($beforeEmail === null ? 'None' : (string) $beforeEmail);
 });
 
-
 it('hides and rejects an older snapshot Undo after the same row changes again', function (): void {
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor);
@@ -101,7 +100,6 @@ it('hides and rejects an older snapshot Undo after the same row changes again', 
         ->and(AdminActionReceipt::query()->count())->toBe($receiptsBefore)
         ->and(AuditEvent::query()->where('action', 'admin.undo_applied')->count())->toBe(0);
 });
-
 
 it('rejects an Undo from another administrator or an expired receipt without changing history', function (): void {
     $owner = User::factory()->admin()->create();

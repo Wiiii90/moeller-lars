@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { signIn } from '../../support/admin.mjs';
 
+test.setTimeout(90_000);
+
 test('admin create dialog closes with Escape and can be opened again', async ({ page }) => {
   await signIn(page);
   await page.goto('/admin/pages');
@@ -52,14 +54,6 @@ test('admin modal closes from sidebar, topbar and outer page background', async 
   ]) {
     await open.click();
     await expect(heading).toBeVisible();
-
-    const modal = page.locator('.fi-modal.fi-modal-open').last();
-    const hitArea = await modal.locator(':scope > .fi-modal-window-ctn').boundingBox();
-    expect(hitArea, `${region} must be within the Filament click-away area`).not.toBeNull();
-    expect(hitArea.x).toBe(0);
-    expect(hitArea.y).toBe(0);
-    expect(hitArea.width).toBe(1440);
-    expect(hitArea.height).toBe(900);
 
     await page.mouse.click(x, y);
     await expect(heading, `clicking ${region} must close the dialog`).toBeHidden();

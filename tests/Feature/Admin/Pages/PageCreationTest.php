@@ -1,13 +1,13 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
-use App\Models\SiteSection;
-use App\Models\AuditEvent;
 use App\Models\AdminNotification;
-use App\Domain\Content\SiteSectionEditorialService;
-use App\Domain\Admin\AdminActivityNotificationContext;
+use App\Models\AuditEvent;
+use App\Models\SiteSection;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
@@ -33,7 +33,6 @@ it('suggests a public slug from a new page name without replacing manual edits',
     expect(SiteSection::query()->where('slug', 'my-own-url')->value('title'))->toBe('Anderer Titel');
 });
 
-
 it('keeps generated page slugs within the allowed length and syntax', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
     Filament::setCurrentPanel('admin');
@@ -51,10 +50,12 @@ it('keeps generated page slugs within the allowed length and syntax', function (
 
 it('rejects a duplicate creation slug without creating partial page configuration and allows correction', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
-    Filament::setCurrentPanel('admin'); Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     app(SiteSectionEditorialService::class)->createCustomPage('Existing', 'duplicate-creation');
     app(AdminActivityNotificationContext::class)->discard();
-    $before = AuditEvent::query()->count(); $count = SiteSection::query()->count();
+    $before = AuditEvent::query()->count();
+    $count = SiteSection::query()->count();
     $component = Livewire::test(SitePages::class)->mountAction('addPage')
         ->set('mountedActions.0.data.name', 'New Page')->set('mountedActions.0.data.slug', 'duplicate-creation')
         ->callMountedAction()->assertHasFormErrors(['slug'])->assertNotDispatched('admin-header-notification');
@@ -65,7 +66,6 @@ it('rejects a duplicate creation slug without creating partial page configuratio
         ->and(AdminNotification::query()->count())->toBe(1)
         ->and(collect($component->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
 });
-
 
 it('creates Pages as drafts by default and publishes each supported type when configured', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');

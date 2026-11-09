@@ -49,7 +49,7 @@ it('separates thumbnail rights revisions from full resolution and refuses anothe
         'sha256' => str_repeat('c', 64),
         'mime_type' => 'image/webp',
         'variant_kind' => PublicMedia::THUMBNAIL_KIND,
-        'transform_profile' => PublicMedia::PUBLIC_TRANSFORM_PROFILE,
+        'state' => 'available',
     ], true);
 
     expect($revisions->forSource($asset, $variant))
@@ -71,7 +71,7 @@ it('refuses a thumbnail projection when its parent record is not an image', func
         'sha256' => str_repeat('c', 64),
         'mime_type' => 'image/webp',
         'variant_kind' => PublicMedia::THUMBNAIL_KIND,
-        'transform_profile' => PublicMedia::PUBLIC_TRANSFORM_PROFILE,
+        'state' => 'available',
     ], true);
 
     expect(fn () => $revisions->forSource($asset, $variant))

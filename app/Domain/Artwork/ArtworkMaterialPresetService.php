@@ -5,6 +5,7 @@ namespace App\Domain\Artwork;
 use App\Domain\Admin\AdminAuditService;
 use App\Models\ArtworkMaterialPreset;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -110,8 +111,8 @@ final class ArtworkMaterialPresetService
         return ArtworkMaterialPreset::query()->orderBy('position')->orderBy('id')->lockForUpdate()->get();
     }
 
-    /** @param \Illuminate\Support\Collection<int, ArtworkMaterialPreset> $presets */
-    private function persistOrder(\Illuminate\Support\Collection $presets): void
+    /** @param Collection<int, ArtworkMaterialPreset> $presets */
+    private function persistOrder(Collection $presets): void
     {
         foreach ($presets->values() as $index => $preset) {
             if ((int) $preset->getAttribute('position') === $index) {
@@ -138,8 +139,7 @@ final class ArtworkMaterialPresetService
     private function assertUniqueName(EloquentCollection $presets, string $name, ?int $exceptId = null): void
     {
         $key = mb_strtolower($name);
-        $duplicate = $presets->first(static fn (ArtworkMaterialPreset $preset): bool =>
-            (int) $preset->getKey() !== $exceptId
+        $duplicate = $presets->first(static fn (ArtworkMaterialPreset $preset): bool => (int) $preset->getKey() !== $exceptId
             && mb_strtolower(trim((string) $preset->getAttribute('name'))) === $key,
         );
         if ($duplicate instanceof ArtworkMaterialPreset) {

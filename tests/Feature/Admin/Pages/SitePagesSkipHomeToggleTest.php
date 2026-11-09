@@ -4,13 +4,15 @@ use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Pages\SitePages;
+use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 it('toggles Skip Home directly without mounting an Action dialog and records both changes', function (): void {
@@ -52,7 +54,6 @@ it('rejects Skip Home without an eligible destination, leaving routing and audit
         ->and(AuditEvent::query()->count())->toBe($before);
 });
 
-
 it('selects and clears a Skip Home destination directly from Pages without any dialog', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $pages = app(SiteSectionEditorialService::class);
@@ -67,14 +68,14 @@ it('selects and clears a Skip Home destination directly from Pages without any d
     $before = AuditEvent::query()->where('action', 'site_section.updated')->count();
 
     $component->call('changeSkipHomeTarget', (string) $second->getKey());
-    $notificationsAfterChange = \App\Models\AdminNotification::query()->count();
+    $notificationsAfterChange = AdminNotification::query()->count();
     expect($routing->configuredTargetId($settings->fresh()))->toBe((int) $second->getKey())
         ->and(AuditEvent::query()->where('action', 'site_section.updated')->count())->toBe($before + 1);
 
     // A repeated selection is a true no-op, with no additional audit mutation.
     $component->call('changeSkipHomeTarget', (string) $second->getKey())->assertNotDispatched('admin-header-notification');
     expect(AuditEvent::query()->where('action', 'site_section.updated')->count())->toBe($before + 1)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe($notificationsAfterChange);
+        ->and(AdminNotification::query()->count())->toBe($notificationsAfterChange);
 
     $component->call('changeSkipHomeTarget', '');
     expect($routing->configuredTargetId($settings->fresh()))->toBeNull()

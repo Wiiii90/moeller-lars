@@ -4,19 +4,21 @@ use App\Domain\Artwork\ArtworkPublicationService;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Support\ArtworkEditDialog;
+use App\Filament\Support\RichTextEditorPlugin;
+use App\Models\AdminNotification;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
-use App\Models\MediaAsset;
-use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\User;
-use Illuminate\Support\Facades\Storage;
+use Filament\Facades\Filament;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 require_once __DIR__.'/GalleryFixtures.php';
@@ -24,7 +26,7 @@ require_once __DIR__.'/GalleryFixtures.php';
 it('offers per-artwork ALT text in the Gallery create and edit dialogs without changing the shared file', function (): void {
     $gallery = galleryFixtureCategory();
     $asset = galleryFixtureAsset('image/jpeg', '');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     galleryFixtureUnavailableAnalytics();
 
     Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
@@ -32,7 +34,7 @@ it('offers per-artwork ALT text in the Gallery create and edit dialogs without c
         ->fillForm([
             'title' => 'New publishable draft',
             'slug' => 'new-publishable-draft',
-            'work_date' => null,
+            'artwork_date' => null,
             'dimension_unit' => 'cm',
             'primary_media_asset_id' => $asset->getKey(),
             'primary_alt_text' => 'Painted landscape with bright green hills',
@@ -43,18 +45,16 @@ it('offers per-artwork ALT text in the Gallery create and edit dialogs without c
     $artwork = Artwork::query()->where('slug', 'new-publishable-draft')->firstOrFail();
     expect($artwork->state)->toBe('draft')
         ->and($artwork->artworkMedia()->where('role', 'primary')->value('alt_text_override'))
-            ->toBe('Painted landscape with bright green hills');
+        ->toBe('Painted landscape with bright green hills');
 
     expect(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
-
-
 
 it('clears a draft primary Media File from Edit without deleting the shared Storage original', function (): void {
     $gallery = galleryFixtureCategory();
     $draft = galleryFixtureArtwork($gallery);
     $shared = galleryFixtureAsset();
-    galleryFixtureThumbnail($shared);
+    testStoredImageThumbnail($shared);
     galleryFixturePrimary($draft, $shared);
     galleryFixtureUnavailableAnalytics();
 
@@ -69,14 +69,14 @@ it('clears a draft primary Media File from Edit without deleting the shared Stor
     expect(ArtworkMedia::query()->where('artwork_id', $draft->getKey())->where('role', 'primary')->exists())->toBeFalse()
         ->and((string) $shared->fresh()->state)->toBe('available')
         ->and(AuditEvent::query()->where('action', 'artwork.primary_media_detached')->where('entity_id', $draft->getKey())->count())->toBe(1)
-        ->and(AdminNotification::query()->where('title', 'Artwork primary media saved')->count())->toBe(1);
+        ->and(AdminNotification::query()->where('status', 'success')->where('source_id', 'activity:'.AuditEvent::query()->where('action', 'artwork.primary_media_detached')->where('entity_id', $draft->getKey())->value('id'))->count())->toBe(1);
 });
 
 it('refuses to clear primary media from a published Artwork without touching the Storage original', function (): void {
     $gallery = galleryFixtureCategory();
     $draft = galleryFixtureArtwork($gallery);
     $shared = galleryFixtureAsset();
-    galleryFixtureThumbnail($shared);
+    testStoredImageThumbnail($shared);
     galleryFixturePrimary($draft, $shared);
     app(ArtworkPublicationService::class)->publish($draft);
 
@@ -85,19 +85,18 @@ it('refuses to clear primary media from a published Artwork without touching the
     $form['primary_alt_text'] = null;
 
     expect(fn () => app(ArtworkEditDialog::class)->save($draft, $form))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
     expect(ArtworkMedia::query()->where('artwork_id', $draft->getKey())->where('role', 'primary')->exists())->toBeTrue()
         ->and((string) $shared->fresh()->state)->toBe('available');
 });
-
 
 it('saves a changed existing Storage Media File through the Gallery field update only once', function (): void {
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
     $old = galleryFixtureAsset();
     $replacement = galleryFixtureAsset();
-    galleryFixtureThumbnail($old);
-    galleryFixtureThumbnail($replacement);
+    testStoredImageThumbnail($old);
+    testStoredImageThumbnail($replacement);
     galleryFixturePrimary($artwork, $old);
     galleryFixtureUnavailableAnalytics();
 
@@ -116,7 +115,7 @@ it('saves a changed existing Storage Media File through the Gallery field update
         ->value('media_asset_id'))->toBe((int) $replacement->getKey())
         ->and(AuditEvent::query()->where('action', 'artwork.primary_media_replaced')
             ->where('entity_id', $artwork->getKey())->count())->toBe(1)
-        ->and(AdminNotification::query()->where('title', 'Artwork primary media saved')->count())->toBe(1);
+        ->and(AdminNotification::query()->where('status', 'success')->where('source_id', 'activity:'.AuditEvent::query()->where('action', 'artwork.primary_media_replaced')->where('entity_id', $artwork->getKey())->value('id'))->count())->toBe(1);
 
     // A subsequent bubbled modal change must not undo the direct field save.
     $editor->call('callMountedAction')
@@ -131,14 +130,14 @@ it('saves a changed existing Storage Media File through the Gallery field update
         ->value('media_asset_id'))->toBe((int) $replacement->getKey())
         ->and(AuditEvent::query()->where('action', 'artwork.primary_media_replaced')
             ->where('entity_id', $artwork->getKey())->count())->toBe(1)
-        ->and(AdminNotification::query()->where('title', 'Artwork primary media saved')->count())->toBe(1);
+        ->and(AdminNotification::query()->where('status', 'success')->where('source_id', 'activity:'.AuditEvent::query()->where('action', 'artwork.primary_media_replaced')->where('entity_id', $artwork->getKey())->value('id'))->count())->toBe(1);
 });
 
 it('repairs an existing media-less Gallery draft using the same Edit form and then publishes it', function (): void {
     $gallery = galleryFixtureCategory();
     $draft = galleryFixtureArtwork($gallery);
     $asset = galleryFixtureAsset('image/jpeg', '');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     $dialog = app(ArtworkEditDialog::class);
 
     $form = $dialog->fill($draft);
@@ -148,16 +147,15 @@ it('repairs an existing media-less Gallery draft using the same Edit form and th
 
     expect($dialog->save($draft, $form))->toBeTrue()
         ->and((int) $draft->artworkMedia()->where('role', 'primary')->value('media_asset_id'))
-            ->toBe((int) $asset->getKey());
+        ->toBe((int) $asset->getKey());
 
     expect(app(ArtworkPublicationService::class)->publish($draft)->state)->toBe('published');
 });
 
-
 it('stores per-artwork ALT for all images in the existing batch direct-upload action', function (): void {
     $gallery = galleryFixtureCategory();
     $asset = galleryFixtureAsset('image/jpeg', '');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     galleryFixtureUnavailableAnalytics();
 
     $row = ['media_asset_id' => (int) $asset->getKey(), 'title' => 'A Batch Artwork'];
@@ -183,7 +181,7 @@ it('edits the ALT description through the Gallery Edit action while retaining sh
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
     $asset = galleryFixtureAsset('image/jpeg', 'Storage-level description');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     galleryFixturePrimary($artwork, $asset);
     galleryFixtureUnavailableAnalytics();
 
@@ -202,12 +200,11 @@ it('edits the ALT description through the Gallery Edit action while retaining sh
         ->and(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
 
-
 it('routes the Artwork EditRecord page through the same ALT-aware editing service', function (): void {
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
     $asset = galleryFixtureAsset('image/jpeg', '');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     galleryFixturePrimary($artwork, $asset);
     galleryFixtureUnavailableAnalytics();
 
@@ -223,8 +220,6 @@ it('routes the Artwork EditRecord page through the same ALT-aware editing servic
         ->toBe('A landscape painting viewed from a rocky terrace')
         ->and(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
-
-
 
 it('renames artwork through the Gallery inline editor with one audit and notification, but stays silent on no-op', function (): void {
     $gallery = galleryFixtureCategory();
@@ -273,17 +268,79 @@ it('does not rename artwork belonging to another Gallery through the inline edit
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore);
 });
 
-
-it('opens the shared Add and Edit artwork forms with the canonical dialog lifecycle', function (): void {
+it('keeps Artwork detail Rich Text formatting through the owning Edit dialog and reopening', function (): void {
     $gallery = galleryFixtureCategory();
+    $draft = galleryFixtureArtwork($gallery);
     galleryFixtureUnavailableAnalytics();
-    $artwork = galleryFixtureArtwork($gallery);
+    $body = '<p data-artist-line-spacing="2.0"><span class="color" data-color="#2468a0">Painting notes</span></p>'
+        .'<table><tbody><tr><th>Support</th></tr><tr><td>Canvas</td></tr></tbody></table>';
 
-    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->mountAction('addArtwork')
-        ->assertMountedActionModalSee('Add artwork');
+    $dialog = app(ArtworkEditDialog::class);
+    $form = $dialog->fill($draft);
+    $form['description'] = $body;
+    expect($dialog->save($draft, $form))->toBeTrue()
+        ->and($draft->fresh()->description)->toBe($body);
 
-    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->mountAction('editArtwork', ['artwork' => $artwork->getKey()])
-        ->assertMountedActionModalSee('Edit artwork');
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->mountAction('editArtwork', ['artwork' => $draft->getKey()]);
+    $rendered = RichContentRenderer::make(
+        $editor->get('mountedActions.0.data.description'),
+    )->plugins([RichTextEditorPlugin::make()])->toHtml();
+    expect($rendered)->toContain('Painting notes', 'Canvas', '<table', 'data-artist-line-spacing="2.0"', 'data-color="#2468a0"');
+    expect($dialog->save($draft->fresh(), $form))->toBeFalse();
 });
+
+it('round-trips Artwork year/month precision and exact dates through the mounted Gallery editor', function (): void {
+    $gallery = galleryFixtureCategory();
+    $draft = galleryFixtureArtwork($gallery);
+    galleryFixtureUnavailableAnalytics();
+
+    $before = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->id])
+        ->mountAction('editArtwork', ['artwork' => $draft->id])
+        ->set('mountedActions.0.data.artwork_date', '2027-06')
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    expect([$draft->fresh()->year, $draft->fresh()->month, $draft->fresh()->day])
+        ->toBe([2027, 6, null])
+        ->and(AuditEvent::query()->count())->toBe($before + 1)
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1);
+    $reopened = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->id])
+        ->mountAction('editArtwork', ['artwork' => $draft->id])
+        ->assertActionDataSet(['artwork_date' => '2027-06']);
+
+    $reopened->callMountedAction()->assertHasNoFormErrors()->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->count())->toBe($before + 1)
+        ->and(AdminNotification::query()->count())->toBe($notifications + 1);
+
+    $reopened->set('mountedActions.0.data.artwork_date', '2028-02-29')
+        ->callMountedAction()->assertHasNoFormErrors();
+    expect([$draft->fresh()->year, $draft->fresh()->month, $draft->fresh()->day])
+        ->toBe([2028, 2, 29]);
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->id])
+        ->mountAction('editArtwork', ['artwork' => $draft->id])
+        ->assertActionDataSet(['artwork_date' => '2028-02-29']);
+});
+
+it('rejects invalid Artwork dates without altering the saved artwork or its audit history', function (string $invalid): void {
+    $gallery = galleryFixtureCategory();
+    $draft = galleryFixtureArtwork($gallery, ['year' => 2026, 'month' => null, 'day' => null]);
+    galleryFixtureUnavailableAnalytics();
+    $original = $draft->fresh()->getAttributes();
+    $audits = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->id])
+        ->mountAction('editArtwork', ['artwork' => $draft->id])
+        ->set('mountedActions.0.data.title', 'Rejected title')
+        ->set('mountedActions.0.data.artwork_date', $invalid)
+        ->callMountedAction()->assertHasFormErrors(['artwork_date'])
+        ->assertNotDispatched('admin-header-notification');
+
+    expect($draft->fresh()->getAttributes())->toBe($original)
+        ->and(AuditEvent::query()->count())->toBe($audits)
+        ->and(AdminNotification::query()->count())->toBe($notifications);
+})->with(['2027-02-29', '2027-00', '2027-04-31']);

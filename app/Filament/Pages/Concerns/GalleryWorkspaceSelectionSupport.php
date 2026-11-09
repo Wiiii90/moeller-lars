@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\GalleryPresentation;
+use App\Domain\Content\SitePreviewContext;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
@@ -116,7 +117,7 @@ trait GalleryWorkspaceSelectionSupport
             'state' => (string) $section->getAttribute('state'),
             'sort_mode' => GalleryPresentation::sortMode($gallery),
             'path' => '/'.ltrim((string) $gallery->getAttribute('slug'), '/'),
-            'preview_url' => app(\App\Domain\Content\SitePreviewContext::class)->previewUrlFor($section),
+            'preview_url' => app(SitePreviewContext::class)->previewUrlFor($section),
             'public_url' => $section->getAttribute('state') === 'published'
                 ? route('site.section', ['section' => $gallery->getAttribute('slug')])
                 : null,

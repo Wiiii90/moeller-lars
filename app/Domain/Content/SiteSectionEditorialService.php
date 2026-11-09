@@ -28,7 +28,7 @@ final class SiteSectionEditorialService
      * Update the visible content-heading only. Page identity/navigation and
      * publication remain owned by their existing services.
      *
-     * @param array<string,mixed> $data
+     * @param  array<string,mixed>  $data
      */
     public function updatePageHeading(SiteSection $section, array $data): SiteSection
     {

@@ -1,12 +1,13 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Pages\General;
-use App\Models\AuditEvent;
 use App\Models\AdminNotification;
+use App\Models\AuditEvent;
 use App\Models\CustomPageSetting;
 use App\Models\HomePresentationSetting;
 use App\Models\PublicContentSetting;
@@ -57,7 +58,7 @@ it('cascades a General social profile deletion through Custom Pages and both sto
     $home->update(['configuration' => $configuration]);
 
     $auditBefore = AuditEvent::query()->count();
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $editor = Livewire::test(General::class)->call('deleteSocialLink', 1)->assertHasNoErrors();
 
     expect(array_column(PublicContentSetting::general()->getAttribute('social_links'), 'platform'))

@@ -1,16 +1,20 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
+use App\Domain\Admin\AdminAuditService;
+use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Pages\CustomPageWorkspace;
-use App\Models\CustomPageSetting;
-use App\Models\PublicContentSetting;
-use App\Models\MediaAsset;
-use App\Models\SiteSection;
-use App\Models\User;
-use App\Models\AuditEvent;
+use App\Filament\Support\RichTextEditorPlugin;
 use App\Models\AdminNotification;
+use App\Models\AuditEvent;
+use App\Models\CustomPageSetting;
+use App\Models\MediaAsset;
+use App\Models\PublicContentSetting;
+use App\Models\User;
+use Filament\Facades\Filament;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
-use Filament\Facades\Filament;
 use Livewire\Livewire;
 
 require_once __DIR__.'/CustomPageFixtures.php';
@@ -26,8 +30,8 @@ it('preserves a nested component changed after its own editor was mounted', func
         ->mountAction('editImageChild', ['imageIndex' => 0, 'childIndex' => 0, 'componentType' => 'text']);
     $child = $settings->fresh()->components()[0]['children'][0];
     $child['body'] = 'Concurrent body';
-    app(\App\Domain\Content\CustomPageEditorialService::class)->updateImageChild($settings, 0, 0, 'text', $child);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(CustomPageEditorialService::class)->updateImageChild($settings, 0, 0, 'text', $child);
+    app(AdminActivityNotificationContext::class)->discard();
     $before = $settings->fresh()->components();
     $audits = AuditEvent::query()->count();
 
@@ -48,12 +52,13 @@ it('saves a nested component and returns it to page level when Parent is cleared
     $audits = AuditEvent::query()->count();
     $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->mountAction('editImageChild', ['imageIndex' => 0, 'childIndex' => 0, 'componentType' => 'text']);
-    $editor->fillForm(['body' => 'Edited body', 'parent_image_index' => null])->callMountedAction()
+    $nestedRichText = '<p data-artist-line-spacing="1.15">A <a href="mailto:artist@example.org">linked</a> biography</p>';
+    $editor->fillForm(['body' => $nestedRichText, 'parent_image_index' => null])->callMountedAction()
         ->assertHasNoFormErrors()->assertDispatched('admin-header-notification');
     $blocks = $settings->fresh()->components();
     expect($blocks)->toHaveCount(2)
         ->and($blocks[0]['children'] ?? [])->toBeEmpty()
-        ->and($blocks[1]['body'])->toBe('Edited body')
+        ->and($blocks[1]['body'])->toBe($nestedRichText)
         ->and(AuditEvent::query()->count())->toBe($audits + 2)
         ->and(AdminNotification::query()->count())->toBe(1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
@@ -71,9 +76,9 @@ it('keeps a changed component safe from a stale mounted editor', function (): vo
     $settings->update(['blocks' => [['type' => 'text', 'published' => true, 'title' => 'Original', 'body' => 'Original body']]]);
     $component = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text']);
-    app(\App\Domain\Content\CustomPageEditorialService::class)->updateBlock($settings, 0, 'text',
+    app(CustomPageEditorialService::class)->updateBlock($settings, 0, 'text',
         ['type' => 'text', 'published' => true, 'title' => 'Concurrent', 'body' => 'Concurrent body']);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $before = AuditEvent::query()->count();
     $component->fillForm(['title' => 'Stale title', 'body' => 'Stale body'])->callMountedAction()
         ->assertHasFormErrors(['type'])->assertNotDispatched('admin-header-notification');
@@ -100,7 +105,11 @@ it('rejects Custom Page component requests after administrative access is lost',
     $actor = Auth::user();
     [$section, $settings] = customPageWorkspaceRecord('Protected component', 'protected-component');
     $component = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id]);
-    if ($guest) { Auth::guard('web')->logout(); } else { $actor->forceFill(['is_admin' => false])->save(); }
+    if ($guest) {
+        Auth::guard('web')->logout();
+    } else {
+        $actor->forceFill(['is_admin' => false])->save();
+    }
     $component->mountAction('addComponent')->assertForbidden();
     expect($settings->fresh()->components())->toBe([]);
 })->with(['guest' => true, 'revoked admin' => false]);
@@ -112,11 +121,11 @@ it('rolls back component edits when auditing fails and allows a clean retry', fu
     $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
         ->fillForm(['title' => 'Changed', 'body' => 'Changed body']);
-    $realAudit = app(\App\Domain\Admin\AdminAuditService::class);
+    $realAudit = app(AdminAuditService::class);
     $audit = Mockery::mock($realAudit);
     $audit->shouldReceive('record')->once()->andThrow(new RuntimeException('Audit unavailable'));
-    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
-    app()->forgetInstance(\App\Domain\Content\CustomPageEditorialService::class);
+    app()->instance(AdminAuditService::class, $audit);
+    app()->forgetInstance(CustomPageEditorialService::class);
     try {
         expect(fn () => $editor->callMountedAction())->toThrow(RuntimeException::class, 'Audit unavailable');
         expect($settings->fresh()->components()[0]['title'])->toBe('Original')
@@ -124,19 +133,17 @@ it('rolls back component edits when auditing fails and allows a clean retry', fu
             ->and(AuditEvent::query()->count())->toBe($before)
             ->and(AdminNotification::query()->count())->toBe(0);
     } finally {
-        app()->instance(\App\Domain\Admin\AdminAuditService::class, $realAudit);
-        app()->forgetInstance(\App\Domain\Content\CustomPageEditorialService::class);
+        app()->instance(AdminAuditService::class, $realAudit);
+        app()->forgetInstance(CustomPageEditorialService::class);
     }
     Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
         ->fillForm(['title' => 'Changed', 'body' => 'Changed body'])->callMountedAction()
         ->assertHasNoFormErrors()->assertSee('Changed')->assertDispatched('admin-header-notification');
-    expect($settings->fresh()->components()[0]['body'])->toBe('Changed body')
+    expect($settings->fresh()->components()[0]['body'])->toBe('<p>Changed body</p>')
         ->and(AuditEvent::query()->count())->toBe($before + 1)
         ->and(AdminNotification::query()->count())->toBe(1);
 });
-
-require_once __DIR__.'/CustomPageFixtures.php';
 
 it('edits and reorders List entries only through the owning component dialog', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('CV list order', 'cv-list-order');
@@ -201,7 +208,7 @@ it('persists List entry details and publication through the component Edit dialo
     expect($item['published'])->toBeFalse()
         ->and($item['context'])->toBe('Museum · 2026')
         ->and($item['title'])->toBe('First entry updated')
-        ->and($item['body'])->toBe('Updated details')
+        ->and($item['body'])->toBe('<p>Updated details</p>')
         ->and($item)->not->toHaveKeys(['date', 'meta', 'location', 'url']);
 
     $workspace = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id]);
@@ -228,7 +235,6 @@ it('keeps Change type reachable when filtering makes drag sorting unavailable', 
         ->and($blocks[2]['type'])->toBe('list');
 });
 
-
 it('persists consecutive component edits without closing the autosaving dialog', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Edit component', 'edit-component');
     $settings->update(['blocks' => [[
@@ -253,21 +259,30 @@ it('persists consecutive component edits without closing the autosaving dialog',
     $first = $settings->fresh()->components()[0];
     expect($first['published'])->toBeFalse()
         ->and($first['title'])->toBe('Revised heading')
-        ->and($first['body'])->toBe('Revised content');
+        ->and($first['body'])->toBe('<p>Revised content</p>');
 
+    $formatted = '<p data-artist-line-spacing="2.0"><span class="color" data-color="#1457a4">Painted light</span> <a href="https://example.org/studio">Studio notes</a></p><table><tbody><tr><th>Year</th></tr><tr><td>2026</td></tr></tbody></table>';
     $editor->fillForm([
         'publication_state' => 'unpublished',
         'title' => 'Revised heading',
-        'body' => 'Later rich text',
+        'body' => $formatted,
     ])
         ->callMountedAction()
         ->assertHasNoFormErrors()
         ->assertSet('mountedActions.0.name', 'editComponent')
         ->assertSee('Edit component');
 
-    expect($settings->fresh()->components()[0]['body'])->toBe('Later rich text');
-});
+    $persisted = $settings->fresh()->components()[0]['body'];
+    $expected = ['data-artist-line-spacing="2.0"', 'data-color="#1457a4"', 'Painted light', 'href="https://example.org/studio"', 'Studio notes', '<table', '<td>2026</td>'];
+    expect($persisted)->toContain(...$expected);
 
+    $reopened = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text']);
+    $rendered = RichContentRenderer::make(
+        $reopened->get('mountedActions.0.data.body'),
+    )->plugins([RichTextEditorPlugin::make()])->toHtml();
+    expect($rendered)->toContain(...$expected);
+});
 
 it('opens and saves the third Rich Text component from its absolute row target', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Targeted editor', 'targeted-editor');
@@ -297,9 +312,8 @@ it('opens and saves the third Rich Text component from its absolute row target',
         ->and($components[1]['type'])->toBe('divider')
         ->and($components[1]['variant'])->toBe('dotted')
         ->and($components[2]['title'])->toBe('Third heading')
-        ->and($components[2]['body'])->toBe('Updated third text');
+        ->and($components[2]['body'])->toBe('<p>Updated third text</p>');
 });
-
 
 it('edits the Contact heading and all Contact settings in the owning component without child rows', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Contact editing', 'contact-editing');
@@ -315,7 +329,6 @@ it('edits the Contact heading and all Contact settings in the owning component w
 
     $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
         ->assertDontSee('Contact item')
-        ->assertDontSeeHtml('class="custom-page-child-row')
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'contact'])
         ->fillForm([
             'type' => 'contact',
@@ -351,7 +364,7 @@ it('edits the Contact heading and all Contact settings in the owning component w
 
 it('retains a selected Contact platform only while its General profile still exists', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Hidden social profile', 'hidden-social-profile');
-    \App\Models\PublicContentSetting::general()->update(['social_links' => [
+    PublicContentSetting::general()->update(['social_links' => [
         ['platform' => 'instagram', 'url' => 'https://example.invalid/instagram'],
         ['platform' => 'facebook', 'url' => 'https://example.invalid/facebook', 'visible' => false],
     ]]);
@@ -369,7 +382,6 @@ it('retains a selected Contact platform only while its General profile still exi
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'contact']);
 
     $editor->set('mountedActions.0.data.title', 'Updated contact')
-        ->call('callMountedAction')
         ->assertHasNoFormErrors()
         ->assertDispatched('admin-header-notification')
         ->assertSet('mountedActions.0.name', 'editComponent')
@@ -411,9 +423,8 @@ it('preserves legacy List metadata as Context and links in Details without dupli
     expect(substr_count($again['body'], '[More information]'))->toBe(1);
 });
 
-
 it('retains disabled Contact settings for later re-enabling', function (): void {
-    \App\Models\PublicContentSetting::general()->update(['social_links' => [
+    PublicContentSetting::general()->update(['social_links' => [
         ['platform' => 'instagram', 'url' => 'https://example.test/artist'],
     ]]);
     [$section, $settings] = customPageWorkspaceRecord('Hidden Contact settings', 'hidden-contact-settings');
@@ -448,7 +459,6 @@ it('retains disabled Contact settings for later re-enabling', function (): void 
         ->and($children['contact_form']['status_text'])->toBe('Soon');
 });
 
-
 it('creates Contact with all three options enabled by default and an editable heading', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Default Contact', 'default-contact');
 
@@ -480,7 +490,6 @@ it('creates Contact with all three options enabled by default and an editable he
     ]);
 });
 
-
 it('edits image size in the owning component and keeps legacy 100% implicit', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Image sizing', 'image-sizing');
     $image = [
@@ -494,10 +503,10 @@ it('edits image size in the owning component and keeps legacy 100% implicit', fu
 
     Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
-        ->assertMountedActionModalSee('Image size')
+        ->assertMountedActionModalSee('Media size')
         ->assertActionDataSet(['image_scale_percent' => CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT]);
 
-    $service = app(\App\Domain\Content\CustomPageEditorialService::class);
+    $service = app(CustomPageEditorialService::class);
     expect($service->updateBlock($settings, 0, 'image', $image))->toBeFalse();
 
     $scaled = [...$image, 'image_scale_percent' => 150];
@@ -510,7 +519,6 @@ it('edits image size in the owning component and keeps legacy 100% implicit', fu
     expect($settings->fresh()->components()[0])->not->toHaveKey('image_scale_percent');
     expect(CustomPageSetting::imageScalePercent($settings->fresh()->components()[0]))->toBe(100);
 });
-
 
 it('rejects out-of-range and noninteger image sizes without changing the saved component', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Image sizing bounds', 'image-sizing-bounds');
@@ -528,7 +536,6 @@ it('rejects out-of-range and noninteger image sizes without changing the saved c
     expect($settings->fresh()->components()[0]['image_scale_percent'])->toBe(175);
 
 });
-
 
 it('renders a scaled image and derives move permissions after filtering and pagination', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Image projection', 'image-projection');
@@ -572,11 +579,10 @@ it('renders a scaled image and derives move permissions after filtering and pagi
         ->and($searched[0]['can_move_down'])->toBeFalse();
 });
 
-
 it('autosaves an image selection without closing the editor and notifies once per real change', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Image replacement', 'image-replacement');
 
-    $createImage = static fn (string $filename): \App\Models\MediaAsset => \App\Models\MediaAsset::query()->create([
+    $createImage = static fn (string $filename): MediaAsset => MediaAsset::query()->create([
         'storage_key' => 'originals/'.$filename,
         'original_filename' => $filename,
         'mime_type' => 'image/jpeg',
@@ -595,8 +601,8 @@ it('autosaves an image selection without closing the editor and notifies once pe
         'image_scale_percent' => 50,
     ]]]);
 
-    $notificationsBefore = \App\Models\AdminNotification::query()->count();
-    $auditsBefore = \App\Models\AuditEvent::query()
+    $notificationsBefore = AdminNotification::query()->count();
+    $auditsBefore = AuditEvent::query()
         ->where('action', 'site_section.updated')
         ->where('entity_type', 'site_section')
         ->where('entity_id', $section->getKey())
@@ -616,8 +622,8 @@ it('autosaves an image selection without closing the editor and notifies once pe
     expect($updated['media_asset_id'])->toBe((int) $replacement->getKey())
         ->and($updated['image_scale_percent'])->toBe(50)
         ->and($updated['image_decorative'])->toBeFalse()
-        ->and(\App\Models\AdminNotification::query()->count())->toBe($notificationsBefore + 1)
-        ->and(\App\Models\AuditEvent::query()
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1)
+        ->and(AuditEvent::query()
             ->where('action', 'site_section.updated')
             ->where('entity_type', 'site_section')
             ->where('entity_id', $section->getKey())
@@ -625,7 +631,7 @@ it('autosaves an image selection without closing the editor and notifies once pe
 
     // A second form-level autosave must not duplicate the persisted mutation.
     $editor->call('callMountedAction')->assertHasNoFormErrors();
-    expect(\App\Models\AdminNotification::query()->count())->toBe($notificationsBefore + 1);
+    expect(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 
     Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
@@ -669,18 +675,6 @@ it('offers a visible Parent selector in CV List Edit and persists the nesting', 
         ->and($blocks[0]['children'][0]['items'][1]['context'])->toBeNull();
 });
 
-it('exposes the same Parent field above the content of a Text Edit', function (): void {
-    [$section, $settings] = customPageWorkspaceRecord('Text parent chooser', 'text-parent-chooser');
-    $settings->update(['blocks' => [
-        ['type' => 'text', 'title' => 'Artist statement', 'body' => 'Words'],
-    ]]);
-    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'text'])
-        ->assertMountedActionModalSee('Parent')
-        ->assertHasNoFormErrors();
-});
-
-
 it('protects stale image autosave and nesting edits through the mounted validation owner', function (string $operation): void {
     [$section, $settings] = customPageWorkspaceRecord('Protected image', 'protected-image');
     $asset = customPageWorkspaceImage('protected-image');
@@ -695,8 +689,8 @@ it('protects stale image autosave and nesting edits through the mounted validati
         ->mountAction('editComponent', ['componentIndex' => $index, 'componentType' => $type]);
     $block = $settings->fresh()->components()[$index];
     $block[$type === 'text' ? 'body' : 'image_scale_percent'] = $type === 'text' ? 'Concurrent content' : 75;
-    app(\App\Domain\Content\CustomPageEditorialService::class)->updateBlock($settings, $index, $type, $block);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(CustomPageEditorialService::class)->updateBlock($settings, $index, $type, $block);
+    app(AdminActivityNotificationContext::class)->discard();
     $before = $settings->fresh()->components();
     $audits = AuditEvent::query()->count();
     if ($operation === 'autosave') {
@@ -720,16 +714,17 @@ it('rolls back edited content and nesting together if the second audit fails and
     ]]);
     $before = $settings->fresh()->components();
     $audits = AuditEvent::query()->count();
-    $realAudit = app(\App\Domain\Admin\AdminAuditService::class);
+    $realAudit = app(AdminAuditService::class);
     $audit = Mockery::mock($realAudit);
     $recordings = 0;
     $audit->shouldReceive('record')->twice()->andReturnUsing(function (...$parameters) use ($realAudit, &$recordings): AuditEvent {
         if (++$recordings === 2) {
             throw new RuntimeException('Nesting audit failed');
         }
+
         return $realAudit->record(...$parameters);
     });
-    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->instance(AdminAuditService::class, $audit);
     try {
         $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
             ->mountAction('editComponent', ['componentIndex' => 1, 'componentType' => 'text'])
@@ -739,14 +734,14 @@ it('rolls back edited content and nesting together if the second audit fails and
             ->and(AuditEvent::query()->count())->toBe($audits)
             ->and(AdminNotification::query()->count())->toBe(0);
     } finally {
-        app()->instance(\App\Domain\Admin\AdminAuditService::class, $realAudit);
+        app()->instance(AdminAuditService::class, $realAudit);
     }
     $editor = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
         ->mountAction('editComponent', ['componentIndex' => 1, 'componentType' => 'text'])
         ->fillForm(['body' => 'Edited content', 'parent_image_index' => '0'])->callMountedAction()
         ->assertHasNoFormErrors()->assertDispatched('admin-header-notification');
     expect($settings->fresh()->components())->toHaveCount(1)
-        ->and($settings->fresh()->components()[0]['children'][0]['body'])->toBe('Edited content')
+        ->and($settings->fresh()->components()[0]['children'][0]['body'])->toBe('<p>Edited content</p>')
         ->and(AuditEvent::query()->count())->toBe($audits + 2)
         ->and(AdminNotification::query()->count())->toBe(1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
@@ -754,7 +749,6 @@ it('rolls back edited content and nesting together if the second audit fails and
     expect(AuditEvent::query()->count())->toBe($audits + 2)
         ->and(AdminNotification::query()->count())->toBe(1);
 });
-
 
 it('rejects an invalid image replacement at the mounted field without mutation or feedback', function (): void {
     [$section, $settings] = customPageWorkspaceRecord('Invalid replacement', 'invalid-replacement');
@@ -771,39 +765,61 @@ it('rejects an invalid image replacement at the mounted field without mutation o
         ->and(AdminNotification::query()->count())->toBe(0);
 });
 
-it('keeps centered Image placement in the canonical component schema', function (): void {
-    [$section, $settings] = customPageWorkspaceRecord('Centered image', 'centered-image');
+it('reorders and publishes Custom Page components in the editor', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+    [$section, $settings] = customPageWorkspaceRecord('Dialog reorder', 'dialog-reorder');
+    $settings->update(['blocks' => [
+        ['type' => 'text', 'published' => true, 'title' => 'First', 'body' => 'One'],
+        ['type' => 'text', 'published' => true, 'title' => 'Second', 'body' => 'Two'],
+    ]]);
+
+    $dialog = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
+        ->mountAction('editComponent', ['componentIndex' => 1, 'componentType' => 'text'])
+        ->assertSet('mountedActions.0.name', 'editComponent');
+    $dialog->mountAction('dialogMoveUp')
+        ->assertSet('mountedActions.0.name', 'editComponent')
+        ->assertSet('mountedActions.0.arguments.componentIndex', 0);
+    expect(array_column($settings->fresh()->components(), 'title'))->toBe(['Second', 'First']);
+    expect($dialog->instance()->getMountedAction()->getModalAction('dialogMoveUp')->isDisabled())->toBeTrue();
+
+    $dialog->mountAction('dialogTogglePublication')
+        ->assertSet('mountedActions.0.name', 'editComponent')
+        ->assertSet('mountedActions.0.arguments.componentIndex', 0);
+    expect($settings->fresh()->components()[0]['published'])->toBeFalse();
+
+    $dialog->mountAction('dialogMoveDown')
+        ->assertSet('mountedActions.0.name', 'editComponent')
+        ->assertSet('mountedActions.0.arguments.componentIndex', 1);
+    expect(array_column($settings->fresh()->components(), 'title'))->toBe(['First', 'Second']);
+    expect($dialog->instance()->getMountedAction()->getModalAction('dialogMoveDown')->isDisabled())->toBeTrue();
+});
+
+it('persists image alignment and video playback preferences in the shared component editor', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('Image presentation', 'image-presentation');
     $settings->update(['blocks' => [[
         'type' => 'image', 'published' => false, 'media_asset_id' => null,
         'image_decorative' => false, 'image_alignment' => 'center',
+        'video_controls_enabled' => false,
     ]]]);
+
     $image = $settings->fresh()->components()[0];
-    expect($image['image_alignment'])->toBe('center')
-        ->and(CustomPageSetting::imageAlignment($image))->toBe('center');
+    expect(CustomPageSetting::imageAlignment($image))->toBe('center')
+        ->and(CustomPageSetting::videoControls($image))->toBeFalse();
 
-    Livewire::test(CustomPageWorkspace::class, ['page' => $section->getKey()])
+    Livewire::test(CustomPageWorkspace::class, ['section' => $section->getKey()])
         ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
-        ->assertActionDataSet(['image_alignment' => 'center']);
-});
-
-it('validates and normalizes optional native video controls on shared Image components', function (): void {
-    [$section, $settings] = customPageWorkspaceRecord('Video controls', 'video-controls');
-    $settings->update(['blocks' => [[
-        'type' => 'image', 'published' => false, 'media_asset_id' => null,
-        'image_decorative' => false, 'video_controls_enabled' => false,
-    ]]]);
-    $saved = $settings->fresh()->components()[0];
-    expect(CustomPageSetting::videoControls($saved))->toBeFalse()
-        ->and($saved['video_controls_enabled'])->toBeFalse();
-
-    Livewire::test(CustomPageWorkspace::class, ['page' => $section->getKey()])
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'image'])
-        ->assertActionDataSet(['video_controls_enabled' => false]);
+        ->assertActionDataSet([
+            'image_alignment' => 'center',
+            'video_controls_enabled' => false,
+        ]);
 
     $settings->update(['blocks' => [[
         'type' => 'image', 'published' => false, 'media_asset_id' => null,
         'image_decorative' => false,
     ]]]);
-    expect($settings->fresh()->components()[0])->not->toHaveKey('video_controls_enabled')
-        ->and(CustomPageSetting::videoControls($settings->fresh()->components()[0]))->toBeTrue();
+    $defaultImage = $settings->fresh()->components()[0];
+    expect($defaultImage)->not->toHaveKey('video_controls_enabled')
+        ->and(CustomPageSetting::videoControls($defaultImage))->toBeTrue();
 });

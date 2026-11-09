@@ -1,14 +1,21 @@
 <?php
 
 use App\Domain\Admin\AdminSettingsService;
+use App\Domain\Artwork\GalleryEditorialService;
+use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\General;
+use App\Models\MediaVariant;
 use App\Models\PublicContentSetting;
+use App\Models\SiteSection;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+
+require_once __DIR__.'/../../Admin/Gallery/GalleryFixtures.php';
 
 beforeEach(function (): void {
     $this->actor = User::factory()->admin()->create();
@@ -98,4 +105,137 @@ it('keeps public on Committed while Preview and admin use Working until Commit',
         ->assertOk()
         ->assertSee($nextWorking, false)
         ->assertDontSee($committed, false);
+});
+
+it('publishes the artist title independently of navigation', function (): void {
+    committedPublicReadSetAppearance();
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_name_visible' => true,
+        'header_name_text' => 'Atelier Neue',
+        'header_name_position' => 'outside',
+    ]);
+
+    $this->get('/preview')->assertOk()->assertSee('Atelier Neue');
+    Auth::guard('web')->logout();
+    $this->get('/')->assertOk()->assertDontSee('Atelier Neue');
+
+    $this->actingAs($this->actor, 'web');
+    app(PublicationService::class)->commit($this->actor, 'Publish artist title');
+    Auth::guard('web')->logout();
+    $this->get('/')->assertOk()->assertSee('Atelier Neue');
+
+    $this->actingAs($this->actor, 'web');
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_name_visible' => false,
+    ]);
+    $this->get('/preview')->assertOk()->assertDontSee('Atelier Neue')->assertSee('data-site-navigation');
+    app(PublicationService::class)->commit($this->actor, 'Hide artist title');
+
+    Auth::guard('web')->logout();
+    $this->get('/')->assertOk()->assertDontSee('Atelier Neue')->assertSee('data-site-navigation');
+});
+
+it('publishes a Gallery parent as a page even when it has child navigation', function (): void {
+    committedPublicReadSetAppearance();
+    $parent = galleryFixtureCategory();
+    $child = galleryFixtureCategory();
+    $parentSection = SiteSection::query()->where('artwork_category_id', $parent->getKey())->firstOrFail();
+    $childSection = SiteSection::query()->where('artwork_category_id', $child->getKey())->firstOrFail();
+    app(SiteSectionEditorialService::class)->updatePlacement(
+        $childSection, 'published', (int) $parentSection->getKey(),
+    );
+
+    $this->get('/preview/'.$parent->slug)->assertOk();
+    app(PublicationService::class)->commit($this->actor, 'Publish nested Gallery');
+    Auth::guard('web')->logout();
+    $this->get('/'.$parent->slug)->assertOk();
+    $this->get('/'.$child->slug)->assertOk();
+});
+
+it('publishes Artwork surface overrides only for their own Gallery detail pages', function (): void {
+    Storage::fake('publication-gallery-test');
+    config(['media.disk' => 'publication-gallery-test']);
+    $actor = $this->actor;
+
+    foreach (['public', 'committed'] as $schema) {
+        DB::table($schema.'.home_presentation_settings')->update(['template' => 'custom']);
+    }
+
+    $first = galleryFixtureCategory();
+    $second = galleryFixtureCategory();
+
+    $artworkA = galleryFixtureArtwork($first, ['state' => 'published', 'position' => 10]);
+    $assetA = galleryFixtureAsset();
+    galleryFixturePrimary($artworkA, $assetA);
+
+    $artworkB = galleryFixtureArtwork($second, ['state' => 'published', 'position' => 10]);
+    $assetB = galleryFixtureAsset();
+    galleryFixturePrimary($artworkB, $assetB);
+    foreach ([$assetA, $assetB] as $asset) {
+        $key = 'gallery-thumbnail-'.$asset->getKey().'.webp';
+        $bytes = 'synthetic thumbnail '.$asset->getKey();
+        Storage::disk('publication-gallery-test')->put($key, $bytes);
+        MediaVariant::query()->create([
+            'media_asset_id' => $asset->getKey(),
+            'variant_kind' => 'thumbnail',
+            'storage_key' => $key,
+            'mime_type' => 'image/webp',
+            'byte_size' => strlen($bytes),
+            'sha256' => hash('sha256', $bytes),
+            'state' => 'available',
+        ]);
+    }
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_divider_mode' => 'fine',
+    ]);
+    $publication = app(PublicationService::class);
+    expect($publication->commit($actor, 'Publish Gallery baseline'))->not->toBeNull();
+
+    $artworkAUrl = '/artworks/'.$artworkA->slug;
+    $artworkBUrl = '/artworks/'.$artworkB->slug;
+    expect($this->get($artworkAUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="fine"');
+
+    app(GalleryEditorialService::class)->update($first, [
+        'name' => $first->name,
+        'description' => $first->description,
+        'artwork_page_surface_mode' => 'separate',
+    ]);
+
+    $previewArtwork = $this->get('/preview'.$artworkAUrl)->assertOk()->getContent();
+    expect($previewArtwork)
+        ->toContain('data-public-layout-divider-mode="separate"');
+
+    expect($this->get('/preview/'.$first->slug)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="fine"');
+
+    expect($this->get('/preview'.$artworkBUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="fine"');
+
+    expect($this->get($artworkAUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="fine"');
+
+    expect($publication->commit($actor, 'Publish Artwork page surface override'))->not->toBeNull();
+    expect($this->get($artworkAUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="separate"');
+    expect($this->get($artworkBUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="fine"');
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'header_divider_mode' => 'separate',
+    ]);
+    app(GalleryEditorialService::class)->update($first, [
+        'name' => $first->name,
+        'description' => $first->description,
+        'artwork_page_surface_mode' => 'joined',
+    ]);
+
+    expect($this->get('/preview'.$artworkAUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="fine"');
+    expect($this->get('/preview'.$artworkBUrl)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="separate"');
+    expect($this->get('/preview/'.$first->slug)->assertOk()->getContent())
+        ->toContain('data-public-layout-divider-mode="separate"');
 });

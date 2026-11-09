@@ -1,8 +1,8 @@
 # Dedicated disposable PostgreSQL runner; never uses the persistent preview.
 $ErrorActionPreference = 'Stop'
 $repoPath = (Get-Location).Path
-if ((git branch --show-current) -ne 'dev' -or (git rev-parse --show-toplevel).Replace('/', '\') -ne $repoPath) {
-    throw 'Run from the dev checkout for the explicitly isolated Public HTTP regression.'
+if ((git branch --show-current) -notin @('dev', 'testing') -or (git rev-parse --show-toplevel).Replace('/', '\') -ne $repoPath) {
+    throw 'Run from a dev or testing checkout for the explicitly isolated Public HTTP regression.'
 }
 $token = [guid]::NewGuid().ToString('N')
 $relativeRoot = "storage/framework/testing/public-session-$token"
@@ -54,8 +54,12 @@ try {
     # enabling disposable flags. The controller itself never boots Laravel.
     php -d variables_order=EGPCS -d "sys_temp_dir=$runtimeRoot/php-temp" -d "upload_tmp_dir=$runtimeRoot/php-upload" tests/Support/PublicSessionHttpWorker.php prepare | Set-Content "$runtimeRoot/verified.json"
     if ($LASTEXITCODE -ne 0) { throw 'Positive Laravel/PDO/path verification or fixture preparation failed.' }
+    if (-not (Test-Path "$runtimeRoot/fixture.json")) {
+        Get-Content "$runtimeRoot/verified.json" -Tail 12
+        throw 'Fixture preparation did not complete; no HTTP tests may start.'
+    }
     $verified = Get-Content "$runtimeRoot/verified.json" -Raw | ConvertFrom-Json
-    if ($verified.identity[0] -ne $databaseName -or $verified.identity[4] -ne $clusterIdentity -or -not (Test-Path "$runtimeRoot/fixture.json")) {
+    if ($verified.identity[0] -ne $databaseName -or $verified.identity[4] -ne $clusterIdentity) {
         throw 'Missing positive verification/fixture evidence; no HTTP tests may start.'
     }
     Get-Content "$runtimeRoot/verified.json"

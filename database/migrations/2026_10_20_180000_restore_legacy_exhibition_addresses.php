@@ -6,7 +6,9 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     private const EXHIBITION_TITLE = 'Der blonde Hans';
+
     private const LEGACY_CITY = 'Hamburg';
+
     private const ORIGINAL_LOCATION_DESCRIPTION = 'Hans Albers Eck, Hans-Albers-Platz 20 & Hans-Albers-Klause, Friedrichstraße 19.';
 
     public function up(): void

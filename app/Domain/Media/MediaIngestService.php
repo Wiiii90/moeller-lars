@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -22,6 +23,7 @@ class MediaIngestService
     // multi-shot composites, with headroom, while retaining a finite
     // decompression safety bound. Runtime resource limits still apply.
     public const MAX_PIXELS = 500_000_000;
+
     public const VIDEO_POSTER_KIND = 'poster';
 
     public const THUMBNAIL_MAX_EDGE = 960;
@@ -558,7 +560,7 @@ class MediaIngestService
             if ($process->run() !== 0) {
                 return null;
             }
-        } catch (\Symfony\Component\Process\Exception\ProcessTimedOutException) {
+        } catch (ProcessTimedOutException) {
             return null;
         }
 

@@ -1,11 +1,11 @@
 <?php
 
 use App\Domain\Artwork\ArtworkEditorialService;
+use App\Domain\Artwork\PublicArtworkQuery;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
 
@@ -36,7 +36,6 @@ function editorialArtwork(ArtworkCategory $category, array $attributes = []): Ar
         'title' => 'Test artwork',
         'state' => 'draft',
         'position' => 0,
-        'date_precision' => 'unknown',
     ], $attributes));
     $artwork->save();
 
@@ -72,27 +71,11 @@ function attachEditorialPrimary(Artwork $artwork, MediaAsset $asset): ArtworkMed
     ]);
 }
 
-function editorialVariant(MediaAsset $asset): MediaVariant
-{
-    return MediaVariant::create([
-        'media_asset_id' => $asset->getKey(),
-        'variant_kind' => 'thumbnail',
-        'storage_key' => 'variants/'.fake()->unique()->uuid().'.webp',
-        'mime_type' => 'image/webp',
-        'byte_size' => 4,
-        'sha256' => hash('sha256', 'var'),
-        'transform_profile' => 'public-v1',
-        'state' => 'available',
-        'width' => 2,
-        'height' => 2,
-    ]);
-}
-
 it('publishes only an artwork with a published gallery and one available primary asset', function (): void {
     $artwork = editorialArtwork(editorialCategory());
     $asset = editorialAsset();
     attachEditorialPrimary($artwork, $asset);
-    editorialVariant($asset);
+    testStoredImageThumbnail($asset);
 
     $published = app(ArtworkEditorialService::class)->publish($artwork);
 
@@ -100,17 +83,15 @@ it('publishes only an artwork with a published gallery and one available primary
         ->and($published->published_at)->not->toBeNull();
 });
 
-it('retains public Gallery visibility when the only image preview is the new public-v2 profile', function (): void {
+it('retains public Gallery visibility when the asset has a single canonical stored thumbnail', function (): void {
     $category = editorialCategory();
     $artwork = editorialArtwork($category);
     $asset = editorialAsset();
     attachEditorialPrimary($artwork, $asset);
-    editorialVariant($asset)->forceFill([
-        'transform_profile' => \App\Domain\Media\MediaIngestService::LARGE_IMAGE_TRANSFORM_PROFILE,
-    ])->save();
+    testStoredImageThumbnail($asset);
 
     app(ArtworkEditorialService::class)->publish($artwork);
-    $public = app(\App\Domain\Artwork\PublicArtworkQuery::class)->publishedBySlug((string) $artwork->getAttribute('slug'));
+    $public = app(PublicArtworkQuery::class)->publishedBySlug((string) $artwork->getAttribute('slug'));
 
     expect($public)->not->toBeNull()
         ->and($public?->getKey())->toBe($artwork->getKey());
@@ -120,7 +101,7 @@ it('keeps an existing publication timestamp stable', function (): void {
     $artwork = editorialArtwork(editorialCategory(), ['published_at' => now()->subDay()]);
     $asset = editorialAsset();
     attachEditorialPrimary($artwork, $asset);
-    editorialVariant($asset);
+    testStoredImageThumbnail($asset);
     $artwork->forceFill(['state' => 'published'])->save();
     $publishedAt = $artwork->fresh()->published_at;
 
@@ -149,7 +130,7 @@ it('rejects publication without canonical ALT or a public thumbnail', function (
 
     if ($case === 'missing-alt') {
         $asset->update(['alt_text' => null]);
-        editorialVariant($asset);
+        testStoredImageThumbnail($asset);
     }
 
     expect(fn () => app(ArtworkEditorialService::class)->publish($artwork))

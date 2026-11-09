@@ -25,7 +25,7 @@ return new class extends Migration
             DB::statement('LOCK TABLE public.exhibitions, committed.exhibitions, publication_version_rows IN ACCESS EXCLUSIVE MODE');
 
             $sources = ['public.exhibitions', 'committed.exhibitions'];
-            $planned = [];
+            $planned = array_fill_keys($sources, []);
             foreach ($sources as $table) {
                 if (DB::selectOne('SELECT to_regclass(?) AS relation_name', [$table])?->relation_name === null) {
                     throw new RuntimeException('Missing publication table: '.$table);

@@ -11,7 +11,7 @@ final class AdminActivityNotificationContext
     private const MAX_MESSAGES = 9;
 
     /**
-     * @param array{change:string,details:?string} $presentation
+     * @param  array{change:string,details:?string}  $presentation
      */
     public function push(int $auditEventId, array $presentation): void
     {
@@ -88,7 +88,7 @@ final class AdminActivityNotificationContext
         ));
     }
 
-    /** @return list<array<string,mixed>> */
+    /** @return list<mixed> */
     private function messages(): array
     {
         $messages = request()->attributes->get(self::REQUEST_ATTRIBUTE, []);

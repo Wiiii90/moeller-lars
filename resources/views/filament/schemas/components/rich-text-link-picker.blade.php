@@ -1,8 +1,8 @@
 <div
     x-ref="richLinkPanel"
     class="admin-rich-text-popover"
-    x-show="activeRichPanel === 'link'"
-    x-cloak
+    hidden
+    x-bind:hidden="activeRichPanel !== 'link'"
     x-bind:style="{ top: richPanelTop + 'px', left: richPanelLeft + 'px' }"
     x-on:change.stop
     x-on:click.outside="applyLink(); closeRichPanel('link')"

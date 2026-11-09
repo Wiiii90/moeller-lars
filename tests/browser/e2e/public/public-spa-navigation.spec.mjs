@@ -121,9 +121,6 @@ async function publicStyleState(page, stage, activeNonce) {
         expect([null, undefined, '']).toContain(style.serialized);
         expect(style.applied).toBe(true);
     }
-    const screenshot = test.info().outputPath(`public-${stage}.png`);
-    await page.screenshot({ path: screenshot });
-    await test.info().attach(`public-${stage}`, { path: screenshot, contentType: 'image/png' });
     return state;
 }
 

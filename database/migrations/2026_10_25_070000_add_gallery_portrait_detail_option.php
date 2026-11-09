@@ -14,12 +14,10 @@ return new class extends Migration
         });
 
         if (DB::connection()->getDriverName() === 'pgsql') {
-            DB::statement("ALTER TABLE committed.artwork_categories
-                ADD COLUMN portrait_detail_enabled boolean NOT NULL DEFAULT false");
+            DB::statement('ALTER TABLE committed.artwork_categories
+                ADD COLUMN portrait_detail_enabled boolean NOT NULL DEFAULT false');
         }
     }
 
-    public function down(): void
-    {
-    }
+    public function down(): void {}
 };

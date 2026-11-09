@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
 use App\Filament\Pages\HomePresentation;
@@ -44,7 +45,7 @@ it('persists Home List entries in the parent component editor with one notificat
     $page->fillForm([
         'editor_kind' => 'list',
         'list_title' => 'CV',
-        'items' => [['title' => 'First revised', 'published' => false]],
+        'items' => [['title' => 'First revised', 'published' => false, 'body' => '<p></p>']],
     ])->callMountedAction()
         ->assertHasNoFormErrors()
         ->assertDispatched('admin-header-notification');
@@ -62,6 +63,23 @@ it('persists Home List entries in the parent component editor with one notificat
         ->assertHasNoFormErrors();
     expect(AuditEvent::query()->count())->toBe($activityCount)
         ->and(AdminNotification::query()->count())->toBe($notificationCount);
+});
+
+it('keeps an unchanged legacy empty List detail silent when reopened', function (): void {
+    $settings = homeNotificationSettings([[
+        'type' => 'list', 'title' => 'CV', 'published' => true, 'items' => [
+            ['title' => 'First', 'published' => true, 'body' => ''],
+        ],
+    ]]);
+    $before = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
+    Livewire::test(HomePresentation::class)
+        ->mountAction('editListComponent', ['index' => 0, 'type' => 'list'])
+        ->callMountedAction()->assertHasNoFormErrors()
+        ->assertNotDispatched('admin-header-notification');
+    expect(AuditEvent::query()->count())->toBe($before)
+        ->and(AdminNotification::query()->count())->toBe($notifications)
+        ->and($settings->fresh()->components(HomeTemplate::Custom)[0]['items'][0]['body'])->toBe('');
 });
 
 it('reorders and removes Home List entries from its Edit dialog', function (): void {
@@ -166,7 +184,7 @@ it('rejects a stale Home component editor without overwriting the current record
     $editor = Livewire::test(HomePresentation::class)->mountAction('editComponent', ['index' => 0, 'type' => 'text']);
     app(HomePresentationEditorialService::class)->updateComponent($settings, HomeTemplate::Custom, 0, 'text',
         ['type' => 'text', 'title' => 'Concurrent heading', 'body' => null]);
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $before = AuditEvent::query()->count();
     $editor->set('mountedActions.0.data.title', 'Stale heading')->callMountedAction()
         ->assertHasFormErrors(['editor_kind'])->assertNotDispatched('admin-header-notification');

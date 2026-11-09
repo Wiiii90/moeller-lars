@@ -1,7 +1,8 @@
 <?php
 
-use App\Filament\Pages\Dashboard;
+use App\Domain\Admin\DashboardFeedPins;
 use App\Domain\Admin\DashboardNotificationRetention;
+use App\Filament\Pages\Dashboard;
 use App\Models\AdminNotification;
 use App\Models\User;
 use Filament\Facades\Filament;
@@ -53,7 +54,7 @@ it('persists combined preferences prunes only own unpinned notifications and reo
         ]);
         $oldest ??= $row;
     }
-    app(\App\Domain\Admin\DashboardFeedPins::class)->toggle('notification:'.$oldest->id);
+    app(DashboardFeedPins::class)->toggle('notification:'.$oldest->id);
     $foreign = AdminNotification::query()->create([
         'user_id' => $other->id, 'source_id' => 'retention:foreign', 'type' => 'system',
         'status' => 'danger', 'title' => 'Other history',

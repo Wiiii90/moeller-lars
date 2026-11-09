@@ -3,8 +3,8 @@
 namespace App\Domain\Publication;
 
 use App\Domain\Admin\AdminAuditService;
-use App\Domain\Content\HistoricalCustomPageBlockCanonicalizer;
 use App\Domain\Content\ExhibitionDate;
+use App\Domain\Content\HistoricalCustomPageBlockCanonicalizer;
 use App\Models\PublicationCheckpoint;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +12,6 @@ use Illuminate\Validation\ValidationException;
 
 final class PublicationVersionService
 {
-
     /**
      * Translation applies only when reading immutable historical checkpoint
      * rows. Working and Committed never regain the retired Artwork columns.
@@ -27,7 +26,6 @@ SQL;
 
     /** @var array<int, bool> */
     private array $compatibleHistoricalCheckpoints = [];
-
 
     public function __construct(
         private readonly AdminAuditService $audit,
@@ -206,7 +204,7 @@ SQL;
         }
 
         if (hash_equals($schemaHash, $this->schemaHash())) {
-            return true;
+            return $this->originalSnapshotHashValid($checkpoint);
         }
 
         // Historical snapshots are immutable. Only verified source-era
@@ -233,14 +231,6 @@ SQL;
         $this->schemaGuard->assertParity();
         $checkpoint->refresh();
         $this->assertRestorable($checkpoint);
-
-        // A matching schema hash alone is not proof that its stored rows are
-        // intact; the explicit audit also checks their original content hash.
-        if (! $this->originalSnapshotHashValid($checkpoint)) {
-            throw ValidationException::withMessages([
-                'publication' => 'This checkpoint does not match its original snapshot checksum.',
-            ]);
-        }
 
         $committedArtworkDifferences = null;
         if ($this->currentLiveCheckpoint()?->getKey() === $checkpoint->getKey()) {
@@ -363,16 +353,11 @@ SQL;
             ]);
         }
 
-        $schemaHash = $checkpoint->getAttribute('schema_hash');
-        if (is_string($schemaHash) && hash_equals($schemaHash, $this->schemaHash())) {
-            return;
-        }
-
         // This is the same eligibility decision used by Admin History.
         // It validates original payload integrity before Working is touched.
         if (! $this->isRestorable($checkpoint)) {
             throw ValidationException::withMessages([
-                'publication' => 'Historical snapshot validation failed; the original version remains preserved but cannot be restored safely.',
+                'publication' => 'Snapshot validation failed; the original version remains preserved but cannot be restored safely.',
             ]);
         }
     }
@@ -461,6 +446,7 @@ SQL;
         foreach (PublicationSnapshot::TABLES as $table) {
             if ($table === 'exhibitions' && $this->hasOldExhibitionDates($checkpoint)) {
                 $total += $this->historicalExhibitionDifferences($checkpoint);
+
                 continue;
             }
             $payload = $this->versionPayloadExpression($checkpoint, $table);
@@ -473,7 +459,6 @@ SQL;
 
         return $total + $this->rightsSelections->pendingCount($checkpoint);
     }
-
 
     /**
      * Project immutable historical rows into the one current publication
@@ -580,7 +565,7 @@ SQL,
                     static fn (string $name): string => "'".str_replace("'", "''", $name)."'",
                     $names,
                 );
-                $expected[] = "('{$table}', ARRAY[".implode(', ', $literals)."]::text[])";
+                $expected[] = "('{$table}', ARRAY[".implode(', ', $literals).']::text[])';
 
                 $projection = $this->versionPayloadExpression($checkpoint, $table);
                 if ($projection !== 'version_row.payload') {
@@ -592,7 +577,7 @@ SQL,
                 ' ELSE version_row.payload END)';
 
             $shape = DB::selectOne(
-                "WITH expected(table_name, column_names) AS (VALUES ".implode(', ', $expected).")
+                'WITH expected(table_name, column_names) AS (VALUES '.implode(', ', $expected).")
                  SELECT COUNT(*)::int AS invalid
                  FROM publication_version_rows AS version_row
                  LEFT JOIN expected ON expected.table_name = version_row.table_name
@@ -602,7 +587,7 @@ SQL,
                         OR ARRAY(
                             SELECT name
                             FROM jsonb_object_keys({$projectedPayload}) AS keys(name)
-                            ORDER BY name
+                            ORDER BY name COLLATE \"C\"
                         ) IS DISTINCT FROM expected.column_names)",
                 [$id],
             );

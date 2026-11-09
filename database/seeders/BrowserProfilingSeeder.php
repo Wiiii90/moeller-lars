@@ -96,7 +96,14 @@ final class BrowserProfilingSeeder extends Seeder
                     'type' => 'text',
                     'published' => true,
                     'title' => 'Public SPA content '.$number,
-                    'body' => null,
+                    // One committed Rich Text layout fixture uses the same canonical
+                    // media already exercised by the public original/thumbnail tests.
+                    'body' => $number === 2
+                        ? '<p data-artist-line-spacing="2.0">An <span class="color" data-color="#245889">authored</span> caption example.</p>'
+                            .'<p><img data-id="'.$media['committed']['id'].'" alt="Browser caption illustration"'
+                            .' data-artist-placement="float-left" data-artist-caption="Synthetic studio caption"></p>'
+                            .'<p>Text beside the floated image on wide screens.</p>'
+                        : null,
                 ], [
                     'type' => 'image',
                     'published' => true,
@@ -128,7 +135,7 @@ final class BrowserProfilingSeeder extends Seeder
             $artwork = Artwork::query()->create([
                 'artwork_category_id' => $category->id, 'slug' => 'browser-artwork-'.$number,
                 'title' => 'Browser Artwork '.$number, 'state' => 'published',
-                'position' => $number * 10, 'work_year' => 2026, 'published_at' => now(),
+                'position' => $number * 10, 'year' => 2026, 'published_at' => now(),
                 'description' => $number === 1
                     ? 'A long artwork description for checking the landscape gallery detail layout at different viewport widths. The narrative and its divider must use the full available artwork track without clipping or affecting other pages.'
                     : null,
@@ -153,7 +160,7 @@ final class BrowserProfilingSeeder extends Seeder
             $artwork = Artwork::query()->create([
                 'artwork_category_id' => $sortGallery->id, 'slug' => 'browser-sort-artwork-'.$number,
                 'title' => 'Browser Sort Artwork '.$number, 'state' => 'published',
-                'position' => $number - 1, 'work_year' => 2026, 'published_at' => now(),
+                'position' => $number - 1, 'year' => 2026, 'published_at' => now(),
             ]);
             ArtworkMedia::query()->create([
                 'artwork_id' => $artwork->id, 'media_asset_id' => $sortMedia['id'],
@@ -236,7 +243,6 @@ final class BrowserProfilingSeeder extends Seeder
         ]);
         $variant = MediaVariant::query()->create([
             'media_asset_id' => $asset->id, 'variant_kind' => PublicMedia::THUMBNAIL_KIND,
-            'transform_profile' => PublicMedia::PUBLIC_TRANSFORM_PROFILE,
             'storage_key' => $thumbnailKey, 'mime_type' => 'image/webp',
             'byte_size' => strlen($thumbBytes), 'sha256' => hash('sha256', $thumbBytes),
             'state' => 'available', 'width' => $thumbnailWidth, 'height' => $thumbnailHeight,

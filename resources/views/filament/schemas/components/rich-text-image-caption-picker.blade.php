@@ -1,8 +1,8 @@
 <div
     x-ref="richCaptionPanel"
     class="admin-rich-text-popover"
-    x-show="activeRichPanel === 'caption'"
-    x-cloak
+    hidden
+    x-bind:hidden="activeRichPanel !== 'caption'"
     x-bind:style="{ top: richPanelTop + 'px', left: richPanelLeft + 'px' }"
     x-on:change.stop
     x-on:click.outside="applyCaption(); closeRichPanel('caption')"

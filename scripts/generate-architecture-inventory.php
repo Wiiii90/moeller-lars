@@ -12,7 +12,6 @@ declare(strict_types=1);
  * Only --write modifies docs/architecture/generated/php-symbols.json.
  * Imports are syntactic use declarations, not proven runtime dependencies.
  */
-
 $root = dirname(__DIR__);
 $outputFile = $root.'/docs/architecture/generated/php-symbols.json';
 $arguments = array_slice($argv, 1);

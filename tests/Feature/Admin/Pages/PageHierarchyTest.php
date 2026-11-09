@@ -1,21 +1,25 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
+use App\Domain\Admin\AdminAuditService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
 use App\Filament\Support\PagesSettingsDialog;
+use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 require_once __DIR__.'/PagesFixtures.php';
@@ -38,7 +42,6 @@ it('keeps root reorder and child reorder canonical', function (): void {
     expect($order->moveTo($rootB, null, 0))->toBeTrue();
     expect($rootB->refresh()->parent_id)->toBeNull();
 });
-
 
 it('allows normal cross-parent moves child to top and top to child with normalized positions', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
@@ -71,7 +74,6 @@ it('allows normal cross-parent moves child to top and top to child with normaliz
         ->count())->toBe(4);
 });
 
-
 it('rejects self parenting level three and nesting a page that already has children', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
@@ -92,7 +94,6 @@ it('rejects self parenting level three and nesting a page that already has child
         ->toThrow(ValidationException::class, 'A page that already has child pages cannot itself become a child page.');
 });
 
-
 it('keeps Home fixed at the top level and preserves its publication delete and conversion guards', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
@@ -112,7 +113,6 @@ it('keeps Home fixed at the top level and preserves its publication delete and c
         ->and(fn () => $home->refresh()->delete())
         ->toThrow(ValidationException::class, 'Home cannot be deleted.');
 });
-
 
 it('flattens nested pages in canonical order when nesting is disabled and blocks new nesting', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
@@ -171,7 +171,6 @@ it('flattens nested pages in canonical order when nesting is disabled and blocks
         ->and($component->get('metrics')['children'])->toBe(0);
 });
 
-
 it('immediately flattens nested pages through Settings autosave without a second submit', function (): void {
     $this->actingAs(pagesTestAdmin(), 'web');
     Filament::setCurrentPanel('admin');
@@ -198,18 +197,18 @@ it('persists cross-parent sorting with one audit and notification and ignores th
     $pages = app(SiteSectionEditorialService::class);
     $parent = $pages->createNavigationGroup('Sort destination');
     $child = $pages->createCustomPage('Sort child', 'sort-child');
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $before = AuditEvent::query()->count();
     $editor = Livewire::test(SitePages::class)->call('sortSection', $child->id, 0, $parent->id)
         ->assertHasNoErrors()->assertDispatched('refresh-sidebar');
     expect($child->fresh()->parent_id)->toBe($parent->id)->and($child->fresh()->position)->toBe(10)
         ->and(AuditEvent::query()->count())->toBe($before + 1)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe(1)
+        ->and(AdminNotification::query()->count())->toBe(1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
     $editor->call('sortSection', $child->id, 0, $parent->id)
         ->assertNotDispatched('admin-header-notification')->assertNotDispatched('refresh-sidebar');
     expect(AuditEvent::query()->count())->toBe($before + 1)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe(1);
+        ->and(AdminNotification::query()->count())->toBe(1);
 });
 
 it('rolls back both hierarchy groups when cross-parent sorting cannot record its audit', function (): void {
@@ -219,15 +218,15 @@ it('rolls back both hierarchy groups when cross-parent sorting cannot record its
     $child = $pages->createCustomPage('Atomic child', 'atomic-child');
     $before = SiteSection::query()->orderBy('id')->get(['id', 'parent_id', 'position'])->toArray();
     $auditCount = AuditEvent::query()->count();
-    $audit = Mockery::mock(app(\App\Domain\Admin\AdminAuditService::class));
+    $audit = Mockery::mock(app(AdminAuditService::class));
     $audit->shouldReceive('recordOrdering')->once()->andThrow(new RuntimeException('Audit unavailable'));
-    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
+    app()->instance(AdminAuditService::class, $audit);
     app()->forgetInstance(SiteSectionOrderService::class);
     expect(fn () => Livewire::test(SitePages::class)->call('sortSection', $child->id, 0, $parent->id))
         ->toThrow(RuntimeException::class, 'Audit unavailable');
     expect(SiteSection::query()->orderBy('id')->get(['id', 'parent_id', 'position'])->toArray())->toBe($before)
         ->and(AuditEvent::query()->count())->toBe($auditCount)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+        ->and(AdminNotification::query()->count())->toBe(0);
 });
 
 it('rejects direct hierarchy sorting after admin authorization is lost', function (bool $guest): void {
@@ -239,10 +238,13 @@ it('rejects direct hierarchy sorting after admin authorization is lost', functio
     $editor = Livewire::test(SitePages::class);
     $before = SiteSection::query()->orderBy('id')->get(['id', 'parent_id', 'position'])->toArray();
     $auditCount = AuditEvent::query()->count();
-    if ($guest) { \Illuminate\Support\Facades\Auth::guard('web')->logout(); }
-    else { $actor->forceFill(['is_admin' => false])->save(); }
+    if ($guest) {
+        Auth::guard('web')->logout();
+    } else {
+        $actor->forceFill(['is_admin' => false])->save();
+    }
     $editor->call('sortSection', $child->id, 0, $parent->id)->assertForbidden();
     expect(SiteSection::query()->orderBy('id')->get(['id', 'parent_id', 'position'])->toArray())->toBe($before)
         ->and(AuditEvent::query()->count())->toBe($auditCount)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+        ->and(AdminNotification::query()->count())->toBe(0);
 })->with(['guest' => true, 'revoked admin' => false]);

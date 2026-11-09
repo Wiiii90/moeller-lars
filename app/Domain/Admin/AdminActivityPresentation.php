@@ -21,9 +21,10 @@ final class AdminActivityPresentation
 
     /** @var array<int|string,string>|null */
     private ?array $siteSectionLabels = null;
+
     /**
-     * @param array{count:int,truncated:bool,items:list<array{field:string,label:string,before:string,after:string}>}|null $summary
-     * @param array{scope:string,before_state:list<string>,after_state:list<string>,event_count:int,item_count:int}|null $ordering
+     * @param  array{count:int,truncated:bool,items:list<array{field:string,label:string,before:string,after:string}>}|null  $summary
+     * @param  array{scope:string,before_state:list<string>,after_state:list<string>,event_count:int,item_count:int}|null  $ordering
      * @return array{change:string,details:?string}
      */
     public function present(
@@ -58,11 +59,11 @@ final class AdminActivityPresentation
     }
 
     /**
-     * @param array{count:int,truncated:bool,items:list<array{field:string,label:string,before:string,after:string}>}|null $summary
+     * @param  array{count:int,truncated:bool,items:list<array{field:string,label:string,before:string,after:string}>}|null  $summary
      */
     private function changeDetails(string $target, ?array $summary): ?string
     {
-        if ($summary === null || ($summary['items'] ?? []) === []) {
+        if ($summary === null || $summary['items'] === []) {
             return $target === '' ? null : 'Affected “'.$target.'”.';
         }
 
@@ -86,7 +87,7 @@ final class AdminActivityPresentation
     }
 
     /**
-     * @param array{scope:string,before_state:list<string>,after_state:list<string>,event_count:int,item_count:int} $ordering
+     * @param  array{scope:string,before_state:list<string>,after_state:list<string>,event_count:int,item_count:int}  $ordering
      */
     private function orderingDetails(string $actionKey, string $target, array $ordering): string
     {
@@ -166,7 +167,7 @@ final class AdminActivityPresentation
     }
 
     /**
-     * @param array{scope:string,before_state:list<string>,after_state:list<string>,event_count:int,item_count:int} $ordering
+     * @param  array{scope:string,before_state:list<string>,after_state:list<string>,event_count:int,item_count:int}  $ordering
      */
     private function navigationDetails(string $target, array $ordering): string
     {
@@ -219,7 +220,7 @@ final class AdminActivityPresentation
     }
 
     /**
-     * @param list<string> $state
+     * @param  list<string>  $state
      * @return array<int,array{parent_id:?int,position:int}>
      */
     private function navigationState(array $state): array
@@ -260,7 +261,7 @@ final class AdminActivityPresentation
     }
 
     /**
-     * @param list<int|string> $values
+     * @param  list<int|string>  $values
      * @return array<string,string>
      */
     private function orderingLabels(string $actionKey, array $values): array

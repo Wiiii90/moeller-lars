@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
-use App\Domain\Content\SafeLinkPolicy;
+use App\Domain\Content\DividerVariant;
 use App\Domain\Content\SafeRichTextRenderer;
-use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Content\SocialLinks;
+use App\Domain\Media\MediaPreviewVariant;
+use App\Domain\Media\MediaTypePolicy;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
@@ -36,7 +37,7 @@ final class CustomPageSetting extends Model
         'contact_form',
     ];
 
-    public const DIVIDER_VARIANTS = \App\Domain\Content\DividerVariant::VALUES;
+    public const DIVIDER_VARIANTS = DividerVariant::VALUES;
 
     public const DEFAULT_IMAGE_SCALE_PERCENT = 100;
 
@@ -137,6 +138,9 @@ final class CustomPageSetting extends Model
     public static function listItemDetails(array $item): ?string
     {
         $body = is_string($item['body'] ?? null) ? trim($item['body']) : '';
+        if ($body === '<p></p>') {
+            $body = '';
+        }
         $url = is_string($item['url'] ?? null) ? trim($item['url']) : '';
         if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL)
             && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
@@ -255,7 +259,7 @@ final class CustomPageSetting extends Model
      * Keep the historical 100% size implicit so an unchanged legacy image
      * remains a no-op when its component editor is opened and submitted.
      *
-     * @param array<string, mixed> $block
+     * @param  array<string, mixed>  $block
      * @return array<string, int>
      */
     private function normalizedImageScale(array $block): array
@@ -416,7 +420,7 @@ final class CustomPageSetting extends Model
             throw ValidationException::withMessages(['blocks' => 'Published non-decorative media must have canonical ALT text in Storage.']);
         }
         if (MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))
-            && \App\Domain\Media\MediaPreviewVariant::imageThumbnail($asset) === null) {
+            && MediaPreviewVariant::imageThumbnail($asset) === null) {
             throw ValidationException::withMessages(['blocks' => 'Published Custom Page images require one available public thumbnail.']);
         }
     }
@@ -602,17 +606,5 @@ final class CustomPageSetting extends Model
         }
 
         app(SafeRichTextRenderer::class)->assertValid($value, allowEmbeddedMedia: true, requirePublicMedia: $requirePublicMedia);
-    }
-
-    private function validateUrl(mixed $value, string $field): void
-    {
-        if ($value === null || $value === '') {
-            return;
-        }
-        if (! is_string($value)
-            || ! in_array(strtolower((string) parse_url($value, PHP_URL_SCHEME)), ['http', 'https'], true)
-            || ! app(SafeLinkPolicy::class)->isAllowed($value)) {
-            throw ValidationException::withMessages([$field => 'Component links must be valid HTTP or HTTPS URLs.']);
-        }
     }
 }

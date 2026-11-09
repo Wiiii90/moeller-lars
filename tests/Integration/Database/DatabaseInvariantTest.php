@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Content\SiteSectionEditorialService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
@@ -8,6 +9,7 @@ use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
+use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -34,7 +36,6 @@ function invariantAsset(): MediaAsset
         'mime_type' => 'image/webp',
         'byte_size' => 4,
         'sha256' => hash('sha256', 'invariant-thumbnail-'.$sequence),
-        'transform_profile' => 'public-v1',
         'state' => 'available',
     ]);
 
@@ -42,13 +43,13 @@ function invariantAsset(): MediaAsset
 }
 
 it('allocates a unique published position through canonical placement without invalidating old snapshots', function (): void {
-    $this->actingAs(\App\Models\User::factory()->admin()->create(), 'web');
+    $this->actingAs(User::factory()->admin()->create(), 'web');
     $first = ArtworkCategory::create(['slug' => 'first', 'name' => 'First', 'show_on_home' => false]);
     $firstSection = testGallerySection($first, ['state' => 'published', 'position' => 200]);
     $second = ArtworkCategory::create(['slug' => 'second', 'name' => 'Second', 'show_on_home' => false]);
     $secondSection = testGallerySection($second, ['state' => 'hidden', 'position' => 200]);
 
-    $updated = app(\App\Domain\Content\SiteSectionEditorialService::class)
+    $updated = app(SiteSectionEditorialService::class)
         ->updatePlacement($secondSection, 'published', null);
 
     expect($updated->state)->toBe('published')

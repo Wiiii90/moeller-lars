@@ -1,12 +1,12 @@
 <?php
 
-use App\Domain\Admin\AdminSettingsService;
-use App\Filament\Pages\General;
-use App\Models\PublicContentSetting;
-use App\Models\User;
-use App\Models\AdminNotification;
 use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\AdminSettingsService;
+use App\Filament\Pages\General;
+use App\Models\AdminNotification;
+use App\Models\PublicContentSetting;
+use App\Models\User;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
@@ -126,7 +126,6 @@ it('adds a social profile only when the dialog is submitted and inserts it at th
         ])
         ->and($links[1]['platform'])->toBe('instagram');
 });
-
 
 it('autosaves each Edit profile change while the dialog stays mounted across reordering', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [

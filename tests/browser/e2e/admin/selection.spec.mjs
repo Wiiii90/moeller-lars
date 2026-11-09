@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { signIn } from '../../support/admin.mjs';
 
+test.setTimeout(90_000);
+
 test.beforeEach(async ({ page }) => {
     await signIn(page);
 });

@@ -66,7 +66,9 @@ final class PublicationConcurrencyTest extends TestCase
     public function test_serial_outcomes_at_observed_database_lock_points(string $scenario, string $first, string $second, string $pause): void
     {
         $setup = $this->start(['operation' => 'prepare', 'scenario' => $scenario]);
-        $fixture = $this->read($setup, 'result')['fixture'];
+        $prepared = $this->read($setup, 'result');
+        self::assertTrue($prepared['ok'], json_encode($prepared, JSON_THROW_ON_ERROR));
+        $fixture = $prepared['fixture'];
         $auditBefore = $this->observer->query('SELECT id, row_to_json(audit_events)::text AS payload FROM audit_events ORDER BY id')->fetchAll(PDO::FETCH_KEY_PAIR);
         $notificationIds = $this->observer->query('SELECT id FROM admin_notifications')->fetchAll(PDO::FETCH_COLUMN);
         $arguments = ['actor' => $fixture['actor'], 'receipt' => $fixture['receipt'], 'event' => $fixture['event']];
@@ -181,7 +183,9 @@ final class PublicationConcurrencyTest extends TestCase
     public function test_recovery_rollback_releases_waiting_commit_without_partial_state_and_allows_retry(string $operation): void
     {
         $setup = $this->start(['operation' => 'prepare', 'scenario' => 'media']);
-        $fixture = $this->read($setup, 'result')['fixture'];
+        $prepared = $this->read($setup, 'result');
+        self::assertTrue($prepared['ok'], json_encode($prepared, JSON_THROW_ON_ERROR));
+        $fixture = $prepared['fixture'];
         $before = $this->observer->query('SELECT id, row_to_json(audit_events)::text FROM audit_events ORDER BY id')->fetchAll(PDO::FETCH_KEY_PAIR);
         $arguments = ['actor' => $fixture['actor'], 'target' => $fixture['target']];
         $restore = $this->start(['operation' => $operation, 'pause' => 'pg_advisory_xact_lock', 'fail_after_audit' => true, ...$arguments]);

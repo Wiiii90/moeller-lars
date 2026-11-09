@@ -4,13 +4,13 @@ use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Publication\PublicationService;
-use Illuminate\Support\Facades\Auth;
 use App\Filament\Pages\SitePages;
 use App\Models\AdminNotification;
 use App\Models\AuditEvent;
 use App\Models\SiteSection;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
@@ -155,7 +155,8 @@ it('keeps invalid heading values on the correct mounted field without persistenc
     $section = app(SiteSectionEditorialService::class)->createCustomPage('Invalid Heading', 'invalid-heading');
     $component = Livewire::test(SitePages::class)->mountAction('editPage', ['section' => $section->id])
         ->set('mountedActions.0.data.content_heading_enabled', true);
-    $before = AuditEvent::query()->count(); $notifications = AdminNotification::query()->count();
+    $before = AuditEvent::query()->count();
+    $notifications = AdminNotification::query()->count();
     $component->set('mountedActions.0.data.content_heading_alignment', 'unsupported')
         ->assertHasFormErrors(['content_heading_alignment'])->assertNotDispatched('admin-header-notification');
     expect($section->fresh()->content_heading_alignment)->toBe('left')->and(AuditEvent::query()->count())->toBe($before)
@@ -163,7 +164,6 @@ it('keeps invalid heading values on the correct mounted field without persistenc
     $component->set('mountedActions.0.data.content_heading_alignment', 'right')->assertHasNoFormErrors();
     expect($section->fresh()->content_heading_alignment)->toBe('right');
 });
-
 
 it('creates a Custom Page with its heading authored through the shared Pages form', function (): void {
     Livewire::test(SitePages::class)

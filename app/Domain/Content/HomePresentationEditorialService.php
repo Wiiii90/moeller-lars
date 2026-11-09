@@ -171,6 +171,16 @@ final class HomePresentationEditorialService
                 ]);
             }
 
+            if ($expectedType === 'list') {
+                // Compare using the shared List representation so opening a
+                // legacy empty Details field does not create a false change.
+                $existingList = new CustomPageSetting(['blocks' => [$components[$index]]]);
+                $editedList = new CustomPageSetting(['blocks' => [$component]]);
+                if ($existingList->normalizedBlocks() === $editedList->normalizedBlocks()) {
+                    return $components;
+                }
+            }
+
             $components[$index] = $component;
 
             return $components;
@@ -252,6 +262,7 @@ final class HomePresentationEditorialService
                 'list' => ['type' => 'list', 'title' => null, 'media_asset_id' => null, 'items' => []],
                 'contact' => ['type' => 'contact', 'children' => []],
                 'legal_disclaimer' => ['type' => 'legal_disclaimer'],
+                default => throw new \LogicException('Expected a validated component kind.'),
             },
         ];
     }
@@ -290,7 +301,7 @@ final class HomePresentationEditorialService
      * component sequence and Custom Page validation. Contact targets use
      * stable type keys; List entries use explicit order indices.
      *
-     * @param array<string,mixed> $payload
+     * @param  array<string,mixed>  $payload
      */
     public function mutateChild(
         HomePresentationSetting $settings, HomeTemplate $mode,
@@ -356,8 +367,8 @@ final class HomePresentationEditorialService
      * Atomically apply selection commands to Home parent components and their
      * List/Contact children. Stale targets fail before any mutation is saved.
      *
-     * @param list<array{index:int,type:string}> $parents
-     * @param list<array{index:int,type:string,child:int|string}> $children
+     * @param  list<array{index:int,type:string}>  $parents
+     * @param  list<array{index:int,type:string,child:int|string}>  $children
      */
     public function changeSelection(
         HomePresentationSetting $settings, HomeTemplate $mode,

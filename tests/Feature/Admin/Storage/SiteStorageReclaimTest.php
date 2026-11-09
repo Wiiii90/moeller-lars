@@ -1,26 +1,49 @@
 <?php
 
-use App\Domain\Storage\SiteStorageReclaimService;
 use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Media\MediaIngestService;
+use App\Domain\Storage\SiteStorageReclaimService;
 use App\Livewire\Admin\SiteStorageReclaimControl;
-use App\Models\AdminNotification;
-use App\Models\MediaAsset;
 use App\Models\AdminActionReceipt;
+use App\Models\AdminNotification;
 use App\Models\AuditEvent;
+use App\Models\MediaAsset;
 use App\Models\PublicationCheckpoint;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
+    // Free Storage also prunes resumable private staging; never point it at
+    // the operator's real incoming-media directory during tests.
+    app()->instance('reclaim-media-test.original-storage-root', storage_path());
+    $root = sys_get_temp_dir().'/moeller-reclaim-test-'.Str::uuid();
+    app()->useStoragePath($root);
+    File::ensureDirectoryExists(storage_path('app/private/incoming-media'));
     Storage::fake('site-storage-reclaim-test');
     config([
         'media.disk' => 'site-storage-reclaim-test',
         'media.quota_bytes' => 10_000_000_000,
     ]);
+});
+
+afterEach(function (): void {
+    $root = storage_path();
+    try {
+        if (str_starts_with($root, sys_get_temp_dir().'/moeller-reclaim-test-')) {
+            File::deleteDirectory($root);
+        }
+    } finally {
+        app()->useStoragePath(app('reclaim-media-test.original-storage-root'));
+        app()->forgetInstance('reclaim-media-test.original-storage-root');
+    }
 });
 
 it('frees recovery roots while preserving Activity and protected publication snapshots', function (): void {
@@ -146,7 +169,7 @@ it('frees recovery roots while preserving Activity and protected publication sna
 it('reports one real reclaim and stays silent when repeated without changes', function (): void {
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor, 'web');
-    reclaimCheckpoint($actor, 'new-live', \Carbon\Carbon::parse(PublicationCheckpoint::query()->max('published_at'))->addSecond());
+    reclaimCheckpoint($actor, 'new-live', Carbon::parse(PublicationCheckpoint::query()->max('published_at'))->addSecond());
     $auditsBefore = AuditEvent::query()->count();
     $notificationsBefore = AdminNotification::query()->count();
 
@@ -249,6 +272,48 @@ it('rolls back recovery metadata when the required audit cannot be persisted', f
         ->and(hash_file('sha256', $disk->path($asset->storage_key)))->toBe($asset->sha256)
         ->and(AuditEvent::query()->count())->toBe($auditsBefore)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore);
+});
+
+it('keeps registered unassigned originals and their mandatory previews intact during Free Storage', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $asset = app(MediaIngestService::class)->ingest(
+        UploadedFile::fake()->image('unassigned-artwork.png', 640, 480),
+    );
+    $variant = $asset->variants()->sole();
+    $disk = Storage::disk(config('media.disk'));
+    $originalHash = hash_file('sha256', $disk->path($asset->storage_key));
+    $previewHash = hash_file('sha256', $disk->path($variant->storage_key));
+
+    app(SiteStorageReclaimService::class)->reclaim();
+
+    expect($asset->fresh()->state)->toBe('available')
+        ->and($variant->fresh()->state)->toBe('available')
+        ->and(hash_file('sha256', $disk->path($asset->storage_key)))->toBe($originalHash)
+        ->and(hash_file('sha256', $disk->path($variant->storage_key)))->toBe($previewHash);
+    $disk->assertExists([$asset->storage_key, $variant->storage_key]);
+});
+
+it('reclaims only old unregistered canonical media files, not user files or registered previews', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $disk = Storage::disk(config('media.disk'));
+    $asset = app(MediaIngestService::class)->ingest(
+        UploadedFile::fake()->image('registered-artwork.webp', 300, 200),
+    );
+    $variant = $asset->variants()->sole();
+    $orphanOriginal = 'originals/'.Str::uuid().'.jpg';
+    $orphanThumbnail = 'variants/'.Str::uuid().'-thumbnail.webp';
+    foreach ([$orphanOriginal, $orphanThumbnail] as $key) {
+        $disk->put($key, 'unregistered bytes');
+        touch($disk->path($key), time() - 900);
+    }
+    $disk->put('originals/operator-notes.txt', 'not a canonical media file');
+
+    $result = app(SiteStorageReclaimService::class)->reclaim();
+
+    expect($result['orphan_files'])->toBe(2)
+        ->and($result['cleanup_incomplete'])->toBeFalse();
+    $disk->assertMissing([$orphanOriginal, $orphanThumbnail]);
+    $disk->assertExists([$asset->storage_key, $variant->storage_key, 'originals/operator-notes.txt']);
 });
 
 function reclaimCheckpoint(User $actor, string $token, DateTimeInterface $publishedAt): PublicationCheckpoint

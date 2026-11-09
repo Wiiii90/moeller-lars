@@ -10,14 +10,15 @@ use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Facades\Filament;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\View;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
+use Livewire\Component;
 use LogicException;
 use SensitiveParameter;
 
@@ -124,7 +125,7 @@ final class AccountMenuAction
 
                     $action->halt();
                 })
-                ->action(function (array $data, \Livewire\Component $livewire): void {
+                ->action(function (array $data, Component $livewire): void {
                     $user = self::user();
                     $passwordChanged = array_key_exists('password', $data);
                     $previousLanguage = self::language();
@@ -166,7 +167,7 @@ final class AccountMenuAction
                         ->required()
                         ->in(['en', 'de']),
                 ])
-                ->action(function (array $data, \Livewire\Component $livewire): void {
+                ->action(function (array $data, Component $livewire): void {
                     $user = self::user();
                     $next = (string) ($data['admin_language'] ?? '');
                     $previous = self::language();
@@ -192,7 +193,7 @@ final class AccountMenuAction
         return (string) (self::user()->getAttribute('admin_language') ?: 'en');
     }
 
-    private static function refreshLanguage(string $previous, string $next, \Livewire\Component $livewire): void
+    private static function refreshLanguage(string $previous, string $next, Component $livewire): void
     {
         if ($next === $previous) {
             return;

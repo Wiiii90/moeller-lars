@@ -9,7 +9,6 @@ use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
 
-
 function heroDomainSettings(array $artworkConfiguration = []): HomePresentationSetting
 {
     $home = SiteSection::query()
@@ -52,8 +51,7 @@ function heroDomainArtwork(ArtworkCategory $category, string $title, int $positi
         'title' => $title,
         'state' => 'published',
         'position' => $position,
-        'work_year' => 2026,
-        'date_precision' => 'year',
+        'year' => 2026,
     ]);
     $artwork->save();
 
@@ -73,7 +71,6 @@ function heroDomainArtwork(ArtworkCategory $category, string $title, int $positi
     MediaVariant::query()->create([
         'media_asset_id' => $asset->getKey(),
         'variant_kind' => 'thumbnail',
-        'transform_profile' => 'public-v1',
         'storage_key' => 'variants/hero-domain-'.$artwork->getKey().'.webp',
         'mime_type' => 'image/webp',
         'byte_size' => 4,

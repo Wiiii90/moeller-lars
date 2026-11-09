@@ -1,8 +1,8 @@
 <?php
 
+use App\Domain\Admin\AdminActivityNotificationContext;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaIngestService;
-use App\Domain\Media\MediaVariantRegenerationService;
 use App\Domain\Publication\PublicationMediaCleanupService;
 use App\Domain\Publication\PublicationService;
 use App\Domain\Publication\PublicationVersionService;
@@ -16,9 +16,11 @@ use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
@@ -26,13 +28,13 @@ require_once __DIR__.'/PublicationVersionFixtures.php';
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     config([
         'media.disk' => 'publication-bytes',
         'media.quota_bytes' => 1_000_000_000,
         'filesystems.disks.publication-bytes' => [
-            'driver' => 'local', 'root' => storage_path('framework/testing/publication-bytes/'.\Illuminate\Support\Str::uuid()), 'throw' => true,
+            'driver' => 'local', 'root' => storage_path('framework/testing/publication-bytes/'.Str::uuid()), 'throw' => true,
         ],
     ]);
 });
@@ -58,13 +60,16 @@ function publicationImageFixture(): array
             'published_at' => now(),
         ]);
         ArtworkMedia::query()->create(['artwork_id' => $artwork->id, 'media_asset_id' => $asset->id, 'role' => 'primary', 'position' => 1]);
+
         return $artwork;
     });
     $variant = $asset->variants()->sole();
     $disk = Storage::disk(config('media.disk'));
     $bytes = [$asset->storage_key => $disk->get($asset->storage_key), $variant->storage_key => $disk->get($variant->storage_key)];
     expect(getimagesizefromstring($bytes[$asset->storage_key])[0])->toBe(320)
-        ->and(getimagesizefromstring($bytes[$variant->storage_key])[0])->toBe(320);
+        ->and(getimagesizefromstring($bytes[$variant->storage_key])[0])->toBe((int) $variant->width)
+        ->and(max((int) $variant->width, (int) $variant->height))->toBeLessThanOrEqual(960);
+
     return compact('asset', 'variant', 'artworks', 'bytes', 'gallery');
 }
 
@@ -84,7 +89,7 @@ function assertPublicationImageReferences(array $fixture, string $schema): void
 {
     $asset = $fixture['asset'];
     $assetFields = ['state', 'storage_key', 'sha256', 'byte_size', 'mime_type', 'original_filename', 'alt_text', 'credit', 'file_creator', 'file_rights_holder', 'copyright_notice_mode', 'copyright_notice'];
-    $variantFields = ['state', 'storage_key', 'sha256', 'byte_size', 'mime_type', 'variant_kind', 'transform_profile', 'width', 'height'];
+    $variantFields = ['state', 'storage_key', 'sha256', 'byte_size', 'mime_type', 'variant_kind', 'width', 'height'];
     expect(DB::table($schema.'.artwork_media')->where('media_asset_id', $asset->id)->orderBy('artwork_id')->pluck('artwork_id')->all())
         ->toBe($fixture['artworks']->pluck('id')->all())
         ->and(DB::table($schema.'.artwork_media')->where('media_asset_id', $asset->id)->where('role', 'primary')->where('position', 1)->count())->toBe(2)
@@ -104,7 +109,7 @@ it('preserves original image bytes and shared references across deletion, histor
     $target = $publication->commit($actor, 'Shared original image');
     assertPublicationImageReferences($fixture, 'committed');
     $notifications = AdminNotification::query()->count();
-    app(\App\Domain\Admin\AdminActivityNotificationContext::class)->discard();
+    app(AdminActivityNotificationContext::class)->discard();
     $editor = Livewire::test(ListMediaAssets::class)->mountAction('delete', ['asset' => $fixture['asset']->id])->callMountedAction();
     expect(AdminNotification::query()->count())->toBe($notifications + 1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1)
@@ -137,13 +142,13 @@ it('preserves original image bytes and shared references across deletion, histor
         ->and(DB::table('committed.artwork_media')->where('media_asset_id', $fixture['asset']->id)->count())->toBe(0)
         ->and($versions->currentLiveCheckpoint()->id)->toBe($live->id);
 
-    // Free storage may release only reproducible thumbnails, never the original.
+    // Free Storage preserves the required preview and original while restore or revert still owns them.
     $result = app(SiteStorageReclaimService::class)->reclaim();
     $disk = Storage::disk(config('media.disk'));
-    expect($result['removed_files'])->toBe(0)->and($result['generated_files'])->toBe(1)
+    expect($result['removed_files'])->toBe(0)
+        ->and($result['orphan_files'])->toBe(0)
         ->and(hash_file('sha256', $disk->path($fixture['asset']->storage_key)))->toBe($fixture['asset']->sha256)
-        ->and($disk->exists($fixture['variant']->storage_key))->toBeFalse()
-        ->and(app(MediaVariantRegenerationService::class)->ensureFile($fixture['variant']->fresh()))->toBeTrue();
+        ->and(hash_file('sha256', $disk->path($fixture['variant']->storage_key)))->toBe($fixture['variant']->sha256);
     assertPublicationImageBytes($fixture);
     $published = $publication->commit($actor, 'Publish recovered media');
     expect($published->operation)->toBe($operation)
@@ -164,7 +169,7 @@ it('releases original bytes only after the final recoverable source is explicitl
     $versions->stageVersion($target, $actor);
     app(SiteStorageReclaimService::class)->reclaim();
     expect($versions->isRestorable($target->fresh()))->toBeTrue()
-        ->and(app(MediaVariantRegenerationService::class)->ensureFile($fixture['variant']->fresh()))->toBeTrue();
+        ->and(Storage::disk(config('media.disk'))->exists($fixture['variant']->storage_key))->toBeTrue();
     assertPublicationImageBytes($fixture);
     $versions->resetStagedChanges($actor);
     expect($versions->isRestorable($target->fresh()))->toBeTrue()
@@ -174,7 +179,9 @@ it('releases original bytes only after the final recoverable source is explicitl
     expect($released['removed_files'])->toBe(2)
         ->and($versions->isRestorable($target->fresh()))->toBeFalse()
         ->and(DB::table('publication_media_cleanups')->count())->toBe(0);
-    foreach (array_keys($fixture['bytes']) as $key) expect(Storage::disk(config('media.disk'))->exists($key))->toBeFalse();
+    foreach (array_keys($fixture['bytes']) as $key) {
+        expect(Storage::disk(config('media.disk'))->exists($key))->toBeFalse();
+    }
     $before = DB::table('media_assets')->orderBy('id')->get()->toJson();
     $audits = AuditEvent::query()->count();
     $notifications = AdminNotification::query()->count();
@@ -183,5 +190,7 @@ it('releases original bytes only after the final recoverable source is explicitl
         ->and(ArtworkMedia::query()->where('media_asset_id', $fixture['asset']->id)->count())->toBe(0)
         ->and(AuditEvent::query()->count())->toBe($audits)
         ->and(AdminNotification::query()->count())->toBe($notifications);
-    foreach (array_keys($fixture['bytes']) as $key) expect(Storage::disk(config('media.disk'))->exists($key))->toBeFalse();
+    foreach (array_keys($fixture['bytes']) as $key) {
+        expect(Storage::disk(config('media.disk'))->exists($key))->toBeFalse();
+    }
 });

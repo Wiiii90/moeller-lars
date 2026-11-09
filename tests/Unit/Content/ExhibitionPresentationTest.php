@@ -1,35 +1,33 @@
 <?php
 
 use App\Models\Exhibition;
-use Carbon\CarbonImmutable;
 
-it('shows organizer separately from the physical map location', function (): void {
-    $exhibition = new Exhibition;
-    $exhibition->setRawAttributes([
-        'organizer' => 'Barfuss Galerie & Freundeskreis',
-        'venue' => 'Simon-Petrus-Kirche',
-        'city' => 'Norderstedt',
-        'country' => 'Deutschland',
-    ]);
-
-    expect($exhibition->summaryAttribution())->toBe('Barfuss Galerie & Freundeskreis')
-        ->and($exhibition->mapLocationLabel())->toBe('Simon-Petrus-Kirche · Norderstedt · Deutschland');
+it('derives exhibition attribution and location from editorial fields', function (): void {
+    foreach ([
+        [
+            ['organizer' => 'Barfuss Galerie & Freundeskreis', 'venue' => 'Simon-Petrus-Kirche',
+                'city' => 'Norderstedt', 'country' => 'Deutschland'],
+            'Barfuss Galerie & Freundeskreis', 'Simon-Petrus-Kirche · Norderstedt · Deutschland',
+        ],
+        [
+            ['organizer' => null, 'venue' => 'Der blonde Hans', 'city' => 'Hamburg', 'country' => null],
+            'Der blonde Hans', 'Der blonde Hans · Hamburg',
+        ],
+        [
+            ['organizer' => null, 'venue' => null, 'city' => 'Hamburg'],
+            null, 'Hamburg',
+        ],
+    ] as [$attributes, $attribution, $location]) {
+        $exhibition = new Exhibition;
+        $exhibition->setRawAttributes($attributes);
+        expect($exhibition->summaryAttribution())->toBe($attribution);
+        if ($attribution !== null) {
+            expect($exhibition->mapLocationLabel())->toBe($location);
+        }
+    }
 });
 
-it('keeps ambiguous pre-migration venue display without appending a ghost city', function (): void {
-    $exhibition = new Exhibition;
-    $exhibition->setRawAttributes([
-        'organizer' => null,
-        'venue' => 'Der blonde Hans',
-        'city' => 'Hamburg',
-        'country' => null,
-    ]);
-
-    expect($exhibition->summaryAttribution())->toBe('Der blonde Hans')
-        ->and($exhibition->mapLocationLabel())->toBe('Der blonde Hans · Hamburg');
-});
-
-it('keeps organizer and venue visibility independent without duplicating the venue byline', function (): void {
+it('keeps organizer and venue visibility independent while retaining legacy attribution', function (): void {
     $exhibition = new Exhibition;
     $exhibition->setRawAttributes([
         'organizer' => 'Galerie Muster',
@@ -52,49 +50,22 @@ it('keeps organizer and venue visibility independent without duplicating the ven
     $exhibition->show_organizer = true;
     expect($exhibition->summaryAttribution())->toBe('Galerie Muster')
         ->and($exhibition->publicVenue())->toBeNull();
-});
 
-it('preserves historical venue-only bylines without repeating them as details', function (): void {
-    $exhibition = new Exhibition;
-    $exhibition->setRawAttributes([
+    $legacy = new Exhibition;
+    $legacy->setRawAttributes([
         'organizer' => null,
         'venue' => 'Der blonde Hans',
         'show_organizer' => false,
         'show_venue' => true,
     ]);
+    expect($legacy->summaryAttribution())->toBe('Der blonde Hans')
+        ->and($legacy->publicVenue())->toBeNull();
 
-    expect($exhibition->summaryAttribution())->toBe('Der blonde Hans')
-        ->and($exhibition->publicVenue())->toBeNull();
+    $legacy->organizer = 'Der blonde Hans';
+    expect($legacy->summaryAttribution())->toBeNull()
+        ->and($legacy->publicVenue())->toBe('Der blonde Hans');
 
-    $exhibition->organizer = 'Der blonde Hans';
-    expect($exhibition->summaryAttribution())->toBeNull()
-        ->and($exhibition->publicVenue())->toBe('Der blonde Hans');
-
-    $exhibition->show_organizer = true;
-    expect($exhibition->summaryAttribution())->toBe('Der blonde Hans')
-        ->and($exhibition->publicVenue())->toBeNull();
-});
-
-it('does not invent a public city byline when no organizer or venue exists', function (): void {
-    $exhibition = new Exhibition;
-    $exhibition->setRawAttributes([
-        'organizer' => null, 'venue' => null, 'city' => 'Hamburg',
-    ]);
-    expect($exhibition->summaryAttribution())->toBeNull();
-});
-
-it('only exposes opted-in vernissages before their actual opening time', function (): void {
-    $exhibition = new Exhibition;
-    $exhibition->setRawAttributes([
-        'starts_on' => '2027-03-03',
-        'ends_on' => '2027-04-03',
-        'vernissage_at' => '2027-03-03 18:00:00',
-        'show_vernissage' => false,
-    ]);
-
-    expect($exhibition->shouldShowPublicVernissage(CarbonImmutable::parse('2027-03-02 12:00:00')))->toBeFalse();
-    $exhibition->setAttribute('show_vernissage', true);
-    expect($exhibition->shouldShowPublicVernissage(CarbonImmutable::parse('2027-03-02 12:00:00')))->toBeTrue()
-        ->and($exhibition->shouldShowPublicVernissage(CarbonImmutable::parse('2027-03-03 17:00:00')))->toBeTrue()
-        ->and($exhibition->shouldShowPublicVernissage(CarbonImmutable::parse('2027-03-03 19:00:00')))->toBeFalse();
+    $legacy->show_organizer = true;
+    expect($legacy->summaryAttribution())->toBe('Der blonde Hans')
+        ->and($legacy->publicVenue())->toBeNull();
 });

@@ -1,8 +1,12 @@
 <?php
 
+use App\Domain\Admin\AdminAuditService;
+use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Filament\Pages\HomePresentation;
+use App\Models\AdminNotification;
 use App\Models\ArtworkCategory;
+use App\Models\AuditEvent;
 use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
 use App\Models\User;
@@ -131,35 +135,50 @@ it('resets Home source paging and selection when Search Status or Source filters
 
 it('persists selected source changes with every audit and exactly one notification then stays silent on no-op', function (): void {
     homeSourcePaginationSettings();
-    $first = homeSourcePaginationGallery(2); $second = homeSourcePaginationGallery(4);
-    $before = \App\Models\AuditEvent::query()->count();
-    $editor = Livewire::test(HomePresentation::class)->set('selectedSourceIds', [$first->id, $second->id])
-        ->call('setSelectedGalleryEligibility', true)->assertHasNoErrors();
+    $first = homeSourcePaginationGallery(2);
+    $second = homeSourcePaginationGallery(4);
+    $before = AuditEvent::query()->count();
+    $editor = Livewire::test(HomePresentation::class)->set('selectedSourceIds', [$first->id, $second->id]);
+    expect($editor->instance()->selectedSourceCapabilities())->toBe([
+        'enable' => true,
+        'disable' => false,
+    ]);
+    $editor->call('setSelectedGalleryEligibility', true)->assertHasNoErrors();
     expect($first->fresh()->show_on_home)->toBeTrue()->and($second->fresh()->show_on_home)->toBeTrue()
-        ->and(\App\Models\AuditEvent::query()->count())->toBe($before + 2)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe(1)
+        ->and(AuditEvent::query()->count())->toBe($before + 2)
+        ->and(AdminNotification::query()->count())->toBe(1)
         ->and(collect($editor->effects['dispatches'] ?? [])->where('name', 'admin-header-notification')->count())->toBe(1);
-    $editor->set('selectedSourceIds', [$first->id, $second->id])->call('setSelectedGalleryEligibility', true)
+    $editor->set('selectedSourceIds', [$first->id, $second->id]);
+    expect($editor->instance()->selectedSourceCapabilities())->toBe([
+        'enable' => false,
+        'disable' => true,
+    ]);
+    $editor->call('setSelectedGalleryEligibility', true)
         ->assertNotDispatched('admin-header-notification');
-    expect(\App\Models\AuditEvent::query()->count())->toBe($before + 2)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe(1);
+    expect(AuditEvent::query()->count())->toBe($before + 2)
+        ->and(AdminNotification::query()->count())->toBe(1);
 });
 
 it('rolls back all selected Home sources when a later Gallery audit fails', function (): void {
     homeSourcePaginationSettings();
-    $first = homeSourcePaginationGallery(2); $second = homeSourcePaginationGallery(4);
-    $before = \App\Models\AuditEvent::query()->count();
-    $realAudit = app(\App\Domain\Admin\AdminAuditService::class); $calls = 0;
+    $first = homeSourcePaginationGallery(2);
+    $second = homeSourcePaginationGallery(4);
+    $before = AuditEvent::query()->count();
+    $realAudit = app(AdminAuditService::class);
+    $calls = 0;
     $audit = Mockery::mock($realAudit);
     $audit->shouldReceive('record')->twice()->andReturnUsing(function (...$parameters) use (&$calls, $realAudit) {
-        if (++$calls === 2) { throw new RuntimeException('Audit unavailable'); }
+        if (++$calls === 2) {
+            throw new RuntimeException('Audit unavailable');
+        }
+
         return $realAudit->record(...$parameters);
     });
-    app()->instance(\App\Domain\Admin\AdminAuditService::class, $audit);
-    app()->forgetInstance(\App\Domain\Artwork\GalleryEditorialService::class);
+    app()->instance(AdminAuditService::class, $audit);
+    app()->forgetInstance(GalleryEditorialService::class);
     expect(fn () => Livewire::test(HomePresentation::class)->set('selectedSourceIds', [$first->id, $second->id])
         ->call('setSelectedGalleryEligibility', true))->toThrow(RuntimeException::class, 'Audit unavailable');
     expect($first->fresh()->show_on_home)->toBeFalse()->and($second->fresh()->show_on_home)->toBeFalse()
-        ->and(\App\Models\AuditEvent::query()->count())->toBe($before)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+        ->and(AuditEvent::query()->count())->toBe($before)
+        ->and(AdminNotification::query()->count())->toBe(0);
 });

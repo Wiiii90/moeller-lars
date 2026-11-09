@@ -1,6 +1,11 @@
 <?php
 
 use App\Filament\Pages\Analytics;
+use App\Models\User;
+use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use Livewire\Livewire;
 
 it('projects disabled empty and missing analytics values without inventing zeroes', function (): void {
     $analytics = new Analytics;
@@ -115,16 +120,16 @@ it('projects behavior from reports already present in the Matomo bulk payload', 
 });
 
 it('rejects mounted analytics requests after logout or loss of administrative access', function (bool $guest): void {
-    $actor = \App\Models\User::factory()->admin()->create();
+    $actor = User::factory()->admin()->create();
     $this->actingAs($actor, 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     config()->set('analytics.matomo.reporting_enabled', false);
-    \Illuminate\Support\Facades\Http::preventStrayRequests();
-    $component = \Livewire\Livewire::test(Analytics::class);
+    Http::preventStrayRequests();
+    $component = Livewire::test(Analytics::class);
 
     if ($guest) {
-        \Illuminate\Support\Facades\Auth::guard('web')->logout();
+        Auth::guard('web')->logout();
     } else {
         $actor->forceFill(['is_admin' => false])->save();
     }

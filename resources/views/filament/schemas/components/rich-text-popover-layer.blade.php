@@ -8,9 +8,10 @@
         @include('filament.schemas.components.rich-text-image-caption-picker')
         <div
             x-ref="richImagePicker"
+            data-rich-text-popover-key="{{ $getKey() }}"
             class="admin-rich-text-popover admin-rich-text-popover--storage"
-            x-show="activeRichPanel === 'image'"
-            x-cloak
+            hidden
+            x-bind:hidden="activeRichPanel !== 'image'"
             x-bind:style="{ top: richPanelTop + 'px', left: richPanelLeft + 'px' }"
             x-on:change.stop
             x-on:click.outside="closeRichPanel('image')"

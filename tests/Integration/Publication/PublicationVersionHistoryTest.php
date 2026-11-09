@@ -2,10 +2,12 @@
 
 use App\Domain\Publication\PublicationService;
 use App\Domain\Publication\PublicationVersionService;
+use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 require_once __DIR__.'/PublicationVersionFixtures.php';
 
@@ -27,7 +29,6 @@ it('creates immutable SHA-256 commits with retained restorable snapshots', funct
         ->and(app(PublicationVersionService::class)->isRestorable($checkpoint))->toBeTrue();
 });
 
-
 it('keeps publication commit history permanent at the database boundary', function (): void {
     $actor = User::factory()->admin()->create();
     publicationVersionSetDisclaimer('History must remain permanent');
@@ -44,4 +45,40 @@ it('keeps publication commit history permanent at the database boundary', functi
     }
 
     expect(PublicationCheckpoint::query()->whereKey($checkpoint->getKey())->exists())->toBeTrue();
+});
+
+it('rejects incompatible checkpoint schemas without recognized source-era transitions', function (): void {
+    $actor = User::factory()->admin()->create();
+    publicationVersionSetDisclaimer('Protected checkpoint');
+    $checkpoint = app(PublicationService::class)->commit($actor, 'Current schema');
+    expect($checkpoint)->not->toBeNull();
+    $checkpoint->forceFill(['schema_hash' => str_repeat('0', 64)])->save();
+
+    $versions = app(PublicationVersionService::class);
+    $before = publicationVersionDisclaimer();
+    expect($versions->isRestorable($checkpoint->fresh()))->toBeFalse();
+    expect(fn () => $versions->verifyCheckpointReadOnly($checkpoint->fresh()))
+        ->toThrow(ValidationException::class);
+    expect(fn () => $versions->stageVersion($checkpoint->fresh(), $actor))
+        ->toThrow(ValidationException::class);
+    expect(publicationVersionDisclaimer())->toBe($before);
+});
+
+it('refuses an intact-schema checkpoint whose original checksum is wrong before staging', function (): void {
+    $actor = User::factory()->admin()->create();
+    publicationVersionSetDisclaimer('Immutable original');
+    $checkpoint = app(PublicationService::class)->commit($actor, 'Hash protected');
+    expect($checkpoint)->not->toBeNull();
+    $versions = app(PublicationVersionService::class);
+    $checkpoint->forceFill(['snapshot_hash' => str_repeat('0', 64)])->save();
+
+    $previous = publicationVersionDisclaimer();
+    $auditCount = AuditEvent::query()->count();
+    expect($versions->isRestorable($checkpoint->fresh()))->toBeFalse();
+    expect(fn () => $versions->verifyCheckpointReadOnly($checkpoint->fresh()))
+        ->toThrow(ValidationException::class);
+    expect(fn () => $versions->stageVersion($checkpoint->fresh(), $actor))
+        ->toThrow(ValidationException::class);
+    expect(publicationVersionDisclaimer())->toBe($previous)
+        ->and(AuditEvent::query()->count())->toBe($auditCount);
 });

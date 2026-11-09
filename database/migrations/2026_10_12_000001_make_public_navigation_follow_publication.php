@@ -45,5 +45,4 @@ return new class extends Migration
             ? ['public', 'committed']
             : [];
     }
-
 };

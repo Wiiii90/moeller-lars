@@ -3,11 +3,12 @@
 use App\Domain\Analytics\ArtistReportingService;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Models\User;
+use Filament\Facades\Filament;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 require_once __DIR__.'/GalleryFixtures.php';
@@ -20,7 +21,7 @@ it('shows real Gallery totals and per-artwork analytics in the workspace', funct
     ]);
     $image = galleryFixtureAsset();
     galleryFixturePrimary($artwork, $image);
-    galleryFixtureThumbnail($image);
+    testStoredImageThumbnail($image);
 
     $reporting = new class((string) $artwork->getAttribute('analytics_key'))
     {
@@ -65,13 +66,12 @@ it('shows real Gallery totals and per-artwork analytics in the workspace', funct
         ->assertSeeText('30d · 4 views · 3 opens · 2 zooms · 3m 15s attention');
 });
 
-
 it('renders previews with incomplete drafts and invalid legacy primary rows without a 500', function (): void {
     $gallery = galleryFixtureCategory();
     $broken = galleryFixtureArtwork($gallery, ['title' => 'No primary media', 'position' => 0]);
     $missingAlt = galleryFixtureArtwork($gallery, ['title' => 'No image ALT text', 'position' => 1]);
     $asset = galleryFixtureAsset('image/jpeg', '');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     galleryFixturePrimary($missingAlt, $asset);
     $valid = galleryFixtureArtwork($gallery, ['title' => 'Valid visible artwork', 'position' => 2]);
     $video = galleryFixtureAsset('video/mp4', 'Accessible moving-image description');

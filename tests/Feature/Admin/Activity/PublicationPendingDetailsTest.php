@@ -1,7 +1,14 @@
 <?php
 
 use App\Domain\Publication\PublicationService;
+use App\Filament\Pages\Activity;
+use App\Models\AdminNotification;
+use App\Models\AuditEvent;
+use App\Models\Redirect;
+use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 
 it('reports concrete changed records and fields for staged publication review', function (): void {
     $id = (int) DB::table('public_content_settings')->where('scope', 'general')->value('id');
@@ -20,7 +27,6 @@ it('reports concrete changed records and fields for staged publication review', 
         ->and($details['truncated'])->toBeFalse();
 });
 
-
 it('reports a complete review at its exact row limit without claiming truncation', function (): void {
     DB::table('public_content_settings')->where('scope', 'general')->update(['public_email' => 'pending-exact@example.test']);
     $publication = app(PublicationService::class);
@@ -33,7 +39,7 @@ it('reports a complete review at its exact row limit without claiming truncation
 
 it('marks truncation only when another changed row exists including in a later table', function (): void {
     DB::table('public_content_settings')->where('scope', 'general')->update(['public_email' => 'pending-more@example.test']);
-    $redirect = \App\Models\Redirect::query()->create([
+    $redirect = Redirect::query()->create([
         'source_path' => '/activity-review-before', 'target_path' => '/activity-review-after',
         'status_code' => 301, 'enabled' => true, 'reason' => 'activity-review',
     ]);
@@ -48,12 +54,12 @@ it('marks truncation only when another changed row exists including in a later t
 });
 
 it('refreshes the mounted publication review from actual pending state without creating audit or feedback', function (): void {
-    $actor = \App\Models\User::factory()->admin()->create();
+    $actor = User::factory()->admin()->create();
     $this->actingAs($actor, 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
     $original = DB::table('public_content_settings')->where('scope', 'general')->value('public_email');
-    $component = \Livewire\Livewire::test(\App\Filament\Pages\Activity::class)
+    $component = Livewire::test(Activity::class)
         ->mountAction('publicationReview')->assertActionMounted('publicationReview')->assertMountedActionModalSee('No working-state changes');
     DB::table('public_content_settings')->where('scope', 'general')->update(['public_email' => 'review-refresh@example.test']);
     $component->unmountAction()->mountAction('publicationReview')->assertActionMounted('publicationReview')->assertMountedActionModalSee('public_email')
@@ -62,15 +68,14 @@ it('refreshes the mounted publication review from actual pending state without c
     $component->unmountAction()->mountAction('publicationReview')->assertActionMounted('publicationReview')->assertMountedActionModalSee('No working-state changes')
         ->assertNotDispatched('admin-header-notification');
     expect(app(PublicationService::class)->pendingDetails()['rows'])->toBe([])
-        ->and(\App\Models\AuditEvent::query()->count())->toBe(0)
-        ->and(\App\Models\AdminNotification::query()->count())->toBe(0);
+        ->and(AuditEvent::query()->count())->toBe(0)
+        ->and(AdminNotification::query()->count())->toBe(0);
 });
 
-
 it('reports removed committed records without inventing changed fields', function (): void {
-    $actor = \App\Models\User::factory()->admin()->create();
+    $actor = User::factory()->admin()->create();
     $this->actingAs($actor, 'web');
-    $redirect = \App\Models\Redirect::query()->create([
+    $redirect = Redirect::query()->create([
         'source_path' => '/activity-retired-path', 'target_path' => '/activity-current-path',
         'status_code' => 301, 'enabled' => true, 'reason' => 'activity-review',
     ]);

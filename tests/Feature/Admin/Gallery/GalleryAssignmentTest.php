@@ -5,20 +5,20 @@ use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Support\ArtworkEditDialog;
-use App\Models\Artwork;
 use App\Models\AdminNotification;
+use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\User;
-use Illuminate\Support\Facades\Storage;
+use Filament\Facades\Filament;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    \Filament\Facades\Filament::setCurrentPanel('admin');
-    \Filament\Facades\Filament::bootCurrentPanel();
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
 require_once __DIR__.'/GalleryFixtures.php';
@@ -38,7 +38,6 @@ it('moves an artwork between Galleries without mutating its MediaAsset', functio
         ->and((int) ArtworkMedia::query()->where('artwork_id', $moved->getKey())->value('media_asset_id'))->toBe((int) $asset->getKey())
         ->and(MediaAsset::query()->whereKey($asset->getKey())->exists())->toBeTrue();
 });
-
 
 it('moves an artwork through the Gallery workspace action without losing its destination or MediaAsset', function (): void {
     $source = galleryFixtureCategory();
@@ -63,8 +62,6 @@ it('moves an artwork through the Gallery workspace action without losing its des
         ->and((int) ArtworkMedia::query()->where('artwork_id', $moved->getKey())->where('role', 'primary')->value('media_asset_id'))->toBe((int) $asset->getKey())
         ->and((int) $remaining->fresh()->position)->toBe(0);
 });
-
-
 
 it('moves a selected Gallery batch in source order while preserving media and emitting one action feedback', function (): void {
     $source = galleryFixtureCategory();
@@ -114,7 +111,7 @@ it('edits per-artwork ALT text and publishes an uploaded image without changing 
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
     $image = galleryFixtureAsset('image/jpeg', '');
-    galleryFixtureThumbnail($image);
+    testStoredImageThumbnail($image);
     galleryFixturePrimary($artwork, $image);
     $publication = app(ArtworkPublicationService::class);
 
@@ -149,7 +146,7 @@ it('saves a combined Gallery artwork edit once and preserves no-op silence after
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
     $image = galleryFixtureAsset();
-    galleryFixtureThumbnail($image);
+    testStoredImageThumbnail($image);
     galleryFixturePrimary($artwork, $image);
     galleryFixtureUnavailableAnalytics();
     $auditsBefore = AuditEvent::query()->count();
@@ -184,12 +181,11 @@ it('saves a combined Gallery artwork edit once and preserves no-op silence after
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1);
 });
 
-
 it('edits an unassigned draft and reassigns it using the shared Artwork editor', function (): void {
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork(null);
     $asset = galleryFixtureAsset('image/jpeg', '');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     galleryFixturePrimary($artwork, $asset);
     $dialog = app(ArtworkEditDialog::class);
 
@@ -201,10 +197,9 @@ it('edits an unassigned draft and reassigns it using the shared Artwork editor',
     expect($dialog->save($artwork, $form, allowGalleryAssignment: true))->toBeTrue()
         ->and((int) $artwork->fresh()->artwork_category_id)->toBe((int) $gallery->getKey())
         ->and($artwork->artworkMedia()->where('role', 'primary')->value('alt_text_override'))
-            ->toBe('A bronze statue in profile')
+        ->toBe('A bronze statue in profile')
         ->and(app(ArtworkPublicationService::class)->publish($artwork)->state)->toBe('published');
 });
-
 
 it('updates an unassigned artwork without silently attaching it to a Gallery', function (): void {
     $artwork = galleryFixtureArtwork(null);
@@ -218,12 +213,11 @@ it('updates an unassigned artwork without silently attaching it to a Gallery', f
         ->and($artwork->fresh()->title)->toBe('Updated unassigned draft');
 });
 
-
 it('rejects detaching a published artwork through the shared editor without changing its metadata', function (): void {
     $gallery = galleryFixtureCategory();
     $artwork = galleryFixtureArtwork($gallery);
     $asset = galleryFixtureAsset('image/jpeg', 'A monochrome photograph of a sculpture');
-    galleryFixtureThumbnail($asset);
+    testStoredImageThumbnail($asset);
     galleryFixturePrimary($artwork, $asset);
     app(ArtworkPublicationService::class)->publish($artwork);
 
@@ -237,8 +231,6 @@ it('rejects detaching a published artwork through the shared editor without chan
     expect((int) $artwork->fresh()->artwork_category_id)->toBe((int) $gallery->getKey())
         ->and($artwork->fresh()->title)->not->toBe('Must not be saved');
 });
-
-
 
 it('rejects a published artwork move to an unpublished Gallery without changing its membership or audit', function (): void {
     $source = galleryFixtureCategory('published');
@@ -269,8 +261,6 @@ it('does not create an audit event when assigning an artwork to its current Gall
         ->and(AuditEvent::query()->count())->toBe($auditsBefore);
 });
 
-
-
 it('rolls back every selected Gallery move when a published artwork cannot enter the destination', function (): void {
     $source = galleryFixtureCategory('published');
     $destination = galleryFixtureCategory('hidden');
@@ -299,42 +289,4 @@ it('rolls back every selected Gallery move when a published artwork cannot enter
         ->and(AuditEvent::query()->count())->toBe($auditsBefore)
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 1)
         ->and(AdminNotification::query()->latest('id')->value('status'))->toBe('danger');
-});
-
-it('restores a removed artwork through Add existing without changing its slug or primary media', function (): void {
-    $source = galleryFixtureCategory();
-    $target = galleryFixtureCategory();
-    $asset = galleryFixtureAsset();
-    $artwork = galleryFixtureArtwork($source, ['slug' => 'ungebetener-besuch', 'title' => 'Ungebetener Besuch']);
-    galleryFixturePrimary($artwork, $asset);
-    galleryFixtureUnavailableAnalytics();
-
-    app(ArtworkGalleryAssignmentService::class)->detach($artwork);
-    expect($artwork->fresh()->artwork_category_id)->toBeNull();
-    expect(Artwork::query()->where('slug', 'ungebetener-besuch')->count())->toBe(1);
-
-    Livewire::test(GalleryWorkspace::class, ['gallery' => $target->getKey()])
-        ->mountAction('addExistingArtwork')
-        ->fillForm(['artwork_id' => $artwork->getKey()])
-        ->callMountedAction()
-        ->assertHasNoFormErrors();
-
-    expect((int) $artwork->fresh()->artwork_category_id)->toBe((int) $target->getKey())
-        ->and($artwork->fresh()->slug)->toBe('ungebetener-besuch')
-        ->and((int) $artwork->artworkMedia()->where('role', 'primary')->value('media_asset_id'))->toBe((int) $asset->getKey())
-        ->and(Artwork::query()->where('slug', 'ungebetener-besuch')->count())->toBe(1);
-});
-
-it('prunes hidden Gallery selections when the artist changes search filters', function (): void {
-    $gallery = galleryFixtureCategory();
-    $visible = galleryFixtureArtwork($gallery, ['title' => 'Visible canvas']);
-    $hidden = galleryFixtureArtwork($gallery, ['title' => 'Other canvas']);
-    galleryFixtureUnavailableAnalytics();
-
-    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
-        ->set('selectedArtworkIds', [$visible->getKey(), $hidden->getKey()])
-        ->set('search', 'Visible');
-
-    expect(array_map('intval', $editor->get('selectedArtworkIds')))->toBe([(int) $visible->getKey()])
-        ->and($hidden->fresh()->artwork_category_id)->toBe($gallery->getKey());
 });

@@ -28,7 +28,6 @@ it('resets the complete working publication state to the current live version wi
         ->and(AuditEvent::query()->latest('id')->value('action'))->toBe('publication.stage_reset');
 });
 
-
 it('restores an old snapshot into working state and records the restore as a new commit when published', function (): void {
     $actor = User::factory()->admin()->create();
     $publication = app(PublicationService::class);
@@ -64,7 +63,6 @@ it('restores an old snapshot into working state and records the restore as a new
         ]);
 });
 
-
 it('reverts only the current LIVE commit by staging its parent and publishing a new revert commit', function (): void {
     $actor = User::factory()->admin()->create();
     $publication = app(PublicationService::class);
@@ -96,7 +94,6 @@ it('reverts only the current LIVE commit by staging its parent and publishing a 
         ->and(PublicationCheckpoint::query()->whereKey($live->getKey())->exists())->toBeTrue();
 });
 
-
 it('restores media parents before artwork media when reverting the current LIVE commit', function (): void {
     $actor = User::factory()->admin()->create();
     $publication = app(PublicationService::class);
@@ -115,7 +112,6 @@ it('restores media parents before artwork media when reverting the current LIVE 
         'title' => 'Revert media artwork',
         'state' => 'published',
         'position' => 0,
-        'date_precision' => 'unknown',
     ]);
     $asset = MediaAsset::query()->create([
         'storage_key' => 'media/revert-parent.jpg',

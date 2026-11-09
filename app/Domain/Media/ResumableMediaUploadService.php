@@ -19,6 +19,7 @@ final class ResumableMediaUploadService
     public const CHUNK_BYTES = 16 * 1024 * 1024;
 
     private const EXPIRY_SECONDS = 48 * 60 * 60;
+
     private const MIN_FREE_RESERVE = 256 * 1024 * 1024;
 
     /** @return array{id:string,offset:int,chunk_size:int,complete:bool,asset_id:int|null,duplicate:bool} */
@@ -64,8 +65,8 @@ final class ResumableMediaUploadService
 
             try {
                 $capacity = app(MediaCapacityService::class)->snapshot();
-                if (($capacity['configuration_valid'] ?? false) !== true
-                    || ($capacity['measurement_available'] ?? false) !== true
+                if ($capacity['configuration_valid'] !== true
+                    || $capacity['measurement_available'] !== true
                     || ! is_int($capacity['quota_bytes'] ?? null)
                     || ! is_int($capacity['remaining_bytes'] ?? null)) {
                     throw $this->invalid('The site storage allowance is not configured or cannot be measured.');
@@ -75,7 +76,7 @@ final class ResumableMediaUploadService
                 }
 
                 $free = @disk_free_space($this->directory());
-                if (! is_float($free) && ! is_int($free)) {
+                if ($free === false) {
                     throw $this->invalid('Free temporary storage could not be verified.');
                 }
                 // Atomic rename retains one physical original, not two copies.
@@ -123,7 +124,7 @@ final class ResumableMediaUploadService
 
             try {
                 $current = fstat($file)['size'] ?? -1;
-                if (! is_int($current) || $current !== $offset) {
+                if ($current !== $offset) {
                     // Caller can resume from the authoritative server offset.
                     throw $this->invalid('Upload offset changed. Resume from the server position.');
                 }
@@ -235,7 +236,7 @@ final class ResumableMediaUploadService
      * Only the already-persisted checksum and an intact original/required
      * preview can convert a pending session to complete.
      *
-     * @param array<string,mixed> $meta
+     * @param  array<string,mixed>  $meta
      * @return array<string,mixed>
      */
     private function reconcileCompleted(string $id, array $meta): array
@@ -274,7 +275,7 @@ final class ResumableMediaUploadService
      * Recover verifiable chunk digests for staged transfers created before
      * the per-chunk metadata was introduced. Hashing streams bounded blocks.
      *
-     * @param array<string,mixed> $meta
+     * @param  array<string,mixed>  $meta
      * @return array<string,mixed>
      */
     private function ensureChunkHashes(string $id, array $meta): array
@@ -286,7 +287,7 @@ final class ResumableMediaUploadService
 
         $size = @filesize($path);
         $declared = (int) $meta['size'];
-        if (! is_int($size) || $size < 0 || $size > $declared) {
+        if ($size === false || $size > $declared) {
             throw $this->invalid('Previous upload staging has an invalid size. Cancel it and start again.');
         }
 
@@ -355,7 +356,7 @@ final class ResumableMediaUploadService
                 $length = min(self::CHUNK_BYTES, $confirmed - $offset);
                 $hash = hash_init('sha256');
                 $count = hash_update_stream($hash, $stream, $length);
-                if (! is_int($count) || $count !== $length) {
+                if ($count !== $length) {
                     throw $this->invalid('Previous upload staging could not be verified.');
                 }
                 $hashes[] = hash_final($hash);
@@ -416,6 +417,7 @@ final class ResumableMediaUploadService
         if ($meta === null || (int) $meta['user_id'] !== $userId) {
             throw $this->invalid('Upload session not found or expired.');
         }
+
         return $meta;
     }
 
@@ -423,6 +425,7 @@ final class ResumableMediaUploadService
     {
         $raw = @file_get_contents($this->manifestPath($id));
         $meta = is_string($raw) ? json_decode($raw, true) : null;
+
         return is_array($meta) ? $meta : null;
     }
 
@@ -449,6 +452,7 @@ final class ResumableMediaUploadService
             if (! is_file($this->manifestPath($id))) {
                 throw $this->invalid('Upload session not found or expired.');
             }
+
             return $this->withLock($this->directory().'/'.$id.'.lock', $action);
         }, exclusive: false);
     }

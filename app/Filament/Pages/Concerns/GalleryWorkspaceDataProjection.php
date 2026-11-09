@@ -3,9 +3,9 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Analytics\ArtistReportingService;
-use App\Domain\Content\SiteSectionType;
 use App\Domain\Artwork\GalleryPresentation;
-use App\Domain\Media\MediaIngestService;
+use App\Domain\Content\SiteSectionType;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaTypePolicy;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -59,7 +59,7 @@ trait GalleryWorkspaceDataProjection
             $primaryAsset = $primary?->getRelationValue('mediaAsset');
             /** @var MediaVariant|null $thumbnail */
             $thumbnail = $primaryAsset instanceof MediaAsset
-                ? \App\Domain\Media\MediaPreviewVariant::preview($primaryAsset)
+                ? MediaPreviewVariant::preview($primaryAsset)
                 : null;
             $mime = $primaryAsset instanceof MediaAsset ? (string) $primaryAsset->getAttribute('mime_type') : '';
             $kind = MediaTypePolicy::isVideo($mime) ? 'video' : (MediaTypePolicy::isImage($mime) ? 'image' : 'none');

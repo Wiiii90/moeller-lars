@@ -118,6 +118,7 @@ final class MediaTypePolicy
     public static function maxBytesFor(string $mimeType): int
     {
         $configured = config('media.quota_bytes');
+
         return is_numeric($configured) && (int) $configured > 0
             ? (int) $configured
             : PHP_INT_MAX;

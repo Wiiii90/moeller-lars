@@ -1,16 +1,14 @@
 <?php
 
 use App\Domain\Content\JournalMediaRenderer;
+use App\Domain\Content\SafeRichTextRenderer;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\PublicContentSetting;
+use Illuminate\Support\Facades\Storage;
 
-it('keeps authored image credits visible when Blog copyright captions are suppressed', function (): void {
-    PublicContentSetting::general()->update([
-        'default_media_copyright_notice' => 'Inherited studio copyright',
-    ]);
-
+function journalImageUsage(): array
+{
     $asset = MediaAsset::query()->create([
         'storage_key' => 'originals/blog-caption.jpg',
         'original_filename' => 'blog-caption.jpg',
@@ -22,19 +20,20 @@ it('keeps authored image credits visible when Blog copyright captions are suppre
         'credit' => 'Photograph by Studio',
         'copyright_notice_mode' => MediaAsset::COPYRIGHT_INHERIT,
     ]);
-    MediaVariant::query()->create([
-        'media_asset_id' => $asset->getKey(),
-        'variant_kind' => 'thumbnail',
-        'storage_key' => 'variants/blog-caption.webp',
-        'mime_type' => 'image/webp',
-        'byte_size' => 10,
-        'sha256' => hash('sha256', 'caption-variant'),
-        'transform_profile' => 'public-v1',
-        'state' => 'available',
-    ]);
+    testStoredImageThumbnail($asset);
 
     $usage = new JournalEntryMedia;
     $usage->setRelation('mediaAsset', $asset);
+
+    return [$asset, $usage];
+}
+
+it('keeps authored image credits visible when Blog copyright captions are suppressed', function (): void {
+    PublicContentSetting::general()->update([
+        'default_media_copyright_notice' => 'Inherited studio copyright',
+    ]);
+
+    [$asset, $usage] = journalImageUsage();
     $renderer = app(JournalMediaRenderer::class);
 
     $blogCaption = $renderer->render($usage, includeInheritedCopyright: false, includeCopyrightNotice: false)->toHtml();
@@ -60,4 +59,85 @@ it('keeps authored image credits visible when Blog copyright captions are suppre
     $hiddenCopyright = $renderer->render($usage, includeInheritedCopyright: false, includeCopyrightNotice: false)->toHtml();
     expect($hiddenCopyright)->toContain('Photograph by Studio')
         ->not->toContain('Artwork-specific copyright');
+
+    $asset->update(['copyright_notice_mode' => MediaAsset::COPYRIGHT_NONE]);
+    $noNotice = $renderer->render($usage)->toHtml();
+    expect($noNotice)->toContain('Photograph by Studio')
+        ->not->toContain('Inherited studio copyright')
+        ->not->toContain('Artwork-specific copyright');
+});
+
+it('enables the Journal image viewer for opted-in media and Rich Text', function (): void {
+    [$asset, $usage] = journalImageUsage();
+    $renderer = app(JournalMediaRenderer::class);
+
+    $plain = $renderer->render($usage)->toHtml();
+    $interactive = $renderer->render($usage, enableViewer: true)->toHtml();
+    expect($plain)->not->toContain('data-artwork-viewer-trigger')
+        ->and($interactive)->toContain('data-artwork-viewer-trigger')
+        ->toContain('data-viewer-scope="content"')
+        ->toContain('data-viewer-kind="image"')
+        ->toContain('aria-label="Enlarge image: An authored image"');
+
+    PublicContentSetting::general()->update(['favicon_media_asset_id' => $asset->getKey()]);
+    $body = '<p>Studio notes</p><p><img data-id="'.$asset->getKey().'" alt="Detail view"></p>';
+    $rich = $renderer->renderRichText($body)->toHtml();
+    expect($rich)->toContain('Studio notes')
+        ->toContain('data-artwork-viewer-trigger')
+        ->toContain('data-viewer-scope="content"')
+        ->toContain('data-viewer-alt="Detail view"');
+});
+
+it('respects per-media video playback controls while keeping the existing default', function (): void {
+    $asset = MediaAsset::query()->create([
+        'storage_key' => 'originals/journal-video.mp4',
+        'original_filename' => 'journal-video.mp4',
+        'mime_type' => 'video/mp4',
+        'byte_size' => 16,
+        'sha256' => hash('sha256', 'journal-video'),
+        'state' => 'available',
+        'alt_text' => 'Studio motion',
+    ]);
+    $usage = new JournalEntryMedia;
+    $usage->setRelation('mediaAsset', $asset);
+    $renderer = app(JournalMediaRenderer::class);
+
+    $default = $renderer->render($usage, enableViewer: true)->toHtml();
+    expect($usage->videoControlsEnabled())->toBeTrue()
+        ->and($default)->toContain('<video ')
+        ->toContain(' controls muted loop playsinline')
+        ->not->toContain('data-artwork-viewer-trigger');
+
+    $usage->setAttribute('video_controls_enabled', false);
+    $disabled = $renderer->render($usage, enableViewer: true)->toHtml();
+    expect($usage->videoControlsEnabled())->toBeFalse()
+        ->and($disabled)->toContain('<video ')
+        ->toContain(' muted loop playsinline')
+        ->not->toContain(' controls');
+
+    $usage->setAttribute('video_controls_enabled', true);
+    expect($renderer->render($usage)->toHtml())->toContain(' controls muted loop playsinline');
+});
+
+it('renders one public caption below the correct repeated Rich Text image without losing placement', function (): void {
+    Storage::fake('rich-text-public-caption');
+    config(['media.disk' => 'rich-text-public-caption']);
+    [$asset] = journalImageUsage();
+    $disk = Storage::disk(config('media.disk'));
+    $disk->put($asset->storage_key, str_repeat('o', 10));
+    PublicContentSetting::general()->update(['favicon_media_asset_id' => $asset->getKey()]);
+
+    $rich = '<p><img data-id="'.$asset->getKey().'" data-artist-placement="float-left"'
+        .' data-artist-caption="Studio &amp; archive" alt="First image"></p>'
+        .'<p><img data-id="'.$asset->getKey().'" data-artist-placement="center" alt="Second image"></p>';
+
+    $html = app(SafeRichTextRenderer::class)->render($rich)->toHtml();
+
+    expect(substr_count($html, 'rich-text__image-caption'))->toBe(1)
+        ->and(substr_count($html, '<img'))->toBe(2)
+        ->and($html)->toContain('rich-text__image--float-left')
+        ->toContain('rich-text__image--center')
+        ->toContain('Studio &amp; archive')
+        ->not->toContain('<script');
+    expect($html)->toMatch('/<img[^>]+><span class="rich-text__image-caption">Studio &amp; archive<\/span><\/span>/');
 });

@@ -13,6 +13,7 @@ use App\Filament\Pages\Concerns\ManagesSitePageDialogs;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
+use App\Filament\Support\HierarchyParentField;
 use App\Filament\Support\SiteNodePresentation;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -21,17 +22,16 @@ use App\Models\Exhibition;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Models\User;
-use Filament\Facades\Filament;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
+use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use UnitEnum;
 use Livewire\Attributes\Session;
+use UnitEnum;
 
 final class SitePages extends Page
 {
@@ -293,7 +293,7 @@ final class SitePages extends Page
                     ];
                 })
                 ->schema([
-                    \App\Filament\Support\HierarchyParentField::make(
+                    HierarchyParentField::make(
                         'parent_id', fn (): array => $this->parentOptions, 'Parent page',
                     )->visible(fn (): bool => $this->nestedNavigationEnabled),
                 ])
@@ -679,11 +679,10 @@ final class SitePages extends Page
             'unpublished' => count(array_filter($allRows, static fn (array $row): bool => $row['state'] !== 'published')),
             'top_level' => count($allGroups),
             'children' => count(array_filter($allRows, static fn (array $row): bool => $row['parent_id'] !== null)),
-            'navigation' => count(array_filter($allRows, static fn (array $row): bool =>
-                $row['state'] === 'published' && (
-                    $row['type'] !== SiteSectionType::Home->value
-                    || (! $skipHome && $row['show_in_navigation'])
-                )
+            'navigation' => count(array_filter($allRows, static fn (array $row): bool => $row['state'] === 'published' && (
+                $row['type'] !== SiteSectionType::Home->value
+                || (! $skipHome && $row['show_in_navigation'])
+            )
             )),
             'galleries' => count(array_filter($allRows, static fn (array $row): bool => $row['type'] === SiteSectionType::Gallery->value)),
         ];
@@ -777,11 +776,9 @@ final class SitePages extends Page
         $deleteHelp = match (true) {
             ! $type->canDelete() => null,
             $hasChildren => 'Move or delete child pages before deleting',
-            $type !== SiteSectionType::Journal && (string) $section->getAttribute('state') !== 'hidden'
-                => 'Unpublish the page before deleting',
+            $type !== SiteSectionType::Journal && (string) $section->getAttribute('state') !== 'hidden' => 'Unpublish the page before deleting',
             $type === SiteSectionType::Gallery && Artwork::query()
-                ->where('artwork_category_id', (int) $section->getAttribute('artwork_category_id'))->exists()
-                => 'Remove the Gallery artworks before deleting',
+                ->where('artwork_category_id', (int) $section->getAttribute('artwork_category_id'))->exists() => 'Remove the Gallery artworks before deleting',
             $type === SiteSectionType::Journal && (
                 BlogPost::query()->where('site_section_id', $sectionId)->exists()
                 || Exhibition::query()->where('site_section_id', $sectionId)->exists()

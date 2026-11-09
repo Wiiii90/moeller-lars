@@ -5,7 +5,7 @@
         @if (($removeAction ?? null) === 'link')
             <x-filament::icon-button icon="heroicon-o-link-slash" size="sm" color="gray"
                 class="admin-dialog__header-action" :label="__('Remove link')"
-                x-show="linkIsExisting" x-on:click.stop="removeLink()" />
+                x-show="linkIsExisting" x-on:mousedown.prevent x-on:click.stop="removeLink()" />
         @elseif (($removeAction ?? null) === 'color')
             <x-filament::icon-button icon="heroicon-o-no-symbol" size="sm" color="gray"
                 class="admin-dialog__header-action" :label="__('Remove color')"

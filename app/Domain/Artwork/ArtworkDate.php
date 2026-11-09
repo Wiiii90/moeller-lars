@@ -29,7 +29,9 @@ final class ArtworkDate
     public static function display(Artwork $artwork, ?string $region = null): ?string
     {
         $year = $artwork->getAttribute('year');
-        if ($year === null) return null;
+        if ($year === null) {
+            return null;
+        }
         $month = $artwork->getAttribute('month');
         if ($month === null) {
             return (string) $year;
@@ -42,6 +44,7 @@ final class ArtworkDate
             return $region === 'de-DE' ? $m.'.'.$y : $m.'/'.$y;
         }
         $d = sprintf('%02d', (int) $day);
+
         return match ($region) {
             'de-DE' => $d.'.'.$m.'.'.$y,
             'en-GB' => $d.'/'.$m.'/'.$y,
@@ -63,24 +66,25 @@ final class ArtworkDate
             'month' => isset($matches[2]) ? (int) $matches[2] : null,
             'day' => isset($matches[3]) ? (int) $matches[3] : null,
         ];
-        self::validateParts($parts);
+        self::validateParts($parts, 'artwork_date');
+
         return $parts;
     }
 
     /** @param array{year:mixed,month:mixed,day:mixed} $parts */
-    public static function validateParts(array $parts): void
+    public static function validateParts(array $parts, ?string $field = null): void
     {
         $year = $parts['year'];
         $month = $parts['month'];
         $day = $parts['day'];
         if ($year !== null && ((int) $year < 1000 || (int) $year > 9999)) {
-            throw ValidationException::withMessages(['year' => 'Choose a four-digit year.']);
+            throw ValidationException::withMessages([$field ?? 'year' => 'Choose a four-digit year.']);
         }
         if ($month !== null && ($year === null || (int) $month < 1 || (int) $month > 12)) {
-            throw ValidationException::withMessages(['month' => 'Choose a valid month and year.']);
+            throw ValidationException::withMessages([$field ?? 'month' => 'Choose a valid month and year.']);
         }
-        if ($day !== null && ($month === null || $year === null || ! checkdate((int) $month, (int) $day, (int) $year))) {
-            throw ValidationException::withMessages(['day' => 'Choose a valid calendar date.']);
+        if ($day !== null && ($month === null || ! checkdate((int) $month, (int) $day, (int) $year))) {
+            throw ValidationException::withMessages([$field ?? 'day' => 'Choose a valid calendar date.']);
         }
     }
 }

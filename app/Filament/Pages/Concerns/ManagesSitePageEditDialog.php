@@ -9,10 +9,10 @@ use App\Domain\Content\SitePageHeading;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionIdentityService;
 use App\Domain\Content\SiteSectionType;
-use App\Filament\Support\AdminIcon;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
+use App\Filament\Support\HierarchyParentField;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Filament\Support\PageHeadingFields;
 use App\Filament\Support\PageMetaDescriptionField;
@@ -24,11 +24,12 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 
 trait ManagesSitePageEditDialog
 {
     /** @var array<int,array<string,mixed>> Server-owned originals for mounted optimistic edits. */
-    #[\Livewire\Attributes\Locked]
+    #[Locked]
     public array $pageDialogOriginals = [];
 
     /** @var array<int, SiteSection> */
@@ -81,7 +82,7 @@ trait ManagesSitePageEditDialog
                             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
                             ->required(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
                             ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false),
-                        \App\Filament\Support\HierarchyParentField::make(
+                        HierarchyParentField::make(
                             'parent_id', fn (): array => $this->parentOptions, 'Parent page',
                         )->visible(fn (): bool => $this->nestedNavigationEnabled),
                         TextInput::make('position')
@@ -331,8 +332,7 @@ trait ManagesSitePageEditDialog
             foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
                 $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($id, $direction): void {
                     $this->moveSection($id, $direction);
-                    $this->dialogSectionCache = [];
-                    $this->replaceMountedAction('editPage', ['section' => $id]);
+                    $this->retargetPageEditor($id);
                 })->disabled(! $this->reorderEnabled || ! ($row['can_move_'.$direction] ?? false));
             }
         }
@@ -344,8 +344,7 @@ trait ManagesSitePageEditDialog
                 $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
                 function () use ($id): void {
                     $this->toggleSectionState($id);
-                    $this->dialogSectionCache = [];
-                    $this->replaceMountedAction('editPage', ['section' => $id]);
+                    $this->retargetPageEditor($id);
                 },
             );
         }
@@ -400,6 +399,13 @@ trait ManagesSitePageEditDialog
         }
 
         return (int) $value;
+    }
+
+    private function retargetPageEditor(int $sectionId): void
+    {
+        $this->dialogSectionCache = [];
+        $this->cacheAction($this->editPageAction());
+        $this->replaceMountedAction('editPage', ['section' => $sectionId]);
     }
 
     private function dialogDisplayPosition(SiteSection $section): int

@@ -112,7 +112,7 @@ export default () => {
                     if (image?.type.name !== 'image') return false;
                     const caption = [...String(value).trim()].slice(0, 500).join('') || null;
                     if (image.attrs.artistCaption === caption) return false;
-                    return editor.chain().focus()
+                    return editor.chain()
                         .setNodeSelection(position)
                         .updateAttributes('image', { artistCaption: caption })
                         .run();
@@ -148,16 +148,18 @@ export default () => {
                             NodeSelection.create(view.state.doc, nodePos),
                         );
                         const boundary = view.dom.closest('.fi-modal-content');
-                        if (boundary) {
+                        const editorArea = view.dom.closest('.fi-fo-rich-editor-main');
+                        if (boundary && editorArea) {
                             const padding = 8;
+                            const clippingBoundary = [boundary, editorArea];
                             transaction.setMeta('floatingToolbar::image', {
                                 type: 'updateOptions',
                                 options: {
                                     options: {
-                                        flip: { boundary, padding },
-                                        shift: { boundary, padding, crossAxis: true },
+                                        flip: { boundary: clippingBoundary, padding },
+                                        shift: { boundary: clippingBoundary, padding, crossAxis: true },
                                         size: {
-                                            boundary,
+                                            boundary: clippingBoundary,
                                             padding,
                                             apply({ availableWidth, availableHeight, elements }) {
                                                 elements.floating.style.maxWidth = `${Math.max(0, availableWidth)}px`;

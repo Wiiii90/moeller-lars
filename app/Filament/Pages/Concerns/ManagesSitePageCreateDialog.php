@@ -6,12 +6,12 @@ use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SitePageHeading;
-use App\Filament\Support\PageHeadingFields;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
+use App\Filament\Support\PageHeadingFields;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
@@ -21,8 +21,8 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 trait ManagesSitePageCreateDialog
 {
@@ -81,8 +81,7 @@ trait ManagesSitePageCreateDialog
                             ->placeholder(__('Last')),
                     ]),
                 PageHeadingFields::schema()
-                    ->visible(fn (Get $get): bool =>
-                        SiteSectionType::tryFrom((string) $get('type'))?->hasPublicPage() ?? false),
+                    ->visible(fn (Get $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->hasPublicPage() ?? false),
             ])
             ->action(function (array $data): void {
                 try {

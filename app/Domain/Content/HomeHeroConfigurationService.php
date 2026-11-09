@@ -86,6 +86,7 @@ final class HomeHeroConfigurationService
         $candidateFilter = ($artwork['pool_rule'] ?? null) === 'year' ? 'year' : 'all';
         $rotationInterval = $this->readRotationInterval($artwork['rotation_interval'] ?? null);
         $rotationStartedAt = $this->readRotationStartedAt($artwork['rotation_started_at'] ?? null);
+
         return [
             'group_source' => $groupSource,
             'display_strategy' => $displayStrategy,
@@ -107,8 +108,8 @@ final class HomeHeroConfigurationService
     }
 
     /**
-     * @param array<string, mixed> $input
-     * @param array{before:list<int|string>,after:list<int|string>}|null $orderingState
+     * @param  array<string, mixed>  $input
+     * @param  array{before:list<int|string>,after:list<int|string>}|null  $orderingState
      */
     public function updateArtworkSettings(HomePresentationSetting $settings, array $input, ?array $orderingState = null): bool
     {

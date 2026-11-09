@@ -259,7 +259,7 @@ final class LegacyArtworkManifestImporter
 
                 $featured = $this->boolean($artwork, 'featured_on_home');
                 if ($this->boolean($category, 'show_on_home')) {
-                    $homeCandidates[] = ['year' => $workYear, 'featured' => $featured, 'slug' => $artworkSlug];
+                    $homeCandidates[] = ['year' => $year, 'featured' => $featured, 'slug' => $artworkSlug];
                 }
 
                 $validatedArtworks[] = [
