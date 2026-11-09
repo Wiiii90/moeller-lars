@@ -1,6 +1,7 @@
 <x-admin.section class="admin-dashboard__feed-section admin-visual-stage-followup" aria-label="Dashboard feed">
     @php
         $selectedCount = count($selectedFeedKeys);
+        $hasResettableFeedFilters = trim($feedSearch) !== '' || $feedType !== 'all';
         $selectableFeedKeys = collect($feed)->pluck('key')->values()->all();
         $feedHasRecords = $feedPagination['total'] > 0 || (trim($feedSearch) !== '' || $feedType !== 'all' || $notificationFilter !== 'all')
             && app(\App\Domain\Admin\DashboardFeed::class)->paginate('', 'all', 1, 25)['total'] > 0;
@@ -34,7 +35,7 @@
 
         <x-slot:reset>
             <div class="admin-data-control-group admin-dashboard__feed-clear">
-                <x-admin.clear-filters wire:click="resetFeed" :disabled="trim($feedSearch) === '' && $feedType === 'all' && $notificationFilter === 'all'" />
+                <x-admin.clear-filters wire:click="resetFeed" :disabled="! $hasResettableFeedFilters" />
             </div>
         </x-slot:reset>
 
@@ -141,7 +142,9 @@
             @if ($feedHasRecords)
                 <x-admin.empty-state title="No matching feed entries" minimal>
                     <x-slot:actions>
-                        <button class="admin-action" type="button" wire:click="resetFeed">{{ __('Clear filters') }}</button>
+                        @if ($hasResettableFeedFilters)
+                            <button class="admin-action" type="button" wire:click="resetFeed">{{ __('Clear filters') }}</button>
+                        @endif
                     </x-slot:actions>
                 </x-admin.empty-state>
             @else

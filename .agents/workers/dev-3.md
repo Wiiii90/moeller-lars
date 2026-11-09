@@ -2,17 +2,19 @@
 
 **Branch:** `dev`  
 **Lease:** 10 (active)  
-**Status:** Assigned, source investigation pending.
+**Status:** Bounded source corrections committed; browser review pending.
 
-## Assigned scope
-- Dashboard Checks settings dialog: inspect dropdown popover placement, clipping, overflow and consistency with the canonical Admin dialog contract; use the shared owner rather than a page-only workaround.
-- Dashboard Findings filters: disable Clear when no filter criterion is selected.
-- Dashboard/Activity clock: reconcile clock alignment with the Activity page's differing top action row; fix placement at the actual layout owner.
+## Owned scope and decisions
+- Dashboard Settings uses existing global Filament Select/Popover chrome. The canonical Admin dialog contract permits nested selection lists to extend beyond the modal window, but requires viewport-safe, focusable popovers. No scoped evidence for a new popup implementation; no change made.
+- Dashboard Clear resets only visible search/type controls; notification history preference belongs to Settings. The shared reset state now follows the exact two resettable filters, including the empty-result action.
+- The Activity clock uses the same stage header height/gap as Dashboard through the existing Stage layout contract, without an artificial Action on the Activity page. The shared clock component remains unchanged.
 
-## Boundaries
-- Work on `dev`, coordinate changes to shared Admin controls with other active workers, and do not edit tests or routine documentation.
-- No unapproved Continuous Integration, deployment, Validation mutations, release or other branch writes.
-- For visual fixes, distinguish source review from verified browser acceptance.
+## Source
+- Registration commit: `e3df0bb7ed004f226050520508ab00b691defa7e`.
+- Source correction: pending guarded commit in this transaction.
+- Affected: Dashboard feed template, shared stage layout and Dashboard header spacing; own worker record.
 
-## Progress / next action
-- Registered on current dev; inspect relevant architecture and Admin dialog/layout contracts, three dashboard routes and direct Activity consumer; implement bounded corrections and record exact source commits and verification limits.
+## Verification and handoff
+- Source-structure checks and publish/readback through connected GitHub; no browser, application runtime or test execution in this worker session.
+- Browser review: Dashboard Settings dropdown dark/light, top/bottom/side viewport boundaries and focus/Escape; Dashboard Clear with empty search/type and nondefault notification preference, active/reset cycles; Dashboard vs Activity clock alignment at desktop and minimal widths.
+- Tests are owned by Testing on its own branch. No deployment, branch integration, Continuous Integration or server action authorized.

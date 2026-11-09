@@ -7,6 +7,7 @@
 :root {
     --admin-stage-divider-inset: .25rem;
     --admin-stage-header-height: 2rem;
+    --admin-stage-header-gap: .45rem;
     --admin-stage-pane-space: var(--admin-section-gap);
     --admin-stage-orbit-size: 18.5rem;
     --admin-stage-orbit-caption-reserve: 2.28125rem;
@@ -240,7 +241,7 @@
     height: 100% !important;
     min-width: 0;
     min-height: 0;
-    grid-template-rows: minmax(0, 1fr) auto !important;
+    grid-template-rows: calc(var(--admin-stage-header-height) + var(--admin-stage-header-gap)) minmax(0, 1fr) auto !important;
     gap: var(--admin-stage-orbit-gap);
     margin: 0 !important;
     padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
@@ -286,6 +287,17 @@
     align-content: start !important;
     border-left: 0 !important;
     overflow: hidden;
+}
+
+/* Activity has no Open link on its own page. Keep the clock's first stage
+ * track as the equivalent Dashboard header rail so the shared dial and
+ * caption align vertically without an artificial control or translation. */
+.activity-atlas__view.activity-clock > .activity-clock__figure {
+    grid-row: 2;
+}
+
+.activity-atlas__view.activity-clock > .activity-clock__caption {
+    grid-row: 3;
 }
 
 /* Keep the stage focused on state rather than checkpoint prose. */

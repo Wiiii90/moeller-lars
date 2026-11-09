@@ -50,7 +50,7 @@
 .admin-dashboard__overview-head {
     display: flex;
     gap: 1rem;
-    margin-bottom: .45rem;
+    margin-bottom: var(--admin-stage-header-gap);
     align-items: center;
     justify-content: space-between;
 }
