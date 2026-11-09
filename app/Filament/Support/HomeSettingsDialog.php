@@ -23,6 +23,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 
 final class HomeSettingsDialog
@@ -72,15 +73,29 @@ final class HomeSettingsDialog
     /** @return list<mixed> */
     public function schema(?Closure $persistHeroToggle = null): array
     {
+        $persistHeading = function (string $field, mixed $value): bool {
+            $section = $this->homeSection($this->resolver->settings());
+            $updated = app(SiteSectionEditorialService::class)->updatePageHeading($section, [$field => $value]);
+
+            return $updated->wasChanged($field);
+        };
+
         return [
             Grid::make()
                 ->columns(['md' => 2])
                 ->schema([
                     Select::make('template')
-                        ->label('Template')
+                        ->label(self::helpLabel(
+                            'Template',
+                            'Home templates',
+                            'Hero Artwork displays selected artworks. Under Construction is a prepared content template, while Custom is fully editable. Each template retains its own settings and content when you switch between them.',
+                        ))
                         ->options(array_map('__', HomeTemplate::options()))
                         ->required()
-                        ->live(),
+                        ->live()
+                        ->columnSpan(fn (callable $get): int => $get('template') === HomeTemplate::UnderConstruction->value ? 1 : 2),
+                    AdminControl::toggle('public_site_gate', 'Temporarily gate the public site')
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
                     ...$this->routingDialog->schema(),
                     AdminControl::toggle('show_in_navigation', 'Show in public navigation')
                         ->live()
@@ -94,7 +109,11 @@ final class HomeSettingsDialog
                             }
                         }),
                     Select::make('group_source')
-                        ->label('Group source')
+                        ->label(self::helpLabel(
+                            'Group source',
+                            'Choosing a Hero group',
+                            'Automatic selects eligible artworks from enabled, published Galleries. Manual uses the artworks you explicitly add and order.',
+                        ))
                         ->options(['automatic' => __('Automatic'), 'manual' => __('Manual')])
                         ->required()
                         ->live()
@@ -111,6 +130,16 @@ final class HomeSettingsDialog
                         ->options(['artwork_date' => __('Artwork date'), 'added' => __('Added')])
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
+                    Select::make('display_strategy')
+                        ->label(self::helpLabel(
+                            'Display strategy',
+                            'Displaying the Hero group',
+                            'Ordered keeps the first artwork visible. Random selects a weighted artwork. Sequential advances through the group after each rotation interval.',
+                        ))
+                        ->options(['ordered' => __('Ordered'), 'random' => __('Random'), 'sequential' => __('Sequential')])
+                        ->required()
+                        ->live()
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
                     Select::make('pool_rule')
                         ->label('Candidate filter')
                         ->options(['all' => __('All eligible'), 'year' => __('Specific Year')])
@@ -127,20 +156,22 @@ final class HomeSettingsDialog
                     $this->heroArtworkSelect('manual_include_ids', 'Additional includes', multiple: true)
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic')
                         ->columnSpanFull(),
-                    Select::make('display_strategy')
-                        ->label('Display strategy')
-                        ->options(['ordered' => __('Ordered'), 'random' => __('Random'), 'sequential' => __('Sequential')])
-                        ->required()
-                        ->live()
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
                     TextInput::make('rotation_interval_count')
-                        ->label('Rotation interval')
+                        ->label(self::helpLabel(
+                            'Rotation interval',
+                            'Rotation interval',
+                            'How many units pass before the next Sequential artwork becomes active. The interval begins when the sequence or rotation settings change.',
+                        ))
                         ->numeric()
                         ->minValue(1)
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
                     Select::make('rotation_interval_unit')
-                        ->label('Interval unit')
+                        ->label(self::helpLabel(
+                            'Interval unit',
+                            'Rotation interval unit',
+                            'Choose whether the Sequential rotation interval is measured in days or weeks.',
+                        ))
                         ->options(['days' => __('Days'), 'weeks' => __('Weeks')])
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
@@ -148,21 +179,14 @@ final class HomeSettingsDialog
                     $this->heroDisplayToggle('show_gallery_link', 'Show Gallery link for single Hero', $persistHeroToggle),
                     $this->heroDisplayToggle('show_navigation', 'Navigate Hero group', $persistHeroToggle),
                     $this->heroDisplayToggle('video_sound_enabled', 'Allow visitors to unmute looping Home videos', $persistHeroToggle),
+                    PageHeadingFields::headingToggle($persistHeading, 'Home settings saved'),
                     $this->heroDisplayToggle('enable_viewer', PublicImageViewer::TOGGLE_LABEL, $persistHeroToggle),
                     AdminControl::toggle('custom_image_viewer_enabled', PublicImageViewer::TOGGLE_LABEL)
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Custom->value),
                     AdminControl::toggle('construction_image_viewer_enabled', PublicImageViewer::TOGGLE_LABEL)
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
-                    Toggle::make('public_site_gate')
-                        ->label('Temporarily gate the public site')
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
+                    ...PageHeadingFields::detailFields($persistHeading, 'Home settings saved'),
                 ]),
-            PageHeadingFields::schema(function (string $field, mixed $value): bool {
-                $section = $this->homeSection($this->resolver->settings());
-                $updated = app(SiteSectionEditorialService::class)->updatePageHeading($section, [$field => $value]);
-
-                return $updated->wasChanged($field);
-            }, 'Home settings saved'),
         ];
     }
 
@@ -260,6 +284,15 @@ final class HomeSettingsDialog
             'template' => $this->resolver->template()->value,
             ...$this->routingDialog->tableState(),
         ];
+    }
+
+    private static function helpLabel(string $label, string $title, string $body): HtmlString
+    {
+        return new HtmlString(
+            '<span class="admin-form-label-with-help">'.e($label).
+            AdminHelp::make($title, $body)->toHtml().
+            '</span>',
+        );
     }
 
     private function heroDisplayToggle(string $field, string $label, ?Closure $persist): Toggle

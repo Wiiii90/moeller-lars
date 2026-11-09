@@ -23,39 +23,51 @@ final class PageHeadingFields
         return Grid::make()
             ->columns(['md' => 2])
             ->schema([
-                Toggle::make('content_heading_enabled')
-                    ->label('Show page heading')
-                    ->default(false)
-                    ->live()
-                    ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_enabled', (bool) $state, $successTitle))
-                    ->columnSpanFull(),
-                TextInput::make('content_heading_override')
-                    ->label('Heading text')
-                    ->placeholder('Use page name')
-                    ->maxLength(160)
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_override', $state, $successTitle))
-                    ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled'))
-                    ->columnSpanFull(),
-                Select::make('content_heading_alignment')
-                    ->label('Alignment')
-                    ->options(SitePageHeading::ALIGNMENTS)
-                    ->default('left')
-                    ->native()
-                    ->required()
-                    ->live()
-                    ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_alignment', $state, $successTitle))
-                    ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled')),
-                Select::make('content_heading_divider')
-                    ->label('Divider below heading')
-                    ->options(SitePageHeading::DIVIDERS)
-                    ->default('none')
-                    ->native()
-                    ->required()
-                    ->live()
-                    ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_divider', $state, $successTitle))
-                    ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled')),
+                self::headingToggle($persist, $successTitle)->columnSpanFull(),
+                ...self::detailFields($persist, $successTitle),
             ]);
+    }
+
+    public static function headingToggle(?Closure $persist = null, string $successTitle = 'Page updated'): Toggle
+    {
+        return Toggle::make('content_heading_enabled')
+            ->label('Show page heading')
+            ->default(false)
+            ->live()
+            ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_enabled', (bool) $state, $successTitle));
+    }
+
+    /** @return list<mixed> */
+    public static function detailFields(?Closure $persist = null, string $successTitle = 'Page updated'): array
+    {
+        return [
+            TextInput::make('content_heading_override')
+                ->label('Heading text')
+                ->placeholder('Use page name')
+                ->maxLength(160)
+                ->live(onBlur: true)
+                ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_override', $state, $successTitle))
+                ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled'))
+                ->columnSpanFull(),
+            Select::make('content_heading_alignment')
+                ->label('Alignment')
+                ->options(SitePageHeading::ALIGNMENTS)
+                ->default('left')
+                ->native()
+                ->required()
+                ->live()
+                ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_alignment', $state, $successTitle))
+                ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled')),
+            Select::make('content_heading_divider')
+                ->label('Divider below heading')
+                ->options(SitePageHeading::DIVIDERS)
+                ->default('none')
+                ->native()
+                ->required()
+                ->live()
+                ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_divider', $state, $successTitle))
+                ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled')),
+        ];
     }
 
     /**
