@@ -503,6 +503,8 @@ final class General extends Page
                             ])
                                 ->columns(1)
                                 ->extraAttributes([
+                                    // Filament positions searchable dropdowns outside clipped
+                                    // field scrollers when this native context is present.
                                     'class' => 'general-appearance-stage__scroll fi-fixed-positioning-context',
                                     'x-ref' => 'appearanceScroll',
                                 ])

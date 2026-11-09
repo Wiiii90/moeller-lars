@@ -1,39 +1,29 @@
-# Dev Worker 7 — General Appearance preview corrections
+# Dev Worker 7 — General Appearance
 
 **Branch:** `dev`  
 **Lease:** 13 (active)  
-**Status:** Active; General Appearance source corrections committed; browser verification pending.
+**Status:** Source corrections committed; browser acceptance and test execution outstanding.
 
-## Assigned scope
-- Appearance / Global: review frame style combinations and their selection presentation; correct site icon Storage picker popover clipping.
-- Appearance / Title: restore hide/show and responsive-size persistence/preview; reconcile beside/inside/above menu placement, alignment, and narrow-screen behavior against existing accepted contract.
-- Appearance / Page: review and reasonably expand content width and padding bounds without breaking menu/title or viewport geometry.
-- Appearance / Menu: correct full-width divider crossing the content region and unstable live preview.
-- Appearance dialog: restore a stable height based on the tallest of Global, Title, Menu, Page tabs when expanded ("More space") and preserve Preview during tab/control changes.
-- Regional Formats: consistent section spacing and discoverable date/number usage hints.
-- Appearance / Legal: review field purpose and artist-facing content instructions; do not fabricate legal advice.
+## Ownership and accepted decisions
+- General → Appearance (Global, Title, Menu, Page and Legal), Regional Formats, Admin live Preview and their direct Public consumers.
+- Frame Style variants and rendering are **deferred** until the upcoming Public Preview review; do not expand or redesign them in this assignment.
+- User specifically authorized writing/updating the directly relevant regression tests on `dev`, **without executing any tests**. No CI, other branch changes or deployment.
+- Do not alter existing saved artist data, add duplicate renderers or invent legal copy. Coordinate shared Admin popover changes with other Dev workers, especially Dashboard ownership.
 
-## Boundaries
-- Work directly on `dev`, coordinate shared Admin/Public controls with active workers. Do not edit tests or general documentation.
-- No unsolicited Continuous Integration, deployment, release or other branch writes; preserve artist data.
-- Browser behavior unverified without actual review.
+## Implemented on dev
+- More/Less Space expanded height uses the tallest mounted Appearance panel; compact mode retains one field scroller, no timers or duplicated measurement (132d16da).
+- Regional Formats use consistent grouped section geometry and public Date/Number usage explanations with translations (8337112a).
+- Page width 560–1920px and padding 12–320px retain viewport-safe shell geometry and existing effective artwork minimum (5787c583).
+- Beside Title owns a genuine exterior rail, separate from Inside Menu; responsive stack checks that exterior rail and alignment remains centrally owned (25a76742, 65738a27).
+- Legal fields' explanatory text clarified, with no auto-filled artist legal material (50b4c9c3).
+- Title visibility and responsive reduction native Select option state remains string-valued after a successful boolean persistence update (3350a477).
+- Full-width Menu divider again uses its own sticky-header gap and viewport-wide stroke; only structurally connected modes join Menu/Page paper (e01a4acd).
+- Site icon searchable Media Select now uses Filament's native fixed-positioning context in the Appearance pane so its dropdown escapes the clipped field scroller; no separate popup/JS positioning code (df6a7bb8).
+- Live Preview has a stable Livewire key and preserves Alpine-measured device/page inline dimensions via `wire:ignore.self`; iframe remains `wire:ignore` and sibling favicon markup can still update (df6a7bb8).
+- Regression tests updated/added at `tests/js/public-header.test.mjs`, `tests/Feature/Admin/General/GeneralSettingsPersistenceTest.php` and `tests/browser/e2e/admin/general-appearance.spec.mjs`; they cover exterior stack geometry, Title setting state, Preview identity through saves, and searchable picker behavior (1551c024).
 
-## Current progress
-- Replaced active-tab-dependent expanded height with the tallest mounted Appearance panel as the intrinsic grid sizing owner; compact mode retains active-tab-only scroll. No duplicated measurement or remount.
-- Regional Formats now reuse Contact/Legal field geometry, with public date/number purpose help and German translations. Content width bounds widened from 640–1440 to 560–1920 pixels, and padding bounds from 24–180 to 12–320 pixels using existing viewport-safe shell and effective minimum-artwork-width logic. Browser behavior remains unverified; title/menu, persistence, picker and Legal issues remain under investigation.
-
-- Replaced Beside menu's shared Inside grid with a true external title rail on the Global background; stack decision now checks the real outside available width rather than Menu content width. This changes previously incorrect source-level outside-stack expectations; Testing must reconcile its tests. Browser acceptance pending.
-
-- Refined all five existing Legal field help texts with field-specific editorial obligations and limitations; localized legal labels and guidance to German. No default legal copy or fabricated operator information was saved.
-
-- Kept Title visibility and responsive-size Selects in their string option type after write (public model remains boolean). Live Preview is now keyed, with `wire:ignore.self` on the Alpine-sized device and page: Livewire updates no longer reset their measured inline dimensions to the 1px CSS defaults. Its iframe remains `wire:ignore`, while its displayed favicon can still be updated from server state.
-
-- Site-icon picker now uses Filament 5's native `fi-fixed-positioning-context` strategy for the existing searchable dropdown, escaping the Appearance scroll owner's clipping while keeping Floating UI positioning. No alternate picker or additional listener introduced.
-- The Full-width Menu divider had lost its sticky-owned gap in `cf867e4e28`, and Public Blade incorrectly marked that gapped mode as connected. Restored one header-owned gap with the viewport-wide stroke above it and limited connected-paper mode to genuinely joined `fine`/`menu`. Browser verification pending.
-- Frame-style controls currently encode five composite variants in a single persisted field. A cleaner independent-contour/backing selection needs a deliberate unified domain/storage design, not appended parallel fields.
-- Existing `tests/js/public-header.test.mjs` Beside assertions describe the old inside-sized rail and must be reconciled by Testing for the new exterior geometry. Dev does not modify tests.
-
-- User explicitly authorized updating regression tests on `dev` while prohibiting their execution. Reconciled `tests/js/public-header.test.mjs` to the exterior Beside title rail; added General Title Select autosave persistence coverage in the existing Feature suite, plus one focused General browser scenario for Preview identity/dimensions and searchable Site icon dropdown. All tests are authored only, not executed.
-
-## Next
-- Browser-verify the new General Preview and Site icon behavior and review authored test expectations against the actual Filament/Livewire DOM, without executing tests in this Dev assignment. Frame Styles remain explicitly deferred; legal author text requires verified operator facts and approval.
+## Verification and open gates
+- Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
+- In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.
+- Testing worker should review/execute the authored tests in an isolated environment when explicitly authorized. Frame Style visual behavior is deliberately left to later review.
+- Final Legal text requires real operator, deployment and rights facts plus artist approval. 
