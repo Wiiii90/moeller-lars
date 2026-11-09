@@ -11,13 +11,44 @@
         @endif
 
         @if ($template === 'artwork')
-            <div class="home-hero-surface admin-visual-stage" aria-label="Hero Artwork">
+            @php
+                $simulationCandidates = collect($heroRailRows)
+                    ->filter(static fn (array $row): bool => $row['eligible'] ?? true)
+                    ->map(static fn (array $row): array => [
+                        'id' => $row['id'],
+                        'eligible' => true,
+                        'thumbnail_url' => $row['thumbnail_url'],
+                        'weight' => $row['weight'] ?? null,
+                    ])->values()->all();
+                $simulationKey = md5(json_encode([
+                    $heroGroupSource, $heroDisplayStrategy, $rotationIntervalCount,
+                    $rotationIntervalUnit, $nextRotationAt, $simulationCandidates,
+                ]));
+            @endphp
+            <div
+                class="home-hero-surface admin-visual-stage"
+                aria-label="Hero Artwork"
+                wire:key="home-stage-{{ $simulationKey }}"
+                x-data="adminHomeHeroStage({
+                    rows: @js($simulationCandidates),
+                    currentId: @js($currentArtwork['id'] ?? null),
+                    strategy: @js($heroDisplayStrategy),
+                    rotationCount: @js($rotationIntervalCount),
+                    rotationUnit: @js($rotationIntervalUnit),
+                    nextRotationAt: @js($nextRotationAt),
+                    sampledAt: @js(now('UTC')->toIso8601String()),
+                })"
+            >
                 <div class="home-hero-surface__visual admin-visual-stage__pane">
-                    @if ($currentArtwork && $currentArtwork['thumbnail_url'])
-                        <img src="{{ $currentArtwork['thumbnail_url'] }}" alt="" loading="eager" decoding="async">
-                    @else
-                        <span>{{ __('No Hero Artwork') }}</span>
-                    @endif
+                    <img
+                        @if ($currentArtwork && $currentArtwork['thumbnail_url']) src="{{ $currentArtwork['thumbnail_url'] }}" @endif
+                        x-show="Boolean(active?.thumbnail_url)"
+                        x-bind:src="active?.thumbnail_url || null"
+                        alt=""
+                        loading="eager"
+                        decoding="async"
+                    >
+                    <span x-show="!active?.thumbnail_url">{{ __('No Hero Artwork preview') }}</span>
                 </div>
 
                 <div class="home-hero-rail admin-visual-stage__pane" aria-label="Hero group">
@@ -26,8 +57,12 @@
                         <span>
                             {{ $heroGroupSource === 'manual' ? count($manualHeroGroup) : $candidatePoolCount }}
                             {{ ($heroGroupSource === 'manual' ? count($manualHeroGroup) : $candidatePoolCount) === 1 ? 'artwork' : 'artworks' }}
+                        </span>
+                        <span x-text="simulationLabel" aria-live="off">
                             @if ($heroDisplayStrategy === 'sequential' && $nextRotationAt)
-                                · next {{ $nextRotationAt }}
+                                Next {{ $nextRotationAt }}
+                            @else
+                                {{ ucfirst($heroDisplayStrategy) }} preview
                             @endif
                         </span>
                     </div>
@@ -36,7 +71,8 @@
                         <div class="home-hero-rail__rows" @if ($heroGroupSource === 'manual') wire:sort="sortHeroArtwork" @endif>
                             @foreach ($heroRailRows as $row)
                                 <article
-                                    class="home-hero-candidate {{ $currentArtwork && $row['id'] === $currentArtwork['id'] ? 'is-current' : '' }} {{ $heroGroupSource === 'manual' ? 'is-manual' : '' }} {{ !($row['eligible'] ?? true) ? 'is-unavailable' : '' }}"
+                                    class="home-hero-candidate {{ $heroGroupSource === 'manual' ? 'is-manual' : '' }} {{ !($row['eligible'] ?? true) ? 'is-unavailable' : '' }}"
+                                    x-bind:class="{ 'is-current': activeId === {{ (int) $row['id'] }} }"
                                     wire:key="home-hero-row-{{ $row['id'] }}"
                                     @if ($heroGroupSource === 'manual') wire:sort:item="{{ $row['id'] }}" @endif
                                 >

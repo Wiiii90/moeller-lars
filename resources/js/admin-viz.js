@@ -5,6 +5,8 @@ window.adminMediaUploadField = adminMediaUploadField;
 import './admin-action-titles.js';
 import './admin-dialog-geometry.js';
 import './admin-partial-date.js';
+import { adminHomeHeroStage } from './admin-home-stage.js';
+window.adminHomeHeroStage = adminHomeHeroStage;
 
 let storageRuntimePromise = null;
 let refreshFrame = null;
