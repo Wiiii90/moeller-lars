@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Admin\AdminWorkflowPreferences;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -212,7 +213,8 @@ trait CustomPageWorkspaceComponentActions
             ->label('Add component')
             ->fillForm(fn (): array => [
                 'type' => 'text',
-                'publication_state' => 'published',
+                'publication_state' => app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::CUSTOM_PAGE)
+                    ? 'published' : 'unpublished',
                 'image_decorative' => false,
                 'variant' => 'thin',
                 'media_asset_id' => null,
@@ -792,7 +794,16 @@ trait CustomPageWorkspaceComponentActions
                 );
             });
 
-        return AdminDialog::confirm($action, 'Delete component?', submitLabel: 'Delete', danger: true);
+        return AdminDialog::confirm(
+            $action,
+            'Delete component?',
+            submitLabel: 'Delete',
+            danger: true,
+            condition: fn (array $arguments): bool => app(AdminWorkflowPreferences::class)->requiresDeletionConfirmation(
+                AdminWorkflowPreferences::CUSTOM_PAGE,
+                $this->pageComponentDeletionHasCascade($arguments),
+            ),
+        );
     }
 
     public function deleteSelectedAction(): Action
@@ -831,7 +842,16 @@ trait CustomPageWorkspaceComponentActions
                 );
             });
 
-        return AdminDialog::confirm($action, 'Delete items?', submitLabel: 'Delete', danger: true);
+        return AdminDialog::confirm(
+            $action,
+            'Delete items?',
+            submitLabel: 'Delete',
+            danger: true,
+            condition: fn (): bool => app(AdminWorkflowPreferences::class)->requiresDeletionConfirmation(
+                AdminWorkflowPreferences::CUSTOM_PAGE,
+                $this->selectedPageComponentsHaveCascade(),
+            ),
+        );
     }
 
     public function deleteSelectedComponentsAction(): Action

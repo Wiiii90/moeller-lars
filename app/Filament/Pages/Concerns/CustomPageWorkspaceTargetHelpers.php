@@ -67,6 +67,42 @@ trait CustomPageWorkspaceTargetHelpers
         return $block;
     }
 
+    /** Only a standalone Divider can be removed without dependent content. */
+    private function pageComponentDeletionHasCascade(array $arguments): bool
+    {
+        $index = $arguments['componentIndex'] ?? null;
+        $type = $arguments['componentType'] ?? null;
+        if (! is_numeric($index) || $type !== 'divider') {
+            return true;
+        }
+
+        $block = $this->settings()->components()[(int) $index] ?? null;
+
+        return ! is_array($block) || ($block['type'] ?? null) !== 'divider';
+    }
+
+    private function selectedPageComponentsHaveCascade(): bool
+    {
+        $targets = $this->selectedComponentTargetData();
+        if ($targets === []) {
+            return true;
+        }
+
+        $blocks = $this->settings()->components();
+        foreach ($targets as $target) {
+            if (isset($target['child_index']) || $target['type'] !== 'divider') {
+                return true;
+            }
+
+            $block = $blocks[$target['index']] ?? null;
+            if (! is_array($block) || ($block['type'] ?? null) !== 'divider') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** Stable child target: owning Image, child position and expected type. */
     private function imageChildTarget(array $arguments): array
     {
