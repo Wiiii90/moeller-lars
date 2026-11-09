@@ -1218,7 +1218,13 @@ final class General extends Page
                 return;
             }
             foreach (array_keys($changes) as $field) {
-                $this->data[$field] = $updated->getAttribute($field);
+                $value = $updated->getAttribute($field);
+                // These two native Selects use string-valued options while
+                // the canonical model stores booleans. Keep Livewire state in
+                // the Select's option type after a successful autosave.
+                $this->data[$field] = in_array($field, ['header_name_visible', 'header_name_auto_scale'], true)
+                    ? ((bool) $value ? '1' : '0')
+                    : $value;
             }
             if (array_intersect(array_keys($changes), [
                 'favicon_media_asset_id',

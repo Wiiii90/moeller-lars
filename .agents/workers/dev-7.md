@@ -26,5 +26,7 @@
 
 - Refined all five existing Legal field help texts with field-specific editorial obligations and limitations; localized legal labels and guidance to German. No default legal copy or fabricated operator information was saved.
 
+- Kept persisted Title visibility and responsive-size toggle Select states in their native string-option representation after successful writes; public model remains boolean. This is a source-level correction to a confirmed state-type mismatch, not proof of the reported browser failure's entire cause.
+
 ## Next
-- Verify saved public appearance, title placements and iframe lifecycle in a real browser; investigate the site-icon picker and full-width divider and any root cause for disappearing Live Preview. Legal text still requires actual operator/deployment facts and artist approval.
+- Browser-check title Hide/Show and responsive reduction selection persistence and Preview stability; the known Select string-option vs model-boolean state mismatch was corrected after autosave. Investigate any remaining Preview loss, full-width divider and picker clipping. Actual Legal text still requires verified operator/deployment facts and artist approval.
