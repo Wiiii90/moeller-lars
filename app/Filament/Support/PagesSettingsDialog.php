@@ -20,7 +20,7 @@ final class PagesSettingsDialog
         private readonly HomeRoutingDialog $homeRouting,
     ) {}
 
-    /** @return array{navigation_nesting_enabled:bool,skip_home:bool,skip_target_section_id:?int,pages_auto_publish:bool,pages_delete_without_confirmation:bool} */
+    /** @return array{navigation_nesting_enabled:bool,navigation_hover_preview:bool,skip_home:bool,skip_target_section_id:?int,pages_auto_publish:bool,pages_delete_without_confirmation:bool} */
     public function fill(): array
     {
         return [
@@ -56,7 +56,9 @@ final class PagesSettingsDialog
             $nesting->afterStateUpdated($onToggleUpdated);
         }
 
-        $hoverPreview = AdminControl::toggle('navigation_hover_preview', 'Show child pages on hover')->live();
+        $hoverPreview = AdminControl::toggle('navigation_hover_preview', 'Preview child pages on hover')
+            ->helperText('Mouse hover temporarily reveals child links. Click the parent to open its submenu; touch navigation is unchanged.')
+            ->live();
         if ($onToggleUpdated !== null) {
             $hoverPreview->afterStateUpdated($onToggleUpdated);
         }

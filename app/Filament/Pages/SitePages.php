@@ -440,7 +440,7 @@ final class SitePages extends Page
         $this->bulkNotification('Delete', $deleted, $blocked);
     }
 
-    public function convertSectionType(int $sectionId, string $targetType): void
+    public function convertSectionType(int $sectionId, string $targetType): string
     {
         $navigationChanged = false;
         try {
@@ -459,9 +459,13 @@ final class SitePages extends Page
         }
 
         $this->loadSections(navigationChanged: $navigationChanged);
+
+        // Return the persisted selection. The browser select is changed before
+        // this action runs, including when domain validation rejects the change.
+        return SiteSection::query()->findOrFail($sectionId)->nodeType()->value;
     }
 
-    public function changeJournalTemplate(int $sectionId, string $template): void
+    public function changeJournalTemplate(int $sectionId, string $template): string
     {
         $navigationChanged = false;
         try {
@@ -480,6 +484,8 @@ final class SitePages extends Page
         }
 
         $this->loadSections(navigationChanged: $navigationChanged);
+
+        return SiteSection::query()->findOrFail($sectionId)->journalTemplate()?->value ?? '';
     }
 
     public function startAddingPage(): void

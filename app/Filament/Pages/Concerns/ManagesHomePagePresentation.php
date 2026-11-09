@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 trait ManagesHomePagePresentation
 {
-    public function changeHomeTemplate(int $sectionId, string $template): void
+    public function changeHomeTemplate(int $sectionId, string $template): string
     {
         try {
             /** @var SiteSection $section */
@@ -38,6 +38,8 @@ trait ManagesHomePagePresentation
         }
 
         $this->loadSections();
+
+        return app(HomeSettingsDialog::class)->tableState()['template'];
     }
 
     public function toggleSkipHome(): void

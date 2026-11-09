@@ -1,8 +1,10 @@
 # Dev Worker 5 — Pages
 
 - **Branch:** `dev`; **lease:** 11; **activation base:** `e3df0bb7ed004f226050520508ab00b691defa7e`.
-- **Assignment:** Pages preview review: explain the existing “Show child pages on hover” option, examine how “Delete pages without confirmation” and “Auto-publish new pages” can be consistent with other Admin settings, and correct the Pages page-type selector so a rejected transition leaves the last persisted type visibly selected.
-- **Current state:** Registered; implementation inspection pending. No application files changed and no verification run yet.
-- **Ownership:** Pages settings and page-type mutation path; inspect shared Settings owners and direct consumers without changing unrelated Admin areas.
-- **Constraints:** Keep canonical owners, do not create parallel settings, preserve existing data and notification semantics, do not edit tests or general documentation on Dev, and do not trigger Continuous Integration, deploy or promotion.
-- **Next:** Inspect current Pages mutation owner, compare existing settings semantics, implement bounded root-cause correction, record verification and browser acceptance gaps.
+- **Assignment:** Pages settings semantics/consistency; failed Page Type selection must revert to persisted value.
+- **Current state:** Source fix prepared for the inline Page Type, Home Template and Journal Template selectors; each mutation returns the authoritative persisted selection to the initiating browser control after success/rejection. Pages hover-preview label/help clarified.
+- **Root cause:** Native `wire:change` handlers persist or reject the mutation but do not necessarily reconcile a browser select whose previous canonical value has not changed in Livewire's rendered HTML.
+- **Settings findings:** `navigation_hover_preview` is a desktop mouse submenu preview; clicking opens child navigation and touch remains click-only. Pages delete-without-confirmation is a global public-content setting and only skips the modal; Dashboard has a separate user preference. Cross-workspace deletion policy must be coordinated with other active Dev owners before changing unrelated pages. Auto-publish is only meaningful for independently publishable new content.
+- **Scope/evidence:** Pages, its direct Home/template consumer and its canonical dialog. No domain transition or database rules changed. Existing type conversion preserves configured-content safety checks.
+- **Verification:** Scoped static source trace and change inspection only; local runtime/browser and persistence/audit/notification cardinality not executed. Testing worker should exercise successful/rejected conversions (including Gallery with Artworks), Home/Journal template rejects and concurrent/rapid selections.
+- **Next:** Validate the committed diff and ref/lease; browser acceptance for desktop and phone settings display plus rejected/accepted dropdown selection remains pending. Reconsider cross-workspace preference grammar after coordinating current owners, without creating parallel settings.

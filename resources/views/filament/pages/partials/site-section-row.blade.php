@@ -50,7 +50,8 @@
             <select
                 class="admin-inline-select"
                 aria-label="Page type for {{ $label }}"
-                wire:change="convertSectionType({{ $section['id'] }}, $event.target.value)"
+                x-data
+                x-on:change="$wire.convertSectionType({{ $section['id'] }}, $event.target.value).then(type => { $el.value = type })"
             >
                 @foreach ($editableTypeOptions as $value => $typeLabel)
                     <option value="{{ $value }}" @selected($section['type'] === $value)>{{ $typeLabel }}</option>
@@ -66,7 +67,8 @@
             <select
                 class="admin-inline-select"
                 aria-label="Home template"
-                wire:change="changeHomeTemplate({{ $section['id'] }}, $event.target.value)"
+                x-data
+                x-on:change="$wire.changeHomeTemplate({{ $section['id'] }}, $event.target.value).then(template => { $el.value = template })"
             >
                 @foreach ($homeTemplateOptions as $value => $templateLabel)
                     <option value="{{ $value }}" @selected(($homeState['template'] ?? null) === $value)>{{ $templateLabel }}</option>
@@ -76,7 +78,8 @@
             <select
                 class="admin-inline-select"
                 aria-label="Journal template for {{ $label }}"
-                wire:change="changeJournalTemplate({{ $section['id'] }}, $event.target.value)"
+                x-data
+                x-on:change="$wire.changeJournalTemplate({{ $section['id'] }}, $event.target.value).then(template => { $el.value = template })"
             >
                 @foreach ($journalTemplateOptions as $value => $templateLabel)
                     <option value="{{ $value }}" @selected($section['template'] === $value)>{{ $templateLabel }}</option>
