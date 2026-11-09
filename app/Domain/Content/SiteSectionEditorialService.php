@@ -321,12 +321,25 @@ final class SiteSectionEditorialService
                 'position' => $position,
             ]);
 
-            if (! $fresh->isDirty()) {
-                return $fresh;
+            if ($fresh->isDirty()) {
+                $fresh->save();
+                $this->audit->record($actor, 'site_section.updated', 'site_section', (int) $fresh->getKey());
             }
 
-            $fresh->save();
-            $this->audit->record($actor, 'site_section.updated', 'site_section', (int) $fresh->getKey());
+            // A hidden Gallery must not remain an enabled automatic Home source.
+            // Make the preference persistent, so republishing requires an explicit Home opt-in.
+            if ($fresh->nodeType() === SiteSectionType::Gallery && $state !== 'published') {
+                $gallery = ArtworkCategory::query()
+                    ->whereKey((int) $fresh->getAttribute('artwork_category_id'))
+                    ->where('show_on_home', true)
+                    ->lockForUpdate()
+                    ->first();
+                if ($gallery instanceof ArtworkCategory) {
+                    $gallery->setAttribute('show_on_home', false);
+                    $gallery->save();
+                    $this->audit->record($actor, 'artwork_category.updated', 'artwork_category', (int) $gallery->getKey());
+                }
+            }
 
             return $fresh;
         });
