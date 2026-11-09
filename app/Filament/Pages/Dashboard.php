@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Admin\AdminDeletionPreferences;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\DashboardFeed;
 use App\Domain\Admin\DashboardFeedPins;
@@ -339,19 +340,24 @@ final class Dashboard extends Page
                 : 'all';
             $retention = app(DashboardNotificationRetention::class)->normalize($data['notification_retention'] ?? 10);
 
-            $user->forceFill([
-                'dashboard_notification_filter' => $this->notificationFilter,
-                'dashboard_notification_retention' => $retention,
-                'dashboard_delete_without_confirmation' => (bool) ($data['delete_without_confirmation'] ?? false),
-            ]);
-            $changed = $user->isDirty();
-
-            if ($changed) {
-                DB::transaction(function () use ($user): void {
+            $changed = DB::transaction(function () use ($user, $retention, $data): bool {
+                $user->forceFill([
+                    'dashboard_notification_filter' => $this->notificationFilter,
+                    'dashboard_notification_retention' => $retention,
+                ]);
+                $dashboardChanged = $user->isDirty();
+                if ($dashboardChanged) {
                     $user->save();
                     app(DashboardNotificationRetention::class)->pruneFor($user);
-                });
-            }
+                }
+
+                $deletionChanged = app(AdminDeletionPreferences::class)->update(
+                    AdminDeletionPreferences::DASHBOARD,
+                    (bool) ($data['delete_without_confirmation'] ?? false),
+                );
+
+                return $dashboardChanged || $deletionChanged;
+            });
 
             $this->refreshFeedFromFirstPage();
             if ($changed) {
@@ -369,7 +375,7 @@ final class Dashboard extends Page
                     return [
                         'notification_filter' => $this->notificationFilter,
                         'notification_retention' => app(DashboardNotificationRetention::class)->limitFor($user instanceof User ? $user : 0),
-                        'delete_without_confirmation' => (bool) $user?->getAttribute('dashboard_delete_without_confirmation'),
+                        'delete_without_confirmation' => app(AdminDeletionPreferences::class)->withoutConfirmation(AdminDeletionPreferences::DASHBOARD),
                     ];
                 })
                 ->schema([
@@ -704,19 +710,14 @@ final class Dashboard extends Page
             });
         }
 
-        if (! $this->deleteWithoutConfirmation()) {
-            $deleteAction = $this->configureConfirmation(
-                $deleteAction,
-                'Delete message?',
-            );
-        }
+        $deleteAction = $this->configureConfirmation($deleteAction, 'Delete message?');
 
         return [$pinAction, $readAction, $deleteAction];
     }
 
     private function deleteWithoutConfirmation(): bool
     {
-        return (bool) auth()->user()?->getAttribute('dashboard_delete_without_confirmation');
+        return app(AdminDeletionPreferences::class)->withoutConfirmation(AdminDeletionPreferences::DASHBOARD);
     }
 
     private function confirmationAction(Action $action, string $heading): Action
@@ -731,6 +732,8 @@ final class Dashboard extends Page
             heading: $heading,
             submitLabel: 'Delete',
             danger: true,
+            condition: fn (): bool => app(AdminDeletionPreferences::class)
+                ->requiresConfirmation(AdminDeletionPreferences::DASHBOARD),
         );
     }
 }

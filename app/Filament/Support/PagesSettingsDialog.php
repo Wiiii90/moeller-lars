@@ -2,6 +2,7 @@
 
 namespace App\Filament\Support;
 
+use App\Domain\Admin\AdminDeletionPreferences;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\Controls\AdminControl;
@@ -28,7 +29,7 @@ final class PagesSettingsDialog
             'navigation_hover_preview' => (bool) PublicContentSetting::general()->getAttribute('navigation_hover_preview'),
             ...$this->homeRouting->fill(),
             'pages_auto_publish' => PublicContentSetting::pagesAutoPublish(),
-            'pages_delete_without_confirmation' => PublicContentSetting::pagesDeleteWithoutConfirmation(),
+            'pages_delete_without_confirmation' => app(AdminDeletionPreferences::class)->withoutConfirmation(AdminDeletionPreferences::PAGES),
         ];
     }
 
@@ -64,7 +65,9 @@ final class PagesSettingsDialog
         }
 
         $autoPublish = AdminControl::toggle('pages_auto_publish', 'Auto-publish new pages')->live();
-        $deleteWithoutConfirmation = AdminControl::toggle('pages_delete_without_confirmation', 'Delete pages without confirmation')->live();
+        $deleteWithoutConfirmation = AdminControl::toggle('pages_delete_without_confirmation', 'Skip confirmation for simple page deletions')
+            ->helperText('Linked content always requires confirmation. Only empty, unpublished Group Nodes can be deleted directly.')
+            ->live();
         if ($onToggleUpdated !== null) {
             $autoPublish->afterStateUpdated($onToggleUpdated);
             $deleteWithoutConfirmation->afterStateUpdated($onToggleUpdated);
@@ -101,10 +104,15 @@ final class PagesSettingsDialog
                 'navigation_nesting_enabled' => $enabled,
                 'navigation_hover_preview' => (bool) ($data['navigation_hover_preview'] ?? $settings->getAttribute('navigation_hover_preview')),
                 'pages_auto_publish' => (bool) ($data['pages_auto_publish'] ?? $settings->getAttribute('pages_auto_publish')),
-                'pages_delete_without_confirmation' => (bool) ($data['pages_delete_without_confirmation'] ?? $settings->getAttribute('pages_delete_without_confirmation')),
             ]);
 
-            return $updated->wasChanged(['navigation_nesting_enabled', 'navigation_hover_preview', 'pages_auto_publish', 'pages_delete_without_confirmation']) || $changed;
+            $deletionChanged = app(AdminDeletionPreferences::class)->update(
+                AdminDeletionPreferences::PAGES,
+                (bool) ($data['pages_delete_without_confirmation'] ?? app(AdminDeletionPreferences::class)->withoutConfirmation(AdminDeletionPreferences::PAGES)),
+            );
+
+            return $updated->wasChanged(['navigation_nesting_enabled', 'navigation_hover_preview', 'pages_auto_publish'])
+                || $changed || $deletionChanged;
         });
     }
 }
