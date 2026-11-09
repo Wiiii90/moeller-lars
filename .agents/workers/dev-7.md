@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 13 (active)  
-**Status:** Active; expanded Appearance height corrected in source (browser review pending).
+**Status:** Active; General Appearance source corrections committed; browser verification pending.
 
 ## Assigned scope
 - Appearance / Global: review frame style combinations and their selection presentation; correct site icon Storage picker popover clipping.
@@ -26,12 +26,12 @@
 
 - Refined all five existing Legal field help texts with field-specific editorial obligations and limitations; localized legal labels and guidance to German. No default legal copy or fabricated operator information was saved.
 
-- Kept persisted Title visibility and responsive-size toggle Select states in their native string-option representation after successful writes; public model remains boolean. This is a source-level correction to a confirmed state-type mismatch, not proof of the reported browser failure's entire cause.
+- Kept Title visibility and responsive-size Selects in their string option type after write (public model remains boolean). Live Preview is now keyed, with `wire:ignore.self` on the Alpine-sized device and page: Livewire updates no longer reset their measured inline dimensions to the 1px CSS defaults. Its iframe remains `wire:ignore`, while its displayed favicon can still be updated from server state.
 
-- Source inspection identifies the site-icon picker clipping boundary: searchable Filament dropdown inside the General pane's fixed overflow/scroll ancestors. Do not switch to a non-searchable native Select or disable the sole scroll owner as a workaround. The safe shared popup-layer solution still needs browser and framework-level verification; Dev Worker 3 also owns related Dashboard popover consistency.
+- Site-icon picker now uses Filament 5's native `fi-fixed-positioning-context` strategy for the existing searchable dropdown, escaping the Appearance scroll owner's clipping while keeping Floating UI positioning. No alternate picker or additional listener introduced.
 - The Full-width Menu divider had lost its sticky-owned gap in `cf867e4e28`, and Public Blade incorrectly marked that gapped mode as connected. Restored one header-owned gap with the viewport-wide stroke above it and limited connected-paper mode to genuinely joined `fine`/`menu`. Browser verification pending.
 - Frame-style controls currently encode five composite variants in a single persisted field. A cleaner independent-contour/backing selection needs a deliberate unified domain/storage design, not appended parallel fields.
 - Existing `tests/js/public-header.test.mjs` Beside assertions describe the old inside-sized rail and must be reconciled by Testing for the new exterior geometry. Dev does not modify tests.
 
 ## Next
-- Browser-check title Hide/Show, responsive reduction persistence, Preview stability, Beside/Inside/Above placements, and the restored full-width separator with sticky gap. Investigate site-icon popup clipping. Actual Legal text still requires verified operator/deployment facts and artist approval.
+- Add targeted regression tests (user explicitly authorized Dev test-source changes, execution forbidden), then browser-check Preview through consecutive autosaves and tab changes; verify site-icon dropdown escapes its scroll pane and remains keyboard/search accessible. Retain Frame Styles for separate later review. Legal author text requires verified operator facts and approval.

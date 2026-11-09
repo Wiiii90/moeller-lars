@@ -503,7 +503,7 @@ final class General extends Page
                             ])
                                 ->columns(1)
                                 ->extraAttributes([
-                                    'class' => 'general-appearance-stage__scroll',
+                                    'class' => 'general-appearance-stage__scroll fi-fixed-positioning-context',
                                     'x-ref' => 'appearanceScroll',
                                 ])
                                 ->columnSpanFull(),

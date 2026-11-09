@@ -17,6 +17,7 @@
 @endphp
 
 <aside
+    wire:key="general-live-preview"
     class="general-appearance-stage__preview admin-visual-stage__pane"
     aria-label="Live public preview"
     x-data="{
@@ -331,9 +332,14 @@
         </div>
     </x-admin.stage-tool-row>
 
+    {{-- Livewire may replace server-rendered siblings after autosave, but
+         cannot erase the fitted device/page dimensions owned by Alpine.
+         ignore.self preserves those attributes and still allows the browser
+         favicon markup to update from persisted settings. --}}
     <div x-ref="viewport" class="general-live-preview__viewport">
         <div
             x-ref="device"
+            wire:ignore.self
             class="general-live-preview__device is-desktop"
             x-bind:class="previewDevice === 'mobile' ? 'is-mobile' : 'is-desktop'"
             data-preview-width="1280"
@@ -363,6 +369,7 @@
             </div>
             <div
                 x-ref="page"
+                wire:ignore.self
                 class="general-live-preview__page"
                 x-bind:class="{ 'is-zoomed': zoom > minZoom, 'is-pan-enabled': zoom > minZoom && (panMode || spacePan), 'is-dragging': dragging }"
             >
