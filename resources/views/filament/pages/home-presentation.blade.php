@@ -57,7 +57,7 @@
                         <strong>{{ $heroGroupSource === 'manual' ? 'Manual' : 'Automatic' }} · {{ ucfirst($heroDisplayStrategy) }}</strong>
                         <span>
                             {{ $heroGroupSource === 'manual' ? count($manualHeroGroup) : $candidatePoolCount }}
-                            {{ ($heroGroupSource === 'manual' ? count($manualHeroGroup) : $candidatePoolCount) === 1 ? 'artwork' : 'artworks' }}
+                            {{ ($heroGroupSource === 'manual' ? count($manualHeroGroup) : $candidatePoolCount) === 1 ? 'candidate' : 'candidates' }}
                         </span>
                         <span x-text="simulationLabel" aria-live="off">
                             @if ($heroDisplayStrategy === 'sequential' && $nextRotationAt)
@@ -129,7 +129,7 @@
                             @endforeach
                         </div>
                     @else
-                        <div class="home-hero-rail__empty">{{ __('No eligible Hero Artwork') }}</div>
+                        <div class="home-hero-rail__empty">{{ __('No eligible Hero candidates') }}</div>
                     @endif
 
                     @if ($selectionIssue)

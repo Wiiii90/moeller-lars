@@ -110,7 +110,7 @@ final class HomePresentation extends Page
 
     public int $heroGroupSize = HomeHeroConfigurationService::DEFAULT_GROUP_SIZE;
 
-    /** @var list<array{artwork_id:int,weight:int}> */
+    /** @var list<array{artwork_id?:int,media_asset_id?:int,weight:int}> */
     public array $manualHeroGroup = [];
 
     public int $rotationIntervalCount = 1;

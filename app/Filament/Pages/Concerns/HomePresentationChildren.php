@@ -209,8 +209,8 @@ trait HomePresentationChildren
     }
 
     /**
-     * @param  array<string,mixed>  $arguments
-/** @return list<Action>
+     * @param array<string,mixed> $arguments
+     * @return list<Action>
      */
     private function homeChildHeaderActions(array $arguments): array
     {
