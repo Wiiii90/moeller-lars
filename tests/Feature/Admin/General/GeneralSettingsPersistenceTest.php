@@ -148,6 +148,41 @@ it('saves distinct General layout changes with one audit and one success feedbac
         ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 2);
 });
 
+it('keeps Title visibility and responsive reduction in Select option form after autosave', function (): void {
+    $before = generalSettingsAuditCount();
+    $notificationsBefore = AdminNotification::query()->count();
+
+    $component = Livewire::test(General::class)
+        ->set('data.header_name_visible', '0')
+        ->assertSet('data.header_name_visible', '0')
+        ->assertHasNoErrors()
+        ->assertDispatched('general-appearance-updated');
+
+    expect(PublicContentSetting::general()->getAttribute('header_name_visible'))->toBeFalse();
+
+    $component
+        ->set('data.header_name_visible', '1')
+        ->assertSet('data.header_name_visible', '1')
+        ->assertHasNoErrors()
+        ->set('data.header_name_auto_scale', '0')
+        ->assertSet('data.header_name_auto_scale', '0')
+        ->assertHasNoErrors();
+
+    expect(PublicContentSetting::general()->getAttribute('header_name_visible'))->toBeTrue()
+        ->and(PublicContentSetting::general()->getAttribute('header_name_auto_scale'))->toBeFalse();
+
+    $component
+        ->set('data.header_name_auto_scale', '1')
+        ->assertSet('data.header_name_auto_scale', '1')
+        ->assertHasNoErrors()
+        ->call('persistChangedField', 'header_name_auto_scale')
+        ->assertNotDispatched('admin-header-notification');
+
+    expect(PublicContentSetting::general()->getAttribute('header_name_auto_scale'))->toBeTrue()
+        ->and(generalSettingsAuditCount())->toBe($before + 4)
+        ->and(AdminNotification::query()->count())->toBe($notificationsBefore + 4);
+});
+
 it('persists contact legal and social edits with success feedback and unchanged-value no-ops', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'contact_recipient_email' => 'before@example.invalid',

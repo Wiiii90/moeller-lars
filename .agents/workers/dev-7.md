@@ -33,5 +33,7 @@
 - Frame-style controls currently encode five composite variants in a single persisted field. A cleaner independent-contour/backing selection needs a deliberate unified domain/storage design, not appended parallel fields.
 - Existing `tests/js/public-header.test.mjs` Beside assertions describe the old inside-sized rail and must be reconciled by Testing for the new exterior geometry. Dev does not modify tests.
 
+- User explicitly authorized updating regression tests on `dev` while prohibiting their execution. Reconciled `tests/js/public-header.test.mjs` to the exterior Beside title rail; added General Title Select autosave persistence coverage in the existing Feature suite, plus one focused General browser scenario for Preview identity/dimensions and searchable Site icon dropdown. All tests are authored only, not executed.
+
 ## Next
-- Add targeted regression tests (user explicitly authorized Dev test-source changes, execution forbidden), then browser-check Preview through consecutive autosaves and tab changes; verify site-icon dropdown escapes its scroll pane and remains keyboard/search accessible. Retain Frame Styles for separate later review. Legal author text requires verified operator facts and approval.
+- Browser-verify the new General Preview and Site icon behavior and review authored test expectations against the actual Filament/Livewire DOM, without executing tests in this Dev assignment. Frame Styles remain explicitly deferred; legal author text requires verified operator facts and approval.
