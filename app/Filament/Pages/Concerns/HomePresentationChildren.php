@@ -3,6 +3,8 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Admin\AdminAutoPublishPreferences;
+use App\Domain\Content\EditorialComponentConversion;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\SocialLinks;
 use App\Filament\Support\AdminRowAction;
@@ -26,6 +28,33 @@ trait HomePresentationChildren
     private function homeChildProjection(array $component, int $componentIndex): array
     {
         $type = (string) ($component['type'] ?? '');
+        if ($type === 'image') {
+            $children = is_array($component['children'] ?? null) ? $component['children'] : [];
+            $result = [];
+            foreach ($children as $position => $child) {
+                if (! is_array($child)) {
+                    continue;
+                }
+                $childType = (string) ($child['type'] ?? '');
+                $title = trim((string) ($child['title'] ?? ''));
+                $body = trim((string) ($child['body'] ?? ''));
+                $result[] = [
+                    'kind' => 'image',
+                    'key' => $position,
+                    'type' => $childType,
+                    'target' => 'image:'.$componentIndex.':'.$position,
+                    'position' => $position + 1,
+                    'title' => $title !== '' ? $title : (self::COMPONENT_LABELS[$childType] ?? 'Component'),
+                    'detail' => $body !== '' ? \Illuminate\Support\Str::limit(strip_tags($body), 90) : '',
+                    'published' => CustomPageSetting::componentPublished($child),
+                    'can_move_up' => $position > 0,
+                    'can_move_down' => $position < count($children) - 1,
+                    'parent_published' => CustomPageSetting::componentPublished($component),
+                ];
+            }
+
+            return $result;
+        }
         if ($type !== 'contact') {
             return [];
         }
@@ -53,6 +82,31 @@ trait HomePresentationChildren
         }
 
         return $result;
+    }
+
+    /** @return array<string,string> */
+    private function homeImageChildTypeOptions(): array
+    {
+        return array_intersect_key(self::COMPONENT_LABELS, array_flip(CustomPageSetting::IMAGE_CHILD_TYPES));
+    }
+
+    /** @param array<string,mixed> $arguments
+     * @return array{0:int,1:array<string,mixed>}
+     */
+    private function homeImageChildTarget(array $arguments): array
+    {
+        $index = filter_var($arguments['child'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+        $type = $arguments['child_type'] ?? null;
+        if ($index === false || ! is_string($type) || ! in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+            throw ValidationException::withMessages(['component' => 'The Image child target is invalid.']);
+        }
+        $parent = $this->componentFromArguments(['index' => $arguments['index'], 'type' => 'image']);
+        $child = $parent['children'][(int) $index] ?? null;
+        if (! is_array($child) || ($child['type'] ?? null) !== $type) {
+            throw ValidationException::withMessages(['component' => 'This Image child changed. Reload and try again.']);
+        }
+
+        return [(int) $index, $child];
     }
 
     /** @param array<string,mixed> $arguments
@@ -195,22 +249,270 @@ trait HomePresentationChildren
             }), 'Delete item?', submitLabel: 'Delete', danger: true);
     }
 
+    /** @param array<string,mixed> $data
+     * @param array<string,mixed>|null $existing
+     * @return array<string,mixed>
+     */
+    private function homeImageChildPayload(array $data, ?array $existing = null): array
+    {
+        // Image children are detail-only. Never create a nested Contact Form,
+        // even if Filament omits a disabled toggle from the form submission.
+        return $this->componentPayload([...$data, 'contact_form_enabled' => false], $existing);
+    }
+
+    public function addHomeImageChildAction(): Action
+    {
+        $action = Action::make('addHomeImageChild')->label('Add component')
+            ->fillForm(fn (): array => [
+                'type' => 'text',
+                'publication_state' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::HOME)
+                    ? 'published' : 'unpublished',
+                'contact_form_enabled' => false,
+                'variant' => 'thin',
+            ])
+            ->schema($this->componentEditorSchema(
+                allowParentSelection: false,
+                typeOptions: $this->homeImageChildTypeOptions(),
+                insideImage: true,
+            ))
+            ->action(function (array $data, array $arguments): void {
+                $parent = $this->componentFromArguments(['index' => $arguments['index'] ?? null, 'type' => 'image']);
+                if (! ($parent['image_decorative'] ?? false)) {
+                    throw ValidationException::withMessages(['component' => 'Only decorative Images can contain components.']);
+                }
+                $changed = app(HomePresentationEditorialService::class)->mutateChild(
+                    $this->settings(), $this->componentTemplate(), (int) $arguments['index'], 'image',
+                    'add', payload: $this->homeImageChildPayload($data),
+                );
+                $this->reloadWorkspace();
+                if ($changed) {
+                    app(AdminNotifier::class)->notification(title: 'Home Image child added', status: 'success');
+                }
+            });
+
+        return AdminDialog::create($action, 'Add component', AdminDialogSize::Large);
+    }
+
+    public function editHomeImageChildAction(): Action
+    {
+        return $this->homeImageChildEditingAction('editHomeImageChild', committed: true);
+    }
+
+    public function editHomeImageChildInstantAction(): Action
+    {
+        return $this->homeImageChildEditingAction('editHomeImageChildInstant', committed: false);
+    }
+
+    private function homeImageChildEditingAction(string $actionName, bool $committed): Action
+    {
+        $action = Action::make($actionName)->label('Edit')
+            ->fillForm(function (array $arguments): array {
+                [, $child] = $this->homeImageChildTarget($arguments);
+                $this->editingHomeComponentOriginal = $child;
+
+                return $this->componentEditorData($child);
+            })
+            ->schema(fn (array $arguments): array => $this->componentEditorSchema(
+                editingType: (string) $arguments['child_type'],
+                allowParentSelection: false,
+                typeOptions: $this->homeImageChildTypeOptions(),
+                insideImage: true,
+                onTypeChange: function (mixed $state) use ($arguments): void {
+                    $type = is_string($state) ? $state : '';
+                    if ($type !== $arguments['child_type'] && array_key_exists($type, $this->homeImageChildTypeOptions())) {
+                        $this->replaceMountedAction('changeHomeImageChildType', [
+                            ...$arguments, 'targetType' => $type,
+                        ]);
+                    }
+                },
+            ))
+            ->modalHeading(__('Edit component'))
+            ->action(function (array $data, array $arguments): void {
+                [$childIndex, $child] = $this->homeImageChildTarget($arguments);
+                $type = (string) $child['type'];
+                if (($data['type'] ?? null) !== $type) {
+                    return;
+                }
+
+                try {
+                    $changed = app(HomePresentationEditorialService::class)->mutateChild(
+                        $this->settings(), $this->componentTemplate(), (int) $arguments['index'], 'image',
+                        'update', $childIndex, $this->homeImageChildPayload($data, $child),
+                        expectedChildType: $type, expectedChild: $this->editingHomeComponentOriginal,
+                    );
+                } catch (ValidationException $exception) {
+                    $path = $this->getMountedActionSchema()->getStatePath();
+                    $errors = [];
+                    foreach ($exception->errors() as $field => $messages) {
+                        $errors[$path.'.'.($field === 'component' ? 'type' : $field)] = $messages;
+                    }
+                    throw ValidationException::withMessages($errors);
+                }
+
+                $this->reloadWorkspace();
+                $this->editingHomeComponentOriginal = $this->componentFromArguments([
+                    'index' => $arguments['index'], 'type' => 'image',
+                ])['children'][$childIndex] ?? null;
+                if ($changed) {
+                    $this->forceRender();
+                    app(AdminNotifier::class)->notification(title: 'Home Image child saved', status: 'success');
+                }
+            });
+
+        return $committed
+            ? AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large)
+            : AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    public function changeHomeImageChildTypeAction(): Action
+    {
+        $target = function (array $arguments): array {
+            [, $child] = $this->homeImageChildTarget($arguments);
+            if (! in_array($arguments['targetType'] ?? null, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
+                throw ValidationException::withMessages(['type' => 'Choose a supported Image child component.']);
+            }
+
+            return $child;
+        };
+
+        return AdminDialog::confirm(
+            Action::make('changeHomeImageChildType')->label('Change component type')
+                ->action(function (array $arguments) use ($target): void {
+                    $child = $target($arguments);
+                    $changed = app(HomePresentationEditorialService::class)->mutateChild(
+                        $this->settings(), $this->componentTemplate(), (int) $arguments['index'], 'image',
+                        'convert', (int) $arguments['child'],
+                        ['type' => (string) $arguments['targetType']], expectedChildType: (string) $child['type'],
+                    );
+                    $this->reloadWorkspace();
+                    if ($changed) {
+                        app(AdminNotifier::class)->notification(title: 'Home Image child type updated', status: 'success');
+                    }
+                }),
+            'Change type?',
+            'Changing the component type may discard fields not supported by its replacement.',
+            'Change type',
+            condition: fn (array $arguments): bool => EditorialComponentConversion::losesContent(
+                $target($arguments), (string) $arguments['targetType'],
+            ),
+        );
+    }
+
+    public function deleteHomeImageChildAction(): Action
+    {
+        return AdminDialog::confirm(
+            Action::make('deleteHomeImageChild')->label('Delete')->color('danger')
+                ->action(function (array $arguments): void {
+                    [$childIndex, $child] = $this->homeImageChildTarget($arguments);
+                    $changed = app(HomePresentationEditorialService::class)->mutateChild(
+                        $this->settings(), $this->componentTemplate(), (int) $arguments['index'], 'image',
+                        'delete', $childIndex, expectedChildType: (string) $child['type'],
+                    );
+                    $this->reloadWorkspace();
+                    if ($changed) {
+                        app(AdminNotifier::class)->notification(title: 'Home Image child deleted', status: 'success');
+                    }
+                }),
+            'Delete component?', submitLabel: 'Delete', danger: true,
+        );
+    }
+
+    public function moveHomeImageChild(int $imageIndex, int $childIndex, string $type, string $direction): void
+    {
+        if (! $this->componentReorderEnabled() || ! in_array($direction, ['up', 'down'], true)) {
+            return;
+        }
+        $this->homeImageChildTarget(['index' => $imageIndex, 'child' => $childIndex, 'child_type' => $type]);
+        $changed = app(HomePresentationEditorialService::class)->mutateChild(
+            $this->settings(), $this->componentTemplate(), $imageIndex, 'image',
+            'move_'.$direction, $childIndex, expectedChildType: $type,
+        );
+        $this->reloadWorkspace();
+        if ($changed) {
+            app(AdminNotifier::class)->notification(title: 'Home Image child order updated', status: 'success');
+        }
+    }
+
+    public function publishHomeImageChild(int $imageIndex, int $childIndex, string $type, bool $published): void
+    {
+        $this->homeImageChildTarget(['index' => $imageIndex, 'child' => $childIndex, 'child_type' => $type]);
+        $changed = app(HomePresentationEditorialService::class)->mutateChild(
+            $this->settings(), $this->componentTemplate(), $imageIndex, 'image',
+            'publish', $childIndex, ['published' => $published], expectedChildType: $type,
+        );
+        $this->reloadWorkspace();
+        if ($changed) {
+            app(AdminNotifier::class)->notification(
+                title: $published ? 'Home Image child published' : 'Home Image child unpublished',
+                status: 'success',
+            );
+        }
+    }
+
+    public function unnestHomeImageChild(int $imageIndex, int $childIndex, string $type): void
+    {
+        $this->homeImageChildTarget(['index' => $imageIndex, 'child' => $childIndex, 'child_type' => $type]);
+        $changed = app(HomePresentationEditorialService::class)->unnestImageChild(
+            $this->settings(), $this->componentTemplate(), $imageIndex, $childIndex, $type,
+        );
+        $this->reloadWorkspace();
+        if ($changed) {
+            app(AdminNotifier::class)->notification(title: 'Home component moved to page level', status: 'success');
+        }
+    }
+
     public function sortHomeChild(string $target, int $position): void
     {
         if (! $this->componentReorderEnabled()) {
             return;
         }
         $parts = explode(':', $target, 3);
-        if (count($parts) !== 3 || $parts[0] !== 'contact' || ! ctype_digit($parts[1])) {
+        if (count($parts) !== 3 || ! ctype_digit($parts[1])) {
             throw ValidationException::withMessages(['component' => 'This Home child changed. Reload and try again.']);
         }
-        $args = ['index' => (int) $parts[1], 'type' => 'contact', 'child' => $parts[2]];
-        $this->homeActionChild($args);
-        $this->persistHomeChild($args, 'reposition', ['position' => $position]);
+
+        $parentIndex = (int) $parts[1];
+        if ($parts[0] === 'contact') {
+            $args = ['index' => $parentIndex, 'type' => 'contact', 'child' => $parts[2]];
+            $this->homeActionChild($args);
+            $this->persistHomeChild($args, 'reposition', ['position' => $position]);
+
+            return;
+        }
+        if ($parts[0] === 'image' && ctype_digit($parts[2])) {
+            $childIndex = (int) $parts[2];
+            $parent = $this->componentFromArguments(['index' => $parentIndex, 'type' => 'image']);
+            $child = $parent['children'][$childIndex] ?? null;
+            if (! is_array($child)) {
+                throw ValidationException::withMessages(['component' => 'This Image child changed. Reload and try again.']);
+            }
+            $changed = app(HomePresentationEditorialService::class)->mutateChild(
+                $this->settings(), $this->componentTemplate(), $parentIndex, 'image',
+                'reposition', $childIndex, ['position' => $position],
+                expectedChildType: (string) $child['type'],
+            );
+            $this->reloadWorkspace();
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Home Image child order updated', status: 'success');
+            }
+
+            return;
+        }
+
+        throw ValidationException::withMessages(['component' => 'This Home child changed. Reload and try again.']);
     }
 
-    public function moveHomeChild(int $index, string $type, int|string $child, string $direction): void
-    {
+    public function moveHomeChild(
+        int $index, string $type, int|string $child, string $direction, ?string $childType = null,
+    ): void {
+        if ($type === 'image') {
+            if (! is_int($child) || $childType === null) {
+                throw ValidationException::withMessages(['component' => 'The Image child target is invalid.']);
+            }
+            $this->moveHomeImageChild($index, $child, $childType, $direction);
+
+            return;
+        }
         if (! $this->componentReorderEnabled() || ! in_array($direction, ['up', 'down'], true)) {
             return;
         }
@@ -218,8 +520,17 @@ trait HomePresentationChildren
         $this->persistHomeChild(['index' => $index, 'type' => $type, 'child' => $child], 'move_'.$direction);
     }
 
-    public function publishHomeChild(int $index, string $type, int|string $child, bool $published): void
-    {
+    public function publishHomeChild(
+        int $index, string $type, int|string $child, bool $published, ?string $childType = null,
+    ): void {
+        if ($type === 'image') {
+            if (! is_int($child) || $childType === null) {
+                throw ValidationException::withMessages(['component' => 'The Image child target is invalid.']);
+            }
+            $this->publishHomeImageChild($index, $child, $childType, $published);
+
+            return;
+        }
         $this->homeActionChild(['index' => $index, 'type' => $type, 'child' => $child]);
         $this->persistHomeChild(['index' => $index, 'type' => $type, 'child' => $child], 'publish', ['published' => $published]);
     }

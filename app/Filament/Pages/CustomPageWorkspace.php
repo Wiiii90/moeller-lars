@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Domain\Content\DividerVariant;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceComponentActions;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceForms;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceLifecycle;
@@ -37,14 +36,7 @@ final class CustomPageWorkspace extends Page
     private const DEFAULT_PAGE_SIZE = 25;
 
     /** @var array<string, string> */
-    private const COMPONENT_LABELS = [
-        'image' => 'Image / Video',
-        'text' => 'Rich Text',
-        'list' => 'List',
-        'divider' => 'Divider',
-        'contact' => 'Contact',
-        'legal_disclaimer' => 'Legal Disclaimer',
-    ];
+    private const COMPONENT_LABELS = \App\Filament\Support\ComponentEditorTypes::LABELS;
 
     /** @var array<string, string> */
     private const CONTACT_CHILD_LABELS = [
@@ -54,7 +46,7 @@ final class CustomPageWorkspace extends Page
     ];
 
     /** @var array<string, string> */
-    private const DIVIDER_LABELS = DividerVariant::LABELS;
+    private const DIVIDER_LABELS = \App\Filament\Support\ComponentEditorTypes::DIVIDER_LABELS;
 
     protected static bool $shouldRegisterNavigation = false;
 

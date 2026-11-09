@@ -61,10 +61,10 @@
                                 <select
                                     class="admin-inline-select custom-page-component__type-select"
                                     aria-label="Component type"
-                                    wire:change="mountAction('changeComponentType', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}', kind: '{{ $homeComponent['filter_type'] }}', targetKind: $event.target.value })"
+                                    wire:change="mountAction('changeComponentType', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}', targetKind: $event.target.value })"
                                 >
-                                    @foreach ($componentTypeOptions as $value => $label)
-                                        <option value="{{ $value }}" @selected($value === $homeComponent['filter_type'])>{{ $label }}</option>
+                                    @foreach (\App\Filament\Support\ComponentEditorTypes::LABELS as $value => $label)
+                                        <option value="{{ $value }}" @selected($value === $homeComponent['type'])>{{ $label }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -126,7 +126,7 @@
                                             <button class="admin-drag-handle custom-page-child-row__drag" type="button"
                                                 @if ($reorderEnabled && count($homeComponent['children']) > 1) wire:sort:handle @else disabled @endif
                                                 aria-label="Drag {{ $child['title'] }} to reorder">⋮⋮</button>
-                                            <span class="custom-page-child-row__kind">{{ __('Contact item') }}</span>
+                                            <span class="custom-page-child-row__kind">{{ $child['kind'] === 'image' ? (\App\Filament\Support\ComponentEditorTypes::LABELS[$child['type']] ?? 'Component') : __('Contact item') }}</span>
                                             <div class="custom-page-child-row__content admin-hierarchy__content">
                                                 <strong>{{ $child['title'] }}</strong>
                                                 @if ($child['detail'] !== '') <small>{{ $child['detail'] }}</small> @endif
@@ -135,26 +135,31 @@
                                                 <x-admin.row-action
                                                     :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                                     :disabled="! $reorderEnabled || ! $child['can_move_up']"
-                                                    wire:click="moveHomeChild({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', @js($child['key']), 'up')"
+                                                    wire:click="moveHomeChild({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', @js($child['key']), 'up', @js($child['type'] ?? null))"
                                                 />
                                                 <x-admin.row-action
                                                     :action="\App\Filament\Support\AdminRowAction::MoveDown"
                                                     :disabled="! $reorderEnabled || ! $child['can_move_down']"
-                                                    wire:click="moveHomeChild({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', @js($child['key']), 'down')"
+                                                    wire:click="moveHomeChild({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', @js($child['key']), 'down', @js($child['type'] ?? null))"
                                                 />
                                                 <x-admin.row-action
                                                     :action="\App\Filament\Support\AdminRowAction::Edit"
-                                                    wire:click="mountAction('editHomeChild', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}', child: @js($child['key']) })"
+                                                    wire:click="mountAction('{{ $child['kind'] === 'image' ? ($child['type'] === 'list' ? 'editHomeImageChild' : 'editHomeImageChildInstant') : 'editHomeChild' }}', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}', child: @js($child['key']), child_type: @js($child['type'] ?? null) })"
                                                 />
                                                 <x-admin.row-action
                                                     :action="$child['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
-                                                    wire:click="publishHomeChild({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', @js($child['key']), {{ $child['published'] ? 'false' : 'true' }})"
+                                                    wire:click="publishHomeChild({{ $homeComponent['index'] }}, '{{ $homeComponent['type'] }}', @js($child['key']), {{ $child['published'] ? 'false' : 'true' }}, @js($child['type'] ?? null))"
                                                 />
                                                 <x-admin.row-action
                                                     :action="\App\Filament\Support\AdminRowAction::Delete"
                                                     :disabled="! \App\Models\CustomPageSetting::canDeleteComponent($child)"
-                                                    wire:click="mountAction('deleteHomeChild', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}', child: @js($child['key']) })"
+                                                    wire:click="mountAction('{{ $child['kind'] === 'image' ? 'deleteHomeImageChild' : 'deleteHomeChild' }}', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}', child: @js($child['key']), child_type: @js($child['type'] ?? null) })"
                                                 />
+                                                @if ($child['kind'] === 'image')
+                                                    <button class="admin-action" type="button"
+                                                        wire:click="unnestHomeImageChild({{ $homeComponent['index'] }}, {{ (int) $child['key'] }}, '{{ $child['type'] }}')"
+                                                        aria-label="Move {{ $child['title'] }} to page level">{{ __('Move out') }}</button>
+                                                @endif
                                             </div>
                                             <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select {{ $child['title'] }}">
                                                 <input type="checkbox" value="{{ $child['target'] }}" wire:model.live="selectedHomeChildTargets">
@@ -165,6 +170,16 @@
                             </div>
                         @elseif ($homeComponent['type'] === 'contact')
                             <div class="custom-page-component__children-empty">{{ __('No contact items') }}</div>
+                        @elseif ($homeComponent['accepts_children'])
+                            <div class="custom-page-component__children-empty">{{ __('No components inside image') }}</div>
+                        @endif
+
+                        @if ($homeComponent['accepts_children'])
+                            <button class="custom-page-component-add-row custom-page-component-add-row--child"
+                                type="button"
+                                wire:click="mountAction('addHomeImageChild', { index: {{ $homeComponent['index'] }}, type: 'image' })">
+                                <span aria-hidden="true">+</span><strong>{{ __('Add component inside image') }}</strong>
+                            </button>
                         @endif
 
                         @if ($homeComponent['type'] === 'contact' && count($homeComponent['children']) < 3)

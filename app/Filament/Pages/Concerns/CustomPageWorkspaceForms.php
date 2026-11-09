@@ -21,11 +21,11 @@ use Filament\Schemas\Components\Utilities\Get;
 trait CustomPageWorkspaceForms
 {
     /** @return list<mixed> */
-    private function componentEditorSchema(?Closure $onTypeChange = null, ?Closure $onImageChange = null, ?string $editingType = null, ?Closure $onContactChange = null): array
+    private function componentEditorSchema(?Closure $onTypeChange = null, ?Closure $onImageChange = null, ?string $editingType = null, ?Closure $onContactChange = null, bool $allowParentSelection = true, ?array $typeOptions = null, bool $insideImage = false): array
     {
         $typeField = Select::make('type')
             ->label('Component')
-            ->options(array_map('__', self::COMPONENT_LABELS))
+            ->options(array_map('__', $typeOptions ?? self::COMPONENT_LABELS))
             ->required()
             ->live()
             ->afterStateUpdated(
@@ -48,7 +48,7 @@ trait CustomPageWorkspaceForms
         $dynamicFields = Grid::make()
             ->columns(['md' => 2])
             ->schema(fn (Get $get): array => [
-                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null, $onImageChange, $onContactChange),
+                ...$this->componentTypeFields((string) $get('type'), $onTypeChange === null, $onImageChange, $onContactChange, $allowParentSelection, $insideImage),
             ])
             ->key('dynamicComponentFields')
             ->columnSpanFull();
@@ -59,7 +59,7 @@ trait CustomPageWorkspaceForms
                 ->schema([
                     $typeField,
                     $statusField,
-                    ...($onTypeChange !== null && in_array($editingType, CustomPageSetting::IMAGE_CHILD_TYPES, true)
+                    ...($allowParentSelection && $onTypeChange !== null && in_array($editingType, CustomPageSetting::IMAGE_CHILD_TYPES, true)
                         && $editingType !== 'text'
                         ? [$this->componentParentField($editingType)]
                         : []),
@@ -69,7 +69,7 @@ trait CustomPageWorkspaceForms
     }
 
     /** @return list<mixed> */
-    private function componentTypeFields(string $type, bool $isNew, ?Closure $onImageChange = null, ?Closure $onContactChange = null): array
+    private function componentTypeFields(string $type, bool $isNew, ?Closure $onImageChange = null, ?Closure $onContactChange = null, bool $allowParentSelection = true, bool $insideImage = false): array
     {
         return match ($type) {
             'image' => [
@@ -92,18 +92,19 @@ trait CustomPageWorkspaceForms
                 Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
                 Toggle::make('video_controls_enabled')->label('Show video playback controls')->default(true),
             ],
-            'text' => $isNew
-                ? AdminRichText::schema('body', 'Text Editor', 20000)
-                : [
-                    $this->componentParentField('text')->columnSpan(1),
-                    TextInput::make('title')->label('Heading')->maxLength(160),
-                    ...AdminRichText::schema('body', 'Text Editor', 20000),
-                ],
+            'text' => [
+                ...(! $isNew && $allowParentSelection
+                    ? [$this->componentParentField('text')->columnSpan(1)]
+                    : []),
+                TextInput::make('title')->label('Heading')->maxLength(160),
+                ...AdminRichText::schema('body', 'Text Editor', 20000),
+            ],
             'list' => [
                 TextInput::make('title')->label('Heading')->maxLength(160),
-                MediaAssetSelect::makeId('media_asset_id', 'Optional list image', imagesOnly: true)
-                    ->placeholder(__('No list image'))
-                    ->nullable(),
+                ...(! $insideImage ? [
+                    MediaAssetSelect::makeId('media_asset_id', 'Optional list image', imagesOnly: true)
+                        ->placeholder(__('No list image'))->nullable(),
+                ] : []),
                 ComponentListEditor::make(),
             ],
             'divider' => [
@@ -137,7 +138,8 @@ trait CustomPageWorkspaceForms
                     ->visible(fn (Get $get): bool => (bool) $get('contact_social_enabled'))
                     ->columnSpanFull(),
                 $this->contactEditorField(
-                    Toggle::make('contact_form_enabled')->label('Contact Form')->default(true)->live(),
+                    Toggle::make('contact_form_enabled')->label('Contact Form')
+                        ->default(! $insideImage)->disabled($insideImage)->live(),
                     'contact_form_enabled', $onContactChange,
                 ),
                 $this->contactEditorField(
@@ -202,11 +204,17 @@ trait CustomPageWorkspaceForms
             ->columnSpanFull();
     }
 
+    /** @return list<array<string,mixed>> */
+    private function editorRootComponents(): array
+    {
+        return $this->settings()->components();
+    }
+
     /** @return array<int,string> */
     private function decorativeImageParentOptions(): array
     {
         $options = [];
-        foreach ($this->settings()->components() as $index => $block) {
+        foreach ($this->editorRootComponents() as $index => $block) {
             if (($block['type'] ?? null) === 'image' && ($block['image_decorative'] ?? false)) {
                 $options[$index] = 'Decorative Image '.($index + 1);
             }

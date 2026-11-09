@@ -2,7 +2,9 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Content\SocialLinks;
 use App\Models\CustomPageSetting;
+use App\Models\PublicContentSetting;
 use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceSecondaryForms
@@ -28,7 +30,7 @@ trait CustomPageWorkspaceSecondaryForms
             ], array_values(array_filter($block['items'] ?? [], 'is_array')));
         }
         if (($block['type'] ?? null) === 'contact') {
-            $children = collect($this->settings()->contactChildren($block))->keyBy('type');
+            $children = collect((new CustomPageSetting)->contactChildren($block))->keyBy('type');
             $email = $children->get('public_email');
             $social = $children->get('social_links');
             $form = $children->get('contact_form');
@@ -156,7 +158,7 @@ trait CustomPageWorkspaceSecondaryForms
     {
         // A disabled toggle may hide its dependent fields. Preserve authored
         // options until they are explicitly edited, not when they are hidden.
-        $children = $existing !== null ? $this->settings()->contactChildren($existing) : [];
+        $children = $existing !== null ? (new CustomPageSetting)->contactChildren($existing) : [];
         $social = collect($children)->firstWhere('type', 'social_links');
         $form = collect($children)->firstWhere('type', 'contact_form');
         $previousPlatforms = is_array($social) ? ($social['social_platforms'] ?? []) : [];
@@ -197,4 +199,34 @@ trait CustomPageWorkspaceSecondaryForms
             ],
         ];
     }
+    /**
+     * New selections must be visible in General. An existing selection may
+     * remain while its General profile is hidden, but never after deletion.
+     *
+     * @param  list<mixed>  $previousPlatforms
+     * @return list<string>
+     */
+    private function validatedSocialPlatforms(mixed $platforms, array $previousPlatforms = []): array
+    {
+        if (! is_array($platforms)) {
+            return [];
+        }
+
+        $configured = array_column(
+            SocialLinks::configured(PublicContentSetting::general()->getAttribute('social_links')),
+            'platform',
+        );
+        $selected = [];
+        foreach ($platforms as $platform) {
+            if (! is_string($platform)
+                || (! array_key_exists($platform, $this->availableSocialPlatforms)
+                    && (! in_array($platform, $previousPlatforms, true) || ! in_array($platform, $configured, true)))) {
+                throw ValidationException::withMessages(['social_platforms' => 'Choose only social links still configured in General.']);
+            }
+            $selected[] = $platform;
+        }
+
+        return array_values(array_unique($selected));
+    }
+
 }

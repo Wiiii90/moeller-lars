@@ -296,14 +296,8 @@ final class CustomPageEditorialService
             if ($targetType === $type) {
                 return false;
             }
-            // Nested Contact is details-only, never an implicit Contact Form.
-            $converted = $this->convertedBlock($children[$childIndex], $targetType);
-            if ($targetType === 'contact') {
-                $converted['children'] = array_values(array_filter(
-                    $converted['children'],
-                    static fn (array $child): bool => ($child['type'] ?? null) !== 'contact_form',
-                ));
-            }
+            // The canonical converter owns nested Contact's no-Form rule.
+            $converted = EditorialComponentConversion::convert($children[$childIndex], $targetType, insideImage: true);
             $children[$childIndex] = $converted;
             $blocks[$imageIndex]['children'] = $children;
 
@@ -515,35 +509,16 @@ final class CustomPageEditorialService
             if ($targetType === 'legal_disclaimer' && $this->containsType($blocks, 'legal_disclaimer', exceptIndex: $index)) {
                 throw ValidationException::withMessages(['component' => 'This page already contains a Legal Disclaimer component.']);
             }
-            $blocks[$index] = $this->convertedBlock($blocks[$index], $targetType);
+            $blocks[$index] = EditorialComponentConversion::convert($blocks[$index], $targetType);
 
             return $this->persist($fresh, $blocks);
         });
     }
 
-    /** @param array<string, mixed> $block */
+    /** @param array<string,mixed> $block */
     public function conversionLosesContent(array $block, string $targetType): bool
     {
-        $this->assertComponentType($targetType);
-        $currentType = is_string($block['type'] ?? null) ? $block['type'] : '';
-        if ($currentType === $targetType) {
-            return false;
-        }
-
-        $next = $this->convertedBlock($block, $targetType);
-        foreach ($block as $key => $value) {
-            if (in_array($key, ['type', 'published'], true)) {
-                continue;
-            }
-            if (array_key_exists($key, $next) && $next[$key] === $value) {
-                continue;
-            }
-            if ($this->meaningfulValue($value)) {
-                return true;
-            }
-        }
-
-        return false;
+        return EditorialComponentConversion::losesContent($block, $targetType);
     }
 
     public function moveBlock(CustomPageSetting $settings, int $index, string $expectedType, string $direction): bool
@@ -760,34 +735,6 @@ final class CustomPageEditorialService
         }
     }
 
-    /** @param array<string,mixed> $block */
-    private function convertedBlock(array $block, string $targetType): array
-    {
-        $title = in_array($block['type'] ?? null, ['text', 'list', 'contact'], true) && is_string($block['title'] ?? null)
-            ? $block['title']
-            : null;
-        $published = CustomPageSetting::componentPublished($block);
-
-        return match ($targetType) {
-            'image' => ['type' => 'image', 'published' => $published, 'media_asset_id' => null, 'image_decorative' => false],
-            'text' => ['type' => 'text', 'published' => $published, 'title' => $title, 'body' => null],
-            'list' => ['type' => 'list', 'published' => $published, 'title' => $title, 'media_asset_id' => null, 'items' => []],
-            'divider' => ['type' => 'divider', 'published' => $published, 'variant' => 'thin'],
-            'contact' => [
-                'type' => 'contact',
-                'published' => $published,
-                'title' => $title,
-                'children' => [
-                    ['type' => 'public_email', 'published' => true],
-                    ['type' => 'social_links', 'published' => true, 'social_platforms' => array_keys(SocialLinks::options())],
-                    ['type' => 'contact_form', 'published' => true, 'form_state' => 'enabled', 'status_text' => null],
-                ],
-            ],
-            'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
-            default => throw new InvalidArgumentException('Unsupported component type.'),
-        };
-    }
-
     /** @param list<array<string,mixed>> $blocks */
     private function containsType(array $blocks, string $type, ?int $exceptIndex = null): bool
     {
@@ -801,27 +748,6 @@ final class CustomPageEditorialService
         }
 
         return false;
-    }
-
-    private function meaningfulValue(mixed $value): bool
-    {
-        if ($value === null || $value === false || $value === '' || $value === []) {
-            return false;
-        }
-        if (is_string($value)) {
-            return trim($value) !== '';
-        }
-        if (is_array($value)) {
-            foreach ($value as $nested) {
-                if ($this->meaningfulValue($nested)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        return true;
     }
 
     private function assertComponentType(string $type): void

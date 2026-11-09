@@ -23,10 +23,11 @@ use App\Domain\Content\SocialLinks;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\MediaPreviewVariant;
 use App\Filament\Pages\Concerns\HomePresentationChildren;
+use App\Filament\Pages\Concerns\CustomPageWorkspaceForms;
+use App\Filament\Pages\Concerns\CustomPageWorkspaceSecondaryForms;
 use App\Filament\Resources\Artworks\ArtworkResource;
-use App\Filament\Support\AdminRichText;
 use App\Filament\Support\AdminRowAction;
-use App\Filament\Support\ComponentListEditor;
+use App\Filament\Support\ComponentEditorTypes;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\HomeSettingsDialog;
@@ -40,10 +41,6 @@ use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -58,7 +55,13 @@ use Livewire\WithFileUploads;
 final class HomePresentation extends Page
 {
     use HomePresentationChildren;
+    use CustomPageWorkspaceForms;
+    use CustomPageWorkspaceSecondaryForms;
     use WithFileUploads;
+
+    private const COMPONENT_LABELS = ComponentEditorTypes::LABELS;
+
+    private const DIVIDER_LABELS = ComponentEditorTypes::DIVIDER_LABELS;
 
     protected static bool $shouldRegisterNavigation = false;
 
@@ -165,15 +168,7 @@ final class HomePresentation extends Page
     ];
 
     /** @var array<string,string> */
-    public array $newComponentOptions = [
-        'image' => 'Image / Video',
-        'heading' => 'Heading',
-        'rich_text' => 'Rich Text',
-        'divider' => 'Divider',
-        'list' => 'List',
-        'contact' => 'Contact',
-        'legal_disclaimer' => 'Legal Disclaimer',
-    ];
+    public array $availableSocialPlatforms = [];
 
     public string $componentSearch = '';
 
@@ -453,66 +448,29 @@ final class HomePresentation extends Page
 
     public function addComponentAction(): Action
     {
-        return AdminDialog::create(
-            Action::make('addComponent')->label('Add component')
-                ->schema([
-                    Select::make('kind')->label('Component')->options($this->newComponentOptions)->required()->live(),
-                    TextInput::make('title')->label('Heading')->maxLength(160)
-                        ->required(fn (callable $get): bool => $get('kind') === 'heading')
-                        ->visible(fn (callable $get): bool => $get('kind') === 'heading'),
-                    ...$this->homeRichTextFields('kind', 'rich_text', required: true),
-                    MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
-                        ->required(fn (callable $get): bool => $get('kind') === 'image')
-                        ->visible(fn (callable $get): bool => $get('kind') === 'image'),
-                    Toggle::make('image_decorative')->label('Decorative image')
-                        ->default(false)->visible(fn (callable $get): bool => $get('kind') === 'image'),
-                    Toggle::make('video_controls_enabled')->label('Show video playback controls')
-                        ->default(true)->visible(fn (callable $get): bool => $get('kind') === 'image'),
-                    Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
-                        ->default('thin')->required(fn (callable $get): bool => $get('kind') === 'divider')
-                        ->visible(fn (callable $get): bool => $get('kind') === 'divider'),
-                    TextInput::make('list_title')->label('List heading')->maxLength(160)
-                        ->visible(fn (callable $get): bool => $get('kind') === 'list'),
-                    MediaAssetSelect::makeId('list_media_asset_id', 'Optional list image', true)
-                        ->nullable()->placeholder('No list image')
-                        ->visible(fn (callable $get): bool => $get('kind') === 'list'),
-                    ComponentListEditor::make()
-                        ->visible(fn (callable $get): bool => $get('kind') === 'list'),
-                ])
-                ->modalHeading('Add component'),
-            'Add component',
-            AdminDialogSize::Large,
-        )->action(function (array $data): void {
-            $kind = (string) ($data['kind'] ?? '');
-            $component = match ($kind) {
-                'heading' => ['type' => 'text', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
-                'rich_text' => ['type' => 'text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
-                'image' => [
-                    'type' => 'image',
-                    'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
-                    'image_decorative' => (bool) ($data['image_decorative'] ?? false),
-                    'video_controls_enabled' => (bool) ($data['video_controls_enabled'] ?? true),
-                ],
-                'divider' => ['type' => 'divider', 'variant' => $data['variant'] ?? 'thin'],
-                'list' => ['type' => 'list', 'title' => $data['list_title'] ?? null,
-                    'media_asset_id' => is_numeric($data['list_media_asset_id'] ?? null) ? (int) $data['list_media_asset_id'] : null,
-                    'items' => is_array($data['items'] ?? null) ? array_values($data['items']) : []],
-                'contact' => ['type' => 'contact', 'children' => [
-                    ['type' => 'public_email', 'published' => true],
-                    ['type' => 'social_links', 'published' => true, 'social_platforms' => array_column(SocialLinks::visible(PublicContentSetting::general()->getAttribute('social_links')), 'platform')],
-                    ['type' => 'contact_form', 'published' => true, 'form_state' => 'enabled', 'status_text' => null],
-                ]],
-                'legal_disclaimer' => ['type' => 'legal_disclaimer'],
-                default => throw ValidationException::withMessages(['kind' => 'Choose a supported Home component.']),
-            };
-            $component['published'] = app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::HOME);
-            app(HomePresentationEditorialService::class)->addComponent($this->settings(), $this->componentTemplate(), $component);
-            $this->reloadWorkspace();
-            app(AdminNotifier::class)->notification(
-                title: 'Home component added',
-                status: 'success',
-            );
-        });
+        $action = Action::make('addComponent')
+            ->label('Add component')
+            ->fillForm(fn (): array => [
+                'type' => 'text',
+                'publication_state' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::HOME)
+                    ? 'published' : 'unpublished',
+                'image_decorative' => false,
+                'variant' => 'thin',
+                'media_asset_id' => null,
+            ])
+            ->schema($this->componentEditorSchema(allowParentSelection: false))
+            ->modalHeading(__('Add component'))
+            ->action(function (array $data): void {
+                $changed = app(HomePresentationEditorialService::class)->addComponent(
+                    $this->settings(), $this->componentTemplate(), $this->componentPayload($data),
+                );
+                $this->reloadWorkspace();
+                if ($changed) {
+                    app(AdminNotifier::class)->notification(title: 'Home component added', status: 'success');
+                }
+            });
+
+        return AdminDialog::create($action, 'Add component', AdminDialogSize::Large);
     }
 
     public function editComponentAction(): Action
@@ -532,110 +490,75 @@ final class HomePresentation extends Page
                 $component = $this->componentFromArguments($arguments);
                 $this->editingHomeComponentOriginal = $component;
 
-                return [
-                    'type' => $component['type'],
-                    'editor_kind' => $this->editorKind($component) ?? $component['type'],
-                    'title' => $component['title'] ?? null,
-                    'body' => $component['body'] ?? null,
-                    'media_asset_id' => $component['media_asset_id'] ?? null,
-                    'image_decorative' => (bool) ($component['image_decorative'] ?? false),
-                    'video_controls_enabled' => CustomPageSetting::videoControls($component),
-                    'variant' => $component['variant'] ?? 'thin',
-                    'list_title' => $component['title'] ?? null,
-                    'list_media_asset_id' => $component['media_asset_id'] ?? null,
-                    'items' => array_map(static fn (array $item): array => [
-                        'title' => $item['title'] ?? null,
-                        'context' => CustomPageSetting::listItemContext($item),
-                        'body' => CustomPageSetting::listItemDetails($item),
-                        'published' => CustomPageSetting::listItemPublished($item),
-                    ], array_values(array_filter($component['items'] ?? [], 'is_array'))),
-                ];
+                return $this->componentEditorData($component);
             })
-            ->schema(fn (array $arguments): array => [
-                Hidden::make('type'),
-                Select::make('editor_kind')
-                    ->label('Component')
-                    ->options($this->componentTypeOptions)
-                    ->required()
-                    ->live()
-                    ->afterStateUpdated(function (mixed $state) use ($arguments): void {
-                        $component = $this->componentFromArguments($arguments);
-                        $currentKind = $this->editorKind($component) ?? (string) $component['type'];
-                        $targetKind = is_string($state) ? $state : '';
-                        if ($targetKind === $currentKind || ! array_key_exists($targetKind, $this->componentTypeOptions)) {
-                            return;
-                        }
+            ->schema(fn (array $arguments): array => $this->componentEditorSchema(
+                editingType: (string) $this->componentFromArguments($arguments)['type'],
+                allowParentSelection: true,
+                onTypeChange: function (mixed $state) use ($arguments): void {
+                    $component = $this->componentFromArguments($arguments);
+                    $type = (string) $component['type'];
+                    $targetType = is_string($state) ? $state : '';
+                    if ($targetType === $type || ! array_key_exists($targetType, self::COMPONENT_LABELS)) {
+                        return;
+                    }
 
-                        $this->replaceMountedAction('changeComponentType', [
-                            ...$arguments,
-                            'kind' => $currentKind,
-                            'targetKind' => $targetKind,
-                        ]);
-                    }),
-                TextInput::make('title')->label('Heading')->maxLength(160)
-                    ->required(fn (callable $get): bool => $get('editor_kind') === 'heading')
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'heading'),
-                ...$this->homeRichTextFields('editor_kind', 'rich_text', required: true),
-                MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
-                    ->required(fn (callable $get): bool => $get('editor_kind') === 'image')
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
-                Toggle::make('image_decorative')->label('Decorative image')
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
-                Toggle::make('video_controls_enabled')->label('Show video playback controls')
-                    ->default(true)->visible(fn (callable $get): bool => $get('editor_kind') === 'image'),
-                Select::make('variant')->label('Divider')->options(DividerVariant::LABELS)
-                    ->required(fn (callable $get): bool => $get('editor_kind') === 'divider')
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'divider'),
-                TextInput::make('list_title')->label('List heading')->maxLength(160)
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
-                MediaAssetSelect::makeId('list_media_asset_id', 'Optional list image', true)
-                    ->nullable()->placeholder('No list image')
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
-                ComponentListEditor::make()
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'list'),
-            ])
-            ->modalHeading('Edit component')
+                    $this->replaceMountedAction('changeComponentType', [
+                        ...$arguments,
+                        'targetKind' => $targetType,
+                    ]);
+                },
+            ))
+            ->modalHeading(__('Edit component'))
             ->extraModalFooterActions(fn (array $arguments): array => $this->homeEditHeaderActions($arguments, $actionName))
             ->action(function (array $data, array $arguments): void {
-                $current = $this->componentFromArguments($arguments);
-                $type = (string) $current['type'];
-                $editorKind = $this->editorKind($current) ?? $type;
-                if (($data['editor_kind'] ?? null) !== $editorKind) {
-                    return; // Conversion is committed by changeComponentType.
+                $component = $this->componentFromArguments($arguments);
+                $type = (string) $component['type'];
+                if (($data['type'] ?? null) !== $type) {
+                    return; // Conversion belongs to the explicit type-change Action.
                 }
-                $component = match ($type) {
-                    'text' => match ($editorKind) {
-                        'heading' => ['type' => 'text', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
-                        'rich_text' => ['type' => 'text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
-                        default => throw ValidationException::withMessages(['component' => 'This text component has no supported editor mode.']),
-                    },
-                    'image' => [
-                        'type' => 'image',
-                        'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
-                        'image_decorative' => (bool) ($data['image_decorative'] ?? false),
-                        'video_controls_enabled' => (bool) ($data['video_controls_enabled'] ?? ($current['video_controls_enabled'] ?? true)),
-                    ],
-                    'divider' => ['type' => 'divider', 'variant' => $data['variant'] ?? 'thin'],
-                    'list' => ['type' => 'list', 'title' => $data['list_title'] ?? null,
-                        'media_asset_id' => is_numeric($data['list_media_asset_id'] ?? null) ? (int) $data['list_media_asset_id'] : null,
-                        'items' => is_array($data['items'] ?? null) ? array_values($data['items']) : ($current['items'] ?? [])],
-                    'contact' => ['type' => 'contact'],
-                    'legal_disclaimer' => ['type' => 'legal_disclaimer'],
-                    default => throw ValidationException::withMessages(['component' => 'This component has no editable fields.']),
-                };
+
                 try {
+                    $payload = $this->componentPayload($data, $component);
+                    $parent = $type !== 'image' ? ($data['parent_image_index'] ?? null) : null;
+                    if ($parent !== null && $parent !== '') {
+                        $imageIndex = filter_var($parent, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+                        if ($imageIndex === false) {
+                            throw ValidationException::withMessages(['parent_image_index' => 'Choose a decorative Image parent.']);
+                        }
+                        $changed = app(HomePresentationEditorialService::class)->updateAndNestComponent(
+                            $this->settings(), $this->componentTemplate(),
+                            (int) $arguments['index'], $type, $payload, (int) $imageIndex,
+                            $this->editingHomeComponentOriginal,
+                        );
+                        $this->reloadWorkspace();
+                        if ($changed) {
+                            app(AdminNotifier::class)->notification(title: 'Home component moved into image', status: 'success');
+                            $parentIndex = (int) $imageIndex - ((int) $arguments['index'] < (int) $imageIndex ? 1 : 0);
+                            $children = $this->settings()->components($this->componentTemplate())[$parentIndex]['children'] ?? [];
+                            $this->replaceMountedAction('editHomeImageChild', [
+                                'index' => $parentIndex, 'type' => 'image',
+                                'child' => count($children) - 1, 'child_type' => $type,
+                            ]);
+                        }
+
+                        return;
+                    }
+
                     $changed = app(HomePresentationEditorialService::class)->updateComponent(
-                        $this->settings(), $this->componentTemplate(), (int) $arguments['index'], $type, [...$current, ...$component],
+                        $this->settings(), $this->componentTemplate(),
+                        (int) $arguments['index'], $type, $payload,
                         $this->editingHomeComponentOriginal,
                     );
                 } catch (ValidationException $exception) {
                     $path = $this->getMountedActionSchema()->getStatePath();
                     $errors = [];
                     foreach ($exception->errors() as $field => $messages) {
-                        $errors[$path.'.'.($field === 'component' ? 'editor_kind' : $field)] = $messages;
+                        $errors[$path.'.'.($field === 'component' ? 'type' : $field)] = $messages;
                     }
                     throw ValidationException::withMessages($errors);
                 }
+
                 $this->reloadWorkspace();
                 $this->editingHomeComponentOriginal = $this->componentFromArguments($arguments);
                 if ($changed) {
@@ -703,12 +626,9 @@ final class HomePresentation extends Page
     {
         $targetComponent = function (array $arguments): array {
             $component = $this->componentFromArguments($arguments);
-            $expectedKind = (string) ($arguments['kind'] ?? '');
-            $targetKind = (string) ($arguments['targetKind'] ?? '');
-            if (! array_key_exists($expectedKind, $this->componentTypeOptions)
-                || ! array_key_exists($targetKind, $this->componentTypeOptions)
-                || (($component['type'] === 'text' ? $this->editorKind($component) : $component['type']) !== $expectedKind)) {
-                throw ValidationException::withMessages(['component' => 'This Home component changed. Reload and try again.']);
+            $targetType = (string) ($arguments['targetKind'] ?? '');
+            if (! array_key_exists($targetType, self::COMPONENT_LABELS)) {
+                throw ValidationException::withMessages(['type' => 'Choose a supported component type.']);
             }
 
             return $component;
@@ -720,11 +640,9 @@ final class HomePresentation extends Page
                 ->action(function (array $arguments) use ($targetComponent): void {
                     $component = $targetComponent($arguments);
                     $changed = app(HomePresentationEditorialService::class)->convertComponent(
-                        $this->settings(),
-                        $this->componentTemplate(),
+                        $this->settings(), $this->componentTemplate(),
                         (int) $arguments['index'],
                         (string) $component['type'],
-                        (string) $arguments['kind'],
                         (string) $arguments['targetKind'],
                     );
                     $this->reloadWorkspace();
@@ -737,7 +655,7 @@ final class HomePresentation extends Page
                 }),
             'Change type?',
             fn (array $arguments): string => 'Changing to '
-                .($this->componentTypeOptions[(string) $arguments['targetKind']] ?? 'another type')
+                .(self::COMPONENT_LABELS[(string) $arguments['targetKind']] ?? 'another type')
                 .' removes content that cannot be kept.',
             'Change type',
             condition: fn (array $arguments): bool => app(HomePresentationEditorialService::class)
@@ -1064,6 +982,7 @@ final class HomePresentation extends Page
 
     private function reloadWorkspace(): void
     {
+        $this->loadEditorSocialLinks();
         $settings = $this->settings();
         $configuration = app(HomePresentationEditorialService::class)->configuration($settings);
         $heroConfiguration = app(HomeHeroConfigurationService::class)->configuration($settings);
@@ -1273,6 +1192,7 @@ final class HomePresentation extends Page
                 'content' => ['primary' => $primary, 'secondary' => $secondary],
                 'published' => CustomPageSetting::componentPublished($component),
                 'children' => $this->homeChildProjection($component, $index),
+                'accepts_children' => $type === 'image' && ($component['image_decorative'] ?? false) === true,
                 'search_text' => Str::lower(implode(' ', [$typeLabel, $primary, $secondary, $title, $body,
                     $type === 'list' ? collect($component['items'] ?? [])
                         ->filter(static fn (mixed $item): bool => is_array($item))
@@ -1386,29 +1306,20 @@ final class HomePresentation extends Page
         ];
     }
 
-    /** @return list<mixed> */
-    private function homeRichTextFields(string $stateField, string $stateValue, bool $required = false): array
+    /** Home and Custom Page share the same component form fields and data
+     * normalization; Home supplies its own template-scoped component list. */
+    private function editorRootComponents(): array
     {
-        $fields = AdminRichText::schema('body', 'Rich Text', 20000, required: $required);
-        foreach ($fields as $field) {
-            $field->visible(fn (callable $get): bool => $get($stateField) === $stateValue);
-        }
-
-        return $fields;
+        return $this->settings()->components($this->componentTemplate());
     }
 
-    /** @param array<string,mixed> $component */
-    private function editorKind(array $component): ?string
+    private function loadEditorSocialLinks(): void
     {
-        if (($component['type'] ?? null) !== 'text') {
-            return null;
-        }
-        $title = $component['title'] ?? null;
-        $body = $component['body'] ?? null;
-        $hasTitle = is_string($title) && trim($title) !== '';
-        $hasBody = is_string($body) && trim($body) !== '';
-
-        return $hasTitle && ! $hasBody ? 'heading' : 'rich_text';
+        $this->availableSocialPlatforms = collect(SocialLinks::visible(
+            PublicContentSetting::general()->getAttribute('social_links'),
+        ))->mapWithKeys(static fn (array $link): array => [
+            $link['platform'] => SocialLinks::label($link['platform']),
+        ])->all();
     }
 
     private function settings(): HomePresentationSetting
@@ -1501,10 +1412,19 @@ final class HomePresentation extends Page
                 throw ValidationException::withMessages(['component' => 'The selected Home child changed. Reload and try again.']);
             }
             $parts = explode(':', $target, 3);
-            if (count($parts) !== 3 || ! ctype_digit($parts[1]) || $parts[0] !== 'contact') {
+            if (count($parts) !== 3 || ! ctype_digit($parts[1])
+                || ! in_array($parts[0], ['contact', 'image'], true)) {
                 throw ValidationException::withMessages(['component' => 'The selected Home child is invalid.']);
             }
-            $targets[] = ['index' => (int) $parts[1], 'type' => 'contact', 'child' => $parts[2]];
+            if ($parts[0] === 'image' && ! ctype_digit($parts[2])) {
+                throw ValidationException::withMessages(['component' => 'The selected Image child is invalid.']);
+            }
+
+            $targets[] = [
+                'index' => (int) $parts[1],
+                'type' => $parts[0],
+                'child' => $parts[0] === 'image' ? (int) $parts[2] : $parts[2],
+            ];
         }
 
         return $targets;
