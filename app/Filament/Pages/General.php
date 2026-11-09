@@ -1367,7 +1367,7 @@ final class General extends Page
         return self::helpLabel(
             'Default copyright notice',
             'About the default copyright notice',
-            'Used as the inherited media copyright notice. Individual assets may override it or use no notice. This setting does not add a copyright line to artwork detail pages.',
+            'Used only for media that inherit the global copyright notice. Each asset can supply its own notice or explicitly use none. This does not automatically add a copyright line to Artwork detail pages.',
         );
     }
 
@@ -1376,7 +1376,7 @@ final class General extends Page
         return self::helpLabel(
             'Imprint',
             'About the imprint',
-            'Provider identification and contact details for the website operator. Use accurate information supplied by the responsible person.',
+            'Identify the actual website operator, a serviceable postal address, reliable contact details and any legally required registration information. Publish only verified operator information; the Legal Disclaimer page component controls public display.',
         );
     }
 
@@ -1385,7 +1385,7 @@ final class General extends Page
         return self::helpLabel(
             'Privacy Policy',
             'About the privacy policy',
-            'Explain the actual processing of visitor data, including hosting, server logs, contact messages and analytics where applicable.',
+            'Describe verified processing of visitor data: hosting and access logs, contact messages and email delivery, enabled analytics, purposes, recipients, retention periods and applicable visitor rights. Check the real deployment and providers before publishing.',
         );
     }
 
@@ -1394,7 +1394,7 @@ final class General extends Page
         return self::helpLabel(
             'Copyright & AI Use',
             'About copyright and AI use',
-            'Explain artwork and photographic rights, reproduction and licensing requests, and the reservation of rights for AI training and data mining.',
+            'Distinguish rights in artworks from rights in photographs, explain permitted reuse and how to request a license, and state the intended terms for AI training and text/data mining. Do not claim rights or technical protections that have not been established.',
         );
     }
 
@@ -1403,7 +1403,7 @@ final class General extends Page
         return self::helpLabel(
             'External Links Notice',
             'About the external links notice',
-            'Optional notice about linked third-party websites. Displayed in the External Links Notice section of the Legal Disclaimer component.',
+            'Optional factual notice for links to third-party sites, including that those sites have their own content and privacy practices. Avoid blanket liability waivers; the External Links Notice appears through a published Legal Disclaimer component.',
         );
     }
 

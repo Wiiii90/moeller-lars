@@ -24,5 +24,7 @@
 
 - Replaced Beside menu's shared Inside grid with a true external title rail on the Global background; stack decision now checks the real outside available width rather than Menu content width. This changes previously incorrect source-level outside-stack expectations; Testing must reconcile its tests. Browser acceptance pending.
 
+- Refined all five existing Legal field help texts with field-specific editorial obligations and limitations; localized legal labels and guidance to German. No default legal copy or fabricated operator information was saved.
+
 ## Next
-- Review the committed Beside/Inside layout source in a real browser and hand off the changed Beside geometry to Testing for expected JS test changes. Trace disappearing Preview/persistence, menu divider, picker and Legal guidance next.
+- Verify saved public appearance, title placements and iframe lifecycle in a real browser; investigate the site-icon picker and full-width divider and any root cause for disappearing Live Preview. Legal text still requires actual operator/deployment facts and artist approval.
