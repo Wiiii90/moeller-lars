@@ -678,7 +678,7 @@ final class HomePresentation extends Page
             });
         $actions[] = AdminDialog::headerAction('dialogDeleteComponent', AdminRowAction::Delete, function () use ($index, $type): void {
             $this->replaceMountedAction('removeComponent', ['index' => $index, 'type' => $type]);
-        });
+        })->disabled(! CustomPageSetting::canDeleteComponent($component));
 
         return $actions;
     }

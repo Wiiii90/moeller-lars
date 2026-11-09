@@ -181,7 +181,7 @@ trait HomePresentationChildren
             });
         $actions[] = AdminDialog::headerAction('homeChildDelete', AdminRowAction::Delete, function () use ($args): void {
             $this->replaceMountedAction('deleteHomeChild', $args);
-        });
+        })->disabled(! CustomPageSetting::canDeleteComponent($child));
 
         return $actions;
     }

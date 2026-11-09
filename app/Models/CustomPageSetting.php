@@ -111,6 +111,26 @@ final class CustomPageSetting extends Model
         return ($block['published'] ?? true) === true;
     }
 
+    /** A published component or structural Image parent cannot be deleted. */
+    public static function canDeleteComponent(array $component): bool
+    {
+        return ! self::componentPublished($component)
+            && (($component['type'] ?? null) !== 'image'
+                || ! is_array($component['children'] ?? null)
+                || $component['children'] === []);
+    }
+
+    /** Reused by Home and Custom Page mutation owners, including bulk actions. */
+    public static function assertComponentDeletable(array $component): void
+    {
+        if (self::componentPublished($component)) {
+            throw ValidationException::withMessages(['component' => 'Unpublish the component before deleting it.']);
+        }
+        if (! self::canDeleteComponent($component)) {
+            throw ValidationException::withMessages(['component' => 'Remove or move the Image children before deleting their parent.']);
+        }
+    }
+
     public static function listItemPublished(array $item): bool
     {
         return ($item['published'] ?? true) === true;

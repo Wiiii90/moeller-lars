@@ -73,6 +73,7 @@
         />
         <x-admin.row-action
             :action="\App\Filament\Support\AdminRowAction::Delete"
+            :disabled="! \App\Models\CustomPageSetting::canDeleteComponent($row)"
             wire:click="mountAction('{{ $isChild ? 'deleteImageChild' : 'deleteComponent' }}', {{ $args }})"
         />
     </div>

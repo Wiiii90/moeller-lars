@@ -371,7 +371,8 @@ trait CustomPageWorkspaceComponentActions
                     },
                 );
                 $actions[] = AdminDialog::headerAction('childDelete', AdminRowAction::Delete,
-                    fn () => $this->replaceMountedAction('deleteImageChild', $args));
+                    fn () => $this->replaceMountedAction('deleteImageChild', $args))
+                    ->disabled(! CustomPageSetting::canDeleteComponent($blocks[$child]));
 
                 return $actions;
             })
@@ -736,7 +737,7 @@ trait CustomPageWorkspaceComponentActions
         );
         $actions[] = AdminDialog::headerAction('dialogDeleteComponent', AdminRowAction::Delete, function () use ($target): void {
             $this->replaceMountedAction('deleteComponent', $target);
-        });
+        })->disabled(! CustomPageSetting::canDeleteComponent($block));
 
         return $actions;
     }

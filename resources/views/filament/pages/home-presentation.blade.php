@@ -372,6 +372,9 @@
                     ->filter(static fn (array $row): bool => in_array($row['target'] ?? null, $selectedHomeTargets, true));
                 $canPublishHomeSelection = $selectedHomeRows->contains(static fn (array $row): bool => ! ($row['published'] ?? false));
                 $canUnpublishHomeSelection = $selectedHomeRows->contains(static fn (array $row): bool => ($row['published'] ?? false));
+                $canDeleteHomeSelection = $homeSelectionCount > 0
+                    && $selectedHomeRows->count() === $homeSelectionCount
+                    && $selectedHomeRows->every(static fn (array $row): bool => \App\Models\CustomPageSetting::canDeleteComponent($row));
                 $componentFiltersActive = trim($componentSearch) !== '' || $componentType !== 'any';
             @endphp
 
@@ -432,7 +435,7 @@
                                 <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('down')" x-on:click="open = false" @disabled(! $reorderEnabled)>{{ __('Move selected down') }}</button>
                                 <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(true)" x-on:click="open = false" @disabled(! $canPublishHomeSelection)>{{ __('Publish selected') }}</button>
                                 <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(false)" x-on:click="open = false" @disabled(! $canUnpublishHomeSelection)>{{ __('Unpublish selected') }}</button>
-                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedComponents')" x-on:click="open = false" @disabled($homeSelectionCount === 0)>{{ __('Delete selected') }}</button>
+                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedComponents')" x-on:click="open = false" @disabled(! $canDeleteHomeSelection)>{{ __('Delete selected') }}</button>
                             </div>
                         </div>
                         <span class="admin-selection__count" aria-label="{{ $homeSelectionCount }} selected">{{ $homeSelectionCount }}</span>

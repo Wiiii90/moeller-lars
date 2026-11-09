@@ -31,7 +31,9 @@
             $canMoveSelected = $selectedItemCount > 0 && $reorderEnabled;
             $canPublishSelected = $selectedParents->contains(static fn (array $component): bool => ($component['published'] ?? false) === false);
             $canUnpublishSelected = $selectedParents->contains(static fn (array $component): bool => ($component['published'] ?? false) === true);
-            $canDeleteSelected = $selectedItemCount > 0;
+            $canDeleteSelected = $selectedItemCount > 0
+                && $selectedParents->count() === $selectedItemCount
+                && $selectedParents->every(static fn (array $component): bool => \App\Models\CustomPageSetting::canDeleteComponent($component));
             $visibleSelectableCount = count($components) + collect($components)
                 ->sum(static fn (array $component): int => count($component['children'] ?? []));
             $resultStart = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;

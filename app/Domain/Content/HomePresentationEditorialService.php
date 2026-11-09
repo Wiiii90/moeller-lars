@@ -330,6 +330,7 @@ final class HomePresentationEditorialService
                 } elseif ($operation === 'publish') {
                     $children[$position]['published'] = ($payload['published'] ?? false) === true;
                 } elseif ($operation === 'delete') {
+                    CustomPageSetting::assertComponentDeletable($children[$position]);
                     array_splice($children, $position, 1);
                 } elseif ($operation === 'reposition') {
                     $moved = array_splice($children, $position, 1);
@@ -394,6 +395,7 @@ final class HomePresentationEditorialService
                     }
                     foreach ($positions as $position) {
                         if ($operation === 'delete') {
+                            CustomPageSetting::assertComponentDeletable($components[$index][$field][$position]);
                             array_splice($components[$index][$field], $position, 1);
                         } else {
                             $components[$index][$field][$position]['published'] = $operation === 'publish';
@@ -404,6 +406,7 @@ final class HomePresentationEditorialService
 
             foreach ($parentIndices as $index) {
                 if ($operation === 'delete') {
+                    CustomPageSetting::assertComponentDeletable($components[$index]);
                     unset($components[$index]);
                 } else {
                     $components[$index]['published'] = $operation === 'publish';
@@ -513,6 +516,7 @@ final class HomePresentationEditorialService
     ): bool {
         return $this->mutateComponents($settings, $mode, function (array $components) use ($index, $expectedType): array {
             $this->assertTarget($components, $index, $expectedType);
+            CustomPageSetting::assertComponentDeletable($components[$index]);
             unset($components[$index]);
 
             return array_values($components);
@@ -528,6 +532,9 @@ final class HomePresentationEditorialService
                 return $components;
             }
 
+            foreach ($indices as $index) {
+                CustomPageSetting::assertComponentDeletable($components[$index]);
+            }
             rsort($indices);
             foreach ($indices as $index) {
                 unset($components[$index]);

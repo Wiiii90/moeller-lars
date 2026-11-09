@@ -244,6 +244,7 @@ final class CustomPageEditorialService
             if (($children[$childIndex]['type'] ?? null) !== $type) {
                 throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
             }
+            CustomPageSetting::assertComponentDeletable($children[$childIndex]);
             array_splice($children, $childIndex, 1);
             if ($children === []) {
                 unset($blocks[$imageIndex]['children']);
@@ -607,6 +608,9 @@ final class CustomPageEditorialService
             $indices = $this->validatedIndices($blocks, $targets);
             if ($indices === []) {
                 return false;
+            }
+            foreach ($indices as $index) {
+                CustomPageSetting::assertComponentDeletable($blocks[$index]);
             }
             rsort($indices);
             foreach ($indices as $index) {

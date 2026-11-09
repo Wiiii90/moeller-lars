@@ -100,6 +100,7 @@
                                 />
                                 <x-admin.row-action
                                     :action="\App\Filament\Support\AdminRowAction::Delete"
+                                    :disabled="! \App\Models\CustomPageSetting::canDeleteComponent($homeComponent)"
                                     wire:click="mountAction('removeComponent', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}' })"
                                 />
                             </div>
@@ -151,6 +152,7 @@
                                                 />
                                                 <x-admin.row-action
                                                     :action="\App\Filament\Support\AdminRowAction::Delete"
+                                                    :disabled="! \App\Models\CustomPageSetting::canDeleteComponent($child)"
                                                     wire:click="mountAction('deleteHomeChild', { index: {{ $homeComponent['index'] }}, type: '{{ $homeComponent['type'] }}', child: @js($child['key']) })"
                                                 />
                                             </div>
