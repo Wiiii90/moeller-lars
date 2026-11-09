@@ -168,6 +168,7 @@ final class HomeSettingsDialog
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
                     ...PageHeadingFields::detailFields($persistHeading, 'Home settings saved'),
                     AdminControl::toggle('auto_publish_new_components', 'Auto-publish new components')
+                        ->visible(fn (callable $get): bool => $get('template') !== HomeTemplate::Artwork->value)
                         ->live()
                         ->afterStateUpdated(static function (mixed $state): void {
                             if (app(AdminWorkflowPreferences::class)->updateAutoPublish(
@@ -178,6 +179,7 @@ final class HomeSettingsDialog
                         }),
                     AdminControl::toggle('delete_without_confirmation', 'Delete simple components without confirmation')
                         ->helperText('Only top-level Dividers can be deleted directly. Nested or media-related components always require confirmation.')
+                        ->visible(fn (callable $get): bool => $get('template') !== HomeTemplate::Artwork->value)
                         ->live()
                         ->afterStateUpdated(static function (mixed $state): void {
                             if (app(AdminWorkflowPreferences::class)->updateDeletion(

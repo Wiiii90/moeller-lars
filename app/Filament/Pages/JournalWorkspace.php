@@ -38,7 +38,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -431,11 +430,18 @@ final class JournalWorkspace extends Page
             ->fillForm(function (): array {
                 $section = $this->section();
 
-                return $this->journalSettingsOriginal = [
+                // The optimistic concurrency snapshot contains persisted
+                // Journal fields only. Personal workflow preferences belong to
+                // the User and must not participate in that row comparison.
+                $this->journalSettingsOriginal = [
                     'template' => (string) $section->getAttribute('template'),
                     'title' => $section->getAttribute('title'),
                     'navigation_label' => $section->getAttribute('navigation_label'),
                     'slug' => $section->getAttribute('slug'),
+                ];
+
+                return [
+                    ...$this->journalSettingsOriginal,
                     'auto_publish_new_entries' => app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::JOURNAL),
                 ];
             })
