@@ -285,11 +285,18 @@ class PublicMedia
 
         $template = $settings->template();
         if ($template === HomeTemplate::Artwork) {
+            // An unpublished Home does not authorize a public original URL.
+            // Authenticated Preview media uses its own admin-owned route.
+            if (! $settings->siteSection()->where('state', 'published')->exists()) {
+                return false;
+            }
+            if (! in_array($mediaAssetId, $this->referenceQuery->homeHeroMediaIds($settings), true)) {
+                return false;
+            }
             $asset = MediaAsset::query()->with('variants')->find($mediaAssetId);
 
             return $asset instanceof MediaAsset
-                && \App\Domain\Content\HomeHeroCandidate::mediaIsEligible($asset)
-                && in_array($mediaAssetId, $this->referenceQuery->homeHeroMediaIds($settings), true);
+                && \App\Domain\Content\HomeHeroCandidate::mediaIsEligible($asset);
         }
         if (! in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)) {
             return false;
