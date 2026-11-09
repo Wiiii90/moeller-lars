@@ -228,11 +228,26 @@
 
 .home-source-candidates {
     display: flex;
-    min-width: 11rem;
-    max-width: 16rem;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
     gap: .26rem;
     align-items: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    cursor: grab;
+    user-select: none;
 }
+
+.home-source-candidates.is-dragging {
+    cursor: grabbing;
+}
+
+.home-source-table__candidates {
+    min-width: 0;
+}
+
 
 .home-source-candidate {
     display: block;

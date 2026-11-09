@@ -107,7 +107,7 @@
             @php
                 $sourceRows = $this->sourceRows();
                 $visibleSourceIds = collect($sourceRows->items())->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
-                $sourceFiltersActive = trim($sourceSearch) !== '' || $sourceStatusFilter !== 'any' || $sourceHomeFilter !== 'any';
+                $sourceFiltersActive = trim($sourceSearch) !== '' || $sourceStatusFilter !== 'any';
                 $sourceHasRecords = $sourceRows->total() > 0 || ($sourceFiltersActive
                     && \App\Models\ArtworkCategory::query()->whereHas('siteSection')->exists());
             @endphp
@@ -116,7 +116,7 @@
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>{{ __('Search') }}</span>
-                        <x-admin.search-input model="sourceSearch" placeholder="Gallery" />
+                        <x-admin.search-input model="sourceSearch" placeholder="Gallery or candidate" />
                     </label>
                 </x-slot:search>
 
@@ -127,14 +127,6 @@
                             <option value="any">{{ __('Any') }}</option>
                             <option value="published">{{ __('Published') }}</option>
                             <option value="unpublished">{{ __('Unpublished') }}</option>
-                        </select>
-                    </label>
-                    <label class="admin-data-field">
-                        <span>Source</span>
-                        <select wire:model.live="sourceHomeFilter">
-                            <option value="any">{{ __('Any') }}</option>
-                            <option value="enabled">{{ __('Enabled') }}</option>
-                            <option value="disabled">{{ __('Unavailable / Disabled') }}</option>
                         </select>
                     </label>
                 </x-slot:filters>
@@ -203,9 +195,8 @@
                     <colgroup>
                         <col class="admin-table__col-one-unit home-source-table__col-gallery">
                         <col class="admin-table__col-one-half-units home-source-table__col-candidates">
-                        <col class="admin-table__col-half-unit home-source-table__col-status">
                         <col class="admin-table__col-half-unit home-source-table__col-artworks">
-                        <col class="admin-table__col-half-unit home-source-table__col-year">
+                        <col class="admin-table__col-half-unit home-source-table__col-status">
                         <col class="home-source-table__col-actions">
                         <col class="admin-table__selection-col home-source-table__col-selection">
                     </colgroup>
@@ -213,9 +204,8 @@
                         <tr>
                             <th scope="col">{{ __('Gallery') }}</th>
                             <th scope="col" class="home-source-table__candidates">{{ __('Candidates') }}</th>
-                            <th scope="col" class="home-source-table__status">{{ __('Status') }}</th>
                             <th scope="col" class="home-source-table__artworks">{{ __('Artworks') }}</th>
-                            <th scope="col" class="home-source-table__year">{{ __('Newest Year') }}</th>
+                            <th scope="col" class="home-source-table__status">{{ __('Status') }}</th>
                             <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">{{ __('Actions') }}</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
@@ -243,10 +233,21 @@
                             <tr class="{{ $selected ? 'is-selected' : '' }}" wire:key="home-source-gallery-{{ $gallery['id'] }}">
                                 <td class="admin-table__identity">
                                     <strong>{{ $gallery['name'] }}</strong>
-                                    <small class="admin-responsive-meta">{{ $gallery['status_label'] }} · {{ number_format($gallery['published_artworks']) }} artworks · {{ $gallery['newest_year'] ?: '—' }}</small>
+                                    <small class="admin-responsive-meta">{{ $gallery['status_label'] }} · {{ number_format($gallery['candidate_count']) }}/{{ number_format($gallery['artworks_count']) }} candidates</small>
                                 </td>
                                 <td class="home-source-table__candidates">
-                                    <div class="home-source-candidates" aria-label="Candidates from {{ $gallery['name'] }}">
+                                    <div
+                                        class="home-source-candidates"
+                                        aria-label="Candidates from {{ $gallery['name'] }} — scroll horizontally"
+                                        tabindex="0"
+                                        x-data="{ dragging: false, startX: 0, startScroll: 0 }"
+                                        x-on:pointerdown="if ($event.pointerType !== 'mouse' || $event.button !== 0) return; dragging = true; startX = $event.clientX; startScroll = $el.scrollLeft; $el.setPointerCapture($event.pointerId)"
+                                        x-on:pointermove="if (dragging) $el.scrollLeft = startScroll - ($event.clientX - startX)"
+                                        x-on:pointerup="dragging = false"
+                                        x-on:pointercancel="dragging = false"
+                                        x-on:lostpointercapture="dragging = false"
+                                        x-bind:class="{ 'is-dragging': dragging }"
+                                    >
                                         @forelse ($gallery['candidates'] as $candidate)
                                             <span class="home-source-candidate">
                                                 <span
@@ -265,9 +266,8 @@
                                         @endforelse
                                     </div>
                                 </td>
+                                <td class="home-source-table__artworks">{{ number_format($gallery['candidate_count']) }}/{{ number_format($gallery['artworks_count']) }}</td>
                                 <td class="home-source-table__status"><span class="admin-status {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
-                                <td class="home-source-table__artworks">{{ number_format($gallery['published_artworks']) }}</td>
-                                <td class="home-source-table__year">{{ $gallery['newest_year'] ?: '—' }}</td>
                                 <td class="admin-table__actions">
                                     <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--state-open admin-toolbar home-source-table__row-actions">
                                         <x-admin.row-action
@@ -275,6 +275,7 @@
                                             :action="$gallery['preference_enabled'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
                                             :label="$gallery['preference_enabled'] ? 'Disable' : 'Enable'"
                                             wire:click="toggleGalleryEligibility({{ $gallery['id'] }})"
+                                            :disabled="! $gallery['preference_enabled'] && ! $gallery['can_enable']"
                                         />
                                         <x-admin.row-action
                                             class="home-source-table__open-action"
@@ -291,7 +292,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="admin-table__empty-cell" colspan="7">
+                                <td class="admin-table__empty-cell" colspan="6">
                                     @if ($sourceHasRecords)
                                         <x-admin.empty-state title="No matching Galleries" minimal>
                                             <x-slot:actions><button class="admin-action" type="button" wire:click="resetSourceFilters">{{ __('Clear filters') }}</button></x-slot:actions>

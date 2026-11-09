@@ -137,9 +137,6 @@ final class HomePresentation extends Page
     #[Session]
     public string $sourceStatusFilter = 'any';
 
-    #[Session]
-    public string $sourceHomeFilter = 'any';
-
     public int $sourcePage = 1;
 
     #[Session]
@@ -247,15 +244,6 @@ final class HomePresentation extends Page
         $this->clearSourceSelection();
     }
 
-    public function updatedSourceHomeFilter(): void
-    {
-        if (! in_array($this->sourceHomeFilter, ['any', 'enabled', 'disabled'], true)) {
-            $this->sourceHomeFilter = 'any';
-        }
-        $this->sourcePage = 1;
-        $this->clearSourceSelection();
-    }
-
     public function updatedSourcePerPage(): void
     {
         if (! in_array($this->sourcePerPage, [10, 25], true)) {
@@ -269,7 +257,6 @@ final class HomePresentation extends Page
     {
         $this->sourceSearch = '';
         $this->sourceStatusFilter = 'any';
-        $this->sourceHomeFilter = 'any';
         $this->sourcePage = 1;
         $this->clearSourceSelection();
     }
@@ -891,11 +878,18 @@ final class HomePresentation extends Page
     {
         /** @var ArtworkCategory $gallery */
         $gallery = ArtworkCategory::query()->findOrFail($galleryId);
-        app(GalleryEditorialService::class)->update($gallery, [
+        $enable = ! (bool) $gallery->getAttribute('show_on_home');
+        if ($enable && ! $gallery->siteSection()->where('state', 'published')->exists()) {
+            throw ValidationException::withMessages(['source' => 'Publish this Gallery before enabling it for Home.']);
+        }
+        $updated = app(GalleryEditorialService::class)->update($gallery, [
             'name' => (string) $gallery->getAttribute('name'),
             'description' => $gallery->getAttribute('description'),
-            'show_on_home' => ! (bool) $gallery->getAttribute('show_on_home'),
+            'show_on_home' => $enable,
         ]);
+        if (! $updated->wasChanged('show_on_home')) {
+            return;
+        }
         $this->clearSourceSelection();
         $this->reloadWorkspace();
         app(AdminNotifier::class)->notification(
@@ -928,11 +922,12 @@ final class HomePresentation extends Page
             return ['enable' => false, 'disable' => false];
         }
 
-        $states = ArtworkCategory::query()->whereKey($ids)->pluck('show_on_home');
+        $galleries = ArtworkCategory::query()->whereKey($ids)->with('siteSection')->get();
 
         return [
-            'enable' => $states->contains(static fn (mixed $value): bool => ! (bool) $value),
-            'disable' => $states->contains(static fn (mixed $value): bool => (bool) $value),
+            'enable' => $galleries->contains(static fn (ArtworkCategory $gallery): bool => ! (bool) $gallery->getAttribute('show_on_home')
+                && $gallery->getRelationValue('siteSection')?->getAttribute('state') === 'published'),
+            'disable' => $galleries->contains(static fn (ArtworkCategory $gallery): bool => (bool) $gallery->getAttribute('show_on_home')),
         ];
     }
 
@@ -943,10 +938,11 @@ final class HomePresentation extends Page
             return;
         }
         $changed = DB::transaction(function () use ($ids, $enabled): int {
-            $galleries = ArtworkCategory::query()->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
+            $galleries = ArtworkCategory::query()->whereIn('id', $ids)->with('siteSection')->orderBy('id')->lockForUpdate()->get();
             $changed = 0;
             foreach ($galleries as $gallery) {
-                if ((bool) $gallery->getAttribute('show_on_home') === $enabled) {
+                if ((bool) $gallery->getAttribute('show_on_home') === $enabled
+                    || ($enabled && $gallery->getRelationValue('siteSection')?->getAttribute('state') !== 'published')) {
                     continue;
                 }
                 $updated = app(GalleryEditorialService::class)->update($gallery, [
@@ -973,29 +969,37 @@ final class HomePresentation extends Page
 
     public function sourceRows(): LengthAwarePaginator
     {
+        $candidateGroup = app(HomeHeroResolver::class)->resolve($this->settings())['group'];
+        $search = trim($this->sourceSearch);
+
         /** @var Builder<ArtworkCategory> $query */
         $query = ArtworkCategory::query()->whereHas('siteSection')->with('siteSection')
-            ->withCount(['artworks as published_artworks_count' => static fn ($query) => $query->where('state', 'published')])
-            ->withMax(['artworks as newest_published_year' => static fn ($query) => $query->where('state', 'published')->whereNotNull('year')], 'year');
+            ->withCount('artworks');
 
-        $search = trim($this->sourceSearch);
         if ($search !== '') {
             $needle = '%'.mb_strtolower($search).'%';
-            $query->whereRaw('LOWER(name) LIKE ?', [$needle]);
+            $matchingGalleryIds = $candidateGroup
+                ->filter(static fn (Artwork $artwork): bool => str_contains(
+                    mb_strtolower((string) $artwork->getAttribute('title')),
+                    mb_strtolower($search),
+                ))
+                ->pluck('artwork_category_id')
+                ->map(static fn (mixed $id): int => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+
+            $query->where(static function (Builder $galleries) use ($needle, $matchingGalleryIds): void {
+                $galleries->whereRaw('LOWER(name) LIKE ?', [$needle]);
+                if ($matchingGalleryIds !== []) {
+                    $galleries->orWhereKey($matchingGalleryIds);
+                }
+            });
         }
         if ($this->sourceStatusFilter === 'published') {
             $query->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', 'published'));
         } elseif ($this->sourceStatusFilter === 'unpublished') {
             $query->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', '<>', 'published'));
-        }
-        if ($this->sourceHomeFilter === 'enabled') {
-            $query->where('show_on_home', true)
-                ->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', 'published'));
-        } elseif ($this->sourceHomeFilter === 'disabled') {
-            $query->where(function (Builder $source): void {
-                $source->where('show_on_home', false)
-                    ->orWhereHas('siteSection', fn (Builder $section): Builder => $section->where('state', '<>', 'published'));
-            });
         }
 
         $total = (clone $query)->count();
@@ -1006,7 +1010,6 @@ final class HomePresentation extends Page
         $galleries = $query->orderBy('name')->offset(($page - 1) * $perPage)->limit($perPage)->get();
         $galleryIds = $galleries->map(static fn (ArtworkCategory $gallery): int => (int) $gallery->getKey())->all();
 
-        $candidateGroup = app(HomeHeroResolver::class)->resolve($this->settings())['group'];
         $candidates = $candidateGroup
             ->filter(static fn (Artwork $artwork): bool => in_array((int) $artwork->getAttribute('artwork_category_id'), $galleryIds, true))
             ->groupBy(fn (Artwork $artwork): int => (int) $artwork->getAttribute('artwork_category_id'));
@@ -1022,12 +1025,13 @@ final class HomePresentation extends Page
                 'id' => (int) $gallery->getKey(),
                 'name' => (string) $gallery->getAttribute('name'),
                 'preference_enabled' => $preference,
+                'can_enable' => $state === 'published',
                 'state' => $state,
                 'status_label' => $state === 'published' ? 'Published' : 'Unpublished',
-                'published_artworks' => (int) $gallery->getAttribute('published_artworks_count'),
-                'newest_year' => $gallery->getAttribute('newest_published_year'),
+                'artworks_count' => (int) $gallery->getAttribute('artworks_count'),
+                'candidate_count' => $galleryCandidates->count(),
                 'workspace_url' => GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()]),
-                'candidates' => $galleryCandidates->take(5)->map(fn (Artwork $artwork): array => $this->candidateRow($artwork))->values()->all(),
+                'candidates' => $galleryCandidates->map(fn (Artwork $artwork): array => $this->candidateRow($artwork))->values()->all(),
             ];
         })->all();
 
