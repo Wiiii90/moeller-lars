@@ -22,5 +22,7 @@
 - Replaced active-tab-dependent expanded height with the tallest mounted Appearance panel as the intrinsic grid sizing owner; compact mode retains active-tab-only scroll. No duplicated measurement or remount.
 - Regional Formats now reuse Contact/Legal field geometry, with public date/number purpose help and German translations. Content width bounds widened from 640–1440 to 560–1920 pixels, and padding bounds from 24–180 to 12–320 pixels using existing viewport-safe shell and effective minimum-artwork-width logic. Browser behavior remains unverified; title/menu, persistence, picker and Legal issues remain under investigation.
 
+- Replaced Beside menu's shared Inside grid with a true external title rail on the Global background; stack decision now checks the real outside available width rather than Menu content width. This changes previously incorrect source-level outside-stack expectations; Testing must reconcile its tests. Browser acceptance pending.
+
 ## Next
-- Trace and correct the disappearing Preview/persistence and public title/menu composition; then review Popover, bounds, Regional Formats and Legal content.
+- Review the committed Beside/Inside layout source in a real browser and hand off the changed Beside geometry to Testing for expected JS test changes. Trace disappearing Preview/persistence, menu divider, picker and Legal guidance next.

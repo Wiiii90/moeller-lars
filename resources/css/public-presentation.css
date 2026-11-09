@@ -2114,6 +2114,26 @@ body.public-site--frame-plain #content {
     grid-template-columns: minmax(15rem, 32%) minmax(0, 1fr);
 }
 
+/* Beside menu is genuinely outside the centered Menu sheet, on the
+ * Global background. The single title retains its canonical DOM identity;
+ * only its unstacked placement differs from Inside menu. At narrow/content
+ * constrained widths the existing stacked Menu composition below takes over. */
+.site-header--name-outside:not(.is-title-stacked) .site-navigation {
+    display: block;
+}
+
+.site-header--name-outside:not(.is-title-stacked) .site-navigation > h1 {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc((100% - 100vw) / 2 + var(--public-gutter));
+    width: max(0px, calc((100vw - 100%) / 2 - var(--public-gutter)));
+    height: 100%;
+    min-height: 0;
+}
+
+
+
 .site-header:is(.site-header--name-inside, .site-header--name-outside) .site-navigation > h1 {
     z-index: 1;
     grid-column: 1;
@@ -2183,7 +2203,8 @@ body.public-site--frame-plain #content {
     .site-header--name-above.site-header--mobile-title-align-right .site-navigation > h1 { justify-content: flex-end; }
 }
 
-/* Desktop alignment in the reserved title area of either integrated mode. */
+/* Alignment uses a real reserved title rail: the Inside column or the
+ * detached Beside area. Stacked modes use responsive alignment below. */
 .site-header:is(.site-header--name-inside, .site-header--name-outside).site-header--title-align-left .site-navigation > h1 {
     justify-content: flex-start;
 }

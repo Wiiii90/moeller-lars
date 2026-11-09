@@ -16,10 +16,12 @@ export function headerShellGeometry(viewportWidth, shellMax, rem = 16) {
     return { gutter, menuWidth };
 }
 
-export function headerNeedsStack(mode, menuWidth, titleWidth, rem = 16) {
+export function headerNeedsStack(mode, availableWidth, titleWidth, rem = 16) {
+    const menuWidth = availableWidth;
     if (mode === 'outside') {
-        return titleWidth + INSIDE_TITLE_PADDING_REM * rem
-            + INSIDE_MIN_NAV_RAIL_REM * rem > menuWidth;
+        // The second argument is the width outside the centered Menu for
+        // Beside; for Inside it is the full Menu width.
+        return titleWidth + INSIDE_TITLE_PADDING_REM * rem > menuWidth;
     }
     if (mode === 'inside') {
         // The real title rail is minmax(15rem, 32%) in the unstacked menu.
@@ -62,9 +64,18 @@ export function initializePublicHeader() {
         const root = getComputedStyle(document.documentElement);
         const rem = Number.parseFloat(root.fontSize) || 16;
         const configuredShellMax = Number.parseFloat(root.getPropertyValue('--public-shell-max')) || 800;
-        const { menuWidth } = headerShellGeometry(window.innerWidth, configuredShellMax, rem);
+        const viewportWidth = document.documentElement.clientWidth;
+        const { gutter, menuWidth } = headerShellGeometry(viewportWidth, configuredShellMax, rem);
+        // Beside is an exterior title rail, not a part of the Menu's grid.
+        // Measure only stable viewport and configured shell geometry.
+        const outsideRailWidth = Math.max(0, (viewportWidth - menuWidth) / 2 - gutter);
         const titleWidth = intrinsicTitleWidth(title, measurementContext);
-        const stacked = headerNeedsStack(mode, menuWidth, titleWidth, rem);
+        const stacked = headerNeedsStack(
+            mode,
+            mode === 'outside' ? outsideRailWidth : menuWidth,
+            titleWidth,
+            rem,
+        );
         if (header.classList.contains('is-title-stacked') !== stacked) {
             header.classList.toggle('is-title-stacked', stacked);
         }
