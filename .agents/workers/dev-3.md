@@ -11,10 +11,10 @@
 
 ## Source
 - Registration commit: `e3df0bb7ed004f226050520508ab00b691defa7e`.
-- Source correction: pending guarded commit in this transaction.
+- Source correction: `cfd10b1e5d8f8ad829eeea166a67d6ede38037d5`, followed by the stage-rail geometry refinement.
 - Affected: Dashboard feed template, shared stage layout and Dashboard header spacing; own worker record.
 
 ## Verification and handoff
-- Source-structure checks and publish/readback through connected GitHub; no browser, application runtime or test execution in this worker session.
+- Verified the published reset condition, active lease and shared Stage/Clock source after commit. No browser, application runtime or test execution in this worker session.
 - Browser review: Dashboard Settings dropdown dark/light, top/bottom/side viewport boundaries and focus/Escape; Dashboard Clear with empty search/type and nondefault notification preference, active/reset cycles; Dashboard vs Activity clock alignment at desktop and minimal widths.
 - Tests are owned by Testing on its own branch. No deployment, branch integration, Continuous Integration or server action authorized.

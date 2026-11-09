@@ -241,7 +241,7 @@
     height: 100% !important;
     min-width: 0;
     min-height: 0;
-    grid-template-rows: calc(var(--admin-stage-header-height) + var(--admin-stage-header-gap)) minmax(0, 1fr) auto !important;
+    grid-template-rows: calc(var(--admin-stage-header-height) + var(--admin-stage-header-gap) - var(--admin-stage-divider-inset) - var(--admin-stage-orbit-gap)) minmax(0, 1fr) auto !important;
     gap: var(--admin-stage-orbit-gap);
     margin: 0 !important;
     padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
