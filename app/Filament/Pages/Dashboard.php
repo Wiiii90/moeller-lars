@@ -733,7 +733,7 @@ final class Dashboard extends Page
             submitLabel: 'Delete',
             danger: true,
             condition: fn (): bool => app(AdminDeletionPreferences::class)
-                ->requiresConfirmation(AdminDeletionPreferences::DASHBOARD),
+                ->requiresConfirmation(AdminDeletionPreferences::DASHBOARD, false),
         );
     }
 }

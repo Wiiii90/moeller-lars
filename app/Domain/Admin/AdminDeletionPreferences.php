@@ -24,7 +24,7 @@ final class AdminDeletionPreferences
         return is_array($preferences) && ($preferences[$scope] ?? false) === true;
     }
 
-    public function requiresConfirmation(string $scope, bool $hasCascadingEffects = false): bool
+    public function requiresConfirmation(string $scope, bool $hasCascadingEffects = true): bool
     {
         return $hasCascadingEffects || ! $this->withoutConfirmation($scope);
     }
