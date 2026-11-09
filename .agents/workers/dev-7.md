@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 13 (active)  
-**Status:** Assigned; source investigation pending.
+**Status:** Active; expanded Appearance height corrected in source (browser review pending).
 
 ## Assigned scope
 - Appearance / Global: review frame style combinations and their selection presentation; correct site icon Storage picker popover clipping.
@@ -18,5 +18,9 @@
 - No unsolicited Continuous Integration, deployment, release or other branch writes; preserve artist data.
 - Browser behavior unverified without actual review.
 
+## Current progress
+- Replaced active-tab-dependent expanded height with the tallest mounted Appearance panel as the intrinsic grid sizing owner; compact mode retains active-tab-only scroll. No duplicated measurement or remount.
+- Browser/layout behavior has not been executed; public appearance, persistence and regional/legal issues remain under investigation.
+
 ## Next
-- Trace Appearance entrypoint, state and rendering contracts and implement finite root-cause corrections.
+- Trace and correct the disappearing Preview/persistence and public title/menu composition; then review Popover, bounds, Regional Formats and Legal content.

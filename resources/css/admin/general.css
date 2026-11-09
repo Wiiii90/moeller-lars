@@ -127,9 +127,10 @@
     pointer-events: none;
 }
 
-/* Invisible absolute panels otherwise still enlarge scrollable overflow.
- * Exclude them from layout AND overflow; the active panel alone owns extent. */
-.general-appearance-stage__panel:not(.is-active) {
+/* In the compact stage, only the selected pane contributes to scrolling.
+ * Expanded mode keeps every pane in the same grid cell to size the stage by
+ * the tallest one, without duplicate measurement markup or pixel heights. */
+.general-appearance-stage:not(.admin-visual-stage--expanded) .general-appearance-stage__panel:not(.is-active) {
     display: none !important;
 }
 
@@ -151,8 +152,8 @@
     overflow: hidden;
 }
 
-/* The active panel alone determines height; the Stage minimum stays intact.
- * The Preview must never contribute its fitted device height to this track. */
+/* The tallest mounted Appearance panel determines expanded height.
+ * The Stage minimum stays intact and Preview never sizes this track. */
 .general-appearance-stage.admin-visual-stage--expanded {
     height: max-content;
     min-height: var(--admin-visual-stage-height);
@@ -176,7 +177,15 @@
     overflow: visible;
 }
 
-/* The Preview consumes the height chosen by the active panel but does
+/* In expanded mode all four panels participate in one intrinsic grid track,
+ * even when visually hidden. Alpine still keeps inactive panels inert. */
+.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__panel {
+    position: relative;
+    inset: auto;
+    align-self: start;
+}
+
+/* The Preview consumes the height chosen by the tallest panel but does
  * not feed its previously fitted size back into intrinsic track sizing. */
 .general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__preview {
     contain: size;
