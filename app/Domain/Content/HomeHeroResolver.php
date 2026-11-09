@@ -107,9 +107,6 @@ final class HomeHeroResolver
         $group = $this->artworks->configuredHomeCandidates(
             $configuration['group_size'],
             $configuration['newest_by'],
-            $configuration['candidate_filter'],
-            $configuration['candidate_filter'] === 'year' ? $configuration['specific_year'] : null,
-            $configuration['manual_include_ids'],
         );
 
         $weights = [];

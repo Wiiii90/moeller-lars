@@ -41,9 +41,6 @@ final class HomeHeroConfigurationService
      *     rotation_started_at:?string,
      *     newest_by:string,
      *     group_size:int,
-     *     candidate_filter:string,
-     *     specific_year:?int,
-     *     manual_include_ids:list<int>,
      *     show_details:bool,
      *     show_gallery_link:bool,
      *     show_navigation:bool,
@@ -83,7 +80,6 @@ final class HomeHeroConfigurationService
         }
 
         $newestBy = $this->enum($artwork['newest_by'] ?? null, ['artwork_date', 'added'], 'artwork_date');
-        $candidateFilter = ($artwork['pool_rule'] ?? null) === 'year' ? 'year' : 'all';
         $rotationInterval = $this->readRotationInterval($artwork['rotation_interval'] ?? null);
         $rotationStartedAt = $this->readRotationStartedAt($artwork['rotation_started_at'] ?? null);
 
@@ -96,9 +92,6 @@ final class HomeHeroConfigurationService
             'rotation_started_at' => $rotationStartedAt,
             'newest_by' => $newestBy,
             'group_size' => $this->boundedGroupSize($artwork['group_size'] ?? null),
-            'candidate_filter' => $candidateFilter,
-            'specific_year' => $this->nullableYear($artwork['pool_year'] ?? null),
-            'manual_include_ids' => $this->positiveIntList($artwork['manual_include_ids'] ?? []),
             'show_details' => (bool) ($artwork['show_details'] ?? true),
             'show_gallery_link' => (bool) ($artwork['show_gallery_link'] ?? false),
             'show_navigation' => (bool) ($artwork['show_navigation'] ?? false),
@@ -124,10 +117,7 @@ final class HomeHeroConfigurationService
             $groupSource = $this->requestedGroupSource($input, $current['group_source']);
             $displayStrategy = $this->requestedDisplayStrategy($input, $current['display_strategy']);
             $newestBy = $this->enum($input['newest_by'] ?? $current['newest_by'], ['artwork_date', 'added'], 'artwork_date');
-            $candidateFilter = $this->enum($input['candidate_filter'] ?? $current['candidate_filter'], ['all', 'year'], 'all');
             $groupSize = $this->validatedGroupSize($input['group_size'] ?? $current['group_size']);
-            $specificYear = $this->nullableYear($input['specific_year'] ?? $current['specific_year']);
-            $manualIncludeIds = $this->positiveIntList($input['manual_include_ids'] ?? $current['manual_include_ids']);
             $manualGroup = $current['manual_group'];
 
             if (array_key_exists('manual_group', $input)) {
@@ -142,12 +132,6 @@ final class HomeHeroConfigurationService
                 ]);
             }
 
-            if ($groupSource === 'automatic' && $candidateFilter === 'year' && $specificYear === null) {
-                throw ValidationException::withMessages([
-                    'specific_year' => 'Choose a year for the Specific Year candidate filter.',
-                ]);
-            }
-
             $rotationStartedAt = $current['rotation_started_at'];
             $showDetails = (bool) ($input['show_details'] ?? $current['show_details']);
             $showGalleryLink = (bool) ($input['show_gallery_link'] ?? $current['show_gallery_link']);
@@ -158,14 +142,8 @@ final class HomeHeroConfigurationService
             $intervalChanged = $rotationInterval !== $current['rotation_interval'];
             $sourceChanged = $groupSource !== $current['group_source'];
             $strategyChanged = $displayStrategy !== $current['display_strategy'];
-            $currentSpecificYear = $current['candidate_filter'] === 'year' ? $current['specific_year'] : null;
-            $requestedSpecificYear = $candidateFilter === 'year' ? $specificYear : null;
             $automaticGroupDefinitionChanged = $groupSource === 'automatic'
-                && ($groupSize !== $current['group_size']
-                    || $newestBy !== $current['newest_by']
-                    || $candidateFilter !== $current['candidate_filter']
-                    || $requestedSpecificYear !== $currentSpecificYear
-                    || ! $this->sameIdSet($manualIncludeIds, $current['manual_include_ids']));
+                && ($groupSize !== $current['group_size'] || $newestBy !== $current['newest_by']);
 
             if ($displayStrategy === 'sequential'
                 && ($rotationStartedAt === null
@@ -186,9 +164,6 @@ final class HomeHeroConfigurationService
                 && $rotationStartedAt === $current['rotation_started_at']
                 && $newestBy === $current['newest_by']
                 && $groupSize === $current['group_size']
-                && $candidateFilter === $current['candidate_filter']
-                && $requestedSpecificYear === $currentSpecificYear
-                && $this->sameIdSet($manualIncludeIds, $current['manual_include_ids'])
                 && $showDetails === $current['show_details']
                 && $showGalleryLink === $current['show_gallery_link']
                 && $showNavigation === $current['show_navigation']
@@ -222,9 +197,7 @@ final class HomeHeroConfigurationService
             $artwork['fixed_artwork_id'] = $manualGroup[0]['artwork_id'] ?? null;
             $artwork['newest_by'] = $newestBy;
             $artwork['group_size'] = $groupSize;
-            $artwork['pool_rule'] = $candidateFilter === 'year' ? 'year' : 'newest';
-            $artwork['pool_year'] = $candidateFilter === 'year' ? $specificYear : null;
-            $artwork['manual_include_ids'] = $manualIncludeIds;
+            unset($artwork['pool_rule'], $artwork['pool_year'], $artwork['manual_include_ids']);
 
             $root[HomeTemplate::Artwork->value] = $artwork;
             $fresh->setAttribute('template', HomeTemplate::Artwork->value);
@@ -428,17 +401,6 @@ final class HomeHeroConfigurationService
     private function manualGroupIds(array $group): array
     {
         return array_map(static fn (array $member): int => $member['artwork_id'], $group);
-    }
-
-    /** @param list<int> $left
-     * @param  list<int>  $right
-     */
-    private function sameIdSet(array $left, array $right): bool
-    {
-        sort($left);
-        sort($right);
-
-        return $left === $right;
     }
 
     /** @return list<array{artwork_id:int,weight:int}> */
@@ -648,28 +610,4 @@ final class HomeHeroConfigurationService
         return $id === false || $id <= 0 ? null : (int) $id;
     }
 
-    private function nullableYear(mixed $value): ?int
-    {
-        $year = $this->nullablePositiveInt($value);
-
-        return $year !== null && $year >= 1000 && $year <= 3000 ? $year : null;
-    }
-
-    /** @return list<int> */
-    private function positiveIntList(mixed $values): array
-    {
-        if (! is_array($values)) {
-            return [];
-        }
-
-        $ids = [];
-        foreach ($values as $value) {
-            $id = $this->nullablePositiveInt($value);
-            if ($id !== null) {
-                $ids[] = $id;
-            }
-        }
-
-        return array_values(array_unique($ids));
-    }
 }

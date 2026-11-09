@@ -9,7 +9,6 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 use LogicException;
 
 class PublicArtworkQuery
@@ -63,17 +62,13 @@ class PublicArtworkQuery
      * Artwork date ordering uses the Artwork's year, month and optional day; Added ordering uses Artwork created_at.
      * MediaAsset timestamps never participate in either ordering.
      *
-     * @param  list<int>  $manualIncludeIds
      * @return Collection<int, Artwork>
      */
     public function configuredHomeCandidates(
         int $groupSize = 12,
         string $newestBy = 'artwork_date',
-        string $filter = 'all',
-        ?int $year = null,
-        array $manualIncludeIds = [],
     ): Collection {
-        $query = $this->configuredHomeCandidateQuery($filter, $year, $manualIncludeIds);
+        $query = $this->homeQuery();
         $this->applyConfiguredHomeOrdering($query, $newestBy);
 
         /** @var Collection<int, Artwork> $artworks */
@@ -152,107 +147,6 @@ class PublicArtworkQuery
         return $artworks;
     }
 
-    /**
-     * The configured Hero candidate pool always starts from the canonical Home eligibility query.
-     * `newest` includes the newest eligible year, `year` includes the chosen eligible year,
-     * and manual IDs may add other Home-eligible artworks.
-     *
-     * @param  list<int>  $manualIncludeIds
-     * @return Collection<int, Artwork>
-     */
-    public function homePoolCandidates(
-        string $rule = 'newest',
-        ?int $year = null,
-        array $manualIncludeIds = [],
-        int $limit = 12,
-    ): Collection {
-        /** @var Collection<int, Artwork> $artworks */
-        $artworks = $this->homePoolQuery($rule, $year, $manualIncludeIds)
-            ->orderByRaw(GalleryPresentation::DATE_ORDER_SQL)
-            ->limit(max(1, min($limit, 50)))
-            ->get();
-
-        return $artworks;
-    }
-
-    /** @param list<int> $manualIncludeIds */
-    public function homePoolCandidateCount(
-        string $rule = 'newest',
-        ?int $year = null,
-        array $manualIncludeIds = [],
-    ): int {
-        return $this->homePoolQuery($rule, $year, $manualIncludeIds)
-            ->withoutEagerLoads()
-            ->count();
-    }
-
-    /** @param list<int> $manualIncludeIds */
-    public function randomForHomePool(
-        string $rule = 'newest',
-        ?int $year = null,
-        array $manualIncludeIds = [],
-    ): ?Artwork {
-        $query = $this->homePoolQuery($rule, $year, $manualIncludeIds);
-        $count = (clone $query)->withoutEagerLoads()->count();
-        if ($count < 1) {
-            return null;
-        }
-
-        return $query
-            ->orderBy('id')
-            ->offset(random_int(0, $count - 1))
-            ->first();
-    }
-
-    /**
-     * Candidate previews for visible Gallery rows are selected from the same configured pool
-     * in one bounded partitioned query instead of one query per Gallery.
-     *
-     * @param  list<int>  $galleryIds
-     * @param  list<int>  $manualIncludeIds
-     * @return Collection<int, Artwork>
-     */
-    public function homePoolCandidatesForGalleries(
-        array $galleryIds,
-        string $rule = 'newest',
-        ?int $year = null,
-        array $manualIncludeIds = [],
-        int $perGallery = 5,
-    ): Collection {
-        $galleryIds = $this->normalizedIds($galleryIds);
-        $perGallery = max(1, min($perGallery, 5));
-        if ($galleryIds === []) {
-            return new Collection;
-        }
-
-        $ranked = $this->homePoolQuery($rule, $year, $manualIncludeIds)
-            ->withoutEagerLoads()
-            ->whereIn('artwork_category_id', $galleryIds)
-            ->select(['artworks.id', 'artworks.artwork_category_id'])
-            ->selectRaw(
-                'ROW_NUMBER() OVER (PARTITION BY artwork_category_id ORDER BY '.GalleryPresentation::DATE_ORDER_SQL.') AS home_candidate_rank',
-            );
-
-        $ids = DB::query()
-            ->fromSub($ranked, 'ranked_home_candidates')
-            ->where('home_candidate_rank', '<=', $perGallery)
-            ->pluck('id')
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->all();
-
-        if ($ids === []) {
-            return new Collection;
-        }
-
-        /** @var Collection<int, Artwork> $artworks */
-        $artworks = $this->homeQuery()
-            ->whereIn('id', $ids)
-            ->orderByRaw(GalleryPresentation::DATE_ORDER_SQL)
-            ->get();
-
-        return $artworks;
-    }
-
     /** @return array{eligible:int,newest_year:?int,newest_year_candidates:int} */
     public function homeCandidateStatistics(): array
     {
@@ -291,32 +185,6 @@ class PublicArtworkQuery
             ->first();
     }
 
-    /**
-     * @param  list<int>  $manualIncludeIds
-     * @return Builder<Artwork>
-     */
-    private function configuredHomeCandidateQuery(string $filter, ?int $year, array $manualIncludeIds): Builder
-    {
-        $query = $this->homeQuery();
-        if ($filter !== 'year') {
-            return $query;
-        }
-
-        $manualIncludeIds = $this->normalizedIds($manualIncludeIds);
-
-        return $query->where(function (Builder $candidates) use ($year, $manualIncludeIds): void {
-            if ($year !== null) {
-                $candidates->where('year', $year);
-            } else {
-                $candidates->whereRaw('1 = 0');
-            }
-
-            if ($manualIncludeIds !== []) {
-                $candidates->orWhereIn('id', $manualIncludeIds);
-            }
-        });
-    }
-
     /** @param Builder<Artwork> $query */
     private function applyConfiguredHomeOrdering(Builder $query, string $newestBy): void
     {
@@ -329,44 +197,6 @@ class PublicArtworkQuery
         }
 
         GalleryPresentation::orderArtworksByDate($query);
-    }
-
-    /**
-     * @param  list<int>  $manualIncludeIds
-     * @return Builder<Artwork>
-     */
-    private function homePoolQuery(string $rule, ?int $year, array $manualIncludeIds): Builder
-    {
-        $manualIncludeIds = $this->normalizedIds($manualIncludeIds);
-        $query = $this->homeQuery();
-
-        if ($rule === 'year') {
-            return $query->where(function (Builder $candidates) use ($year, $manualIncludeIds): void {
-                if ($year !== null) {
-                    $candidates->where('year', $year);
-                } else {
-                    $candidates->whereRaw('1 = 0');
-                }
-
-                if ($manualIncludeIds !== []) {
-                    $candidates->orWhereIn('id', $manualIncludeIds);
-                }
-            });
-        }
-
-        $latestYear = (clone $query)->withoutEagerLoads()->max('year');
-
-        return $query->where(function (Builder $candidates) use ($latestYear, $manualIncludeIds): void {
-            if ($latestYear !== null) {
-                $candidates->where('year', $latestYear);
-            } else {
-                $candidates->whereRaw('1 = 0');
-            }
-
-            if ($manualIncludeIds !== []) {
-                $candidates->orWhereIn('id', $manualIncludeIds);
-            }
-        });
     }
 
     /** @return Builder<Artwork> */

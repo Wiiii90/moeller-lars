@@ -3,7 +3,6 @@
 namespace App\Filament\Support;
 
 use App\Domain\Admin\AdminNotifier;
-use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomeHeroResolver;
 use App\Domain\Content\HomePresentationEditorialService;
@@ -14,7 +13,6 @@ use App\Domain\Content\SitePageHeading;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Support\Controls\AdminControl;
 use App\Models\Artwork;
-use App\Models\ArtworkCategory;
 use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
 use Closure;
@@ -33,7 +31,6 @@ final class HomeSettingsDialog
         private readonly HomePresentationEditorialService $editorial,
         private readonly HomeHeroConfigurationService $heroConfiguration,
         private readonly HomeHeroResolver $heroResolver,
-        private readonly PublicArtworkQuery $artworks,
         private readonly HomeRoutingDialog $routingDialog,
     ) {}
 
@@ -58,9 +55,6 @@ final class HomeSettingsDialog
             'display_strategy' => $hero['display_strategy'],
             'newest_by' => $hero['newest_by'],
             'group_size' => $hero['group_size'],
-            'pool_rule' => $hero['candidate_filter'],
-            'pool_year' => $hero['specific_year'],
-            'manual_include_ids' => $hero['manual_include_ids'],
             'rotation_interval_count' => $hero['rotation_interval']['count'],
             'rotation_interval_unit' => $hero['rotation_interval']['unit'],
             'public_site_gate' => (bool) ($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? false),
@@ -140,22 +134,6 @@ final class HomeSettingsDialog
                         ->required()
                         ->live()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                    Select::make('pool_rule')
-                        ->label('Candidate filter')
-                        ->options(['all' => __('All eligible'), 'year' => __('Specific Year')])
-                        ->required()
-                        ->live()
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
-                    TextInput::make('pool_year')
-                        ->label('Year')
-                        ->numeric()
-                        ->minValue(1000)
-                        ->maxValue(3000)
-                        ->required(fn (callable $get): bool => $get('pool_rule') === 'year')
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic' && $get('pool_rule') === 'year'),
-                    $this->heroArtworkSelect('manual_include_ids', 'Additional includes', multiple: true)
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic')
-                        ->columnSpanFull(),
                     TextInput::make('rotation_interval_count')
                         ->label(self::helpLabel(
                             'Rotation interval',
@@ -219,9 +197,6 @@ final class HomeSettingsDialog
                 'display_strategy' => $data['display_strategy'] ?? $current['display_strategy'],
                 'newest_by' => $data['newest_by'] ?? $current['newest_by'],
                 'group_size' => $data['group_size'] ?? $current['group_size'],
-                'candidate_filter' => $data['pool_rule'] ?? $current['candidate_filter'],
-                'specific_year' => $data['pool_year'] ?? $current['specific_year'],
-                'manual_include_ids' => $data['manual_include_ids'] ?? $current['manual_include_ids'],
                 'rotation_interval_count' => $data['rotation_interval_count'] ?? $current['rotation_interval']['count'],
                 'rotation_interval_unit' => $data['rotation_interval_unit'] ?? $current['rotation_interval']['unit'],
             ];
@@ -330,72 +305,4 @@ final class HomeSettingsDialog
         return $section;
     }
 
-    private function heroArtworkSelect(string $name, string $label, bool $multiple = false): Select
-    {
-        $select = Select::make($name)
-            ->label($label)
-            ->searchable()
-            ->getSearchResultsUsing(fn (string $search): array => $this->heroArtworkOptions($search))
-            ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
-            ->searchPrompt(__('Search eligible Hero Artworks'))
-            ->noSearchResultsMessage(__('No matching eligible artworks'));
-
-        if ($multiple) {
-            $select
-                ->multiple()
-                ->placeholder(__('No additional artworks'))
-                ->getOptionLabelsUsing(fn (array $values): array => $this->heroArtworkOptionLabels($values));
-        } else {
-            $select->getOptionLabelUsing(fn (mixed $value): ?string => $this->heroArtworkOptionLabel($value));
-        }
-
-        return $select;
-    }
-
-    /** @return array<int, string> */
-    private function heroArtworkOptions(string $search): array
-    {
-        return $this->artworks->searchHomeCandidates($search, 30)
-            ->mapWithKeys(fn (Artwork $artwork): array => [(int) $artwork->getKey() => $this->heroArtworkLabel($artwork)])
-            ->all();
-    }
-
-    /** @param list<mixed> $values
-     * @return array<int, string>
-     */
-    private function heroArtworkOptionLabels(array $values): array
-    {
-        $ids = collect($values)
-            ->map(static fn ($value): int => (int) $value)
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-
-        return $this->artworks->homeCandidatesByIds($ids)
-            ->mapWithKeys(fn (Artwork $artwork): array => [(int) $artwork->getKey() => $this->heroArtworkLabel($artwork)])
-            ->all();
-    }
-
-    private function heroArtworkOptionLabel(mixed $value): ?string
-    {
-        $id = filter_var($value, FILTER_VALIDATE_INT);
-        if ($id === false || $id <= 0) {
-            return null;
-        }
-
-        $artwork = $this->artworks->homeCandidateById((int) $id);
-
-        return $artwork instanceof Artwork ? $this->heroArtworkLabel($artwork) : null;
-    }
-
-    private function heroArtworkLabel(Artwork $artwork): string
-    {
-        $artwork->loadMissing('category');
-        $gallery = $artwork->getRelationValue('category');
-        $galleryName = $gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : 'Gallery';
-        $year = $artwork->getAttribute('year');
-
-        return (string) $artwork->getAttribute('title').' · '.$galleryName.($year === null ? '' : ' · '.$year);
-    }
 }

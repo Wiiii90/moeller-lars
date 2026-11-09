@@ -28,9 +28,6 @@ final class HomePresentationEditorialService
                 'enable_viewer' => true,
                 'hero_mode' => 'automatic',
                 'fixed_artwork_id' => null,
-                'pool_rule' => 'newest',
-                'pool_year' => null,
-                'manual_include_ids' => [],
             ],
             HomeTemplate::UnderConstruction->value => [
                 'public_site_gate' => false,
@@ -70,6 +67,7 @@ final class HomePresentationEditorialService
         $custom = is_array($stored[HomeTemplate::Custom->value] ?? null)
             ? $stored[HomeTemplate::Custom->value]
             : [];
+        unset($artwork['pool_rule'], $artwork['pool_year'], $artwork['manual_include_ids']);
 
         return [
             HomeTemplate::Artwork->value => array_replace($defaults[HomeTemplate::Artwork->value], $artwork),
@@ -100,18 +98,6 @@ final class HomePresentationEditorialService
             }
             if (array_key_exists('fixed_artwork_id', $input)) {
                 $configuration[HomeTemplate::Artwork->value]['fixed_artwork_id'] = $this->nullablePositiveInt($input['fixed_artwork_id']);
-                $artworkSettingsChanged = true;
-            }
-            if (array_key_exists('pool_rule', $input) && $input['pool_rule'] !== null) {
-                $configuration[HomeTemplate::Artwork->value]['pool_rule'] = (string) $input['pool_rule'];
-                $artworkSettingsChanged = true;
-            }
-            if (array_key_exists('pool_year', $input)) {
-                $configuration[HomeTemplate::Artwork->value]['pool_year'] = $this->nullablePositiveInt($input['pool_year']);
-                $artworkSettingsChanged = true;
-            }
-            if (array_key_exists('manual_include_ids', $input)) {
-                $configuration[HomeTemplate::Artwork->value]['manual_include_ids'] = $this->positiveIntList($input['manual_include_ids']);
                 $artworkSettingsChanged = true;
             }
             if (in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)
@@ -594,21 +580,12 @@ final class HomePresentationEditorialService
         $artwork = $configuration[HomeTemplate::Artwork->value] ?? [];
         $mode = $artwork['hero_mode'] ?? null;
         $fixedId = $artwork['fixed_artwork_id'] ?? null;
-        $poolRule = $artwork['pool_rule'] ?? null;
-        $poolYear = $artwork['pool_year'] ?? null;
-        $manualIds = $artwork['manual_include_ids'] ?? null;
 
         if (! is_bool($artwork['show_details'] ?? null)
             || ! is_bool($artwork['show_gallery_link'] ?? null)
             || ! is_string($mode)
             || ! in_array($mode, ['automatic', 'fixed', 'random'], true)
             || ($fixedId !== null && (! is_int($fixedId) || $fixedId <= 0))
-            || ! is_string($poolRule)
-            || ! in_array($poolRule, ['newest', 'year'], true)
-            || ($poolYear !== null && (! is_int($poolYear) || $poolYear < 1000 || $poolYear > 3000))
-            || ! is_array($manualIds)
-            || ! array_is_list($manualIds)
-            || ! $this->isPositiveIntList($manualIds)
             || ! is_bool($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? null)
             || ! is_bool($configuration[HomeTemplate::UnderConstruction->value]['image_viewer_enabled'] ?? null)
             || ! is_bool($configuration[HomeTemplate::Custom->value]['image_viewer_enabled'] ?? null)) {
@@ -623,12 +600,6 @@ final class HomePresentationEditorialService
             ]);
         }
 
-        if ($poolRule === 'year' && $poolYear === null) {
-            throw ValidationException::withMessages([
-                'pool_year' => 'Choose a year for the specific-year candidate pool.',
-            ]);
-        }
-
         $this->validateComponents($configuration[HomeTemplate::UnderConstruction->value]['components'] ?? null);
         $this->validateComponents($configuration[HomeTemplate::Custom->value]['components'] ?? null);
     }
@@ -636,35 +607,15 @@ final class HomePresentationEditorialService
     /** @param array<string, mixed> $artwork */
     private function validateArtworkReferences(array $artwork): void
     {
-        $manualIds = $this->positiveIntList($artwork['manual_include_ids'] ?? []);
-        $ids = $manualIds;
         $fixedId = $artwork['fixed_artwork_id'] ?? null;
-        if (is_int($fixedId) && $fixedId > 0) {
-            $ids[] = $fixedId;
-        }
-        $ids = array_values(array_unique($ids));
-
-        if ($ids !== []) {
-            $validIds = $this->artworks->homeCandidatesByIds($ids)
-                ->pluck('id')
-                ->map(static fn (mixed $id): int => (int) $id)
-                ->all();
-            sort($ids);
-            sort($validIds);
-
-            if ($ids !== $validIds) {
-                throw ValidationException::withMessages([
-                    'hero_artwork' => 'Hero artwork choices must be eligible published artworks from enabled Home source Galleries.',
-                ]);
-            }
+        if (is_int($fixedId) && $fixedId > 0 && ! $this->artworks->homeCandidateById($fixedId)) {
+            throw ValidationException::withMessages([
+                'hero_artwork' => 'Choose an eligible published artwork from an enabled Home source Gallery.',
+            ]);
         }
 
         if (($artwork['hero_mode'] ?? null) === 'random') {
-            $poolCount = $this->artworks->homePoolCandidateCount(
-                (string) ($artwork['pool_rule'] ?? 'newest'),
-                is_int($artwork['pool_year'] ?? null) ? $artwork['pool_year'] : null,
-                $manualIds,
-            );
+            $poolCount = $this->artworks->homeCandidateCount();
 
             if ($poolCount < 1) {
                 throw ValidationException::withMessages([
@@ -741,36 +692,6 @@ final class HomePresentationEditorialService
         $id = filter_var($value, FILTER_VALIDATE_INT);
 
         return $id === false || $id <= 0 ? null : (int) $id;
-    }
-
-    /** @return list<int> */
-    private function positiveIntList(mixed $values): array
-    {
-        if (! is_array($values)) {
-            return [];
-        }
-
-        $ids = [];
-        foreach ($values as $value) {
-            $id = $this->nullablePositiveInt($value);
-            if ($id !== null) {
-                $ids[] = $id;
-            }
-        }
-
-        return array_values(array_unique($ids));
-    }
-
-    /** @param list<mixed> $values */
-    private function isPositiveIntList(array $values): bool
-    {
-        foreach ($values as $value) {
-            if (! is_int($value) || $value <= 0) {
-                return false;
-            }
-        }
-
-        return count($values) === count(array_unique($values));
     }
 
     private function locked(HomePresentationSetting $settings): HomePresentationSetting

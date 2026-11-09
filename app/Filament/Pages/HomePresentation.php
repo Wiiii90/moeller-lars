@@ -105,13 +105,6 @@ final class HomePresentation extends Page
 
     public int $heroGroupSize = HomeHeroConfigurationService::DEFAULT_GROUP_SIZE;
 
-    public string $heroPoolRule = 'all';
-
-    public ?int $heroPoolYear = null;
-
-    /** @var list<int> */
-    public array $manualHeroCandidateIds = [];
-
     /** @var list<array{artwork_id:int,weight:int}> */
     public array $manualHeroGroup = [];
 
@@ -1060,9 +1053,6 @@ final class HomePresentation extends Page
         $this->heroDisplayStrategy = $heroConfiguration['display_strategy'];
         $this->heroNewestBy = $heroConfiguration['newest_by'];
         $this->heroGroupSize = $heroConfiguration['group_size'];
-        $this->heroPoolRule = $heroConfiguration['candidate_filter'];
-        $this->heroPoolYear = $heroConfiguration['specific_year'];
-        $this->manualHeroCandidateIds = $heroConfiguration['manual_include_ids'];
         $this->manualHeroGroup = $heroConfiguration['manual_group'];
         $this->rotationIntervalCount = $heroConfiguration['rotation_interval']['count'];
         $this->rotationIntervalUnit = $heroConfiguration['rotation_interval']['unit'];
