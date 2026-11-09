@@ -1931,10 +1931,17 @@ html:has(.artwork-viewer[open]) {
     border-bottom: 0;
 }
 
+/* A full-width line must remain visible across the entire viewport,
+ * followed by a real gap in the sticky header (not buried in the next
+ * connected paper sheet). The gap and stroke share one ownership point. */
+.site-header--divider-full {
+    padding-bottom: var(--public-shell-gap);
+}
+
 .site-header--divider-full::after {
     position: absolute;
     right: 0;
-    bottom: 0;
+    bottom: var(--public-shell-gap);
     left: 0;
     height: 1px;
     content: "";

@@ -90,7 +90,7 @@
             $paperCompatible = ! ($publicHeaderPosition === 'below' && $publicHeaderVisible)
                 && ! $publicPageTransparent
                 && (! $fittedArtwork || ($artworkWideMenu && in_array($effectiveHeaderDivider, ['fine', 'menu', 'full'], true)));
-            $paperConnected = $paperCompatible && in_array($effectiveHeaderDivider, ['fine', 'menu', 'full'], true);
+            $paperConnected = $paperCompatible && in_array($effectiveHeaderDivider, ['fine', 'menu'], true);
         @endphp
         <div class="public-paper-frame @if ($paperCompatible) public-paper-frame--compatible @endif @if ($paperConnected) public-paper-frame--connected @endif">
             <div class="public-paper-decoration" aria-hidden="true"></div>
