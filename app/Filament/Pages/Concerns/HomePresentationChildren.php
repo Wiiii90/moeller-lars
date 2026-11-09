@@ -325,8 +325,12 @@ trait HomePresentationChildren
                         ]);
                     }
                 },
+                onContactChange: fn (string $key, mixed $value) => $this->persistHomeEditorField(
+                    $arguments, (int) $arguments['child'], $key, $value,
+                ),
             ))
             ->modalHeading(__('Edit component'))
+            ->extraModalFooterActions(fn (array $arguments): array => $this->homeImageChildHeaderActions($arguments, $actionName))
             ->action(function (array $data, array $arguments): void {
                 [$childIndex, $child] = $this->homeImageChildTarget($arguments);
                 $type = (string) $child['type'];
@@ -362,6 +366,55 @@ trait HomePresentationChildren
         return $committed
             ? AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large)
             : AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /**
+     * Match the canonical Custom Page nested editor toolbar. All commands
+     * return to the same child in its new position, never a stale index.
+     *
+     * @param array<string,mixed> $arguments
+     * @return list<Action>
+     */
+    private function homeImageChildHeaderActions(array $arguments, string $actionName): array
+    {
+        [$childIndex, $child] = $this->homeImageChildTarget($arguments);
+        $imageIndex = (int) $arguments['index'];
+        $type = (string) $child['type'];
+        $image = $this->componentFromArguments(['index' => $imageIndex, 'type' => 'image']);
+        $siblings = $image['children'] ?? [];
+        $args = ['index' => $imageIndex, 'type' => 'image', 'child' => $childIndex, 'child_type' => $type];
+        $actions = [];
+
+        foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
+            $canMove = $this->componentReorderEnabled()
+                && ($direction === 'up' ? $childIndex > 0 : $childIndex < count($siblings) - 1);
+            $actions[] = AdminDialog::headerAction(
+                'homeImageChildMove'.ucfirst($direction),
+                $role,
+                function () use ($args, $imageIndex, $childIndex, $type, $direction, $actionName): void {
+                    $this->moveHomeImageChild($imageIndex, $childIndex, $type, $direction);
+                    $this->replaceMountedAction($actionName, [
+                        ...$args, 'child' => $childIndex + ($direction === 'up' ? -1 : 1),
+                    ]);
+                },
+            )->disabled(! $canMove);
+        }
+
+        $published = CustomPageSetting::componentPublished($child);
+        $actions[] = AdminDialog::headerAction(
+            'homeImageChildPublication',
+            $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
+            function () use ($args, $imageIndex, $childIndex, $type, $published, $actionName): void {
+                $this->publishHomeImageChild($imageIndex, $childIndex, $type, ! $published);
+                $this->replaceMountedAction($actionName, $args);
+            },
+        );
+        $actions[] = AdminDialog::headerAction(
+            'homeImageChildDelete', AdminRowAction::Delete,
+            fn () => $this->replaceMountedAction('deleteHomeImageChild', $args),
+        )->disabled(! CustomPageSetting::canDeleteComponent($child));
+
+        return $actions;
     }
 
     public function changeHomeImageChildTypeAction(): Action

@@ -283,13 +283,15 @@ class PublicMedia
             return false;
         }
 
+        // All Home templates share the same publication boundary. An
+        // unpublished Home never authorizes a public media URL; authenticated
+        // Preview delivery uses its separately authorized routes instead.
+        if (! $settings->siteSection()->where('state', 'published')->exists()) {
+            return false;
+        }
+
         $template = $settings->template();
         if ($template === HomeTemplate::Artwork) {
-            // An unpublished Home does not authorize a public original URL.
-            // Authenticated Preview media uses its own admin-owned route.
-            if (! $settings->siteSection()->where('state', 'published')->exists()) {
-                return false;
-            }
             if (! in_array($mediaAssetId, $this->referenceQuery->homeHeroMediaIds($settings), true)) {
                 return false;
             }

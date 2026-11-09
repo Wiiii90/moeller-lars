@@ -508,6 +508,8 @@ final class HomePresentation extends Page
                         'targetKind' => $targetType,
                     ]);
                 },
+                onImageChange: fn (mixed $state) => $this->persistHomeEditorField($arguments, null, 'media_asset_id', $state),
+                onContactChange: fn (string $key, mixed $value) => $this->persistHomeEditorField($arguments, null, $key, $value),
             ))
             ->modalHeading(__('Edit component'))
             ->extraModalFooterActions(fn (array $arguments): array => $this->homeEditHeaderActions($arguments, $actionName))
@@ -573,6 +575,105 @@ final class HomePresentation extends Page
         return $committed
             ? AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large)
             : AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /**
+     * Persist individual Image/Contact edits through Home's canonical mutation.
+     * Rebuild sibling Contact values from the latest committed block, as the
+     * existing Custom Page editor does, rather than trusting stale modal data.
+     *
+     * @param array<string,mixed> $arguments
+     */
+    private function persistHomeEditorField(array $arguments, ?int $childIndex, string $key, mixed $value): void
+    {
+        $root = $this->componentFromArguments([
+            'index' => $arguments['index'] ?? null,
+            'type' => $childIndex === null ? ($arguments['type'] ?? null) : 'image',
+        ]);
+        $existing = $childIndex === null ? $root : ($root['children'][$childIndex] ?? null);
+        if (! is_array($existing)) {
+            throw ValidationException::withMessages(['component' => 'This Home component changed. Reopen the editor.']);
+        }
+        $type = (string) ($existing['type'] ?? '');
+
+        if ($type === 'image' && $childIndex === null && $key === 'media_asset_id') {
+            $id = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if ($id === false || $id === null) {
+                throw ValidationException::withMessages(['media_asset_id' => 'Choose an image or video from Storage.']);
+            }
+            $payload = [...$existing, 'media_asset_id' => (int) $id];
+        } elseif ($type === 'contact') {
+            $data = $this->componentEditorData($existing);
+            if (str_starts_with($key, 'contact_social_selected.')) {
+                $platform = substr($key, strlen('contact_social_selected.'));
+                if (! array_key_exists($platform, $this->availableSocialPlatforms)) {
+                    return;
+                }
+                $data['contact_social_selected'][$platform] = (bool) $value;
+            } elseif (in_array($key, [
+                'title', 'contact_email_enabled', 'contact_social_enabled',
+                'contact_form_enabled', 'contact_form_state', 'contact_status_text',
+            ], true)) {
+                $data[$key] = $value;
+            } else {
+                throw new \InvalidArgumentException('Unknown Home Contact field.');
+            }
+
+            if (in_array($key, ['contact_form_state', 'contact_status_text'], true)) {
+                $form = $this->getMountedActionSchema()->getRawState();
+                $state = $key === 'contact_form_state'
+                    ? $value : ($form['contact_form_state'] ?? $data['contact_form_state']);
+                $status = $key === 'contact_status_text'
+                    ? $value : ($form['contact_status_text'] ?? $data['contact_status_text']);
+                $data['contact_form_state'] = $state;
+                $data['contact_status_text'] = $status;
+                if ($state === 'under_construction' && blank($status)) {
+                    return;
+                }
+            }
+            if ($childIndex !== null) {
+                $data['contact_form_enabled'] = false;
+            }
+            $payload = $this->contactComponentPayload(
+                $data, CustomPageSetting::componentPublished($existing), $existing,
+            );
+        } else {
+            return;
+        }
+
+        $index = (int) $arguments['index'];
+        try {
+            $editor = app(HomePresentationEditorialService::class);
+            $changed = $childIndex === null
+                ? $editor->updateComponent(
+                    $this->settings(), $this->componentTemplate(), $index, $type,
+                    $payload, $this->editingHomeComponentOriginal,
+                )
+                : $editor->mutateChild(
+                    $this->settings(), $this->componentTemplate(), $index, 'image',
+                    'update', $childIndex, $payload,
+                    expectedChildType: $type, expectedChild: $this->editingHomeComponentOriginal,
+                );
+        } catch (ValidationException $exception) {
+            $path = $this->getMountedActionSchema()->getStatePath();
+            $errors = [];
+            foreach ($exception->errors() as $field => $messages) {
+                $errors[$path.'.'.($field === 'component' ? 'type' : $field)] = $messages;
+            }
+            throw ValidationException::withMessages($errors);
+        }
+
+        $freshRoot = $this->settings()->components($this->componentTemplate())[$index] ?? null;
+        $this->editingHomeComponentOriginal = $childIndex === null
+            ? $freshRoot
+            : (is_array($freshRoot) ? ($freshRoot['children'][$childIndex] ?? null) : null);
+        if (! $changed) {
+            return;
+        }
+
+        $this->reloadWorkspace();
+        $this->forceRender();
+        app(AdminNotifier::class)->notification(title: 'Home component saved', status: 'success');
     }
 
     /** @param array<string,mixed> $arguments
