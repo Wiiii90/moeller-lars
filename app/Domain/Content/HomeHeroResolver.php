@@ -4,10 +4,11 @@ namespace App\Domain\Content;
 
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Models\Artwork;
+use App\Models\MediaAsset;
 use App\Models\HomePresentationSetting;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 final class HomeHeroResolver
@@ -20,9 +21,9 @@ final class HomeHeroResolver
     /**
      * @return array{
      *     configuration:array<string,mixed>,
-     *     group:EloquentCollection<int,Artwork>,
-     *     current:?Artwork,
-     *     sequence:EloquentCollection<int,Artwork>,
+     *     group:Collection<int,HomeHeroCandidate>,
+     *     current:?HomeHeroCandidate,
+     *     sequence:Collection<int,HomeHeroCandidate>,
      *     weights:array<int,int>,
      *     rotation_slot:int,
      *     next_rotation_at:?CarbonImmutable
@@ -66,69 +67,109 @@ final class HomeHeroResolver
     }
 
     /** @param array<string,mixed> $configuration
-     * @return array{0:EloquentCollection<int,Artwork>,1:array<int,int>}
+     * @return array{0:Collection<int,HomeHeroCandidate>,1:array<string,int>}
      */
     private function manualGroup(array $configuration): array
     {
-        $stored = $configuration['manual_group'];
-        $ids = array_map(static fn (array $member): int => $member['artwork_id'], $stored);
-        $eligible = $this->artworks->homeCandidatesByIds($ids)
-            ->keyBy(fn (Artwork $artwork): int => (int) $artwork->getKey());
-
-        $effectiveMembers = [];
-        $group = new EloquentCollection;
-        foreach ($stored as $member) {
-            $artwork = $eligible->get($member['artwork_id']);
-            if (! $artwork instanceof Artwork) {
-                continue;
-            }
-            $group->push($artwork);
-            $effectiveMembers[] = $member;
-        }
-
-        if ($effectiveMembers === []) {
-            return [$group, []];
-        }
-
-        $effectiveMembers = $this->configuration->normalizeManualGroup($effectiveMembers);
+        $members = $configuration['manual_group'];
+        $eligible = $this->selectedCandidates($members);
+        $effective = array_values(array_filter(
+            $members,
+            static fn (array $member): bool => $eligible->contains(
+                static fn (HomeHeroCandidate $candidate): bool => $candidate->key() === HomeHeroConfigurationService::memberKey($member),
+            ),
+        ));
         $weights = [];
-        foreach ($effectiveMembers as $member) {
-            $weights[$member['artwork_id']] = $member['weight'];
+        if ($effective !== []) {
+            foreach ($this->configuration->normalizeManualGroup($effective) as $member) {
+                $weights[HomeHeroConfigurationService::memberKey($member)] = $member['weight'];
+            }
         }
 
-        return [$group, $weights];
+        return [$eligible, $weights];
     }
 
     /** @param array<string,mixed> $configuration
-     * @return array{0:EloquentCollection<int,Artwork>,1:array<int,int>}
+     * @return array{0:Collection<int,HomeHeroCandidate>,1:array<string,int>}
      */
     private function automaticGroup(array $configuration): array
     {
         $group = $this->artworks->configuredHomeCandidates(
             $configuration['group_size'],
             $configuration['newest_by'],
-        );
+        )->map(static fn (Artwork $artwork): HomeHeroCandidate => HomeHeroCandidate::fromArtwork($artwork))
+            ->values();
+
+        // Explicit Storage selections are available in either source mode.
+        // Stored Artwork members are meaningful only when Manual is selected.
+        $mediaMembers = array_values(array_filter(
+            $configuration['manual_group'],
+            static fn (array $member): bool => isset($member['media_asset_id']),
+        ));
+        foreach ($this->selectedCandidates($mediaMembers) as $candidate) {
+            $group->push($candidate);
+        }
 
         $weights = [];
         if ($group->isNotEmpty()) {
             $base = intdiv(HomeHeroConfigurationService::WEIGHT_TOTAL, $group->count());
             $remainder = HomeHeroConfigurationService::WEIGHT_TOTAL - ($base * $group->count());
-            foreach ($group->values() as $index => $artwork) {
-                $weights[(int) $artwork->getKey()] = $base + ($index < $remainder ? 1 : 0);
+            foreach ($group->values() as $index => $candidate) {
+                $weights[$candidate->key()] = $base + ($index < $remainder ? 1 : 0);
             }
         }
 
         return [$group, $weights];
     }
 
+    /**
+     * Bulk-load selected identities. Only canonical Artwork eligibility and
+     * available Storage media with ALT/preview enter the public group.
+     *
+     * @param list<array<string,int>> $members
+     * @return Collection<int,HomeHeroCandidate>
+     */
+    private function selectedCandidates(array $members): Collection
+    {
+        $artworkIds = [];
+        $mediaIds = [];
+        foreach ($members as $member) {
+            if (isset($member['artwork_id'])) {
+                $artworkIds[] = $member['artwork_id'];
+            } elseif (isset($member['media_asset_id'])) {
+                $mediaIds[] = $member['media_asset_id'];
+            }
+        }
+
+        $artworks = $this->artworks->homeCandidatesByIds($artworkIds)->keyBy('id');
+        $media = MediaAsset::query()->whereIn('id', $mediaIds)->where('state', 'available')
+            ->with(['variants', 'artworks.category'])->get()->keyBy('id');
+        $candidates = new Collection;
+        foreach ($members as $member) {
+            if (isset($member['artwork_id'])) {
+                $artwork = $artworks->get($member['artwork_id']);
+                if ($artwork instanceof Artwork) {
+                    $candidates->push(HomeHeroCandidate::fromArtwork($artwork));
+                }
+            } else {
+                $asset = $media->get($member['media_asset_id']);
+                if ($asset instanceof MediaAsset && ($candidate = HomeHeroCandidate::fromMedia($asset)) !== null) {
+                    $candidates->push($candidate);
+                }
+            }
+        }
+
+        return $candidates;
+    }
+
     /** @param array<string,mixed> $configuration
-     * @param  EloquentCollection<int,Artwork>  $group
-     * @param  array<int,int>  $weights
+     * @param  Collection<int,HomeHeroCandidate>  $group
+     * @param  array<string,int>  $weights
      * @return array<string,mixed>
      */
     private function randomResolution(
         array $configuration,
-        EloquentCollection $group,
+        Collection $group,
         array $weights,
         ?int $randomBasisPoint,
     ): array {
@@ -140,7 +181,7 @@ final class HomeHeroResolver
         $current = null;
         $cumulative = 0;
         foreach ($group as $artwork) {
-            $cumulative += $weights[(int) $artwork->getKey()] ?? 0;
+            $cumulative += $weights[$artwork->key()] ?? 0;
             if ($basisPoint < $cumulative) {
                 $current = $artwork;
                 break;
@@ -160,14 +201,14 @@ final class HomeHeroResolver
     }
 
     /** @param array<string,mixed> $configuration
-     * @param  EloquentCollection<int,Artwork>  $group
-     * @param  array<int,int>  $weights
+     * @param  Collection<int,HomeHeroCandidate>  $group
+     * @param  array<string,int>  $weights
      * @return array<string,mixed>
      */
     private function sequentialResolution(
         HomePresentationSetting $settings,
         array $configuration,
-        EloquentCollection $group,
+        Collection $group,
         array $weights,
         ?DateTimeInterface $at,
     ): array {

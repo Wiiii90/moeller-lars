@@ -529,6 +529,17 @@ final class MediaReferenceCatalog
         $homeNode = $this->homeNode();
         $homeUrl = $homeNode instanceof SiteSection ? $this->presentation->workspaceUrl($homeNode) : null;
         foreach (HomePresentationSetting::query()->get(['id', 'configuration']) as $settings) {
+            foreach (($settings->modeConfiguration(HomeTemplate::Artwork)['manual_group'] ?? []) as $member) {
+                if (! is_array($member) || ! is_numeric($member['media_asset_id'] ?? null)
+                    || (int) $member['media_asset_id'] <= 0) {
+                    continue;
+                }
+                $this->appendReferenceRow($rows, (int) $member['media_asset_id'], [
+                    'type' => 'Home: Hero Artwork',
+                    'label' => 'Selected Storage Hero candidate',
+                    'url' => $homeUrl,
+                ]);
+            }
             foreach ([HomeTemplate::UnderConstruction, HomeTemplate::Custom] as $template) {
                 foreach ($settings->components($template) as $component) {
                     if (($component['type'] ?? null) === 'image'

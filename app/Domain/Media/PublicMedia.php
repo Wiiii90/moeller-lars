@@ -284,6 +284,13 @@ class PublicMedia
         }
 
         $template = $settings->template();
+        if ($template === HomeTemplate::Artwork) {
+            $asset = MediaAsset::query()->with('variants')->find($mediaAssetId);
+
+            return $asset instanceof MediaAsset
+                && \App\Domain\Content\HomeHeroCandidate::mediaIsEligible($asset)
+                && in_array($mediaAssetId, $this->referenceQuery->homeHeroMediaIds($settings), true);
+        }
         if (! in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)) {
             return false;
         }

@@ -23,6 +23,9 @@ This is a **consolidated operational state**, not an append-only log. Durable co
 
 ## 3. What is actually implemented
 
+**Home directly selected Storage Heroes (2026-11-09, source only):** The Home Hero resolver now uses one typed candidate value for published Gallery Artworks or explicitly selected available Storage images/videos, without synthesizing a Gallery/Artwork record or adding a media serving pipeline. Image candidates require existing canonical preview files and ALT; direct video uses the existing video URL/poster and public controls. Home MediaAsset IDs participate in the canonical MediaReferenceQuery for safe retained references, while PublicMedia authorizes a direct asset only for the active Hero template. Storage's reference catalog exposes its editorial Home destination. Publication snapshots and immutable artifact URLs retain their existing owners and gates. Source changes are **not tested or browser-accepted** and require Working/Committed and media-deletion regressions before rollout.
+
+
 | Slice | Source state | Verification / blocker |
 | --- | --- | --- |
 | **A Legal** | Five-field General, preserved legacy external link text, English UI, expandable authored subsections/deep links, artwork auto-© removed. Migration `2026_10_14_180000_add_public_legal_sections.php`. | Migration/local tests/browser editorial acceptance **NOT executed** in this workstream; genuine text still owed. |

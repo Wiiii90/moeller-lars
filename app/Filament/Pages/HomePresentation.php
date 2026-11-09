@@ -9,6 +9,7 @@ use App\Domain\Artwork\ArtworkDate;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Content\DividerVariant;
+use App\Domain\Content\HomeHeroCandidate;
 use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomeHeroResolver;
 use App\Domain\Content\HomePresentationEditorialService;
@@ -20,12 +21,12 @@ use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SocialLinks;
 use App\Domain\Media\MediaTypePolicy;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Filament\Pages\Concerns\HomePresentationChildren;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\ComponentListEditor;
-use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\HomeSettingsDialog;
@@ -356,33 +357,41 @@ final class HomePresentation extends Page
         );
     }
 
-    public function addHeroArtworkAction(): Action
+    public function addCandidateAction(): Action
     {
         return AdminDialog::command(
-            Action::make('addHeroArtwork')
-                ->label('Add artwork')
-                ->schema([$this->heroArtworkSelect('artwork_id', 'Artwork')->required()])
-                ->modalHeading('Add artwork'),
-            'Add artwork',
-            AdminDialogSize::Small,
+            Action::make('addCandidate')
+                ->label('Add Candidate')
+                ->schema([
+                    MediaAssetSelect::makeId(
+                        'media_asset_id',
+                        'Image or video from Storage',
+                        allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
+                    )->required(),
+                ])
+                ->modalHeading('Add Hero candidate'),
+            'Add Candidate',
+            AdminDialogSize::Large,
         )->action(function (array $data): void {
-            app(HomeHeroConfigurationService::class)->addManualMember($this->settings(), (int) $data['artwork_id']);
+            $id = filter_var($data['media_asset_id'] ?? null, FILTER_VALIDATE_INT);
+            if ($id === false || $id <= 0) {
+                throw ValidationException::withMessages(['media_asset_id' => 'Choose an eligible image or video from Storage.']);
+            }
+            $changed = app(HomeHeroConfigurationService::class)->addCandidate($this->settings(), (int) $id);
             $this->reloadWorkspace();
-            app(AdminNotifier::class)->notification(
-                title: 'Artwork added to Home group',
-                status: 'success',
-            );
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Hero candidate added', status: 'success');
+            }
         });
     }
 
-    public function removeHeroArtwork(int $artworkId): void
+    public function removeHeroCandidate(string $key): void
     {
-        app(HomeHeroConfigurationService::class)->removeManualMember($this->settings(), $artworkId);
+        $changed = app(HomeHeroConfigurationService::class)->removeCandidate($this->settings(), $key);
         $this->reloadWorkspace();
-        app(AdminNotifier::class)->notification(
-            title: 'Artwork removed from Home group',
-            status: 'success',
-        );
+        if ($changed) {
+            app(AdminNotifier::class)->notification(title: 'Hero candidate removed', status: 'success');
+        }
     }
 
     public function sortHeroArtwork(string $target, int $position): void
@@ -390,11 +399,10 @@ final class HomePresentation extends Page
         if ($this->heroGroupSource !== 'manual') {
             return;
         }
-        $ids = collect($this->heroRailRows)->pluck('id')->map(fn ($id): int => (int) $id)->values()->all();
-        $artworkId = filter_var($target, FILTER_VALIDATE_INT);
-        $from = $artworkId === false ? false : array_search((int) $artworkId, $ids, true);
+        $ids = collect($this->heroRailRows)->pluck('id')->values()->all();
+        $from = array_search($target, $ids, true);
         if ($from === false) {
-            throw ValidationException::withMessages(['manual_group' => 'The Manual Home group changed. Reload and try again.']);
+            throw ValidationException::withMessages(['manual_group' => 'The Hero group changed. Reload and try again.']);
         }
         $moved = $ids[$from];
         array_splice($ids, $from, 1);
@@ -403,49 +411,43 @@ final class HomePresentation extends Page
         $changed = app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
         $this->reloadWorkspace();
         if ($changed) {
-            app(AdminNotifier::class)->notification('Home group order updated', status: 'success');
+            app(AdminNotifier::class)->notification('Hero candidate order updated', status: 'success');
         }
     }
 
-    public function moveHeroArtwork(int $artworkId, string $direction): void
+    public function moveHeroArtwork(string $key, string $direction): void
     {
         if ($this->heroGroupSource !== 'manual' || ! in_array($direction, ['up', 'down'], true)) {
             return;
         }
-        $ids = collect($this->heroRailRows)->pluck('id')->map(fn ($id): int => (int) $id)->values()->all();
-        $index = array_search($artworkId, $ids, true);
+        $ids = collect($this->heroRailRows)->pluck('id')->values()->all();
+        $index = array_search($key, $ids, true);
         if ($index === false) {
             return;
         }
-        $target = $direction === 'up' ? $index - 1 : $index + 1;
-        if (! array_key_exists($target, $ids)) {
+        $to = $index + ($direction === 'up' ? -1 : 1);
+        if (! isset($ids[$to])) {
             return;
         }
-        [$ids[$index], $ids[$target]] = [$ids[$target], $ids[$index]];
+        [$ids[$index], $ids[$to]] = [$ids[$to], $ids[$index]];
         $changed = app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
         $this->reloadWorkspace();
         if ($changed) {
-            app(AdminNotifier::class)->notification('Home group order updated', status: 'success');
+            app(AdminNotifier::class)->notification('Hero candidate order updated', status: 'success');
         }
     }
 
-    public function setHeroPercentage(int $artworkId, mixed $percentage): void
+    public function setHeroPercentage(string $key, mixed $percentage): void
     {
-        if (! is_numeric($percentage)) {
-            throw ValidationException::withMessages(['weight' => 'Enter a valid percentage.']);
-        }
-        $value = (float) $percentage;
-        if ($value < 0 || $value > 100) {
+        if (! is_numeric($percentage) || (float) $percentage < 0 || (float) $percentage > 100) {
             throw ValidationException::withMessages(['weight' => 'Percentage must be between 0 and 100.']);
         }
-        $changed = app(HomeHeroConfigurationService::class)->updateManualMemberWeight(
-            $this->settings(),
-            $artworkId,
-            (int) round($value * 100),
+        $changed = app(HomeHeroConfigurationService::class)->updateCandidateWeight(
+            $this->settings(), $key, (int) round(((float) $percentage) * 100),
         );
         $this->reloadWorkspace();
         if ($changed) {
-            app(AdminNotifier::class)->notification('Home artwork percentage updated', status: 'success');
+            app(AdminNotifier::class)->notification('Hero candidate percentage updated', status: 'success');
         }
     }
 
@@ -1016,29 +1018,29 @@ final class HomePresentation extends Page
     public function sourceRows(): LengthAwarePaginator
     {
         $candidateGroup = app(HomeHeroResolver::class)->resolve($this->settings())['group'];
+        $grouped = $candidateGroup->groupBy(
+            static fn (HomeHeroCandidate $candidate): int => (int) ($candidate->gallery()?->getKey() ?? 0),
+        );
+        $standalone = $grouped->get(0, collect());
         $search = trim($this->sourceSearch);
+        $needle = mb_strtolower($search);
 
         /** @var Builder<ArtworkCategory> $query */
         $query = ArtworkCategory::query()->whereHas('siteSection')->with('siteSection')
             ->withCount('artworks');
 
         if ($search !== '') {
-            $needle = '%'.mb_strtolower($search).'%';
-            $matchingGalleryIds = $candidateGroup
-                ->filter(static fn (Artwork $artwork): bool => str_contains(
-                    mb_strtolower((string) $artwork->getAttribute('title')),
-                    mb_strtolower($search),
+            $matchedGalleryIds = $candidateGroup
+                ->filter(static fn (HomeHeroCandidate $candidate): bool => str_contains(
+                    mb_strtolower($candidate->title()), $needle,
                 ))
-                ->pluck('artwork_category_id')
-                ->map(static fn (mixed $id): int => (int) $id)
-                ->unique()
-                ->values()
-                ->all();
+                ->map(static fn (HomeHeroCandidate $candidate): int => (int) ($candidate->gallery()?->getKey() ?? 0))
+                ->filter()->unique()->values()->all();
 
-            $query->where(static function (Builder $galleries) use ($needle, $matchingGalleryIds): void {
-                $galleries->whereRaw('LOWER(name) LIKE ?', [$needle]);
-                if ($matchingGalleryIds !== []) {
-                    $galleries->orWhereKey($matchingGalleryIds);
+            $query->where(function (Builder $galleries) use ($needle, $matchedGalleryIds): void {
+                $galleries->whereRaw('LOWER(name) LIKE ?', ['%'.$needle.'%']);
+                if ($matchedGalleryIds !== []) {
+                    $galleries->orWhereIn('id', $matchedGalleryIds);
                 }
             });
         }
@@ -1048,27 +1050,31 @@ final class HomePresentation extends Page
             $query->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', '<>', 'published'));
         }
 
-        $total = (clone $query)->count();
+        $showStandalone = $standalone->isNotEmpty() && $this->sourceStatusFilter !== 'unpublished'
+            && ($search === '' || str_contains('standalone storage media', $needle)
+                || $standalone->contains(static fn (HomeHeroCandidate $candidate): bool => str_contains(
+                    mb_strtolower($candidate->title()), $needle,
+                )));
+
+        $galleryTotal = (clone $query)->count();
+        $total = $galleryTotal + (int) $showStandalone;
         $perPage = in_array($this->sourcePerPage, [10, 25], true) ? $this->sourcePerPage : 10;
         $lastPage = max(1, (int) ceil($total / $perPage));
         $page = max(1, min($this->sourcePage, $lastPage));
+        $offset = ($page - 1) * $perPage;
+
         /** @var EloquentCollection<int,ArtworkCategory> $galleries */
-        $galleries = $query->orderBy('name')->offset(($page - 1) * $perPage)->limit($perPage)->get();
-        $galleryIds = $galleries->map(static fn (ArtworkCategory $gallery): int => (int) $gallery->getKey())->all();
-
-        $candidates = $candidateGroup
-            ->filter(static fn (Artwork $artwork): bool => in_array((int) $artwork->getAttribute('artwork_category_id'), $galleryIds, true))
-            ->groupBy(fn (Artwork $artwork): int => (int) $artwork->getAttribute('artwork_category_id'));
-
-        $rows = $galleries->map(function (ArtworkCategory $gallery) use ($candidates): array {
+        $galleries = $query->orderBy('name')->offset($offset)->limit($perPage)->get();
+        $rows = $galleries->map(function (ArtworkCategory $gallery) use ($grouped): array {
             /** @var SiteSection|null $section */
             $section = $gallery->getRelationValue('siteSection');
             $state = (string) ($section?->getAttribute('state') ?? 'hidden');
             $preference = (bool) $gallery->getAttribute('show_on_home');
-            $galleryCandidates = $candidates->get((int) $gallery->getKey(), collect());
+            $galleryCandidates = $grouped->get((int) $gallery->getKey(), collect());
 
             return [
                 'id' => (int) $gallery->getKey(),
+                'standalone' => false,
                 'name' => (string) $gallery->getAttribute('name'),
                 'preference_enabled' => $preference,
                 'can_enable' => $state === 'published',
@@ -1077,9 +1083,25 @@ final class HomePresentation extends Page
                 'artworks_count' => (int) $gallery->getAttribute('artworks_count'),
                 'candidate_count' => $galleryCandidates->count(),
                 'workspace_url' => GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()]),
-                'candidates' => $galleryCandidates->map(fn (Artwork $artwork): array => $this->candidateRow($artwork))->values()->all(),
+                'candidates' => $galleryCandidates->map(fn (HomeHeroCandidate $candidate): array => $this->candidateRow($candidate))->values()->all(),
             ];
         })->all();
+
+        if ($showStandalone && $offset <= $galleryTotal && ($offset + $perPage) > $galleryTotal) {
+            $rows[] = [
+                'id' => 0,
+                'standalone' => true,
+                'name' => 'Standalone Storage media',
+                'preference_enabled' => false,
+                'can_enable' => false,
+                'state' => 'published',
+                'status_label' => 'Available',
+                'artworks_count' => $standalone->count(),
+                'candidate_count' => $standalone->count(),
+                'workspace_url' => null,
+                'candidates' => $standalone->map(fn (HomeHeroCandidate $candidate): array => $this->candidateRow($candidate))->values()->all(),
+            ];
+        }
 
         return new LengthAwarePaginator($rows, $total, $perPage, $page, ['path' => request()->url(), 'pageName' => 'sourcePage']);
     }
@@ -1150,12 +1172,12 @@ final class HomePresentation extends Page
         $this->candidatePoolCount = $resolution['group']->count();
         $this->nextRotationAt = $resolution['next_rotation_at']?->toIso8601String();
         $current = $resolution['current'];
-        if ($current instanceof Artwork) {
-            $this->currentArtwork = $this->artworkRow($current);
+        if ($current instanceof HomeHeroCandidate) {
+            $this->currentArtwork = $this->candidateRow($current);
         } else {
             $this->selectionIssue = $this->heroGroupSource === 'manual'
-                ? 'No stored Manual group member is currently eligible.'
-                : 'No eligible artwork matches the Automatic candidate settings.';
+                ? 'No stored Manual candidate is currently eligible.'
+                : 'No eligible Hero candidate is available.';
         }
 
         if ($this->heroGroupSource === 'manual') {
@@ -1165,11 +1187,11 @@ final class HomePresentation extends Page
         }
 
         $sequence = $this->heroDisplayStrategy === 'sequential' ? $resolution['sequence'] : $resolution['group'];
-        $currentId = $current instanceof Artwork ? (int) $current->getKey() : null;
-        $this->heroRailRows = $sequence->values()->map(function (Artwork $artwork, int $index) use ($currentId): array {
-            $row = $this->candidateRow($artwork);
+        $currentId = $current instanceof HomeHeroCandidate ? $current->key() : null;
+        $this->heroRailRows = $sequence->values()->map(function (HomeHeroCandidate $candidate, int $index) use ($currentId, $resolution): array {
+            $row = $this->candidateRow($candidate);
             $row['eligible'] = true;
-            $row['weight'] = null;
+            $row['weight'] = $resolution['weights'][$candidate->key()] ?? null;
             $row['percentage'] = null;
             $row['sequence_label'] = $this->heroDisplayStrategy === 'sequential'
                 ? ($index === 0 ? 'Current' : ($index === 1 ? 'Next' : 'Then'))
@@ -1184,41 +1206,42 @@ final class HomePresentation extends Page
      */
     private function manualHeroRows(array $resolution): array
     {
-        $storedIds = array_column($this->manualHeroGroup, 'artwork_id');
-        $artworks = Artwork::query()->with(['category.siteSection', 'artworkMedia.mediaAsset.variants'])
-            ->whereIn('id', $storedIds)->get()->keyBy(fn (Artwork $artwork): int => (int) $artwork->getKey());
-        $effectiveIds = $resolution['group']->modelKeys();
-        $sequenceIds = $resolution['sequence']->modelKeys();
-        $weightById = collect($this->manualHeroGroup)->mapWithKeys(fn (array $member): array => [$member['artwork_id'] => $member['weight']])->all();
+        $storedKeys = array_map(HomeHeroConfigurationService::memberKey(...), $this->manualHeroGroup);
+        $eligible = $resolution['group']->keyBy(static fn (HomeHeroCandidate $candidate): string => $candidate->key());
+        $sequenceKeys = $resolution['sequence']->map(static fn (HomeHeroCandidate $candidate): string => $candidate->key())->values()->all();
+        $weightByKey = collect($this->manualHeroGroup)->mapWithKeys(
+            static fn (array $member): array => [HomeHeroConfigurationService::memberKey($member) => $member['weight']],
+        )->all();
 
-        $displayIds = $this->heroDisplayStrategy === 'sequential'
-            ? array_values(array_unique(array_merge($sequenceIds, $storedIds)))
-            : $storedIds;
+        $displayKeys = $this->heroDisplayStrategy === 'sequential'
+            ? array_values(array_unique([...$sequenceKeys, ...$storedKeys]))
+            : $storedKeys;
         $rows = [];
-        foreach ($displayIds as $displayIndex => $id) {
-            $artwork = $artworks->get($id);
-            $row = $artwork instanceof Artwork ? $this->candidateRow($artwork) : [
-                'id' => (int) $id,
-                'title' => 'Unavailable artwork #'.$id,
+        foreach ($displayKeys as $displayIndex => $key) {
+            $candidate = $eligible->get($key);
+            $row = $candidate instanceof HomeHeroCandidate ? $this->candidateRow($candidate) : [
+                'id' => $key,
+                'title' => 'Unavailable candidate '.$key,
                 'year' => null,
                 'date' => null,
                 'gallery' => null,
+                'gallery_id' => null,
                 'thumbnail_url' => null,
                 'gallery_url' => null,
             ];
-            $eligible = in_array((int) $id, $effectiveIds, true);
-            $sequenceIndex = array_search((int) $id, $sequenceIds, true);
-            $weight = (int) ($weightById[$id] ?? 0);
-            $row['eligible'] = $eligible;
+            $isEligible = $candidate instanceof HomeHeroCandidate;
+            $sequenceIndex = array_search($key, $sequenceKeys, true);
+            $weight = (int) ($weightByKey[$key] ?? 0);
+            $row['eligible'] = $isEligible;
             $row['weight'] = $weight;
             $row['percentage'] = number_format($weight / 100, 2, '.', '');
-            $row['sequence_label'] = ! $eligible
+            $row['sequence_label'] = ! $isEligible
                 ? 'Unavailable'
                 : ($this->heroDisplayStrategy === 'sequential'
                     ? ($sequenceIndex === 0 ? 'Current' : ($sequenceIndex === 1 ? 'Next' : 'Then'))
                     : null);
             $row['can_move_up'] = $displayIndex > 0;
-            $row['can_move_down'] = $displayIndex < count($displayIds) - 1;
+            $row['can_move_down'] = $displayIndex < count($displayKeys) - 1;
             $rows[] = $row;
         }
 
@@ -1383,84 +1406,28 @@ final class HomePresentation extends Page
     }
 
     /** @return array<string,mixed> */
-    private function artworkRow(Artwork $artwork): array
+    private function candidateRow(HomeHeroCandidate $candidate): array
     {
-        return [...$this->candidateRow($artwork), 'preview_url' => route('preview.artworks.show', ['slug' => $artwork->getAttribute('slug')])];
-    }
-
-    /** @return array<string,mixed> */
-    private function candidateRow(Artwork $artwork): array
-    {
-        $gallery = $artwork->getRelationValue('category');
-        if (! $gallery instanceof ArtworkCategory) {
-            $artwork->loadMissing('category');
-            $gallery = $artwork->getRelationValue('category');
-        }
+        $artwork = $candidate->artwork();
+        $asset = $candidate->mediaAsset();
+        $gallery = $candidate->gallery();
+        $asset?->loadMissing('variants');
+        $preview = $asset instanceof MediaAsset ? MediaPreviewVariant::preview($asset) : null;
 
         return [
-            'id' => (int) $artwork->getKey(),
-            'title' => (string) $artwork->getAttribute('title'),
-            'year' => $artwork->getAttribute('year'),
-            'date' => ArtworkDate::fromArtwork($artwork),
+            'id' => $candidate->key(),
+            'title' => $candidate->title(),
+            'year' => $artwork?->getAttribute('year'),
+            'date' => $artwork instanceof Artwork ? ArtworkDate::fromArtwork($artwork) : null,
             'gallery' => $gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : null,
-            'thumbnail_url' => ArtworkResource::thumbnailUrl($artwork),
-            'gallery_url' => $gallery instanceof ArtworkCategory ? GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()]) : null,
+            'gallery_id' => $gallery?->getKey(),
+            'thumbnail_url' => $artwork instanceof Artwork
+                ? ArtworkResource::thumbnailUrl($artwork)
+                : ($preview ? route('admin.media.variant', $preview) : null),
+            'gallery_url' => $gallery instanceof ArtworkCategory
+                ? GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()])
+                : null,
         ];
-    }
-
-    private function heroArtworkSelect(string $name, string $label, bool $multiple = false): Select
-    {
-        $select = Select::make($name)->label($label)->searchable()
-            ->getSearchResultsUsing(fn (string $search): array => $this->heroArtworkOptions($search))
-            ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)->searchPrompt('Search eligible Hero Artworks')->noSearchResultsMessage('No matching eligible artworks');
-        if ($multiple) {
-            $select->multiple()->getOptionLabelsUsing(fn (array $values): array => $this->heroArtworkOptionLabels($values));
-        } else {
-            $select->getOptionLabelUsing(fn (mixed $value): ?string => $this->heroArtworkOptionLabel($value));
-        }
-
-        return $select;
-    }
-
-    /** @return array<int,string> */
-    private function heroArtworkOptions(string $search): array
-    {
-        $used = $this->heroGroupSource === 'manual' ? array_column($this->manualHeroGroup, 'artwork_id') : [];
-
-        return app(PublicArtworkQuery::class)->searchHomeCandidates($search, 30)
-            ->reject(fn (Artwork $artwork): bool => in_array((int) $artwork->getKey(), $used, true))
-            ->mapWithKeys(fn (Artwork $artwork): array => [(int) $artwork->getKey() => $this->heroArtworkLabel($artwork)])->all();
-    }
-
-    /** @param list<mixed> $values
-     * @return array<int,string>
-     */
-    private function heroArtworkOptionLabels(array $values): array
-    {
-        $ids = collect($values)->map(static fn ($value): int => (int) $value)->filter()->unique()->values()->all();
-
-        return app(PublicArtworkQuery::class)->homeCandidatesByIds($ids)
-            ->mapWithKeys(fn (Artwork $artwork): array => [(int) $artwork->getKey() => $this->heroArtworkLabel($artwork)])->all();
-    }
-
-    private function heroArtworkOptionLabel(mixed $value): ?string
-    {
-        $id = filter_var($value, FILTER_VALIDATE_INT);
-        if ($id === false || $id <= 0) {
-            return null;
-        }
-        $artwork = app(PublicArtworkQuery::class)->homeCandidateById((int) $id);
-
-        return $artwork instanceof Artwork ? $this->heroArtworkLabel($artwork) : null;
-    }
-
-    private function heroArtworkLabel(Artwork $artwork): string
-    {
-        $gallery = $artwork->getRelationValue('category');
-        $galleryName = $gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : 'Gallery';
-        $year = $artwork->getAttribute('year');
-
-        return (string) $artwork->getAttribute('title').' · '.$galleryName.($year === null ? '' : ' · '.$year);
     }
 
     /** @return list<mixed> */

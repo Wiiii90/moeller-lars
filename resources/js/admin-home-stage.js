@@ -4,14 +4,14 @@
  */
 export function adminHomeHeroStage(config = {}) {
     const rows = (Array.isArray(config.rows) ? config.rows : [])
-        .filter((row) => row && row.eligible !== false && Number.isInteger(Number(row.id)))
+        .filter((row) => row && row.eligible !== false && typeof row.id === 'string' && /^(artwork|media):[1-9]\d*$/.test(row.id))
         .map((row) => ({
-            id: Number(row.id),
+            id: row.id,
             thumbnail_url: row.thumbnail_url || null,
             weight: Number.isFinite(Number(row.weight)) ? Number(row.weight) : null,
         }));
 
-    const initialId = Number(config.currentId);
+    const initialId = String(config.currentId ?? '');
     const initialIndex = Math.max(0, rows.findIndex((row) => row.id === initialId));
     const intervalCount = Math.max(1, Math.floor(Number(config.rotationCount) || 1));
     const intervalDays = intervalCount * (config.rotationUnit === 'weeks' ? 7 : 1);
@@ -27,7 +27,7 @@ export function adminHomeHeroStage(config = {}) {
         return first;
     };
     const sampledAt = new Date(config.sampledAt);
-    let monthIndex = 0;
+    let monthIndex = monthly && sampledAt < anchor ? -1 : 0;
     if (monthly && Number.isFinite(sampledAt.getTime()) && sampledAt >= anchor) {
         const wholeMonths = (sampledAt.getUTCFullYear() - anchor.getUTCFullYear()) * 12
             + sampledAt.getUTCMonth() - anchor.getUTCMonth();

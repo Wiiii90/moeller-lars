@@ -180,9 +180,22 @@ final class MediaReferenceQuery
     /** @return list<int> */
     public function mediaIdsForHome(HomePresentationSetting $settings): array
     {
-        $ids = [];
+        $ids = $this->homeHeroMediaIds($settings);
         foreach ([HomeTemplate::UnderConstruction, HomeTemplate::Custom] as $template) {
             $ids = array_merge($ids, $this->componentMediaIds($settings->components($template)));
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /** @return list<int> */
+    public function homeHeroMediaIds(HomePresentationSetting $settings): array
+    {
+        $ids = [];
+        foreach (($settings->modeConfiguration(HomeTemplate::Artwork)['manual_group'] ?? []) as $member) {
+            if (is_array($member) && filter_var($member['media_asset_id'] ?? null, FILTER_VALIDATE_INT) > 0) {
+                $ids[] = (int) $member['media_asset_id'];
+            }
         }
 
         return array_values(array_unique($ids));

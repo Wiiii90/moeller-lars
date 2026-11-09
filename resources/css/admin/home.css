@@ -217,15 +217,6 @@
     line-height: 1.4;
 }
 
-.home-hero-rail__add {
-    flex: 0 0 auto;
-    border-top: 1px solid var(--admin-line);
-}
-
-.home-hero-rail__add .admin-add-row {
-    width: 100%;
-}
-
 .home-source-candidates {
     display: flex;
     min-width: 0;

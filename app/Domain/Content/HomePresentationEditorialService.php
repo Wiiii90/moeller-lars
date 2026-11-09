@@ -4,7 +4,6 @@ namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminOrderingState;
-use App\Domain\Artwork\PublicArtworkQuery;
 use App\Models\CustomPageSetting;
 use App\Models\HomePresentationSetting;
 use Illuminate\Support\Facades\DB;
@@ -12,10 +11,7 @@ use Illuminate\Validation\ValidationException;
 
 final class HomePresentationEditorialService
 {
-    public function __construct(
-        private readonly AdminAuditService $audit,
-        private readonly PublicArtworkQuery $artworks,
-    ) {}
+    public function __construct(private readonly AdminAuditService $audit) {}
 
     /** @return array<string, mixed> */
     public static function defaults(): array
@@ -26,8 +22,6 @@ final class HomePresentationEditorialService
                 'show_gallery_link' => false,
                 'show_navigation' => false,
                 'enable_viewer' => true,
-                'hero_mode' => 'automatic',
-                'fixed_artwork_id' => null,
             ],
             HomeTemplate::UnderConstruction->value => [
                 'public_site_gate' => false,
@@ -84,22 +78,7 @@ final class HomePresentationEditorialService
             $configuration = $this->configuration($fresh);
             $originalConfiguration = $configuration;
             $originalTemplate = $fresh->template();
-            $artworkSettingsChanged = false;
 
-            if (array_key_exists('show_details', $input) && $input['show_details'] !== null) {
-                $configuration[HomeTemplate::Artwork->value]['show_details'] = (bool) $input['show_details'];
-            }
-            if (array_key_exists('show_gallery_link', $input) && $input['show_gallery_link'] !== null) {
-                $configuration[HomeTemplate::Artwork->value]['show_gallery_link'] = (bool) $input['show_gallery_link'];
-            }
-            if (array_key_exists('hero_mode', $input) && $input['hero_mode'] !== null) {
-                $configuration[HomeTemplate::Artwork->value]['hero_mode'] = (string) $input['hero_mode'];
-                $artworkSettingsChanged = true;
-            }
-            if (array_key_exists('fixed_artwork_id', $input)) {
-                $configuration[HomeTemplate::Artwork->value]['fixed_artwork_id'] = $this->nullablePositiveInt($input['fixed_artwork_id']);
-                $artworkSettingsChanged = true;
-            }
             if (in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)
                 && array_key_exists('image_viewer_enabled', $input)) {
                 if (! is_bool($input['image_viewer_enabled'])) {
@@ -112,9 +91,6 @@ final class HomePresentationEditorialService
             }
 
             $this->validateConfiguration($configuration);
-            if ($artworkSettingsChanged) {
-                $this->validateArtworkReferences($configuration[HomeTemplate::Artwork->value]);
-            }
 
             if ($originalTemplate === $template && $originalConfiguration === $configuration) {
                 return false;
@@ -584,16 +560,7 @@ final class HomePresentationEditorialService
     /** @param array<string, mixed> $configuration */
     private function validateConfiguration(array $configuration): void
     {
-        $artwork = $configuration[HomeTemplate::Artwork->value] ?? [];
-        $mode = $artwork['hero_mode'] ?? null;
-        $fixedId = $artwork['fixed_artwork_id'] ?? null;
-
-        if (! is_bool($artwork['show_details'] ?? null)
-            || ! is_bool($artwork['show_gallery_link'] ?? null)
-            || ! is_string($mode)
-            || ! in_array($mode, ['automatic', 'fixed', 'random'], true)
-            || ($fixedId !== null && (! is_int($fixedId) || $fixedId <= 0))
-            || ! is_bool($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? null)
+        if (! is_bool($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? null)
             || ! is_bool($configuration[HomeTemplate::UnderConstruction->value]['image_viewer_enabled'] ?? null)
             || ! is_bool($configuration[HomeTemplate::Custom->value]['image_viewer_enabled'] ?? null)) {
             throw ValidationException::withMessages([
@@ -601,35 +568,8 @@ final class HomePresentationEditorialService
             ]);
         }
 
-        if ($mode === 'fixed' && $fixedId === null) {
-            throw ValidationException::withMessages([
-                'fixed_artwork_id' => 'Choose an eligible artwork for Fixed mode.',
-            ]);
-        }
-
         $this->validateComponents($configuration[HomeTemplate::UnderConstruction->value]['components'] ?? null);
         $this->validateComponents($configuration[HomeTemplate::Custom->value]['components'] ?? null);
-    }
-
-    /** @param array<string, mixed> $artwork */
-    private function validateArtworkReferences(array $artwork): void
-    {
-        $fixedId = $artwork['fixed_artwork_id'] ?? null;
-        if (is_int($fixedId) && $fixedId > 0 && ! $this->artworks->homeCandidateById($fixedId)) {
-            throw ValidationException::withMessages([
-                'hero_artwork' => 'Choose an eligible published artwork from an enabled Home source Gallery.',
-            ]);
-        }
-
-        if (($artwork['hero_mode'] ?? null) === 'random') {
-            $poolCount = $this->artworks->homeCandidateCount();
-
-            if ($poolCount < 1) {
-                throw ValidationException::withMessages([
-                    'hero_mode' => 'Random Pool needs at least one eligible Hero candidate.',
-                ]);
-            }
-        }
     }
 
     private function validateComponents(mixed $components): void

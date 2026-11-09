@@ -4,6 +4,7 @@ namespace App\Filament\Support;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminWorkflowPreferences;
+use App\Domain\Content\HomeHeroCandidate;
 use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomeHeroResolver;
 use App\Domain\Content\HomePresentationEditorialService;
@@ -109,7 +110,7 @@ final class HomeSettingsDialog
                         ->label(self::helpLabel(
                             'Group source',
                             'Choosing a Hero group',
-                            'Automatic selects eligible artworks from enabled, published Galleries. Manual uses the artworks you explicitly add and order.',
+                            'Automatic selects eligible Artworks from enabled, published Galleries. Storage files you explicitly add can also join Automatic. Manual uses the stored, ordered selection of Gallery Artworks and Storage files.',
                         ))
                         ->options(['automatic' => __('Automatic'), 'manual' => __('Manual')])
                         ->required()
@@ -227,11 +228,11 @@ final class HomeSettingsDialog
 
             if ($groupSource === 'manual' && $current['manual_group'] === []) {
                 $resolved = $this->heroResolver->resolve($settings)['current'];
-                if ($resolved instanceof Artwork) {
-                    $input['manual_group'] = [[
-                        'artwork_id' => (int) $resolved->getKey(),
-                        'weight' => HomeHeroConfigurationService::WEIGHT_TOTAL,
-                    ]];
+                if ($resolved instanceof HomeHeroCandidate) {
+                    $identity = $resolved->artwork() instanceof Artwork
+                        ? ['artwork_id' => (int) $resolved->record->getKey()]
+                        : ['media_asset_id' => (int) $resolved->record->getKey()];
+                    $input['manual_group'] = [[...$identity, 'weight' => HomeHeroConfigurationService::WEIGHT_TOTAL]];
                 }
             }
 

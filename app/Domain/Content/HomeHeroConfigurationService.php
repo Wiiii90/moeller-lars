@@ -3,8 +3,8 @@
 namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
-use App\Domain\Artwork\PublicArtworkQuery;
 use App\Models\HomePresentationSetting;
+use App\Models\MediaAsset;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -23,19 +23,16 @@ final class HomeHeroConfigurationService
         'unit' => 'weeks',
     ];
 
-    public function __construct(
-        private readonly AdminAuditService $audit,
-        private readonly PublicArtworkQuery $artworks,
-    ) {}
+    public function __construct(private readonly AdminAuditService $audit) {}
 
     /**
-     * Canonical Hero configuration. New group-source/display-strategy keys are authoritative when
-     * present; the legacy fixed/automatic/random representation remains losslessly readable.
+     * Canonical Hero configuration. Legacy fixed/automatic/random values are
+     * accepted as historic input, never persisted as a second model.
      *
      * @return array{
      *     group_source:string,
      *     display_strategy:string,
-     *     manual_group:list<array{artwork_id:int,weight:int}>,
+     *     manual_group:list<array{artwork_id?:int,media_asset_id?:int,weight:int}>,
      *     manual_group_count:int,
      *     rotation_interval:array{count:int,unit:string},
      *     rotation_started_at:?string,
@@ -138,7 +135,7 @@ final class HomeHeroConfigurationService
             $showNavigation = (bool) ($input['show_navigation'] ?? $current['show_navigation']);
             $videoSoundEnabled = (bool) ($input['video_sound_enabled'] ?? $current['video_sound_enabled']);
             $enableViewer = (bool) ($input['enable_viewer'] ?? $current['enable_viewer']);
-            $manualSequenceChanged = $this->manualGroupIds($manualGroup) !== $this->manualGroupIds($current['manual_group']);
+            $manualSequenceChanged = $this->manualGroupKeys($manualGroup) !== $this->manualGroupKeys($current['manual_group']);
             $intervalChanged = $rotationInterval !== $current['rotation_interval'];
             $sourceChanged = $groupSource !== $current['group_source'];
             $strategyChanged = $displayStrategy !== $current['display_strategy'];
@@ -189,12 +186,9 @@ final class HomeHeroConfigurationService
             $artwork['rotation_interval'] = $rotationInterval;
             $artwork['rotation_started_at'] = $rotationStartedAt;
 
-            // Keep legacy keys current so older readers and intermediate admin states remain lossless.
-            $artwork['hero_mode'] = $groupSource === 'manual'
-                ? 'fixed'
-                : ($displayStrategy === 'random' ? 'random' : 'automatic');
-            $artwork['automatic_selection'] = $displayStrategy === 'random' ? 'random' : 'newest';
-            $artwork['fixed_artwork_id'] = $manualGroup[0]['artwork_id'] ?? null;
+            // Historical keys are read above but no longer written. There is
+            // exactly one authoritative group and display strategy.
+            unset($artwork['hero_mode'], $artwork['automatic_selection'], $artwork['fixed_artwork_id']);
             $artwork['newest_by'] = $newestBy;
             $artwork['group_size'] = $groupSize;
             unset($artwork['pool_rule'], $artwork['pool_year'], $artwork['manual_include_ids']);
@@ -233,50 +227,57 @@ final class HomeHeroConfigurationService
         });
     }
 
-    public function addManualMember(HomePresentationSetting $settings, int $artworkId): bool
+    /** Add a selected Storage asset without copying files or inventing an Artwork. */
+    public function addCandidate(HomePresentationSetting $settings, int $mediaAssetId): bool
     {
-        if (! $this->artworks->homeCandidateById($artworkId)) {
+        $asset = $mediaAssetId > 0
+            ? MediaAsset::query()->with('variants')->find($mediaAssetId)
+            : null;
+        if (! $asset instanceof MediaAsset || ! HomeHeroCandidate::mediaIsEligible($asset)) {
             throw ValidationException::withMessages([
-                'manual_group' => 'Choose an eligible published artwork from an enabled Home source Gallery.',
+                'media_asset_id' => 'Choose an available image with a public preview and ALT text, or an available video with ALT text.',
             ]);
         }
 
         $current = $this->configuration($settings->fresh());
         $group = $current['manual_group'];
-        if (in_array($artworkId, $this->manualGroupIds($group), true)) {
+        if (count($group) >= self::MAX_GROUP_SIZE) {
             throw ValidationException::withMessages([
-                'manual_group' => 'That artwork is already in the Manual Home group.',
+                'media_asset_id' => 'The Hero group cannot exceed '.self::MAX_GROUP_SIZE.' explicitly selected candidates.',
             ]);
         }
+        if (in_array('media:'.$mediaAssetId, $this->manualGroupKeys($group), true)) {
+            throw ValidationException::withMessages(['media_asset_id' => 'That file is already selected.']);
+        }
 
+        $member = ['media_asset_id' => $mediaAssetId];
         if ($group === []) {
-            $group[] = ['artwork_id' => $artworkId, 'weight' => self::WEIGHT_TOTAL];
+            $group[] = [...$member, 'weight' => self::WEIGHT_TOTAL];
         } else {
-            $newWeight = intdiv(self::WEIGHT_TOTAL, count($group) + 1);
-            $existingWeights = array_map(static fn (array $member): int => $member['weight'], $group);
-            $scaled = $this->allocateBudget($existingWeights, self::WEIGHT_TOTAL - $newWeight);
-            foreach ($group as $index => $member) {
+            $weight = intdiv(self::WEIGHT_TOTAL, count($group) + 1);
+            $scaled = $this->allocateBudget(array_column($group, 'weight'), self::WEIGHT_TOTAL - $weight);
+            foreach ($group as $index => $existing) {
                 $group[$index]['weight'] = $scaled[$index];
             }
-            $group[] = ['artwork_id' => $artworkId, 'weight' => $newWeight];
+            $group[] = [...$member, 'weight' => $weight];
         }
 
         return $this->updateArtworkSettings($settings, ['manual_group' => $group]);
     }
 
-    public function removeManualMember(HomePresentationSetting $settings, int $artworkId): bool
+    public function removeCandidate(HomePresentationSetting $settings, string $key): bool
     {
         $current = $this->configuration($settings->fresh());
         $group = $current['manual_group'];
-        $index = array_search($artworkId, $this->manualGroupIds($group), true);
+        $index = array_search($key, $this->manualGroupKeys($group), true);
         if ($index === false) {
-            throw ValidationException::withMessages(['manual_group' => 'That artwork is not in the Manual Home group.']);
+            throw ValidationException::withMessages(['candidate' => 'This candidate is not in the selected group.']);
         }
         if ($current['group_source'] === 'manual' && count($group) === 1) {
-            throw ValidationException::withMessages(['manual_group' => 'The active Manual Home group cannot be empty.']);
+            throw ValidationException::withMessages(['candidate' => 'The active Manual Home group cannot be empty.']);
         }
 
-        array_splice($group, (int) $index, 1);
+        array_splice($group, $index, 1);
         if ($group !== []) {
             $group = $this->normalizeManualGroup($group);
         }
@@ -284,160 +285,162 @@ final class HomeHeroConfigurationService
         return $this->updateArtworkSettings($settings, ['manual_group' => $group]);
     }
 
-    /** @param list<int> $artworkIds */
-    public function reorderManualGroup(HomePresentationSetting $settings, array $artworkIds): bool
+    /** @param list<string> $keys */
+    public function reorderManualGroup(HomePresentationSetting $settings, array $keys): bool
     {
         $current = $this->configuration($settings->fresh());
         $group = $current['manual_group'];
-        $expected = $this->manualGroupIds($group);
-        $actual = array_map('intval', $artworkIds);
-        if (count($actual) !== count(array_unique($actual))) {
-            throw ValidationException::withMessages(['manual_group' => 'Manual Home group order contains duplicates.']);
+        $expected = $this->manualGroupKeys($group);
+        if (count($keys) !== count(array_unique($keys))) {
+            throw ValidationException::withMessages(['candidate' => 'Home group order contains duplicates.']);
         }
 
-        $sortedExpected = $expected;
-        $sortedActual = $actual;
-        sort($sortedExpected);
-        sort($sortedActual);
-        if ($sortedExpected !== $sortedActual) {
-            throw ValidationException::withMessages(['manual_group' => 'Manual Home group order must contain the same artworks.']);
+        $left = $expected;
+        $right = $keys;
+        sort($left);
+        sort($right);
+        if ($left !== $right) {
+            throw ValidationException::withMessages(['candidate' => 'Home group order has changed. Reload and try again.']);
         }
-
-        $byId = [];
+        $byKey = [];
         foreach ($group as $member) {
-            $byId[$member['artwork_id']] = $member;
+            $byKey[self::memberKey($member)] = $member;
         }
-        $reordered = array_map(static fn (int $id): array => $byId[$id], $actual);
 
         return $this->updateArtworkSettings(
             $settings,
-            ['manual_group' => $reordered],
-            ['before' => $expected, 'after' => $actual],
+            ['manual_group' => array_map(static fn (string $key): array => $byKey[$key], $keys)],
+            ['before' => $expected, 'after' => $keys],
         );
     }
 
-    public function updateManualMemberWeight(HomePresentationSetting $settings, int $artworkId, int $basisPoints): bool
+    public function updateCandidateWeight(HomePresentationSetting $settings, string $key, int $basisPoints): bool
     {
         if ($basisPoints < 0 || $basisPoints > self::WEIGHT_TOTAL) {
-            throw ValidationException::withMessages([
-                'weight' => 'Manual Home percentage must be between 0 and 100 percent.',
-            ]);
+            throw ValidationException::withMessages(['weight' => 'Hero percentage must be between 0 and 100.']);
         }
-
-        $current = $this->configuration($settings->fresh());
-        $group = $current['manual_group'];
-        $target = array_search($artworkId, $this->manualGroupIds($group), true);
+        $group = $this->configuration($settings->fresh())['manual_group'];
+        $target = array_search($key, $this->manualGroupKeys($group), true);
         if ($target === false) {
-            throw ValidationException::withMessages(['manual_group' => 'That artwork is not in the Manual Home group.']);
+            throw ValidationException::withMessages(['candidate' => 'The selected Hero candidate changed.']);
         }
         if (count($group) === 1) {
             $group[0]['weight'] = self::WEIGHT_TOTAL;
 
             return $this->updateArtworkSettings($settings, ['manual_group' => $group]);
         }
-
-        $otherWeights = [];
-        $otherIndices = [];
+        $indices = [];
+        $other = [];
         foreach ($group as $index => $member) {
             if ($index === $target) {
                 continue;
             }
-            $otherIndices[] = $index;
-            $otherWeights[] = $member['weight'];
+            $indices[] = $index;
+            $other[] = $member['weight'];
         }
-        $distributed = $this->allocateBudget($otherWeights, self::WEIGHT_TOTAL - $basisPoints);
-        foreach ($otherIndices as $offset => $index) {
-            $group[$index]['weight'] = $distributed[$offset];
+        $scaled = $this->allocateBudget($other, self::WEIGHT_TOTAL - $basisPoints);
+        foreach ($indices as $offset => $index) {
+            $group[$index]['weight'] = $scaled[$offset];
         }
-        $group[(int) $target]['weight'] = $basisPoints;
+        $group[$target]['weight'] = $basisPoints;
 
         return $this->updateArtworkSettings($settings, ['manual_group' => $group]);
     }
 
-    /**
-     * @return list<array{artwork_id:int,weight:int}>
-     */
+    /** @return list<array{artwork_id?:int,media_asset_id?:int,weight:int}> */
     public function normalizeManualGroup(mixed $value): array
     {
         if (! is_array($value) || ! array_is_list($value)) {
-            throw ValidationException::withMessages(['manual_group' => 'Manual Home group must be an ordered list.']);
+            throw ValidationException::withMessages(['manual_group' => 'The Hero group must be an ordered list.']);
         }
-        if ($value === []) {
-            return [];
-        }
-
         $members = [];
         $seen = [];
         foreach ($value as $member) {
             if (! is_array($member)) {
-                throw ValidationException::withMessages(['manual_group' => 'Manual Home group members must be structured values.']);
+                throw ValidationException::withMessages(['manual_group' => 'Hero candidates must be structured values.']);
             }
-            $artworkId = $this->nullablePositiveInt($member['artwork_id'] ?? null);
+            $identity = $this->memberIdentity($member);
             $weight = filter_var($member['weight'] ?? null, FILTER_VALIDATE_INT);
-            if ($artworkId === null || $weight === false || $weight < 0 || $weight > self::WEIGHT_TOTAL) {
-                throw ValidationException::withMessages(['manual_group' => 'Manual Home group members need a valid artwork and percentage.']);
+            if ($identity === null || $weight === false || $weight < 0 || $weight > self::WEIGHT_TOTAL) {
+                throw ValidationException::withMessages(['manual_group' => 'Choose a valid Hero candidate and percentage.']);
             }
-            if (isset($seen[$artworkId])) {
-                throw ValidationException::withMessages(['manual_group' => 'Manual Home group cannot contain duplicate artworks.']);
+            $key = self::memberKey($identity);
+            if (isset($seen[$key])) {
+                throw ValidationException::withMessages(['manual_group' => 'The Hero group cannot contain duplicate candidates.']);
             }
-            $seen[$artworkId] = true;
-            $members[] = ['artwork_id' => $artworkId, 'weight' => (int) $weight];
+            $seen[$key] = true;
+            $members[] = [...$identity, 'weight' => (int) $weight];
         }
-
-        $weights = $this->allocateBudget(
-            array_map(static fn (array $member): int => $member['weight'], $members),
-            self::WEIGHT_TOTAL,
-        );
-        foreach ($members as $index => $member) {
-            $members[$index]['weight'] = $weights[$index];
-        }
-
-        return $members;
-    }
-
-    /** @param list<array{artwork_id:int,weight:int}> $group
-     * @return list<int>
-     */
-    private function manualGroupIds(array $group): array
-    {
-        return array_map(static fn (array $member): int => $member['artwork_id'], $group);
-    }
-
-    /** @return list<array{artwork_id:int,weight:int}> */
-    private function readManualGroup(mixed $value): array
-    {
-        if (! is_array($value) || ! array_is_list($value) || $value === []) {
-            return [];
-        }
-
-        $members = [];
-        $seen = [];
-        foreach ($value as $member) {
-            if (! is_array($member)) {
-                continue;
-            }
-            $artworkId = $this->nullablePositiveInt($member['artwork_id'] ?? null);
-            $weight = filter_var($member['weight'] ?? null, FILTER_VALIDATE_INT);
-            if ($artworkId === null || $weight === false || $weight < 0 || $weight > self::WEIGHT_TOTAL || isset($seen[$artworkId])) {
-                continue;
-            }
-            $seen[$artworkId] = true;
-            $members[] = ['artwork_id' => $artworkId, 'weight' => (int) $weight];
-        }
-
         if ($members === []) {
             return [];
         }
 
-        $weights = $this->allocateBudget(
-            array_map(static fn (array $member): int => $member['weight'], $members),
-            self::WEIGHT_TOTAL,
-        );
+        $weights = $this->allocateBudget(array_column($members, 'weight'), self::WEIGHT_TOTAL);
         foreach ($members as $index => $member) {
             $members[$index]['weight'] = $weights[$index];
         }
 
         return $members;
+    }
+
+    /** @param list<array<string,int>> $group
+     * @return list<string>
+     */
+    private function manualGroupKeys(array $group): array
+    {
+        return array_map(self::memberKey(...), $group);
+    }
+
+    /** @param array<string,mixed> $member
+     * @return array{artwork_id?:int,media_asset_id?:int}|null
+     */
+    private function memberIdentity(array $member): ?array
+    {
+        $artworkId = $this->nullablePositiveInt($member['artwork_id'] ?? null);
+        $mediaId = $this->nullablePositiveInt($member['media_asset_id'] ?? null);
+        if (($artworkId === null) === ($mediaId === null)) {
+            return null;
+        }
+
+        return $artworkId !== null ? ['artwork_id' => $artworkId] : ['media_asset_id' => $mediaId];
+    }
+
+    /** @param array<string,int> $member */
+    public static function memberKey(array $member): string
+    {
+        if (isset($member['media_asset_id'])) {
+            return 'media:'.$member['media_asset_id'];
+        }
+
+        return 'artwork:'.$member['artwork_id'];
+    }
+
+    /** @return list<array{artwork_id?:int,media_asset_id?:int,weight:int}> */
+    private function readManualGroup(mixed $value): array
+    {
+        if (! is_array($value) || ! array_is_list($value)) {
+            return [];
+        }
+        $members = [];
+        $seen = [];
+        foreach ($value as $member) {
+            if (! is_array($member)) {
+                continue;
+            }
+            $identity = $this->memberIdentity($member);
+            $weight = filter_var($member['weight'] ?? null, FILTER_VALIDATE_INT);
+            if ($identity === null || $weight === false || $weight < 0 || $weight > self::WEIGHT_TOTAL) {
+                continue;
+            }
+            $key = self::memberKey($identity);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $members[] = [...$identity, 'weight' => (int) $weight];
+        }
+
+        return $members === [] ? [] : $this->normalizeManualGroup($members);
     }
 
     /** @param list<int> $weights

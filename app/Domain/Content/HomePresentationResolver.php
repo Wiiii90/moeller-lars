@@ -103,7 +103,7 @@ final class HomePresentationResolver
         $presentation = match ($template) {
             HomeTemplate::Artwork => [
                 'template' => $template,
-                'artwork' => $heroResolution['current'],
+                'heroCandidate' => $heroResolution['current'],
                 'media' => $this->media,
                 'showDetails' => $heroConfiguration['show_details'],
                 'showGalleryLink' => $heroConfiguration['show_gallery_link'],
@@ -140,32 +140,7 @@ final class HomePresentationResolver
     /** @return list<int> */
     public function mediaIds(HomePresentationSetting $settings): array
     {
-        $ids = [];
-        foreach ([HomeTemplate::UnderConstruction, HomeTemplate::Custom] as $template) {
-            foreach ($settings->components($template) as $component) {
-                if (($component['type'] ?? null) === 'image'
-                    && is_numeric($component['media_asset_id'] ?? null)
-                    && (int) $component['media_asset_id'] > 0) {
-                    $ids[] = (int) $component['media_asset_id'];
-                }
-
-                if (($component['type'] ?? null) === 'list') {
-                    if (is_numeric($component['media_asset_id'] ?? null)) {
-                        $ids[] = (int) $component['media_asset_id'];
-                    }
-                    foreach (($component['items'] ?? []) as $item) {
-                        if (is_array($item) && is_string($item['body'] ?? null)) {
-                            $ids = array_merge($ids, RichTextMediaReference::ids($item['body']));
-                        }
-                    }
-                }
-                if (($component['type'] ?? null) === 'text' && is_string($component['body'] ?? null)) {
-                    $ids = array_merge($ids, RichTextMediaReference::ids($component['body']));
-                }
-            }
-        }
-
-        return array_values(array_unique($ids));
+        return app(\App\Domain\Media\MediaReferenceQuery::class)->mediaIdsForHome($settings);
     }
 
     public function referencesMedia(HomePresentationSetting $settings, int $mediaAssetId): bool
