@@ -189,13 +189,13 @@ final class PublicAppearance
 
     public const DEFAULT_CONTENT_PADDING = 75;
 
-    public const MIN_PAGE_WIDTH = 640;
+    public const MIN_PAGE_WIDTH = 560;
 
-    public const MAX_PAGE_WIDTH = 1440;
+    public const MAX_PAGE_WIDTH = 1920;
 
-    public const MIN_CONTENT_PADDING = 24;
+    public const MIN_CONTENT_PADDING = 12;
 
-    public const MAX_CONTENT_PADDING = 180;
+    public const MAX_CONTENT_PADDING = 320;
 
     /** @return array<string, string> */
     public static function modeOptions(): array

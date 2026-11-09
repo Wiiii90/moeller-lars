@@ -20,7 +20,7 @@
 
 ## Current progress
 - Replaced active-tab-dependent expanded height with the tallest mounted Appearance panel as the intrinsic grid sizing owner; compact mode retains active-tab-only scroll. No duplicated measurement or remount.
-- Regional Formats now reuse the Contact/Legal grouped field geometry, with date and number purpose help, including German translations. Browser behavior remains unverified; public appearance, persistence and Legal issues remain under investigation.
+- Regional Formats now reuse Contact/Legal field geometry, with public date/number purpose help and German translations. Content width bounds widened from 640–1440 to 560–1920 pixels, and padding bounds from 24–180 to 12–320 pixels using existing viewport-safe shell and effective minimum-artwork-width logic. Browser behavior remains unverified; title/menu, persistence, picker and Legal issues remain under investigation.
 
 ## Next
 - Trace and correct the disappearing Preview/persistence and public title/menu composition; then review Popover, bounds, Regional Formats and Legal content.
