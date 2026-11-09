@@ -151,9 +151,9 @@ final class HomeSettingsDialog
                         ->label(self::helpLabel(
                             'Interval unit',
                             'Rotation interval unit',
-                            'Choose whether the Sequential rotation interval is measured in days or weeks.',
+                            'Days and weeks use fixed durations. Months follow calendar dates, so a rotation anchored on January 31 continues on February 28 and March 31.',
                         ))
-                        ->options(['days' => __('Days'), 'weeks' => __('Weeks')])
+                        ->options(['days' => __('Days'), 'weeks' => __('Weeks'), 'months' => __('Months')])
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
                     $this->heroDisplayToggle('show_details', 'Show artwork information', $persistHeroToggle),

@@ -531,7 +531,7 @@ final class HomeHeroConfigurationService
             return self::DEFAULT_ROTATION_INTERVAL;
         }
         $count = filter_var($value['count'] ?? null, FILTER_VALIDATE_INT);
-        $unit = $this->enumOrNull($value['unit'] ?? null, ['days', 'weeks']);
+        $unit = $this->enumOrNull($value['unit'] ?? null, ['days', 'weeks', 'months']);
         if ($count === false || $count < 1 || $unit === null) {
             return self::DEFAULT_ROTATION_INTERVAL;
         }
@@ -546,9 +546,9 @@ final class HomeHeroConfigurationService
             throw ValidationException::withMessages(['rotation_interval' => 'Choose a valid Sequential rotation interval.']);
         }
         $count = filter_var($value['count'] ?? null, FILTER_VALIDATE_INT);
-        $unit = $this->enumOrNull($value['unit'] ?? null, ['days', 'weeks']);
+        $unit = $this->enumOrNull($value['unit'] ?? null, ['days', 'weeks', 'months']);
         if ($count === false || $count < 1 || $unit === null) {
-            throw ValidationException::withMessages(['rotation_interval' => 'Sequential rotation interval needs a positive count in days or weeks.']);
+            throw ValidationException::withMessages(['rotation_interval' => 'Sequential rotation interval needs a positive count in days, weeks or calendar months.']);
         }
 
         return ['count' => (int) $count, 'unit' => $unit];

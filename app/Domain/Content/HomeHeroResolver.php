@@ -176,16 +176,29 @@ final class HomeHeroResolver
             : CarbonImmutable::instance($at)->utc();
         $anchor = $this->rotationAnchor($settings, $configuration, $now);
         $interval = $configuration['rotation_interval'];
-        $secondsPerUnit = $interval['unit'] === 'weeks' ? 604800 : 86400;
-        $intervalSeconds = $interval['count'] * $secondsPerUnit;
+        if ($interval['unit'] === 'months') {
+            // Every boundary is calculated from the original anchor, never the
+            // previous clipped month (Jan 31 -> Feb 28 -> Mar 31).
+            $months = max(0, ($now->year - $anchor->year) * 12 + $now->month - $anchor->month);
+            if ($months > 0 && $anchor->addMonthsNoOverflow($months)->greaterThan($now)) {
+                $months--;
+            }
+            $elapsedIntervals = $now->lessThan($anchor) ? 0 : intdiv($months, $interval['count']);
+            $nextRotationAt = $now->lessThan($anchor)
+                ? $anchor
+                : $anchor->addMonthsNoOverflow(($elapsedIntervals + 1) * $interval['count']);
+        } else {
+            $secondsPerUnit = $interval['unit'] === 'weeks' ? 604800 : 86400;
+            $intervalSeconds = $interval['count'] * $secondsPerUnit;
+            $elapsedSeconds = max(0, $now->getTimestamp() - $anchor->getTimestamp());
+            $elapsedIntervals = intdiv($elapsedSeconds, $intervalSeconds);
+            $nextRotationAt = $now->lessThan($anchor)
+                ? $anchor
+                : $anchor->addSeconds(($elapsedIntervals + 1) * $intervalSeconds);
+        }
 
-        $elapsedSeconds = max(0, $now->getTimestamp() - $anchor->getTimestamp());
-        $elapsedIntervals = intdiv($elapsedSeconds, $intervalSeconds);
         $slot = $elapsedIntervals % $group->count();
         $sequence = $group->slice($slot)->concat($group->take($slot))->values();
-        $nextRotationAt = $now->lessThan($anchor)
-            ? $anchor
-            : $anchor->addSeconds(($elapsedIntervals + 1) * $intervalSeconds);
 
         return [
             'configuration' => $configuration,

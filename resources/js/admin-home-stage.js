@@ -13,9 +13,27 @@ export function adminHomeHeroStage(config = {}) {
 
     const initialId = Number(config.currentId);
     const initialIndex = Math.max(0, rows.findIndex((row) => row.id === initialId));
-    const intervalDays = Math.max(1, Number(config.rotationCount) || 1)
-        * (config.rotationUnit === 'weeks' ? 7 : 1);
+    const intervalCount = Math.max(1, Math.floor(Number(config.rotationCount) || 1));
+    const intervalDays = intervalCount * (config.rotationUnit === 'weeks' ? 7 : 1);
+    const anchor = config.rotationStartedAt ? new Date(config.rotationStartedAt) : null;
+    const monthly = config.rotationUnit === 'months' && anchor && Number.isFinite(anchor.getTime());
+    const monthAt = (index) => {
+        const first = new Date(Date.UTC(
+            anchor.getUTCFullYear(), anchor.getUTCMonth() + index * intervalCount, 1,
+            anchor.getUTCHours(), anchor.getUTCMinutes(), anchor.getUTCSeconds(), anchor.getUTCMilliseconds(),
+        ));
+        const lastDay = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+        first.setUTCDate(Math.min(anchor.getUTCDate(), lastDay));
+        return first;
+    };
     const sampledAt = new Date(config.sampledAt);
+    let monthIndex = 0;
+    if (monthly && Number.isFinite(sampledAt.getTime()) && sampledAt >= anchor) {
+        const wholeMonths = (sampledAt.getUTCFullYear() - anchor.getUTCFullYear()) * 12
+            + sampledAt.getUTCMonth() - anchor.getUTCMonth();
+        monthIndex = Math.max(0, Math.floor(wholeMonths / intervalCount));
+        if (monthAt(monthIndex) > sampledAt) monthIndex -= 1;
+    }
     const nextAt = config.nextRotationAt ? new Date(config.nextRotationAt) : null;
 
     return {
@@ -25,6 +43,7 @@ export function adminHomeHeroStage(config = {}) {
         simulatedAt: Number.isFinite(sampledAt.getTime()) ? sampledAt : new Date(),
         nextAt: nextAt && Number.isFinite(nextAt.getTime()) ? nextAt : null,
         timer: null,
+        monthIndex,
         get activeId() { return this.rows[this.activeIndex]?.id ?? null; },
         get active() { return this.rows[this.activeIndex] ?? null; },
         get simulationLabel() {
@@ -65,7 +84,9 @@ export function adminHomeHeroStage(config = {}) {
             const intervalMs = intervalDays * 86400000;
             while (this.simulatedAt.getTime() >= this.nextAt.getTime()) {
                 this.activeIndex = (this.activeIndex + 1) % this.rows.length;
-                this.nextAt = new Date(this.nextAt.getTime() + intervalMs);
+                this.nextAt = monthly
+                    ? monthAt(++this.monthIndex + 1)
+                    : new Date(this.nextAt.getTime() + intervalMs);
             }
         },
     };

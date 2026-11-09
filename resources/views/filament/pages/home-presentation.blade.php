@@ -35,6 +35,7 @@
                     strategy: @js($heroDisplayStrategy),
                     rotationCount: @js($rotationIntervalCount),
                     rotationUnit: @js($rotationIntervalUnit),
+                    rotationStartedAt: @js($rotationStartedAt),
                     nextRotationAt: @js($nextRotationAt),
                     sampledAt: @js(now('UTC')->toIso8601String()),
                 })"
