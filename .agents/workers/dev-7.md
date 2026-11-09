@@ -20,7 +20,7 @@
 
 ## Current progress
 - Replaced active-tab-dependent expanded height with the tallest mounted Appearance panel as the intrinsic grid sizing owner; compact mode retains active-tab-only scroll. No duplicated measurement or remount.
-- Browser/layout behavior has not been executed; public appearance, persistence and regional/legal issues remain under investigation.
+- Regional Formats now reuse the Contact/Legal grouped field geometry, with date and number purpose help, including German translations. Browser behavior remains unverified; public appearance, persistence and Legal issues remain under investigation.
 
 ## Next
 - Trace and correct the disappearing Preview/persistence and public title/menu composition; then review Popover, bounds, Regional Formats and Legal content.

@@ -631,20 +631,25 @@ final class General extends Page
                     View::make('filament.schemas.components.admin-section-heading')
                         ->viewData(['label' => __('Regional Formats'), 'class' => 'general-form-section-heading'])
                         ->columnSpanFull(),
-                    Select::make('regional_format')
-                        ->label('Dates')
-                        ->options(RegionalFormats::OPTIONS)
-                        ->native()
-                        ->required()
-                        ->live()
-                        ->afterStateUpdated(self::persist('regional_format')),
-                    Select::make('number_format')
-                        ->label('Numbers')
-                        ->options(RegionalFormats::NUMBER_OPTIONS)
-                        ->native()
-                        ->required()
-                        ->live()
-                        ->afterStateUpdated(self::persist('number_format')),
+                    Group::make([
+                        Select::make('regional_format')
+                            ->label(self::regionalDatesLabel())
+                            ->options(RegionalFormats::OPTIONS)
+                            ->native()
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(self::persist('regional_format')),
+                        Select::make('number_format')
+                            ->label(self::regionalNumbersLabel())
+                            ->options(RegionalFormats::NUMBER_OPTIONS)
+                            ->native()
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(self::persist('number_format')),
+                    ])
+                        ->columns(2)
+                        ->extraAttributes(['class' => 'general-two-column-settings general-regional-settings'])
+                        ->columnSpanFull(),
                 ])
                     ->columns(2)
                     ->extraAttributes(['class' => 'general-settings-section'])
@@ -1402,11 +1407,29 @@ final class General extends Page
         );
     }
 
+    private static function regionalDatesLabel(): HtmlString
+    {
+        return self::helpLabel(
+            'Dates',
+            'About public date formats',
+            'Controls how structured dates are displayed on the public website, including Exhibition dates. Artist-entered free-text dates and administrator date preferences are unchanged.',
+        );
+    }
+
+    private static function regionalNumbersLabel(): HtmlString
+    {
+        return self::helpLabel(
+            'Numbers',
+            'About public number formats',
+            'Controls decimal and thousands separators for numerical values formatted on the public website. Stored values and administrator number preferences are unchanged.',
+        );
+    }
+
     private static function helpLabel(string $label, string $title, string $body): HtmlString
     {
         return new HtmlString(
-            '<span class="admin-form-label-with-help">'.$label.
-            AdminHelp::make($title, $body)->toHtml().
+            '<span class="admin-form-label-with-help">'.e(__($label)).
+            AdminHelp::make(__($title), __($body))->toHtml().
             '</span>',
         );
     }
