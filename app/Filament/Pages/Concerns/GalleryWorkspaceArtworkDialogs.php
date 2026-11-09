@@ -3,7 +3,9 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Admin\AdminWorkflowPreferences;
 use App\Domain\Artwork\ArtworkDraftService;
+use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Media\MediaAssetEditorialService;
@@ -55,7 +57,8 @@ trait GalleryWorkspaceArtworkDialogs
                     $data['slug'] = Str::slug((string) ($data['title'] ?? ''));
                 }
                 $payload = $this->normalizeArtworkFormData($data);
-                DB::transaction(function () use ($payload, $asset, $data): void {
+                $autoPublish = app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::GALLERY);
+                DB::transaction(function () use ($payload, $asset, $data, $autoPublish): void {
                     $artwork = app(ArtworkDraftService::class)->create($payload);
                     if ($asset instanceof MediaAsset) {
                         app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
@@ -66,17 +69,34 @@ trait GalleryWorkspaceArtworkDialogs
                             );
                         }
                     }
+                    if ($autoPublish) {
+                        try {
+                            app(ArtworkPublicationService::class)->publish($artwork);
+                        } catch (ValidationException $exception) {
+                            // Keep publication readiness feedback on an actual
+                            // Create field. The encompassing transaction still
+                            // rolls back the draft, media link and audit.
+                            throw ValidationException::withMessages([
+                                'primary_media_asset_id' => collect($exception->errors())->flatten()->first()
+                                    ?? 'Publishing requires a published Gallery and eligible primary media.',
+                            ]);
+                        }
+                    }
                 });
 
                 $this->pendingPrimaryMediaAssetId = null;
                 $this->refreshWorkspaceAfterMutation();
                 app(AdminNotifier::class)->notification(
-                    title: 'Artwork draft created',
+                    title: $autoPublish ? 'Artwork published' : 'Artwork draft created',
                     status: 'success',
                 );
             });
 
-        return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
+        return AdminDialog::create(
+            $action,
+            app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::GALLERY) ? 'Create and publish' : 'Create draft',
+            AdminDialogSize::Large,
+        );
     }
 
     public function editArtworkAction(): Action

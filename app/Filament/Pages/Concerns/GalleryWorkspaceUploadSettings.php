@@ -3,9 +3,11 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Admin\AdminWorkflowPreferences;
 use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\GalleryPresentation;
+use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\ArtworkCategory;
@@ -42,6 +44,7 @@ trait GalleryWorkspaceUploadSettings
                     'show_media_credits' => GalleryPresentation::showMediaCredits($gallery),
                     'show_media_copyright' => GalleryPresentation::showMediaCopyright($gallery),
                     'caption_layout' => GalleryPresentation::captionLayout($gallery),
+                    'auto_publish_new_artworks' => app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::GALLERY),
                 ];
             })
             ->schema([
@@ -73,6 +76,17 @@ trait GalleryWorkspaceUploadSettings
                             ->columnSpanFull(),
                         Toggle::make('video_sound_enabled')
                             ->label('Allow visitors to unmute looping Gallery videos')
+                            ->columnSpanFull(),
+                        AdminControl::toggle('auto_publish_new_artworks', 'Auto-publish new Artworks')
+                            ->helperText('Only available media with suitable ALT text and a published Gallery can be published. If the checks fail, creation is rejected without keeping a partial draft.')
+                            ->live()
+                            ->afterStateUpdated(static function (mixed $state): void {
+                                if (app(AdminWorkflowPreferences::class)->updateAutoPublish(
+                                    AdminWorkflowPreferences::GALLERY, (bool) $state,
+                                )) {
+                                    app(AdminNotifier::class)->notification(title: 'Gallery settings saved', status: 'success');
+                                }
+                            })
                             ->columnSpanFull(),
                         Toggle::make('landscape_detail_enabled')
                             ->label('Expand landscape Artwork pages')
@@ -175,7 +189,12 @@ trait GalleryWorkspaceUploadSettings
                 $this->loadGallery((int) $gallery->getKey());
                 $this->loadMoveTargets();
                 $this->refreshWorkspaceAfterMutation();
-                if ($changed) {
+                $preferenceChanged = app(AdminWorkflowPreferences::class)->updateAutoPublish(
+                    AdminWorkflowPreferences::GALLERY,
+                    (bool) ($data['auto_publish_new_artworks']
+                        ?? app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::GALLERY)),
+                );
+                if ($changed || $preferenceChanged) {
                     app(AdminNotifier::class)->notification(
                         title: 'Gallery settings saved',
                         status: 'success',

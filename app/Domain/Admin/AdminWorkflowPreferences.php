@@ -15,6 +15,7 @@ final class AdminWorkflowPreferences
     public const CUSTOM_PAGE = 'custom_page';
     public const HOME = 'home';
     public const JOURNAL = 'journal';
+    public const GALLERY = 'gallery';
 
     private const DELETE_SCOPES = [self::DASHBOARD, self::PAGES, self::CUSTOM_PAGE, self::HOME];
 
@@ -24,6 +25,7 @@ final class AdminWorkflowPreferences
         self::CUSTOM_PAGE => true,
         self::HOME => true,
         self::JOURNAL => false,
+        self::GALLERY => false,
     ];
 
     public function deletionWithoutConfirmation(string $scope): bool
