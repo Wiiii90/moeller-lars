@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Admin\AdminWorkflowPreferences;
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Content\BlogEditorialService;
 use App\Domain\Content\ExhibitionDate;
@@ -15,6 +16,7 @@ use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\MediaPreviewVariant;
 use App\Filament\Support\AdminRowAction;
+use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\JournalEntryEditorSchema;
@@ -36,6 +38,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -433,6 +436,7 @@ final class JournalWorkspace extends Page
                     'title' => $section->getAttribute('title'),
                     'navigation_label' => $section->getAttribute('navigation_label'),
                     'slug' => $section->getAttribute('slug'),
+                    'auto_publish_new_entries' => app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::JOURNAL),
                 ];
             })
             ->schema([
@@ -442,6 +446,16 @@ final class JournalWorkspace extends Page
                     TextInput::make('navigation_label')->label('Navigation label')->maxLength(160),
                     TextInput::make('slug')->label('Public URL slug')->required()->maxLength(80)
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
+                    AdminControl::toggle('auto_publish_new_entries', 'Auto-publish new Journal entries')
+                        ->helperText('Creates and publishes only when all publication checks pass. If an entry is not ready, no partial draft is created.')
+                        ->live()
+                        ->afterStateUpdated(static function (mixed $state): void {
+                            if (app(AdminWorkflowPreferences::class)->updateAutoPublish(
+                                AdminWorkflowPreferences::JOURNAL, (bool) $state,
+                            )) {
+                                app(AdminNotifier::class)->notification(title: 'Journal settings saved', status: 'success');
+                            }
+                        }),
                 ]),
             ])
             ->modalHeading(__('Journal settings'))
@@ -469,7 +483,12 @@ final class JournalWorkspace extends Page
                 }
                 $this->loadJournalContext($updated);
                 $this->reloadEntries();
-                if ($before !== $updated->only(['template', 'title', 'navigation_label', 'slug'])) {
+                $publishChanged = app(AdminWorkflowPreferences::class)->updateAutoPublish(
+                    AdminWorkflowPreferences::JOURNAL,
+                    (bool) ($data['auto_publish_new_entries']
+                        ?? app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::JOURNAL)),
+                );
+                if ($before !== $updated->only(['template', 'title', 'navigation_label', 'slug']) || $publishChanged) {
                     $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Journal settings saved',
@@ -488,8 +507,14 @@ final class JournalWorkspace extends Page
             ->modalHeading(__('Add post'))
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
+                $autoPublish = app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::JOURNAL);
                 try {
-                    app(BlogEditorialService::class)->createDraft($data);
+                    DB::transaction(static function () use ($data, $autoPublish): void {
+                        $post = app(BlogEditorialService::class)->createDraft($data);
+                        if ($autoPublish) {
+                            app(BlogEditorialService::class)->publish($post);
+                        }
+                    });
                 } catch (ValidationException $exception) {
                     $this->notifyValidationFailure('Post was not created', $exception);
                     $action->halt();
@@ -498,12 +523,16 @@ final class JournalWorkspace extends Page
                 }
                 $this->loadPosts();
                 app(AdminNotifier::class)->notification(
-                    title: 'Post draft created',
+                    title: $autoPublish ? 'Post published' : 'Post draft created',
                     status: 'success',
                 );
             });
 
-        return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
+        return AdminDialog::create(
+            $action,
+            app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::JOURNAL) ? 'Create and publish' : 'Create draft',
+            AdminDialogSize::Large,
+        );
     }
 
     public function editPostAction(): Action
@@ -577,8 +606,14 @@ final class JournalWorkspace extends Page
             ->modalHeading(__('Add exhibition'))
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
+                $autoPublish = app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::JOURNAL);
                 try {
-                    app(ExhibitionEditorialService::class)->createDraft($data);
+                    DB::transaction(static function () use ($data, $autoPublish): void {
+                        $entry = app(ExhibitionEditorialService::class)->createDraft($data);
+                        if ($autoPublish) {
+                            app(ExhibitionEditorialService::class)->publish($entry);
+                        }
+                    });
                 } catch (ValidationException $exception) {
                     $this->notifyValidationFailure('Exhibition was not created', $exception);
                     $action->halt();
@@ -587,12 +622,16 @@ final class JournalWorkspace extends Page
                 }
                 $this->loadExhibitions();
                 app(AdminNotifier::class)->notification(
-                    title: 'Exhibition created',
+                    title: $autoPublish ? 'Exhibition published' : 'Exhibition created',
                     status: 'success',
                 );
             });
 
-        return AdminDialog::create($action, 'Create exhibition', AdminDialogSize::Large);
+        return AdminDialog::create(
+            $action,
+            app(AdminWorkflowPreferences::class)->autoPublish(AdminWorkflowPreferences::JOURNAL) ? 'Create and publish' : 'Create exhibition',
+            AdminDialogSize::Large,
+        );
     }
 
     public function setExhibitionFieldVisibility(int $id, string $field, bool $visible): void
