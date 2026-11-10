@@ -14,7 +14,7 @@
 - More/Less Space expanded height uses the tallest mounted Appearance panel; compact mode retains one field scroller, no timers or duplicated measurement (132d16da).
 - Regional Formats use consistent grouped section geometry and public Date/Number usage explanations with translations (8337112a).
 - Page width 560–1920px and padding 12–320px retain viewport-safe shell geometry and existing effective artwork minimum (5787c583).
-- **Replaced rejected Beside/Inside composition**: original Beside title rail width was overridden by later shared `width: auto`, so Right was ineffective; the repaired variant owns an exterior full-width alignment rail fed by the same stable geometry as its stack decision, accounting for expanded Artwork paper. Inside alone reserves a defined column within the Menu, while its actual navigation owns the remainder. Hidden Title reserves neither column nor external row. The two modes use one heading and a shared narrow-screen stack. Old coupled selectors removed.
+- **Replaced rejected Beside/Inside composition** (8c0aa659): original Beside title rail width was overridden by later shared `width: auto`, so Right was ineffective; the repaired variant owns an exterior full-width alignment rail fed by the same stable geometry as its stack decision, accounting for expanded Artwork paper. Inside alone reserves a defined column within the Menu, while its actual navigation owns the remainder. Hidden Title reserves neither column nor external row. The two modes use one heading and a shared narrow-screen stack. Old coupled selectors removed.
 - Legal fields' explanatory text clarified, with no auto-filled artist legal material (50b4c9c3).
 - Title visibility and responsive reduction native Select option state remains string-valued after a successful boolean persistence update (3350a477).
 - Full-width Menu divider again uses its own sticky-header gap and viewport-wide stroke; only structurally connected modes join Menu/Page paper (e01a4acd).
@@ -24,7 +24,7 @@
 
 ## Current user rejection and follow-up
 - User reports on the current Public Preview that both Beside/Inside and Left/Right are significantly misplaced. Old implementation is not accepted. This repair removes the causal width override and clarifies the two independent layout owners.
-- Author the existing geometry and browser tests for actual Title/Menu bounds and alignment before claiming acceptance; **do not execute tests**.
+- Updated the existing Public header geometry tests and the General browser regression tests to compare actual Title/Menu/paper bounds for Beside/Inside Left/Right and narrow stacking. No tests run. The existing Dev skill now requires checking the *final* CSS cascade and browser bounding boxes for visual alignment corrections.
 
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.

@@ -1,29 +1,35 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { headerNeedsStack, headerShellGeometry } from '../../resources/js/public-header.js';
+import { headerBesideGeometry, headerNeedsStack, headerShellGeometry } from '../../resources/js/public-header.js';
 
-test('Beside uses the external title rail rather than the Menu width', () => {
+test('Beside has a real exterior alignment rail, including expanded Artwork paper', () => {
     const wide = headerShellGeometry(1440, 800);
-    const wideBeside = (1440 - wide.menuWidth) / 2 - wide.gutter;
-    assert.equal(wideBeside, 296);
-    assert.equal(headerNeedsStack('outside', wideBeside, 145), false);
-    assert.equal(headerNeedsStack('outside', wideBeside, 280), true);
+    const beside = headerBesideGeometry(1440, wide.menuWidth, wide.menuWidth, wide.gutter);
+    assert.deepEqual(beside, { offset: 296, railWidth: 296 });
+    assert.equal(headerNeedsStack('outside', beside.railWidth, 145), false);
+    assert.equal(headerNeedsStack('outside', beside.railWidth, 280), true);
+
+    const expanded = headerBesideGeometry(1920, 800, 1400, 24);
+    assert.deepEqual(expanded, { offset: 536, railWidth: 236 });
+    // The title starts at the viewport gutter but cannot overlap a larger
+    // Artwork Menu paper, even though its navigation still occupies 800px.
+    assert.equal(headerNeedsStack('outside', expanded.railWidth, 145), false);
+    assert.equal(headerNeedsStack('outside', expanded.railWidth, 220), true);
 
     const constrained = headerShellGeometry(1000, 800);
-    const constrainedBeside = (1000 - constrained.menuWidth) / 2 - constrained.gutter;
-    assert.equal(constrainedBeside, 80);
-    assert.equal(headerNeedsStack('outside', constrainedBeside, 145), true);
+    const tight = headerBesideGeometry(1000, constrained.menuWidth, constrained.menuWidth, constrained.gutter);
+    assert.deepEqual(tight, { offset: 80, railWidth: 80 });
+    assert.equal(headerNeedsStack('outside', tight.railWidth, 145), true);
 
-    // A 1920px Menu fills a 1440px viewport's available width: no exterior
-    // title rail exists, even though the viewport itself is desktop-sized.
+    // A wide configured Menu can exhaust the exterior rail entirely.
     const wideMenu = headerShellGeometry(1440, 1920);
-    const absentBeside = Math.max(0, (1440 - wideMenu.menuWidth) / 2 - wideMenu.gutter);
-    assert.equal(absentBeside, 0);
-    assert.equal(headerNeedsStack('outside', absentBeside, 25), true);
+    const absent = headerBesideGeometry(1440, wideMenu.menuWidth, wideMenu.menuWidth, wideMenu.gutter);
+    assert.equal(absent.railWidth, 0);
+    assert.equal(headerNeedsStack('outside', absent.railWidth, 25), true);
 
     const spacious = headerShellGeometry(2000, 800);
-    const spaciousBeside = (2000 - spacious.menuWidth) / 2 - spacious.gutter;
-    assert.equal(headerNeedsStack('outside', spaciousBeside, 540), false);
+    const spaciousBeside = headerBesideGeometry(2000, spacious.menuWidth, spacious.menuWidth, spacious.gutter);
+    assert.equal(headerNeedsStack('outside', spaciousBeside.railWidth, 540), false);
 });
 
 test('Inside title fits its real title column and preserves 15rem for navigation', () => {

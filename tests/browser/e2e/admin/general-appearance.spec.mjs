@@ -81,6 +81,103 @@ test('General Preview stays mounted through Title saves and reloads with persist
   }
 });
 
+test('Beside and Inside keep separate title rails with working Left/Right alignment', async ({ page, context }) => {
+  await signIn(page);
+  await page.setViewportSize({ width: 1900, height: 1000 });
+  await page.goto('/admin/general');
+
+  const titlePanel = page.locator('[data-appearance-panel="title"]');
+  await page.locator('.general-appearance-stage').getByRole('button', { name: 'Title', exact: true }).click();
+  const visibility = titlePanel.getByRole('combobox', { name: 'Title', exact: true });
+  const originalVisibility = await visibility.inputValue();
+
+  const saveOption = async (field, value) => {
+    if (await field.inputValue() === value) return;
+    const save = page.waitForResponse(response => new URL(response.url()).pathname.endsWith('/livewire/update'));
+    await field.selectOption(value);
+    expect((await save).ok(), 'Title setting autosave must succeed').toBe(true);
+  };
+
+  const publicPage = await context.newPage();
+  await publicPage.setViewportSize({ width: 1900, height: 1000 });
+  let position;
+  let alignment;
+  let originalPosition;
+  let originalAlignment;
+
+  const geometry = () => publicPage.locator('.site-header').evaluate(header => {
+    const bounds = selector => {
+      const node = header.querySelector(selector);
+      if (!node) throw new Error('Missing title composition element: ' + selector);
+      const rect = node.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+    };
+    const surface = header.querySelector('.site-navigation-surface');
+    const paper = surface && getComputedStyle(surface).display !== 'contents'
+      ? surface.getBoundingClientRect()
+      : header.querySelector('.site-navigation').getBoundingClientRect();
+    return {
+      title: bounds('.site-title'),
+      heading: bounds('.site-navigation > .site-name-heading'),
+      menu: bounds('.site-navigation'),
+      navigation: bounds('.site-navigation__rail:not([hidden]), .site-navigation__submenu:not([hidden])'),
+      paperLeft: paper.left,
+      stacked: header.classList.contains('is-title-stacked'),
+    };
+  });
+
+  try {
+    await saveOption(visibility, '1');
+    position = titlePanel.getByRole('combobox', { name: 'Position', exact: true });
+    alignment = titlePanel.getByRole('combobox', { name: 'Alignment', exact: true });
+    originalPosition = await position.inputValue();
+    originalAlignment = await alignment.inputValue();
+
+    for (const [option, className] of [
+      ['outside', 'site-header--name-outside'],
+      ['inside', 'site-header--name-inside'],
+    ]) {
+      await saveOption(position, option);
+      const results = {};
+      for (const value of ['left', 'right']) {
+        await saveOption(alignment, value);
+        await publicPage.goto('/preview');
+        await expect(publicPage.locator('.site-header')).toHaveClass(new RegExp(className));
+        await expect(publicPage.locator('.site-title')).toBeVisible();
+        results[value] = await geometry();
+        expect(results[value].stacked, option + ': Desktop title should fit unstacked').toBe(false);
+
+        if (option === 'outside') {
+          expect(results[value].heading.right).toBeLessThanOrEqual(results[value].paperLeft);
+          expect(results[value].title.right).toBeLessThan(results[value].paperLeft);
+        } else {
+          expect(results[value].heading.left).toBeGreaterThanOrEqual(results[value].menu.left);
+          expect(results[value].heading.right).toBeLessThanOrEqual(results[value].navigation.left + 1);
+          expect(results[value].title.left).toBeGreaterThanOrEqual(results[value].menu.left);
+        }
+      }
+      expect(results.right.title.left - results.left.title.left,
+        option + ': Right must visibly move the title within its own rail').toBeGreaterThan(20);
+
+      await publicPage.setViewportSize({ width: 520, height: 860 });
+      await expect(publicPage.locator('.site-header')).toHaveClass(/is-title-stacked/);
+      const mobile = await geometry();
+      expect(mobile.heading.bottom).toBeLessThanOrEqual(mobile.navigation.top + 1);
+      expect(mobile.title.left).toBeGreaterThanOrEqual(mobile.menu.left);
+      await publicPage.setViewportSize({ width: 1900, height: 1000 });
+      await expect(publicPage.locator('.site-header')).not.toHaveClass(/is-title-stacked/);
+    }
+  } finally {
+    // Restore editorial settings in the disposable browser database even
+    // when a geometry assertion fails. Position first reinstates its valid
+    // Alignment choices (Center is only offered for Above/Below).
+    if (originalPosition && position) await saveOption(position, originalPosition);
+    if (originalAlignment && alignment) await saveOption(alignment, originalAlignment);
+    await saveOption(visibility, originalVisibility);
+    await publicPage.close();
+  }
+});
+
 test('General Site icon retains searchable Storage dropdown outside the clipped field pane', async ({ page }) => {
   await signIn(page);
   await page.setViewportSize({ width: 1900, height: 1000 });
