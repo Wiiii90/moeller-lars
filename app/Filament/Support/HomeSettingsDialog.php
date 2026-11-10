@@ -51,7 +51,7 @@ final class HomeSettingsDialog
             'construction_image_viewer_enabled' => (bool) $configuration[HomeTemplate::UnderConstruction->value]['image_viewer_enabled'],
             'group_source' => $hero['group_source'],
             'display_strategy' => $hero['display_strategy'],
-            'newest_by' => $hero['newest_by'],
+            'source_rule' => $hero['source_rule'],
             'group_size' => $hero['group_size'],
             'rotation_interval_count' => $hero['rotation_interval']['count'],
             'rotation_interval_unit' => $hero['rotation_interval']['unit'],
@@ -103,7 +103,7 @@ final class HomeSettingsDialog
                         }),
                     Select::make('group_source')
                         ->label(self::helpLabel(
-                            'Group source',
+                            'Source',
                             'Choosing a Hero group',
                             'Automatic uses only enabled, published Galleries. Semi-Automatic combines the enabled Galleries with the separately enabled Manual Storage group and allows excluding individual automatic candidates. Manual uses only the stored, ordered Manual group.',
                         ))
@@ -112,24 +112,32 @@ final class HomeSettingsDialog
                         ->live()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
                     TextInput::make('group_size')
-                        ->label('Group size')
+                        ->label(self::helpLabel(
+                            'Source Size',
+                            'Hero source size',
+                            'Maximum number of active Hero candidates. Automatic selects this many from eligible Galleries. Semi-Automatic counts enabled Manual candidates first and fills the remaining places from eligible Galleries.',
+                        ))
                         ->numeric()
                         ->minValue(1)
                         ->maxValue(HomeHeroConfigurationService::MAX_GROUP_SIZE)
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') !== 'manual'),
-                    Select::make('newest_by')
-                        ->label('Newest by')
-                        ->options(['artwork_date' => __('Artwork date'), 'added' => __('Added')])
+                    Select::make('source_rule')
+                        ->label(self::helpLabel(
+                            'Rule',
+                            'Source ordering rule',
+                            'Artwork rules use the artwork date (year, month and day). Media Added rules use the upload date of the primary media file. Newest or Oldest determines which eligible Gallery Artworks are sourced first.',
+                        ))
+                        ->options(HomeHeroConfigurationService::SOURCE_RULES)
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') !== 'manual'),
                     Select::make('display_strategy')
                         ->label(self::helpLabel(
-                            'Display strategy',
+                            'Strategy',
                             'Displaying the Hero group',
-                            'Ordered keeps the first artwork visible. Random selects a weighted artwork. Sequential advances through the group after each rotation interval.',
+                            'Top Only displays the first sourced candidate. Random selects from the group using its weights. Sequential advances through the group after each rotation interval.',
                         ))
-                        ->options(['ordered' => __('Ordered'), 'random' => __('Random'), 'sequential' => __('Sequential')])
+                        ->options(['ordered' => __('Top Only'), 'random' => __('Random'), 'sequential' => __('Sequential')])
                         ->required()
                         ->live()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
@@ -204,7 +212,7 @@ final class HomeSettingsDialog
                 'enable_viewer' => $data['enable_viewer'] ?? $current['enable_viewer'],
                 'group_source' => $groupSource,
                 'display_strategy' => $data['display_strategy'] ?? $current['display_strategy'],
-                'newest_by' => $data['newest_by'] ?? $current['newest_by'],
+                'source_rule' => $data['source_rule'] ?? $current['source_rule'],
                 'group_size' => $data['group_size'] ?? $current['group_size'],
                 'rotation_interval_count' => $data['rotation_interval_count'] ?? $current['rotation_interval']['count'],
                 'rotation_interval_unit' => $data['rotation_interval_unit'] ?? $current['rotation_interval']['unit'],

@@ -120,7 +120,7 @@ final class HomeHeroResolver
             }
             $automatic = $this->artworks->configuredHomeCandidates(
                 $remaining,
-                $configuration['newest_by'],
+                $configuration['source_rule'],
                 array_values(array_unique($excluded)),
             )->map(static fn (Artwork $artwork): HomeHeroCandidate => HomeHeroCandidate::fromArtwork($artwork))
                 ->values();

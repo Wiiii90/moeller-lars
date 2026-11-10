@@ -47,7 +47,7 @@ export function adminHomeHeroStage(config = {}) {
         get activeId() { return this.rows[this.activeIndex]?.id ?? null; },
         get active() { return this.rows[this.activeIndex] ?? null; },
         get simulationLabel() {
-            if (this.strategy === 'ordered') return 'Ordered · fixed first selection';
+            if (this.strategy === 'ordered') return 'Top Only · first sourced candidate';
             if (this.strategy === 'random') return 'Random · new sample every 10 seconds';
             const at = this.simulatedAt.toISOString().slice(0, 10);
             const next = this.nextAt?.toISOString().replace('T', ' ').slice(0, 16) ?? '—';

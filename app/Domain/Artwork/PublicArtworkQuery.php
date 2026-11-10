@@ -59,21 +59,22 @@ class PublicArtworkQuery
 
     /**
      * Return the bounded automatic Home candidate group from the canonical Home eligibility query.
-     * Artwork date ordering uses the Artwork's year, month and optional day; Added ordering uses Artwork created_at.
-     * MediaAsset timestamps never participate in either ordering.
+     * Artwork rules sort by the Artwork's year, month and optional day.
+     * Media Added rules sort by the primary MediaAsset upload timestamp.
+     * Both use the same eligible-gallery query and deterministic tie-breakers.
      *
      * @return Collection<int, Artwork>
      */
     public function configuredHomeCandidates(
         int $groupSize = 12,
-        string $newestBy = 'artwork_date',
+        string $sourceRule = 'newest_artwork',
         array $excludeIds = [],
     ): Collection {
         $query = $this->homeQuery();
         if ($excludeIds !== []) {
             $query->whereNotIn('id', $excludeIds);
         }
-        $this->applyConfiguredHomeOrdering($query, $newestBy);
+        $this->applyConfiguredHomeOrdering($query, $sourceRule);
 
         /** @var Collection<int, Artwork> $artworks */
         $artworks = $query
@@ -190,17 +191,25 @@ class PublicArtworkQuery
     }
 
     /** @param Builder<Artwork> $query */
-    private function applyConfiguredHomeOrdering(Builder $query, string $newestBy): void
+    private function applyConfiguredHomeOrdering(Builder $query, string $sourceRule): void
     {
-        if ($newestBy === 'added') {
-            $query
-                ->orderByDesc('created_at')
-                ->orderByDesc('id');
+        if (in_array($sourceRule, ['newest_media_added', 'oldest_media_added'], true)) {
+            // Every eligible Artwork has exactly one viable primary media link.
+            // Sort by the file's upload time, not the Artwork record's creation.
+            $primaryMediaAdded = \App\Models\MediaAsset::query()
+                ->select('media_assets.created_at')
+                ->join('artwork_media', 'artwork_media.media_asset_id', '=', 'media_assets.id')
+                ->whereColumn('artwork_media.artwork_id', 'artworks.id')
+                ->where('artwork_media.role', 'primary')
+                ->limit(1);
+            $direction = $sourceRule === 'oldest_media_added' ? 'asc' : 'desc';
+            $query->orderBy($primaryMediaAdded, $direction)
+                ->orderBy('artworks.id', $direction);
 
             return;
         }
 
-        GalleryPresentation::orderArtworksByDate($query);
+        GalleryPresentation::orderArtworksByDate($query, $sourceRule === 'oldest_artwork');
     }
 
     /** @return Builder<Artwork> */

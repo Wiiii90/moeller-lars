@@ -55,7 +55,7 @@
 
                 <div class="home-hero-rail admin-visual-stage__pane" aria-label="Hero group">
                     <div class="home-hero-rail__summary">
-                        <strong>{{ match ($heroGroupSource) { 'manual' => 'Manual', 'semi_automatic' => 'Semi-Automatic', default => 'Automatic' } }} · {{ ucfirst($heroDisplayStrategy) }}</strong>
+                        <strong>{{ match ($heroGroupSource) { 'manual' => 'Manual', 'semi_automatic' => 'Semi-Automatic', default => 'Automatic' } }} · {{ $heroDisplayStrategy === 'ordered' ? 'Top Only' : ucfirst($heroDisplayStrategy) }}</strong>
                         <span>
                             {{ $candidatePoolCount }}
                             {{ $candidatePoolCount === 1 ? 'candidate' : 'candidates' }}
@@ -64,7 +64,7 @@
                             @if ($heroDisplayStrategy === 'sequential' && $nextRotationAt)
                                 Next {{ $nextRotationAt }}
                             @else
-                                {{ ucfirst($heroDisplayStrategy) }} preview
+                                {{ $heroDisplayStrategy === 'ordered' ? 'Top Only' : ucfirst($heroDisplayStrategy) }} preview
                             @endif
                         </span>
                     </div>

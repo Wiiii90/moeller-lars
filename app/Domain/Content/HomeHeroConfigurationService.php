@@ -17,6 +17,13 @@ final class HomeHeroConfigurationService
 
     public const WEIGHT_TOTAL = 10000;
 
+    public const SOURCE_RULES = [
+        'newest_media_added' => 'Newest by Media Added',
+        'newest_artwork' => 'Newest by Artwork',
+        'oldest_media_added' => 'Oldest by Media Added',
+        'oldest_artwork' => 'Oldest by Artwork',
+    ];
+
     /** @var array{count:int,unit:string} */
     public const DEFAULT_ROTATION_INTERVAL = [
         'count' => 1,
@@ -38,7 +45,7 @@ final class HomeHeroConfigurationService
      *     manual_group_count:int,
      *     rotation_interval:array{count:int,unit:string},
      *     rotation_started_at:?string,
-     *     newest_by:string,
+     *     source_rule:string,
      *     group_size:int,
      *     show_details:bool,
      *     show_gallery_link:bool,
@@ -78,7 +85,17 @@ final class HomeHeroConfigurationService
             ]];
         }
 
-        $newestBy = $this->enum($artwork['newest_by'] ?? null, ['artwork_date', 'added'], 'artwork_date');
+        // Historical newest_by values are read once and normalized to the
+        // single current source-rule vocabulary. Do not persist both fields.
+        $legacyRule = match ($artwork['newest_by'] ?? null) {
+            'added' => 'newest_media_added',
+            default => 'newest_artwork',
+        };
+        $sourceRule = $this->enum(
+            $artwork['source_rule'] ?? null,
+            array_keys(self::SOURCE_RULES),
+            $legacyRule,
+        );
         $rotationInterval = $this->readRotationInterval($artwork['rotation_interval'] ?? null);
         $rotationStartedAt = $this->readRotationStartedAt($artwork['rotation_started_at'] ?? null);
 
@@ -91,7 +108,7 @@ final class HomeHeroConfigurationService
             'manual_group_count' => count($manualGroup),
             'rotation_interval' => $rotationInterval,
             'rotation_started_at' => $rotationStartedAt,
-            'newest_by' => $newestBy,
+            'source_rule' => $sourceRule,
             'group_size' => $this->boundedGroupSize($artwork['group_size'] ?? null),
             'show_details' => (bool) ($artwork['show_details'] ?? true),
             'show_gallery_link' => (bool) ($artwork['show_gallery_link'] ?? false),
@@ -121,7 +138,11 @@ final class HomeHeroConfigurationService
                 ? $this->validatedDisabledAutoArtworkIds($input['disabled_auto_artwork_ids'])
                 : $current['disabled_auto_artwork_ids'];
             $displayStrategy = $this->requestedDisplayStrategy($input, $current['display_strategy']);
-            $newestBy = $this->enum($input['newest_by'] ?? $current['newest_by'], ['artwork_date', 'added'], 'artwork_date');
+            $sourceRule = $this->enum(
+                $input['source_rule'] ?? $current['source_rule'],
+                array_keys(self::SOURCE_RULES),
+                $current['source_rule'],
+            );
             $groupSize = $this->validatedGroupSize($input['group_size'] ?? $current['group_size']);
             $manualGroup = $current['manual_group'];
 
@@ -142,7 +163,7 @@ final class HomeHeroConfigurationService
             $sourceChanged = $groupSource !== $current['group_source'];
             $strategyChanged = $displayStrategy !== $current['display_strategy'];
             $automaticGroupDefinitionChanged = $groupSource !== 'manual'
-                && ($groupSize !== $current['group_size'] || $newestBy !== $current['newest_by']
+                && ($groupSize !== $current['group_size'] || $sourceRule !== $current['source_rule']
                     || $disabledAutoIds !== $current['disabled_auto_artwork_ids']
                     || $manualGroupEnabled !== $current['manual_group_enabled']);
 
@@ -165,7 +186,7 @@ final class HomeHeroConfigurationService
                 && $manualGroup === $current['manual_group']
                 && $rotationInterval === $current['rotation_interval']
                 && $rotationStartedAt === $current['rotation_started_at']
-                && $newestBy === $current['newest_by']
+                && $sourceRule === $current['source_rule']
                 && $groupSize === $current['group_size']
                 && $showDetails === $current['show_details']
                 && $showGalleryLink === $current['show_gallery_link']
@@ -197,7 +218,8 @@ final class HomeHeroConfigurationService
             // Historical keys are read above but no longer written. There is
             // exactly one authoritative group and display strategy.
             unset($artwork['hero_mode'], $artwork['automatic_selection'], $artwork['fixed_artwork_id']);
-            $artwork['newest_by'] = $newestBy;
+            $artwork['source_rule'] = $sourceRule;
+            unset($artwork['newest_by']);
             $artwork['group_size'] = $groupSize;
             unset($artwork['pool_rule'], $artwork['pool_year'], $artwork['manual_include_ids']);
 

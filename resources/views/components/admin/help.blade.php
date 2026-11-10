@@ -39,7 +39,6 @@
     }"
     x-on:mouseenter="show()"
     x-on:mouseleave="hide()"
-    x-on:focusin="show()"
     x-on:focusout="if (! $el.contains($event.relatedTarget)) hide()"
     x-on:keydown.escape.window="hide()"
     x-on:scroll.window="if (open) place()"

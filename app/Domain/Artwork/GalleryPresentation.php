@@ -77,13 +77,15 @@ final class GalleryPresentation
     /** Shared by Gallery, one-time Manual sorting and public Home candidates. */
     public const DATE_ORDER_SQL = 'year DESC NULLS LAST, month DESC NULLS LAST, day DESC NULLS LAST, created_at DESC, id DESC';
 
+    public const DATE_ORDER_ASC_SQL = 'year ASC NULLS LAST, month ASC NULLS LAST, day ASC NULLS LAST, created_at ASC, id ASC';
+
     /** @template TModel of \Illuminate\Database\Eloquent\Model
      * @param  Builder<TModel>  $query
      * @return Builder<TModel>
      */
-    public static function orderArtworksByDate(Builder $query): Builder
+    public static function orderArtworksByDate(Builder $query, bool $oldestFirst = false): Builder
     {
-        return $query->orderByRaw(self::DATE_ORDER_SQL);
+        return $query->orderByRaw($oldestFirst ? self::DATE_ORDER_ASC_SQL : self::DATE_ORDER_SQL);
     }
 
     public const EDGE_DISABLED = 'disabled';

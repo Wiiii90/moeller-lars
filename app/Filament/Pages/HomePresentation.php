@@ -114,7 +114,7 @@ final class HomePresentation extends Page
 
     public string $heroDisplayStrategy = 'ordered';
 
-    public string $heroNewestBy = 'artwork_date';
+    public string $heroSourceRule = 'newest_artwork';
 
     public int $heroGroupSize = HomeHeroConfigurationService::DEFAULT_GROUP_SIZE;
 
@@ -1182,7 +1182,7 @@ final class HomePresentation extends Page
         $this->disabledAutoHeroIds = $heroConfiguration['disabled_auto_artwork_ids'];
         $this->excludedHeroRows = [];
         $this->heroDisplayStrategy = $heroConfiguration['display_strategy'];
-        $this->heroNewestBy = $heroConfiguration['newest_by'];
+        $this->heroSourceRule = $heroConfiguration['source_rule'];
         $this->heroGroupSize = $heroConfiguration['group_size'];
         $this->manualHeroGroup = $heroConfiguration['manual_group'];
         $this->rotationIntervalCount = $heroConfiguration['rotation_interval']['count'];
