@@ -118,7 +118,8 @@
                                     @endif
 
                                     @php
-                                        $isManualCandidate = in_array($row['id'], $manualHeroKeys, true);
+                                        $isManualCandidate = ($heroGroupSource === 'manual' || $manualHeroGroupEnabled)
+                                            && in_array($row['id'], $manualHeroKeys, true);
                                         $isAutomaticCandidate = $heroGroupSource === 'semi_automatic'
                                             && ! $isManualCandidate && str_starts_with($row['id'], 'artwork:');
                                     @endphp

@@ -564,7 +564,9 @@ final class HomeHeroConfigurationService
                 $disabled = array_values(array_diff($disabled, [$artworkId]));
             } else {
                 $key = 'artwork:'.$artworkId;
-                $manualKeys = array_map(self::memberKey(...), $current['manual_group']);
+                $manualKeys = $current['manual_group_enabled']
+                    ? array_map(self::memberKey(...), $current['manual_group'])
+                    : [];
                 $active = app(HomeHeroResolver::class)->resolve($fresh)['group'];
                 if (in_array($key, $manualKeys, true)
                     || ! $active->contains(static fn (HomeHeroCandidate $candidate): bool => $candidate->key() === $key)) {
