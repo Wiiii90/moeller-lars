@@ -19,13 +19,13 @@
 - Full-width Menu divider again uses its own sticky-header gap and viewport-wide stroke; only structurally connected modes join Menu/Page paper (e01a4acd).
 - Site icon searchable Media Select now uses Filament's native fixed-positioning context in the Appearance pane so its dropdown escapes the clipped field scroller; no separate popup/JS positioning code (df6a7bb8).
 - Live Preview has a stable Livewire key and preserves Alpine-measured device/page inline dimensions via `wire:ignore.self`; iframe remains `wire:ignore` and sibling favicon markup can still update (df6a7bb8).
-- Regression tests updated/added at `tests/js/public-header.test.mjs`, `tests/Feature/Admin/General/GeneralSettingsPersistenceTest.php` and `tests/browser/e2e/admin/general-appearance.spec.mjs`; they cover exterior stack geometry, Title state, Preview identity through Title/Menu saves and local tab/Stage switching, and searchable picker behavior (1551c024).
+- Regression tests updated/added at `tests/js/public-header.test.mjs`, `tests/Feature/Admin/General/GeneralSettingsPersistenceTest.php` and `tests/browser/e2e/admin/general-appearance.spec.mjs`; they cover Inside fit/position geometry, Title state, Preview identity through Title/Menu saves and tab/Stage switching, and searchable picker behavior (1551c024).
 
 ## Latest user decision: retire Beside; repair Inside
 - Beside has been removed from admin options, Public CSS and JavaScript, and German locale. A one-way migration updates current Working and Committed settings. The single legacy value mapping in PublicAppearance is retained only to read immutable historical publication checkpoints.
 - Inside Left places artist name left of navigation, Inside Right places artist name right of navigation, changing physical grid columns rather than text alignment within one left column. At 40rem and below the title always forms an Above Menu row, honoring Responsive alignment. Wider screens stack only on real content fit.
 - Preserve Above and Below Menu behavior, the existing frame controls, site icon picker and Live Preview.
-- Reconcile existing geometry tests and the directly relevant Public site contract; no tests may be executed under the current user instruction.
+- Updated the existing JavaScript, Feature and browser regression tests for the remaining positions, physical Inside Left/Right ordering and responsive Above Menu fallback (f5e6d669). Removed obsolete Beside test cases. Reconciled the canonical Public site composition contract and Dev visual-alignment gate. Tests remain unexecuted.
 
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
