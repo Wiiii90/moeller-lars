@@ -81,111 +81,85 @@ test('General Preview stays mounted through Title saves and reloads with persist
   }
 });
 
-test('Beside and Inside keep separate title rails with working Left/Right alignment', async ({ page, context }) => {
+test('Inside Menu swaps title and navigation sides and stacks above them on phones', async ({ page, context }) => {
   await signIn(page);
   await page.setViewportSize({ width: 1900, height: 1000 });
   await page.goto('/admin/general');
 
-  const titlePanel = page.locator('[data-appearance-panel="title"]');
-  await page.locator('.general-appearance-stage').getByRole('button', { name: 'Title', exact: true }).click();
-  const visibility = titlePanel.getByRole('combobox', { name: 'Title', exact: true });
+  const stage = page.locator('.general-appearance-stage');
+  await stage.getByRole('button', { name: 'Title', exact: true }).click();
+  const fields = stage.locator('[data-appearance-panel="title"]');
+  const visibility = fields.getByRole('combobox', { name: 'Title', exact: true });
   const originalVisibility = await visibility.inputValue();
 
-  const saveOption = async (field, value) => {
-    if (await field.inputValue() === value) return;
-    const save = page.waitForResponse(response => new URL(response.url()).pathname.endsWith('/livewire/update'));
-    await field.selectOption(value);
-    expect((await save).ok(), 'Title setting autosave must succeed').toBe(true);
+  const save = async (control, value) => {
+    if (await control.inputValue() === value) return;
+    const response = page.waitForResponse(r => new URL(r.url()).pathname.endsWith('/livewire/update'));
+    await control.selectOption(value);
+    expect((await response).ok(), 'Title autosave must succeed').toBe(true);
   };
 
   const publicPage = await context.newPage();
   await publicPage.setViewportSize({ width: 1900, height: 1000 });
-  let position;
-  let alignment;
-  let originalPosition;
-  let originalAlignment;
-
-  const geometry = () => publicPage.locator('.site-header').evaluate(header => {
-    const bounds = selector => {
-      const node = header.querySelector(selector);
-      if (!node) throw new Error('Missing title composition element: ' + selector);
-      const rect = node.getBoundingClientRect();
-      return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+  let position, alignment, responsive, initialPosition, initialAlignment, initialResponsive;
+  const bounds = () => publicPage.locator('.site-header').evaluate(header => {
+    const rect = selector => {
+      const element = header.querySelector(selector);
+      if (!element) throw new Error('Missing Public header element: ' + selector);
+      const box = element.getBoundingClientRect();
+      return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
     };
-    const surface = header.querySelector('.site-navigation-surface');
-    const paper = surface && getComputedStyle(surface).display !== 'contents'
-      ? surface.getBoundingClientRect()
-      : header.querySelector('.site-navigation').getBoundingClientRect();
     return {
-      title: bounds('.site-title'),
-      heading: bounds('.site-navigation > .site-name-heading'),
-      menu: bounds('.site-navigation'),
-      navigation: bounds('.site-navigation__rail:not([hidden]), .site-navigation__submenu:not([hidden])'),
-      paperLeft: paper.left,
+      heading: rect('.site-navigation > .site-name-heading'),
+      title: rect('.site-title'),
+      navigation: rect('.site-navigation__rail:not([hidden]), .site-navigation__submenu:not([hidden])'),
+      menu: rect('.site-navigation'),
       stacked: header.classList.contains('is-title-stacked'),
     };
   });
 
   try {
-    await saveOption(visibility, '1');
-    position = titlePanel.getByRole('combobox', { name: 'Position', exact: true });
-    alignment = titlePanel.getByRole('combobox', { name: 'Alignment', exact: true });
-    originalPosition = await position.inputValue();
-    originalAlignment = await alignment.inputValue();
+    await save(visibility, '1');
+    position = fields.getByRole('combobox', { name: 'Position', exact: true });
+    alignment = fields.getByRole('combobox', { name: 'Alignment', exact: true });
+    responsive = fields.getByRole('combobox', { name: 'Responsive alignment', exact: true });
+    initialPosition = await position.inputValue();
+    initialAlignment = await alignment.inputValue();
+    initialResponsive = await responsive.inputValue();
+    expect(await position.locator('option').evaluateAll(nodes => nodes.map(node => node.value)))
+      .toEqual(['inside', 'above', 'below']);
 
-    for (const [option, className] of [
-      ['outside', 'site-header--name-outside'],
-      ['inside', 'site-header--name-inside'],
-    ]) {
-      await saveOption(position, option);
-      const results = {};
-      for (const value of ['left', 'right']) {
-        await saveOption(alignment, value);
-        await publicPage.goto('/preview');
-        await expect(publicPage.locator('.site-header')).toHaveClass(new RegExp(className));
-        await expect(publicPage.locator('.site-title')).toBeVisible();
-        results[value] = await geometry();
-        expect(results[value].stacked, option + ': Desktop title should fit unstacked').toBe(false);
+    await save(position, 'inside');
+    await save(alignment, 'left');
+    await publicPage.goto('/preview');
+    await expect(publicPage.locator('.site-title')).toBeVisible();
+    const left = await bounds();
+    expect(left.stacked).toBe(false);
+    expect(left.heading.right).toBeLessThanOrEqual(left.navigation.left + 1);
+    expect(left.heading.left).toBeGreaterThanOrEqual(left.menu.left - 1);
 
-        if (option === 'outside') {
-          expect(results[value].heading.right).toBeLessThanOrEqual(results[value].paperLeft);
-          expect(results[value].title.right).toBeLessThan(results[value].paperLeft);
-        } else {
-          expect(results[value].heading.left).toBeGreaterThanOrEqual(results[value].menu.left);
-          expect(results[value].heading.right).toBeLessThanOrEqual(results[value].navigation.left + 1);
-          expect(results[value].title.left).toBeGreaterThanOrEqual(results[value].menu.left);
-        }
-      }
-      expect(results.right.title.left - results.left.title.left,
-        option + ': Right must visibly move the title within its own rail').toBeGreaterThan(20);
+    await save(alignment, 'right');
+    await publicPage.goto('/preview');
+    const right = await bounds();
+    expect(right.stacked).toBe(false);
+    expect(right.heading.left).toBeGreaterThanOrEqual(right.navigation.right - 1);
+    expect(right.heading.right).toBeLessThanOrEqual(right.menu.right + 1);
+    expect(right.title.left - left.title.left).toBeGreaterThan(100);
+    expect(right.navigation.left).toBeLessThan(left.navigation.left);
 
-      if (option === 'outside') {
-        // The title can stack at a desktop width when there is not enough
-        // *exterior* space. Desktop Right must still apply in this state;
-        // the separate Responsive alignment is not a desktop override.
-        await publicPage.setViewportSize({ width: 950, height: 860 });
-        await expect(publicPage.locator('.site-header')).toHaveClass(/is-title-stacked/);
-        const desktopStack = await geometry();
-        expect(desktopStack.title.right).toBeGreaterThan(desktopStack.menu.right - 50);
-        await publicPage.setViewportSize({ width: 1900, height: 1000 });
-        await expect(publicPage.locator('.site-header')).not.toHaveClass(/is-title-stacked/);
-      }
-
-      await publicPage.setViewportSize({ width: 520, height: 860 });
-      await expect(publicPage.locator('.site-header')).toHaveClass(/is-title-stacked/);
-      const mobile = await geometry();
-      expect(mobile.heading.bottom).toBeLessThanOrEqual(mobile.navigation.top + 1);
-      expect(mobile.title.left).toBeGreaterThanOrEqual(mobile.menu.left);
-      await publicPage.setViewportSize({ width: 1900, height: 1000 });
-      await expect(publicPage.locator('.site-header')).not.toHaveClass(/is-title-stacked/);
-    }
+    await save(responsive, 'center');
+    await publicPage.setViewportSize({ width: 520, height: 860 });
+    await expect(publicPage.locator('.site-header')).toHaveClass(/is-title-stacked/);
+    const mobile = await bounds();
+    expect(mobile.heading.bottom).toBeLessThanOrEqual(mobile.navigation.top + 1);
+    const titleCenter = (mobile.title.left + mobile.title.right) / 2;
+    const menuCenter = (mobile.menu.left + mobile.menu.right) / 2;
+    expect(Math.abs(titleCenter - menuCenter)).toBeLessThan(8);
   } finally {
-    // Restore editorial settings in the disposable browser database even
-    // when a geometry assertion fails. Position first reinstates its valid
-    // Alignment choices (Center is only offered for Above/Below).
-    if (originalPosition && position) await saveOption(position, originalPosition);
-    if (originalAlignment && alignment) await saveOption(alignment, originalAlignment);
-    await saveOption(visibility, originalVisibility);
+    if (initialPosition && position) await save(position, initialPosition);
+    if (initialAlignment && alignment) await save(alignment, initialAlignment);
+    if (initialResponsive && responsive) await save(responsive, initialResponsive);
+    await save(visibility, originalVisibility);
     await publicPage.close();
   }
 });

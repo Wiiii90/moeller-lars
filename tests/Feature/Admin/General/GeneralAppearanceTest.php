@@ -18,16 +18,19 @@ beforeEach(function (): void {
     Filament::bootCurrentPanel();
 });
 
-it('limits integrated desktop title alignment to Left and Right', function (): void {
-    foreach (['inside', 'outside'] as $position) {
-        expect(PublicAppearance::headerAlignmentOptions($position))->toBe([
+it('offers only Inside, Above and Below positions and persists Inside Right', function (): void {
+    expect(PublicAppearance::HEADER_POSITIONS)->toHaveKeys(['inside', 'above', 'below'])
+        ->and(PublicAppearance::HEADER_POSITIONS)->not->toHaveKey('outside')
+        ->and(PublicAppearance::headerAlignmentOptions('inside'))->toBe([
             'left' => 'Left',
             'right' => 'Right',
-        ]);
-        expect(PublicAppearance::presentedHeaderAlignment('center', $position))->toBe('left');
-    }
-    expect(PublicAppearance::headerAlignmentOptions('above'))->toHaveKey('center')
+        ])
+        ->and(PublicAppearance::presentedHeaderAlignment('center', 'inside'))->toBe('left')
+        ->and(PublicAppearance::headerAlignmentOptions('above'))->toHaveKey('center')
         ->and(PublicAppearance::headerAlignmentOptions('below'))->toHaveKey('center');
+
+    // Previously published, immutable checkpoints may retain the retired key.
+    expect(PublicAppearance::headerPosition('outside'))->toBe('inside');
 
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'header_name_position' => 'above',
@@ -36,12 +39,14 @@ it('limits integrated desktop title alignment to Left and Right', function (): v
 
     Livewire::test(General::class)
         ->assertSet('data.header_name_alignment', 'center')
-        ->set('data.header_name_position', 'outside')
+        ->set('data.header_name_position', 'inside')
         ->assertSet('data.header_name_alignment', 'left')
+        ->assertHasNoErrors()
+        ->set('data.header_name_alignment', 'right')
         ->assertHasNoErrors();
 
-    expect(PublicContentSetting::general()->getAttribute('header_name_position'))->toBe('outside')
-        ->and(PublicContentSetting::general()->getAttribute('header_name_alignment'))->toBe('left');
+    expect(PublicContentSetting::general()->getAttribute('header_name_position'))->toBe('inside')
+        ->and(PublicContentSetting::general()->getAttribute('header_name_alignment'))->toBe('right');
 });
 
 it('validates and persists the configured Menu type', function (): void {
