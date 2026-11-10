@@ -2256,16 +2256,19 @@ body.public-site--frame-plain #content {
     grid-row: 2;
 }
 
-/* A stacked title follows Responsive alignment, even on wider viewports
- * where the configured shell or long title forces a two-row composition. */
-.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-left .site-navigation > .site-name-heading {
-    justify-content: flex-start;
-}
-.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-center .site-navigation > .site-name-heading {
-    justify-content: center;
-}
-.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-right .site-navigation > .site-name-heading {
-    justify-content: flex-end;
+/* A desktop fit-driven stack still honors Desktop Alignment.
+ * Responsive Alignment applies only at the same 40rem mobile boundary
+ * as Above/Below Menu; the two controls must never silently conflict. */
+@media (max-width: 40rem) {
+    .site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-left .site-navigation > .site-name-heading {
+        justify-content: flex-start;
+    }
+    .site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-center .site-navigation > .site-name-heading {
+        justify-content: center;
+    }
+    .site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-right .site-navigation > .site-name-heading {
+        justify-content: flex-end;
+    }
 }
 
 /* Page without navigation still owns one independent real title row. */

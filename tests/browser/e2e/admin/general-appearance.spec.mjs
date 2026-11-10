@@ -159,6 +159,18 @@ test('Beside and Inside keep separate title rails with working Left/Right alignm
       expect(results.right.title.left - results.left.title.left,
         option + ': Right must visibly move the title within its own rail').toBeGreaterThan(20);
 
+      if (option === 'outside') {
+        // The title can stack at a desktop width when there is not enough
+        // *exterior* space. Desktop Right must still apply in this state;
+        // the separate Responsive alignment is not a desktop override.
+        await publicPage.setViewportSize({ width: 950, height: 860 });
+        await expect(publicPage.locator('.site-header')).toHaveClass(/is-title-stacked/);
+        const desktopStack = await geometry();
+        expect(desktopStack.title.right).toBeGreaterThan(desktopStack.menu.right - 50);
+        await publicPage.setViewportSize({ width: 1900, height: 1000 });
+        await expect(publicPage.locator('.site-header')).not.toHaveClass(/is-title-stacked/);
+      }
+
       await publicPage.setViewportSize({ width: 520, height: 860 });
       await expect(publicPage.locator('.site-header')).toHaveClass(/is-title-stacked/);
       const mobile = await geometry();
