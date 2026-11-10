@@ -16,6 +16,16 @@ export function headerShellGeometry(viewportWidth, shellMax, rem = 16) {
     return { gutter, menuWidth };
 }
 
+/* Beside's offset starts at the left viewport gutter; its right edge
+ * stops at the VISIBLE Menu paper, which may be wider than navigation on
+ * fitted Artwork pages. The shell's center axis never changes. */
+export function headerBesideGeometry(viewportWidth, menuWidth, paperWidth, gutter) {
+    return {
+        offset: Math.max(0, (viewportWidth - menuWidth) / 2 - gutter),
+        railWidth: Math.max(0, (viewportWidth - Math.max(menuWidth, paperWidth)) / 2 - gutter),
+    };
+}
+
 /* Beside receives the available exterior rail width, Inside receives the
  * available Menu width. Both are measured from the same stable shell geometry. */
 export function headerNeedsStack(mode, availableWidth, titleWidth, rem = 16) {
@@ -65,9 +75,21 @@ export function initializePublicHeader() {
         const configuredShellMax = Number.parseFloat(root.getPropertyValue('--public-shell-max')) || 800;
         const viewportWidth = document.documentElement.clientWidth;
         const { gutter, menuWidth } = headerShellGeometry(viewportWidth, configuredShellMax, rem);
-        // Beside is an exterior title rail, not a part of the Menu's grid.
-        // Measure only stable viewport and configured shell geometry.
-        const outsideRailWidth = Math.max(0, (viewportWidth - menuWidth) / 2 - gutter);
+        // The Artwork menu can widen its paper beyond its 800px-sized
+        // navigation. Read only the stable wrapper width, never the title
+        // or a column changed by is-title-stacked.
+        let outsideRailWidth = 0;
+        if (mode === 'outside') {
+            const menu = header.querySelector('.site-navigation');
+            const surface = header.querySelector('.site-navigation-surface');
+            const paperWidth = surface instanceof HTMLElement && getComputedStyle(surface).display !== 'contents'
+                ? Math.max(menuWidth, surface.getBoundingClientRect().width)
+                : menuWidth;
+            const beside = headerBesideGeometry(viewportWidth, menuWidth, paperWidth, gutter);
+            outsideRailWidth = beside.railWidth;
+            menu?.style.setProperty('--public-title-outside-offset', `${beside.offset}px`);
+            menu?.style.setProperty('--public-title-outside-width', `${beside.railWidth}px`);
+        }
         const titleWidth = intrinsicTitleWidth(title, measurementContext);
         const stacked = headerNeedsStack(
             mode,

@@ -2109,60 +2109,66 @@ body.public-site--frame-plain #content {
     --public-title-default: var(--public-index-ink);
 }
 
-.site-header:is(.site-header--name-inside, .site-header--name-outside) .site-navigation {
-    display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
-    align-items: center;
-}
-
-.site-header--name-inside:not(.is-title-stacked) .site-navigation {
-    /* A real alignment rail wider than the title itself: Left and Right
-     * must be visibly distinct rather than sharing a max-content column. */
-    grid-template-columns: minmax(15rem, 32%) minmax(0, 1fr);
-}
-
-/* Beside menu is genuinely outside the centered Menu sheet, on the
- * Global background. The single title retains its canonical DOM identity;
- * only its unstacked placement differs from Inside menu. At narrow/content
- * constrained widths the existing stacked Menu composition below takes over. */
-.site-header--name-outside:not(.is-title-stacked) .site-navigation {
-    display: block;
-}
-
-.site-header--name-outside:not(.is-title-stacked) .site-navigation > h1 {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: calc((100% - 100vw) / 2 + var(--public-gutter));
-    width: max(0px, calc((100vw - 100%) / 2 - var(--public-gutter)));
-    height: 100%;
-    min-height: 0;
-}
-
-
-
-.site-header:is(.site-header--name-inside, .site-header--name-outside) .site-navigation > h1 {
+/* One physical title in the Menu DOM, but two distinct placements:
+ * Inside reserves a true Menu column; Beside takes a full-width exterior
+ * title rail on the global surface, leaving the Menu paper centered. */
+.site-header:is(.site-header--name-inside, .site-header--name-outside) .site-navigation > .site-name-heading {
+    position: relative;
     z-index: 1;
-    grid-column: 1;
-    grid-row: 1;
     display: flex;
-    width: auto;
+    box-sizing: border-box;
+    width: 100%;
     min-width: 0;
     min-height: 2.95rem;
     height: 100%;
-    padding: 0 .85rem;
+    margin: 0;
+    padding-inline: .85rem;
     align-items: center;
-    justify-content: flex-start;
 }
 
-.site-header:is(.site-header--name-inside, .site-header--name-outside) .site-title {
+.site-header:is(.site-header--name-inside, .site-header--name-outside) .site-navigation > .site-name-heading > .site-title {
     position: static;
-    max-width: none;
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    margin: 0;
+    white-space: nowrap;
 }
 
-.site-header:is(.site-header--name-inside, .site-header--name-outside) :is(.site-navigation__rail, .site-navigation__submenu) {
+/* Inside: text aligns against the LEFT or RIGHT edge of this real title
+ * column. The remaining rail belongs exclusively to navigation. */
+.site-header--name-inside:not(.is-title-stacked):not(.site-header--title-hidden) .site-navigation {
+    display: grid;
+    grid-template-columns: minmax(15rem, 32%) minmax(0, 1fr);
+    align-items: stretch;
+}
+
+.site-header--name-inside:not(.is-title-stacked):not(.site-header--title-hidden) .site-navigation > .site-name-heading {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.site-header--name-inside:not(.is-title-stacked):not(.site-header--title-hidden) :is(.site-navigation__rail, .site-navigation__submenu) {
     grid-column: 2;
     grid-row: 1;
+}
+
+/* Beside: the title's whole alignment rail is outside the visible Menu
+ * paper, not a max-content box and not an extra column inside the Menu.
+ * Public-header.js supplies the exact viewport/paper dimensions used for
+ * its stack decision (including expanded Artwork Menu paper). The CSS
+ * fallback keeps the rail usable before script initialization. */
+.site-header--name-outside:not(.is-title-stacked):not(.site-header--title-hidden) .site-navigation {
+    display: block;
+}
+
+.site-header--name-outside:not(.is-title-stacked):not(.site-header--title-hidden) .site-navigation > .site-name-heading {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--public-title-outside-offset, max(0px, calc((100vw - 100%) / 2 - var(--public-gutter)))));
+    width: var(--public-title-outside-width, max(0px, calc((100vw - 100%) / 2 - var(--public-gutter))));
+    height: 100%;
 }
 
 /* Above menu is a stable two-row Menu composition. It is not the
@@ -2210,27 +2216,25 @@ body.public-site--frame-plain #content {
     .site-header--name-above.site-header--mobile-title-align-right .site-navigation > h1 { justify-content: flex-end; }
 }
 
-/* Alignment uses a real reserved title rail: the Inside column or the
- * detached Beside area. Stacked modes use responsive alignment below. */
-.site-header:is(.site-header--name-inside, .site-header--name-outside).site-header--title-align-left .site-navigation > h1 {
+/* Align text within its own real width: Inside's Menu column or
+ * Beside's exterior rail. This must never align a shrink-to-fit heading. */
+.site-header:is(.site-header--name-inside, .site-header--name-outside).site-header--title-align-left .site-navigation > .site-name-heading {
     justify-content: flex-start;
 }
-.site-header:is(.site-header--name-inside, .site-header--name-outside).site-header--title-align-center .site-navigation > h1 {
-    justify-content: center;
-}
-.site-header:is(.site-header--name-inside, .site-header--name-outside).site-header--title-align-right .site-navigation > h1 {
+.site-header:is(.site-header--name-inside, .site-header--name-outside).site-header--title-align-right .site-navigation > .site-name-heading {
     justify-content: flex-end;
 }
 
-/* Once either name no longer fits, the menu becomes a two-row sheet.
- * Both the artist name and the navigation inherit the same Menu background
- * and share exactly the same static outer frame. */
+/* Fit fallback: both modes use one title row WITHIN the Menu paper, above
+ * its navigation rail. No empty column remains when Title is hidden. */
 .site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked .site-navigation {
+    display: grid;
     grid-template-columns: minmax(0, 1fr);
 }
 
-.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked .site-navigation > h1 {
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked .site-navigation > .site-name-heading {
     position: relative;
+    inset: auto;
     grid-column: 1;
     grid-row: 1;
     width: 100%;
@@ -2240,6 +2244,7 @@ body.public-site--frame-plain #content {
 }
 
 .site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked .site-title {
+    width: max-content;
     min-width: 0;
     max-width: 100%;
     white-space: normal;
@@ -2251,15 +2256,15 @@ body.public-site--frame-plain #content {
     grid-row: 2;
 }
 
-/* Stacked mode is responsive regardless of whether its trigger was the
- * actual title width, menu width or browser width. */
-.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-left .site-navigation > h1 {
+/* A stacked title follows Responsive alignment, even on wider viewports
+ * where the configured shell or long title forces a two-row composition. */
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-left .site-navigation > .site-name-heading {
     justify-content: flex-start;
 }
-.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-center .site-navigation > h1 {
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-center .site-navigation > .site-name-heading {
     justify-content: center;
 }
-.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-right .site-navigation > h1 {
+.site-header:is(.site-header--name-inside, .site-header--name-outside).is-title-stacked.site-header--mobile-title-align-right .site-navigation > .site-name-heading {
     justify-content: flex-end;
 }
 
