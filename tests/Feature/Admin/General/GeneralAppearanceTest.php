@@ -19,7 +19,7 @@ beforeEach(function (): void {
 });
 
 it('offers only Inside, Above and Below positions and persists Inside Right', function (): void {
-    expect(PublicAppearance::HEADER_POSITIONS)->toHaveKeys(['inside', 'above', 'below'])
+    expect(array_keys(PublicAppearance::HEADER_POSITIONS))->toBe(['inside', 'above', 'below'])
         ->and(PublicAppearance::HEADER_POSITIONS)->not->toHaveKey('outside')
         ->and(PublicAppearance::headerAlignmentOptions('inside'))->toBe([
             'left' => 'Left',

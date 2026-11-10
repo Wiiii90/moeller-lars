@@ -126,8 +126,11 @@ test('Inside Menu swaps title and navigation sides and stacks above them on phon
     initialPosition = await position.inputValue();
     initialAlignment = await alignment.inputValue();
     initialResponsive = await responsive.inputValue();
-    expect(await position.locator('option').evaluateAll(nodes => nodes.map(node => node.value)))
-      .toEqual(['inside', 'above', 'below']);
+    const options = await position.locator('option').evaluateAll(nodes => nodes.map(node => node.value));
+    expect(options).toContain('inside');
+    expect(options).toContain('above');
+    expect(options).toContain('below');
+    expect(options).not.toContain('outside');
 
     await save(position, 'inside');
     await save(alignment, 'left');
