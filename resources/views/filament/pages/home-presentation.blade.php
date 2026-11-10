@@ -325,7 +325,7 @@
                                 <td class="home-source-table__status admin-table__yield--narrow"><span class="admin-status {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
                                 <td class="admin-table__actions">
                                     @unless ($gallery['standalone'])
-                                        <div class="admin-row-actions admin-row-actions--canonical admin-toolbar home-source-table__row-actions">
+                                        <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-toolbar home-source-table__row-actions">
                                             <x-admin.row-action
                                                 :action="$gallery['preference_enabled'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
                                                 :label="$gallery['preference_enabled'] ? 'Disable' : 'Enable'"

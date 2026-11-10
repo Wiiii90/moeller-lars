@@ -21,10 +21,6 @@
     width: calc(var(--admin-row-actions-width) + .5rem);
 }
 
-.home-source-table__row-actions {
-    width: var(--admin-row-actions-width);
-}
-
 .home-source-table__gallery-link {
     color: inherit;
     text-decoration: none;

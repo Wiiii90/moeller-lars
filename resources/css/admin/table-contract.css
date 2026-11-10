@@ -223,7 +223,8 @@
     width: var(--admin-row-actions-width);
     max-width: none;
     min-width: 0;
-    grid-template-columns: var(--admin-row-actions-columns);
+    /* Without a multi-action variant, this is one bounded semantic slot. */
+    grid-template-columns: var(--admin-row-actions-columns, minmax(0, 1fr));
     gap: var(--admin-row-actions-gap, .25rem) !important;
     margin-inline-start: auto !important;
     margin-inline-end: 0 !important;
