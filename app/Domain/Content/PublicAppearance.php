@@ -36,7 +36,7 @@ final class PublicAppearance
 
     public const DEFAULT_GRADIENT_ANGLE = 180;
 
-    public const HEADER_POSITIONS = ['outside' => 'Beside menu', 'inside' => 'Inside menu', 'above' => 'Above menu', 'below' => 'Below menu'];
+    public const HEADER_POSITIONS = ['inside' => 'Inside menu', 'above' => 'Above menu', 'below' => 'Below menu'];
 
     public const HEADER_CAPS = ['small-caps' => 'Small caps', 'normal' => 'Original case'];
 
@@ -44,7 +44,7 @@ final class PublicAppearance
 
     public static function headerAlignmentOptions(string $position): array
     {
-        return in_array($position, ['inside', 'outside'], true)
+        return $position === 'inside'
             ? ['left' => 'Left', 'right' => 'Right']
             : self::HEADER_ALIGNMENT;
     }
@@ -53,7 +53,7 @@ final class PublicAppearance
     {
         $alignment = self::headerAlignment($value);
 
-        return in_array(self::headerPosition($position), ['inside', 'outside'], true) && $alignment === 'center'
+        return self::headerPosition($position) === 'inside' && $alignment === 'center'
             ? 'left'
             : $alignment;
     }
@@ -134,6 +134,13 @@ final class PublicAppearance
     public static function headerPosition(mixed $value): string
     {
         $value ??= 'inside';
+
+        // Immutable publication checkpoints may still contain the retired
+        // persisted value. Render it using the remaining Inside position.
+        if ($value === 'outside') {
+            return 'inside';
+        }
+
         if (! is_string($value) || ! array_key_exists($value, self::HEADER_POSITIONS)) {
             throw ValidationException::withMessages(['header_name_position' => 'Choose a supported name position.']);
         }

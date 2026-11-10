@@ -326,7 +326,7 @@ final class General extends Page
                                                     return;
                                                 }
 
-                                                if (in_array($livewire->data['header_name_position'] ?? null, ['inside', 'outside'], true)
+                                                if (($livewire->data['header_name_position'] ?? null) === 'inside'
                                                     && ($livewire->data['header_name_alignment'] ?? null) === 'center') {
                                                     $livewire->data['header_name_alignment'] = 'left';
                                                     $livewire->persistChangedFields(['header_name_position', 'header_name_alignment']);
