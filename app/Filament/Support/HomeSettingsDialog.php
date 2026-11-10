@@ -4,9 +4,7 @@ namespace App\Filament\Support;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminAutoPublishPreferences;
-use App\Domain\Content\HomeHeroCandidate;
 use App\Domain\Content\HomeHeroConfigurationService;
-use App\Domain\Content\HomeHeroResolver;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeTemplate;
@@ -14,7 +12,6 @@ use App\Domain\Content\PublicImageViewer;
 use App\Domain\Content\SitePageHeading;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Support\Controls\AdminControl;
-use App\Models\Artwork;
 use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
 use Closure;
@@ -32,7 +29,6 @@ final class HomeSettingsDialog
         private readonly HomePresentationResolver $resolver,
         private readonly HomePresentationEditorialService $editorial,
         private readonly HomeHeroConfigurationService $heroConfiguration,
-        private readonly HomeHeroResolver $heroResolver,
         private readonly HomeRoutingDialog $routingDialog,
     ) {}
 
@@ -109,9 +105,9 @@ final class HomeSettingsDialog
                         ->label(self::helpLabel(
                             'Group source',
                             'Choosing a Hero group',
-                            'Automatic selects eligible Artworks from enabled, published Galleries. Storage files you explicitly add can also join Automatic. Manual uses the stored, ordered selection of Gallery Artworks and Storage files.',
+                            'Automatic uses only enabled, published Galleries. Semi-Automatic combines the enabled Galleries with the separately enabled Manual Storage group and allows excluding individual automatic candidates. Manual uses only the stored, ordered Manual group.',
                         ))
-                        ->options(['automatic' => __('Automatic'), 'manual' => __('Manual')])
+                        ->options(['automatic' => __('Automatic'), 'semi_automatic' => __('Semi-Automatic'), 'manual' => __('Manual')])
                         ->required()
                         ->live()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
@@ -121,12 +117,12 @@ final class HomeSettingsDialog
                         ->minValue(1)
                         ->maxValue(HomeHeroConfigurationService::MAX_GROUP_SIZE)
                         ->required()
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') !== 'manual'),
                     Select::make('newest_by')
                         ->label('Newest by')
                         ->options(['artwork_date' => __('Artwork date'), 'added' => __('Added')])
                         ->required()
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') !== 'manual'),
                     Select::make('display_strategy')
                         ->label(self::helpLabel(
                             'Display strategy',
@@ -213,16 +209,6 @@ final class HomeSettingsDialog
                 'rotation_interval_count' => $data['rotation_interval_count'] ?? $current['rotation_interval']['count'],
                 'rotation_interval_unit' => $data['rotation_interval_unit'] ?? $current['rotation_interval']['unit'],
             ];
-
-            if ($groupSource === 'manual' && $current['manual_group'] === []) {
-                $resolved = $this->heroResolver->resolve($settings)['current'];
-                if ($resolved instanceof HomeHeroCandidate) {
-                    $identity = $resolved->artwork() instanceof Artwork
-                        ? ['artwork_id' => (int) $resolved->record->getKey()]
-                        : ['media_asset_id' => (int) $resolved->record->getKey()];
-                    $input['manual_group'] = [[...$identity, 'weight' => HomeHeroConfigurationService::WEIGHT_TOTAL]];
-                }
-            }
 
             $changed = $this->heroConfiguration->updateArtworkSettings($settings, $input);
         } else {

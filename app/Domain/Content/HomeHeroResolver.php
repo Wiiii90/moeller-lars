@@ -89,25 +89,42 @@ final class HomeHeroResolver
         return [$eligible, $weights];
     }
 
+    /** Read the one stored Manual group, independent of the active source mode.
+     * @return Collection<int,HomeHeroCandidate>
+     */
+    public function manualCandidates(HomePresentationSetting $settings): Collection
+    {
+        return $this->selectedCandidates($this->configuration->configuration($settings)['manual_group']);
+    }
+
     /** @param array<string,mixed> $configuration
      * @return array{0:Collection<int,HomeHeroCandidate>,1:array<string,int>}
      */
     private function automaticGroup(array $configuration): array
     {
-        $group = $this->artworks->configuredHomeCandidates(
-            $configuration['group_size'],
-            $configuration['newest_by'],
-        )->map(static fn (Artwork $artwork): HomeHeroCandidate => HomeHeroCandidate::fromArtwork($artwork))
-            ->values();
+        $semi = $configuration['group_source'] === 'semi_automatic';
+        $manual = $semi && $configuration['manual_group_enabled']
+            ? $this->selectedCandidates($configuration['manual_group'])->take($configuration['group_size'])->values()
+            : new Collection;
 
-        // Explicit Storage selections are available in either source mode.
-        // Stored Artwork members are meaningful only when Manual is selected.
-        $mediaMembers = array_values(array_filter(
-            $configuration['manual_group'],
-            static fn (array $member): bool => isset($member['media_asset_id']),
-        ));
-        foreach ($this->selectedCandidates($mediaMembers) as $candidate) {
-            $group->push($candidate);
+        $remaining = max(0, $configuration['group_size'] - $manual->count());
+        $group = $manual;
+        if ($remaining > 0) {
+            $excluded = $semi ? $configuration['disabled_auto_artwork_ids'] : [];
+            // An explicitly selected Artwork cannot appear twice in the same
+            // mixed group, even when its Gallery is enabled for automatic use.
+            foreach ($manual as $candidate) {
+                if ($candidate->artwork() instanceof Artwork) {
+                    $excluded[] = (int) $candidate->record->getKey();
+                }
+            }
+            $automatic = $this->artworks->configuredHomeCandidates(
+                $remaining,
+                $configuration['newest_by'],
+                array_values(array_unique($excluded)),
+            )->map(static fn (Artwork $artwork): HomeHeroCandidate => HomeHeroCandidate::fromArtwork($artwork))
+                ->values();
+            $group = $manual->concat($automatic)->values();
         }
 
         $weights = [];

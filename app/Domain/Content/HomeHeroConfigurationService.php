@@ -31,6 +31,8 @@ final class HomeHeroConfigurationService
      *
      * @return array{
      *     group_source:string,
+     *     manual_group_enabled:bool,
+     *     disabled_auto_artwork_ids:list<int>,
      *     display_strategy:string,
      *     manual_group:list<array{artwork_id?:int,media_asset_id?:int,weight:int}>,
      *     manual_group_count:int,
@@ -56,7 +58,7 @@ final class HomeHeroConfigurationService
             ? $artwork['hero_mode']
             : 'automatic';
 
-        $groupSource = $this->enumOrNull($artwork['group_source'] ?? null, ['automatic', 'manual'])
+        $groupSource = $this->enumOrNull($artwork['group_source'] ?? null, ['automatic', 'semi_automatic', 'manual'])
             ?? (in_array($persistedMode, ['fixed', 'manual'], true) ? 'manual' : 'automatic');
 
         $displayStrategy = $this->enumOrNull($artwork['display_strategy'] ?? null, ['ordered', 'random', 'sequential']);
@@ -82,6 +84,8 @@ final class HomeHeroConfigurationService
 
         return [
             'group_source' => $groupSource,
+            'manual_group_enabled' => (bool) ($artwork['manual_group_enabled'] ?? true),
+            'disabled_auto_artwork_ids' => $this->readDisabledAutoArtworkIds($artwork['disabled_auto_artwork_ids'] ?? []),
             'display_strategy' => $displayStrategy,
             'manual_group' => $manualGroup,
             'manual_group_count' => count($manualGroup),
@@ -112,6 +116,10 @@ final class HomeHeroConfigurationService
 
             $current = $this->configuration($fresh);
             $groupSource = $this->requestedGroupSource($input, $current['group_source']);
+            $manualGroupEnabled = (bool) ($input['manual_group_enabled'] ?? $current['manual_group_enabled']);
+            $disabledAutoIds = array_key_exists('disabled_auto_artwork_ids', $input)
+                ? $this->validatedDisabledAutoArtworkIds($input['disabled_auto_artwork_ids'])
+                : $current['disabled_auto_artwork_ids'];
             $displayStrategy = $this->requestedDisplayStrategy($input, $current['display_strategy']);
             $newestBy = $this->enum($input['newest_by'] ?? $current['newest_by'], ['artwork_date', 'added'], 'artwork_date');
             $groupSize = $this->validatedGroupSize($input['group_size'] ?? $current['group_size']);
@@ -123,12 +131,6 @@ final class HomeHeroConfigurationService
 
             $rotationInterval = $this->requestedRotationInterval($input, $current['rotation_interval']);
 
-            if ($groupSource === 'manual' && $manualGroup === []) {
-                throw ValidationException::withMessages([
-                    'manual_group' => 'Manual Home groups need at least one artwork.',
-                ]);
-            }
-
             $rotationStartedAt = $current['rotation_started_at'];
             $showDetails = (bool) ($input['show_details'] ?? $current['show_details']);
             $showGalleryLink = (bool) ($input['show_gallery_link'] ?? $current['show_gallery_link']);
@@ -139,8 +141,10 @@ final class HomeHeroConfigurationService
             $intervalChanged = $rotationInterval !== $current['rotation_interval'];
             $sourceChanged = $groupSource !== $current['group_source'];
             $strategyChanged = $displayStrategy !== $current['display_strategy'];
-            $automaticGroupDefinitionChanged = $groupSource === 'automatic'
-                && ($groupSize !== $current['group_size'] || $newestBy !== $current['newest_by']);
+            $automaticGroupDefinitionChanged = $groupSource !== 'manual'
+                && ($groupSize !== $current['group_size'] || $newestBy !== $current['newest_by']
+                    || $disabledAutoIds !== $current['disabled_auto_artwork_ids']
+                    || $manualGroupEnabled !== $current['manual_group_enabled']);
 
             if ($displayStrategy === 'sequential'
                 && ($rotationStartedAt === null
@@ -155,6 +159,8 @@ final class HomeHeroConfigurationService
             if (
                 $fresh->template() === HomeTemplate::Artwork
                 && $groupSource === $current['group_source']
+                && $manualGroupEnabled === $current['manual_group_enabled']
+                && $disabledAutoIds === $current['disabled_auto_artwork_ids']
                 && $displayStrategy === $current['display_strategy']
                 && $manualGroup === $current['manual_group']
                 && $rotationInterval === $current['rotation_interval']
@@ -181,6 +187,8 @@ final class HomeHeroConfigurationService
             $artwork['video_sound_enabled'] = $videoSoundEnabled;
             $artwork['enable_viewer'] = $enableViewer;
             $artwork['group_source'] = $groupSource;
+            $artwork['manual_group_enabled'] = $manualGroupEnabled;
+            $artwork['disabled_auto_artwork_ids'] = $disabledAutoIds;
             $artwork['display_strategy'] = $displayStrategy;
             $artwork['manual_group'] = $manualGroup;
             $artwork['rotation_interval'] = $rotationInterval;
@@ -240,6 +248,12 @@ final class HomeHeroConfigurationService
         }
 
         $current = $this->configuration($settings->fresh());
+        if ($current['group_source'] === 'automatic') {
+            throw ValidationException::withMessages([
+                'media_asset_id' => 'Switch to Semi-Automatic or Manual to edit the Manual group.',
+            ]);
+        }
+
         $group = $current['manual_group'];
         if (count($group) >= self::MAX_GROUP_SIZE) {
             throw ValidationException::withMessages([
@@ -273,10 +287,6 @@ final class HomeHeroConfigurationService
         if ($index === false) {
             throw ValidationException::withMessages(['candidate' => 'This candidate is not in the selected group.']);
         }
-        if ($current['group_source'] === 'manual' && count($group) === 1) {
-            throw ValidationException::withMessages(['candidate' => 'The active Manual Home group cannot be empty.']);
-        }
-
         array_splice($group, $index, 1);
         if ($group !== []) {
             $group = $this->normalizeManualGroup($group);
@@ -492,11 +502,88 @@ final class HomeHeroConfigurationService
         return array_values($allocated);
     }
 
+    /** @return list<int> */
+    private function readDisabledAutoArtworkIds(mixed $value): array
+    {
+        if (! is_array($value) || ! array_is_list($value)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($value as $valueId) {
+            $id = filter_var($valueId, FILTER_VALIDATE_INT);
+            if ($id !== false && $id > 0) {
+                $ids[] = (int) $id;
+            }
+        }
+
+        $ids = array_values(array_unique($ids));
+        sort($ids);
+
+        return $ids;
+    }
+
+    /** @return list<int> */
+    private function validatedDisabledAutoArtworkIds(mixed $value): array
+    {
+        if (! is_array($value) || ! array_is_list($value)
+            || count($value) > 10000
+            || count($this->readDisabledAutoArtworkIds($value)) !== count($value)) {
+            throw ValidationException::withMessages([
+                'disabled_auto_artwork_ids' => 'Choose distinct, valid Artwork exclusions.',
+            ]);
+        }
+
+        return $this->readDisabledAutoArtworkIds($value);
+    }
+
+    public function setAutomaticCandidateEnabled(HomePresentationSetting $settings, int $artworkId, bool $enabled): bool
+    {
+        if ($artworkId < 1) {
+            throw ValidationException::withMessages(['candidate' => 'Select a valid Gallery Artwork.']);
+        }
+
+        return DB::transaction(function () use ($settings, $artworkId, $enabled): bool {
+            /** @var HomePresentationSetting $fresh */
+            $fresh = HomePresentationSetting::query()
+                ->whereKey($settings->getKey())->lockForUpdate()->firstOrFail();
+            $current = $this->configuration($fresh);
+            if ($current['group_source'] !== 'semi_automatic') {
+                throw ValidationException::withMessages([
+                    'candidate' => 'Only Semi-Automatic permits individual Gallery exclusions.',
+                ]);
+            }
+
+            $disabled = $current['disabled_auto_artwork_ids'];
+            $present = in_array($artworkId, $disabled, true);
+            if ($present === ! $enabled) {
+                return false;
+            }
+
+            if ($enabled) {
+                $disabled = array_values(array_diff($disabled, [$artworkId]));
+            } else {
+                $key = 'artwork:'.$artworkId;
+                $manualKeys = array_map(self::memberKey(...), $current['manual_group']);
+                $active = app(HomeHeroResolver::class)->resolve($fresh)['group'];
+                if (in_array($key, $manualKeys, true)
+                    || ! $active->contains(static fn (HomeHeroCandidate $candidate): bool => $candidate->key() === $key)) {
+                    throw ValidationException::withMessages([
+                        'candidate' => 'This automatic candidate is no longer in the current Hero group.',
+                    ]);
+                }
+                $disabled[] = $artworkId;
+            }
+
+            return $this->updateArtworkSettings($fresh, ['disabled_auto_artwork_ids' => $disabled]);
+        });
+    }
+
     /** @param array<string, mixed> $input */
     private function requestedGroupSource(array $input, string $current): string
     {
         return array_key_exists('group_source', $input)
-            ? $this->enum($input['group_source'], ['automatic', 'manual'], $current)
+            ? $this->enum($input['group_source'], ['automatic', 'semi_automatic', 'manual'], $current)
             : $current;
     }
 

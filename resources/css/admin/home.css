@@ -238,9 +238,15 @@
     align-items: flex-start;
     overflow-x: auto;
     overflow-y: hidden;
-    scrollbar-width: thin;
+    scrollbar-width: none;
     cursor: grab;
     user-select: none;
+}
+
+.home-source-candidates::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
 }
 
 .home-source-candidates.is-dragging {

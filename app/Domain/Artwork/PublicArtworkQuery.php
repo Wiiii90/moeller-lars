@@ -67,8 +67,12 @@ class PublicArtworkQuery
     public function configuredHomeCandidates(
         int $groupSize = 12,
         string $newestBy = 'artwork_date',
+        array $excludeIds = [],
     ): Collection {
         $query = $this->homeQuery();
+        if ($excludeIds !== []) {
+            $query->whereNotIn('id', $excludeIds);
+        }
         $this->applyConfiguredHomeOrdering($query, $newestBy);
 
         /** @var Collection<int, Artwork> $artworks */

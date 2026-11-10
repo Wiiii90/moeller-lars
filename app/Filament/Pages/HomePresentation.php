@@ -104,6 +104,14 @@ final class HomePresentation extends Page
 
     public string $heroGroupSource = 'automatic';
 
+    public bool $manualHeroGroupEnabled = true;
+
+    /** @var list<int> */
+    public array $disabledAutoHeroIds = [];
+
+    /** @var list<array<string,mixed>> */
+    public array $excludedHeroRows = [];
+
     public string $heroDisplayStrategy = 'ordered';
 
     public string $heroNewestBy = 'artwork_date';
@@ -317,7 +325,12 @@ final class HomePresentation extends Page
                 fn (string $field, bool $value) => $this->persistHeroDisplayToggle($field, $value),
             ))
             ->action(function (array $data) use ($dialog): void {
+                $previousSource = $this->heroGroupSource;
                 $changed = $dialog->save($data);
+                if (($data['group_source'] ?? $previousSource) !== $previousSource) {
+                    $this->sourcePage = 1;
+                    $this->clearSourceSelection();
+                }
                 $this->reloadWorkspace();
 
                 if ($changed) {
@@ -378,6 +391,38 @@ final class HomePresentation extends Page
                 app(AdminNotifier::class)->notification(title: 'Hero candidate added', status: 'success');
             }
         });
+    }
+
+    public function setAutomaticHeroCandidateEnabled(int $artworkId, bool $enabled): void
+    {
+        $changed = app(HomeHeroConfigurationService::class)->setAutomaticCandidateEnabled(
+            $this->settings(), $artworkId, $enabled,
+        );
+        if (! $changed) {
+            return;
+        }
+
+        $this->reloadWorkspace();
+        app(AdminNotifier::class)->notification(
+            title: $enabled ? 'Automatic Hero candidate restored' : 'Automatic Hero candidate excluded',
+            status: 'success',
+        );
+    }
+
+    public function toggleManualHeroSource(): void
+    {
+        if ($this->heroGroupSource !== 'semi_automatic') {
+            return;
+        }
+        $changed = app(HomeHeroConfigurationService::class)->updateArtworkSettings(
+            $this->settings(), ['manual_group_enabled' => ! $this->manualHeroGroupEnabled],
+        );
+        if (! $changed) {
+            return;
+        }
+        $this->clearSourceSelection();
+        $this->reloadWorkspace();
+        app(AdminNotifier::class)->notification(title: 'Manual Hero source updated', status: 'success');
     }
 
     public function removeHeroCandidate(string $key): void
@@ -923,11 +968,15 @@ final class HomePresentation extends Page
 
     public function toggleVisibleSourceSelection(): void
     {
-        $visibleIds = $this->sourceRows()->getCollection()->pluck('id')->map(static fn ($id): int => (int) $id)->filter()->values()->all();
+        $visibleIds = $this->sourceRows()->getCollection()->pluck('id')
+            ->map(static fn ($id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0 || ($id === 0 && $this->heroGroupSource === 'semi_automatic'))
+            ->values()->all();
         if ($visibleIds === []) {
             return;
         }
-        $selected = collect($this->selectedSourceIds)->map(static fn ($id): int => (int) $id)->filter()->unique()->values();
+        $selected = collect($this->selectedSourceIds)->map(static fn ($id): int => (int) $id)
+            ->filter(static fn (int $id): bool => $id >= 0)->unique()->values();
         if ($selected->intersect($visibleIds)->count() === count($visibleIds)) {
             $this->selectedSourceIds = $selected->reject(static fn (int $id): bool => in_array($id, $visibleIds, true))->values()->all();
 
@@ -939,30 +988,40 @@ final class HomePresentation extends Page
     /** @return array{enable:bool,disable:bool} */
     public function selectedSourceCapabilities(): array
     {
-        $ids = collect($this->selectedSourceIds)->map(static fn (mixed $id): int => (int) $id)
-            ->filter(static fn (int $id): bool => $id > 0)->unique()->all();
-        if ($ids === []) {
+        $selected = array_map('intval', $this->selectedSourceIds);
+        $ids = array_values(array_filter($selected, static fn (int $id): bool => $id > 0));
+        $hasManual = $this->heroGroupSource === 'semi_automatic' && in_array(0, $selected, true);
+        if ($ids === [] && ! $hasManual) {
             return ['enable' => false, 'disable' => false];
         }
 
         $galleries = ArtworkCategory::query()->whereKey($ids)->with('siteSection')->get();
 
         return [
-            'enable' => $galleries->contains(static fn (ArtworkCategory $gallery): bool => ! (bool) $gallery->getAttribute('show_on_home')
-                && $gallery->getRelationValue('siteSection')?->getAttribute('state') === 'published'),
-            'disable' => $galleries->contains(static fn (ArtworkCategory $gallery): bool => (bool) $gallery->getAttribute('show_on_home')),
+            'enable' => ($hasManual && ! $this->manualHeroGroupEnabled)
+                || $galleries->contains(static fn (ArtworkCategory $gallery): bool => ! (bool) $gallery->getAttribute('show_on_home')
+                    && $gallery->getRelationValue('siteSection')?->getAttribute('state') === 'published'),
+            'disable' => ($hasManual && $this->manualHeroGroupEnabled)
+                || $galleries->contains(static fn (ArtworkCategory $gallery): bool => (bool) $gallery->getAttribute('show_on_home')),
         ];
     }
 
     public function setSelectedGalleryEligibility(bool $enabled): void
     {
-        $ids = collect($this->selectedSourceIds)->map(static fn ($id): int => (int) $id)->filter()->unique()->values()->all();
-        if ($ids === []) {
+        $selected = array_map('intval', $this->selectedSourceIds);
+        $includeManual = $this->heroGroupSource === 'semi_automatic' && in_array(0, $selected, true);
+        $ids = array_values(array_unique(array_filter($selected, static fn (int $id): bool => $id > 0)));
+        if ($ids === [] && ! $includeManual) {
             return;
         }
-        $changed = DB::transaction(function () use ($ids, $enabled): int {
+        $changed = DB::transaction(function () use ($ids, $includeManual, $enabled): int {
             $galleries = ArtworkCategory::query()->whereIn('id', $ids)->with('siteSection')->orderBy('id')->lockForUpdate()->get();
             $changed = 0;
+            if ($includeManual) {
+                $changed += (int) app(HomeHeroConfigurationService::class)->updateArtworkSettings(
+                    $this->settings(), ['manual_group_enabled' => $enabled],
+                );
+            }
             foreach ($galleries as $gallery) {
                 if ((bool) $gallery->getAttribute('show_on_home') === $enabled
                     || ($enabled && $gallery->getRelationValue('siteSection')?->getAttribute('state') !== 'published')) {
@@ -992,25 +1051,31 @@ final class HomePresentation extends Page
 
     public function sourceRows(): LengthAwarePaginator
     {
-        $candidateGroup = app(HomeHeroResolver::class)->resolve($this->settings())['group'];
-        // Direct Storage selections always belong to the independent manual
-        // source row, even when the file is also used by an Artwork in a Gallery.
-        $grouped = $candidateGroup
-            ->filter(static fn (HomeHeroCandidate $candidate): bool => $candidate->kind === 'artwork')
+        $settings = $this->settings();
+        $resolver = app(HomeHeroResolver::class);
+        $active = $resolver->resolve($settings)['group'];
+        $manualKeys = $this->heroGroupSource === 'semi_automatic' && $this->manualHeroGroupEnabled
+            ? array_map(HomeHeroConfigurationService::memberKey(...), $this->manualHeroGroup)
+            : [];
+        $grouped = $active
+            ->filter(static fn (HomeHeroCandidate $candidate): bool => $candidate->kind === 'artwork'
+                && ! in_array($candidate->key(), $manualKeys, true))
             ->groupBy(static fn (HomeHeroCandidate $candidate): int => (int) ($candidate->gallery()?->getKey() ?? 0));
-        $standalone = $candidateGroup
-            ->filter(static fn (HomeHeroCandidate $candidate): bool => $candidate->kind === 'media')
-            ->values();
+        $manual = $this->heroGroupSource === 'automatic'
+            ? collect()
+            : $resolver->manualCandidates($settings);
         $search = trim($this->sourceSearch);
         $needle = mb_strtolower($search);
+        $showGalleries = $this->heroGroupSource !== 'manual';
 
         /** @var Builder<ArtworkCategory> $query */
         $query = ArtworkCategory::query()->whereHas('siteSection')->with('siteSection')
             ->withCount('artworks');
 
         if ($search !== '') {
-            $matchedGalleryIds = $candidateGroup
+            $matchedGalleryIds = $active
                 ->filter(static fn (HomeHeroCandidate $candidate): bool => $candidate->kind === 'artwork'
+                    && ! in_array($candidate->key(), $manualKeys, true)
                     && str_contains(mb_strtolower($candidate->title()), $needle))
                 ->map(static fn (HomeHeroCandidate $candidate): int => (int) ($candidate->gallery()?->getKey() ?? 0))
                 ->filter()->unique()->values()->all();
@@ -1028,64 +1093,70 @@ final class HomePresentation extends Page
             $query->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', '<>', 'published'));
         }
 
-        $showStandalone = $standalone->isNotEmpty() && $this->sourceStatusFilter !== 'unpublished'
-            && ($search === '' || str_contains('manually added storage direct selections', $needle)
-                || $standalone->contains(static fn (HomeHeroCandidate $candidate): bool => str_contains(
+        // The one stored Manual group stays visible in Semi-Automatic and
+        // Manual even when empty or currently disabled. Automatic never shows
+        // or sources this virtual group.
+        $manualEnabled = $this->heroGroupSource === 'manual' || $this->manualHeroGroupEnabled;
+        $manualState = $manualEnabled ? 'published' : 'unpublished';
+        $showManual = $this->heroGroupSource !== 'automatic'
+            && ($this->sourceStatusFilter === 'any' || $this->sourceStatusFilter === $manualState)
+            && ($search === '' || str_contains('manual group storage manually added', $needle)
+                || $manual->contains(static fn (HomeHeroCandidate $candidate): bool => str_contains(
                     mb_strtolower($candidate->title()), $needle,
                 )));
 
-        $galleryTotal = (clone $query)->count();
-        $total = $galleryTotal + (int) $showStandalone;
+        $galleryTotal = $showGalleries ? (clone $query)->count() : 0;
+        $total = $galleryTotal + (int) $showManual;
         $perPage = in_array($this->sourcePerPage, [10, 25], true) ? $this->sourcePerPage : 10;
-        $lastPage = max(1, (int) ceil($total / $perPage));
-        $page = max(1, min($this->sourcePage, $lastPage));
+        $page = max(1, min($this->sourcePage, max(1, (int) ceil($total / $perPage))));
         $offset = ($page - 1) * $perPage;
-        // Keep the manually added Storage source visible on the first page.
-        // Its virtual row occupies one slot; subsequent pages contain only
-        // actual Galleries without duplicating or skipping a record.
-        $showStandaloneOnPage = $showStandalone && $page === 1;
-        $galleryOffset = max(0, $offset - (int) $showStandalone);
-        $galleryLimit = $perPage - (int) $showStandaloneOnPage;
+        $manualOnPage = $showManual && $page === 1;
+        $galleryOffset = max(0, $offset - (int) $showManual);
+        $galleryLimit = $perPage - (int) $manualOnPage;
 
-        /** @var EloquentCollection<int,ArtworkCategory> $galleries */
-        $galleries = $query->orderBy('name')->offset($galleryOffset)->limit($galleryLimit)->get();
         $rows = [];
-        if ($showStandaloneOnPage) {
+        if ($manualOnPage) {
             $rows[] = [
                 'id' => 0,
                 'standalone' => true,
-                'name' => 'Manually added (Storage)',
-                'preference_enabled' => false,
-                'can_enable' => false,
-                'state' => 'published',
-                'status_label' => 'Available',
+                'name' => 'Manual group',
+                'preference_enabled' => $manualEnabled,
+                'can_enable' => $this->heroGroupSource === 'semi_automatic',
+                'state' => $manualState,
+                'status_label' => $this->heroGroupSource === 'manual'
+                    ? 'Manual' : ($manualEnabled ? 'Enabled' : 'Disabled'),
                 'artworks_count' => 0,
-                'candidate_count' => $standalone->count(),
+                'candidate_count' => $manual->count(),
                 'workspace_url' => null,
-                'candidates' => $standalone->map(fn (HomeHeroCandidate $candidate): array => $this->candidateRow($candidate))->values()->all(),
+                'candidates' => $manual->map(fn (HomeHeroCandidate $candidate): array => $this->candidateRow($candidate))->values()->all(),
             ];
         }
-        $rows = array_merge($rows, $galleries->map(function (ArtworkCategory $gallery) use ($grouped): array {
-            /** @var SiteSection|null $section */
-            $section = $gallery->getRelationValue('siteSection');
-            $state = (string) ($section?->getAttribute('state') ?? 'hidden');
-            $preference = (bool) $gallery->getAttribute('show_on_home');
-            $galleryCandidates = $grouped->get((int) $gallery->getKey(), collect());
 
-            return [
-                'id' => (int) $gallery->getKey(),
-                'standalone' => false,
-                'name' => (string) $gallery->getAttribute('name'),
-                'preference_enabled' => $preference,
-                'can_enable' => $state === 'published',
-                'state' => $state,
-                'status_label' => $state === 'published' ? 'Published' : 'Unpublished',
-                'artworks_count' => (int) $gallery->getAttribute('artworks_count'),
-                'candidate_count' => $galleryCandidates->count(),
-                'workspace_url' => GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()]),
-                'candidates' => $galleryCandidates->map(fn (HomeHeroCandidate $candidate): array => $this->candidateRow($candidate))->values()->all(),
-            ];
-        })->all());
+        if ($showGalleries && $galleryLimit > 0) {
+            /** @var EloquentCollection<int,ArtworkCategory> $galleries */
+            $galleries = $query->orderBy('name')->offset($galleryOffset)->limit($galleryLimit)->get();
+            foreach ($galleries as $gallery) {
+                /** @var SiteSection|null $section */
+                $section = $gallery->getRelationValue('siteSection');
+                $state = (string) ($section?->getAttribute('state') ?? 'hidden');
+                $preference = (bool) $gallery->getAttribute('show_on_home');
+                $galleryCandidates = $grouped->get((int) $gallery->getKey(), collect());
+
+                $rows[] = [
+                    'id' => (int) $gallery->getKey(),
+                    'standalone' => false,
+                    'name' => (string) $gallery->getAttribute('name'),
+                    'preference_enabled' => $preference,
+                    'can_enable' => $state === 'published',
+                    'state' => $state,
+                    'status_label' => $state === 'published' ? 'Published' : 'Unpublished',
+                    'artworks_count' => (int) $gallery->getAttribute('artworks_count'),
+                    'candidate_count' => $galleryCandidates->count(),
+                    'workspace_url' => GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()]),
+                    'candidates' => $galleryCandidates->map(fn (HomeHeroCandidate $candidate): array => $this->candidateRow($candidate))->values()->all(),
+                ];
+            }
+        }
 
         return new LengthAwarePaginator($rows, $total, $perPage, $page, ['path' => request()->url(), 'pageName' => 'sourcePage']);
     }
@@ -1107,6 +1178,9 @@ final class HomePresentation extends Page
         $this->artworkShowNavigation = $heroConfiguration['show_navigation'];
         $this->artworkEnableViewer = $heroConfiguration['enable_viewer'];
         $this->heroGroupSource = $heroConfiguration['group_source'];
+        $this->manualHeroGroupEnabled = $heroConfiguration['manual_group_enabled'];
+        $this->disabledAutoHeroIds = $heroConfiguration['disabled_auto_artwork_ids'];
+        $this->excludedHeroRows = [];
         $this->heroDisplayStrategy = $heroConfiguration['display_strategy'];
         $this->heroNewestBy = $heroConfiguration['newest_by'];
         $this->heroGroupSize = $heroConfiguration['group_size'];
@@ -1150,8 +1224,9 @@ final class HomePresentation extends Page
         $statistics = $publicArtworks->homeCandidateStatistics();
         $this->eligibleArtworkCount = $statistics['eligible'];
         $this->newestEligibleYear = $statistics['newest_year'];
-        $this->sourceGalleryCount = ArtworkCategory::query()->where('show_on_home', true)
-            ->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', 'published'))->count();
+        $this->sourceGalleryCount = $this->heroGroupSource === 'manual' ? 0
+            : ArtworkCategory::query()->where('show_on_home', true)
+                ->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', 'published'))->count();
 
         $resolution = app(HomeHeroResolver::class)->resolve($settings);
         $this->candidatePoolCount = $resolution['group']->count();
@@ -1169,6 +1244,13 @@ final class HomePresentation extends Page
             $this->heroRailRows = $this->manualHeroRows($resolution);
 
             return;
+        }
+
+        if ($this->heroGroupSource === 'semi_automatic' && $this->disabledAutoHeroIds !== []) {
+            $disabled = $publicArtworks->homeCandidatesByIds($this->disabledAutoHeroIds);
+            $this->excludedHeroRows = $disabled
+                ->map(fn (Artwork $artwork): array => $this->candidateRow(HomeHeroCandidate::fromArtwork($artwork)))
+                ->values()->all();
         }
 
         $sequence = $this->heroDisplayStrategy === 'sequential' ? $resolution['sequence'] : $resolution['group'];
@@ -1368,7 +1450,7 @@ final class HomePresentation extends Page
                 ['role' => 'views', 'label' => 'Views · 30d', 'value' => $this->formatMetric($this->homeViews), 'description' => $analyticsDescription],
                 ['role' => 'sources', 'label' => 'Source Galleries', 'value' => number_format($this->sourceGalleryCount), 'description' => 'Effective sources'],
                 ['role' => 'eligible', 'label' => 'Eligible Artworks', 'value' => number_format($this->eligibleArtworkCount), 'description' => 'Home eligible'],
-                ['role' => 'candidates', 'label' => 'Candidate Group', 'value' => number_format($this->heroGroupSource === 'manual' ? count($this->manualHeroGroup) : $this->candidatePoolCount), 'description' => $this->heroGroupSource === 'manual' ? 'Stored members' : 'Effective group'],
+                ['role' => 'candidates', 'label' => 'Candidate Group', 'value' => number_format($this->candidatePoolCount), 'description' => 'Effective group'],
                 ['role' => 'year', 'label' => 'Newest Year', 'value' => $this->newestEligibleYear === null ? '—' : (string) $this->newestEligibleYear, 'description' => 'Eligible newest'],
             ];
 

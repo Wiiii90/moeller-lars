@@ -12,6 +12,7 @@
 
         @if ($template === 'artwork')
             @php
+                $manualHeroKeys = array_map(\App\Domain\Content\HomeHeroConfigurationService::memberKey(...), $manualHeroGroup);
                 $simulationCandidates = collect($heroRailRows)
                     ->filter(static fn (array $row): bool => $row['eligible'] ?? true)
                     ->map(static fn (array $row): array => [
@@ -54,10 +55,10 @@
 
                 <div class="home-hero-rail admin-visual-stage__pane" aria-label="Hero group">
                     <div class="home-hero-rail__summary">
-                        <strong>{{ $heroGroupSource === 'manual' ? 'Manual' : 'Automatic' }} · {{ ucfirst($heroDisplayStrategy) }}</strong>
+                        <strong>{{ match ($heroGroupSource) { 'manual' => 'Manual', 'semi_automatic' => 'Semi-Automatic', default => 'Automatic' } }} · {{ ucfirst($heroDisplayStrategy) }}</strong>
                         <span>
-                            {{ $heroGroupSource === 'manual' ? count($manualHeroGroup) : $candidatePoolCount }}
-                            {{ ($heroGroupSource === 'manual' ? count($manualHeroGroup) : $candidatePoolCount) === 1 ? 'candidate' : 'candidates' }}
+                            {{ $candidatePoolCount }}
+                            {{ $candidatePoolCount === 1 ? 'candidate' : 'candidates' }}
                         </span>
                         <span x-text="simulationLabel" aria-live="off">
                             @if ($heroDisplayStrategy === 'sequential' && $nextRotationAt)
@@ -68,9 +69,9 @@
                         </span>
                     </div>
 
-                    @if ($heroRailRows !== [])
+                    @if ($heroRailRows !== [] || $excludedHeroRows !== [])
                         <div class="home-hero-rail__rows" @if ($heroGroupSource === 'manual') wire:sort="sortHeroArtwork" @endif>
-                            @foreach ($heroRailRows as $row)
+                            @forelse ($heroRailRows as $row)
                                 <article
                                     class="home-hero-candidate {{ $heroGroupSource === 'manual' ? 'is-manual' : '' }} {{ !($row['eligible'] ?? true) ? 'is-unavailable' : '' }}"
                                     x-bind:class="{ 'is-current': activeId === $el.dataset.candidateKey }"
@@ -116,17 +117,52 @@
                                         </label>
                                     @endif
 
-                                    @if ($heroGroupSource === 'manual' || str_starts_with($row['id'], 'media:'))
+                                    @php
+                                        $isManualCandidate = in_array($row['id'], $manualHeroKeys, true);
+                                        $isAutomaticCandidate = $heroGroupSource === 'semi_automatic'
+                                            && ! $isManualCandidate && str_starts_with($row['id'], 'artwork:');
+                                    @endphp
+                                    @if ($heroGroupSource === 'manual' || ($heroGroupSource === 'semi_automatic' && $isManualCandidate) || $isAutomaticCandidate)
                                         <div class="home-hero-candidate__actions admin-toolbar">
                                             @if ($heroGroupSource === 'manual')
-                                            <button class="admin-action admin-order-action" type="button" wire:click="moveHeroArtwork('{{ $row['id'] }}', 'up')" @disabled(! $row['can_move_up']) aria-label="Move {{ $row['title'] }} up">↑</button>
-                                            <button class="admin-action admin-order-action" type="button" wire:click="moveHeroArtwork('{{ $row['id'] }}', 'down')" @disabled(! $row['can_move_down']) aria-label="Move {{ $row['title'] }} down">↓</button>
+                                                <button class="admin-action admin-order-action" type="button" wire:click="moveHeroArtwork('{{ $row['id'] }}', 'up')" @disabled(! $row['can_move_up']) aria-label="Move {{ $row['title'] }} up">↑</button>
+                                                <button class="admin-action admin-order-action" type="button" wire:click="moveHeroArtwork('{{ $row['id'] }}', 'down')" @disabled(! $row['can_move_down']) aria-label="Move {{ $row['title'] }} down">↓</button>
                                             @endif
-                                            <button class="admin-action is-danger" type="button" wire:click="removeHeroCandidate('{{ $row['id'] }}')" @disabled($heroGroupSource === 'manual' && count($manualHeroGroup) === 1)>{{ __('Remove') }}</button>
+                                            @if ($isAutomaticCandidate)
+                                                <button class="admin-action" type="button" wire:click="setAutomaticHeroCandidateEnabled({{ (int) substr($row['id'], 8) }}, false)" aria-label="Exclude {{ $row['title'] }} from automatic Hero candidates">{{ __('Disable') }}</button>
+                                            @else
+                                                <button class="admin-action is-danger" type="button" wire:click="removeHeroCandidate('{{ $row['id'] }}')">{{ __('Remove') }}</button>
+                                            @endif
                                         </div>
                                     @endif
                                 </article>
-                            @endforeach
+                            @empty
+                                <div class="home-hero-rail__empty">{{ __('No eligible Hero candidates') }}</div>
+                            @endforelse
+
+                            @if ($heroGroupSource === 'semi_automatic' && $excludedHeroRows !== [])
+                            <div class="home-hero-rail__exclusions">
+                                <div class="home-hero-rail__summary"><strong>{{ __('Excluded automatic candidates') }}</strong></div>
+                                @foreach ($excludedHeroRows as $excluded)
+                                    <article class="home-hero-candidate" wire:key="home-excluded-{{ $excluded['id'] }}">
+                                        <span class="home-hero-candidate__visual">
+                                            @if ($excluded['thumbnail_url'])
+                                                <img src="{{ $excluded['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
+                                            @else
+                                                <span>—</span>
+                                            @endif
+                                        </span>
+                                        <div class="home-hero-candidate__meta">
+                                            <strong title="{{ $excluded['title'] }}">{{ $excluded['title'] }}</strong>
+                                            <small>{{ __('Excluded') }}</small>
+                                        </div>
+                                        <div class="home-hero-candidate__actions admin-toolbar">
+                                            <button class="admin-action" type="button" wire:click="setAutomaticHeroCandidateEnabled({{ (int) substr($excluded['id'], 8) }}, true)">{{ __('Enable') }}</button>
+                                        </div>
+                                    </article>
+                                @endforeach
+                            </div>
+                            @endif
                         </div>
                     @else
                         <div class="home-hero-rail__empty">{{ __('No eligible Hero candidates') }}</div>
@@ -140,7 +176,9 @@
 
             @php
                 $sourceRows = $this->sourceRows();
-                $visibleSourceIds = collect($sourceRows->items())->pluck('id')->map(fn ($id) => (int) $id)->filter()->values()->all();
+                $visibleSourceIds = collect($sourceRows->items())->pluck('id')->map(fn ($id) => (int) $id)
+                    ->filter(fn (int $id) => $id > 0 || ($id === 0 && $heroGroupSource === 'semi_automatic'))
+                    ->values()->all();
                 $sourceFiltersActive = trim($sourceSearch) !== '' || $sourceStatusFilter !== 'any';
                 $sourceHasRecords = $sourceRows->total() > 0 || ($sourceFiltersActive
                     && \App\Models\ArtworkCategory::query()->whereHas('siteSection')->exists());
@@ -180,15 +218,17 @@
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">{{ __('Settings') }}</span>
                             </button>
+                            @if ($heroGroupSource !== 'automatic')
                             <button
                                 class="admin-action admin-action--with-icon"
                                 type="button"
                                 wire:click="mountAction('addCandidate')"
-                                title="Add an eligible Gallery artwork or image/video from Storage"
+                                title="Add an eligible image or video to the Manual group"
                             >
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">{{ __('Add Candidate') }}</span>
                             </button>
+                            @endif
                             <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">{{ __('Preview') }}</span>
@@ -277,7 +317,7 @@
                                     <small class="admin-responsive-meta">
                                         {{ $gallery['status_label'] }} ·
                                         @if ($gallery['standalone'])
-                                            {{ number_format($gallery['candidate_count']) }} Storage candidates
+                                            {{ number_format($gallery['candidate_count']) }} Manual candidates
                                         @else
                                             {{ number_format($gallery['candidate_count']) }}/{{ number_format($gallery['artworks_count']) }} candidates
                                         @endif
@@ -324,32 +364,32 @@
                                 </td>
                                 <td class="home-source-table__status admin-table__yield--narrow"><span class="admin-status {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
                                 <td class="admin-table__actions">
-                                    @unless ($gallery['standalone'])
+                                    @if (! $gallery['standalone'] || $heroGroupSource === 'semi_automatic')
                                         <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-toolbar home-source-table__row-actions">
                                             <x-admin.row-action
                                                 :action="$gallery['preference_enabled'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
                                                 :label="$gallery['preference_enabled'] ? 'Disable' : 'Enable'"
-                                                wire:click="toggleGalleryEligibility({{ $gallery['id'] }})"
+                                                wire:click="{{ $gallery['standalone'] ? 'toggleManualHeroSource' : 'toggleGalleryEligibility('.$gallery['id'].')' }}"
                                                 :disabled="! $gallery['preference_enabled'] && ! $gallery['can_enable']"
                                             />
                                         </div>
-                                    @endunless
+                                    @endif
                                 </td>
                                 <td class="admin-table__selection admin-table__selection--trailing">
-                                    @unless ($gallery['standalone'])
+                                    @if (! $gallery['standalone'] || $heroGroupSource === 'semi_automatic')
                                         <input type="checkbox" value="{{ $gallery['id'] }}" wire:model.live="selectedSourceIds" aria-label="Select {{ $gallery['name'] }}">
-                                    @endunless
+                                    @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
                                 <td class="admin-table__empty-cell" colspan="6">
                                     @if ($sourceHasRecords)
-                                        <x-admin.empty-state title="No matching Galleries" minimal>
+                                        <x-admin.empty-state title="No matching sources" minimal>
                                             <x-slot:actions><button class="admin-action" type="button" wire:click="resetSourceFilters">{{ __('Clear filters') }}</button></x-slot:actions>
                                         </x-admin.empty-state>
                                     @else
-                                        <x-admin.empty-state title="No Gallery sources" minimal />
+                                        <x-admin.empty-state title="No Hero sources" minimal />
                                     @endif
                                 </td>
                             </tr>
@@ -374,7 +414,9 @@
                 </footer>
             @endif
 
-            <x-admin.add-row wire:click="mountAction('addCandidate')">{{ __('Add Candidate') }}</x-admin.add-row>
+            @if ($heroGroupSource !== 'automatic')
+                <x-admin.add-row wire:click="mountAction('addCandidate')">{{ __('Add Candidate') }}</x-admin.add-row>
+            @endif
 
         @elseif (in_array($template, ['under_construction', 'custom'], true))
             @php
