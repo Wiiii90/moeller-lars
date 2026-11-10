@@ -12,11 +12,25 @@
  * Construction component templates reuse Custom Page's hierarchy geometry,
  * including a permanent editable Component column and flexible Content. */
 .home-source-table {
-    --admin-row-actions-width: var(--admin-row-actions-state-open-width);
+    --admin-row-actions-width: var(--admin-row-action-slot-state-width);
 }
 
 .home-source-table__col-actions {
-    width: calc(var(--admin-row-actions-state-open-width) + .5rem);
+    width: calc(var(--admin-row-action-slot-state-width) + .5rem);
+}
+
+.home-source-table__row-actions {
+    width: var(--admin-row-action-slot-state-width);
+}
+
+.home-source-table__gallery-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.home-source-table__gallery-link:is(:hover, :focus-visible) {
+    color: var(--admin-accent-strong);
+    text-decoration: underline;
 }
 
 /* Home component and nested-child sequences now use the same canonical
@@ -237,8 +251,8 @@
 
 .home-source-table__candidates {
     min-width: 0;
+    overflow: hidden;
 }
-
 
 .home-source-candidate {
     display: block;

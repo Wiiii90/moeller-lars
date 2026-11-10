@@ -993,10 +993,14 @@ final class HomePresentation extends Page
     public function sourceRows(): LengthAwarePaginator
     {
         $candidateGroup = app(HomeHeroResolver::class)->resolve($this->settings())['group'];
-        $grouped = $candidateGroup->groupBy(
-            static fn (HomeHeroCandidate $candidate): int => (int) ($candidate->gallery()?->getKey() ?? 0),
-        );
-        $standalone = $grouped->get(0, collect());
+        // Direct Storage selections always belong to the independent manual
+        // source row, even when the file is also used by an Artwork in a Gallery.
+        $grouped = $candidateGroup
+            ->filter(static fn (HomeHeroCandidate $candidate): bool => $candidate->kind === 'artwork')
+            ->groupBy(static fn (HomeHeroCandidate $candidate): int => (int) ($candidate->gallery()?->getKey() ?? 0));
+        $standalone = $candidateGroup
+            ->filter(static fn (HomeHeroCandidate $candidate): bool => $candidate->kind === 'media')
+            ->values();
         $search = trim($this->sourceSearch);
         $needle = mb_strtolower($search);
 
@@ -1006,9 +1010,8 @@ final class HomePresentation extends Page
 
         if ($search !== '') {
             $matchedGalleryIds = $candidateGroup
-                ->filter(static fn (HomeHeroCandidate $candidate): bool => str_contains(
-                    mb_strtolower($candidate->title()), $needle,
-                ))
+                ->filter(static fn (HomeHeroCandidate $candidate): bool => $candidate->kind === 'artwork'
+                    && str_contains(mb_strtolower($candidate->title()), $needle))
                 ->map(static fn (HomeHeroCandidate $candidate): int => (int) ($candidate->gallery()?->getKey() ?? 0))
                 ->filter()->unique()->values()->all();
 
@@ -1026,7 +1029,7 @@ final class HomePresentation extends Page
         }
 
         $showStandalone = $standalone->isNotEmpty() && $this->sourceStatusFilter !== 'unpublished'
-            && ($search === '' || str_contains('standalone storage media', $needle)
+            && ($search === '' || str_contains('manually added storage direct selections', $needle)
                 || $standalone->contains(static fn (HomeHeroCandidate $candidate): bool => str_contains(
                     mb_strtolower($candidate->title()), $needle,
                 )));
@@ -1037,10 +1040,32 @@ final class HomePresentation extends Page
         $lastPage = max(1, (int) ceil($total / $perPage));
         $page = max(1, min($this->sourcePage, $lastPage));
         $offset = ($page - 1) * $perPage;
+        // Keep the manually added Storage source visible on the first page.
+        // Its virtual row occupies one slot; subsequent pages contain only
+        // actual Galleries without duplicating or skipping a record.
+        $showStandaloneOnPage = $showStandalone && $page === 1;
+        $galleryOffset = max(0, $offset - (int) $showStandalone);
+        $galleryLimit = $perPage - (int) $showStandaloneOnPage;
 
         /** @var EloquentCollection<int,ArtworkCategory> $galleries */
-        $galleries = $query->orderBy('name')->offset($offset)->limit($perPage)->get();
-        $rows = $galleries->map(function (ArtworkCategory $gallery) use ($grouped): array {
+        $galleries = $query->orderBy('name')->offset($galleryOffset)->limit($galleryLimit)->get();
+        $rows = [];
+        if ($showStandaloneOnPage) {
+            $rows[] = [
+                'id' => 0,
+                'standalone' => true,
+                'name' => 'Manually added (Storage)',
+                'preference_enabled' => false,
+                'can_enable' => false,
+                'state' => 'published',
+                'status_label' => 'Available',
+                'artworks_count' => 0,
+                'candidate_count' => $standalone->count(),
+                'workspace_url' => null,
+                'candidates' => $standalone->map(fn (HomeHeroCandidate $candidate): array => $this->candidateRow($candidate))->values()->all(),
+            ];
+        }
+        $rows = array_merge($rows, $galleries->map(function (ArtworkCategory $gallery) use ($grouped): array {
             /** @var SiteSection|null $section */
             $section = $gallery->getRelationValue('siteSection');
             $state = (string) ($section?->getAttribute('state') ?? 'hidden');
@@ -1060,23 +1085,7 @@ final class HomePresentation extends Page
                 'workspace_url' => GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()]),
                 'candidates' => $galleryCandidates->map(fn (HomeHeroCandidate $candidate): array => $this->candidateRow($candidate))->values()->all(),
             ];
-        })->all();
-
-        if ($showStandalone && $offset <= $galleryTotal && ($offset + $perPage) > $galleryTotal) {
-            $rows[] = [
-                'id' => 0,
-                'standalone' => true,
-                'name' => 'Standalone Storage media',
-                'preference_enabled' => false,
-                'can_enable' => false,
-                'state' => 'published',
-                'status_label' => 'Available',
-                'artworks_count' => $standalone->count(),
-                'candidate_count' => $standalone->count(),
-                'workspace_url' => null,
-                'candidates' => $standalone->map(fn (HomeHeroCandidate $candidate): array => $this->candidateRow($candidate))->values()->all(),
-            ];
-        }
+        })->all());
 
         return new LengthAwarePaginator($rows, $total, $perPage, $page, ['path' => request()->url(), 'pageName' => 'sourcePage']);
     }

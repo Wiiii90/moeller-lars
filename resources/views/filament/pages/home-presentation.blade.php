@@ -223,8 +223,8 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            <x-admin.table class="admin-data-table admin-table--six-grid home-source-table">
-                <table>
+            <x-admin.table class="admin-data-table home-source-table">
+                <table class="admin-table--six-grid">
                     <colgroup>
                         <col class="admin-table__col-one-unit home-source-table__col-gallery">
                         <col class="admin-table__col-one-half-units home-source-table__col-candidates">
@@ -265,8 +265,21 @@
                             @endphp
                             <tr class="{{ $selected ? 'is-selected' : '' }}" wire:key="home-source-gallery-{{ $gallery['id'] }}">
                                 <td class="admin-table__identity">
-                                    <strong>{{ $gallery['name'] }}</strong>
-                                    <small class="admin-responsive-meta">{{ $gallery['status_label'] }} · {{ number_format($gallery['candidate_count']) }}/{{ number_format($gallery['artworks_count']) }} candidates</small>
+                                    <strong>
+                                        @if ($gallery['workspace_url'])
+                                            <a class="home-source-table__gallery-link" href="{{ $gallery['workspace_url'] }}" wire:navigate>{{ $gallery['name'] }}</a>
+                                        @else
+                                            {{ $gallery['name'] }}
+                                        @endif
+                                    </strong>
+                                    <small class="admin-responsive-meta">
+                                        {{ $gallery['status_label'] }} ·
+                                        @if ($gallery['standalone'])
+                                            {{ number_format($gallery['candidate_count']) }} Storage candidates
+                                        @else
+                                            {{ number_format($gallery['candidate_count']) }}/{{ number_format($gallery['artworks_count']) }} candidates
+                                        @endif
+                                    </small>
                                 </td>
                                 <td class="home-source-table__candidates">
                                     <div
@@ -279,6 +292,7 @@
                                         x-on:pointerup="dragging = false"
                                         x-on:pointercancel="dragging = false"
                                         x-on:lostpointercapture="dragging = false"
+                                        x-on:dragstart.prevent
                                         x-bind:class="{ 'is-dragging': dragging }"
                                     >
                                         @forelse ($gallery['candidates'] as $candidate)
@@ -288,7 +302,7 @@
                                                     title="{{ $candidate['title'] }}{{ $candidate['year'] ? ' · '.$candidate['year'] : '' }}"
                                                 >
                                                     @if ($candidate['thumbnail_url'])
-                                                        <img src="{{ $candidate['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
+                                                        <img src="{{ $candidate['thumbnail_url'] }}" alt="" loading="lazy" decoding="async" draggable="false">
                                                     @else
                                                         <span>—</span>
                                                     @endif
@@ -299,33 +313,25 @@
                                         @endforelse
                                     </div>
                                 </td>
-                                <td class="home-source-table__artworks">{{ number_format($gallery['candidate_count']) }}/{{ number_format($gallery['artworks_count']) }}</td>
+                                <td class="home-source-table__artworks">
+                                    @if ($gallery['standalone'])
+                                        —
+                                    @else
+                                        {{ number_format($gallery['candidate_count']) }}/{{ number_format($gallery['artworks_count']) }}
+                                    @endif
+                                </td>
                                 <td class="home-source-table__status"><span class="admin-status {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
                                 <td class="admin-table__actions">
-                                    <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--state-open admin-toolbar home-source-table__row-actions">
-                                        @if ($gallery['standalone'])
+                                    @unless ($gallery['standalone'])
+                                        <div class="admin-row-actions admin-row-actions--canonical admin-toolbar home-source-table__row-actions">
                                             <x-admin.row-action
-                                                :action="\App\Filament\Support\AdminRowAction::Edit"
-                                                label="Select Storage candidate"
-                                                wire:click="mountAction('addCandidate')"
+                                                :action="$gallery['preference_enabled'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
+                                                :label="$gallery['preference_enabled'] ? 'Disable' : 'Enable'"
+                                                wire:click="toggleGalleryEligibility({{ $gallery['id'] }})"
+                                                :disabled="! $gallery['preference_enabled'] && ! $gallery['can_enable']"
                                             />
-                                        @else
-                                        <x-admin.row-action
-                                            class="home-source-table__eligibility-action"
-                                            :action="$gallery['preference_enabled'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
-                                            :label="$gallery['preference_enabled'] ? 'Disable' : 'Enable'"
-                                            wire:click="toggleGalleryEligibility({{ $gallery['id'] }})"
-                                            :disabled="! $gallery['preference_enabled'] && ! $gallery['can_enable']"
-                                        />
-                                        <x-admin.row-action
-                                            class="home-source-table__open-action"
-                                            :action="\App\Filament\Support\AdminRowAction::Open"
-                                            label="Open Gallery"
-                                            :href="$gallery['workspace_url']"
-                                            wire:navigate
-                                        />
-                                        @endif
-                                    </div>
+                                        </div>
+                                    @endunless
                                 </td>
                                 <td class="admin-table__selection admin-table__selection--trailing">
                                     @unless ($gallery['standalone'])
