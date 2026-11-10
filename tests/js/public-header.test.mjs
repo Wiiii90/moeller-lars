@@ -1,35 +1,31 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { headerBesideGeometry, headerNeedsStack, headerShellGeometry } from '../../resources/js/public-header.js';
+import { headerBesideGeometry, headerGutter, headerNeedsStack } from '../../resources/js/public-header.js';
 
-test('Beside has a real exterior alignment rail, including expanded Artwork paper', () => {
-    const wide = headerShellGeometry(1440, 800);
-    const beside = headerBesideGeometry(1440, wide.menuWidth, wide.menuWidth, wide.gutter);
+test('Beside follows actual Menu and paper edges, including fitted Artwork', () => {
+    const beside = headerBesideGeometry(320, 320, 24);
     assert.deepEqual(beside, { offset: 296, railWidth: 296 });
     assert.equal(headerNeedsStack('outside', beside.railWidth, 145), false);
     assert.equal(headerNeedsStack('outside', beside.railWidth, 280), true);
 
-    const expanded = headerBesideGeometry(1920, 800, 1400, 24);
+    // Navigation is centered at x=560, but the wider Artwork paper starts
+    // at x=260. Alignment must end at paper x=260, not Menu x=560.
+    const expanded = headerBesideGeometry(560, 260, 24);
     assert.deepEqual(expanded, { offset: 536, railWidth: 236 });
-    // The title starts at the viewport gutter but cannot overlap a larger
-    // Artwork Menu paper, even though its navigation still occupies 800px.
     assert.equal(headerNeedsStack('outside', expanded.railWidth, 145), false);
     assert.equal(headerNeedsStack('outside', expanded.railWidth, 220), true);
 
-    const constrained = headerShellGeometry(1000, 800);
-    const tight = headerBesideGeometry(1000, constrained.menuWidth, constrained.menuWidth, constrained.gutter);
+    const tight = headerBesideGeometry(100, 100, 20);
     assert.deepEqual(tight, { offset: 80, railWidth: 80 });
     assert.equal(headerNeedsStack('outside', tight.railWidth, 145), true);
 
-    // A wide configured Menu can exhaust the exterior rail entirely.
-    const wideMenu = headerShellGeometry(1440, 1920);
-    const absent = headerBesideGeometry(1440, wideMenu.menuWidth, wideMenu.menuWidth, wideMenu.gutter);
-    assert.equal(absent.railWidth, 0);
+    // A shell filling the viewport leaves only the configured gutter.
+    const absent = headerBesideGeometry(24, 24, 24);
+    assert.deepEqual(absent, { offset: 0, railWidth: 0 });
     assert.equal(headerNeedsStack('outside', absent.railWidth, 25), true);
 
-    const spacious = headerShellGeometry(2000, 800);
-    const spaciousBeside = headerBesideGeometry(2000, spacious.menuWidth, spacious.menuWidth, spacious.gutter);
-    assert.equal(headerNeedsStack('outside', spaciousBeside.railWidth, 540), false);
+    const spacious = headerBesideGeometry(600, 600, 24);
+    assert.equal(headerNeedsStack('outside', spacious.railWidth, 540), false);
 });
 
 test('Inside title fits its real title column and preserves 15rem for navigation', () => {
@@ -45,13 +41,11 @@ test('Inside title fits its real title column and preserves 15rem for navigation
     assert.equal(headerNeedsStack('above', 360, 130), false);
 });
 
-test('responsive shell geometry comes from configured width and fixed viewport only', () => {
-    const desktop = headerShellGeometry(1440, 800);
-    const narrow = headerShellGeometry(520, 800);
-    assert.deepEqual(desktop, { gutter: 24, menuWidth: 800 });
-    assert.ok(Math.abs(narrow.gutter - 10.4) < 0.001);
-    assert.ok(Math.abs(narrow.menuWidth - 499.2) < 0.001);
-    assert.equal(headerShellGeometry(1440, 640).menuWidth, 640);
-    // Nothing from the current title-stack class or rail geometry is an input.
-    assert.deepEqual(headerShellGeometry(1440, 800), desktop);
+test('responsive gutter mirrors the root CSS clamp; Menu width is read from CSS', () => {
+    assert.equal(headerGutter(1440), 24);
+    assert.ok(Math.abs(headerGutter(520) - 10.4) < 0.001);
+    assert.equal(headerGutter(1000), 20);
+    assert.equal(headerGutter(2000), 24);
+    // Menu/paper rectangle inputs are independent of title alignment.
+    assert.deepEqual(headerBesideGeometry(560, 560, 24), { offset: 536, railWidth: 536 });
 });

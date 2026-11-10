@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 13 (active)  
-**Status:** Rebuilding rejected Beside/Inside title layout; source-level repair committed, real browser acceptance outstanding.
+**Status:** Beside/Inside source rebuilt; final visual acceptance and test execution outstanding.
 
 ## Ownership and accepted decisions
 - General → Appearance (Global, Title, Menu, Page and Legal), Regional Formats, Admin live Preview and their direct Public consumers.
@@ -24,7 +24,7 @@
 
 ## Current user rejection and follow-up
 - User reports on the current Public Preview that both Beside/Inside and Left/Right are significantly misplaced. Old implementation is not accepted. This repair removes the causal width override and clarifies the two independent layout owners.
-- Updated the existing Public header geometry tests and the General browser regression tests to compare actual Title/Menu/paper bounds for Beside/Inside Left/Right and narrow stacking. No tests run. The existing Dev skill now requires checking the *final* CSS cascade and browser bounding boxes for visual alignment corrections.
+- Updated the existing Public header geometry tests and General browser regression tests to compare real Title/Menu/paper bounds for Beside/Inside Left/Right and narrow stacking (eceed7ce). Removed duplicate modeled Menu width in the header initializer: the exact rendered Menu and paper bounds now own offset and stack decisions, including Artwork where paper and Menu width differ. No tests run. The existing Dev skill requires checking the final CSS cascade and browser bounding boxes for visual alignment corrections.
 
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.

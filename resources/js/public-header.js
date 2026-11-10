@@ -1,28 +1,23 @@
-/* Artist-title stacking is decided from stable browser/configuration
- * geometry, never from a rail whose size changes with is-title-stacked.
- * This is a one-way calculation on initial render, browser resize, and
- * font completion. No element observer, timer or layout feedback. */
+/* Artist-title stacking uses the rendered Menu and paper geometry.
+ * Their width is CSS-owned and unchanged by is-title-stacked; only title
+ * positioning and navigation rows change. No layout feedback or timers. */
 const INSIDE_MIN_TITLE_RAIL_REM = 15;
 const INSIDE_TITLE_PADDING_REM = 1.7;
 const INSIDE_MIN_NAV_RAIL_REM = 15;
 const INSIDE_TITLE_SHARE = 0.32;
 
-export function headerShellGeometry(viewportWidth, shellMax, rem = 16) {
-    // Mirrors the public shell's single CSS gutter clamp. Unlike a
-    // getBoundingClientRect() read on the active navigation, this geometry
-    // is unaffected by the stacked-title class or page scrollbars.
-    const gutter = Math.min(1.5 * rem, Math.max(.65 * rem, viewportWidth * .02));
-    const menuWidth = Math.max(0, Math.min(shellMax, viewportWidth - 2 * gutter));
-    return { gutter, menuWidth };
+export function headerGutter(viewportWidth, rem = 16) {
+    // Mirrors the root --public-gutter clamp at the document viewport.
+    return Math.min(1.5 * rem, Math.max(.65 * rem, viewportWidth * .02));
 }
 
-/* Beside's offset starts at the left viewport gutter; its right edge
- * stops at the VISIBLE Menu paper, which may be wider than navigation on
- * fitted Artwork pages. The shell's center axis never changes. */
-export function headerBesideGeometry(viewportWidth, menuWidth, paperWidth, gutter) {
+/* Beside starts at the viewport gutter and stops at the *visible* Menu
+ * paper, not necessarily the navigation width on Artwork pages. These
+ * source rectangles are fixed by CSS, not by title stacking. */
+export function headerBesideGeometry(menuLeft, paperLeft, gutter) {
     return {
-        offset: Math.max(0, (viewportWidth - menuWidth) / 2 - gutter),
-        railWidth: Math.max(0, (viewportWidth - Math.max(menuWidth, paperWidth)) / 2 - gutter),
+        offset: Math.max(0, menuLeft - gutter),
+        railWidth: Math.max(0, paperLeft - gutter),
     };
 }
 
@@ -63,32 +58,31 @@ export function initializePublicHeader() {
     const mode = header.classList.contains('site-header--name-outside')
         ? 'outside'
         : (header.classList.contains('site-header--name-inside') ? 'inside' : 'other');
-    if (mode === 'other') return () => {};
+    const menu = header.querySelector('.site-navigation');
+    if (mode === 'other' || !(menu instanceof HTMLElement)) return () => {};
 
     let disposed = false;
     // Reuse one offscreen canvas context throughout this route's lifetime.
     const measurementContext = document.createElement('canvas').getContext('2d');
     const update = () => {
         if (disposed) return;
-        const root = getComputedStyle(document.documentElement);
-        const rem = Number.parseFloat(root.fontSize) || 16;
-        const configuredShellMax = Number.parseFloat(root.getPropertyValue('--public-shell-max')) || 800;
-        const viewportWidth = document.documentElement.clientWidth;
-        const { gutter, menuWidth } = headerShellGeometry(viewportWidth, configuredShellMax, rem);
-        // The Artwork menu can widen its paper beyond its 800px-sized
-        // navigation. Read only the stable wrapper width, never the title
-        // or a column changed by is-title-stacked.
+        const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+        const gutter = headerGutter(document.documentElement.clientWidth, rem);
+        // This actual Menu element has a CSS-defined shell width and retains
+        // that width whether its title is inline or stacked. Reading the
+        // outer wrapper for the paper also handles fitted Artwork pages.
+        const menuRect = menu.getBoundingClientRect();
+        const menuWidth = menuRect.width;
         let outsideRailWidth = 0;
         if (mode === 'outside') {
-            const menu = header.querySelector('.site-navigation');
             const surface = header.querySelector('.site-navigation-surface');
-            const paperWidth = surface instanceof HTMLElement && getComputedStyle(surface).display !== 'contents'
-                ? Math.max(menuWidth, surface.getBoundingClientRect().width)
-                : menuWidth;
-            const beside = headerBesideGeometry(viewportWidth, menuWidth, paperWidth, gutter);
+            const paperLeft = surface instanceof HTMLElement && getComputedStyle(surface).display !== 'contents'
+                ? surface.getBoundingClientRect().left
+                : menuRect.left;
+            const beside = headerBesideGeometry(menuRect.left, paperLeft, gutter);
             outsideRailWidth = beside.railWidth;
-            menu?.style.setProperty('--public-title-outside-offset', `${beside.offset}px`);
-            menu?.style.setProperty('--public-title-outside-width', `${beside.railWidth}px`);
+            menu.style.setProperty('--public-title-outside-offset', `${beside.offset}px`);
+            menu.style.setProperty('--public-title-outside-width', `${beside.railWidth}px`);
         }
         const titleWidth = intrinsicTitleWidth(title, measurementContext);
         const stacked = headerNeedsStack(
