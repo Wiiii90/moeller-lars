@@ -214,15 +214,16 @@
 
 }
 
-@container admin-table (max-width: 54rem){
-    .home-source-table :is(.home-source-table__candidates, .home-source-table__artworks, .home-source-table__year, .home-source-table__col-candidates, .home-source-table__col-artworks, .home-source-table__col-year){
-        display: none !important;
-    }
+/* Home source table follows the shared semantic yield classes:
+ * Artworks is secondary at Compact, Status moves into identity metadata at
+ * Narrow, and the Candidate contact strip remains the single elastic column.
+ * Neither transition changes the terminal Selection checkbox rail. */
+@container admin-table (max-width: 64rem){
+    .home-source-table .admin-responsive-meta { display: block; }
+}
 
-    .home-source-table__col-gallery{ width: auto !important; }
-    .home-source-table__col-status{ width: 7rem !important; }
-    .home-source-table__col-actions{ width: 14.75rem !important; }
-    .home-source-table .admin-responsive-meta{ display: block; }
+@container admin-table (max-width: 54rem){
+    .home-source-table__col-gallery { width: var(--admin-table-one-half-units) !important; }
 }
 
 /* Table-specific Narrow reduction for the already-reviewed Home table.
@@ -294,21 +295,23 @@
 }
 
 @container admin-table (max-width: 38rem){
-    .home-source-table :is(.home-source-table__status, .home-source-table__col-status){
+    .home-source-table > table {
+        --admin-row-actions-width: var(--admin-control-height);
+    }
+
+    .home-source-table__col-gallery { width: var(--admin-table-two-units) !important; }
+
+    .home-source-table .home-source-table__row-actions .admin-action {
+        width: var(--admin-control-height);
+        min-width: var(--admin-control-height);
+        gap: 0;
+        padding-inline: 0;
+        justify-content: center;
+    }
+
+    .home-source-table .home-source-table__row-actions .admin-action__label {
         display: none;
     }
-
-    .home-source-table__col-gallery{ width: auto !important; }
-    .home-source-table__col-actions{ width: 3.15rem !important; }
-
-    .home-source-table .admin-row-actions-heading{
-        --admin-row-actions-width: 3.15rem;
-    }
-
-    .home-source-table .admin-responsive-meta{
-        display: block;
-    }
-
 }
 
 /* Extreme widths: the task surface wins over summary statistics. */

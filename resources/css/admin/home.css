@@ -15,12 +15,14 @@
     --admin-row-actions-width: var(--admin-row-action-slot-state-width);
 }
 
+/* The single state action shares one width with its heading and colgroup.
+ * The responsive table owner updates this semantic rail at Minimal. */
 .home-source-table__col-actions {
-    width: calc(var(--admin-row-action-slot-state-width) + .5rem);
+    width: calc(var(--admin-row-actions-width) + .5rem);
 }
 
 .home-source-table__row-actions {
-    width: var(--admin-row-action-slot-state-width);
+    width: var(--admin-row-actions-width);
 }
 
 .home-source-table__gallery-link {

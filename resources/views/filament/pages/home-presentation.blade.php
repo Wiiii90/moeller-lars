@@ -227,9 +227,9 @@
                 <table class="admin-table--six-grid">
                     <colgroup>
                         <col class="admin-table__col-one-unit home-source-table__col-gallery">
-                        <col class="admin-table__col-one-half-units home-source-table__col-candidates">
-                        <col class="admin-table__col-half-unit home-source-table__col-artworks">
-                        <col class="admin-table__col-half-unit home-source-table__col-status">
+                        <col class="home-source-table__col-candidates">
+                        <col class="admin-table__col-half-unit home-source-table__col-artworks admin-table__yield--compact">
+                        <col class="admin-table__col-half-unit home-source-table__col-status admin-table__yield--narrow">
                         <col class="home-source-table__col-actions">
                         <col class="admin-table__selection-col home-source-table__col-selection">
                     </colgroup>
@@ -237,8 +237,8 @@
                         <tr>
                             <th scope="col">{{ __('Gallery') }}</th>
                             <th scope="col" class="home-source-table__candidates">{{ __('Candidates') }}</th>
-                            <th scope="col" class="home-source-table__artworks">{{ __('Artworks') }}</th>
-                            <th scope="col" class="home-source-table__status">{{ __('Status') }}</th>
+                            <th scope="col" class="home-source-table__artworks admin-table__yield--compact">{{ __('Artworks') }}</th>
+                            <th scope="col" class="home-source-table__status admin-table__yield--narrow">{{ __('Status') }}</th>
                             <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">{{ __('Actions') }}</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
@@ -251,9 +251,11 @@
                                         const selectedCount = visibleIds.filter((id) => selectedIds.includes(id)).length;
                                         $el.checked = visibleIds.length > 0 && selectedCount === visibleIds.length;
                                         $el.indeterminate = selectedCount > 0 && selectedCount < visibleIds.length;
+                                        $el.disabled = visibleIds.length === 0;
+                                        $el.setAttribute('aria-checked', $el.indeterminate ? 'mixed' : ($el.checked ? 'true' : 'false'));
                                     "
                                     @disabled($visibleSourceIds === [])
-                                    aria-label="Toggle selection for visible Galleries"
+                                    aria-label="Select all visible Galleries"
                                 >
                             </th>
                         </tr>
@@ -313,14 +315,14 @@
                                         @endforelse
                                     </div>
                                 </td>
-                                <td class="home-source-table__artworks">
+                                <td class="home-source-table__artworks admin-table__yield--compact">
                                     @if ($gallery['standalone'])
                                         —
                                     @else
                                         {{ number_format($gallery['candidate_count']) }}/{{ number_format($gallery['artworks_count']) }}
                                     @endif
                                 </td>
-                                <td class="home-source-table__status"><span class="admin-status {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
+                                <td class="home-source-table__status admin-table__yield--narrow"><span class="admin-status {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
                                 <td class="admin-table__actions">
                                     @unless ($gallery['standalone'])
                                         <div class="admin-row-actions admin-row-actions--canonical admin-toolbar home-source-table__row-actions">
