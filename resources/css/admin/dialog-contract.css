@@ -59,6 +59,17 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     max-height: calc(100dvh - var(--admin-dialog-layer-block-start) - 2rem);
 }
 
+/* A visual Storage Select owns a positioned, scrollable contact sheet inside
+ * the native dialog content. Compact single-field dialogs otherwise collapse
+ * around the trigger and clip its options. Allocate a usable native content
+ * scrollport while the picker is expanded, without moving the popup outside
+ * Filament's focus/scroll boundary or changing the closed dialog geometry. */
+.fi-modal-window.admin-task-dialog:has(
+    .admin-media-picker--visual .fi-select-input-btn[aria-expanded="true"]
+) {
+    min-height: min(36rem, calc(100dvh - var(--admin-dialog-layer-block-start) - 2rem));
+}
+
 .fi-modal-header,
 .fi-modal-footer {
     flex: 0 0 auto;
