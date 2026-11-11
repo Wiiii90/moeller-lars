@@ -22,6 +22,11 @@
     aria-label="Live public preview"
     x-data="{
         resizeObserver: null,
+        // Match the standalone Preview's actual browser viewport when both
+        // tabs share a window. The preview is scaled visually, not reflowed
+        // inside the smaller Admin pane.
+        desktopViewportWidth: window.innerWidth,
+        desktopViewportHeight: window.innerHeight,
         fitScale: 1,
         zoom: 1,
         minZoom: 1,
@@ -244,6 +249,7 @@
         },
     }"
     x-on:general-appearance-updated.window="refreshPreview()"
+    x-on:resize.window="desktopViewportWidth = window.innerWidth; desktopViewportHeight = window.innerHeight; $nextTick(() => fitPreview())"
     x-on:keydown.window="handleSpaceDown($event)"
     x-on:keyup.window="handleSpaceUp($event)"
     x-on:blur.window="cancelSpacePan()"
@@ -344,8 +350,8 @@
             x-bind:class="previewDevice === 'mobile' ? 'is-mobile' : 'is-desktop'"
             data-preview-width="1280"
             data-preview-height="720"
-            x-bind:data-preview-width="previewDevice === 'mobile' ? 390 : 1280"
-            x-bind:data-preview-height="previewDevice === 'mobile' ? 844 : 720"
+            x-bind:data-preview-width="previewDevice === 'mobile' ? 390 : desktopViewportWidth"
+            x-bind:data-preview-height="previewDevice === 'mobile' ? 844 : desktopViewportHeight"
         >
             <div x-ref="browser" class="general-live-preview__browser" aria-hidden="true">
                 <span class="general-live-preview__browser-dots">
