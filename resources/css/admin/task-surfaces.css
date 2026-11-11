@@ -132,21 +132,25 @@
 }
 
 .admin-table--data tbody tr.is-selected,
+.admin-data-table tbody tr.is-selected,
 .media-workspace__table tbody tr.is-selected {
     background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface));
 }
 
 .admin-table--data tbody tr.is-selected > td,
+.admin-data-table tbody tr.is-selected > td,
 .media-workspace__table tbody tr.is-selected > td {
     box-shadow: inset 0 2px 0 var(--admin-accent), inset 0 -2px 0 var(--admin-accent);
 }
 
 .admin-table--data tbody tr.is-selected > td:first-child,
+.admin-data-table tbody tr.is-selected > td:first-child,
 .media-workspace__table tbody tr.is-selected > td:first-child {
     box-shadow: inset 2px 0 0 var(--admin-accent), inset 0 2px 0 var(--admin-accent), inset 0 -2px 0 var(--admin-accent);
 }
 
 .admin-table--data tbody tr.is-selected > td:last-child,
+.admin-data-table tbody tr.is-selected > td:last-child,
 .media-workspace__table tbody tr.is-selected > td:last-child {
     box-shadow: inset -2px 0 0 var(--admin-accent), inset 0 2px 0 var(--admin-accent), inset 0 -2px 0 var(--admin-accent);
 }

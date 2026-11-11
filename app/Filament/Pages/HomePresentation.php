@@ -152,8 +152,11 @@ final class HomePresentation extends Page
     #[Session]
     public int $sourcePerPage = 10;
 
-    /** @var list<int|string> */
+    /** @var list<int|string> Group IDs or typed candidate keys sharing one selection model. */
     public array $selectedSourceIds = [];
+
+    /** @var list<int> Visible Gallery source rows expanded into candidate rows. */
+    public array $expandedSourceIds = [];
 
     /** @var list<array<string,mixed>> */
     public array $componentDataset = [];
@@ -316,6 +319,7 @@ final class HomePresentation extends Page
                 $changed = $dialog->save($data);
                 if (($data['group_source'] ?? $previousSource) !== $previousSource) {
                     $this->sourcePage = 1;
+                    $this->expandedSourceIds = [];
                     $this->clearSourceSelection();
                 }
                 $this->reloadWorkspace();
@@ -466,6 +470,7 @@ final class HomePresentation extends Page
         }
         if ($field === 'group_source') {
             $this->sourcePage = 1;
+            $this->expandedSourceIds = [];
             $this->clearSourceSelection();
         }
         $this->reloadWorkspace();
@@ -1029,57 +1034,157 @@ final class HomePresentation extends Page
         );
     }
 
-    public function toggleVisibleSourceSelection(): void
+    /** Return exactly the selectable rows rendered on the current source page. */
+    public function visibleSourceSelectionTargets(): array
     {
-        $visibleIds = $this->sourceRows()->getCollection()->pluck('id')
-            ->map(static fn ($id): int => (int) $id)
-            ->filter(fn (int $id): bool => $id > 0 || ($id === 0 && $this->heroGroupSource === 'semi_automatic'))
-            ->values()->all();
-        if ($visibleIds === []) {
-            return;
+        $targets = [];
+        foreach ($this->sourceRows()->items() as $row) {
+            $groupId = (int) $row['id'];
+            if (in_array($groupId, $this->expandedSourceIds, true)) {
+                foreach ($row['candidates'] as $candidate) {
+                    $targets[] = $candidate['id'];
+                }
+            } else {
+                $targets[] = $groupId;
+            }
         }
-        $selected = collect($this->selectedSourceIds)->map(static fn ($id): int => (int) $id)
-            ->filter(static fn (int $id): bool => $id >= 0)->unique()->values();
-        if ($selected->intersect($visibleIds)->count() === count($visibleIds)) {
-            $this->selectedSourceIds = $selected->reject(static fn (int $id): bool => in_array($id, $visibleIds, true))->values()->all();
 
-            return;
-        }
-        $this->selectedSourceIds = $selected->merge($visibleIds)->unique()->values()->all();
+        return $targets;
     }
 
-    /** @return array{enable:bool,disable:bool} */
-    public function selectedSourceCapabilities(): array
+    public function toggleSourceExpansion(int $groupId): void
     {
-        $selected = array_map('intval', $this->selectedSourceIds);
-        $ids = array_values(array_filter($selected, static fn (int $id): bool => $id > 0));
-        $hasManual = $this->heroGroupSource === 'semi_automatic' && in_array(0, $selected, true);
-        if ($ids === [] && ! $hasManual) {
-            return ['enable' => false, 'disable' => false];
+        $source = collect($this->sourceRows()->items())
+            ->first(static fn (array $row): bool => (int) $row['id'] === $groupId);
+        if (! is_array($source)) {
+            return;
         }
 
-        $galleries = ArtworkCategory::query()->whereKey($ids)->with('siteSection')->get();
+        $expanded = in_array($groupId, $this->expandedSourceIds, true);
+        $keys = array_column($source['candidates'], 'id');
+        $this->selectedSourceIds = array_values(array_filter(
+            $this->selectedSourceIds,
+            static fn (int|string $value): bool => $expanded
+                ? ! in_array($value, $keys, true)
+                : (string) $value !== (string) $groupId,
+        ));
+        $this->expandedSourceIds = $expanded
+            ? array_values(array_diff($this->expandedSourceIds, [$groupId]))
+            : [...$this->expandedSourceIds, $groupId];
+    }
 
-        return [
-            'enable' => ($hasManual && ! $this->manualHeroGroupEnabled)
-                || $galleries->contains(static fn (ArtworkCategory $gallery): bool => ! (bool) $gallery->getAttribute('show_on_home')
-                    && $gallery->getRelationValue('siteSection')?->getAttribute('state') === 'published'),
-            'disable' => ($hasManual && $this->manualHeroGroupEnabled)
-                || $galleries->contains(static fn (ArtworkCategory $gallery): bool => (bool) $gallery->getAttribute('show_on_home')),
-        ];
+    public function toggleVisibleSourceSelection(): void
+    {
+        $targets = $this->visibleSourceSelectionTargets();
+        if ($targets === []) {
+            return;
+        }
+
+        $selected = array_values(array_unique(array_map('strval', $this->selectedSourceIds)));
+        $visible = array_map('strval', $targets);
+        $allSelected = count(array_intersect($selected, $visible)) === count($visible);
+        if ($allSelected) {
+            $this->selectedSourceIds = array_values(array_filter(
+                $this->selectedSourceIds,
+                static fn (int|string $id): bool => ! in_array((string) $id, $visible, true),
+            ));
+
+            return;
+        }
+
+        foreach ($targets as $target) {
+            if (! in_array((string) $target, $selected, true)) {
+                $this->selectedSourceIds[] = $target;
+            }
+        }
+    }
+
+    /** Split one selected row set by semantic identity; never cast candidates to 0. */
+    private function selectedSourceTargets(): array
+    {
+        $groups = [];
+        $candidateKeys = [];
+        foreach ($this->selectedSourceIds as $value) {
+            if (is_int($value) || (is_string($value) && ctype_digit($value))) {
+                $groups[] = (int) $value;
+            } elseif (is_string($value) && preg_match('/^(artwork|media):[1-9][0-9]*$/D', $value)) {
+                $candidateKeys[] = $value;
+            }
+        }
+
+        return [array_values(array_unique($groups)), array_values(array_unique($candidateKeys))];
+    }
+
+    /** @return array{enable:bool,disable:bool,remove:bool} */
+    public function selectedSourceCapabilities(): array
+    {
+        [$groups, $keys] = $this->selectedSourceTargets();
+        $ids = array_values(array_filter($groups, static fn (int $id): bool => $id > 0));
+        $hasManualGroup = $this->heroGroupSource !== 'automatic' && in_array(0, $groups, true);
+
+        $galleries = ArtworkCategory::query()->whereKey($ids)->with('siteSection')->get();
+        $enable = ($hasManualGroup && $this->heroGroupSource === 'semi_automatic' && ! $this->manualHeroGroupEnabled)
+            || $galleries->contains(static fn (ArtworkCategory $gallery): bool =>
+                ! (bool) $gallery->getAttribute('show_on_home')
+                && $gallery->getRelationValue('siteSection')?->getAttribute('state') === 'published');
+        $disable = ($hasManualGroup && $this->heroGroupSource === 'semi_automatic' && $this->manualHeroGroupEnabled)
+            || $galleries->contains(static fn (ArtworkCategory $gallery): bool =>
+                (bool) $gallery->getAttribute('show_on_home'));
+
+        $manual = collect($this->manualHeroGroup)->keyBy(HomeHeroConfigurationService::memberKey(...));
+        $automatic = collect([...$this->heroRailRows, ...$this->excludedHeroRows])
+            ->filter(static fn (array $row): bool => $row['is_automatic'] ?? false)
+            ->keyBy('id');
+        $remove = $hasManualGroup && $manual->isNotEmpty();
+
+        foreach ($keys as $key) {
+            if ($this->heroGroupSource !== 'automatic' && $manual->has($key)) {
+                $member = $manual->get($key);
+                $enable = $enable || ! $member['enabled'];
+                $disable = $disable || $member['enabled'];
+                $remove = true;
+            } elseif ($automatic->has($key)) {
+                $row = $automatic->get($key);
+                $enable = $enable || ($row['disabled'] ?? false);
+                $disable = $disable || ! ($row['disabled'] ?? false);
+            }
+        }
+
+        return ['enable' => $enable, 'disable' => $disable, 'remove' => $remove];
     }
 
     public function setSelectedGalleryEligibility(bool $enabled): void
     {
-        $selected = array_map('intval', $this->selectedSourceIds);
-        $includeManual = $this->heroGroupSource === 'semi_automatic' && in_array(0, $selected, true);
-        $ids = array_values(array_unique(array_filter($selected, static fn (int $id): bool => $id > 0)));
-        if ($ids === [] && ! $includeManual) {
+        [$groups, $keys] = $this->selectedSourceTargets();
+        $includeManual = $this->heroGroupSource === 'semi_automatic' && in_array(0, $groups, true);
+        $ids = array_values(array_filter($groups, static fn (int $id): bool => $id > 0));
+        $manualKeys = $this->heroGroupSource === 'automatic' ? [] :
+            array_map(HomeHeroConfigurationService::memberKey(...), $this->manualHeroGroup);
+        $automatic = collect([...$this->heroRailRows, ...$this->excludedHeroRows])
+            ->filter(static fn (array $row): bool => $row['is_automatic'] ?? false)
+            ->keyBy('id');
+        if ($ids === [] && ! $includeManual && $keys === []) {
             return;
         }
-        $changed = DB::transaction(function () use ($ids, $includeManual, $enabled): int {
-            $galleries = ArtworkCategory::query()->whereIn('id', $ids)->with('siteSection')->orderBy('id')->lockForUpdate()->get();
+
+        $changed = DB::transaction(function () use ($ids, $includeManual, $keys, $manualKeys, $automatic, $enabled): int {
+            $galleries = ArtworkCategory::query()->whereIn('id', $ids)
+                ->with('siteSection')->orderBy('id')->lockForUpdate()->get();
             $changed = 0;
+            // Persist candidate exclusions before changing Gallery eligibility:
+            // disabling the Gallery first could invalidate candidate ownership.
+            foreach ($keys as $key) {
+                if (in_array($key, $manualKeys, true)) {
+                    $changed += (int) app(HomeHeroConfigurationService::class)->setManualCandidateEnabled(
+                        $this->settings(), $key, $enabled,
+                    );
+                } elseif ($automatic->has($key) && str_starts_with($key, 'artwork:')) {
+                    $changed += (int) app(HomeHeroConfigurationService::class)->setAutomaticCandidateEnabled(
+                        $this->settings(), (int) substr($key, 8), $enabled,
+                    );
+                }
+            }
+
             if ($includeManual) {
                 $changed += (int) app(HomeHeroConfigurationService::class)->updateArtworkSettings(
                     $this->settings(), ['manual_group_enabled' => $enabled],
@@ -1105,11 +1210,49 @@ final class HomePresentation extends Page
         $this->reloadWorkspace();
         if ($changed > 0) {
             app(AdminNotifier::class)->notification(
-                title: $enabled ? 'Home source preferences enabled' : 'Home source preferences disabled',
-                body: $changed.' '.($changed === 1 ? 'Gallery' : 'Galleries').' updated.',
+                title: $enabled ? 'Selected Hero sources enabled' : 'Selected Hero sources disabled',
+                body: $changed.' '.($changed === 1 ? 'item' : 'items').' updated.',
                 status: 'success',
             );
         }
+    }
+
+    public function removeSelectedManualHeroCandidatesAction(): Action
+    {
+        return AdminDialog::confirm(
+            Action::make('removeSelectedManualHeroCandidates')
+                ->label('Remove')
+                ->action(function (): void {
+                    [$groups, $keys] = $this->selectedSourceTargets();
+                    $current = app(HomeHeroConfigurationService::class)->configuration($this->settings());
+                    if ($current['group_source'] === 'automatic') {
+                        return;
+                    }
+                    $group = $current['manual_group'];
+                    $removeAll = in_array(0, $groups, true);
+                    $remaining = array_values(array_filter($group, static fn (array $member): bool =>
+                        ! $removeAll && ! in_array(HomeHeroConfigurationService::memberKey($member), $keys, true),
+                    ));
+                    if (count($remaining) === count($group)) {
+                        return;
+                    }
+                    $changed = app(HomeHeroConfigurationService::class)->updateArtworkSettings(
+                        $this->settings(), ['manual_group' => $remaining],
+                    );
+                    $this->clearSourceSelection();
+                    $this->reloadWorkspace();
+                    if ($changed) {
+                        app(AdminNotifier::class)->notification(
+                            title: 'Selected Manual Hero candidates removed',
+                            status: 'success',
+                        );
+                    }
+                }),
+            'Remove selected Manual Hero candidates?',
+            submitLabel: 'Remove',
+            danger: true,
+            condition: fn (): bool => $this->selectedSourceCapabilities()['remove'],
+        );
     }
 
     public function sourceRows(): LengthAwarePaginator

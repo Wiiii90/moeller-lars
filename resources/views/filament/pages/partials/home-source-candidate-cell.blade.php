@@ -3,7 +3,7 @@
     <button
         type="button"
         class="home-source-candidate__preview home-source-table__candidate-image-toggle"
-        x-on:click="expanded = expanded.filter(id => id !== {{ $groupId }})"
+        wire:click="toggleSourceExpansion({{ $groupId }})"
         aria-label="Collapse candidates in {{ $gallery['name'] }}"
     >
         @if ($candidate && $candidate['thumbnail_url'])

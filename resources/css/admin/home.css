@@ -20,31 +20,20 @@
         minmax(var(--admin-row-action-slot-delete-width), max-content);
 }
 
-.home-source-table__row-actions.is-hidden {
-    display: none !important;
-}
-
 .home-source-table__action-slot {
     display: block;
     min-width: 0;
 }
 
-/* Dashboard unread and Manual Sourced Artworks share the same neutral accent.
- * The table background belongs to rows; no per-cell accent seams. */
-.home-source-table__manual-group:not(.is-selected),
-.home-source-table__manual-candidate {
-    background: var(--admin-row-highlight-unread);
-}
-
-/* The Manual row is continuous, without the stray trailing divider underneath Clear. */
-.home-source-table__manual-group > td,
-.home-source-table__candidate-row > td {
+/* The first candidate shares the Gallery row. Remaining candidates are
+ * ordinary rows: remove ONLY their internal separators and retain the final
+ * boundary before the next Gallery. Selection follows the shared table state. */
+.home-source-table__group.is-expanded:has(+ .home-source-table__candidate-row) > td,
+.home-source-table__candidate-row:not(.is-group-end) > td {
     border-bottom: 0 !important;
 }
 
-/* Automatic has no Add Candidate row. Its source table therefore owns the
- * lower separator, which the shared Add Row normally provides. */
-.admin-data-table.home-source-table--no-add-row {
+.home-source-table__candidate-row.is-group-end:not(:last-child) > td {
     border-bottom: 1px solid var(--admin-line) !important;
 }
 
@@ -117,6 +106,7 @@
     flex-direction: column;
     overflow: hidden;
     border: 1px solid var(--admin-line);
+    border-bottom: 0;
     background: var(--admin-surface);
 }
 
@@ -182,6 +172,7 @@
     box-sizing: border-box;
     min-height: 0;
     flex: 1 1 auto;
+    border-bottom: 1px solid var(--admin-line);
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: none;
@@ -505,21 +496,8 @@
     padding-bottom: .36rem;
 }
 
-.home-source-table__candidate-actions .admin-action__label {
-    display: none;
-}
-
-.home-source-table__candidate-actions .admin-action {
-    width: 1.78rem;
-    min-width: 1.78rem;
-    height: 1.78rem;
-    padding: 0;
-}
-
-.home-source-table__candidate-actions .home-source-table__action-slot {
-    width: 1.78rem;
-    min-width: 1.78rem;
-}
+/* Candidate actions use exactly the same central labeled two-slot rail as
+ * collapsed Gallery actions; compact labels follow the shared breakpoints. */
 
 @container admin-table (max-width: 38rem) {
     .home-source-table__candidate-inline {

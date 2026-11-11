@@ -212,7 +212,8 @@
 
 .admin-data-table,
 .admin-table--data {
-    border-block: 0 !important;
+    border-top: 0 !important;
+    border-bottom: 1px solid var(--admin-line) !important;
 }
 
 .media-workspace__table-wrap {
@@ -334,11 +335,17 @@
     white-space: nowrap;
 }
 
-/* The shared add-row primitive owns the one separator after a data table.
- * Never compress its height or marker for an individual workspace. */
-.media-workspace__table-wrap:has(+ .admin-add-row),
-.admin-table--data:has(+ .admin-add-row) {
-    border-bottom: 0 !important;
+/* Every standard data-table shell owns its lower separator, including the
+ * final row when no Add Row follows. Add Row owns only its body and its NEXT
+ * separator; no duplicate stroke at the table/Add Row boundary. Pagers reuse
+ * the same single shared edge instead of drawing another line over it. */
+:is(.admin-data-table, .admin-table--data, .media-workspace__table-wrap) + .admin-add-row,
+.admin-pager + .admin-add-row {
+    border-top: 0;
+}
+
+:is(.admin-data-table, .admin-table--data, .media-workspace__table-wrap) + .admin-pager {
+    border-top: 0;
 }
 
 /* Outside tables (e.g. an empty Storage library), the empty state's lower
