@@ -55,9 +55,7 @@ final class PagesSettingsDialog
             $nesting->afterStateUpdated($onToggleUpdated);
         }
 
-        $hoverPreview = AdminControl::toggle('navigation_hover_preview', 'Preview child pages on hover')
-            ->helperText('Mouse hover temporarily reveals child links. Click the parent to open its submenu; touch navigation is unchanged.')
-            ->live();
+        $hoverPreview = AdminControl::toggle('navigation_hover_preview', 'Preview child pages on hover')->live();
         if ($onToggleUpdated !== null) {
             $hoverPreview->afterStateUpdated($onToggleUpdated);
         }

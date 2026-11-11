@@ -39,6 +39,8 @@ Literal identifiers in source code, paths, commands, configuration keys and exis
 
 **Canonical Admin references:** [Admin UI](docs/admin/ui.md), [Responsive](docs/admin/responsive.md), [Dialogs](docs/admin/dialogs.md) and [Browser review](docs/admin/browser-review.md). They own the rules directly; no separate root UI or handoff skill exists.
 
+**Admin field-help rule — mandatory for every role:** Settings, Create and Edit dialogs must never show persistent explanatory paragraphs or Filament `helperText()` below/between ordinary controls. Use a concise field label and state; where additional explanation is genuinely necessary, put it behind the existing shared `AdminHelp` lightbulb beside the label, opening only on deliberate interaction. Destructive consequences belong in the relevant confirmation dialog, and real validation errors remain visible as validation errors. Review every modified dialog schema for visible helper prose before committing; do not compensate with page-local styling or hide the same prose with CSS. See the [canonical dialog rule](docs/admin/dialogs.md#chrome-and-actions).
+
 ## Browser-accepted dialog scroll-lock contract — do not regress
 
 The admin dialog behavior accepted in browser review on 2026-10-11 is a

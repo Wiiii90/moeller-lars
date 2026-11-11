@@ -36,7 +36,7 @@ If `foo` already owns an operation, consider a cohesive extension of its paramet
 
 Never build a shadow persistence store, alternate renderer, second event bus, ad hoc CSS offset, extra listener/polling loop or transition shim to compensate for structural mistakes. **Real compatibility** remains mandatory for stored artist data, PostgreSQL schema/migrations, immutable public media, committed snapshots, append-only audit/Undo and proven external contracts. Inspect the relevant consumers before changing them; never treat “pre-release” as license to destroy actual persisted history.
 
-Reuse the Admin's shared controls, dialogs, tables, toolbar and notification grammar; Public keeps its own canonical menu, layout, viewer, media and navigation semantics. Protect authentication, validation, locking, transaction boundaries, Working/Public/Preview separation and failure/no-op feedback. Refactor behavior **must be preserved**, including accepted browser behavior, not merely PHP return types.
+Reuse the Admin's shared controls, dialogs, tables, toolbar and notification grammar; Public keeps its own canonical menu, layout, viewer, media and navigation semantics. The [Admin dialog field-help contract](../../../docs/admin/dialogs.md#chrome-and-actions) prohibits persistent explanatory prose under ordinary Settings/Create/Edit controls; clarify labels or use the central on-demand Help lightbulb rather than reintroducing `helperText()` or a page-local workaround. Protect authentication, validation, locking, transaction boundaries, Working/Public/Preview separation and failure/no-op feedback. Refactor behavior **must be preserved**, including accepted browser behavior, not merely PHP return types.
 
 ## Bounded workflow and architecture gaps
 
