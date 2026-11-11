@@ -223,25 +223,8 @@ test('General More space never resizes on Show/Hide and embedded Preview matches
       await expect(direct.locator('meta[data-public-layout]'))
         .toHaveAttribute('data-public-layout-divider-mode', 'fine');
 
-      const geometry = doc => {
-        const header = doc.querySelector('.site-header');
-        const menu = doc.querySelector('.site-navigation');
-        const content = doc.querySelector('#content');
-        if (!header || !menu || !content) throw new Error('Incomplete public preview shell');
-        const menuRect = menu.getBoundingClientRect();
-        const contentRect = content.getBoundingClientRect();
-        return {
-          className: header.className,
-          dividerBorder: getComputedStyle(menu).borderBottomWidth,
-          headerDivider: getComputedStyle(header, '::after').content,
-          menuLeft: menuRect.left,
-          menuWidth: menuRect.width,
-          contentLeft: contentRect.left,
-          contentWidth: contentRect.width,
-        };
-      };
-      // Both windows load the same /preview controller and Public CSS. Match
-      // *logical iframe viewport*, not the scaled Admin device dimensions.
+      // Both documents must report the same divider and geometry when
+      // rendered at the same logical viewport size.
       const directLayout = await direct.evaluate(() => {
         const header = document.querySelector('.site-header');
         const menu = document.querySelector('.site-navigation');
