@@ -396,6 +396,63 @@ final class HomePresentation extends Page
         );
     }
 
+    /** Stage quick edits use the same audited Hero settings owner as the Settings dialog. */
+    public function updateHeroStageSetting(string $field, mixed $value): void
+    {
+        $configuration = app(HomeHeroConfigurationService::class)->configuration($this->settings());
+        if ($field === 'group_source') {
+            if (! in_array($value, ['automatic', 'semi_automatic', 'manual'], true)) {
+                throw ValidationException::withMessages(['group_source' => 'Choose a valid Hero source.']);
+            }
+        } elseif ($field === 'display_strategy') {
+            if (! in_array($value, ['ordered', 'random', 'sequential'], true)) {
+                throw ValidationException::withMessages(['display_strategy' => 'Choose a valid Hero strategy.']);
+            }
+        } elseif ($field === 'source_rule') {
+            if ($configuration['group_source'] === 'manual'
+                || ! is_string($value) || ! array_key_exists($value, HomeHeroConfigurationService::SOURCE_RULES)) {
+                throw ValidationException::withMessages(['source_rule' => 'Choose a valid Gallery source rule.']);
+            }
+        } elseif ($field === 'group_size') {
+            $size = filter_var($value, FILTER_VALIDATE_INT);
+            if ($configuration['group_source'] === 'manual' || $size === false
+                || $size < 1 || $size > HomeHeroConfigurationService::MAX_GROUP_SIZE) {
+                throw ValidationException::withMessages(['group_size' => 'Source Size must be between 1 and 50.']);
+            }
+            $value = $size;
+        } else {
+            throw ValidationException::withMessages(['hero' => 'Unsupported Hero Stage setting.']);
+        }
+
+        $changed = app(HomeHeroConfigurationService::class)->updateArtworkSettings(
+            $this->settings(), [$field => $value],
+        );
+        if (! $changed) {
+            return;
+        }
+        if ($field === 'group_source') {
+            $this->sourcePage = 1;
+            $this->clearSourceSelection();
+        }
+        $this->reloadWorkspace();
+        app(AdminNotifier::class)->notification(title: 'Home settings saved', status: 'success');
+    }
+
+    public function setManualHeroCandidateEnabled(string $key, bool $enabled): void
+    {
+        $changed = app(HomeHeroConfigurationService::class)->setManualCandidateEnabled(
+            $this->settings(), $key, $enabled,
+        );
+        if (! $changed) {
+            return;
+        }
+        $this->reloadWorkspace();
+        app(AdminNotifier::class)->notification(
+            title: $enabled ? 'Manual Hero candidate enabled' : 'Manual Hero candidate disabled',
+            status: 'success',
+        );
+    }
+
     public function toggleManualHeroSource(): void
     {
         if ($this->heroGroupSource !== 'semi_automatic') {
@@ -423,10 +480,10 @@ final class HomePresentation extends Page
 
     public function sortHeroArtwork(string $target, int $position): void
     {
-        if ($this->heroGroupSource !== 'manual') {
+        if (! in_array($this->heroGroupSource, ['manual', 'semi_automatic'], true)) {
             return;
         }
-        $ids = collect($this->heroRailRows)->pluck('id')->values()->all();
+        $ids = array_map(HomeHeroConfigurationService::memberKey(...), $this->manualHeroGroup);
         $from = array_search($target, $ids, true);
         if ($from === false) {
             throw ValidationException::withMessages(['manual_group' => 'The Hero group changed. Reload and try again.']);
@@ -1213,12 +1270,12 @@ final class HomePresentation extends Page
         }
 
         if ($this->heroGroupSource === 'manual') {
-            $this->heroRailRows = $this->manualHeroRows($resolution);
+            $this->heroRailRows = $this->manualHeroRows($settings, $resolution);
 
             return;
         }
 
-        if ($this->heroGroupSource === 'semi_automatic' && $this->disabledAutoHeroIds !== []) {
+        if ($this->disabledAutoHeroIds !== []) {
             $disabled = $publicArtworks->homeCandidatesByIds($this->disabledAutoHeroIds);
             $this->excludedHeroRows = $disabled
                 ->map(fn (Artwork $artwork): array => $this->candidateRow(HomeHeroCandidate::fromArtwork($artwork)))
@@ -1230,41 +1287,41 @@ final class HomePresentation extends Page
         $this->heroRailRows = $sequence->values()->map(function (HomeHeroCandidate $candidate, int $index) use ($currentId, $resolution): array {
             $row = $this->candidateRow($candidate);
             $row['eligible'] = true;
+            $row['is_manual'] = false;
+            $row['is_automatic'] = true;
             $weight = $resolution['weights'][$candidate->key()] ?? 0;
             $row['weight'] = $weight;
             $row['percentage'] = number_format($weight / 100, 2, '.', '');
-            if ($this->heroGroupSource === 'semi_automatic' && $this->manualHeroGroupEnabled) {
-                $manualKeys = array_map(HomeHeroConfigurationService::memberKey(...), $this->manualHeroGroup);
-                $manualIndex = array_search($candidate->key(), $manualKeys, true);
-                $row['can_move_up'] = $manualIndex !== false && $manualIndex > 0;
-                $row['can_move_down'] = $manualIndex !== false && $manualIndex < count($manualKeys) - 1;
-            }
             $row['sequence_label'] = $this->heroDisplayStrategy === 'sequential'
                 ? ($index === 0 ? 'Current' : ($index === 1 ? 'Next' : 'Then'))
                 : ($row['id'] === $currentId ? 'Current' : null);
 
             return $row;
         })->all();
+        if ($this->heroGroupSource === 'semi_automatic') {
+            $manualKeys = array_map(HomeHeroConfigurationService::memberKey(...), $this->manualHeroGroup);
+            $automaticRows = array_values(array_filter(
+                $this->heroRailRows,
+                static fn (array $row): bool => ! in_array($row['id'], $manualKeys, true),
+            ));
+            $this->heroRailRows = [...$this->manualHeroRows($settings, $resolution), ...$automaticRows];
+        }
     }
 
-    /** @param array<string,mixed> $resolution
-     * @return list<array<string,mixed>>
-     */
-    private function manualHeroRows(array $resolution): array
+    /** Display stored Manual members even when disabled or currently ineligible. */
+    private function manualHeroRows(HomePresentationSetting $settings, array $resolution): array
     {
-        $storedKeys = array_map(HomeHeroConfigurationService::memberKey(...), $this->manualHeroGroup);
-        $eligible = $resolution['group']->keyBy(static fn (HomeHeroCandidate $candidate): string => $candidate->key());
-        $sequenceKeys = $resolution['sequence']->map(static fn (HomeHeroCandidate $candidate): string => $candidate->key())->values()->all();
-        $weightByKey = collect($this->manualHeroGroup)->mapWithKeys(
-            static fn (array $member): array => [HomeHeroConfigurationService::memberKey($member) => $member['weight']],
-        )->all();
-
-        $displayKeys = $this->heroDisplayStrategy === 'sequential'
-            ? array_values(array_unique([...$sequenceKeys, ...$storedKeys]))
-            : $storedKeys;
+        $resolver = app(HomeHeroResolver::class);
+        $available = $resolver->manualCandidates($settings)
+            ->keyBy(static fn (HomeHeroCandidate $candidate): string => $candidate->key());
+        $active = $resolution['group']
+            ->keyBy(static fn (HomeHeroCandidate $candidate): string => $candidate->key());
+        $sequenceKeys = $resolution['sequence']
+            ->map(static fn (HomeHeroCandidate $candidate): string => $candidate->key())->values()->all();
         $rows = [];
-        foreach ($displayKeys as $displayIndex => $key) {
-            $candidate = $eligible->get($key);
+        foreach ($this->manualHeroGroup as $index => $member) {
+            $key = HomeHeroConfigurationService::memberKey($member);
+            $candidate = $available->get($key);
             $row = $candidate instanceof HomeHeroCandidate ? $this->candidateRow($candidate) : [
                 'id' => $key,
                 'title' => 'Unavailable candidate '.$key,
@@ -1275,19 +1332,27 @@ final class HomePresentation extends Page
                 'thumbnail_url' => null,
                 'gallery_url' => null,
             ];
-            $isEligible = $candidate instanceof HomeHeroCandidate;
+            $enabled = $member['enabled'];
+            $sourceEnabled = $this->heroGroupSource === 'manual' || $this->manualHeroGroupEnabled;
+            $effective = $enabled && $sourceEnabled && $active->has($key);
             $sequenceIndex = array_search($key, $sequenceKeys, true);
-            $weight = (int) ($weightByKey[$key] ?? 0);
-            $row['eligible'] = $isEligible;
+            $weight = (int) ($resolution['weights'][$key] ?? 0);
+            $row['eligible'] = $effective;
+            $row['disabled'] = ! $enabled;
+            $row['is_manual'] = true;
+            $row['is_automatic'] = false;
             $row['weight'] = $weight;
             $row['percentage'] = number_format($weight / 100, 2, '.', '');
-            $row['sequence_label'] = ! $isEligible
+            $row['sequence_label'] = ! ($candidate instanceof HomeHeroCandidate)
                 ? 'Unavailable'
-                : ($this->heroDisplayStrategy === 'sequential'
-                    ? ($sequenceIndex === 0 ? 'Current' : ($sequenceIndex === 1 ? 'Next' : 'Then'))
-                    : null);
-            $row['can_move_up'] = $displayIndex > 0;
-            $row['can_move_down'] = $displayIndex < count($displayKeys) - 1;
+                : (! $enabled ? 'Disabled'
+                    : (! $sourceEnabled ? 'Source disabled'
+                        : (! $effective ? 'Outside active group'
+                            : ($this->heroDisplayStrategy === 'sequential'
+                                ? ($sequenceIndex === 0 ? 'Current' : ($sequenceIndex === 1 ? 'Next' : 'Then'))
+                                : null))));
+            $row['can_move_up'] = $index > 0;
+            $row['can_move_down'] = $index < count($this->manualHeroGroup) - 1;
             $rows[] = $row;
         }
 

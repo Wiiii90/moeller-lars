@@ -44,7 +44,7 @@ final class HomeHeroConfigurationService
      *     disabled_auto_artwork_ids:list<int>,
      *     sourced_weights:array<string,int>,
      *     display_strategy:string,
-     *     manual_group:list<array{artwork_id?:int,media_asset_id?:int,weight:int}>,
+     *     manual_group:list<array{artwork_id?:int,media_asset_id?:int,weight:int,enabled:bool}>,
      *     manual_group_count:int,
      *     rotation_interval:array{count:int,unit:string},
      *     rotation_started_at:?string,
@@ -118,7 +118,7 @@ final class HomeHeroConfigurationService
             'group_size' => $this->boundedGroupSize($source['group_size'] ?? null),
             'manual_group' => $manual,
             'manual_group_enabled' => $mode === 'semi_automatic' ? (bool) ($source['manual_group_enabled'] ?? true) : $mode === 'manual',
-            'disabled_auto_artwork_ids' => $mode === 'semi_automatic'
+            'disabled_auto_artwork_ids' => $mode !== 'manual'
                 ? $this->readDisabledAutoArtworkIds($source['disabled_auto_artwork_ids'] ?? []) : [],
             'sourced_weights' => $mode === 'manual' ? [] : $this->readSourcedWeights($source['sourced_weights'] ?? []),
         ];
@@ -146,13 +146,13 @@ final class HomeHeroConfigurationService
                 $profiles[$mode]['source_rule'] = $profile['source_rule'];
                 $profiles[$mode]['group_size'] = $profile['group_size'];
                 $profiles[$mode]['sourced_weights'] = $profile['sourced_weights'];
+                $profiles[$mode]['disabled_auto_artwork_ids'] = $profile['disabled_auto_artwork_ids'];
             }
             if ($mode !== 'automatic') {
                 $profiles[$mode]['manual_group'] = $profile['manual_group'];
             }
             if ($mode === 'semi_automatic') {
                 $profiles[$mode]['manual_group_enabled'] = $profile['manual_group_enabled'];
-                $profiles[$mode]['disabled_auto_artwork_ids'] = $profile['disabled_auto_artwork_ids'];
             }
         }
         return $profiles;
@@ -201,7 +201,9 @@ final class HomeHeroConfigurationService
             $videoSoundEnabled = (bool) ($input['video_sound_enabled'] ?? $current['video_sound_enabled']);
             $enableViewer = (bool) ($input['enable_viewer'] ?? $current['enable_viewer']);
 
-            $manualSequenceChanged = $this->manualGroupKeys($manualGroup) !== $this->manualGroupKeys($profile['manual_group']);
+            $manualSequenceChanged = $this->manualGroupKeys($manualGroup) !== $this->manualGroupKeys($profile['manual_group'])
+                || array_map(static fn (array $member): bool => $member['enabled'], $manualGroup)
+                    !== array_map(static fn (array $member): bool => $member['enabled'], $profile['manual_group']);
             $intervalChanged = $rotationInterval !== $profile['rotation_interval'];
             $strategyChanged = $displayStrategy !== $profile['display_strategy'];
             $automaticGroupDefinitionChanged = $groupSource !== 'manual'
@@ -225,13 +227,13 @@ final class HomeHeroConfigurationService
                 $profiles[$groupSource]['source_rule'] = $sourceRule;
                 $profiles[$groupSource]['group_size'] = $groupSize;
                 $profiles[$groupSource]['sourced_weights'] = $sourcedWeights;
+                $profiles[$groupSource]['disabled_auto_artwork_ids'] = $disabledAutoIds;
             }
             if ($groupSource !== 'automatic') {
                 $profiles[$groupSource]['manual_group'] = $manualGroup;
             }
             if ($groupSource === 'semi_automatic') {
                 $profiles[$groupSource]['manual_group_enabled'] = $manualGroupEnabled;
-                $profiles[$groupSource]['disabled_auto_artwork_ids'] = $disabledAutoIds;
             }
 
             $artwork['show_details'] = $showDetails;
@@ -315,17 +317,19 @@ final class HomeHeroConfigurationService
             throw ValidationException::withMessages(['media_asset_id' => 'That file is already selected.']);
         }
 
-        $member = ['media_asset_id' => $mediaAssetId];
-        if ($group === []) {
-            $group[] = [...$member, 'weight' => self::WEIGHT_TOTAL];
-        } else {
-            $weight = intdiv(self::WEIGHT_TOTAL, count($group) + 1);
-            $scaled = $this->allocateBudget(array_column($group, 'weight'), self::WEIGHT_TOTAL - $weight);
-            foreach ($group as $index => $existing) {
-                $group[$index]['weight'] = $scaled[$index];
-            }
-            $group[] = [...$member, 'weight' => $weight];
+        $member = ['media_asset_id' => $mediaAssetId, 'enabled' => true];
+        $enabledIndices = array_keys(array_filter(
+            $group, static fn (array $entry): bool => $entry['enabled'],
+        ));
+        $weight = intdiv(self::WEIGHT_TOTAL, count($enabledIndices) + 1);
+        $scaled = $this->allocateBudget(
+            array_map(static fn (int $index): int => $group[$index]['weight'], $enabledIndices),
+            self::WEIGHT_TOTAL - $weight,
+        );
+        foreach ($enabledIndices as $offset => $index) {
+            $group[$index]['weight'] = $scaled[$offset];
         }
+        $group[] = [...$member, 'weight' => $weight];
 
         return $this->updateArtworkSettings($settings, ['manual_group' => $group]);
     }
@@ -344,6 +348,31 @@ final class HomeHeroConfigurationService
         }
 
         return $this->updateArtworkSettings($settings, ['manual_group' => $group]);
+    }
+
+    /** Enable or disable a stored member without dropping its order, media reference or weight. */
+    public function setManualCandidateEnabled(HomePresentationSetting $settings, string $key, bool $enabled): bool
+    {
+        return DB::transaction(function () use ($settings, $key, $enabled): bool {
+            /** @var HomePresentationSetting $fresh */
+            $fresh = HomePresentationSetting::query()->whereKey($settings->getKey())
+                ->lockForUpdate()->firstOrFail();
+            $current = $this->configuration($fresh);
+            if ($current['group_source'] === 'automatic') {
+                throw ValidationException::withMessages(['candidate' => 'Manual candidates belong to Manual or Semi-Automatic.']);
+            }
+            $group = $current['manual_group'];
+            $index = array_search($key, $this->manualGroupKeys($group), true);
+            if ($index === false) {
+                throw ValidationException::withMessages(['candidate' => 'This candidate is no longer in the Manual group.']);
+            }
+            if ($group[$index]['enabled'] === $enabled) {
+                return false;
+            }
+            $group[$index]['enabled'] = $enabled;
+
+            return $this->updateArtworkSettings($fresh, ['manual_group' => $group]);
+        });
     }
 
     /** @param list<string> $keys */
@@ -412,15 +441,13 @@ final class HomeHeroConfigurationService
         if ($target === false) {
             throw ValidationException::withMessages(['candidate' => 'The selected Hero candidate changed.']);
         }
-        if (count($group) === 1) {
-            $group[0]['weight'] = self::WEIGHT_TOTAL;
-
-            return $this->updateArtworkSettings($settings, ['manual_group' => $group]);
+        if (! $group[$target]['enabled']) {
+            throw ValidationException::withMessages(['weight' => 'Enable this candidate before editing its chance.']);
         }
         $indices = [];
         $other = [];
         foreach ($group as $index => $member) {
-            if ($index === $target) {
+            if ($index === $target || ! $member['enabled']) {
                 continue;
             }
             $indices[] = $index;
@@ -435,7 +462,7 @@ final class HomeHeroConfigurationService
         return $this->updateArtworkSettings($settings, ['manual_group' => $group]);
     }
 
-    /** @return list<array{artwork_id?:int,media_asset_id?:int,weight:int}> */
+    /** @return list<array{artwork_id?:int,media_asset_id?:int,weight:int,enabled:bool}> */
     public function normalizeManualGroup(mixed $value): array
     {
         if (! is_array($value) || ! array_is_list($value)) {
@@ -452,20 +479,32 @@ final class HomeHeroConfigurationService
             if ($identity === null || $weight === false || $weight < 0 || $weight > self::WEIGHT_TOTAL) {
                 throw ValidationException::withMessages(['manual_group' => 'Choose a valid Hero candidate and percentage.']);
             }
+            $enabled = $member['enabled'] ?? true;
+            if (! is_bool($enabled)) {
+                throw ValidationException::withMessages(['manual_group' => 'Candidate enabled state must be true or false.']);
+            }
             $key = self::memberKey($identity);
             if (isset($seen[$key])) {
                 throw ValidationException::withMessages(['manual_group' => 'The Hero group cannot contain duplicate candidates.']);
             }
             $seen[$key] = true;
-            $members[] = [...$identity, 'weight' => (int) $weight];
+            $members[] = [...$identity, 'weight' => (int) $weight, 'enabled' => $enabled];
         }
         if ($members === []) {
             return [];
         }
 
-        $weights = $this->allocateBudget(array_column($members, 'weight'), self::WEIGHT_TOTAL);
-        foreach ($members as $index => $member) {
-            $members[$index]['weight'] = $weights[$index];
+        $enabledIndices = array_keys(array_filter(
+            $members, static fn (array $member): bool => $member['enabled'],
+        ));
+        if ($enabledIndices !== []) {
+            $weights = $this->allocateBudget(
+                array_map(static fn (int $index): int => $members[$index]['weight'], $enabledIndices),
+                self::WEIGHT_TOTAL,
+            );
+            foreach ($enabledIndices as $offset => $index) {
+                $members[$index]['weight'] = $weights[$offset];
+            }
         }
 
         return $members;
@@ -503,7 +542,7 @@ final class HomeHeroConfigurationService
         return 'artwork:'.$member['artwork_id'];
     }
 
-    /** @return list<array{artwork_id?:int,media_asset_id?:int,weight:int}> */
+    /** @return list<array{artwork_id?:int,media_asset_id?:int,weight:int,enabled:bool}> */
     private function readManualGroup(mixed $value): array
     {
         if (! is_array($value) || ! array_is_list($value)) {
@@ -520,12 +559,16 @@ final class HomeHeroConfigurationService
             if ($identity === null || $weight === false || $weight < 0 || $weight > self::WEIGHT_TOTAL) {
                 continue;
             }
+            $enabled = $member['enabled'] ?? true;
+            if (! is_bool($enabled)) {
+                continue;
+            }
             $key = self::memberKey($identity);
             if (isset($seen[$key])) {
                 continue;
             }
             $seen[$key] = true;
-            $members[] = [...$identity, 'weight' => (int) $weight];
+            $members[] = [...$identity, 'weight' => (int) $weight, 'enabled' => $enabled];
         }
 
         return $members === [] ? [] : $this->normalizeManualGroup($members);
@@ -626,9 +669,9 @@ final class HomeHeroConfigurationService
             $fresh = HomePresentationSetting::query()
                 ->whereKey($settings->getKey())->lockForUpdate()->firstOrFail();
             $current = $this->configuration($fresh);
-            if ($current['group_source'] !== 'semi_automatic') {
+            if (! in_array($current['group_source'], ['automatic', 'semi_automatic'], true)) {
                 throw ValidationException::withMessages([
-                    'candidate' => 'Only Semi-Automatic permits individual Gallery exclusions.',
+                    'candidate' => 'Only Automatic and Semi-Automatic permit Gallery exclusions.',
                 ]);
             }
 

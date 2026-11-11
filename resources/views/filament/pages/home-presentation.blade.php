@@ -20,6 +20,8 @@
                         'eligible' => true,
                         'thumbnail_url' => $row['thumbnail_url'],
                         'weight' => $row['weight'] ?? null,
+                        'is_manual' => $row['is_manual'] ?? false,
+                        'is_automatic' => $row['is_automatic'] ?? false,
                     ])->values()->all();
                 $simulationKey = md5(json_encode([
                     $heroGroupSource, $heroDisplayStrategy, $rotationIntervalCount,
@@ -27,7 +29,7 @@
                 ]));
             @endphp
             <div
-                class="home-hero-surface admin-visual-stage"
+                class="home-hero-surface admin-visual-stage admin-visual-stage--split"
                 aria-label="Hero Artwork"
                 wire:key="home-stage-{{ $simulationKey }}"
                 x-data="adminHomeHeroStage({
@@ -42,6 +44,23 @@
                 })"
             >
                 <div class="home-hero-surface__visual admin-visual-stage__pane">
+                    <div class="home-hero-surface__visual-actions admin-toolbar" x-show="activeId !== null" x-cloak>
+                        <button class="admin-action admin-action--with-icon" type="button"
+                            x-show="active?.is_manual" x-on:click="$wire.setManualHeroCandidateEnabled(activeId, false)"
+                            title="Disable current Manual candidate" aria-label="Disable current Manual candidate">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" class="admin-action__icon" />
+                        </button>
+                        <button class="admin-action admin-action--with-icon" type="button"
+                            x-show="active?.is_automatic" x-on:click="$wire.setAutomaticHeroCandidateEnabled(Number(activeId.split(':')[1]), false)"
+                            title="Disable current automatic candidate" aria-label="Disable current automatic candidate">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" class="admin-action__icon" />
+                        </button>
+                        <button class="admin-action admin-action--with-icon is-danger" type="button"
+                            x-show="active?.is_manual" x-on:click="$wire.removeHeroCandidate(activeId)"
+                            title="Remove current Manual candidate" aria-label="Remove current Manual candidate">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
+                        </button>
+                    </div>
                     <img
                         @if ($currentArtwork && $currentArtwork['thumbnail_url']) src="{{ $currentArtwork['thumbnail_url'] }}" @endif
                         x-show="Boolean(active?.thumbnail_url)"
@@ -54,38 +73,73 @@
                 </div>
 
                 <div class="home-hero-rail admin-visual-stage__pane" aria-label="Hero group">
-                    <div class="home-hero-rail__summary">
-                        <strong>{{ match ($heroGroupSource) { 'manual' => 'Manual', 'semi_automatic' => 'Semi-Automatic', default => 'Automatic' } }} · {{ $heroDisplayStrategy === 'ordered' ? 'Top Only' : ucfirst($heroDisplayStrategy) }}</strong>
-                        <span>
-                            {{ $candidatePoolCount }}
-                            {{ $candidatePoolCount === 1 ? 'candidate' : 'candidates' }}
-                        </span>
-                        <span x-text="simulationLabel" aria-live="off">
-                            @if ($heroDisplayStrategy === 'sequential' && $nextRotationAt)
-                                Next {{ $nextRotationAt }}
-                            @else
-                                {{ $heroDisplayStrategy === 'ordered' ? 'Top Only' : ucfirst($heroDisplayStrategy) }} preview
+                    <header class="home-hero-rail__summary">
+                        <h2 class="admin-section__kicker home-hero-rail__title admin-visual-stage__heading">{{ __('Hero Artwork') }}</h2>
+                        <div class="home-hero-stage-settings" aria-label="Hero Stage quick settings">
+                            <label class="home-hero-stage-field">
+                                <span>{{ __('Source') }}</span>
+                                <select class="admin-form-control" wire:change="updateHeroStageSetting('group_source', $event.target.value)" aria-label="Hero source">
+                                    <option value="automatic" @selected($heroGroupSource === 'automatic')>{{ __('Automatic') }}</option>
+                                    <option value="semi_automatic" @selected($heroGroupSource === 'semi_automatic')>{{ __('Semi-Automatic') }}</option>
+                                    <option value="manual" @selected($heroGroupSource === 'manual')>{{ __('Manual') }}</option>
+                                </select>
+                            </label>
+                            @if ($heroGroupSource !== 'manual')
+                                <label class="home-hero-stage-field">
+                                    <span>{{ __('Source Rule') }}</span>
+                                    <select class="admin-form-control" wire:change="updateHeroStageSetting('source_rule', $event.target.value)" aria-label="Hero source rule">
+                                        @foreach (\App\Domain\Content\HomeHeroConfigurationService::SOURCE_RULES as $value => $label)
+                                            <option value="{{ $value }}" @selected($heroSourceRule === $value)>{{ __($label) }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                                <label class="home-hero-stage-field">
+                                    <span>{{ __('Source Size') }}</span>
+                                    <input class="admin-form-control" type="number" min="1" max="{{ \App\Domain\Content\HomeHeroConfigurationService::MAX_GROUP_SIZE }}"
+                                        step="1" value="{{ $heroGroupSize }}" wire:change="updateHeroStageSetting('group_size', $event.target.value)" aria-label="Hero source size">
+                                </label>
                             @endif
-                        </span>
-                    </div>
+                            <label class="home-hero-stage-field">
+                                <span>{{ __('Strategy') }}</span>
+                                <select class="admin-form-control" wire:change="updateHeroStageSetting('display_strategy', $event.target.value)" aria-label="Hero display strategy">
+                                    <option value="ordered" @selected($heroDisplayStrategy === 'ordered')>{{ __('Top Only') }}</option>
+                                    <option value="random" @selected($heroDisplayStrategy === 'random')>{{ __('Random') }}</option>
+                                    <option value="sequential" @selected($heroDisplayStrategy === 'sequential')>{{ __('Sequential') }}</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="home-hero-rail__simulation">
+                            <span>{{ $candidatePoolCount }} {{ $candidatePoolCount === 1 ? __('candidate') : __('candidates') }}</span>
+                            <span x-text="simulationLabel" aria-live="off">{{ __('Stage simulation') }}</span>
+                        </div>
+                        <div class="home-hero-candidate__heading" aria-hidden="true">
+                            <span class="home-hero-candidate__heading-position">{{ __('Position') }}</span>
+                            <span class="home-hero-candidate__heading-chance">{{ $heroDisplayStrategy === 'random' ? __('Chance') : '' }}</span>
+                            <span class="home-hero-candidate__heading-actions">{{ __('Actions') }}</span>
+                        </div>
+                    </header>
 
                     @if ($heroRailRows !== [] || $excludedHeroRows !== [])
-                        <div class="home-hero-rail__rows" @if ($heroGroupSource === 'manual') wire:sort="sortHeroArtwork" @endif>
-                            @forelse ($heroRailRows as $row)
+                        <div class="home-hero-rail__rows" @if (in_array($heroGroupSource, ['manual', 'semi_automatic'], true)) wire:sort="sortHeroArtwork" @endif>
+                            @foreach ($heroRailRows as $index => $row)
+                                @php $isManual = $row['is_manual'] ?? false; @endphp
                                 <article
-                                    class="home-hero-candidate {{ $heroGroupSource === 'manual' ? 'is-manual' : '' }} {{ $heroDisplayStrategy === 'random' ? 'is-weighted' : '' }} {{ !($row['eligible'] ?? true) ? 'is-unavailable' : '' }}"
+                                    class="home-hero-candidate {{ !($row['eligible'] ?? true) ? 'is-unavailable' : '' }}"
                                     x-bind:class="{ 'is-current': activeId === $el.dataset.candidateKey }"
                                     data-candidate-key="{{ $row['id'] }}"
                                     wire:key="home-hero-row-{{ $row['id'] }}"
-                                    @if ($heroGroupSource === 'manual') wire:sort:item="{{ $row['id'] }}" @endif
+                                    @if ($isManual) wire:sort:item="{{ $row['id'] }}" @endif
                                 >
-                                    @if ($heroGroupSource === 'manual')
+                                    <span class="home-hero-candidate__position"><span class="admin-position">{{ $index + 1 }}</span></span>
+                                    @if ($isManual)
                                         <button class="admin-drag-handle" type="button" wire:sort:handle aria-label="Drag {{ $row['title'] }}">⋮⋮</button>
+                                    @else
+                                        <span class="home-hero-candidate__drag-spacer" aria-hidden="true"></span>
                                     @endif
 
                                     <div class="home-hero-candidate__visual">
                                         @if ($row['thumbnail_url'])
-                                            <img src="{{ $row['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
+                                            <img src="{{ $row['thumbnail_url'] }}" alt="" loading="lazy" decoding="async" draggable="false">
                                         @else
                                             <span>—</span>
                                         @endif
@@ -95,14 +149,13 @@
                                         <strong title="{{ $row['title'] }}">{{ $row['title'] }}</strong>
                                         <span title="{{ $row['gallery'] ?: '—' }}">{{ $row['gallery'] ?: '—' }} · {{ $row['year'] ?: '—' }}</span>
                                         @if ($row['sequence_label'])
-                                            <small>{{ $row['sequence_label'] }}</small>
+                                            <small>{{ __($row['sequence_label']) }}</small>
                                         @endif
                                     </div>
 
-                                    @if ($heroDisplayStrategy === 'random')
-                                        <label class="home-hero-weight">
-                                            <span>{{ __('Chance') }}</span>
-                                            <span class="home-hero-weight__input">
+                                    <div class="home-hero-weight">
+                                        @if ($heroDisplayStrategy === 'random' && ($row['eligible'] ?? false))
+                                            <label class="home-hero-weight__input">
                                                 <input
                                                     class="admin-form-control"
                                                     type="number"
@@ -114,56 +167,61 @@
                                                     aria-label="Random percentage for {{ $row['title'] }}"
                                                 >
                                                 <span>%</span>
-                                            </span>
-                                        </label>
-                                    @endif
+                                            </label>
+                                        @elseif ($heroDisplayStrategy === 'random')
+                                            <span class="home-hero-weight__inactive">—</span>
+                                        @endif
+                                    </div>
 
-                                    @php
-                                        $isManualCandidate = ($heroGroupSource === 'manual' || $manualHeroGroupEnabled)
-                                            && in_array($row['id'], $manualHeroKeys, true);
-                                        $isAutomaticCandidate = $heroGroupSource === 'semi_automatic'
-                                            && ! $isManualCandidate && str_starts_with($row['id'], 'artwork:');
-                                    @endphp
-                                    @if ($heroGroupSource === 'manual' || ($heroGroupSource === 'semi_automatic' && $isManualCandidate) || $isAutomaticCandidate)
-                                        <div class="home-hero-candidate__actions admin-toolbar">
-                                            @if ($heroGroupSource === 'manual' || ($heroGroupSource === 'semi_automatic' && $isManualCandidate))
-                                                <button class="admin-action admin-order-action" type="button" wire:click="moveHeroArtwork('{{ $row['id'] }}', 'up')" @disabled(! $row['can_move_up']) aria-label="Move {{ $row['title'] }} up">↑</button>
-                                                <button class="admin-action admin-order-action" type="button" wire:click="moveHeroArtwork('{{ $row['id'] }}', 'down')" @disabled(! $row['can_move_down']) aria-label="Move {{ $row['title'] }} down">↓</button>
-                                            @endif
-                                            @if ($isAutomaticCandidate)
-                                                <button class="admin-action" type="button" wire:click="setAutomaticHeroCandidateEnabled({{ (int) substr($row['id'], 8) }}, false)" aria-label="Exclude {{ $row['title'] }} from automatic Hero candidates">{{ __('Disable') }}</button>
+                                    <div class="home-hero-candidate__actions admin-toolbar">
+                                        @if ($isManual)
+                                            <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp" :disabled="! $row['can_move_up']"
+                                                wire:click="moveHeroArtwork('{{ $row['id'] }}', 'up')" />
+                                            <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveDown" :disabled="! $row['can_move_down']"
+                                                wire:click="moveHeroArtwork('{{ $row['id'] }}', 'down')" />
+                                            @if ($row['disabled'])
+                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Publish" label="Enable"
+                                                    wire:click="setManualHeroCandidateEnabled('{{ $row['id'] }}', true)" />
                                             @else
-                                                <button class="admin-action is-danger" type="button" wire:click="removeHeroCandidate('{{ $row['id'] }}')">{{ __('Remove') }}</button>
+                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Unpublish" label="Disable"
+                                                    wire:click="setManualHeroCandidateEnabled('{{ $row['id'] }}', false)" />
                                             @endif
-                                        </div>
-                                    @endif
+                                            <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Delete" label="Remove"
+                                                wire:click="removeHeroCandidate('{{ $row['id'] }}')" />
+                                        @elseif ($row['is_automatic'] ?? false)
+                                            <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Unpublish" label="Disable"
+                                                wire:click="setAutomaticHeroCandidateEnabled({{ (int) substr($row['id'], 8) }}, false)" />
+                                        @endif
+                                    </div>
                                 </article>
-                            @empty
-                                <div class="home-hero-rail__empty">{{ __('No eligible Hero candidates') }}</div>
-                            @endforelse
+                            @endforeach
 
-                            @if ($heroGroupSource === 'semi_automatic' && $excludedHeroRows !== [])
-                            <div class="home-hero-rail__exclusions">
-                                <div class="home-hero-rail__summary"><strong>{{ __('Excluded automatic candidates') }}</strong></div>
-                                @foreach ($excludedHeroRows as $excluded)
-                                    <article class="home-hero-candidate" wire:key="home-excluded-{{ $excluded['id'] }}">
-                                        <span class="home-hero-candidate__visual">
-                                            @if ($excluded['thumbnail_url'])
-                                                <img src="{{ $excluded['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
-                                            @else
-                                                <span>—</span>
-                                            @endif
-                                        </span>
-                                        <div class="home-hero-candidate__meta">
-                                            <strong title="{{ $excluded['title'] }}">{{ $excluded['title'] }}</strong>
-                                            <small>{{ __('Excluded') }}</small>
-                                        </div>
-                                        <div class="home-hero-candidate__actions admin-toolbar">
-                                            <button class="admin-action" type="button" wire:click="setAutomaticHeroCandidateEnabled({{ (int) substr($excluded['id'], 8) }}, true)">{{ __('Enable') }}</button>
-                                        </div>
-                                    </article>
-                                @endforeach
-                            </div>
+                            @if ($excludedHeroRows !== [])
+                                <div class="home-hero-rail__exclusions">
+                                    <div class="home-hero-rail__exclusions-title">{{ __('Excluded automatic candidates') }}</div>
+                                    @foreach ($excludedHeroRows as $excluded)
+                                        <article class="home-hero-candidate is-unavailable" wire:key="home-excluded-{{ $excluded['id'] }}">
+                                            <span class="home-hero-candidate__position"><span class="admin-position">—</span></span>
+                                            <span class="home-hero-candidate__drag-spacer" aria-hidden="true"></span>
+                                            <div class="home-hero-candidate__visual">
+                                                @if ($excluded['thumbnail_url'])
+                                                    <img src="{{ $excluded['thumbnail_url'] }}" alt="" loading="lazy" decoding="async" draggable="false">
+                                                @else
+                                                    <span>—</span>
+                                                @endif
+                                            </div>
+                                            <div class="home-hero-candidate__meta">
+                                                <strong title="{{ $excluded['title'] }}">{{ $excluded['title'] }}</strong>
+                                                <small>{{ __('Excluded') }}</small>
+                                            </div>
+                                            <div class="home-hero-weight"></div>
+                                            <div class="home-hero-candidate__actions admin-toolbar">
+                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Publish" label="Enable"
+                                                    wire:click="setAutomaticHeroCandidateEnabled({{ (int) substr($excluded['id'], 8) }}, true)" />
+                                            </div>
+                                        </article>
+                                    @endforeach
+                                </div>
                             @endif
                         </div>
                     @else

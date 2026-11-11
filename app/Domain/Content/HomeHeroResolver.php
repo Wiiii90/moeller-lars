@@ -71,7 +71,9 @@ final class HomeHeroResolver
      */
     private function manualGroup(array $configuration): array
     {
-        $members = $configuration['manual_group'];
+        $members = array_values(array_filter(
+            $configuration['manual_group'], static fn (array $member): bool => $member['enabled'],
+        ));
         $eligible = $this->selectedCandidates($members);
         $effective = array_values(array_filter(
             $members,
@@ -104,13 +106,15 @@ final class HomeHeroResolver
     {
         $semi = $configuration['group_source'] === 'semi_automatic';
         $manual = $semi && $configuration['manual_group_enabled']
-            ? $this->selectedCandidates($configuration['manual_group'])->take($configuration['group_size'])->values()
+            ? $this->selectedCandidates(array_values(array_filter(
+                $configuration['manual_group'], static fn (array $member): bool => $member['enabled'],
+            )))->take($configuration['group_size'])->values()
             : new Collection;
 
         $remaining = max(0, $configuration['group_size'] - $manual->count());
         $group = $manual;
         if ($remaining > 0) {
-            $excluded = $semi ? $configuration['disabled_auto_artwork_ids'] : [];
+            $excluded = $configuration['disabled_auto_artwork_ids'];
             // An explicitly selected Artwork cannot appear twice in the same
             // mixed group, even when its Gallery is enabled for automatic use.
             foreach ($manual as $candidate) {

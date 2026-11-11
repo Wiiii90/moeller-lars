@@ -9,6 +9,8 @@ export function adminHomeHeroStage(config = {}) {
             id: row.id,
             thumbnail_url: row.thumbnail_url || null,
             weight: Number.isFinite(Number(row.weight)) ? Number(row.weight) : null,
+            is_manual: row.is_manual === true,
+            is_automatic: row.is_automatic === true,
         }));
 
     const initialId = String(config.currentId ?? '');
@@ -47,11 +49,11 @@ export function adminHomeHeroStage(config = {}) {
         get activeId() { return this.rows[this.activeIndex]?.id ?? null; },
         get active() { return this.rows[this.activeIndex] ?? null; },
         get simulationLabel() {
-            if (this.strategy === 'ordered') return 'Top Only · first sourced candidate';
-            if (this.strategy === 'random') return 'Random · new sample every 10 seconds';
+            if (this.strategy === 'ordered') return 'Top Only: first sourced candidate';
+            if (this.strategy === 'random') return 'Random preview: new sample every 10 seconds';
             const at = this.simulatedAt.toISOString().slice(0, 10);
             const next = this.nextAt?.toISOString().replace('T', ' ').slice(0, 16) ?? '—';
-            return 'Simulated ' + at + ' · next ' + next + ' UTC';
+            return 'Sequential preview: ' + at + '; next rotation ' + next + ' UTC';
         },
         init() {
             if (this.rows.length === 0 || this.strategy === 'ordered') return;

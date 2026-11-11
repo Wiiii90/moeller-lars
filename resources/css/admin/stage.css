@@ -42,11 +42,18 @@
 :is(
     .admin-visual-stage--rail,
     .analytics-visual-stage,
-    .admin-storage__visual-stage,
-    .home-hero-surface
+    .admin-storage__visual-stage
 ) {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+    overflow: visible;
+}
+
+/* Home uses the shared half-and-half divider aligned with the central three-metric axis. */
+.home-hero-surface {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 0 !important;
     overflow: visible;
 }
@@ -56,8 +63,7 @@
 :is(
     .admin-visual-stage--rail,
     .analytics-visual-stage,
-    .admin-storage__visual-stage,
-    .home-hero-surface
+    .admin-storage__visual-stage
 )::after,
 .admin-visual-stage--split::after,
 .admin-visual-stage--triptych::before,
@@ -76,8 +82,7 @@
 :is(
     .admin-visual-stage--rail,
     .analytics-visual-stage,
-    .admin-storage__visual-stage,
-    .home-hero-surface
+    .admin-storage__visual-stage
 )::after,
 .admin-visual-stage--triptych::after,
 .activity-atlas__grid::after {
@@ -118,9 +123,7 @@
     border-left: 0 !important;
 }
 
-/* Home and Analytics intentionally reach the exact 2/3 axis. The Analytics
- * canvas midpoint then lands exactly on the metric boundary after column two. */
-.home-hero-surface > .home-hero-surface__visual,
+/* Analytics reaches the 2/3 metric axis; Home uses the shared split Stage axis. */
 .analytics-visual-stage > .analytics-world {
     box-sizing: border-box;
     grid-column: 1 / span 2;
@@ -130,10 +133,25 @@
     padding-left: 0 !important;
 }
 
-.analytics-visual-stage > .analytics-stage-rail,
-.home-hero-surface > .home-hero-rail {
+.analytics-visual-stage > .analytics-stage-rail {
     grid-column: 3;
     min-width: 0;
+}
+
+.home-hero-surface > .home-hero-surface__visual {
+    box-sizing: border-box;
+    grid-column: 1;
+    width: 100%;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.home-hero-surface > .home-hero-rail {
+    box-sizing: border-box;
+    grid-column: 2;
+    min-width: 0;
+    padding-left: var(--admin-stage-pane-space) !important;
 }
 
 .home-hero-surface__visual {
@@ -597,5 +615,30 @@
         .admin-visual-stage--single-minimal > .admin-visual-stage__pane:not(:first-child) {
             display: none !important;
         }
+    }
+}
+
+/* Home alone stacks its two semantic panes below the half-width editing floor.
+ * The Stage height stays stable across candidate/strategy/source changes. */
+@container admin-workspace (max-width: 48rem) {
+    .home-hero-surface {
+        height: calc(var(--admin-visual-stage-height) * 1.5);
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .home-hero-surface::after {
+        display: none;
+        content: none;
+    }
+    .home-hero-surface > .home-hero-surface__visual {
+        grid-column: 1;
+        grid-row: 1;
+        min-height: 0;
+    }
+    .home-hero-surface > .home-hero-rail {
+        grid-column: 1;
+        grid-row: 2;
+        min-height: 0;
+        padding-left: 0 !important;
     }
 }

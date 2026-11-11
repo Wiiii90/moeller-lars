@@ -10,7 +10,7 @@
 | Dev Worker 4 | 8 | Active — Gallery Settings canonical two-column source update; browser review pending | Gallery/Artwork, Materials, public Artwork fit, publication projection | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 11 | Active — Pages preview findings | Pages settings semantics/consistency; failed page-type switch must restore the persisted selection | [dev-5.md](workers/dev-5.md) |
 
-| Dev Worker 6 | 14 | Active — takeover; Home Stage preview continuation | Pages → Home: Hero Artwork candidate management/rotation/stage; Under Construction and Custom settings/editor parity; checks on video and month rotation; no tests/deployment | [dev-6.md](workers/dev-6.md) |
+| Dev Worker 6 | 14 | Active — Home Hero Stage source updated; browser review pending | Pages → Home: Hero Artwork candidate management/rotation/stage; Under Construction and Custom settings/editor parity; checks on video and month rotation; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 13 | Active — General Appearance preview corrections | Appearance Global/Title/Menu/Page/Legal, preview geometry/persistence, Regional Formats hints | [dev-7.md](workers/dev-7.md) |
 
 Only activated Dev workers receive a row and their own `.agents/workers/dev-N.md` record. This roster belongs exclusively to `dev` and must never receive Docs, Testing or Refactor worker entries. Follow the [shared worker protocol](README.md) for atomic registration, takeover and lease updates.
