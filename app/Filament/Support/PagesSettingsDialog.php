@@ -6,12 +6,13 @@ use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\Controls\AdminControl;
-use Illuminate\Support\HtmlString;
 use App\Models\PublicContentSetting;
+use App\Models\User;
 use Closure;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 
 final class PagesSettingsDialog
@@ -22,12 +23,12 @@ final class PagesSettingsDialog
         private readonly HomeRoutingDialog $homeRouting,
     ) {}
 
-    /** @return array{navigation_nesting_enabled:bool,navigation_hover_preview:bool,skip_home:bool,skip_target_section_id:?int,pages_auto_publish:bool} */
+    /** @return array{navigation_nesting_enabled:bool,skip_home:bool,skip_target_section_id:?int,pages_auto_publish:bool,pages_delete_without_confirmation:bool} */
     public function fill(): array
     {
         return [
             'navigation_nesting_enabled' => PublicContentSetting::navigationNestingEnabled(),
-            'navigation_hover_preview' => (bool) PublicContentSetting::general()->getAttribute('navigation_hover_preview'),
+            'pages_delete_without_confirmation' => (bool) (Filament::auth()->user()?->getAttribute('pages_delete_without_confirmation') ?? false),
             ...$this->homeRouting->fill(),
             'pages_auto_publish' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::PAGES),
         ];
@@ -44,7 +45,7 @@ final class PagesSettingsDialog
             : static function (Get $get) use ($persistOnToggle): void {
                 $persistOnToggle([
                     'navigation_nesting_enabled' => $get('navigation_nesting_enabled'),
-                    'navigation_hover_preview' => $get('navigation_hover_preview'),
+                    'pages_delete_without_confirmation' => $get('pages_delete_without_confirmation'),
                     'skip_home' => $get('skip_home'),
                     'skip_target_section_id' => $get('skip_target_section_id'),
                     'pages_auto_publish' => $get('pages_auto_publish'),
@@ -56,18 +57,9 @@ final class PagesSettingsDialog
             $nesting->afterStateUpdated($onToggleUpdated);
         }
 
-        $hoverPreview = AdminControl::toggle('navigation_hover_preview')
-            ->label(new HtmlString(
-                '<span class="admin-form-label-with-help">'.e(__('Preview child pages on hover'))
-                .AdminHelp::make(
-                    __('About child page hover preview'),
-                    __('Mouse hover temporarily reveals child links. Click the parent to open its submenu; touch navigation is unchanged.'),
-                )->toHtml()
-                .'</span>',
-            ))
-            ->live();
+        $deleteWithoutConfirmation = AdminControl::toggle('pages_delete_without_confirmation', 'Delete without confirmation')->live();
         if ($onToggleUpdated !== null) {
-            $hoverPreview->afterStateUpdated($onToggleUpdated);
+            $deleteWithoutConfirmation->afterStateUpdated($onToggleUpdated);
         }
 
         $autoPublish = AdminControl::toggle('pages_auto_publish', 'Auto-publish new pages')->live();
@@ -80,7 +72,7 @@ final class PagesSettingsDialog
                 ->columns(['md' => 2])
                 ->schema([
                     $nesting,
-                    $hoverPreview,
+                    $deleteWithoutConfirmation,
                     Group::make($this->homeRouting->schema($onToggleUpdated)),
                     $autoPublish,
                 ]),
@@ -103,16 +95,28 @@ final class PagesSettingsDialog
 
             $updated = $this->settings->updatePublicContent($settings, [
                 'navigation_nesting_enabled' => $enabled,
-                'navigation_hover_preview' => (bool) ($data['navigation_hover_preview'] ?? $settings->getAttribute('navigation_hover_preview')),
             ]);
+
+            $user = Filament::auth()->user();
+            $deleteChanged = false;
+            if ($user instanceof User) {
+                $persistedUser = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+                $deleteWithoutConfirmation = (bool) ($data['pages_delete_without_confirmation']
+                    ?? $persistedUser->getAttribute('pages_delete_without_confirmation'));
+                if ((bool) $persistedUser->getAttribute('pages_delete_without_confirmation') !== $deleteWithoutConfirmation) {
+                    $persistedUser->forceFill(['pages_delete_without_confirmation' => $deleteWithoutConfirmation])->save();
+                    $user->setAttribute('pages_delete_without_confirmation', $deleteWithoutConfirmation);
+                    $deleteChanged = true;
+                }
+            }
 
             $publishChanged = app(AdminAutoPublishPreferences::class)->update(
                 AdminAutoPublishPreferences::PAGES,
                 (bool) ($data['pages_auto_publish'] ?? app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::PAGES)),
             );
 
-            return $updated->wasChanged(['navigation_nesting_enabled', 'navigation_hover_preview'])
-                || $changed || $publishChanged;
+            return $updated->wasChanged('navigation_nesting_enabled')
+                || $changed || $publishChanged || $deleteChanged;
         });
     }
 }

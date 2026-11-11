@@ -103,7 +103,7 @@
                 @php
                     $selectedNavigationParent = collect($navigationItems)->first(fn ($item) => $item['active'] && $item['children'] !== []);
                 @endphp
-                <div class="site-navigation" data-site-navigation data-hover-preview="{{ $publicNavigationHover ? 'true' : 'false' }}">
+                <div class="site-navigation" data-site-navigation>
                     @if ($publicHeaderVisible && $publicHeaderPosition !== 'below')
                         <x-public.artist-name :home-url="$homeUrl" :title="$publicHeaderText" />
                     @endif

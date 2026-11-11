@@ -26,6 +26,7 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Pages\Page;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
@@ -349,13 +350,15 @@ final class SitePages extends Page
         return AdminDialog::confirm(
             Action::make('deletePage')
                 ->label('Delete')
+                ->modalContent(fn (array $arguments): ?View => $this->deleteImpactView([(int) ($arguments['section'] ?? 0)]))
                 ->action(function (array $arguments): void {
                     $this->deleteSection((int) ($arguments['section'] ?? 0));
                 }),
             heading: 'Delete page?',
-            description: 'The page is removed only when publication, child-page and content safety rules allow it.',
             submitLabel: 'Delete',
             danger: true,
+            condition: fn (array $arguments): bool => ! $this->deleteWithoutConfirmation()
+                || SiteSection::query()->where('parent_id', (int) ($arguments['section'] ?? 0))->exists(),
         );
     }
 
@@ -364,13 +367,15 @@ final class SitePages extends Page
         return AdminDialog::confirm(
             Action::make('deleteSelectedPages')
                 ->label('Delete selected')
+                ->modalContent(fn (): ?View => $this->deleteImpactView($this->selectedIds()))
                 ->action(function (): void {
                     $this->bulkDelete();
                 }),
             heading: 'Delete pages?',
-            description: 'Only selected pages that satisfy the current safety rules are removed. Blocked pages are kept.',
             submitLabel: 'Delete',
             danger: true,
+            condition: fn (): bool => ! $this->deleteWithoutConfirmation()
+                || SiteSection::query()->whereIn('parent_id', $this->selectedIds())->exists(),
         );
     }
 
@@ -388,7 +393,7 @@ final class SitePages extends Page
 
         $navigationChanged = false;
         try {
-            $this->deleteSectionRecord($section);
+            $this->deleteSectionTree($section);
             $navigationChanged = true;
             app(AdminNotifier::class)->notification(
                 title: 'Page removed',
@@ -413,13 +418,22 @@ final class SitePages extends Page
 
     private function bulkDelete(): void
     {
-        $sections = $this->selectedSections()
-            ->sortByDesc(static fn (SiteSection $section): int => $section->getAttribute('parent_id') === null ? 0 : 1)
-            ->values();
+        $sections = $this->selectedSections();
+        $eligibleIds = $sections
+            ->filter(static fn (SiteSection $section): bool => $section->nodeType()->canDelete())
+            ->modelKeys();
+
+        // A selected parent owns the entire deletion transaction for its
+        // children, even when those children were also selected explicitly.
+        $roots = $sections->filter(static function (SiteSection $section) use ($eligibleIds): bool {
+            $parentId = $section->getAttribute('parent_id');
+
+            return $parentId === null || ! in_array((int) $parentId, $eligibleIds, true);
+        });
 
         $deleted = 0;
         $blocked = 0;
-        foreach ($sections as $section) {
+        foreach ($roots as $section) {
             if (! $section->nodeType()->canDelete()) {
                 $blocked++;
 
@@ -427,8 +441,7 @@ final class SitePages extends Page
             }
 
             try {
-                $this->deleteSectionRecord($section);
-                $deleted++;
+                $deleted += $this->deleteSectionTree($section);
             } catch (ValidationException) {
                 $blocked++;
             }
@@ -779,7 +792,6 @@ final class SitePages extends Page
         // services. Actual deletion must still revalidate locked records.
         $deleteHelp = match (true) {
             ! $type->canDelete() => null,
-            $hasChildren => 'Move or delete child pages before deleting',
             $type !== SiteSectionType::Journal && (string) $section->getAttribute('state') !== 'hidden' => 'Unpublish the page before deleting',
             $type === SiteSectionType::Gallery && Artwork::query()
                 ->where('artwork_category_id', (int) $section->getAttribute('artwork_category_id'))->exists() => 'Remove the Gallery artworks before deleting',
@@ -919,6 +931,80 @@ final class SitePages extends Page
 
         $this->loadSections(navigationChanged: $changed > 0);
         $this->bulkNotification($state === 'published' ? 'Publish' : 'Unpublish', $changed, $blocked);
+    }
+
+    private function deleteWithoutConfirmation(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User && (bool) $user->getAttribute('pages_delete_without_confirmation');
+    }
+
+    /** @param list<int> $parentIds */
+    private function deleteImpactView(array $parentIds): ?View
+    {
+        if ($parentIds === []) {
+            return null;
+        }
+
+        $parents = SiteSection::query()->whereKey($parentIds)->get()->keyBy('id');
+        $children = SiteSection::query()
+            ->whereIn('parent_id', $parentIds)
+            ->orderBy('parent_id')
+            ->orderBy('position')
+            ->orderBy('id')
+            ->get();
+
+        $groups = [];
+        foreach ($children as $child) {
+            $parentId = (int) $child->getAttribute('parent_id');
+            $parent = $parents->get($parentId);
+            if (! $parent instanceof SiteSection || ! $parent->nodeType()->canDelete()) {
+                continue;
+            }
+
+            if (! isset($groups[$parentId])) {
+                $groups[$parentId] = [
+                    'parent' => $this->sectionLabel($parent),
+                    'children' => [],
+                ];
+            }
+            $groups[$parentId]['children'][] = [
+                'label' => $this->sectionLabel($child),
+                'type' => $child->nodeType()->label($child->journalTemplate()),
+            ];
+        }
+
+        return $groups === [] ? null : view('filament.pages.partials.delete-children-dialog', [
+            'groups' => array_values($groups),
+        ]);
+    }
+
+    /**
+     * Delete each child through its original domain owner, then its parent.
+     * Any invalid child or parent rolls the entire cascade and its audit back.
+     */
+    private function deleteSectionTree(SiteSection $section): int
+    {
+        return DB::transaction(function () use ($section): int {
+            /** @var SiteSection $parent */
+            $parent = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
+            /** @var EloquentCollection<int, SiteSection> $children */
+            $children = SiteSection::query()
+                ->where('parent_id', $parent->getKey())
+                ->orderBy('position')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($children as $child) {
+                $this->deleteSectionRecord($child);
+            }
+
+            $this->deleteSectionRecord($parent);
+
+            return 1 + $children->count();
+        });
     }
 
     private function deleteSectionRecord(SiteSection $section): void

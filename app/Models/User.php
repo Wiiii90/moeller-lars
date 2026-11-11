@@ -37,6 +37,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'is_admin' => 'boolean',
             'dashboard_notification_retention' => 'integer',
             'dashboard_delete_without_confirmation' => 'boolean',
+            'pages_delete_without_confirmation' => 'boolean',
             'admin_auto_publish_preferences' => 'array',
         ];
     }

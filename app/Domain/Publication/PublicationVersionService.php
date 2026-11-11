@@ -496,7 +496,7 @@ SQL,
             'media_variants' => "(version_row.payload - 'transform_profile')",
             // Admin confirmation is now a per-user preference, not published
             // site content. Preserve old immutable snapshots without the field.
-            'public_content_settings' => "(version_row.payload - 'pages_delete_without_confirmation' - 'pages_auto_publish')",
+            'public_content_settings' => "(version_row.payload - 'pages_delete_without_confirmation' - 'pages_auto_publish' - 'navigation_hover_preview')",
             'exhibitions' => $this->hasOldExhibitionDates($checkpoint)
                 ? "(version_row.payload - 'date_text')" : 'version_row.payload',
             default => 'version_row.payload',
@@ -539,7 +539,7 @@ SQL,
                             ->whereRaw("jsonb_exists(payload, 'transform_profile')");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'public_content_settings')
-                            ->whereRaw("jsonb_exists(payload, 'pages_delete_without_confirmation') OR jsonb_exists(payload, 'pages_auto_publish')");
+                            ->whereRaw("jsonb_exists(payload, 'pages_delete_without_confirmation') OR jsonb_exists(payload, 'pages_auto_publish') OR jsonb_exists(payload, 'navigation_hover_preview')");
                     });
                 })
                 ->exists();

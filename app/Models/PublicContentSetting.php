@@ -117,7 +117,6 @@ use LogicException;
     'public_page_width',
     'public_content_padding',
     'navigation_nesting_enabled',
-    'navigation_hover_preview',
 ])]
 #[Guarded(['id', 'scope'])]
 class PublicContentSetting extends Model
@@ -175,7 +174,6 @@ class PublicContentSetting extends Model
             'public_page_width' => 'integer',
             'public_content_padding' => 'integer',
             'navigation_nesting_enabled' => 'boolean',
-            'navigation_hover_preview' => 'boolean',
         ];
     }
 
