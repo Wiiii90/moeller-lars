@@ -6,11 +6,19 @@
     --public-gutter: clamp(.65rem, 2vw, 1.5rem);
     --public-mobile-inset: .65rem;
     --public-content-padding: 75px;
-    /* General's configured horizontal dimensions own the menu and content.
-     * Inset yields only when the shell can no longer fit the artwork. */
+    /* Resolve the reading inset from the SAME effective shell width for
+     * Menu and Page. A raw 100% changes meaning between grid tracks and
+     * padding and incorrectly uses viewport width for a capped shell.
+     * A length-valued inset avoids that context-dependent percentage. */
     --public-content-inset: max(
         var(--public-mobile-inset),
-        min(var(--public-content-padding), calc((100% - var(--public-art-max)) / 2))
+        min(
+            var(--public-content-padding),
+            calc((
+                min(var(--public-shell-max), 100dvw - 2 * var(--public-gutter))
+                - var(--public-art-max)
+            ) / 2)
+        )
     );
     --public-content-block-inset: 2rem;
     --public-paper-return-inset: .75rem;
@@ -2108,6 +2116,24 @@ body.public-site--frame-plain #content {
     --public-title-default: var(--public-index-ink);
 }
 
+/* A visible Inside title and its cyclic navigation occupy the SAME
+ * centered reading width as Page content. Keep the interior padding when
+ * stacked so the fit calculation remains stable across layout states.
+ * The hidden-title path retains the established full-width Menu rail. */
+.site-header--name-inside:not(.site-header--title-hidden) .site-navigation {
+    padding-inline: var(--public-content-inset);
+}
+
+/* Navigation is allowed the remaining reading width, but the cyclic
+ * previous/next controls always own their 44px tracks. No second content
+ * inset is subtracted once the Menu itself owns the shared padding. */
+.site-header--name-inside:not(.site-header--title-hidden) :is(.site-navigation__rail, .site-navigation__submenu) {
+    grid-template-columns:
+        minmax(2.75rem, 1fr)
+        minmax(0, calc(100% - 5.5rem))
+        minmax(2.75rem, 1fr);
+}
+
 /* Inside Menu has two physical regions. Alignment selects the title's
  * SIDE, not just text alignment within a permanent left-hand column. */
 .site-header--name-inside .site-navigation > .site-name-heading {
@@ -2119,7 +2145,7 @@ body.public-site--frame-plain #content {
     min-height: 2.95rem;
     height: 100%;
     margin: 0;
-    padding-inline: .85rem;
+    padding-inline: 0;
     align-items: center;
 }
 
@@ -2219,7 +2245,7 @@ body.public-site--frame-plain #content {
     grid-row: 1;
     min-height: 0;
     height: auto;
-    padding: .45rem max(var(--public-gutter), var(--public-mobile-inset));
+    padding: .45rem 0;
 }
 
 .site-header--name-inside.is-title-stacked .site-title {

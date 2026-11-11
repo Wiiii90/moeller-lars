@@ -1,8 +1,7 @@
-/* The canonical Inside Menu title uses two physical regions at desktop
- * widths and becomes the first row above navigation on narrow screens.
- * Its menu width is CSS-owned, unchanged by title stacking or Left/Right. */
+/* The Inside Menu title and navigation share the Page reading width.
+ * The visible Menu owns that padding in every layout state, so measuring
+ * its content width cannot feed back through is-title-stacked. */
 const MIN_TITLE_RAIL_REM = 15;
-const TITLE_PADDING_REM = 1.7;
 const MIN_NAV_RAIL_REM = 15;
 const TITLE_RAIL_SHARE = 0.32;
 
@@ -10,7 +9,7 @@ export function headerNeedsStack(menuWidth, titleWidth, narrowViewport = false, 
     if (narrowViewport) return true;
 
     const titleRailWidth = Math.max(MIN_TITLE_RAIL_REM * rem, menuWidth * TITLE_RAIL_SHARE);
-    return titleWidth + TITLE_PADDING_REM * rem > titleRailWidth
+    return titleWidth > titleRailWidth
         || menuWidth - titleRailWidth < MIN_NAV_RAIL_REM * rem;
 }
 
@@ -39,8 +38,12 @@ export function initializePublicHeader() {
     const update = () => {
         if (disposed) return;
         const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+        const menuStyle = getComputedStyle(menu);
+        const readingWidth = menu.clientWidth
+            - (Number.parseFloat(menuStyle.paddingLeft) || 0)
+            - (Number.parseFloat(menuStyle.paddingRight) || 0);
         const stacked = headerNeedsStack(
-            menu.getBoundingClientRect().width,
+            Math.max(0, readingWidth),
             intrinsicTitleWidth(title, measurementContext),
             window.matchMedia('(max-width: 40rem)').matches,
             rem,
