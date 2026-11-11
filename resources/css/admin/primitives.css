@@ -6,7 +6,9 @@
     --admin-line-strong: #bdbdbd;
     --admin-surface: #fff;
     --admin-subtle: #f7f7f6;
-    /* Shared warm row highlight for pinned messages and explicit Manual groups. */
+    /* Shared state hues, consumed by Dashboard and Home. */
+    --admin-row-highlight-unread: color-mix(in srgb, var(--admin-accent) 6%, var(--admin-surface));
+    --admin-row-highlight-unread-hover: color-mix(in srgb, var(--admin-accent) 9%, var(--admin-surface));
     --admin-row-highlight-pinned: color-mix(in srgb, #d6a52f 15%, var(--admin-surface));
     --admin-row-highlight-pinned-hover: color-mix(in srgb, #d6a52f 20%, var(--admin-surface));
     --admin-accent: #b45309;
@@ -46,8 +48,6 @@
 }
 
 .dark {
-    --admin-row-highlight-pinned: color-mix(in srgb, #d6a52f 15%, var(--admin-surface));
-    --admin-row-highlight-pinned-hover: color-mix(in srgb, #d6a52f 20%, var(--admin-surface));
     --admin-text: #f2f2f0;
     --admin-muted: #aaa9a5;
     --admin-faint: #7d7c78;

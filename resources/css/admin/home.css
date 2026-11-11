@@ -29,13 +29,17 @@
     min-width: 0;
 }
 
+/* Dashboard unread and Manual Sourced Artworks share the same neutral accent.
+ * The table background belongs to rows; no per-cell accent seams. */
 .home-source-table__manual-group:not(.is-selected),
-.home-source-table__manual-details {
-    background: var(--admin-row-highlight-pinned);
+.home-source-table__manual-candidate {
+    background: var(--admin-row-highlight-unread);
 }
 
-.home-source-table__manual-group:not(.is-selected):hover {
-    background: var(--admin-row-highlight-pinned-hover);
+/* The Manual row is continuous, without the stray trailing divider underneath Clear. */
+.home-source-table__manual-group > td,
+.home-source-table__candidate-row > td {
+    border-bottom: 0 !important;
 }
 
 /* Automatic has no Add Candidate row. Its source table therefore owns the
@@ -343,72 +347,44 @@
     line-height: 1.4;
 }
 
+/* One thumbnail frame is reused by the folded strip and the table rows.
+ * Keep images small and consistently rectangular, without cropping art. */
+.home-source-table {
+    --home-source-thumb-width: 2.55rem;
+    --home-source-thumb-height: 2rem;
+}
+
 .home-source-candidates__toggle {
     display: flex;
     box-sizing: border-box;
-    width: 100%;
+    width: fit-content;
+    max-width: 100%;
     min-width: 0;
-    padding: .16rem .2rem;
-    gap: .35rem;
-    align-items: center;
-    border: 1px solid transparent;
-    border-radius: .2rem;
+    padding: 0;
+    border: 0;
     background: transparent;
-    color: var(--admin-muted);
+    color: inherit;
     cursor: pointer;
     text-align: left;
 }
 
-.home-source-candidates__toggle:hover,
-.home-source-candidates__toggle:focus-visible {
-    border-color: var(--admin-line-strong);
-    background: var(--admin-subtle);
-    color: var(--admin-text);
-    outline: none;
-}
-
-.home-source-candidates__toggle:focus-visible {
+/* Deliberately no hover paint, border or chevron: only keyboard focus is marked. */
+.home-source-candidates__toggle:focus-visible,
+.home-source-table__candidate-image-toggle:focus-visible {
     outline: 2px solid var(--admin-accent);
-    outline-offset: -2px;
-}
-
-.home-source-candidates__chevron {
-    display: grid;
-    width: 1rem;
-    height: 1rem;
-    flex: 0 0 1rem;
-    place-items: center;
-    transition: transform .15s ease;
-}
-
-.home-source-candidates__chevron.is-expanded {
-    transform: rotate(90deg);
-}
-
-.home-source-candidates__chevron svg {
-    width: 1rem;
-    height: 1rem;
-}
-
-.home-source-candidates__expanded-label {
-    min-width: 0;
-    flex: 1 1 auto;
-    color: var(--admin-muted);
-    font-size: var(--admin-font-size-table-meta);
+    outline-offset: 2px;
 }
 
 .home-source-candidates {
     display: flex;
-    flex: 1 1 auto;
     min-width: 0;
-    width: 100%;
     max-width: 100%;
-    gap: .26rem;
-    align-items: flex-start;
+    gap: .2rem;
+    align-items: center;
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
-    cursor: grab;
+    cursor: pointer;
     user-select: none;
 }
 
@@ -429,19 +405,22 @@
 
 .home-source-candidate {
     display: block;
-    width: 2.55rem;
-    height: 2rem;
-    flex: 0 0 2.55rem;
+    width: var(--home-source-thumb-width);
+    height: var(--home-source-thumb-height);
+    flex: 0 0 var(--home-source-thumb-width);
 }
 
 .home-source-candidate__preview {
     display: grid;
-    width: 100%;
-    height: 100%;
+    box-sizing: border-box;
+    width: var(--home-source-thumb-width);
+    height: var(--home-source-thumb-height);
+    min-width: 0;
     padding: 0;
     place-items: center;
     overflow: hidden;
     border: 0;
+    border-radius: 0;
     background: var(--admin-subtle);
     color: inherit;
 }
@@ -456,73 +435,32 @@
 .home-source-candidate__preview > span,
 .home-source-candidates__empty {
     color: var(--admin-faint);
-    font-size: .58rem;
+    font-size: var(--admin-font-size-table-meta);
 }
 
-/* The expanded Gallery candidate detail is one semantic row across the same
- * table, not a second sortable table or a second candidate state store. */
-.home-source-table td.home-source-table__details-cell {
-    padding: .25rem .6rem .55rem;
-    overflow: hidden;
+.home-source-table__candidate-image-toggle {
+    cursor: pointer;
 }
 
-.home-source-table__detail-list {
+/* Candidate details stay in their original Gallery / Candidates / Actions /
+ * Selection table tracks. The first candidate is already in the Gallery row,
+ * and remaining candidates have no extra headings, dividers or larger media. */
+.home-source-table__candidate-inline {
     display: grid;
     min-width: 0;
-    gap: 0;
-}
-
-.home-source-table__detail-heading,
-.home-source-table__detail-row {
-    display: grid;
-    grid-template-columns: 4rem minmax(0, 1fr) 5.2rem 4.5rem;
+    grid-template-columns: var(--home-source-thumb-width) minmax(0, 1fr) auto;
+    gap: .4rem;
     align-items: center;
-    gap: .6rem;
-    min-width: 0;
 }
 
-.home-source-table__detail-heading {
-    padding: .3rem .4rem .2rem;
-    color: var(--admin-muted);
-    font-size: var(--admin-font-size-table-header);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-}
-
-.home-source-table__detail-heading > :first-child {
-    grid-column: 2;
-}
-
-.home-source-table__detail-row {
-    padding: .35rem .4rem;
-    border-top: 1px solid var(--admin-line);
-}
-
-.home-source-table__detail-preview {
-    display: grid;
-    width: 4rem;
-    height: 3rem;
-    place-items: center;
-    overflow: hidden;
-    background: var(--admin-subtle);
-}
-
-.home-source-table__detail-preview img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.home-source-table__detail-meta {
+.home-source-table__candidate-meta {
     display: grid;
     min-width: 0;
-    gap: .16rem;
+    gap: .1rem;
 }
 
-.home-source-table__detail-meta strong,
-.home-source-table__detail-meta small {
+.home-source-table__candidate-meta strong,
+.home-source-table__candidate-meta small {
     display: block;
     min-width: 0;
     overflow: hidden;
@@ -530,86 +468,67 @@
     white-space: nowrap;
 }
 
-.home-source-table__detail-meta strong {
+.home-source-table__candidate-meta strong {
     color: var(--admin-text);
     font-size: var(--admin-font-size-table-identity);
 }
 
-.home-source-table__detail-meta small {
+.home-source-table__candidate-meta small {
     color: var(--admin-muted);
     font-size: var(--admin-font-size-table-meta);
 }
 
-.home-source-table__detail-chance {
+.home-source-table__candidate-chance {
     min-width: 0;
     color: var(--admin-muted);
-    text-align: center;
     font-variant-numeric: tabular-nums;
 }
 
-.home-source-table__detail-chance label {
-    display: flex;
+.home-source-table__candidate-chance label {
+    display: inline-flex;
     gap: .2rem;
     align-items: center;
 }
 
-.home-source-table__detail-chance input {
+.home-source-table__candidate-chance input {
     box-sizing: border-box;
-    width: 3.4rem;
+    width: 3.25rem;
     min-width: 0;
     height: 1.8rem;
     padding-inline: .2rem;
     font-size: var(--admin-font-size-table-compact);
 }
 
-.home-source-table__detail-actions {
-    display: flex;
-    min-width: 0;
-    justify-content: flex-end;
-    gap: .15rem;
+.home-source-table .home-source-table__group.is-expanded > td,
+.home-source-table .home-source-table__candidate-row > td {
+    padding-top: .36rem;
+    padding-bottom: .36rem;
 }
 
-.home-source-table__detail-actions .admin-action {
-    display: inline-flex;
-    box-sizing: border-box;
+.home-source-table__candidate-actions .admin-action__label {
+    display: none;
+}
+
+.home-source-table__candidate-actions .admin-action {
     width: 1.78rem;
     min-width: 1.78rem;
     height: 1.78rem;
     padding: 0;
-    justify-content: center;
-    align-items: center;
 }
 
-.home-source-table__detail-actions .admin-action__label {
-    display: none;
-}
-
-.home-source-table__detail-actions > .home-source-table__action-slot {
+.home-source-table__candidate-actions .home-source-table__action-slot {
     width: 1.78rem;
-    flex: 0 0 1.78rem;
-}
-
-.home-source-table__detail-empty {
-    padding: .8rem .4rem;
-    color: var(--admin-muted);
-    font-size: var(--admin-font-size-table-support);
+    min-width: 1.78rem;
 }
 
 @container admin-table (max-width: 38rem) {
-    .home-source-table__detail-heading,
-    .home-source-table__detail-row {
-        grid-template-columns: 2.75rem minmax(0, 1fr) 4.4rem 4rem;
-        gap: .3rem;
+    .home-source-table__candidate-inline {
+        gap: .25rem;
     }
-    .home-source-table__detail-preview {
-        width: 2.75rem;
-        height: 2.5rem;
-    }
-    .home-source-table__detail-chance input {
-        width: 3rem;
+    .home-source-table__candidate-chance input {
+        width: 2.7rem;
     }
 }
-
 
 .home-workspace__skip-row {
     display: grid;

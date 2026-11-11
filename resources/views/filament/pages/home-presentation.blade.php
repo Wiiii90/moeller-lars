@@ -368,9 +368,11 @@
                                 $selected = in_array($gallery['id'], array_map('intval', $selectedSourceIds), true);
                                 $manualSource = $gallery['standalone'];
                                 $groupId = (int) $gallery['id'];
+                                $firstCandidate = $gallery['candidates'][0] ?? null;
                             @endphp
                             <tr
                                 class="home-source-table__group {{ $selected ? 'is-selected' : '' }} {{ $manualSource ? 'home-source-table__manual-group' : '' }}"
+                                x-bind:class="{ 'is-expanded': expanded.includes({{ $groupId }}) }"
                                 wire:key="home-source-gallery-{{ $groupId }}"
                             >
                                 <td class="admin-table__identity">
@@ -387,6 +389,7 @@
                                     <button
                                         type="button"
                                         class="home-source-candidates__toggle"
+                                        x-show="!expanded.includes({{ $groupId }})"
                                         x-data="{ dragging: false, moved: false, startX: 0, startScroll: 0 }"
                                         x-on:pointerdown="if ($event.pointerType !== 'mouse' || $event.button !== 0) return; dragging = true; moved = false; startX = $event.clientX; startScroll = $refs.strip.scrollLeft; $el.setPointerCapture($event.pointerId)"
                                         x-on:pointermove="if (!dragging) return; if (Math.abs($event.clientX - startX) > 6) moved = true; if (moved) $refs.strip.scrollLeft = startScroll - ($event.clientX - startX)"
@@ -394,16 +397,15 @@
                                         x-on:pointercancel="dragging = false"
                                         x-on:lostpointercapture="dragging = false"
                                         x-on:dragstart.prevent
-                                        x-on:click="if (moved) { moved = false; return }; expanded = expanded.includes({{ $groupId }}) ? expanded.filter(id => id !== {{ $groupId }}) : [...expanded, {{ $groupId }}]"
+                                        x-on:click="if (moved) { moved = false; return }; expanded = [...expanded, {{ $groupId }}]"
                                         x-bind:aria-expanded="expanded.includes({{ $groupId }}) ? 'true' : 'false'"
-                                        aria-controls="home-source-details-{{ $groupId }}"
-                                        aria-label="Expand or collapse candidates in {{ $gallery['name'] }}"
+                                        aria-controls="home-source-candidates-{{ $groupId }}"
+                                        aria-label="Expand candidates in {{ $gallery['name'] }}"
                                     >
-                                        <span class="home-source-candidates" x-ref="strip" x-show="!expanded.includes({{ $groupId }})" x-bind:class="{ 'is-dragging': dragging }">
+                                        <span class="home-source-candidates" x-ref="strip" x-bind:class="{ 'is-dragging': dragging }">
                                             @forelse ($gallery['candidates'] as $candidate)
                                                 <span class="home-source-candidate">
-                                                    <span class="home-source-candidate__preview"
-                                                        title="{{ $candidate['title'] }}{{ $candidate['year'] ? ' · '.$candidate['year'] : '' }}">
+                                                    <span class="home-source-candidate__preview">
                                                         @if ($candidate['thumbnail_url'])
                                                             <img src="{{ $candidate['thumbnail_url'] }}" alt="" loading="lazy" decoding="async" draggable="false">
                                                         @else
@@ -415,18 +417,15 @@
                                                 <span class="home-source-candidates__empty">—</span>
                                             @endforelse
                                         </span>
-                                        <span class="home-source-candidates__expanded-label" x-show="expanded.includes({{ $groupId }})" x-cloak>
-                                            {{ number_format($gallery['candidate_count']) }} {{ __('candidates') }}
-                                        </span>
-                                        <span class="home-source-candidates__chevron" x-bind:class="{ 'is-expanded': expanded.includes({{ $groupId }}) }" aria-hidden="true">
-                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Next->mini()" />
-                                        </span>
                                     </button>
+                                    <div id="home-source-candidates-{{ $groupId }}" x-show="expanded.includes({{ $groupId }})" x-cloak>
+                                        @include('filament.pages.partials.home-source-candidate-cell', ['candidate' => $firstCandidate, 'groupId' => $groupId])
+                                    </div>
                                 </td>
                                 <td class="admin-table__actions">
                                     <div
                                         class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-toolbar home-source-table__row-actions"
-                                        x-bind:class="{ 'is-hidden': expanded.includes({{ $groupId }}) }"
+                                        x-show="!expanded.includes({{ $groupId }})"
                                     >
                                         @if ($manualSource)
                                             <span class="home-source-table__action-slot" aria-hidden="true"></span>
@@ -446,86 +445,35 @@
                                             <span class="home-source-table__action-slot" aria-hidden="true"></span>
                                         @endif
                                     </div>
+                                    <div x-show="expanded.includes({{ $groupId }})" x-cloak>
+                                        @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $firstCandidate, 'manualSource' => $manualSource])
+                                    </div>
                                 </td>
                                 <td class="admin-table__selection admin-table__selection--trailing">
                                     @if (! $manualSource || $heroGroupSource === 'semi_automatic')
-                                        <input type="checkbox" value="{{ $groupId }}" wire:model.live="selectedSourceIds" aria-label="Select {{ $gallery['name'] }}">
+                                        <input type="checkbox" value="{{ $groupId }}" wire:model.live="selectedSourceIds"
+                                            x-show="!expanded.includes({{ $groupId }})"
+                                            aria-label="Select {{ $gallery['name'] }}">
                                     @endif
                                 </td>
                             </tr>
-                            <tr
-                                id="home-source-details-{{ $groupId }}"
-                                class="home-source-table__details {{ $manualSource ? 'home-source-table__manual-details' : '' }}"
-                                x-show="expanded.includes({{ $groupId }})"
-                                x-cloak
-                                wire:key="home-source-details-{{ $groupId }}"
-                            >
-                                <td colspan="4" class="home-source-table__details-cell">
-                                    <div class="home-source-table__detail-list" aria-label="Individual candidates from {{ $gallery['name'] }}">
-                                        <div class="home-source-table__detail-heading" aria-hidden="true">
-                                            <span>{{ __('Name') }}</span>
-                                            <span>{{ $heroDisplayStrategy === 'random' ? __('Chance') : '' }}</span>
-                                            <span>{{ __('Actions') }}</span>
-                                        </div>
-                                        @forelse ($gallery['candidates'] as $candidate)
-                                            <div class="home-source-table__detail-row" wire:key="home-source-candidate-detail-{{ $groupId }}-{{ $candidate['id'] }}">
-                                                <span class="home-source-table__detail-preview">
-                                                    @if ($candidate['thumbnail_url'])
-                                                        <img src="{{ $candidate['thumbnail_url'] }}" alt="" loading="lazy" decoding="async" draggable="false">
-                                                    @else
-                                                        <span>—</span>
-                                                    @endif
-                                                </span>
-                                                <div class="home-source-table__detail-meta">
-                                                    <strong>{{ $candidate['title'] }}</strong>
-                                                    <small>{{ $candidate['gallery'] ?: '—' }}{{ $candidate['year'] ? ' · '.$candidate['year'] : '' }}</small>
-                                                    @if ($candidate['disabled'] ?? false)
-                                                        <small>{{ $manualSource ? __('Disabled') : __('Excluded') }}</small>
-                                                    @elseif (! ($candidate['eligible'] ?? true))
-                                                        <small>{{ $candidate['sequence_label'] ?? __('Unavailable') }}</small>
-                                                    @endif
-                                                </div>
-                                                <div class="home-source-table__detail-chance">
-                                                    @if ($heroDisplayStrategy === 'random' && ($candidate['eligible'] ?? false))
-                                                        <label>
-                                                            <input class="admin-form-control" type="number" min="0" max="100" step="0.01"
-                                                                value="{{ $candidate['percentage'] }}"
-                                                                wire:change="setHeroPercentage('{{ $candidate['id'] }}', $event.target.value)"
-                                                                aria-label="Random chance for {{ $candidate['title'] }}">
-                                                            <span>%</span>
-                                                        </label>
-                                                    @elseif ($heroDisplayStrategy === 'random')
-                                                        <span>—</span>
-                                                    @endif
-                                                </div>
-                                                <div class="home-source-table__detail-actions admin-toolbar">
-                                                    @if ($manualSource)
-                                                        <x-admin.row-action
-                                                            :action="($candidate['disabled'] ?? false) ? \App\Filament\Support\AdminRowAction::Publish : \App\Filament\Support\AdminRowAction::Unpublish"
-                                                            :label="($candidate['disabled'] ?? false) ? 'Enable' : 'Disable'"
-                                                            wire:click="setManualHeroCandidateEnabled('{{ $candidate['id'] }}', {{ ($candidate['disabled'] ?? false) ? 'true' : 'false' }})"
-                                                        />
-                                                        <x-admin.row-action
-                                                            :action="\App\Filament\Support\AdminRowAction::Delete"
-                                                            label="Remove"
-                                                            wire:click="removeHeroCandidate('{{ $candidate['id'] }}')"
-                                                        />
-                                                    @else
-                                                        <x-admin.row-action
-                                                            :action="($candidate['disabled'] ?? false) ? \App\Filament\Support\AdminRowAction::Publish : \App\Filament\Support\AdminRowAction::Unpublish"
-                                                            :label="($candidate['disabled'] ?? false) ? 'Enable' : 'Disable'"
-                                                            wire:click="setAutomaticHeroCandidateEnabled({{ (int) substr($candidate['id'], 8) }}, {{ ($candidate['disabled'] ?? false) ? 'true' : 'false' }})"
-                                                        />
-                                                        <span class="home-source-table__action-slot" aria-hidden="true"></span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        @empty
-                                            <div class="home-source-table__detail-empty">{{ __('No sourced candidates in this group') }}</div>
-                                        @endforelse
-                                    </div>
-                                </td>
-                            </tr>
+                            @foreach (array_slice($gallery['candidates'], 1) as $candidate)
+                                <tr
+                                    class="home-source-table__candidate-row {{ $manualSource ? 'home-source-table__manual-candidate' : '' }}"
+                                    x-show="expanded.includes({{ $groupId }})"
+                                    x-cloak
+                                    wire:key="home-source-item-{{ $groupId }}-{{ $candidate['id'] }}"
+                                >
+                                    <td class="home-source-table__empty-gallery"></td>
+                                    <td class="home-source-table__candidates">
+                                        @include('filament.pages.partials.home-source-candidate-cell', ['candidate' => $candidate, 'groupId' => $groupId])
+                                    </td>
+                                    <td class="admin-table__actions">
+                                        @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $candidate, 'manualSource' => $manualSource])
+                                    </td>
+                                    <td class="admin-table__selection admin-table__selection--trailing"></td>
+                                </tr>
+                            @endforeach
                         @empty
                             <tr>
                                 <td class="admin-table__empty-cell" colspan="4">
