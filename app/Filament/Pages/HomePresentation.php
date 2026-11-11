@@ -1122,9 +1122,6 @@ final class HomePresentation extends Page
                 'name' => 'Manual group',
                 'preference_enabled' => $manualEnabled,
                 'can_enable' => $this->heroGroupSource === 'semi_automatic',
-                'state' => $manualState,
-                'status_label' => $this->heroGroupSource === 'manual'
-                    ? 'Manual' : ($manualEnabled ? 'Enabled' : 'Disabled'),
                 'artworks_count' => 0,
                 'candidate_count' => $manual->count(),
                 'workspace_url' => null,
@@ -1148,8 +1145,6 @@ final class HomePresentation extends Page
                     'name' => (string) $gallery->getAttribute('name'),
                     'preference_enabled' => $preference,
                     'can_enable' => $state === 'published',
-                    'state' => $state,
-                    'status_label' => $state === 'published' ? 'Published' : 'Unpublished',
                     'artworks_count' => (int) $gallery->getAttribute('artworks_count'),
                     'candidate_count' => $galleryCandidates->count(),
                     'workspace_url' => GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()]),

@@ -271,7 +271,6 @@
                         <col class="admin-table__col-one-unit home-source-table__col-gallery">
                         <col class="home-source-table__col-candidates">
                         <col class="admin-table__col-half-unit home-source-table__col-artworks admin-table__yield--compact">
-                        <col class="admin-table__col-half-unit home-source-table__col-status admin-table__yield--narrow">
                         <col class="home-source-table__col-actions">
                         <col class="admin-table__selection-col home-source-table__col-selection">
                     </colgroup>
@@ -280,7 +279,6 @@
                             <th scope="col">{{ __('Gallery') }}</th>
                             <th scope="col" class="home-source-table__candidates">{{ __('Candidates') }}</th>
                             <th scope="col" class="home-source-table__artworks admin-table__yield--compact">{{ __('Artworks') }}</th>
-                            <th scope="col" class="home-source-table__status admin-table__yield--narrow">{{ __('Status') }}</th>
                             <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">{{ __('Actions') }}</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
@@ -317,7 +315,6 @@
                                         @endif
                                     </strong>
                                     <small class="admin-responsive-meta">
-                                        {{ $gallery['status_label'] }} ·
                                         @if ($gallery['standalone'])
                                             {{ number_format($gallery['candidate_count']) }} Manual candidates
                                         @else
@@ -364,7 +361,6 @@
                                         {{ number_format($gallery['candidate_count']) }}/{{ number_format($gallery['artworks_count']) }}
                                     @endif
                                 </td>
-                                <td class="home-source-table__status admin-table__yield--narrow"><span class="admin-status {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
                                 <td class="admin-table__actions">
                                     @if (! $gallery['standalone'] || $heroGroupSource === 'semi_automatic')
                                         <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-toolbar home-source-table__row-actions">
@@ -385,7 +381,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="admin-table__empty-cell" colspan="6">
+                                <td class="admin-table__empty-cell" colspan="5">
                                     @if ($sourceHasRecords)
                                         <x-admin.empty-state title="No matching sources" minimal>
                                             <x-slot:actions><button class="admin-action" type="button" wire:click="resetSourceFilters">{{ __('Clear filters') }}</button></x-slot:actions>
