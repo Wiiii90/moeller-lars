@@ -118,7 +118,7 @@ final class HomePresentation extends Page
 
     public int $heroGroupSize = HomeHeroConfigurationService::DEFAULT_GROUP_SIZE;
 
-    /** @var list<array{artwork_id?:int,media_asset_id?:int,weight:int}> */
+    /** @var list<array{artwork_id?:int,media_asset_id?:int,weight:int,enabled:bool}> */
     public array $manualHeroGroup = [];
 
     public int $rotationIntervalCount = 1;
@@ -381,6 +381,39 @@ final class HomePresentation extends Page
         });
     }
 
+    public function clearManualHeroCandidatesAction(): Action
+    {
+        return AdminDialog::confirm(
+            Action::make('clearManualHeroCandidates')
+                ->label('Clear')
+                ->visible(fn (): bool => $this->heroGroupSource !== 'automatic')
+                ->action(function (): void {
+                    $settings = $this->settings();
+                    $configuration = app(HomeHeroConfigurationService::class)->configuration($settings);
+                    if ($configuration['group_source'] === 'automatic') {
+                        throw ValidationException::withMessages(['manual_group' => 'Automatic has no Manual candidate group.']);
+                    }
+                    if ($configuration['manual_group'] === []) {
+                        return;
+                    }
+                    $changed = app(HomeHeroConfigurationService::class)->updateArtworkSettings(
+                        $settings, ['manual_group' => []],
+                    );
+                    $this->reloadWorkspace();
+                    if ($changed) {
+                        app(AdminNotifier::class)->notification(
+                            title: 'Manual Hero candidates cleared',
+                            status: 'success',
+                        );
+                    }
+                }),
+            'Clear Manual Sourced Artworks?',
+            submitLabel: 'Clear',
+            danger: true,
+            condition: fn (): bool => $this->manualHeroGroup !== [],
+        );
+    }
+
     public function setAutomaticHeroCandidateEnabled(int $artworkId, bool $enabled): void
     {
         $changed = app(HomeHeroConfigurationService::class)->setAutomaticCandidateEnabled(
@@ -452,22 +485,6 @@ final class HomePresentation extends Page
             title: $enabled ? 'Manual Hero candidate enabled' : 'Manual Hero candidate disabled',
             status: 'success',
         );
-    }
-
-    public function toggleManualHeroSource(): void
-    {
-        if ($this->heroGroupSource !== 'semi_automatic') {
-            return;
-        }
-        $changed = app(HomeHeroConfigurationService::class)->updateArtworkSettings(
-            $this->settings(), ['manual_group_enabled' => ! $this->manualHeroGroupEnabled],
-        );
-        if (! $changed) {
-            return;
-        }
-        $this->clearSourceSelection();
-        $this->reloadWorkspace();
-        app(AdminNotifier::class)->notification(title: 'Manual Hero source updated', status: 'success');
     }
 
     public function removeHeroCandidate(string $key): void
@@ -1097,19 +1114,17 @@ final class HomePresentation extends Page
 
     public function sourceRows(): LengthAwarePaginator
     {
-        $settings = $this->settings();
-        $resolver = app(HomeHeroResolver::class);
-        $active = $resolver->resolve($settings)['group'];
-        $manualKeys = $this->heroGroupSource === 'semi_automatic' && $this->manualHeroGroupEnabled
-            ? array_map(HomeHeroConfigurationService::memberKey(...), $this->manualHeroGroup)
-            : [];
-        $grouped = $active
-            ->filter(static fn (HomeHeroCandidate $candidate): bool => $candidate->kind === 'artwork'
-                && ! in_array($candidate->key(), $manualKeys, true))
-            ->groupBy(static fn (HomeHeroCandidate $candidate): int => (int) ($candidate->gallery()?->getKey() ?? 0));
+        // Use the same resolved Stage rows for the Gallery details: the live
+        // Random chances and excluded/disabled states must not fork here.
         $manual = $this->heroGroupSource === 'automatic'
             ? collect()
-            : $resolver->manualCandidates($settings);
+            : collect($this->heroRailRows)->filter(static fn (array $row): bool => $row['is_manual'] ?? false)->values();
+        $automatic = $this->heroGroupSource === 'manual'
+            ? collect()
+            : collect([...$this->heroRailRows, ...$this->excludedHeroRows])
+                ->filter(static fn (array $row): bool => ($row['is_automatic'] ?? false) && (int) ($row['gallery_id'] ?? 0) > 0)
+                ->unique('id')->values();
+        $grouped = $automatic->groupBy(static fn (array $row): int => (int) $row['gallery_id']);
         $search = trim($this->sourceSearch);
         $needle = mb_strtolower($search);
         $showGalleries = $this->heroGroupSource !== 'manual';
@@ -1118,11 +1133,9 @@ final class HomePresentation extends Page
         $query = ArtworkCategory::query()->whereHas('siteSection')->with('siteSection');
 
         if ($search !== '') {
-            $matchedGalleryIds = $active
-                ->filter(static fn (HomeHeroCandidate $candidate): bool => $candidate->kind === 'artwork'
-                    && ! in_array($candidate->key(), $manualKeys, true)
-                    && str_contains(mb_strtolower($candidate->title()), $needle))
-                ->map(static fn (HomeHeroCandidate $candidate): int => (int) ($candidate->gallery()?->getKey() ?? 0))
+            $matchedGalleryIds = $automatic
+                ->filter(static fn (array $row): bool => str_contains(mb_strtolower($row['title']), $needle))
+                ->map(static fn (array $row): int => (int) $row['gallery_id'])
                 ->filter()->unique()->values()->all();
 
             $query->where(function (Builder $galleries) use ($needle, $matchedGalleryIds): void {
@@ -1138,8 +1151,8 @@ final class HomePresentation extends Page
         $manualEnabled = $this->heroGroupSource === 'manual' || $this->manualHeroGroupEnabled;
         $showManual = $this->heroGroupSource !== 'automatic'
             && ($search === '' || str_contains('manual sourced artworks storage manually added', $needle)
-                || $manual->contains(static fn (HomeHeroCandidate $candidate): bool => str_contains(
-                    mb_strtolower($candidate->title()), $needle,
+                || $manual->contains(static fn (array $candidate): bool => str_contains(
+                    mb_strtolower($candidate['title']), $needle,
                 )));
 
         $galleryTotal = $showGalleries ? (clone $query)->count() : 0;
@@ -1161,7 +1174,7 @@ final class HomePresentation extends Page
                 'can_enable' => $this->heroGroupSource === 'semi_automatic',
                 'candidate_count' => $manual->count(),
                 'workspace_url' => null,
-                'candidates' => $manual->map(fn (HomeHeroCandidate $candidate): array => $this->candidateRow($candidate))->values()->all(),
+                'candidates' => $manual->all(),
             ];
         }
 
@@ -1183,7 +1196,7 @@ final class HomePresentation extends Page
                     'can_enable' => $state === 'published',
                     'candidate_count' => $galleryCandidates->count(),
                     'workspace_url' => GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()]),
-                    'candidates' => $galleryCandidates->map(fn (HomeHeroCandidate $candidate): array => $this->candidateRow($candidate))->values()->all(),
+                    'candidates' => $galleryCandidates->values()->all(),
                 ];
             }
         }
@@ -1279,8 +1292,18 @@ final class HomePresentation extends Page
         if ($this->disabledAutoHeroIds !== []) {
             $disabled = $publicArtworks->homeCandidatesByIds($this->disabledAutoHeroIds);
             $this->excludedHeroRows = $disabled
-                ->map(fn (Artwork $artwork): array => $this->candidateRow(HomeHeroCandidate::fromArtwork($artwork)))
-                ->values()->all();
+                ->map(function (Artwork $artwork): array {
+                    $row = $this->candidateRow(HomeHeroCandidate::fromArtwork($artwork));
+                    $row['eligible'] = false;
+                    $row['disabled'] = true;
+                    $row['is_manual'] = false;
+                    $row['is_automatic'] = true;
+                    $row['weight'] = 0;
+                    $row['percentage'] = '0.00';
+                    $row['sequence_label'] = 'Excluded';
+
+                    return $row;
+                })->values()->all();
         }
 
         $sequence = $this->heroDisplayStrategy === 'sequential' ? $resolution['sequence'] : $resolution['group'];

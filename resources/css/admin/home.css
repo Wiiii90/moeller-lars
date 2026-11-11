@@ -12,7 +12,30 @@
  * Construction component templates reuse Custom Page's hierarchy geometry,
  * including a permanent editable Component column and flexible Content. */
 .home-source-table {
-    --admin-row-actions-width: var(--admin-row-action-slot-state-width);
+    --admin-row-actions-width: calc(
+        var(--admin-row-action-slot-state-width) + var(--admin-row-action-slot-delete-width) + .25rem
+    );
+    --admin-row-actions-columns:
+        minmax(var(--admin-row-action-slot-state-width), max-content)
+        minmax(var(--admin-row-action-slot-delete-width), max-content);
+}
+
+.home-source-table__row-actions.is-hidden {
+    display: none !important;
+}
+
+.home-source-table__action-slot {
+    display: block;
+    min-width: 0;
+}
+
+.home-source-table__manual-group:not(.is-selected),
+.home-source-table__manual-details {
+    background: var(--admin-row-highlight-pinned);
+}
+
+.home-source-table__manual-group:not(.is-selected):hover {
+    background: var(--admin-row-highlight-pinned-hover);
 }
 
 /* Automatic has no Add Candidate row. Its source table therefore owns the
@@ -320,8 +343,63 @@
     line-height: 1.4;
 }
 
+.home-source-candidates__toggle {
+    display: flex;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding: .16rem .2rem;
+    gap: .35rem;
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: .2rem;
+    background: transparent;
+    color: var(--admin-muted);
+    cursor: pointer;
+    text-align: left;
+}
+
+.home-source-candidates__toggle:hover,
+.home-source-candidates__toggle:focus-visible {
+    border-color: var(--admin-line-strong);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+    outline: none;
+}
+
+.home-source-candidates__toggle:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: -2px;
+}
+
+.home-source-candidates__chevron {
+    display: grid;
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 1rem;
+    place-items: center;
+    transition: transform .15s ease;
+}
+
+.home-source-candidates__chevron.is-expanded {
+    transform: rotate(90deg);
+}
+
+.home-source-candidates__chevron svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.home-source-candidates__expanded-label {
+    min-width: 0;
+    flex: 1 1 auto;
+    color: var(--admin-muted);
+    font-size: var(--admin-font-size-table-meta);
+}
+
 .home-source-candidates {
     display: flex;
+    flex: 1 1 auto;
     min-width: 0;
     width: 100%;
     max-width: 100%;
@@ -380,6 +458,158 @@
     color: var(--admin-faint);
     font-size: .58rem;
 }
+
+/* The expanded Gallery candidate detail is one semantic row across the same
+ * table, not a second sortable table or a second candidate state store. */
+.home-source-table td.home-source-table__details-cell {
+    padding: .25rem .6rem .55rem;
+    overflow: hidden;
+}
+
+.home-source-table__detail-list {
+    display: grid;
+    min-width: 0;
+    gap: 0;
+}
+
+.home-source-table__detail-heading,
+.home-source-table__detail-row {
+    display: grid;
+    grid-template-columns: 4rem minmax(0, 1fr) 5.2rem 4.5rem;
+    align-items: center;
+    gap: .6rem;
+    min-width: 0;
+}
+
+.home-source-table__detail-heading {
+    padding: .3rem .4rem .2rem;
+    color: var(--admin-muted);
+    font-size: var(--admin-font-size-table-header);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.home-source-table__detail-heading > :first-child {
+    grid-column: 2;
+}
+
+.home-source-table__detail-row {
+    padding: .35rem .4rem;
+    border-top: 1px solid var(--admin-line);
+}
+
+.home-source-table__detail-preview {
+    display: grid;
+    width: 4rem;
+    height: 3rem;
+    place-items: center;
+    overflow: hidden;
+    background: var(--admin-subtle);
+}
+
+.home-source-table__detail-preview img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.home-source-table__detail-meta {
+    display: grid;
+    min-width: 0;
+    gap: .16rem;
+}
+
+.home-source-table__detail-meta strong,
+.home-source-table__detail-meta small {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-source-table__detail-meta strong {
+    color: var(--admin-text);
+    font-size: var(--admin-font-size-table-identity);
+}
+
+.home-source-table__detail-meta small {
+    color: var(--admin-muted);
+    font-size: var(--admin-font-size-table-meta);
+}
+
+.home-source-table__detail-chance {
+    min-width: 0;
+    color: var(--admin-muted);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.home-source-table__detail-chance label {
+    display: flex;
+    gap: .2rem;
+    align-items: center;
+}
+
+.home-source-table__detail-chance input {
+    box-sizing: border-box;
+    width: 3.4rem;
+    min-width: 0;
+    height: 1.8rem;
+    padding-inline: .2rem;
+    font-size: var(--admin-font-size-table-compact);
+}
+
+.home-source-table__detail-actions {
+    display: flex;
+    min-width: 0;
+    justify-content: flex-end;
+    gap: .15rem;
+}
+
+.home-source-table__detail-actions .admin-action {
+    display: inline-flex;
+    box-sizing: border-box;
+    width: 1.78rem;
+    min-width: 1.78rem;
+    height: 1.78rem;
+    padding: 0;
+    justify-content: center;
+    align-items: center;
+}
+
+.home-source-table__detail-actions .admin-action__label {
+    display: none;
+}
+
+.home-source-table__detail-actions > .home-source-table__action-slot {
+    width: 1.78rem;
+    flex: 0 0 1.78rem;
+}
+
+.home-source-table__detail-empty {
+    padding: .8rem .4rem;
+    color: var(--admin-muted);
+    font-size: var(--admin-font-size-table-support);
+}
+
+@container admin-table (max-width: 38rem) {
+    .home-source-table__detail-heading,
+    .home-source-table__detail-row {
+        grid-template-columns: 2.75rem minmax(0, 1fr) 4.4rem 4rem;
+        gap: .3rem;
+    }
+    .home-source-table__detail-preview {
+        width: 2.75rem;
+        height: 2.5rem;
+    }
+    .home-source-table__detail-chance input {
+        width: 3rem;
+    }
+}
+
 
 .home-workspace__skip-row {
     display: grid;
