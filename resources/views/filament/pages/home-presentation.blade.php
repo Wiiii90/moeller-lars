@@ -73,7 +73,7 @@
                         <div class="home-hero-rail__rows" @if ($heroGroupSource === 'manual') wire:sort="sortHeroArtwork" @endif>
                             @forelse ($heroRailRows as $row)
                                 <article
-                                    class="home-hero-candidate {{ $heroGroupSource === 'manual' ? 'is-manual' : '' }} {{ !($row['eligible'] ?? true) ? 'is-unavailable' : '' }}"
+                                    class="home-hero-candidate {{ $heroGroupSource === 'manual' ? 'is-manual' : '' }} {{ $heroDisplayStrategy === 'random' ? 'is-weighted' : '' }} {{ !($row['eligible'] ?? true) ? 'is-unavailable' : '' }}"
                                     x-bind:class="{ 'is-current': activeId === $el.dataset.candidateKey }"
                                     data-candidate-key="{{ $row['id'] }}"
                                     wire:key="home-hero-row-{{ $row['id'] }}"
@@ -99,11 +99,12 @@
                                         @endif
                                     </div>
 
-                                    @if ($heroGroupSource === 'manual' && $heroDisplayStrategy === 'random')
+                                    @if ($heroDisplayStrategy === 'random')
                                         <label class="home-hero-weight">
                                             <span>{{ __('Chance') }}</span>
                                             <span class="home-hero-weight__input">
                                                 <input
+                                                    class="admin-form-control"
                                                     type="number"
                                                     min="0"
                                                     max="100"

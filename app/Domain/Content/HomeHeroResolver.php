@@ -127,14 +127,10 @@ final class HomeHeroResolver
             $group = $manual->concat($automatic)->values();
         }
 
-        $weights = [];
-        if ($group->isNotEmpty()) {
-            $base = intdiv(HomeHeroConfigurationService::WEIGHT_TOTAL, $group->count());
-            $remainder = HomeHeroConfigurationService::WEIGHT_TOTAL - ($base * $group->count());
-            foreach ($group->values() as $index => $candidate) {
-                $weights[$candidate->key()] = $base + ($index < $remainder ? 1 : 0);
-            }
-        }
+        $weights = $this->configuration->sourcedGroupWeights(
+            $group,
+            $configuration['sourced_weights'],
+        );
 
         return [$group, $weights];
     }

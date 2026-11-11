@@ -40,6 +40,7 @@ final class HomeHeroConfigurationService
      *     group_source:string,
      *     manual_group_enabled:bool,
      *     disabled_auto_artwork_ids:list<int>,
+     *     sourced_weights:array<string,int>,
      *     display_strategy:string,
      *     manual_group:list<array{artwork_id?:int,media_asset_id?:int,weight:int}>,
      *     manual_group_count:int,
@@ -103,6 +104,7 @@ final class HomeHeroConfigurationService
             'group_source' => $groupSource,
             'manual_group_enabled' => (bool) ($artwork['manual_group_enabled'] ?? true),
             'disabled_auto_artwork_ids' => $this->readDisabledAutoArtworkIds($artwork['disabled_auto_artwork_ids'] ?? []),
+            'sourced_weights' => $this->readSourcedWeights($artwork['sourced_weights'] ?? []),
             'display_strategy' => $displayStrategy,
             'manual_group' => $manualGroup,
             'manual_group_count' => count($manualGroup),
@@ -137,6 +139,9 @@ final class HomeHeroConfigurationService
             $disabledAutoIds = array_key_exists('disabled_auto_artwork_ids', $input)
                 ? $this->validatedDisabledAutoArtworkIds($input['disabled_auto_artwork_ids'])
                 : $current['disabled_auto_artwork_ids'];
+            $sourcedWeights = array_key_exists('sourced_weights', $input)
+                ? $this->validatedSourcedWeights($input['sourced_weights'])
+                : $current['sourced_weights'];
             $displayStrategy = $this->requestedDisplayStrategy($input, $current['display_strategy']);
             $sourceRule = $this->enum(
                 $input['source_rule'] ?? $current['source_rule'],
@@ -182,6 +187,7 @@ final class HomeHeroConfigurationService
                 && $groupSource === $current['group_source']
                 && $manualGroupEnabled === $current['manual_group_enabled']
                 && $disabledAutoIds === $current['disabled_auto_artwork_ids']
+                && $sourcedWeights === $current['sourced_weights']
                 && $displayStrategy === $current['display_strategy']
                 && $manualGroup === $current['manual_group']
                 && $rotationInterval === $current['rotation_interval']
@@ -210,6 +216,7 @@ final class HomeHeroConfigurationService
             $artwork['group_source'] = $groupSource;
             $artwork['manual_group_enabled'] = $manualGroupEnabled;
             $artwork['disabled_auto_artwork_ids'] = $disabledAutoIds;
+            $artwork['sourced_weights'] = $sourcedWeights;
             $artwork['display_strategy'] = $displayStrategy;
             $artwork['manual_group'] = $manualGroup;
             $artwork['rotation_interval'] = $rotationInterval;
@@ -351,7 +358,34 @@ final class HomeHeroConfigurationService
         if ($basisPoints < 0 || $basisPoints > self::WEIGHT_TOTAL) {
             throw ValidationException::withMessages(['weight' => 'Hero percentage must be between 0 and 100.']);
         }
-        $group = $this->configuration($settings->fresh())['manual_group'];
+        $fresh = $settings->fresh();
+        $configuration = $this->configuration($fresh);
+        if ($configuration['display_strategy'] !== 'random') {
+            throw ValidationException::withMessages(['weight' => 'Hero chances can be changed only for Random strategy.']);
+        }
+
+        if ($configuration['group_source'] !== 'manual') {
+            $resolution = app(HomeHeroResolver::class)->resolve($fresh);
+            $candidates = $resolution['group']->values();
+            $keys = $candidates->map(static fn (HomeHeroCandidate $candidate): string => $candidate->key())->all();
+            $target = array_search($key, $keys, true);
+            if ($target === false) {
+                throw ValidationException::withMessages(['candidate' => 'The sourced Hero candidate changed. Reload and try again.']);
+            }
+            $weights = $resolution['weights'];
+            $otherKeys = array_values(array_filter($keys, static fn (string $value): bool => $value !== $key));
+            $otherValues = array_map(static fn (string $value): int => $weights[$value] ?? 0, $otherKeys);
+            $newWeights = $configuration['sourced_weights'];
+            $newWeights[$key] = $otherKeys === [] ? self::WEIGHT_TOTAL : $basisPoints;
+            $allocated = $this->allocateBudget($otherValues, self::WEIGHT_TOTAL - $newWeights[$key]);
+            foreach ($otherKeys as $index => $otherKey) {
+                $newWeights[$otherKey] = $allocated[$index];
+            }
+
+            return $this->updateArtworkSettings($fresh, ['sourced_weights' => $newWeights]);
+        }
+
+        $group = $configuration['manual_group'];
         $target = array_search($key, $this->manualGroupKeys($group), true);
         if ($target === false) {
             throw ValidationException::withMessages(['candidate' => 'The selected Hero candidate changed.']);
@@ -601,6 +635,83 @@ final class HomeHeroConfigurationService
 
             return $this->updateArtworkSettings($fresh, ['disabled_auto_artwork_ids' => $disabled]);
         });
+    }
+
+    /**
+     * A sourced group changes as Galleries, rules or exclusions change.
+     * Store explicit per-candidate chances, not a second source list; the
+     * resolver rebalances the active members whenever membership changes.
+     *
+     * @return array<string,int>
+     */
+    private function readSourcedWeights(mixed $value): array
+    {
+        if (! is_array($value) || array_is_list($value)) {
+            return [];
+        }
+
+        $weights = [];
+        foreach ($value as $key => $weight) {
+            if (! is_string($key) || ! preg_match('/^(artwork|media):[1-9][0-9]*$/D', $key)) {
+                continue;
+            }
+            $number = filter_var($weight, FILTER_VALIDATE_INT);
+            if ($number === false || $number < 0 || $number > self::WEIGHT_TOTAL) {
+                continue;
+            }
+            $weights[$key] = (int) $number;
+        }
+
+        ksort($weights);
+
+        return $weights;
+    }
+
+    /**
+     * Resolve percentages for the *current* sourced membership. Unknown
+     * candidates start near the average already configured chance, so adding
+     * a Gallery never silently reduces their default chance to almost zero.
+     *
+     * @param \Illuminate\Support\Collection<int,HomeHeroCandidate> $group
+     * @param array<string,int> $stored
+     * @return array<string,int>
+     */
+    public function sourcedGroupWeights(\Illuminate\Support\Collection $group, array $stored): array
+    {
+        $keys = $group->map(static fn (HomeHeroCandidate $candidate): string => $candidate->key())->values()->all();
+        if ($keys === []) {
+            return [];
+        }
+
+        $known = [];
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $stored)) {
+                $known[] = $stored[$key];
+            }
+        }
+        $fallback = $known === [] ? 1 : max(1, (int) round(array_sum($known) / count($known)));
+        $raw = array_map(static fn (string $key): int => $stored[$key] ?? $fallback, $keys);
+        $balanced = $this->allocateBudget($raw, self::WEIGHT_TOTAL);
+
+        return array_combine($keys, $balanced);
+    }
+
+    /** @return array<string,int> */
+    private function validatedSourcedWeights(mixed $value): array
+    {
+        if (! is_array($value) || ($value !== [] && array_is_list($value)) || count($value) > 1000) {
+            throw ValidationException::withMessages([
+                'weight' => 'The sourced Hero weights must contain at most 1000 valid candidate entries.',
+            ]);
+        }
+        $weights = $this->readSourcedWeights($value);
+        if (count($weights) !== count($value)) {
+            throw ValidationException::withMessages([
+                'weight' => 'Invalid sourced Hero candidate or percentage.',
+            ]);
+        }
+
+        return $weights;
     }
 
     /** @param array<string, mixed> $input */

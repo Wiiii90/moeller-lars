@@ -7,14 +7,18 @@
     class="admin-help"
     x-data="{
         open: false,
-        top: 0,
-        left: 0,
         show() {
             const panel = this.$refs.panel;
             if (! panel || panel.matches(':popover-open')) return;
+
+            // Measure the native top-layer popover while invisible. Position
+            // it synchronously before its first visible frame; a nextTick
+            // placement flashes the initially unpositioned panel at 0,0.
+            panel.style.visibility = 'hidden';
             panel.showPopover();
             this.open = true;
-            this.$nextTick(() => this.place());
+            this.place();
+            panel.style.visibility = '';
         },
         hide() {
             this.open = false;
@@ -33,8 +37,8 @@
             const above = trigger.top - margin;
             const upward = below < height + gap && above > below;
             const requestedTop = upward ? trigger.top - height - gap : trigger.bottom + gap;
-            this.top = Math.max(margin, Math.min(requestedTop, window.innerHeight - height - margin));
-            this.left = Math.max(margin, Math.min(trigger.right - width, window.innerWidth - width - margin));
+            panel.style.top = Math.max(margin, Math.min(requestedTop, window.innerHeight - height - margin)) + 'px';
+            panel.style.left = Math.max(margin, Math.min(trigger.right - width, window.innerWidth - width - margin)) + 'px';
         }
     }"
     x-on:mouseenter="show()"
@@ -64,6 +68,5 @@
         class="admin-help__popover"
         role="tooltip"
         popover="manual"
-        x-bind:style="'top:' + top + 'px;left:' + left + 'px'"
     >{{ $text }}</span>
 </span>

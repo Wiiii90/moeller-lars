@@ -1258,8 +1258,9 @@ final class HomePresentation extends Page
         $this->heroRailRows = $sequence->values()->map(function (HomeHeroCandidate $candidate, int $index) use ($currentId, $resolution): array {
             $row = $this->candidateRow($candidate);
             $row['eligible'] = true;
-            $row['weight'] = $resolution['weights'][$candidate->key()] ?? null;
-            $row['percentage'] = null;
+            $weight = $resolution['weights'][$candidate->key()] ?? 0;
+            $row['weight'] = $weight;
+            $row['percentage'] = number_format($weight / 100, 2, '.', '');
             $row['sequence_label'] = $this->heroDisplayStrategy === 'sequential'
                 ? ($index === 0 ? 'Current' : ($index === 1 ? 'Next' : 'Then'))
                 : ($row['id'] === $currentId ? 'Current' : null);
