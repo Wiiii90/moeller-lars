@@ -15,6 +15,12 @@
     --admin-row-actions-width: var(--admin-row-action-slot-state-width);
 }
 
+/* Automatic has no Add Candidate row. Its source table therefore owns the
+ * lower separator, which the shared Add Row normally provides. */
+.admin-data-table.home-source-table--no-add-row {
+    border-bottom: 1px solid var(--admin-line) !important;
+}
+
 /* The single state action shares one width with its heading and colgroup.
  * The responsive table owner updates this semantic rail at Minimal. */
 .home-source-table__col-actions {
@@ -79,26 +85,12 @@
 }
 
 .home-hero-rail {
-    position: relative;
     display: flex;
     min-width: 0;
     flex-direction: column;
     overflow: hidden;
     border: 1px solid var(--admin-line);
     background: var(--admin-surface);
-}
-
-/* The final rule stays fixed while the candidate list itself scrolls. */
-.home-hero-rail::after {
-    position: absolute;
-    z-index: 2;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    height: 1px;
-    background: var(--admin-line-strong);
-    content: "";
-    pointer-events: none;
 }
 
 .home-hero-rail__summary {

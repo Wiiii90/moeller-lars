@@ -329,7 +329,7 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            <x-admin.table class="admin-data-table home-source-table">
+            <x-admin.table class="admin-data-table home-source-table {{ $heroGroupSource === 'automatic' ? 'home-source-table--no-add-row' : '' }}">
                 <table class="admin-table--six-grid">
                     <colgroup>
                         <col class="admin-table__col-one-unit home-source-table__col-gallery">
