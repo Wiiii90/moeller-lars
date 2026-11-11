@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 13 (active)  
-**Status:** Retired Beside option, revised Inside Left/Right structural layout; source committed, browser verification outstanding.
+**Status:** General Stage stability and Public/embedded Preview parity corrections in progress; browser acceptance outstanding.
 
 ## Ownership and accepted decisions
 - General → Appearance (Global, Title, Menu, Page and Legal), Regional Formats, Admin live Preview and their direct Public consumers.
@@ -26,6 +26,10 @@
 - Inside Left places artist name left of navigation, Inside Right places artist name right of navigation, changing physical grid columns rather than text alignment within one left column. At 40rem and below the title always forms an Above Menu row, honoring Responsive alignment. Wider screens stack only on real content fit.
 - Preserve Above and Below Menu behavior, the existing frame controls, site icon picker and Live Preview.
 - Updated the existing JavaScript, Feature and browser regression tests for the remaining positions, physical Inside Left/Right ordering and responsive Above Menu fallback (f5e6d669). Removed obsolete Beside test cases. Reconciled the canonical Public site composition contract and Dev visual-alignment gate. Tests remain unexecuted.
+
+## Current browser findings (2026-11-11)
+- User reports More space Stage/Preview height jumping on Title Show/Hide. Cause in General CSS: expanded height was tied to live Filament conditional form geometry. Replaced max-content expanded sizing with a stable full-viewport-sized stage; retained the existing single scroll owner for forms that exceed it. Removed the matching obsolete responsive size overrides.
+- User also reports Inside title/navigation improperly occupying the entire Menu padding area; investigate the single Public content-width geometry and reserve cyclic navigation arrows. Standalone /preview and embedded iframe use the same route but not the same viewport width (embedded desktop hardcodes 1280), so identical rendering is only meaningful at equal logical viewport size. Report and address visual divider differences without inventing a second renderer.
 
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.

@@ -152,45 +152,17 @@
     overflow: hidden;
 }
 
-/* The tallest mounted Appearance panel determines expanded height.
- * The Stage minimum stays intact and Preview never sizes this track. */
+/* Expanded Stage has a stable viewport-sized geometry rather than a
+ * content-derived max-height. Filament removes conditional fields from the
+ * DOM on Show/Hide or mode changes: intrinsic sizing made the whole Stage
+ * and the neighboring Preview jump on every autosave.
+ *
+ * More space extends the same stage and the SAME scroll owner. If an editor
+ * contains more fields than fit, only its own field pane scrolls; settings
+ * never resize the Stage. No duplicated hidden fields or JS measurements. */
 .general-appearance-stage.admin-visual-stage--expanded {
-    height: max-content;
-    min-height: var(--admin-visual-stage-height);
-    grid-template-rows: minmax(var(--admin-visual-stage-height), max-content) !important;
-}
-
-.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__controls {
-    height: auto !important;
-    align-self: start;
-    grid-template-rows: max-content;
-}
-
-.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__controls > .fi-sc {
-    height: auto;
-    grid-template-rows: auto auto max-content;
-    align-content: start;
-}
-
-.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__scroll {
-    height: auto;
-    overflow: visible;
-}
-
-/* In expanded mode all four panels participate in one intrinsic grid track,
- * even when visually hidden. Alpine still keeps inactive panels inert. */
-.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__panel {
-    position: relative;
-    inset: auto;
-    align-self: start;
-}
-
-/* The Preview consumes the height chosen by the tallest panel but does
- * not feed its previously fitted size back into intrinsic track sizing. */
-.general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__preview {
-    contain: size;
-    height: 100%;
-    align-self: stretch;
+    height: max(var(--admin-visual-stage-height), 100dvh);
+    grid-template-rows: minmax(0, 1fr) !important;
 }
 
 .general-stage-kicker,

@@ -446,14 +446,8 @@
         display: none !important;
     }
 
-    /* Expanded General retains the tallest-tab height without Preview. */
-    .general-appearance-stage.admin-visual-stage--expanded{
-        grid-template-rows: minmax(var(--admin-visual-stage-height), max-content) !important;
-    }
-
-    .general-appearance-stage.admin-visual-stage--expanded .general-appearance-stage__controls{
-        height: auto !important;
-    }
+    /* Expanded General keeps the same stable stage height and one field
+     * scroller when the parallel Live Preview is intentionally hidden. */
 }
 
 @media (max-width: 63.99rem){
