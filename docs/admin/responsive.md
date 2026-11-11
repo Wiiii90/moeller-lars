@@ -156,8 +156,11 @@ the same Public layout decisions and configured divider. If the standalone
 window has a different viewport size, responsive layout may differ; exact
 pixel-level equality is not possible across unequal viewport sizes or
 fractional preview scaling. Phone preview intentionally uses a 390 × 844
-logical viewport. The More/Less arrow remains icon-only with its accessible
-tooltip/name.
+logical viewport. Home's Random Hero strategy selects artwork separately on
+each real HTTP request, so two valid `/preview` requests may show different
+artworks even with equal geometry; General does not silently override that
+Home-owned selection strategy to fake content identity. The More/Less arrow
+remains icon-only with its accessible tooltip/name.
 
 **Global** owns Site icon/Background. **Title** uses paired rows for
 Title/visible Text, Position/Lettering, Alignment/Responsive alignment,

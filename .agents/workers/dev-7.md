@@ -34,6 +34,9 @@
 - Updated existing General browser regression coverage for invariant More space height through Title Show/Hide and tab switching, same-viewport iframe/direct layout bounds, and a genuinely absent Menu divider at No divider. The tests are not executed.
 - Updated the canonical Admin responsive/Stage and Public reading-width contracts, and added explicit Stage/iframe parity checks to the existing Dev skill. No separate preview renderer or hidden form copy.
 
+- Public Home's `HomeHeroResolver::randomResolution()` calls `random_int()` for each request in Random strategy. Standalone and embedded /preview therefore cannot guarantee an identical chosen artwork without changing the separately owned Home strategy. No Home code changed; this limitation is recorded rather than adding cross-request synchronisation.
+- The thin line visible in the supplied embedded screenshots is not proven to come from the Public `fine` divider: source says `border-bottom: 0` for that setting. Equal-viewport browser comparison and computed border/contour inspection are still required before marking the reported line resolved. The new browser regression test explicitly checks that state; it has not been executed.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.
