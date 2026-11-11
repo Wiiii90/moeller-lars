@@ -74,43 +74,42 @@
 
                 <div class="home-hero-rail admin-visual-stage__pane" aria-label="Hero group">
                     <header class="home-hero-rail__summary">
-                        <h2 class="admin-section__kicker home-hero-rail__title admin-visual-stage__heading">{{ __('Hero Artwork') }}</h2>
-                        <div class="home-hero-stage-settings" aria-label="Hero Stage quick settings">
-                            <label class="home-hero-stage-field">
+                        <h2 class="admin-section__kicker home-hero-rail__title">{{ __('Hero Artwork') }}</h2>
+                        @if ($heroDisplayStrategy === 'sequential')
+                            <p class="home-hero-rail__simulation" x-text="simulationLabel" aria-live="off">{{ __('Sequential preview') }}</p>
+                        @endif
+                        <div class="home-hero-stage-settings {{ $heroGroupSource === 'manual' ? 'home-hero-stage-settings--manual' : '' }}" aria-label="Hero Stage quick settings">
+                            <label class="admin-data-field">
                                 <span>{{ __('Source') }}</span>
-                                <select class="admin-form-control" wire:change="updateHeroStageSetting('group_source', $event.target.value)" aria-label="Hero source">
+                                <select wire:change="updateHeroStageSetting('group_source', $event.target.value)" aria-label="Hero source">
                                     <option value="automatic" @selected($heroGroupSource === 'automatic')>{{ __('Automatic') }}</option>
                                     <option value="semi_automatic" @selected($heroGroupSource === 'semi_automatic')>{{ __('Semi-Automatic') }}</option>
                                     <option value="manual" @selected($heroGroupSource === 'manual')>{{ __('Manual') }}</option>
                                 </select>
                             </label>
                             @if ($heroGroupSource !== 'manual')
-                                <label class="home-hero-stage-field">
+                                <label class="admin-data-field">
                                     <span>{{ __('Source Rule') }}</span>
-                                    <select class="admin-form-control" wire:change="updateHeroStageSetting('source_rule', $event.target.value)" aria-label="Hero source rule">
+                                    <select wire:change="updateHeroStageSetting('source_rule', $event.target.value)" aria-label="Hero source rule">
                                         @foreach (\App\Domain\Content\HomeHeroConfigurationService::SOURCE_RULES as $value => $label)
                                             <option value="{{ $value }}" @selected($heroSourceRule === $value)>{{ __($label) }}</option>
                                         @endforeach
                                     </select>
                                 </label>
-                                <label class="home-hero-stage-field">
+                                <label class="admin-data-field">
                                     <span>{{ __('Source Size') }}</span>
-                                    <input class="admin-form-control" type="number" min="1" max="{{ \App\Domain\Content\HomeHeroConfigurationService::MAX_GROUP_SIZE }}"
+                                    <input type="number" min="1" max="{{ \App\Domain\Content\HomeHeroConfigurationService::MAX_GROUP_SIZE }}"
                                         step="1" value="{{ $heroGroupSize }}" wire:change="updateHeroStageSetting('group_size', $event.target.value)" aria-label="Hero source size">
                                 </label>
                             @endif
-                            <label class="home-hero-stage-field">
+                            <label class="admin-data-field">
                                 <span>{{ __('Strategy') }}</span>
-                                <select class="admin-form-control" wire:change="updateHeroStageSetting('display_strategy', $event.target.value)" aria-label="Hero display strategy">
+                                <select wire:change="updateHeroStageSetting('display_strategy', $event.target.value)" aria-label="Hero display strategy">
                                     <option value="ordered" @selected($heroDisplayStrategy === 'ordered')>{{ __('Top Only') }}</option>
                                     <option value="random" @selected($heroDisplayStrategy === 'random')>{{ __('Random') }}</option>
                                     <option value="sequential" @selected($heroDisplayStrategy === 'sequential')>{{ __('Sequential') }}</option>
                                 </select>
                             </label>
-                        </div>
-                        <div class="home-hero-rail__simulation">
-                            <span>{{ $candidatePoolCount }} {{ $candidatePoolCount === 1 ? __('candidate') : __('candidates') }}</span>
-                            <span x-text="simulationLabel" aria-live="off">{{ __('Stage simulation') }}</span>
                         </div>
                         <div class="home-hero-candidate__heading" aria-hidden="true">
                             <span class="home-hero-candidate__heading-position">{{ __('Position') }}</span>

@@ -98,47 +98,28 @@
 .home-hero-rail__summary {
     display: grid;
     gap: .45rem;
-    padding: .38rem .65rem .5rem;
+    padding: 0 .65rem .5rem;
     border-bottom: 1px solid var(--admin-line);
 }
 
+/* Quick editors are native admin-data-field controls; Home owns only their
+ * column allocation, not separate label, input or select styling. */
 .home-hero-stage-settings {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(6.9rem, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, .75fr) minmax(0, 1fr);
     gap: .4rem;
     min-width: 0;
 }
 
-.home-hero-stage-field {
-    display: grid;
-    min-width: 0;
-    gap: .18rem;
-}
-
-.home-hero-stage-field > span,
-.home-hero-candidate__heading {
-    color: var(--admin-muted);
-    font-size: .58rem;
-    font-weight: 700;
-    letter-spacing: .07em;
-    text-transform: uppercase;
-}
-
-.home-hero-stage-field .admin-form-control {
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-    height: 1.9rem;
-    font-size: .67rem;
+.home-hero-stage-settings--manual {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .home-hero-rail__simulation {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: .12rem .65rem;
+    margin: 0;
     color: var(--admin-muted);
     font-size: .61rem;
+    line-height: 1.4;
 }
 
 .home-hero-candidate__heading {
@@ -150,13 +131,23 @@
     padding: .14rem .4rem 0;
 }
 
+.home-hero-candidate__heading {
+    color: var(--admin-muted);
+    font-size: .58rem;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+}
+
 .home-hero-candidate__heading-position { grid-column: 1 / span 2; }
 .home-hero-candidate__heading-chance { grid-column: 5; text-align: center; }
 .home-hero-candidate__heading-actions { grid-column: 6; text-align: center; }
 
 .home-hero-rail__rows {
+    box-sizing: border-box;
     min-height: 0;
     flex: 1 1 auto;
+    border-bottom: 1px solid var(--admin-line-strong);
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: none;
