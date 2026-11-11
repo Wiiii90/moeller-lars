@@ -75,9 +75,10 @@
                 <div class="home-hero-rail admin-visual-stage__pane" aria-label="Hero group">
                     <header class="home-hero-rail__summary">
                         <h2 class="admin-section__kicker home-hero-rail__title">{{ __('Hero Artwork') }}</h2>
-                        @if ($heroDisplayStrategy === 'sequential')
-                            <p class="home-hero-rail__simulation" x-text="simulationLabel" aria-live="off">{{ __('Sequential preview') }}</p>
-                        @endif
+                        <p class="home-hero-rail__simulation" aria-live="off">
+                            <span>{{ __('Preview:') }} <span x-text="previewLabel">{{ $heroDisplayStrategy === 'ordered' ? __('Top Only') : ucfirst($heroDisplayStrategy) }}</span></span>
+                            <span>{{ __('Next Rotation:') }} <span x-text="nextRotationLabel">{{ $heroDisplayStrategy === 'ordered' ? __('No rotation') : ($heroDisplayStrategy === 'random' ? __('Every 10 seconds (Stage simulation)') : __('Not scheduled')) }}</span></span>
+                        </p>
                         <div class="home-hero-stage-settings {{ $heroGroupSource === 'manual' ? 'home-hero-stage-settings--manual' : '' }}" aria-label="Hero Stage quick settings">
                             <label class="admin-data-field">
                                 <span>{{ __('Source') }}</span>
