@@ -43,6 +43,18 @@ For a requested new Dev preview, resolve the exact fresh `dev` SHA and use the e
 
 Do not record private host/access details here. No current deployed Validation SHA is independently confirmed in Org state; verify before claiming one.
 
+## Validation recovery rehearsal
+
+Before the next substantial Validation update, prefer creating an operator-controlled local recovery point of the current artist-curated Validation state. Treat PostgreSQL **and matching canonical media originals as one recoverable dataset**, record the exact deployed application identity, and keep the raw export immutable.
+
+Recommended local shape:
+- `validation-raw`: untouched database dump + matching media archive/inventory/checksums + source/runtime identity;
+- `validation-dev-lab`: an isolated restored copy derived from the raw snapshot, sanitized for local-only runtime integrations and then migrated with the current `dev` source for rehearsal/browser inspection.
+
+Never overwrite the ordinary local-preview database or mutate the raw export during migration experiments. A successful local rehearsal reduces risk before the next Validation deployment but does not close #38 or replace a later authoritative off-server backup/restore proof.
+
+Current cross-repository mismatch to resolve later: the application migration contract treats artist-curated Validation data/media as intended cutover authority, while the platform's general Production backup contract still excludes temporary Validation from the normal Restic backup set. Preserve Validation explicitly until that platform protection boundary is reconciled.
+
 ## Main / repository-history gate
 
 Before the next approved promotion to `main`, remove the historical public ADR infrastructure material from reachable Git history. The user decision is made: the old ADR content should be removed from history, not merely deleted from the current tree.
