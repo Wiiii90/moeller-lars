@@ -19,6 +19,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
@@ -105,11 +106,22 @@ final class HomeSettingsDialog
                         ->label(self::helpLabel(
                             'Source',
                             'Choosing a Hero group',
-                            'Automatic uses only enabled, published Galleries. Semi-Automatic combines the enabled Galleries with the separately enabled Manual Storage group and allows excluding individual automatic candidates. Manual uses only the stored, ordered Manual group.',
+                            'Automatic selects only from enabled, published Galleries. Semi-Automatic combines eligible Galleries with its own editable Manual Sourced Artworks. Manual has a separate saved candidate order and Random chances. Switching Source preserves each mode.',
                         ))
                         ->options(['automatic' => __('Automatic'), 'semi_automatic' => __('Semi-Automatic'), 'manual' => __('Manual')])
                         ->required()
                         ->live()
+                        ->afterStateUpdated(function (?string $state, Set $set): void {
+                            if (! in_array($state, ['automatic', 'semi_automatic', 'manual'], true)) {
+                                return;
+                            }
+                            $profile = $this->heroConfiguration->configuration($this->resolver->settings(), $state);
+                            $set('group_size', $profile['group_size']);
+                            $set('source_rule', $profile['source_rule']);
+                            $set('display_strategy', $profile['display_strategy']);
+                            $set('rotation_interval_count', $profile['rotation_interval']['count']);
+                            $set('rotation_interval_unit', $profile['rotation_interval']['unit']);
+                        })
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
                     TextInput::make('group_size')
                         ->label(self::helpLabel(
@@ -124,7 +136,7 @@ final class HomeSettingsDialog
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') !== 'manual'),
                     Select::make('source_rule')
                         ->label(self::helpLabel(
-                            'Rule',
+                            'Source Rule',
                             'Source ordering rule',
                             'Artwork rules use the artwork date (year, month and day). Media Added rules use the upload date of the primary media file. Newest or Oldest determines which eligible Gallery Artworks are sourced first.',
                         ))
@@ -133,7 +145,7 @@ final class HomeSettingsDialog
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') !== 'manual'),
                     Select::make('display_strategy')
                         ->label(self::helpLabel(
-                            'Strategy',
+                            'Display Strategy',
                             'Displaying the Hero group',
                             'Top Only displays the first sourced candidate. Random selects from the group using its weights. Sequential advances through the group after each rotation interval.',
                         ))
@@ -211,12 +223,19 @@ final class HomeSettingsDialog
                 'video_sound_enabled' => $data['video_sound_enabled'] ?? $current['video_sound_enabled'],
                 'enable_viewer' => $data['enable_viewer'] ?? $current['enable_viewer'],
                 'group_source' => $groupSource,
-                'display_strategy' => $data['display_strategy'] ?? $current['display_strategy'],
-                'source_rule' => $data['source_rule'] ?? $current['source_rule'],
-                'group_size' => $data['group_size'] ?? $current['group_size'],
-                'rotation_interval_count' => $data['rotation_interval_count'] ?? $current['rotation_interval']['count'],
-                'rotation_interval_unit' => $data['rotation_interval_unit'] ?? $current['rotation_interval']['unit'],
             ];
+            if ($groupSource === $current['group_source']) {
+                $input += [
+                    'display_strategy' => $data['display_strategy'] ?? $current['display_strategy'],
+                    'source_rule' => $data['source_rule'] ?? $current['source_rule'],
+                    'group_size' => $data['group_size'] ?? $current['group_size'],
+                    'rotation_interval_count' => $data['rotation_interval_count'] ?? $current['rotation_interval']['count'],
+                    'rotation_interval_unit' => $data['rotation_interval_unit'] ?? $current['rotation_interval']['unit'],
+                ];
+            }
+            // Source switches persist the destination profile untouched. The
+            // Select's live callback refreshes dependent fields from that
+            // saved profile rather than copying another mode's form state.
 
             $changed = $this->heroConfiguration->updateArtworkSettings($settings, $input);
         } else {

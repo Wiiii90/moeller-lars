@@ -292,7 +292,7 @@ class PublicMedia
 
         $template = $settings->template();
         if ($template === HomeTemplate::Artwork) {
-            if (! in_array($mediaAssetId, $this->referenceQuery->homeHeroMediaIds($settings), true)) {
+            if (! in_array($mediaAssetId, $this->referenceQuery->homeHeroMediaIds($settings, activeOnly: true), true)) {
                 return false;
             }
             $asset = MediaAsset::query()->with('variants')->find($mediaAssetId);

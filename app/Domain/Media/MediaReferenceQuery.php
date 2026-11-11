@@ -188,13 +188,35 @@ final class MediaReferenceQuery
         return array_values(array_unique($ids));
     }
 
-    /** @return list<int> */
-    public function homeHeroMediaIds(HomePresentationSetting $settings): array
+    /**
+     * Stored source profiles own media retention even while inactive. Public
+     * delivery must instead use only the active profile and enabled Manual
+     * selection, never another Source's private draft candidates.
+     *
+     * @return list<int>
+     */
+    public function homeHeroMediaIds(HomePresentationSetting $settings, bool $activeOnly = false): array
     {
+        if ($activeOnly) {
+            // Only the resolver knows the current eligible, size-limited Hero
+            // group. Do not authorize disabled Manual candidates or items
+            // beyond Semi-Automatic's configured source size.
+            $group = app(\App\Domain\Content\HomeHeroResolver::class)->resolve($settings)['group'];
+
+            return $group
+                ->filter(static fn (\App\Domain\Content\HomeHeroCandidate $candidate): bool => $candidate->kind === 'media')
+                ->map(static fn (\App\Domain\Content\HomeHeroCandidate $candidate): int => (int) $candidate->record->getKey())
+                ->unique()->values()->all();
+        }
+
+        $configuration = app(\App\Domain\Content\HomeHeroConfigurationService::class);
         $ids = [];
-        foreach (($settings->modeConfiguration(HomeTemplate::Artwork)['manual_group'] ?? []) as $member) {
-            if (is_array($member) && filter_var($member['media_asset_id'] ?? null, FILTER_VALIDATE_INT) > 0) {
-                $ids[] = (int) $member['media_asset_id'];
+        foreach (['semi_automatic', 'manual'] as $source) {
+            $profile = $configuration->configuration($settings, $source);
+            foreach ($profile['manual_group'] as $member) {
+                if (isset($member['media_asset_id'])) {
+                    $ids[] = (int) $member['media_asset_id'];
+                }
             }
         }
 

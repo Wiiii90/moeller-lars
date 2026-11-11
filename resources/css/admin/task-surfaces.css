@@ -577,16 +577,28 @@
     cursor: pointer;
 }
 
-.admin-add-row:hover,
+.admin-add-row:hover:not([aria-disabled="true"]),
 .custom-page-component-add-row:hover {
     background: var(--admin-subtle);
     color: var(--admin-text);
 }
 
-.admin-add-row:focus-visible,
+.admin-add-row:focus-visible:not([aria-disabled="true"]),
 .custom-page-component-add-row:focus-visible {
     background: var(--admin-subtle);
     color: var(--admin-text);
+    outline: 2px solid var(--admin-accent);
+    outline-offset: -2px;
+}
+
+.admin-add-row[aria-disabled="true"] {
+    opacity: .38;
+    cursor: default;
+}
+
+/* Keep the standard Add Row frame and keyboard focusability so the browser
+ * can show the inactive Source's explanation on hover or focus. */
+.admin-add-row[aria-disabled="true"]:focus-visible {
     outline: 2px solid var(--admin-accent);
     outline-offset: -2px;
 }

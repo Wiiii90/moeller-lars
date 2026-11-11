@@ -229,9 +229,18 @@
     color: var(--admin-text);
 }
 
-.admin-action:disabled {
+.admin-action:disabled,
+.admin-action[aria-disabled="true"] {
     opacity: .38;
     cursor: default;
+}
+
+/* An ARIA-disabled action remains focusable/hoverable solely to explain why
+ * the unavailable command cannot run; its owner must omit any mutation hook. */
+.admin-action[aria-disabled="true"]:is(:hover, :focus-visible) {
+    border-color: transparent;
+    background: transparent;
+    color: var(--admin-muted);
 }
 
 .admin-action.is-primary {

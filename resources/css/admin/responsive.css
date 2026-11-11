@@ -215,9 +215,8 @@
 }
 
 /* Home source table keeps Candidates as the sole elastic column.
- * Artworks yields at Compact, while Gallery identity and candidate counts
- * retain their shared responsive metadata. Neither transition moves the
- * terminal Selection checkbox rail. */
+ * Gallery identity and candidate counts retain shared responsive metadata;
+ * Actions and the terminal Selection rail keep their canonical alignment. */
 @container admin-table (max-width: 64rem){
     .home-source-table .admin-responsive-meta { display: block; }
 }

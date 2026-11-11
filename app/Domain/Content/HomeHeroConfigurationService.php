@@ -33,8 +33,10 @@ final class HomeHeroConfigurationService
     public function __construct(private readonly AdminAuditService $audit) {}
 
     /**
-     * Canonical Hero configuration. Legacy fixed/automatic/random values are
-     * accepted as historic input, never persisted as a second model.
+     * Canonical active Source profile, or an inactive profile when $mode is
+     * provided. All source modes own independent candidates, ordered groups,
+     * weights, rules, strategy and rotation. Genuine persisted legacy values
+     * seed the new profiles once, not a parallel runtime data structure.
      *
      * @return array{
      *     group_source:string,
@@ -55,69 +57,105 @@ final class HomeHeroConfigurationService
      *     enable_viewer:bool
      * }
      */
-    public function configuration(HomePresentationSetting $settings): array
+    public function configuration(HomePresentationSetting $settings, ?string $mode = null): array
     {
         $root = $settings->configuration();
         $artwork = is_array($root[HomeTemplate::Artwork->value] ?? null)
             ? $root[HomeTemplate::Artwork->value]
             : [];
-
-        $persistedMode = is_string($artwork['hero_mode'] ?? null)
-            ? $artwork['hero_mode']
-            : 'automatic';
-
-        $groupSource = $this->enumOrNull($artwork['group_source'] ?? null, ['automatic', 'semi_automatic', 'manual'])
+        $persistedMode = is_string($artwork['hero_mode'] ?? null) ? $artwork['hero_mode'] : 'automatic';
+        $storedSource = $this->enumOrNull($artwork['group_source'] ?? null, ['automatic', 'semi_automatic', 'manual'])
             ?? (in_array($persistedMode, ['fixed', 'manual'], true) ? 'manual' : 'automatic');
+        $selectedSource = $this->enum($mode, ['automatic', 'semi_automatic', 'manual'], $storedSource);
 
-        $displayStrategy = $this->enumOrNull($artwork['display_strategy'] ?? null, ['ordered', 'random', 'sequential']);
-        if ($displayStrategy === null) {
-            $legacySelection = $persistedMode === 'random'
-                ? 'random'
-                : $this->enum($artwork['automatic_selection'] ?? null, ['newest', 'random'], 'newest');
-            $displayStrategy = $legacySelection === 'random' ? 'random' : 'ordered';
-        }
-
-        $manualGroup = $this->readManualGroup($artwork['manual_group'] ?? null);
-        $legacyFixedId = $this->nullablePositiveInt($artwork['fixed_artwork_id'] ?? null);
-        if ($manualGroup === [] && $legacyFixedId !== null && in_array($persistedMode, ['fixed', 'manual'], true)) {
-            $manualGroup = [[
-                'artwork_id' => $legacyFixedId,
-                'weight' => self::WEIGHT_TOTAL,
-            ]];
-        }
-
-        // Historical newest_by values are read once and normalized to the
-        // single current source-rule vocabulary. Do not persist both fields.
-        $legacyRule = match ($artwork['newest_by'] ?? null) {
-            'added' => 'newest_media_added',
-            default => 'newest_artwork',
-        };
-        $sourceRule = $this->enum(
-            $artwork['source_rule'] ?? null,
-            array_keys(self::SOURCE_RULES),
-            $legacyRule,
-        );
-        $rotationInterval = $this->readRotationInterval($artwork['rotation_interval'] ?? null);
-        $rotationStartedAt = $this->readRotationStartedAt($artwork['rotation_started_at'] ?? null);
+        $profile = $this->readSourceProfile($artwork, $selectedSource);
 
         return [
-            'group_source' => $groupSource,
-            'manual_group_enabled' => (bool) ($artwork['manual_group_enabled'] ?? true),
-            'disabled_auto_artwork_ids' => $this->readDisabledAutoArtworkIds($artwork['disabled_auto_artwork_ids'] ?? []),
-            'sourced_weights' => $this->readSourcedWeights($artwork['sourced_weights'] ?? []),
-            'display_strategy' => $displayStrategy,
-            'manual_group' => $manualGroup,
-            'manual_group_count' => count($manualGroup),
-            'rotation_interval' => $rotationInterval,
-            'rotation_started_at' => $rotationStartedAt,
-            'source_rule' => $sourceRule,
-            'group_size' => $this->boundedGroupSize($artwork['group_size'] ?? null),
+            'group_source' => $selectedSource,
+            ...$profile,
+            'manual_group_count' => count($profile['manual_group']),
             'show_details' => (bool) ($artwork['show_details'] ?? true),
             'show_gallery_link' => (bool) ($artwork['show_gallery_link'] ?? false),
             'show_navigation' => (bool) ($artwork['show_navigation'] ?? false),
             'video_sound_enabled' => (bool) ($artwork['video_sound_enabled'] ?? false),
             'enable_viewer' => (bool) ($artwork['enable_viewer'] ?? true),
         ];
+    }
+
+    /**
+     * The stored profiles have exactly one owner per Source. Prior root-level
+     * settings are legitimate saved data and seed each profile once; an empty
+     * saved profile (including an empty Manual list) always wins thereafter.
+     *
+     * @param array<string,mixed> $artwork
+     * @return array<string,mixed>
+     */
+    private function readSourceProfile(array $artwork, string $mode): array
+    {
+        $profiles = is_array($artwork['source_profiles'] ?? null) ? $artwork['source_profiles'] : [];
+        $stored = is_array($profiles[$mode] ?? null) ? $profiles[$mode] : [];
+        $source = array_replace($artwork, $stored);
+        $legacyMode = is_string($artwork['hero_mode'] ?? null) ? $artwork['hero_mode'] : 'automatic';
+        $strategy = $this->enumOrNull($source['display_strategy'] ?? null, ['ordered', 'random', 'sequential']);
+        if ($strategy === null) {
+            $legacySelection = $legacyMode === 'random'
+                ? 'random' : $this->enum($artwork['automatic_selection'] ?? null, ['newest', 'random'], 'newest');
+            $strategy = $legacySelection === 'random' ? 'random' : 'ordered';
+        }
+
+        $manual = $mode === 'automatic' ? [] : $this->readManualGroup($source['manual_group'] ?? null);
+        $legacyFixed = $this->nullablePositiveInt($artwork['fixed_artwork_id'] ?? null);
+        if ($mode !== 'automatic' && $manual === [] && ! array_key_exists('manual_group', $stored)
+            && $legacyFixed !== null && in_array($legacyMode, ['fixed', 'manual'], true)) {
+            $manual = [['artwork_id' => $legacyFixed, 'weight' => self::WEIGHT_TOTAL]];
+        }
+        $legacyRule = ($artwork['newest_by'] ?? null) === 'added' ? 'newest_media_added' : 'newest_artwork';
+        return [
+            'display_strategy' => $strategy,
+            'rotation_interval' => $this->readRotationInterval($source['rotation_interval'] ?? null),
+            'rotation_started_at' => $this->readRotationStartedAt($source['rotation_started_at'] ?? null),
+            'source_rule' => $this->enum($source['source_rule'] ?? null, array_keys(self::SOURCE_RULES), $legacyRule),
+            'group_size' => $this->boundedGroupSize($source['group_size'] ?? null),
+            'manual_group' => $manual,
+            'manual_group_enabled' => $mode === 'semi_automatic' ? (bool) ($source['manual_group_enabled'] ?? true) : $mode === 'manual',
+            'disabled_auto_artwork_ids' => $mode === 'semi_automatic'
+                ? $this->readDisabledAutoArtworkIds($source['disabled_auto_artwork_ids'] ?? []) : [],
+            'sourced_weights' => $mode === 'manual' ? [] : $this->readSourcedWeights($source['sourced_weights'] ?? []),
+        ];
+    }
+
+    /**
+     * Persist only fields that actually belong to the corresponding mode.
+     * This is one canonical profile map with independent stored Manual and
+     * Semi-Automatic candidates, never parallel root-level state.
+     *
+     * @param array<string,mixed> $artwork
+     * @return array<string,array<string,mixed>>
+     */
+    private function sourceProfiles(array $artwork): array
+    {
+        $profiles = [];
+        foreach (['automatic', 'semi_automatic', 'manual'] as $mode) {
+            $profile = $this->readSourceProfile($artwork, $mode);
+            $profiles[$mode] = [
+                'display_strategy' => $profile['display_strategy'],
+                'rotation_interval' => $profile['rotation_interval'],
+                'rotation_started_at' => $profile['rotation_started_at'],
+            ];
+            if ($mode !== 'manual') {
+                $profiles[$mode]['source_rule'] = $profile['source_rule'];
+                $profiles[$mode]['group_size'] = $profile['group_size'];
+                $profiles[$mode]['sourced_weights'] = $profile['sourced_weights'];
+            }
+            if ($mode !== 'automatic') {
+                $profiles[$mode]['manual_group'] = $profile['manual_group'];
+            }
+            if ($mode === 'semi_automatic') {
+                $profiles[$mode]['manual_group_enabled'] = $profile['manual_group_enabled'];
+                $profiles[$mode]['disabled_auto_artwork_ids'] = $profile['disabled_auto_artwork_ids'];
+            }
+        }
+        return $profiles;
     }
 
     /**
@@ -135,78 +173,66 @@ final class HomeHeroConfigurationService
 
             $current = $this->configuration($fresh);
             $groupSource = $this->requestedGroupSource($input, $current['group_source']);
-            $manualGroupEnabled = (bool) ($input['manual_group_enabled'] ?? $current['manual_group_enabled']);
+            $profile = $this->configuration($fresh, $groupSource);
+
+            $manualGroupEnabled = (bool) ($input['manual_group_enabled'] ?? $profile['manual_group_enabled']);
             $disabledAutoIds = array_key_exists('disabled_auto_artwork_ids', $input)
                 ? $this->validatedDisabledAutoArtworkIds($input['disabled_auto_artwork_ids'])
-                : $current['disabled_auto_artwork_ids'];
+                : $profile['disabled_auto_artwork_ids'];
             $sourcedWeights = array_key_exists('sourced_weights', $input)
                 ? $this->validatedSourcedWeights($input['sourced_weights'])
-                : $current['sourced_weights'];
-            $displayStrategy = $this->requestedDisplayStrategy($input, $current['display_strategy']);
+                : $profile['sourced_weights'];
+            $displayStrategy = $this->requestedDisplayStrategy($input, $profile['display_strategy']);
             $sourceRule = $this->enum(
-                $input['source_rule'] ?? $current['source_rule'],
+                $input['source_rule'] ?? $profile['source_rule'],
                 array_keys(self::SOURCE_RULES),
-                $current['source_rule'],
+                $profile['source_rule'],
             );
-            $groupSize = $this->validatedGroupSize($input['group_size'] ?? $current['group_size']);
-            $manualGroup = $current['manual_group'];
+            $groupSize = $this->validatedGroupSize($input['group_size'] ?? $profile['group_size']);
+            $manualGroup = array_key_exists('manual_group', $input)
+                ? $this->normalizeManualGroup($input['manual_group'])
+                : $profile['manual_group'];
+            $rotationInterval = $this->requestedRotationInterval($input, $profile['rotation_interval']);
+            $rotationStartedAt = $profile['rotation_started_at'];
 
-            if (array_key_exists('manual_group', $input)) {
-                $manualGroup = $this->normalizeManualGroup($input['manual_group']);
-            }
-
-            $rotationInterval = $this->requestedRotationInterval($input, $current['rotation_interval']);
-
-            $rotationStartedAt = $current['rotation_started_at'];
             $showDetails = (bool) ($input['show_details'] ?? $current['show_details']);
             $showGalleryLink = (bool) ($input['show_gallery_link'] ?? $current['show_gallery_link']);
             $showNavigation = (bool) ($input['show_navigation'] ?? $current['show_navigation']);
             $videoSoundEnabled = (bool) ($input['video_sound_enabled'] ?? $current['video_sound_enabled']);
             $enableViewer = (bool) ($input['enable_viewer'] ?? $current['enable_viewer']);
-            $manualSequenceChanged = $this->manualGroupKeys($manualGroup) !== $this->manualGroupKeys($current['manual_group']);
-            $intervalChanged = $rotationInterval !== $current['rotation_interval'];
-            $sourceChanged = $groupSource !== $current['group_source'];
-            $strategyChanged = $displayStrategy !== $current['display_strategy'];
+
+            $manualSequenceChanged = $this->manualGroupKeys($manualGroup) !== $this->manualGroupKeys($profile['manual_group']);
+            $intervalChanged = $rotationInterval !== $profile['rotation_interval'];
+            $strategyChanged = $displayStrategy !== $profile['display_strategy'];
             $automaticGroupDefinitionChanged = $groupSource !== 'manual'
-                && ($groupSize !== $current['group_size'] || $sourceRule !== $current['source_rule']
-                    || $disabledAutoIds !== $current['disabled_auto_artwork_ids']
-                    || $manualGroupEnabled !== $current['manual_group_enabled']);
-
+                && ($groupSize !== $profile['group_size'] || $sourceRule !== $profile['source_rule']
+                    || $disabledAutoIds !== $profile['disabled_auto_artwork_ids']
+                    || $manualGroupEnabled !== $profile['manual_group_enabled']);
             if ($displayStrategy === 'sequential'
-                && ($rotationStartedAt === null
-                    || $manualSequenceChanged
-                    || $intervalChanged
-                    || $sourceChanged
-                    || $strategyChanged
-                    || $automaticGroupDefinitionChanged)) {
+                && ($rotationStartedAt === null || $manualSequenceChanged || $intervalChanged
+                    || $strategyChanged || $automaticGroupDefinitionChanged)) {
                 $rotationStartedAt = CarbonImmutable::now('UTC')->toIso8601String();
-            }
-
-            if (
-                $fresh->template() === HomeTemplate::Artwork
-                && $groupSource === $current['group_source']
-                && $manualGroupEnabled === $current['manual_group_enabled']
-                && $disabledAutoIds === $current['disabled_auto_artwork_ids']
-                && $sourcedWeights === $current['sourced_weights']
-                && $displayStrategy === $current['display_strategy']
-                && $manualGroup === $current['manual_group']
-                && $rotationInterval === $current['rotation_interval']
-                && $rotationStartedAt === $current['rotation_started_at']
-                && $sourceRule === $current['source_rule']
-                && $groupSize === $current['group_size']
-                && $showDetails === $current['show_details']
-                && $showGalleryLink === $current['show_gallery_link']
-                && $showNavigation === $current['show_navigation']
-                && $videoSoundEnabled === $current['video_sound_enabled']
-                && $enableViewer === $current['enable_viewer']
-            ) {
-                return false;
             }
 
             $root = $fresh->configuration();
             $artwork = is_array($root[HomeTemplate::Artwork->value] ?? null)
-                ? $root[HomeTemplate::Artwork->value]
-                : [];
+                ? $root[HomeTemplate::Artwork->value] : [];
+            $profiles = $this->sourceProfiles($artwork);
+            $profiles[$groupSource]['display_strategy'] = $displayStrategy;
+            $profiles[$groupSource]['rotation_interval'] = $rotationInterval;
+            $profiles[$groupSource]['rotation_started_at'] = $rotationStartedAt;
+            if ($groupSource !== 'manual') {
+                $profiles[$groupSource]['source_rule'] = $sourceRule;
+                $profiles[$groupSource]['group_size'] = $groupSize;
+                $profiles[$groupSource]['sourced_weights'] = $sourcedWeights;
+            }
+            if ($groupSource !== 'automatic') {
+                $profiles[$groupSource]['manual_group'] = $manualGroup;
+            }
+            if ($groupSource === 'semi_automatic') {
+                $profiles[$groupSource]['manual_group_enabled'] = $manualGroupEnabled;
+                $profiles[$groupSource]['disabled_auto_artwork_ids'] = $disabledAutoIds;
+            }
 
             $artwork['show_details'] = $showDetails;
             $artwork['show_gallery_link'] = $showGalleryLink;
@@ -214,21 +240,17 @@ final class HomeHeroConfigurationService
             $artwork['video_sound_enabled'] = $videoSoundEnabled;
             $artwork['enable_viewer'] = $enableViewer;
             $artwork['group_source'] = $groupSource;
-            $artwork['manual_group_enabled'] = $manualGroupEnabled;
-            $artwork['disabled_auto_artwork_ids'] = $disabledAutoIds;
-            $artwork['sourced_weights'] = $sourcedWeights;
-            $artwork['display_strategy'] = $displayStrategy;
-            $artwork['manual_group'] = $manualGroup;
-            $artwork['rotation_interval'] = $rotationInterval;
-            $artwork['rotation_started_at'] = $rotationStartedAt;
-
-            // Historical keys are read above but no longer written. There is
-            // exactly one authoritative group and display strategy.
-            unset($artwork['hero_mode'], $artwork['automatic_selection'], $artwork['fixed_artwork_id']);
-            $artwork['source_rule'] = $sourceRule;
-            unset($artwork['newest_by']);
-            $artwork['group_size'] = $groupSize;
-            unset($artwork['pool_rule'], $artwork['pool_year'], $artwork['manual_include_ids']);
+            $artwork['source_profiles'] = $profiles;
+            unset(
+                $artwork['manual_group'], $artwork['sourced_weights'],
+                $artwork['manual_group_enabled'], $artwork['disabled_auto_artwork_ids'],
+                $artwork['display_strategy'], $artwork['rotation_interval'],
+                $artwork['rotation_started_at'], $artwork['source_rule'],
+                $artwork['group_size'], $artwork['newest_by'],
+                $artwork['hero_mode'], $artwork['automatic_selection'],
+                $artwork['fixed_artwork_id'], $artwork['pool_rule'],
+                $artwork['pool_year'], $artwork['manual_include_ids'],
+            );
 
             $root[HomeTemplate::Artwork->value] = $artwork;
             $fresh->setAttribute('template', HomeTemplate::Artwork->value);

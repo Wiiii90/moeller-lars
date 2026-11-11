@@ -126,7 +126,7 @@
                                     @endphp
                                     @if ($heroGroupSource === 'manual' || ($heroGroupSource === 'semi_automatic' && $isManualCandidate) || $isAutomaticCandidate)
                                         <div class="home-hero-candidate__actions admin-toolbar">
-                                            @if ($heroGroupSource === 'manual')
+                                            @if ($heroGroupSource === 'manual' || ($heroGroupSource === 'semi_automatic' && $isManualCandidate))
                                                 <button class="admin-action admin-order-action" type="button" wire:click="moveHeroArtwork('{{ $row['id'] }}', 'up')" @disabled(! $row['can_move_up']) aria-label="Move {{ $row['title'] }} up">↑</button>
                                                 <button class="admin-action admin-order-action" type="button" wire:click="moveHeroArtwork('{{ $row['id'] }}', 'down')" @disabled(! $row['can_move_down']) aria-label="Move {{ $row['title'] }} down">↓</button>
                                             @endif
@@ -181,29 +181,18 @@
                 $visibleSourceIds = collect($sourceRows->items())->pluck('id')->map(fn ($id) => (int) $id)
                     ->filter(fn (int $id) => $id > 0 || ($id === 0 && $heroGroupSource === 'semi_automatic'))
                     ->values()->all();
-                $sourceFiltersActive = trim($sourceSearch) !== '' || $sourceStatusFilter !== 'any';
+                $sourceFiltersActive = trim($sourceSearch) !== '';
                 $sourceHasRecords = $sourceRows->total() > 0 || ($sourceFiltersActive
                     && \App\Models\ArtworkCategory::query()->whereHas('siteSection')->exists());
             @endphp
 
-            <x-admin.controls class="home-artwork-source-controls admin-data-controls--dashboard-responsive" :metric-grid="true" :search-span="2" aria-label="Gallery source controls">
+            <x-admin.controls class="home-artwork-source-controls admin-data-controls--dashboard-responsive" :metric-grid="true" :search-span="3" aria-label="Gallery source controls">
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>{{ __('Search') }}</span>
                         <x-admin.search-input model="sourceSearch" placeholder="Gallery or candidate" />
                     </label>
                 </x-slot:search>
-
-                <x-slot:filters>
-                    <label class="admin-data-field">
-                        <span>{{ __('Status') }}</span>
-                        <select wire:model.live="sourceStatusFilter">
-                            <option value="any">{{ __('Any') }}</option>
-                            <option value="published">{{ __('Published') }}</option>
-                            <option value="unpublished">{{ __('Unpublished') }}</option>
-                        </select>
-                    </label>
-                </x-slot:filters>
 
                 <x-slot:reset>
                     <div class="admin-data-control-group">
@@ -220,17 +209,20 @@
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">{{ __('Settings') }}</span>
                             </button>
-                            @if ($heroGroupSource !== 'automatic')
                             <button
                                 class="admin-action admin-action--with-icon"
                                 type="button"
-                                wire:click="mountAction('addCandidate')"
-                                title="Add an eligible image or video to the Manual group"
+                                @if ($heroGroupSource === 'automatic')
+                                    aria-disabled="true"
+                                    title="Add Candidate is available in Semi-Automatic or Manual, not Automatic."
+                                @else
+                                    wire:click="mountAction('addCandidate')"
+                                    title="Add an eligible image or video to Manual Sourced Artworks"
+                                @endif
                             >
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">{{ __('Add Candidate') }}</span>
                             </button>
-                            @endif
                             <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">{{ __('Preview') }}</span>
@@ -270,7 +262,6 @@
                     <colgroup>
                         <col class="admin-table__col-one-unit home-source-table__col-gallery">
                         <col class="home-source-table__col-candidates">
-                        <col class="admin-table__col-half-unit home-source-table__col-artworks admin-table__yield--compact">
                         <col class="home-source-table__col-actions">
                         <col class="admin-table__selection-col home-source-table__col-selection">
                     </colgroup>
@@ -278,7 +269,6 @@
                         <tr>
                             <th scope="col">{{ __('Gallery') }}</th>
                             <th scope="col" class="home-source-table__candidates">{{ __('Candidates') }}</th>
-                            <th scope="col" class="home-source-table__artworks admin-table__yield--compact">{{ __('Artworks') }}</th>
                             <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">{{ __('Actions') }}</span></th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
@@ -314,13 +304,7 @@
                                             {{ $gallery['name'] }}
                                         @endif
                                     </strong>
-                                    <small class="admin-responsive-meta">
-                                        @if ($gallery['standalone'])
-                                            {{ number_format($gallery['candidate_count']) }} Manual candidates
-                                        @else
-                                            {{ number_format($gallery['candidate_count']) }}/{{ number_format($gallery['artworks_count']) }} candidates
-                                        @endif
-                                    </small>
+                                    <small class="admin-responsive-meta">{{ number_format($gallery['candidate_count']) }} candidates</small>
                                 </td>
                                 <td class="home-source-table__candidates">
                                     <div
@@ -354,13 +338,6 @@
                                         @endforelse
                                     </div>
                                 </td>
-                                <td class="home-source-table__artworks admin-table__yield--compact">
-                                    @if ($gallery['standalone'])
-                                        —
-                                    @else
-                                        {{ number_format($gallery['candidate_count']) }}/{{ number_format($gallery['artworks_count']) }}
-                                    @endif
-                                </td>
                                 <td class="admin-table__actions">
                                     @if (! $gallery['standalone'] || $heroGroupSource === 'semi_automatic')
                                         <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-toolbar home-source-table__row-actions">
@@ -381,7 +358,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="admin-table__empty-cell" colspan="5">
+                                <td class="admin-table__empty-cell" colspan="4">
                                     @if ($sourceHasRecords)
                                         <x-admin.empty-state title="No matching sources" minimal>
                                             <x-slot:actions><button class="admin-action" type="button" wire:click="resetSourceFilters">{{ __('Clear filters') }}</button></x-slot:actions>
@@ -412,7 +389,9 @@
                 </footer>
             @endif
 
-            @if ($heroGroupSource !== 'automatic')
+            @if ($heroGroupSource === 'automatic')
+                <x-admin.add-row aria-disabled="true" title="Add Candidate is available in Semi-Automatic or Manual, not Automatic.">{{ __('Add Candidate') }}</x-admin.add-row>
+            @else
                 <x-admin.add-row wire:click="mountAction('addCandidate')">{{ __('Add Candidate') }}</x-admin.add-row>
             @endif
 
