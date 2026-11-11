@@ -456,7 +456,7 @@ See [Admin browser workflow](browser-review.md) for the direct/worker browser-re
 
 ### Gradient tables and stable Appearance Stage height
 
-The [Admin control contract](controls.md#public-appearance-controls-source-to-dev2ad31502ea4e) owns the shared ColorPicker, gradient-stop validation and table adapter; the [table contract](tables.md#general-appearance-color-stop-table) owns Add/Delete row presentation. [General Appearance Stage and Live Preview](responsive.md#general-appearance-stage-and-live-preview) owns stable, viewport-sized More Space geometry and the single iframe's same-viewport rendering/lifecycle. These rules apply equally to Background, Title, Menu, Page and Divider color; no local alternate table, state or measurement system is introduced.
+The [Admin control contract](controls.md#public-appearance-controls-source-to-dev2ad31502ea4e) owns the shared ColorPicker, gradient-stop validation and table adapter; the [table contract](tables.md#general-appearance-color-stop-table) owns Add/Delete row presentation. [General Appearance Stage and Live Preview](responsive.md#general-appearance-stage-and-live-preview) owns stable, capped More Space geometry and the single iframe's same-viewport rendering/lifecycle. These rules apply equally to Background, Title, Menu, Page and Divider color; no local alternate table, state or measurement system is introduced.
 
 ## 27. Administration language and regional display
 

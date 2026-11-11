@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 13 (active)  
-**Status:** General Stage and Inside Menu geometry corrected in source; embedded Desktop viewport matched to standalone browser tab; real browser acceptance outstanding.
+**Status:** Corrected over-tall More space Stage with a stable, capped height; embedded Desktop preview remains a scaled same-viewport overview, not a pixel-sized equivalent; browser acceptance outstanding.
 
 ## Ownership and accepted decisions
 - General → Appearance (Global, Title, Menu, Page and Legal), Regional Formats, Admin live Preview and their direct Public consumers.
@@ -36,6 +36,12 @@
 
 - Public Home's `HomeHeroResolver::randomResolution()` calls `random_int()` for each request in Random strategy. Standalone and embedded /preview therefore cannot guarantee an identical chosen artwork without changing the separately owned Home strategy. No Home code changed; this limitation is recorded rather than adding cross-request synchronisation.
 - The thin line visible in the supplied embedded screenshots is not proven to come from the Public `fine` divider: source says `border-bottom: 0` for that setting. Equal-viewport browser comparison and computed border/contour inspection are still required before marking the reported line resolved. The new browser regression test explicitly checks that state; it has not been executed.
+
+## Latest user feedback: More space too tall and preview limits
+- The previous `max(shared height, 100dvh)` forced General to consume the entire viewport and left an oversized empty area below the controls. Replaced it with `clamp(shared Stage height, 100dvh - 10rem, 54rem)`; field presence/Show-Hide still never changes outer height and the existing pane scrolls as necessary.
+- The embedded Desktop preview renders exactly one real `/preview` iframe at the logical parent window dimensions and scales the complete desktop view to fit the half-width Admin pane. At e.g. 1900px logical desktop width, shrinking to ~550px makes the text and artwork naturally tiny. A legible *full* desktop at the same time as full-width parity is physically impossible within the small pane; no new preview modes or duplicated renderer were introduced.
+- The faint extra line reported earlier appears intermittently; its computed origin is not browser-verified. No unproven CSS overlay was added. Separate Home Random Hero HTTP requests can choose different artwork.
+- Regression assertions updated for stable, below-viewport and <=54rem expanded sizing; **tests not executed**.
 
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.

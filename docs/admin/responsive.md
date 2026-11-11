@@ -140,8 +140,11 @@ a scoped `:has(.general-appearance-stage__panel)` rule. The panels occupy
 are inert, aria-hidden and out of layout flow; the active pane alone scrolls.
 The Stage's default height always uses the shared
 `--admin-visual-stage-height` token. **More space** deliberately switches
-to a stable full-browser-viewport height, never to content-derived maximum
-height. Show/Hide, dynamic gradient inputs, selection of another tab and
+to a bounded, stable Stage height: at most 54rem, at least the shared Stage
+height and no more than the available viewport height minus the Admin
+workspace reserve where that minimum permits. It never expands to the
+entire browser viewport or a content-derived maximum height. Show/Hide,
+dynamic gradient inputs, selection of another tab and
 asynchronous field morphs must not change the Stage height in either mode.
 Overflow stays in the ONE field scroller; no hidden-field duplicates, timers,
 observers or separately persisted size state are needed.

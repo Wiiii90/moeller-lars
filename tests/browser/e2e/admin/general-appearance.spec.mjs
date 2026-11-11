@@ -191,6 +191,12 @@ test('General More space never resizes on Show/Hide and embedded Preview matches
 
   await save(visible, '1');
   const expandedHeight = await height();
+  const bounds = await page.evaluate(() => ({
+    viewportHeight: window.innerHeight,
+    fontSize: Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
+  }));
+  expect(expandedHeight).toBeLessThan(bounds.viewportHeight);
+  expect(expandedHeight).toBeLessThanOrEqual(54 * bounds.fontSize + 1);
   const browserViewport = await page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }));
   const direct = await context.newPage();
   await direct.setViewportSize(browserViewport);

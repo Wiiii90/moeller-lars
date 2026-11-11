@@ -113,9 +113,9 @@
     display: contents !important;
 }
 
-/* All panels share a single grid cell. Only the active panel ever
- * contributes to the expanded track; inactive panels remain absolute.
- * Switching tabs recalculates intrinsic height through normal CSS layout. */
+/* All panels share a single grid cell. Only the active panel is in
+ * the layout flow; inactive panels never affect height or scrolling.
+ * Both compact and expanded Stage heights are independent of field count. */
 .general-appearance-stage__panel {
     grid-area: 1 / 1;
     position: absolute;
@@ -127,9 +127,8 @@
     pointer-events: none;
 }
 
-/* In the compact stage, only the selected pane contributes to scrolling.
- * Expanded mode keeps every pane in the same grid cell to size the stage by
- * the tallest one, without duplicate measurement markup or pixel heights. */
+/* In either size mode, only the selected pane contributes to scrolling.
+ * Filament may add/remove conditional fields without resizing the Stage. */
 .general-appearance-stage:not(.admin-visual-stage--expanded) .general-appearance-stage__panel:not(.is-active) {
     display: none !important;
 }
@@ -152,16 +151,17 @@
     overflow: hidden;
 }
 
-/* Expanded Stage has a stable viewport-sized geometry rather than a
- * content-derived max-height. Filament removes conditional fields from the
- * DOM on Show/Hide or mode changes: intrinsic sizing made the whole Stage
- * and the neighboring Preview jump on every autosave.
+/* More space is bounded, NOT an entire viewport-tall section. Reserve
+ * room for the Admin workspace and cap expansion at 54rem, which covers
+ * most of the full Title paint editor at normal font size. The shared
+ * Stage height remains the minimum on short screens.
  *
- * More space extends the same stage and the SAME scroll owner. If an editor
- * contains more fields than fit, only its own field pane scrolls; settings
- * never resize the Stage. No duplicated hidden fields or JS measurements. */
+ * Crucially, this value never depends on conditional Filament fields:
+ * Show/Hide, tab switches and autosaves cannot resize the Stage/Preview.
+ * Long editors use the existing single field scroller, not another
+ * scroll owner or hidden duplicate form. */
 .general-appearance-stage.admin-visual-stage--expanded {
-    height: max(var(--admin-visual-stage-height), 100dvh);
+    height: clamp(var(--admin-visual-stage-height), calc(100dvh - 10rem), 54rem);
     grid-template-rows: minmax(0, 1fr) !important;
 }
 
