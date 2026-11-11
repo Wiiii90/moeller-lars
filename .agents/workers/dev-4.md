@@ -37,5 +37,6 @@
 - Source-only correction. No local browser or narrow dialog tests performed through GitHub connector. Home is assigned to active Dev Worker 6; do not edit Home's private helper during the Gallery assignment.
 
 ## Next
-- Check the user's actual new Dimensions screenshot; avoid relitigating already proven local schema/history checks.
-- Prepare quick one-time Validation snapshot, explicit image deployment/migration route and short post-check **only when the user authorizes Validation rollout**. Never deploy automatically.
+- User to review Gallery Settings in refreshed local preview: two columns at medium/large widths, natural one-column reflow at narrow width; shared bulb behavior, toggle/select alignment, autocomplete and save/reopen. Adjust the actual ordering and retained settings only after the user's next decision.
+- Gallery's Sort once by artwork date stays in the header unchanged by request. Check the new full-width Dimensions layout if still needed; do not reopen the completed local migration/schema/history preflight.
+- Validation requires explicit deployment authorization and a short-lived database/media snapshot before the separately selected update/cutover operation. Do not deploy automatically.
