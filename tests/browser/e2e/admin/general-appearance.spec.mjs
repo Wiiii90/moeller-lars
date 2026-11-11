@@ -167,6 +167,124 @@ test('Inside Menu swaps title and navigation sides and stacks above them on phon
   }
 });
 
+test('General More space never resizes on Show/Hide and embedded Preview matches the standalone viewport', async ({ page, context }) => {
+  await signIn(page);
+  await page.setViewportSize({ width: 1900, height: 1000 });
+  await page.goto('/admin/general');
+
+  const stage = page.locator('.general-appearance-stage');
+  const iframeElement = stage.locator('.general-live-preview__device iframe');
+  const embedded = page.frameLocator('.general-live-preview__device iframe');
+  await stage.getByRole('button', { name: 'More space' }).click();
+  await stage.getByRole('button', { name: 'Title', exact: true }).click();
+  const visible = stage.locator('[data-appearance-panel="title"]')
+    .getByRole('combobox', { name: 'Title', exact: true });
+  const originalVisibility = await visible.inputValue();
+
+  const save = async (control, value) => {
+    if (await control.inputValue() === value) return;
+    const response = page.waitForResponse(r => new URL(r.url()).pathname.endsWith('/livewire/update'));
+    await control.selectOption(value);
+    expect((await response).ok()).toBe(true);
+  };
+  const height = () => stage.evaluate(el => el.getBoundingClientRect().height);
+
+  await save(visible, '1');
+  const expandedHeight = await height();
+  const browserViewport = await page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }));
+  const direct = await context.newPage();
+  await direct.setViewportSize(browserViewport);
+  try {
+    await expect.poll(() => iframeElement.evaluate(node => node.contentWindow?.innerWidth))
+      .toBe(browserViewport.width);
+    await expect.poll(() => iframeElement.evaluate(node => node.contentWindow?.innerHeight))
+      .toBe(browserViewport.height);
+
+    await save(visible, '0');
+    expect(Math.abs((await height()) - expandedHeight)).toBeLessThan(1);
+    await save(visible, '1');
+    expect(Math.abs((await height()) - expandedHeight)).toBeLessThan(1);
+
+    for (const tab of ['Global', 'Menu', 'Page', 'Title']) {
+      await stage.getByRole('button', { name: tab, exact: true }).click();
+      expect(Math.abs((await height()) - expandedHeight)).toBeLessThan(1);
+    }
+
+    await stage.getByRole('button', { name: 'Menu', exact: true }).click();
+    const divider = stage.locator('[data-appearance-panel="menu"]')
+      .getByRole('combobox', { name: 'Menu to page', exact: true });
+    const originalDivider = await divider.inputValue();
+    try {
+      await save(divider, 'menu');
+      await save(divider, 'fine');
+      await expect(embedded.locator('meta[data-public-layout]'))
+        .toHaveAttribute('data-public-layout-divider-mode', 'fine');
+      await direct.goto('/preview');
+      await expect(direct.locator('meta[data-public-layout]'))
+        .toHaveAttribute('data-public-layout-divider-mode', 'fine');
+
+      const geometry = doc => {
+        const header = doc.querySelector('.site-header');
+        const menu = doc.querySelector('.site-navigation');
+        const content = doc.querySelector('#content');
+        if (!header || !menu || !content) throw new Error('Incomplete public preview shell');
+        const menuRect = menu.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        return {
+          className: header.className,
+          dividerBorder: getComputedStyle(menu).borderBottomWidth,
+          headerDivider: getComputedStyle(header, '::after').content,
+          menuLeft: menuRect.left,
+          menuWidth: menuRect.width,
+          contentLeft: contentRect.left,
+          contentWidth: contentRect.width,
+        };
+      };
+      // Both windows load the same /preview controller and Public CSS. Match
+      // *logical iframe viewport*, not the scaled Admin device dimensions.
+      const directLayout = await direct.evaluate(() => {
+        const header = document.querySelector('.site-header');
+        const menu = document.querySelector('.site-navigation');
+        const content = document.querySelector('#content');
+        const m = menu.getBoundingClientRect(), c = content.getBoundingClientRect();
+        return {
+          className: header.className,
+          dividerBorder: getComputedStyle(menu).borderBottomWidth,
+          headerDivider: getComputedStyle(header, '::after').content,
+          menuLeft: m.left, menuWidth: m.width,
+          contentLeft: c.left, contentWidth: c.width,
+        };
+      });
+      const frameLayout = await embedded.locator('body.public-site').evaluate(body => {
+        const header = body.querySelector('.site-header');
+        const menu = body.querySelector('.site-navigation');
+        const content = body.querySelector('#content');
+        const m = menu.getBoundingClientRect(), c = content.getBoundingClientRect();
+        return {
+          className: header.className,
+          dividerBorder: getComputedStyle(menu).borderBottomWidth,
+          headerDivider: getComputedStyle(header, '::after').content,
+          menuLeft: m.left, menuWidth: m.width,
+          contentLeft: c.left, contentWidth: c.width,
+        };
+      });
+      expect(frameLayout.className).toBe(directLayout.className);
+      expect(frameLayout.dividerBorder).toBe('0px');
+      expect(directLayout.dividerBorder).toBe('0px');
+      expect(frameLayout.headerDivider).toBe(directLayout.headerDivider);
+      for (const field of ['menuLeft', 'menuWidth', 'contentLeft', 'contentWidth']) {
+        expect(Math.abs(frameLayout[field] - directLayout[field])).toBeLessThan(2);
+      }
+      expect(Math.abs((await height()) - expandedHeight)).toBeLessThan(1);
+    } finally {
+      await save(divider, originalDivider);
+    }
+  } finally {
+    await save(visible, originalVisibility);
+    await direct.close();
+  }
+});
+
 test('General Site icon retains searchable Storage dropdown outside the clipped field pane', async ({ page }) => {
   await signIn(page);
   await page.setViewportSize({ width: 1900, height: 1000 });

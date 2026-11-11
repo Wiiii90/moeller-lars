@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 13 (active)  
-**Status:** General Stage stability and Public/embedded Preview parity corrections in progress; browser acceptance outstanding.
+**Status:** General Stage and Inside Menu geometry corrected in source; embedded Desktop viewport matched to standalone browser tab; real browser acceptance outstanding.
 
 ## Ownership and accepted decisions
 - General → Appearance (Global, Title, Menu, Page and Legal), Regional Formats, Admin live Preview and their direct Public consumers.
@@ -30,6 +30,9 @@
 ## Current browser findings (2026-11-11)
 - User reports More space Stage/Preview height jumping on Title Show/Hide. Cause in General CSS: expanded height was tied to live Filament conditional form geometry. Replaced max-content expanded sizing with a stable full-viewport-sized stage; retained the existing single scroll owner for forms that exceed it. Removed the matching obsolete responsive size overrides.
 - Public Menu fix: shared --public-content-inset previously resolved 100% differently in grid-track vs padding contexts and used the viewport even when the authored shell was capped. It is now a single viewport/shell-derived length shared by Page and Menu; visible Inside title and navigation stay inside this reading inset, reserve cyclic arrows' 44px rails, and JS calculates stacking against the stable inner reading width. Hidden Title retains its established full-width navigation. The standalone /preview and embedded iframe use the same route but embedded Desktop historically used a fixed 1280px viewport, hence responsive differences at unequal widths. The iframe now uses the current parent browser viewport width/height as its logical desktop viewport and only scales pixels into the Admin pane. Desktop tabs opened in the same browser window should therefore use the same responsive breakpoints; mobile remains the explicit 390x844 device preset. At unequal standalone browser sizes, pixel-identical previews remain impossible. No second renderer was added.
+
+- Updated existing General browser regression coverage for invariant More space height through Title Show/Hide and tab switching, same-viewport iframe/direct layout bounds, and a genuinely absent Menu divider at No divider. The tests are not executed.
+- Updated the canonical Admin responsive/Stage and Public reading-width contracts, and added explicit Stage/iframe parity checks to the existing Dev skill. No separate preview renderer or hidden form copy.
 
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
