@@ -2,7 +2,7 @@
 
 **Lease:** 8  
 **Branch:** dev  
-**State:** Active. Both historical checkpoints passed local read-only preflight; shared Dimensions layout corrected in source, final browser review pending.
+**State:** Active. Gallery Settings canonical two-column schema and shared bulb committed; browser review pending.
 
 ## Ownership / restrictions
 - Gallery/Artwork Admin form, metadata, sorting, Materials and public Artwork presentation. Bounded historical publication read-time projection required for Artwork date migration. Respect Worker 1's Exhibition work and Worker 2's Media/Storage lifecycle.
@@ -30,6 +30,11 @@
 - If migration acceptance needs more than the existing two read-only results, an explicitly chosen local Stage can be exercised on the **already isolated local environment**, understanding that it replaces Working and can affect local media. Do not require an extra clone/backup without a real reason; this is not automatically a condition for routine UI completion.
 - Confirm Artwork forms, sorting and public portrait/landscape fit in browser when user provides concrete feedback. Testing worker owns migration/restore and responsive regression tests; Docs worker owns durable accepted documentation.
 - Deferred/out-of-scope: stale multi-admin form concurrency; old orphan Artwork slots and historical extra-media metadata; Worker 2's media cleanup/deletion; Worker 1's Exhibition date migration.
+
+## Gallery Settings canonical dialog (2026-11-11)
+- `GalleryWorkspaceUploadSettings::gallerySettingsAction` uses the same responsive two-column `Grid::make()->columns(['md' => 2])` contract as Home Settings; only Gallery title spans the complete row. Removed full-row spans from the other fourteen fields and increased modal to the shared Large editorial width so two-column controls fit.
+- Every field uses `AdminControl` factory; obsolete raw Filament imports removed. The former `hintIcon('heroicon-o-light-bulb')` is retired. Real `AdminHelp` bulb appears with Artwork order and auto-publish labels; auto-publish explanation is preserved in the central help popup instead of a separate full-width helper paragraph. `AdminHelp::label` is the common owner, not a Gallery-only icon/popover. Existing values, ordering, fields and sort-once header action remain unchanged.
+- Source-only correction. No local browser or narrow dialog tests performed through GitHub connector. Home is assigned to active Dev Worker 6; do not edit Home's private helper during the Gallery assignment.
 
 ## Next
 - Check the user's actual new Dimensions screenshot; avoid relitigating already proven local schema/history checks.

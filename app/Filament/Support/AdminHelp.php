@@ -13,4 +13,13 @@ final class AdminHelp
             'text' => $text,
         ])->render());
     }
+
+    public static function label(string $text, string $helpLabel, string $description): HtmlString
+    {
+        return new HtmlString(
+            '<span class="admin-form-label-with-help">'.e($text)
+            .self::make($helpLabel, $description)->toHtml()
+            .'</span>',
+        );
+    }
 }

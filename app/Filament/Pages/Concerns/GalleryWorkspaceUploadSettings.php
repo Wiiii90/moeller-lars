@@ -8,13 +8,11 @@ use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\GalleryPresentation;
 use App\Filament\Support\Controls\AdminControl;
+use App\Filament\Support\AdminHelp;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\ArtworkCategory;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
@@ -48,37 +46,38 @@ trait GalleryWorkspaceUploadSettings
                 ];
             })
             ->schema([
+                // Home and Gallery Settings share a responsive two-column form.
+                // Only the Gallery title deliberately spans the whole row.
                 Grid::make()
                     ->columns(['md' => 2])
                     ->schema([
-                        TextInput::make('name')->label('Gallery title')->required()->maxLength(160)->columnSpanFull(),
-                        Toggle::make('show_on_home')->label('Eligible for homepage presentation')->columnSpanFull(),
-                        Select::make('sort_mode')
-                            ->label('Artwork order')
-                            ->hintIcon('heroicon-o-light-bulb', tooltip: 'Manual: drag or edit positions; new artworks appear first. Newest artwork date: the Gallery always displays works by date instead of manual position. To sort the manual positions only once, save Manual first and use Sort once by artwork date below.')
+                        AdminControl::text('name', 'Gallery title')
+                            ->required()
+                            ->maxLength(160)
+                            ->columnSpanFull(),
+                        AdminControl::toggle('show_on_home', 'Eligible for homepage presentation'),
+                        AdminControl::select('sort_mode')
+                            ->label(AdminHelp::label(
+                                'Artwork order',
+                                'Gallery artwork ordering',
+                                'Manual: drag or edit positions; new artworks appear first. Newest artwork date: the Gallery always displays works by date instead of manual position. To sort manual positions only once, save Manual first and use Sort once by artwork date.',
+                            ))
                             ->options(GalleryPresentation::SORT_OPTIONS)
                             ->default(GalleryPresentation::SORT_MANUAL)
-                            ->required()
-                            ->columnSpanFull(),
-                        Toggle::make('show_artwork_information')
-                            ->label('Show Artwork information below each work')
-                            ->columnSpanFull(),
-                        Toggle::make('show_media_credits')
-                            ->label('Show authored Media File credits')
-                            ->columnSpanFull(),
-                        Toggle::make('show_media_copyright')
-                            ->label('Show configured copyright notices')
-                            ->columnSpanFull(),
-                        Select::make('caption_layout')
-                            ->label('Caption arrangement')
+                            ->required(),
+                        AdminControl::toggle('show_artwork_information', 'Show Artwork information below each work'),
+                        AdminControl::toggle('show_media_credits', 'Show authored Media File credits'),
+                        AdminControl::toggle('show_media_copyright', 'Show configured copyright notices'),
+                        AdminControl::select('caption_layout', 'Caption arrangement')
                             ->options(GalleryPresentation::CAPTION_LAYOUTS)
-                            ->required()
-                            ->columnSpanFull(),
-                        Toggle::make('video_sound_enabled')
-                            ->label('Allow visitors to unmute looping Gallery videos')
-                            ->columnSpanFull(),
-                        AdminControl::toggle('auto_publish_new_artworks', 'Auto-publish new Artworks')
-                            ->helperText('Only available media with suitable ALT text and a published Gallery can be published. If the checks fail, creation is rejected without keeping a partial draft.')
+                            ->required(),
+                        AdminControl::toggle('video_sound_enabled', 'Allow visitors to unmute looping Gallery videos'),
+                        AdminControl::toggle('auto_publish_new_artworks')
+                            ->label(AdminHelp::label(
+                                'Auto-publish new Artworks',
+                                'Automatic Artwork publishing',
+                                'Only available media with suitable ALT text and a published Gallery can be published. If the checks fail, creation is rejected without keeping a partial draft.',
+                            ))
                             ->live()
                             ->afterStateUpdated(static function (mixed $state): void {
                                 if (app(AdminAutoPublishPreferences::class)->update(
@@ -86,40 +85,27 @@ trait GalleryWorkspaceUploadSettings
                                 )) {
                                     app(AdminNotifier::class)->notification(title: 'Gallery settings saved', status: 'success');
                                 }
-                            })
-                            ->columnSpanFull(),
-                        Toggle::make('landscape_detail_enabled')
-                            ->label('Expand landscape Artwork pages')
-                            ->columnSpanFull(),
-                        Toggle::make('portrait_detail_enabled')
-                            ->label('Expand portrait Artwork pages')
-                            ->columnSpanFull(),
-                        Select::make('artwork_page_surface_mode')
-                            ->label('Artwork page surface')
+                            }),
+                        AdminControl::toggle('landscape_detail_enabled', 'Expand landscape Artwork pages'),
+                        AdminControl::toggle('portrait_detail_enabled', 'Expand portrait Artwork pages'),
+                        AdminControl::select('artwork_page_surface_mode', 'Artwork page surface')
                             ->options(GalleryPresentation::ARTWORK_SURFACE_OPTIONS)
                             ->default(GalleryPresentation::ARTWORK_SURFACE_INHERIT)
-                            ->required()
-                            ->columnSpanFull(),
-                        Toggle::make('artwork_menu_surface_wide')
-                            ->label('Match Menu surface to Artwork page width')
-                            ->default(false)
-                            ->columnSpanFull(),
-                        Select::make('artwork_divider')
-                            ->label('Between Artworks')
+                            ->required(),
+                        AdminControl::toggle('artwork_menu_surface_wide', 'Match Menu surface to Artwork page width')
+                            ->default(false),
+                        AdminControl::select('artwork_divider', 'Between Artworks')
                             ->options(GalleryPresentation::DIVIDER_OPTIONS)
                             ->default(GalleryPresentation::DIVIDER_NONE)
-                            ->required()
-                            ->columnSpanFull(),
-                        Select::make('edge_navigation_mode')
-                            ->label('Artwork navigation at sequence ends')
+                            ->required(),
+                        AdminControl::select('edge_navigation_mode', 'Artwork navigation at sequence ends')
                             ->options([
                                 GalleryPresentation::EDGE_DISABLED => 'Disabled arrows (default)',
                                 GalleryPresentation::EDGE_HIDDEN => 'Hide unavailable arrows',
                                 GalleryPresentation::EDGE_CYCLIC => 'Cyclic (last ↔ first)',
                             ])
                             ->default(GalleryPresentation::EDGE_DISABLED)
-                            ->required()
-                            ->columnSpanFull(),
+                            ->required(),
                     ]),
             ])
             ->modalHeading('Gallery settings')
@@ -202,7 +188,7 @@ trait GalleryWorkspaceUploadSettings
                 }
             });
 
-        return AdminDialog::edit($action, AdminDialogSize::Default);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function materialPresetsAction(): Action
