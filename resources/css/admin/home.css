@@ -62,20 +62,12 @@
 
 .home-hero-surface__visual-actions {
     position: absolute;
-    z-index: 2;
-    top: .5rem;
-    right: .5rem;
+    z-index: 6;
+    top: .7rem;
+    right: .7rem;
     display: flex;
-    gap: .2rem;
-}
-
-.home-hero-surface__visual-actions .admin-action {
-    min-width: 0;
-    width: var(--admin-control-height);
-    height: var(--admin-control-height);
-    justify-content: center;
-    padding: 0;
-    background: var(--admin-surface);
+    gap: .18rem;
+    align-items: center;
 }
 
 .home-hero-surface__visual > span,
@@ -87,12 +79,26 @@
 }
 
 .home-hero-rail {
+    position: relative;
     display: flex;
     min-width: 0;
     flex-direction: column;
     overflow: hidden;
     border: 1px solid var(--admin-line);
     background: var(--admin-surface);
+}
+
+/* The final rule stays fixed while the candidate list itself scrolls. */
+.home-hero-rail::after {
+    position: absolute;
+    z-index: 2;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 1px;
+    background: var(--admin-line-strong);
+    content: "";
+    pointer-events: none;
 }
 
 .home-hero-rail__summary {
@@ -116,10 +122,20 @@
 }
 
 .home-hero-rail__simulation {
-    margin: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .12rem;
+    min-width: 0;
     color: var(--admin-muted);
     font-size: .61rem;
     line-height: 1.4;
+}
+
+.home-hero-rail__simulation > p {
+    display: block;
+    margin: 0;
+    min-width: 0;
+    text-align: left;
 }
 
 .home-hero-candidate__heading {
@@ -147,7 +163,6 @@
     box-sizing: border-box;
     min-height: 0;
     flex: 1 1 auto;
-    border-bottom: 1px solid var(--admin-line-strong);
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: none;

@@ -357,6 +357,7 @@ final class HomePresentation extends Page
         return AdminDialog::command(
             Action::make('addCandidate')
                 ->label('Add Candidate')
+                ->visible(fn (): bool => $this->heroGroupSource !== 'automatic')
                 ->schema([
                     MediaAssetSelect::makeId(
                         'media_asset_id',

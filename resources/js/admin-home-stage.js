@@ -37,13 +37,6 @@ export function adminHomeHeroStage(config = {}) {
         if (monthAt(monthIndex) > sampledAt) monthIndex -= 1;
     }
     const nextAt = config.nextRotationAt ? new Date(config.nextRotationAt) : null;
-    const dateFormat = new Intl.DateTimeFormat('en-GB', {
-        day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
-    });
-    const dateTimeFormat = new Intl.DateTimeFormat('en-GB', {
-        day: 'numeric', month: 'short', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC',
-    });
 
     return {
         rows,
@@ -55,16 +48,6 @@ export function adminHomeHeroStage(config = {}) {
         monthIndex,
         get activeId() { return this.rows[this.activeIndex]?.id ?? null; },
         get active() { return this.rows[this.activeIndex] ?? null; },
-        get previewLabel() {
-            if (this.strategy === 'ordered') return 'Top Only';
-            if (this.strategy === 'random') return 'Random';
-            return 'Sequential (' + dateFormat.format(this.simulatedAt) + ')';
-        },
-        get nextRotationLabel() {
-            if (this.strategy === 'ordered') return 'No rotation';
-            if (this.strategy === 'random') return 'Every 10 seconds (Stage simulation)';
-            return this.nextAt ? dateTimeFormat.format(this.nextAt) + ' UTC' : 'Not scheduled';
-        },
         init() {
             if (this.rows.length === 0 || this.strategy === 'ordered') return;
             this.timer = window.setInterval(

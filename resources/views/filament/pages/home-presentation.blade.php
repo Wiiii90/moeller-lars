@@ -12,6 +12,7 @@
 
         @if ($template === 'artwork')
             @php
+                $simulationAt = now('UTC');
                 $manualHeroKeys = array_map(\App\Domain\Content\HomeHeroConfigurationService::memberKey(...), $manualHeroGroup);
                 $simulationCandidates = collect($heroRailRows)
                     ->filter(static fn (array $row): bool => $row['eligible'] ?? true)
@@ -40,25 +41,25 @@
                     rotationUnit: @js($rotationIntervalUnit),
                     rotationStartedAt: @js($rotationStartedAt),
                     nextRotationAt: @js($nextRotationAt),
-                    sampledAt: @js(now('UTC')->toIso8601String()),
+                    sampledAt: @js($simulationAt->toIso8601String()),
                 })"
             >
                 <div class="home-hero-surface__visual admin-visual-stage__pane">
-                    <div class="home-hero-surface__visual-actions admin-toolbar" x-show="activeId !== null" x-cloak>
-                        <button class="admin-action admin-action--with-icon" type="button"
+                    <div class="home-hero-surface__visual-actions" aria-label="Actions for simulated Hero Artwork" x-show="activeId !== null" x-cloak>
+                        <button class="admin-icon-action admin-icon-action--surface" type="button"
                             x-show="active?.is_manual" x-on:click="$wire.setManualHeroCandidateEnabled(activeId, false)"
                             title="Disable current Manual candidate" aria-label="Disable current Manual candidate">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" class="admin-action__icon" />
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" />
                         </button>
-                        <button class="admin-action admin-action--with-icon" type="button"
+                        <button class="admin-icon-action admin-icon-action--surface" type="button"
                             x-show="active?.is_automatic" x-on:click="$wire.setAutomaticHeroCandidateEnabled(Number(activeId.split(':')[1]), false)"
                             title="Disable current automatic candidate" aria-label="Disable current automatic candidate">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" class="admin-action__icon" />
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" />
                         </button>
-                        <button class="admin-action admin-action--with-icon is-danger" type="button"
+                        <button class="admin-icon-action admin-icon-action--surface is-danger" type="button"
                             x-show="active?.is_manual" x-on:click="$wire.removeHeroCandidate(activeId)"
                             title="Remove current Manual candidate" aria-label="Remove current Manual candidate">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
                         </button>
                     </div>
                     <img
@@ -75,10 +76,26 @@
                 <div class="home-hero-rail admin-visual-stage__pane" aria-label="Hero group">
                     <header class="home-hero-rail__summary">
                         <h2 class="admin-section__kicker home-hero-rail__title">{{ __('Hero Artwork') }}</h2>
-                        <p class="home-hero-rail__simulation" aria-live="off">
-                            <span>{{ __('Preview:') }} <span x-text="previewLabel">{{ $heroDisplayStrategy === 'ordered' ? __('Top Only') : ucfirst($heroDisplayStrategy) }}</span></span>
-                            <span>{{ __('Next Rotation:') }} <span x-text="nextRotationLabel">{{ $heroDisplayStrategy === 'ordered' ? __('No rotation') : ($heroDisplayStrategy === 'random' ? __('Every 10 seconds (Stage simulation)') : __('Not scheduled')) }}</span></span>
-                        </p>
+                        <div class="home-hero-rail__simulation" aria-live="off">
+                            <p>
+                                <span>{{ __('Preview:') }}</span>
+                                @if ($heroDisplayStrategy === 'sequential')
+                                    {{ __('Sequential') }} (<span x-text="simulatedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })">{{ $simulationAt->format('j M Y') }}</span>)
+                                @else
+                                    {{ $heroDisplayStrategy === 'random' ? __('Random') : __('Top Only') }}
+                                @endif
+                            </p>
+                            <p>
+                                <span>{{ __('Next Rotation:') }}</span>
+                                @if ($heroDisplayStrategy === 'sequential')
+                                    <span x-text="nextAt ? nextAt.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }) + ' UTC' : 'Not scheduled'">{{ $nextRotationAt ? \Carbon\CarbonImmutable::parse($nextRotationAt)->setTimezone('UTC')->format('j M Y, H:i').' UTC' : __('Not scheduled') }}</span>
+                                @elseif ($heroDisplayStrategy === 'random')
+                                    {{ __('Every 10 seconds (Stage simulation)') }}
+                                @else
+                                    {{ __('No rotation') }}
+                                @endif
+                            </p>
+                        </div>
                         <div class="home-hero-stage-settings {{ $heroGroupSource === 'manual' ? 'home-hero-stage-settings--manual' : '' }}" aria-label="Hero Stage quick settings">
                             <label class="admin-data-field">
                                 <span>{{ __('Source') }}</span>
@@ -267,20 +284,17 @@
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">{{ __('Settings') }}</span>
                             </button>
-                            <button
-                                class="admin-action admin-action--with-icon"
-                                type="button"
-                                @if ($heroGroupSource === 'automatic')
-                                    aria-disabled="true"
-                                    title="Add Candidate is available in Semi-Automatic or Manual, not Automatic."
-                                @else
+                            @if ($heroGroupSource !== 'automatic')
+                                <button
+                                    class="admin-action admin-action--with-icon"
+                                    type="button"
                                     wire:click="mountAction('addCandidate')"
                                     title="Add an eligible image or video to Manual Sourced Artworks"
-                                @endif
-                            >
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">{{ __('Add Candidate') }}</span>
-                            </button>
+                                >
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">{{ __('Add Candidate') }}</span>
+                                </button>
+                            @endif
                             <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">{{ __('Preview') }}</span>
@@ -447,9 +461,7 @@
                 </footer>
             @endif
 
-            @if ($heroGroupSource === 'automatic')
-                <x-admin.add-row aria-disabled="true" title="Add Candidate is available in Semi-Automatic or Manual, not Automatic.">{{ __('Add Candidate') }}</x-admin.add-row>
-            @else
+            @if ($heroGroupSource !== 'automatic')
                 <x-admin.add-row wire:click="mountAction('addCandidate')">{{ __('Add Candidate') }}</x-admin.add-row>
             @endif
 

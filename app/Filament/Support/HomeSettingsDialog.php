@@ -76,7 +76,7 @@ final class HomeSettingsDialog
 
         return [
             Grid::make()
-                ->columns(['md' => 2])
+                ->columns(['default' => 1, 'lg' => 2])
                 ->schema([
                     Select::make('template')
                         ->label(self::helpLabel(
@@ -87,7 +87,7 @@ final class HomeSettingsDialog
                         ->options(array_map('__', HomeTemplate::options()))
                         ->required()
                         ->live()
-                        ->columnSpan(fn (callable $get): int => $get('template') === HomeTemplate::UnderConstruction->value ? 1 : 2),
+                        ->columnSpanFull(),
                     AdminControl::toggle('public_site_gate', 'Temporarily gate the public site')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
                     ...$this->routingDialog->schema(),
