@@ -6,6 +6,7 @@ use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\Controls\AdminControl;
+use Illuminate\Support\HtmlString;
 use App\Models\PublicContentSetting;
 use Closure;
 use Filament\Schemas\Components\Grid;
@@ -55,7 +56,16 @@ final class PagesSettingsDialog
             $nesting->afterStateUpdated($onToggleUpdated);
         }
 
-        $hoverPreview = AdminControl::toggle('navigation_hover_preview', 'Preview child pages on hover')->live();
+        $hoverPreview = AdminControl::toggle('navigation_hover_preview')
+            ->label(new HtmlString(
+                '<span class="admin-form-label-with-help">'.e(__('Preview child pages on hover'))
+                .AdminHelp::make(
+                    __('About child page hover preview'),
+                    __('Mouse hover temporarily reveals child links. Click the parent to open its submenu; touch navigation is unchanged.'),
+                )->toHtml()
+                .'</span>',
+            ))
+            ->live();
         if ($onToggleUpdated !== null) {
             $hoverPreview->afterStateUpdated($onToggleUpdated);
         }
