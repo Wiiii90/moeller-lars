@@ -343,6 +343,17 @@
     --home-source-thumb-height: 2rem;
 }
 
+/* The Edit Group list is intentionally one compact row per candidate:
+ * image height matches the existing 1.9rem Admin position badge, with
+ * one elastic single-line identity instead of the source table's chance track. */
+.home-hero-group-table {
+    --home-source-thumb-height: 1.9rem;
+}
+
+.home-hero-group-table .home-source-table__candidate-inline {
+    grid-template-columns: var(--home-source-thumb-width) minmax(0, 1fr);
+}
+
 .home-source-candidates__toggle {
     display: flex;
     box-sizing: border-box;

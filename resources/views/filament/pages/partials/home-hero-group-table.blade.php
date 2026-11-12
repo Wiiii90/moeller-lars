@@ -1,4 +1,4 @@
-{{-- This is the same four-track editorial table used by Gallery Materials, not a Filament repeater. --}}
+{{-- Shared ranked Admin table; compact single-line identity keeps every row at the same height. --}}
 <x-admin.table class="admin-table--data admin-table--ranked home-hero-group-table" aria-label="Manual Sourced Artworks">
     <table class="admin-table--six-grid">
         <colgroup>
@@ -25,7 +25,7 @@
                             title="{{ __('Drag to reorder') }}"
                             aria-label="{{ __('Drag') }} {{ $row['title'] }} {{ __('to reorder') }}">⋮⋮</button>
                     </td>
-                    <td>
+                    <td class="admin-table__identity">
                         <div class="home-source-table__candidate-inline">
                             <span class="home-source-candidate__preview">
                                 @if ($row['thumbnail_url'])
@@ -34,10 +34,7 @@
                                     <span>—</span>
                                 @endif
                             </span>
-                            <div class="home-source-table__candidate-meta">
-                                <strong title="{{ $row['title'] }}">{{ $row['title'] }}</strong>
-                                <small>{{ implode(', ', array_filter([$row['gallery'], $row['date']])) ?: __('Storage') }}</small>
-                            </div>
+                            <strong title="{{ implode(', ', array_filter([$row['title'], $row['gallery'], $row['date']])) }}">{{ $row['title'] }}</strong>
                         </div>
                     </td>
                     <td class="admin-table__actions">

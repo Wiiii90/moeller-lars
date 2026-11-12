@@ -424,7 +424,9 @@
     }
 }
 
-@container admin-table (max-width: 64rem) {
+/* Four labeled actions fit the Large Edit dialog's inner content width.
+ * Compact only after the real table loses space for its elastic identity. */
+@container admin-table (max-width: 43rem) {
     .admin-table__col-actions-move-state-remove {
         width: var(--admin-row-actions-move-state-remove-compact-width);
     }
@@ -447,7 +449,9 @@
     .admin-row-actions--move-state-remove .admin-action__label {
         display: none !important;
     }
+}
 
+@container admin-table (max-width: 64rem) {
     .admin-row-actions--move-state-delete {
         --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
         --admin-row-actions-columns: repeat(5, 1.35rem);
