@@ -277,11 +277,11 @@
                                 <button
                                     class="admin-action admin-action--with-icon"
                                     type="button"
-                                    wire:click="mountAction('addCandidate')"
-                                    title="Add an eligible image or video to Manual Sourced Artworks"
+                                    wire:click="mountAction('editHeroGroup')"
+                                    title="Edit Manual Sourced Artworks"
                                 >
-                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">{{ __('Add Candidate') }}</span>
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">{{ __('Edit Group') }}</span>
                                 </button>
                             @endif
                             <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener">
@@ -373,7 +373,10 @@
                             >
                                 <td class="admin-table__identity">
                                     <strong>
-                                        @if ($gallery['workspace_url'])
+                                        @if ($manualSource)
+                                            <button class="home-source-table__gallery-link home-source-table__gallery-link--button"
+                                                type="button" wire:click="mountAction('editHeroGroup')">{{ $gallery['name'] }}</button>
+                                        @elseif ($gallery['workspace_url'])
                                             <a class="home-source-table__gallery-link" href="{{ $gallery['workspace_url'] }}" wire:navigate>{{ $gallery['name'] }}</a>
                                         @else
                                             {{ $gallery['name'] }}
@@ -512,10 +515,6 @@
                         <button class="admin-action" type="button" wire:click="goToSourcePage({{ $sourceRows->currentPage() + 1 }})" @disabled(! $sourceRows->hasMorePages())>{{ __('Next') }}</button>
                     </div>
                 </footer>
-            @endif
-
-            @if ($heroGroupSource !== 'automatic')
-                <x-admin.add-row wire:click="mountAction('addCandidate')">{{ __('Add Candidate') }}</x-admin.add-row>
             @endif
 
         @elseif (in_array($template, ['under_construction', 'custom'], true))

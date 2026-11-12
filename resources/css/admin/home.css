@@ -48,6 +48,15 @@
     text-decoration: none;
 }
 
+.home-source-table__gallery-link--button {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
 .home-source-table__gallery-link:is(:hover, :focus-visible) {
     color: var(--admin-accent-strong);
     text-decoration: underline;

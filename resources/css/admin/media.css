@@ -922,6 +922,24 @@
     font-size: .65rem;
 }
 
+/* Inline preview variant for tabular Media selections. It reuses the same
+ * canonical preview and metadata parts without the Storage picker card size. */
+.admin-media-choice--inline {
+    grid-template-columns: 3rem minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: .35rem;
+    align-items: center;
+}
+
+.admin-media-choice--inline .admin-media-choice__preview {
+    width: 3rem;
+    aspect-ratio: 4 / 3;
+}
+
+.admin-media-choice--inline .admin-media-choice__meta {
+    padding: 0;
+}
+
 /* Selected Media Files remain ordinary underline Selects, but keep a small
  * preview alongside a single-line filename. The popup above retains its
  * existing visual Storage thumbnail grid without a second picker control. */
