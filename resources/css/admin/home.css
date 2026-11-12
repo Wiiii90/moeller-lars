@@ -455,6 +455,9 @@
     display: grid;
     min-width: 0;
     gap: .1rem;
+    /* Two metadata lines fit inside the existing 2rem thumbnail track.
+     * Keep the first Gallery row's height and vertically centered title stable. */
+    line-height: 1.2;
 }
 
 .home-source-table__candidate-meta strong,
