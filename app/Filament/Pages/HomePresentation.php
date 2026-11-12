@@ -120,10 +120,6 @@ final class HomePresentation extends Page
     /** @var list<array{artwork_id?:int,media_asset_id?:int,weight:int,enabled:bool}> */
     public array $manualHeroGroup = [];
 
-    /** Only the original edit-dialog snapshot; candidate edits stay in Filament form state. */
-    #[Locked]
-    public ?array $editingHeroGroupBaseline = null;
-
     public int $rotationIntervalCount = 1;
 
     public string $rotationIntervalUnit = 'weeks';
@@ -365,57 +361,43 @@ final class HomePresentation extends Page
 
     public function editHeroGroupAction(): Action
     {
-        return AdminDialog::command(
+        return AdminDialog::edit(
             Action::make('editHeroGroup')
                 ->label('Edit Group')
                 ->visible(fn (): bool => $this->heroGroupSource !== 'automatic')
                 ->modalHeading('Edit Manual Sourced Artworks')
-                ->fillForm(function (): array {
-                    $current = app(HomeHeroConfigurationService::class)->configuration($this->settings()->fresh());
-                    if ($current['group_source'] === 'automatic') {
-                        throw ValidationException::withMessages([
-                            'manual_group' => 'Switch to Semi-Automatic or Manual before editing this group.',
-                        ]);
-                    }
-
-                    $this->editingHeroGroupBaseline = [
-                        'source' => $current['group_source'],
-                        'members' => $current['manual_group'],
-                    ];
-
-                    return [
-                        'pending_media_asset_id' => null,
-                        'manual_group' => $current['manual_group'],
-                    ];
-                })
+                ->fillForm(fn (): array => ['pending_media_asset_id' => null])
                 ->schema(fn (): array => app(HomeHeroGroupDialog::class)->schema())
-                ->action(function (array $data): void {
-                    $baseline = $this->editingHeroGroupBaseline;
-                    $draft = $data['manual_group'] ?? null;
-                    if (! is_array($baseline) || ! is_array($baseline['members'] ?? null)
-                        || ! is_string($baseline['source'] ?? null) || ! is_array($draft)) {
-                        throw ValidationException::withMessages([
-                            'manual_group' => 'The group draft is no longer valid. Reopen Edit Group.',
-                        ]);
-                    }
-
-                    $changed = app(HomeHeroConfigurationService::class)->commitManualGroup(
-                        $this->settings(),
-                        $baseline['source'],
-                        $baseline['members'],
-                        array_values($draft),
-                    );
-                    $this->editingHeroGroupBaseline = null;
-                    $this->reloadWorkspace();
-                    if ($changed) {
-                        app(AdminNotifier::class)->notification(
-                            title: 'Manual Hero group saved',
-                            status: 'success',
-                        );
-                    }
-                }),
-            'Save Group',
+                // The picker persists on change and row actions persist directly.
+                // The shared Edit adapter keeps the native modal mounted.
+                ->action(static function (): void {}),
             AdminDialogSize::Large,
+        );
+    }
+
+    /** Reuse the current Hero Stage projection rather than maintaining a second table dataset. */
+    public function manualHeroEditorRows(): array
+    {
+        return array_values(array_filter(
+            $this->heroRailRows,
+            static fn (array $row): bool => (bool) ($row['is_manual'] ?? false),
+        ));
+    }
+
+    /** The Storage picker commits through the same audited Hero owner as Stage actions. */
+    public function addHeroCandidateFromStorage(int $mediaAssetId): void
+    {
+        $changed = app(HomeHeroConfigurationService::class)->addCandidate(
+            $this->settings(), $mediaAssetId,
+        );
+        if (! $changed) {
+            return;
+        }
+
+        $this->reloadWorkspace();
+        app(AdminNotifier::class)->notification(
+            title: 'Hero candidate added',
+            status: 'success',
         );
     }
 

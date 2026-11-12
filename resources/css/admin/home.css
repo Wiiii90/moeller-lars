@@ -337,7 +337,8 @@
 
 /* One thumbnail frame is reused by the folded strip and the table rows.
  * Keep images small and consistently rectangular, without cropping art. */
-.home-source-table {
+.home-source-table,
+.home-hero-group-table {
     --home-source-thumb-width: 2.55rem;
     --home-source-thumb-height: 2rem;
 }

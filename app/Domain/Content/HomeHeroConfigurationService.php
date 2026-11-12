@@ -333,14 +333,8 @@ final class HomeHeroConfigurationService
         });
     }
 
-    /**
-     * Add a Storage asset only to a modal draft; no persistence or audit occurs
-     * until the full ordered Manual group is submitted.
-     *
-     * @param  list<array<string,mixed>>  $draft
-     * @return list<array{artwork_id?:int,media_asset_id?:int,weight:int,enabled:bool}>
-     */
-    public function appendDraftCandidate(array $draft, int $mediaAssetId): array
+    /** Add one eligible Storage member to the current source profile. */
+    public function addCandidate(HomePresentationSetting $settings, int $mediaAssetId): bool
     {
         $asset = $mediaAssetId > 0
             ? MediaAsset::query()->with('variants')->find($mediaAssetId)
@@ -351,10 +345,17 @@ final class HomeHeroConfigurationService
             ]);
         }
 
-        $group = $this->normalizeManualGroup(array_values($draft));
+        $current = $this->configuration($settings->fresh());
+        if ($current['group_source'] === 'automatic') {
+            throw ValidationException::withMessages([
+                'pending_media_asset_id' => 'Switch to Semi-Automatic or Manual before editing this group.',
+            ]);
+        }
+
+        $group = $current['manual_group'];
         if (count($group) >= self::MAX_GROUP_SIZE) {
             throw ValidationException::withMessages([
-                'manual_group' => 'The Hero group cannot exceed '.self::MAX_GROUP_SIZE.' manually selected candidates.',
+                'pending_media_asset_id' => 'The Hero group cannot exceed '.self::MAX_GROUP_SIZE.' manually selected candidates.',
             ]);
         }
         if (in_array('media:'.$mediaAssetId, $this->manualGroupKeys($group), true)) {
@@ -376,81 +377,7 @@ final class HomeHeroConfigurationService
         }
         $group[] = ['media_asset_id' => $mediaAssetId, 'weight' => $weight, 'enabled' => true];
 
-        return $this->normalizeManualGroup($group);
-    }
-
-    /**
-     * One checked commit for the complete draft, including reorder, enable,
-     * removal and additions. Reject stale editors rather than overwriting a
-     * different saved group or source mode.
-     *
-     * @param  list<array<string,mixed>>  $expected
-     * @param  list<array<string,mixed>>  $draft
-     */
-    public function commitManualGroup(
-        HomePresentationSetting $settings,
-        string $expectedSource,
-        array $expected,
-        array $draft,
-    ): bool {
-        return DB::transaction(function () use ($settings, $expectedSource, $expected, $draft): bool {
-            /** @var HomePresentationSetting $fresh */
-            $fresh = HomePresentationSetting::query()
-                ->whereKey($settings->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
-            $current = $this->configuration($fresh);
-            if ($fresh->getAttribute('template') !== HomeTemplate::Artwork->value
-                || $expectedSource === 'automatic' || $current['group_source'] !== $expectedSource
-                || $current['manual_group'] !== $expected) {
-                throw ValidationException::withMessages([
-                    'manual_group' => 'The Hero source or Manual group changed. Reopen Edit Group before saving.',
-                ]);
-            }
-
-            $members = $this->normalizeManualGroup(array_values($draft));
-            $existingKeys = $this->manualGroupKeys($expected);
-            foreach ($members as $member) {
-                if (in_array(self::memberKey($member), $existingKeys, true)) {
-                    continue;
-                }
-                if (! isset($member['media_asset_id'])) {
-                    throw ValidationException::withMessages([
-                        'manual_group' => 'New group members must be selected from Storage.',
-                    ]);
-                }
-
-                $asset = MediaAsset::query()->with('variants')->find($member['media_asset_id']);
-                if (! $asset instanceof MediaAsset || ! HomeHeroCandidate::mediaIsEligible($asset)) {
-                    throw ValidationException::withMessages([
-                        'manual_group' => 'A newly selected Media File is no longer eligible. Remove it and try again.',
-                    ]);
-                }
-            }
-
-            $beforeKeys = $this->manualGroupKeys($expected);
-            $afterKeys = $this->manualGroupKeys($members);
-            $beforeSorted = $beforeKeys;
-            $afterSorted = $afterKeys;
-            sort($beforeSorted);
-            sort($afterSorted);
-            $sameMembers = $beforeSorted === $afterSorted;
-            $expectedByKey = [];
-            foreach ($expected as $member) {
-                $expectedByKey[self::memberKey($member)] = $member;
-            }
-            $onlyReordered = $sameMembers && $beforeKeys !== $afterKeys;
-            foreach ($members as $member) {
-                if (($expectedByKey[self::memberKey($member)] ?? null) !== $member) {
-                    $onlyReordered = false;
-                    break;
-                }
-            }
-
-            $orderAudit = $onlyReordered ? ['before' => $beforeKeys, 'after' => $afterKeys] : null;
-
-            return $this->updateArtworkSettings($fresh, ['manual_group' => $members], $orderAudit);
-        });
+        return $this->updateArtworkSettings($settings, ['manual_group' => $group]);
     }
 
     public function removeCandidate(HomePresentationSetting $settings, string $key): bool
