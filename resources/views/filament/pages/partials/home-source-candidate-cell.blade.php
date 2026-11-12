@@ -22,13 +22,11 @@
     </div>
     <div class="home-source-table__candidate-chance">
         @if ($candidate && $heroDisplayStrategy === 'random' && ($candidate['eligible'] ?? false))
-            <label>
-                <input class="admin-form-control" type="number" min="0" max="100" step="0.01"
-                    value="{{ $candidate['percentage'] }}"
-                    wire:change="setHeroPercentage('{{ $candidate['id'] }}', $event.target.value)"
-                    aria-label="Random chance for {{ $candidate['title'] }}">
-                <span>%</span>
-            </label>
+            <x-admin.inline-percentage
+                :value="$candidate['percentage']"
+                :label="'Random chance for '.$candidate['title']"
+                wire:change="setHeroPercentage('{{ $candidate['id'] }}', $event.target.value)"
+            />
         @elseif ($candidate && $heroDisplayStrategy === 'random')
             <span>—</span>
         @endif

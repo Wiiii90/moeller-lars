@@ -283,25 +283,6 @@
     color: var(--admin-muted);
 }
 
-.home-hero-weight__input {
-    display: inline-flex;
-    width: 100%;
-    min-width: 0;
-    gap: .15rem;
-    align-items: center;
-    font-size: .6rem;
-}
-
-.home-hero-weight input {
-    box-sizing: border-box;
-    width: 3.5rem;
-    min-width: 0;
-    height: 1.8rem;
-    padding-inline: .2rem;
-    font-size: .67rem;
-    font-variant-numeric: tabular-nums;
-}
-
 .home-hero-weight__inactive {
     display: block;
     text-align: center;
@@ -485,21 +466,6 @@
     font-variant-numeric: tabular-nums;
 }
 
-.home-source-table__candidate-chance label {
-    display: inline-flex;
-    gap: .2rem;
-    align-items: center;
-}
-
-.home-source-table__candidate-chance input {
-    box-sizing: border-box;
-    width: 3.25rem;
-    min-width: 0;
-    height: 1.8rem;
-    padding-inline: .2rem;
-    font-size: var(--admin-font-size-table-compact);
-}
-
 /* Gallery rows always inherit the central table cell padding. Expanding
  * candidates may compact only the additional candidate rows, never the
  * first Gallery row: its title and actions must not jump vertically. */
@@ -514,9 +480,6 @@
 @container admin-table (max-width: 38rem) {
     .home-source-table__candidate-inline {
         gap: .25rem;
-    }
-    .home-source-table__candidate-chance input {
-        width: 2.7rem;
     }
 }
 

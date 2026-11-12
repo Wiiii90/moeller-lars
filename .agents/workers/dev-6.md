@@ -14,9 +14,9 @@
 
 ## Home source Gallery row first-candidate height (latest check)
 
-- The Random Chance number field is a native input using the shared `admin-form-control` CSS class and the canonical `setHeroPercentage` mutation handler, but it is not currently a reusable `AdminControl::number` Filament component. The Stage and expanded source table each render that native input because both bind row-specific Livewire actions; no replacement/wrapper was introduced in this correction.
+- Random Chance is now the **single reusable** `<x-admin.inline-percentage>` Blade/native control in `resources/views/components/admin/`. Stage and expanded Gallery candidate rows both use it and forward their existing row-specific Livewire `wire:change` to its one internal input. The component owns 0–100 range, 0.01 step, decimal input mode, accessible label and percentage suffix. Its visual owner is the established `admin-inline-input` contract with compact shared percent geometry in `task-surfaces.css`; obsolete Home-specific field markup and CSS were deleted. The shared Home `setHeroPercentage` domain mutation/validation remains unchanged; this is deliberately **not** a Filament `AdminControl::number` schema field because it is an inline Livewire table/Stage editor.
 - Gallery title moving slightly *down* after expansion is due to the first candidate's two metadata lines exceeding the collapsed 2rem thumbnail track, while shared table cells stay vertically middle-aligned. The Chance input is only 1.8rem tall and is not the height owner. Added only `line-height: 1.2` to existing Home candidate metadata owner to fit both text lines within the 2rem image track. No Gallery padding, row actions, percentages or shared CSS changed.
-- Browser visual check is still required. Avoid expanding this narrow layout fix into a new central form component without a broader and evidenced inline-number-control contract.
+- Browser visual check is still required for stable Gallery row height, Stage/table percentage baseline, compact widths, keyboard focus and no change in validation or persistence. No tests, CI or deployment were run.
 
 ## Home source Gallery row vertical rhythm (latest correction)
 

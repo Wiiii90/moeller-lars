@@ -387,6 +387,32 @@
     border-bottom-color: var(--admin-accent);
 }
 
+/* Native percentage fields in Stage/table editing reuse the same inline-input
+ * chrome and semantic change event. Percentage unit/width have one shared owner. */
+.admin-inline-percentage {
+    display: inline-flex;
+    box-sizing: border-box;
+    width: 4.15rem;
+    max-width: 100%;
+    min-width: 0;
+    gap: .18rem;
+    align-items: center;
+    color: var(--admin-muted);
+    font-size: var(--admin-font-size-table-compact);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.admin-inline-percentage > .admin-inline-percentage__input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+}
+
+.admin-inline-percentage > span {
+    flex: 0 0 auto;
+}
+
 .admin-status {
     display: inline-flex;
     max-width: 100%;

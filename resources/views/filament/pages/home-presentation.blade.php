@@ -169,19 +169,11 @@
 
                                     <div class="home-hero-weight">
                                         @if ($heroDisplayStrategy === 'random' && ($row['eligible'] ?? false))
-                                            <label class="home-hero-weight__input">
-                                                <input
-                                                    class="admin-form-control"
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    step="0.01"
-                                                    value="{{ $row['percentage'] }}"
-                                                    wire:change="setHeroPercentage('{{ $row['id'] }}', $event.target.value)"
-                                                    aria-label="Random percentage for {{ $row['title'] }}"
-                                                >
-                                                <span>%</span>
-                                            </label>
+                                            <x-admin.inline-percentage
+                                                :value="$row['percentage']"
+                                                :label="'Random chance for '.$row['title']"
+                                                wire:change="setHeroPercentage('{{ $row['id'] }}', $event.target.value)"
+                                            />
                                         @elseif ($heroDisplayStrategy === 'random')
                                             <span class="home-hero-weight__inactive">—</span>
                                         @endif
