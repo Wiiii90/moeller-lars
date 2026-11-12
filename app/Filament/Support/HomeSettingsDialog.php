@@ -4,6 +4,7 @@ namespace App\Filament\Support;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminAutoPublishPreferences;
+use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomePresentationResolver;
@@ -48,6 +49,13 @@ final class HomeSettingsDialog
             'show_navigation' => $hero['show_navigation'],
             'video_sound_enabled' => $hero['video_sound_enabled'],
             'enable_viewer' => $hero['enable_viewer'],
+            'landscape_detail_enabled' => $hero['landscape_detail_enabled'],
+            'portrait_detail_enabled' => $hero['portrait_detail_enabled'],
+            'artwork_page_surface_mode' => $hero['artwork_page_surface_mode'],
+            'artwork_menu_surface_wide' => $hero['artwork_menu_surface_wide'],
+            'show_media_credits' => $hero['show_media_credits'],
+            'show_media_copyright' => $hero['show_media_copyright'],
+            'caption_layout' => $hero['caption_layout'],
             'custom_image_viewer_enabled' => (bool) $configuration[HomeTemplate::Custom->value]['image_viewer_enabled'],
             'construction_image_viewer_enabled' => (bool) $configuration[HomeTemplate::UnderConstruction->value]['image_viewer_enabled'],
             'group_source' => $hero['group_source'],
@@ -175,6 +183,19 @@ final class HomeSettingsDialog
                     $this->heroDisplayToggle('show_details', 'Show artwork information', $persistHeroToggle),
                     $this->heroDisplayToggle('show_gallery_link', 'Show Gallery link for single Hero', $persistHeroToggle),
                     $this->heroDisplayToggle('show_navigation', 'Navigate Hero group', $persistHeroToggle),
+                    $this->heroDisplayToggle('show_media_credits', 'Show authored Media File credits', $persistHeroToggle),
+                    $this->heroDisplayToggle('show_media_copyright', 'Show configured copyright notices', $persistHeroToggle),
+                    AdminControl::select('caption_layout', 'Caption arrangement')
+                        ->options(GalleryPresentation::CAPTION_LAYOUTS)
+                        ->required()
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                    $this->heroDisplayToggle('landscape_detail_enabled', 'Expand landscape Hero artworks', $persistHeroToggle),
+                    $this->heroDisplayToggle('portrait_detail_enabled', 'Expand portrait Hero artworks', $persistHeroToggle),
+                    AdminControl::select('artwork_page_surface_mode', 'Artwork page surface')
+                        ->options(GalleryPresentation::ARTWORK_SURFACE_OPTIONS)
+                        ->required()
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                    $this->heroDisplayToggle('artwork_menu_surface_wide', 'Match Menu surface to Artwork page width', $persistHeroToggle),
                     $this->heroDisplayToggle('video_sound_enabled', 'Allow visitors to unmute looping Home videos', $persistHeroToggle),
                     PageHeadingFields::headingToggle($persistHeading, 'Home settings saved'),
                     $this->heroDisplayToggle('enable_viewer', PublicImageViewer::TOGGLE_LABEL, $persistHeroToggle),
@@ -222,6 +243,13 @@ final class HomeSettingsDialog
                 'show_navigation' => $data['show_navigation'] ?? $current['show_navigation'],
                 'video_sound_enabled' => $data['video_sound_enabled'] ?? $current['video_sound_enabled'],
                 'enable_viewer' => $data['enable_viewer'] ?? $current['enable_viewer'],
+                'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? $current['landscape_detail_enabled'],
+                'portrait_detail_enabled' => $data['portrait_detail_enabled'] ?? $current['portrait_detail_enabled'],
+                'artwork_page_surface_mode' => $data['artwork_page_surface_mode'] ?? $current['artwork_page_surface_mode'],
+                'artwork_menu_surface_wide' => $data['artwork_menu_surface_wide'] ?? $current['artwork_menu_surface_wide'],
+                'show_media_credits' => $data['show_media_credits'] ?? $current['show_media_credits'],
+                'show_media_copyright' => $data['show_media_copyright'] ?? $current['show_media_copyright'],
+                'caption_layout' => $data['caption_layout'] ?? $current['caption_layout'],
                 'group_source' => $groupSource,
             ];
             if ($groupSource === $current['group_source']) {

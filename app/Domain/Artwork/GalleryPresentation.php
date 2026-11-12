@@ -118,7 +118,13 @@ final class GalleryPresentation
 
     public static function artworkPageDividerOverride(ArtworkCategory $gallery): ?string
     {
-        return match (self::artworkPageSurfaceMode($gallery)) {
+        return self::artworkPageDividerForMode(self::artworkPageSurfaceMode($gallery));
+    }
+
+    /** Both Gallery Artwork detail and Home Hero use the same public surface grammar. */
+    public static function artworkPageDividerForMode(string $mode): ?string
+    {
+        return match ($mode) {
             self::ARTWORK_SURFACE_JOINED => 'fine',
             self::ARTWORK_SURFACE_SEPARATE => 'separate',
             default => null,

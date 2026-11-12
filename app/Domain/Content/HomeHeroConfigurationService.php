@@ -3,6 +3,7 @@
 namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Artwork\GalleryPresentation;
 use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use Carbon\CarbonImmutable;
@@ -54,7 +55,14 @@ final class HomeHeroConfigurationService
      *     show_gallery_link:bool,
      *     show_navigation:bool,
      *     video_sound_enabled:bool,
-     *     enable_viewer:bool
+     *     enable_viewer:bool,
+     *     landscape_detail_enabled:bool,
+     *     portrait_detail_enabled:bool,
+     *     artwork_page_surface_mode:string,
+     *     artwork_menu_surface_wide:bool,
+     *     show_media_credits:bool,
+     *     show_media_copyright:bool,
+     *     caption_layout:string
      * }
      */
     public function configuration(HomePresentationSetting $settings, ?string $mode = null): array
@@ -79,6 +87,21 @@ final class HomeHeroConfigurationService
             'show_navigation' => (bool) ($artwork['show_navigation'] ?? false),
             'video_sound_enabled' => (bool) ($artwork['video_sound_enabled'] ?? false),
             'enable_viewer' => (bool) ($artwork['enable_viewer'] ?? true),
+            'landscape_detail_enabled' => (bool) ($artwork['landscape_detail_enabled'] ?? false),
+            'portrait_detail_enabled' => (bool) ($artwork['portrait_detail_enabled'] ?? false),
+            'artwork_page_surface_mode' => $this->enum(
+                $artwork['artwork_page_surface_mode'] ?? null,
+                array_keys(GalleryPresentation::ARTWORK_SURFACE_OPTIONS),
+                GalleryPresentation::ARTWORK_SURFACE_INHERIT,
+            ),
+            'artwork_menu_surface_wide' => (bool) ($artwork['artwork_menu_surface_wide'] ?? false),
+            'show_media_credits' => (bool) ($artwork['show_media_credits'] ?? false),
+            'show_media_copyright' => (bool) ($artwork['show_media_copyright'] ?? false),
+            'caption_layout' => $this->enum(
+                $artwork['caption_layout'] ?? null,
+                array_keys(GalleryPresentation::CAPTION_LAYOUTS),
+                GalleryPresentation::CAPTION_RIGHTS_LEFT,
+            ),
         ];
     }
 
@@ -200,6 +223,21 @@ final class HomeHeroConfigurationService
             $showNavigation = (bool) ($input['show_navigation'] ?? $current['show_navigation']);
             $videoSoundEnabled = (bool) ($input['video_sound_enabled'] ?? $current['video_sound_enabled']);
             $enableViewer = (bool) ($input['enable_viewer'] ?? $current['enable_viewer']);
+            $expandLandscape = (bool) ($input['landscape_detail_enabled'] ?? $current['landscape_detail_enabled']);
+            $expandPortrait = (bool) ($input['portrait_detail_enabled'] ?? $current['portrait_detail_enabled']);
+            $pageSurfaceMode = $this->enum(
+                $input['artwork_page_surface_mode'] ?? $current['artwork_page_surface_mode'],
+                array_keys(GalleryPresentation::ARTWORK_SURFACE_OPTIONS),
+                $current['artwork_page_surface_mode'],
+            );
+            $wideArtworkMenu = (bool) ($input['artwork_menu_surface_wide'] ?? $current['artwork_menu_surface_wide']);
+            $showMediaCredits = (bool) ($input['show_media_credits'] ?? $current['show_media_credits']);
+            $showMediaCopyright = (bool) ($input['show_media_copyright'] ?? $current['show_media_copyright']);
+            $captionLayout = $this->enum(
+                $input['caption_layout'] ?? $current['caption_layout'],
+                array_keys(GalleryPresentation::CAPTION_LAYOUTS),
+                $current['caption_layout'],
+            );
 
             $manualSequenceChanged = $this->manualGroupKeys($manualGroup) !== $this->manualGroupKeys($profile['manual_group'])
                 || array_map(static fn (array $member): bool => $member['enabled'], $manualGroup)
@@ -241,6 +279,13 @@ final class HomeHeroConfigurationService
             $artwork['show_navigation'] = $showNavigation;
             $artwork['video_sound_enabled'] = $videoSoundEnabled;
             $artwork['enable_viewer'] = $enableViewer;
+            $artwork['landscape_detail_enabled'] = $expandLandscape;
+            $artwork['portrait_detail_enabled'] = $expandPortrait;
+            $artwork['artwork_page_surface_mode'] = $pageSurfaceMode;
+            $artwork['artwork_menu_surface_wide'] = $wideArtworkMenu;
+            $artwork['show_media_credits'] = $showMediaCredits;
+            $artwork['show_media_copyright'] = $showMediaCopyright;
+            $artwork['caption_layout'] = $captionLayout;
             $artwork['group_source'] = $groupSource;
             $artwork['source_profiles'] = $profiles;
             unset(

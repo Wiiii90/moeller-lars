@@ -46,8 +46,8 @@ trait GalleryWorkspaceUploadSettings
                 ];
             })
             ->schema([
-                // Home and Gallery Settings share a responsive two-column form.
-                // Only the Gallery title deliberately spans the whole row.
+                // The shared Gallery controls use two columns; the title spans the row.
+                // Home-only eligibility is edited exclusively in the Home workspace.
                 Grid::make()
                     ->columns(['md' => 2])
                     ->schema([

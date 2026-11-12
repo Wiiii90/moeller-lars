@@ -77,16 +77,15 @@
                     <header class="home-hero-rail__summary">
                         <h2 class="admin-section__kicker home-hero-rail__title">{{ __('Hero Artwork') }}</h2>
                         <div class="home-hero-rail__simulation" aria-live="off">
-                            <p>
-                                <span>{{ __('Preview:') }}</span>
+                            <span>{{ __('Preview:') }}
                                 @if ($heroDisplayStrategy === 'sequential')
                                     {{ __('Sequential') }} (<span x-text="simulatedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })">{{ $simulationAt->format('j M Y') }}</span>)
                                 @else
                                     {{ $heroDisplayStrategy === 'random' ? __('Random') : __('Top Only') }}
                                 @endif
-                            </p>
-                            <p>
-                                <span>{{ __('Next Rotation:') }}</span>
+                            </span>
+                            <span class="home-hero-rail__simulation-separator" aria-hidden="true">|</span>
+                            <span>{{ __('Next Rotation:') }}
                                 @if ($heroDisplayStrategy === 'sequential')
                                     <span x-text="nextAt ? nextAt.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }) + ' UTC' : 'Not scheduled'">{{ $nextRotationAt ? \Carbon\CarbonImmutable::parse($nextRotationAt)->setTimezone('UTC')->format('j M Y, H:i').' UTC' : __('Not scheduled') }}</span>
                                 @elseif ($heroDisplayStrategy === 'random')
@@ -94,7 +93,7 @@
                                 @else
                                     {{ __('No rotation') }}
                                 @endif
-                            </p>
+                            </span>
                         </div>
                         <div class="home-hero-stage-settings {{ $heroGroupSource === 'manual' ? 'home-hero-stage-settings--manual' : '' }}" aria-label="Hero Stage quick settings">
                             <label class="admin-data-field">
@@ -164,10 +163,8 @@
 
                                     <div class="home-hero-candidate__meta">
                                         <strong title="{{ $row['title'] }}">{{ $row['title'] }}</strong>
-                                        <span title="{{ $row['gallery'] ?: '—' }}">{{ $row['gallery'] ?: '—' }} · {{ $row['year'] ?: '—' }}</span>
-                                        @if ($row['sequence_label'])
-                                            <small>{{ __($row['sequence_label']) }}</small>
-                                        @endif
+                                        <span title="{{ implode(', ', array_filter([$row['gallery'], $row['date']])) }}">{{ implode(', ', array_filter([$row['gallery'], $row['date']])) ?: '—' }}</span>
+                                        {{-- The two-line candidate contract keeps status in the action state and accessible title. --}}
                                     </div>
 
                                     <div class="home-hero-weight">
@@ -433,7 +430,12 @@
                                     @if (! $expanded)
                                         <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-toolbar home-source-table__row-actions">
                                             @if ($manualSource)
-                                                <span class="home-source-table__action-slot" aria-hidden="true"></span>
+                                                <x-admin.row-action
+                                                    :action="$manualHeroGroupEnabled ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
+                                                    :label="$manualHeroGroupEnabled ? 'Disable' : 'Enable'"
+                                                    wire:click="setManualHeroSourceEnabled({{ $manualHeroGroupEnabled ? 'false' : 'true' }})"
+                                                    :disabled="$heroGroupSource === 'manual'"
+                                                />
                                                 <x-admin.row-action
                                                     :action="\App\Filament\Support\AdminRowAction::Delete"
                                                     label="Clear"
@@ -627,7 +629,7 @@
             </div>
             @if ($skipTarget)
                 <div class="home-workspace__skip-row">
-                    <div><strong>{{ $skipTarget['label'] }}</strong><span>{{ $skipTarget['type'] }} · {{ $skipTarget['path'] }}</span></div>
+                    <div><strong>{{ $skipTarget['label'] }}</strong><span>{{ $skipTarget['type'] }} | {{ $skipTarget['path'] }}</span></div>
                     <div class="home-workspace__redirect-expression" aria-label="Current Home redirect"><code>/</code><span aria-hidden="true">→</span><code>{{ $skipTarget['path'] }}</code></div>
                     <a class="admin-action" href="{{ $skipTarget['url'] }}" target="_blank" rel="noopener">{{ __('Open target') }}</a>
                 </div>

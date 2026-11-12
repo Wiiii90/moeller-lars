@@ -15,12 +15,7 @@
     <div class="home-source-table__candidate-meta">
         @if ($candidate)
             <strong title="{{ $candidate['title'] }}">{{ $candidate['title'] }}</strong>
-            <small>{{ $candidate['gallery'] ?: '—' }}{{ $candidate['year'] ? ' · '.$candidate['year'] : '' }}</small>
-            @if ($candidate['disabled'] ?? false)
-                <small>{{ $manualSource ? __('Disabled') : __('Excluded') }}</small>
-            @elseif (! ($candidate['eligible'] ?? true))
-                <small>{{ $candidate['sequence_label'] ?? __('Unavailable') }}</small>
-            @endif
+            <small title="{{ ($candidate['disabled'] ?? false) ? __('Disabled') : ($candidate['sequence_label'] ?? '') }}">{{ implode(', ', array_filter([$candidate['gallery'], $candidate['date']])) ?: '—' }}</small>
         @else
             <small>{{ __('No sourced candidates') }}</small>
         @endif

@@ -303,7 +303,6 @@ trait ManagesSitePageEditDialog
         $galleryService = app(GalleryEditorialService::class);
         $gallery = $galleryService->update($gallery, [
             'name' => $name,
-            'show_on_home' => (bool) $gallery->getAttribute('show_on_home'),
         ]);
 
         if (trim((string) $gallery->getAttribute('slug')) !== trim((string) $slug)) {

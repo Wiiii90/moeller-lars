@@ -20,7 +20,7 @@
     $asset = ($showMediaCredits || $showMediaCopyright) ? $media->primaryAsset($artwork) : null;
     $credit = $showMediaCredits && $asset !== null ? trim((string) ($asset->getAttribute('credit') ?? '')) : '';
     $copyright = $showMediaCopyright && $asset !== null ? trim((string) ($asset->effectiveCopyrightNotice() ?? '')) : '';
-    $mediaRights = implode(' · ', array_filter([$credit, $copyright], static fn (string $value): bool => $value !== ''));
+    $mediaRights = implode(', ', array_filter([$credit, $copyright], static fn (string $value): bool => $value !== ''));
     $rightsRight = $mediaRights !== '' && $captionLayout === 'rights_right';
 @endphp
 

@@ -131,20 +131,27 @@
 }
 
 .home-hero-rail__simulation {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: .12rem;
+    display: flex;
+    gap: .35rem;
     min-width: 0;
+    align-items: center;
+    overflow: hidden;
     color: var(--admin-muted);
     font-size: .61rem;
     line-height: 1.4;
+    white-space: nowrap;
 }
 
-.home-hero-rail__simulation > p {
-    display: block;
-    margin: 0;
+.home-hero-rail__simulation > span {
     min-width: 0;
-    text-align: left;
+    flex: 0 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.home-hero-rail__simulation > .home-hero-rail__simulation-separator {
+    flex: 0 0 auto;
+    overflow: visible;
 }
 
 .home-hero-candidate__heading {

@@ -324,6 +324,8 @@ when `Current Home artwork` already communicates the section.
 
 Likewise avoid eyebrow/kicker labels on every row/card. Information hierarchy should come from page heading, metric strip, control labels, table headers and section titles.
 
+**Metadata separators:** Never insert the decorative middle dot (`·`) between ordinary interface values or dates. Use a comma and space for related metadata within a label (`Gallery, 16 Nov 2026`), or a clearly visible vertical bar (`|`) for separate inline facts (`Preview: Sequential | Next Rotation: 17 Nov 2026`). Date details use the existing canonical regional Artwork-date formatter, not a guessed year or a new formatting helper. Preserve punctuation that is part of artist-authored content and historical titles.
+
 ## 16. Dialogs and overlays
 
 **[Admin Dialogs](dialogs.md)** owns the shared Filament Action modal lifecycle: native backdrop, focus/Escape/X, confirmation semantics, header-action rail, Edit change/save path, widths and responsive content frame. The **framework alone** owns the document scroll lock; the accepted long-/short-page behavior is preserved through the existing version-guarded build patch, never a page-local JavaScript lock. Do not create second dialogs, page-specific transforms, native `wire:confirm` prompts or fixed-width compensations.

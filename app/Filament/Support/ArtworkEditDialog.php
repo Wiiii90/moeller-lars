@@ -42,7 +42,6 @@ final class ArtworkEditDialog
             'primary_media_asset_id' => $primary?->getAttribute('media_asset_id'),
             'primary_alt_text' => $primary?->getAttribute('alt_text_override'),
             'artwork_date' => ArtworkDate::fromArtwork($artwork),
-            'exclude_from_home' => (int) (bool) $artwork->getAttribute('exclude_from_home'),
         ];
     }
 
@@ -138,16 +137,6 @@ final class ArtworkEditDialog
 
                     AdminDimensionsControl::make(),
 
-                    Select::make('exclude_from_home')
-                        ->label('Home eligibility')
-                        ->options([
-                            0 => __('Follow Gallery setting'),
-                            1 => __('Exclude this Artwork from Home'),
-                        ])
-                        ->default(0)
-                        ->native(false)
-                        ->selectablePlaceholder(false)
-                        ->columnSpanFull(),
                     ...AdminRichText::schema('description', 'Description', 10000),
                 ]),
         ];

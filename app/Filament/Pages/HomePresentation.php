@@ -337,7 +337,11 @@ final class HomePresentation extends Page
 
     private function persistHeroDisplayToggle(string $field, bool $value): void
     {
-        if (! in_array($field, ['show_details', 'show_gallery_link', 'show_navigation', 'enable_viewer', 'video_sound_enabled'], true)) {
+        if (! in_array($field, [
+            'show_details', 'show_gallery_link', 'show_navigation', 'enable_viewer',
+            'video_sound_enabled', 'show_media_credits', 'show_media_copyright',
+            'landscape_detail_enabled', 'portrait_detail_enabled', 'artwork_menu_surface_wide',
+        ], true)) {
             throw new \InvalidArgumentException('Unsupported Hero display setting.');
         }
 
@@ -475,6 +479,27 @@ final class HomePresentation extends Page
         }
         $this->reloadWorkspace();
         app(AdminNotifier::class)->notification(title: 'Home settings saved', status: 'success');
+    }
+
+    public function setManualHeroSourceEnabled(bool $enabled): void
+    {
+        if ($this->heroGroupSource !== 'semi_automatic') {
+            return;
+        }
+
+        $changed = app(HomeHeroConfigurationService::class)->updateArtworkSettings(
+            $this->settings(), ['manual_group_enabled' => $enabled],
+        );
+        if (! $changed) {
+            return;
+        }
+
+        $this->clearSourceSelection();
+        $this->reloadWorkspace();
+        app(AdminNotifier::class)->notification(
+            title: $enabled ? 'Manual Hero source enabled' : 'Manual Hero source disabled',
+            status: 'success',
+        );
     }
 
     public function setManualHeroCandidateEnabled(string $key, bool $enabled): void
@@ -1575,7 +1600,7 @@ final class HomePresentation extends Page
             [$primary, $secondary] = match ($filterType) {
                 'image' => [
                     $asset instanceof MediaAsset ? (string) $asset->getAttribute('original_filename') : 'Choose an image from Storage',
-                    $asset instanceof MediaAsset && filled($asset->getAttribute('alt_text')) ? 'ALT · '.Str::limit((string) $asset->getAttribute('alt_text'), 90) : 'Storage image',
+                    $asset instanceof MediaAsset && filled($asset->getAttribute('alt_text')) ? 'ALT: '.Str::limit((string) $asset->getAttribute('alt_text'), 90) : 'Storage image',
                 ],
                 'heading' => [$title !== '' ? $title : 'Untitled heading', ''],
                 'rich_text' => [$title !== '' ? $title : (Str::limit($body, 110) ?: 'Empty Rich Text'), $title !== '' ? (Str::limit($body, 110) ?: 'No body text') : ''],
@@ -1657,8 +1682,8 @@ final class HomePresentation extends Page
         if ($template === HomeTemplate::Artwork) {
             $analyticsDescription = $this->analyticsDescription();
             $this->metrics = [
-                ['role' => 'visits', 'label' => 'Visits · 30d', 'value' => $this->formatMetric($this->homeVisits), 'description' => $analyticsDescription],
-                ['role' => 'views', 'label' => 'Views · 30d', 'value' => $this->formatMetric($this->homeViews), 'description' => $analyticsDescription],
+                ['role' => 'visits', 'label' => 'Visits | 30d', 'value' => $this->formatMetric($this->homeVisits), 'description' => $analyticsDescription],
+                ['role' => 'views', 'label' => 'Views | 30d', 'value' => $this->formatMetric($this->homeViews), 'description' => $analyticsDescription],
                 ['role' => 'sources', 'label' => 'Source Galleries', 'value' => number_format($this->sourceGalleryCount), 'description' => 'Effective sources'],
                 ['role' => 'eligible', 'label' => 'Eligible Artworks', 'value' => number_format($this->eligibleArtworkCount), 'description' => 'Home eligible'],
                 ['role' => 'candidates', 'label' => 'Candidate Group', 'value' => number_format($this->candidatePoolCount), 'description' => 'Effective group'],
@@ -1697,7 +1722,7 @@ final class HomePresentation extends Page
             'id' => $candidate->key(),
             'title' => $candidate->title(),
             'year' => $artwork?->getAttribute('year'),
-            'date' => $artwork instanceof Artwork ? ArtworkDate::fromArtwork($artwork) : null,
+            'date' => $artwork instanceof Artwork ? ArtworkDate::display($artwork) : null,
             'gallery' => $gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : null,
             'gallery_id' => $gallery?->getKey(),
             'thumbnail_url' => $artwork instanceof Artwork
@@ -1865,13 +1890,13 @@ final class HomePresentation extends Page
     private function analyticsDescription(): string
     {
         if (! $this->homeAnalyticsLoaded) {
-            return 'Loading · 30d';
+            return 'Loading | 30d';
         }
 
         return match ($this->homeAnalyticsStatus) {
-            'stale' => 'Cached · 30d',
-            'available' => 'Home · 30d',
-            default => 'Unavailable · 30d',
+            'stale' => 'Cached | 30d',
+            'available' => 'Home | 30d',
+            default => 'Unavailable | 30d',
         };
     }
 }

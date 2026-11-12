@@ -878,6 +878,18 @@ body {
 }
 
 
+/* Home's Hero and individual Artwork pages share the fitted paper geometry.
+ * Only Hero slides matching the configured orientation expand their artwork;
+ * rotating to a different orientation does not distort the image or footer. */
+.site-content--home-hero-fitted .home-hero-slide--expanded .artwork-card {
+    width: min(100%, var(--public-fitted-image-width, var(--public-shell-max)));
+}
+
+.site-content--home-hero-fitted .home-hero-slide--expanded .artwork-card__image {
+    max-height: 84svh;
+    object-fit: contain;
+}
+
 /* Hidden Hero members are rendered once and remain out of layout and the
  * accessibility tree until the active member changes. */
 [data-home-hero-slide][hidden] {
