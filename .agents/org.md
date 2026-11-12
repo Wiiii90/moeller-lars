@@ -43,17 +43,15 @@ For a requested new Dev preview, resolve the exact fresh `dev` SHA and use the e
 
 Do not record private host/access details here. No current deployed Validation SHA is independently confirmed in Org state; verify before claiming one.
 
-## Validation recovery rehearsal
+## Local artist-state mirror from Validation
 
-Before the next substantial Validation update, prefer creating an operator-controlled local recovery point of the current artist-curated Validation state. Treat PostgreSQL **and matching canonical media originals as one recoverable dataset**, record the exact deployed application identity, and keep the raw export immutable.
+Before the next substantial Validation update, copy the current artist-curated Validation state **locally** so local development uses the same real content the artist is editing on Validation. The primary purpose is development/migration rehearsal, not backup.
 
-Recommended local shape:
-- `validation-raw`: untouched database dump + matching media archive/inventory/checksums + source/runtime identity;
-- `validation-dev-lab`: an isolated restored copy derived from the raw snapshot, sanitized for local-only runtime integrations and then migrated with the current `dev` source for rehearsal/browser inspection.
+Bring over the matching PostgreSQL application data **and canonical media originals** into the local preview environment (or another isolated local application database/media copy if needed). Then apply the newest `dev` migrations and application code locally. This lets current development adapt against the artist's real data before deploying that same newer `dev` source to Validation.
 
-Never overwrite the ordinary local-preview database or mutate the raw export during migration experiments. A successful local rehearsal reduces risk before the next Validation deployment but does not close #38 or replace a later authoritative off-server backup/restore proof.
+The local copy is allowed to advance beyond Validation's current schema: Validation itself remains unchanged until the later explicit preview/update. At deployment time the same forward migrations must still run against the then-current Validation data. If the artist has made additional edits since the local copy was taken, refresh/reconcile as needed before treating the rehearsal as exact.
 
-Current cross-repository mismatch to resolve later: the application migration contract treats artist-curated Validation data/media as intended cutover authority, while the platform's general Production backup contract still excludes temporary Validation from the normal Restic backup set. Preserve Validation explicitly until that platform protection boundary is reconciled.
+Having the data/media locally is a useful extra copy, but it is not the reason for the workflow and does not by itself close #38 or replace the platform backup contract.
 
 ## Main / repository-history gate
 
