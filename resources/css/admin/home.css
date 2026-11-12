@@ -497,7 +497,9 @@
     font-size: var(--admin-font-size-table-compact);
 }
 
-.home-source-table .home-source-table__group.is-expanded > td,
+/* Gallery rows always inherit the central table cell padding. Expanding
+ * candidates may compact only the additional candidate rows, never the
+ * first Gallery row: its title and actions must not jump vertically. */
 .home-source-table .home-source-table__candidate-row > td {
     padding-top: .36rem;
     padding-bottom: .36rem;
