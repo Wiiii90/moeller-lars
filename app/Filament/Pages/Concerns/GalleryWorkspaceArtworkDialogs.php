@@ -7,7 +7,6 @@ use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
-use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\ArtworkEditDialog;

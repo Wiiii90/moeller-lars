@@ -5,7 +5,6 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkSelectionOrder;
-use App\Domain\Artwork\GalleryPresentation;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;

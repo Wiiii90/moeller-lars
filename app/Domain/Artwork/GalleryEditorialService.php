@@ -59,8 +59,10 @@ final class GalleryEditorialService
             $fresh = ArtworkCategory::query()->whereKey($gallery->getKey())->lockForUpdate()->firstOrFail();
             $oldName = (string) $fresh->getAttribute('name');
             $oldMode = GalleryPresentation::sortMode($fresh);
-            $beforeOrder = GalleryPresentation::orderArtworks($fresh->artworks()->getQuery(), $fresh)
-                ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
+            $beforeOrder = ($validated['sort_mode'] ?? $oldMode) !== $oldMode
+                ? GalleryPresentation::orderArtworks($fresh->artworks()->getQuery(), $fresh)
+                    ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all()
+                : null;
             $fresh->fill($validated);
 
             if (! $fresh->isDirty()) {
@@ -70,7 +72,7 @@ final class GalleryEditorialService
             $nameChanged = $fresh->isDirty('name');
             $fresh->save();
 
-            if (GalleryPresentation::sortMode($fresh) !== $oldMode) {
+            if ($beforeOrder !== null) {
                 // Reify the selected visual ranking into the canonical positions.
                 // Returning to Manual keeps the existing sorted result, not an
                 // unrelated older hidden ranking.
