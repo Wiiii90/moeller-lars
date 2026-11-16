@@ -129,10 +129,10 @@ trait GalleryWorkspaceArtworkDialogs
                         status: 'success',
                     );
                 },
-                onPositionChanged: function (mixed $position) use ($arguments): void {
+                onPositionChanged: function (mixed $state) use ($arguments): void {
                     try {
                         if (! $this->moveArtworkToPosition(
-                            (int) $this->actionArtwork($arguments)->getKey(), $position,
+                            (int) $this->actionArtwork($arguments)->getKey(), $state,
                         )) {
                             return;
                         }
