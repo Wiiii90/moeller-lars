@@ -4,17 +4,38 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Artwork\ArtworkDate;
 use App\Domain\Artwork\ArtworkDimensions;
+use App\Domain\Artwork\ArtworkSort;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Support\ArtworkEditDialog;
+use App\Models\ArtworkCategory;
 
 trait GalleryWorkspaceFormSupport
 {
     /** @return list<mixed> */
     private function artworkCreateFormSchema(): array
     {
-        // Create and Edit share one semantic field schema. Create alone checks
-        // slug uniqueness before committing a new artwork.
-        return app(ArtworkEditDialog::class)->schema(creating: true);
+        // Create and Edit share one semantic field schema. Position defaults
+        // to the currently selected Gallery sort without changing its mode.
+        return app(ArtworkEditDialog::class)->schema(
+            creating: true,
+            positionCount: count($this->artworkDataset) + 1,
+            onPositionChanged: static function (mixed $state, callable $set): void {
+                $set('position_explicit', true);
+            },
+            onCreateOrderSourceChanged: function (callable $get, callable $set): void {
+                if ((bool) $get('position_explicit')) {
+                    return;
+                }
+                /** @var ArtworkCategory $gallery */
+                $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+                $assetId = (int) ($get('primary_media_asset_id') ?? 0);
+                $set('position', ArtworkSort::suggestedPosition(
+                    $gallery,
+                    $get('artwork_date'),
+                    $assetId > 0 ? $assetId : null,
+                ));
+            },
+        );
     }
 
     /** @return array<string, mixed> */

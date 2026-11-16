@@ -14,6 +14,7 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
 use Closure;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
@@ -46,7 +47,7 @@ final class ArtworkEditDialog
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true, ?Closure $onPositionChanged = null): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true, ?Closure $onPositionChanged = null, ?Closure $onCreateOrderSourceChanged = null): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
@@ -60,6 +61,24 @@ final class ArtworkEditDialog
         $material = ArtworkMaterialSelect::make();
         if ($positionCount === null) {
             $material->columnSpanFull();
+        }
+
+        $dateControl = AdminPartialDateControl::make()
+            ->rule(static fn (): Closure => static function (string $attribute, mixed $value, Closure $fail): void {
+                try {
+                    ArtworkDate::normalize($value);
+                } catch (ValidationException $exception) {
+                    $fail($exception->getMessage());
+                }
+            })
+            ->columnSpanFull();
+
+        if ($creating && $onCreateOrderSourceChanged instanceof Closure) {
+            $dateControl->live()->afterStateUpdated(
+                static function (callable $get, callable $set) use ($onCreateOrderSourceChanged): void {
+                    $onCreateOrderSourceChanged($get, $set);
+                },
+            );
         }
 
         return [
@@ -98,13 +117,16 @@ final class ArtworkEditDialog
                             'title' => 'Unpublish this Artwork before changing or removing its primary Media File.',
                         ] : [], merge: true)
                         ->live()
-                        ->afterStateUpdated(static function (mixed $state, callable $set) use ($onPrimaryMediaChanged): void {
+                        ->afterStateUpdated(static function (mixed $state, callable $set, callable $get) use ($onPrimaryMediaChanged, $creating, $onCreateOrderSourceChanged): void {
                             // One Media-file selection owns the Artwork association.
                             // On Edit, persist only this mutation, independent of the modal form.
                             if ($onPrimaryMediaChanged instanceof Closure) {
                                 $onPrimaryMediaChanged(filled($state) ? (int) $state : null);
                             }
                             $set('primary_alt_text', null);
+                            if ($creating && $onCreateOrderSourceChanged instanceof Closure) {
+                                $onCreateOrderSourceChanged($get, $set);
+                            }
                         })
                         ->columnSpanFull(),
                     TextInput::make('primary_alt_text')
@@ -113,15 +135,7 @@ final class ArtworkEditDialog
                         ->nullable()
                         ->columnSpanFull(),
 
-                    AdminPartialDateControl::make()
-                        ->rule(static fn (): Closure => static function (string $attribute, mixed $value, Closure $fail): void {
-                            try {
-                                ArtworkDate::normalize($value);
-                            } catch (ValidationException $exception) {
-                                $fail($exception->getMessage());
-                            }
-                        })
-                        ->columnSpanFull(),
+                    $dateControl,
 
                     $material,
                     ...($positionCount !== null ? [
@@ -132,6 +146,10 @@ final class ArtworkEditDialog
 
                     ...AdminRichText::schema('description', 'Description', 10000),
                 ]),
+            ...($creating && $positionCount !== null ? [
+                // Transient form intent only: never store a second ranking.
+                Hidden::make('position_explicit')->default(false),
+            ] : []),
         ];
     }
 

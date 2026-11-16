@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Artwork\ArtworkDraftService;
+use App\Domain\Artwork\ArtworkSort;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
@@ -13,6 +14,7 @@ use App\Filament\Support\ArtworkEditDialog;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\Artwork;
+use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Illuminate\Support\Str;
@@ -27,6 +29,12 @@ trait GalleryWorkspaceArtworkDialogs
             ->fillForm(fn (): array => [
                 'primary_media_asset_id' => $this->pendingPrimaryMediaAssetId,
                 'artwork_date' => null,
+                'position' => ArtworkSort::suggestedPosition(
+                    ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']),
+                    null,
+                    $this->pendingPrimaryMediaAssetId,
+                ),
+                'position_explicit' => false,
                 'exclude_from_home' => 0,
             ])
             ->schema($this->artworkCreateFormSchema())
@@ -55,6 +63,10 @@ trait GalleryWorkspaceArtworkDialogs
                     $data['slug'] = Str::slug((string) ($data['title'] ?? ''));
                 }
                 $payload = $this->normalizeArtworkFormData($data);
+                if (! (bool) ($data['position_explicit'] ?? false)) {
+                    unset($payload['position']);
+                }
+                unset($payload['position_explicit']);
                 $autoPublish = app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::GALLERY);
                 DB::transaction(function () use ($payload, $asset, $data, $autoPublish): void {
                     $artwork = app(ArtworkDraftService::class)->create($payload);

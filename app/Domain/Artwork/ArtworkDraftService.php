@@ -30,6 +30,16 @@ final class ArtworkDraftService
             throw ValidationException::withMessages(['artwork_category_id' => 'The Gallery is required.']);
         }
 
+        // A submitted Position is an explicit override. The ordinary Create
+        // form drops its live suggestion before calling this service, so
+        // source-driven creation never accidentally switches to Manual.
+        $requestedPosition = array_key_exists('position', $data)
+            ? filter_var($data['position'], FILTER_VALIDATE_INT)
+            : null;
+        if ($requestedPosition === false || ($requestedPosition !== null && $requestedPosition < 1)) {
+            throw ValidationException::withMessages(['position' => 'Choose a positive Artwork position.']);
+        }
+
         $data = $this->validatedEditorialData($data);
         unset($data['position']);
         $data['artwork_category_id'] = $galleryId;
@@ -38,7 +48,7 @@ final class ArtworkDraftService
 
         $actor = $this->audit->requireActor();
 
-        return DB::transaction(function () use ($galleryId, $data, $actor): Artwork {
+        return DB::transaction(function () use ($galleryId, $data, $actor, $requestedPosition): Artwork {
             /** @var ArtworkCategory|null $gallery */
             $gallery = ArtworkCategory::query()->whereKey($galleryId)->lockForUpdate()->first();
             if (! $gallery instanceof ArtworkCategory) {
@@ -55,20 +65,26 @@ final class ArtworkDraftService
 
             $this->audit->record($actor, 'artwork.created', 'artwork', $artwork->getKey());
 
-            if (GalleryPresentation::sortMode($gallery) === GalleryPresentation::SORT_MANUAL && $maxPosition !== null) {
-                // Use the existing audited Gallery ordering owner; avoid a
-                // competing position-shift algorithm for newly created slots.
+            if ($requestedPosition !== null) {
+                $ids = GalleryPresentation::orderArtworks($gallery->artworks()->getQuery(), $gallery)
+                    ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
+                if ($requestedPosition > count($ids)) {
+                    throw ValidationException::withMessages(['position' => 'Choose a position within the Gallery.']);
+                }
+                $currentIndex = array_search((int) $artwork->getKey(), $ids, true);
+                array_splice($ids, $currentIndex, 1);
+                array_splice($ids, $requestedPosition - 1, 0, [(int) $artwork->getKey()]);
+                // An intentional Position override is the Manual handoff;
+                // GalleryEditorialService owns both ranking and its audit.
+                app(GalleryEditorialService::class)->reorderArtworks($gallery, $ids);
+            } elseif (GalleryPresentation::sortMode($gallery) === GalleryPresentation::SORT_MANUAL && $maxPosition !== null) {
+                // Manual Create inserts first. Do not duplicate ranking logic.
                 $ids = $gallery->artworks()
                     ->whereKeyNot($artwork->getKey())
                     ->orderBy('position')
                     ->orderBy('id')
-                    ->pluck('id')
-                    ->map(static fn (mixed $id): int => (int) $id)
-                    ->all();
-                app(GalleryEditorialService::class)->reorderArtworks(
-                    $gallery,
-                    [(int) $artwork->getKey(), ...$ids],
-                );
+                    ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
+                app(GalleryEditorialService::class)->reorderArtworks($gallery, [(int) $artwork->getKey(), ...$ids]);
             }
 
             return $artwork->fresh();
