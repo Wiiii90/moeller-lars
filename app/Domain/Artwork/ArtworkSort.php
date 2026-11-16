@@ -36,11 +36,11 @@ final class ArtworkSort
             $direction = $rule === self::OLDEST_MEDIA_ADDED ? 'ASC' : 'DESC';
 
             return $query->orderByRaw(
-                "COALESCE((SELECT media_assets.created_at FROM media_assets
+                "(SELECT media_assets.created_at FROM media_assets
                     JOIN artwork_media ON artwork_media.media_asset_id = media_assets.id
                     WHERE artwork_media.artwork_id = artworks.id AND artwork_media.role = 'primary'
-                    ORDER BY artwork_media.position, artwork_media.id LIMIT 1),
-                    artworks.created_at) {$direction} NULLS LAST, artworks.id {$direction}",
+                    ORDER BY artwork_media.position, artwork_media.id LIMIT 1)
+                    {$direction} NULLS LAST, artworks.id {$direction}",
             );
         }
 
