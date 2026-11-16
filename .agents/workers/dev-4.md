@@ -2,7 +2,7 @@
 
 **Lease:** 8  
 **Branch:** dev  
-**State:** Active. One-time Gallery date-sort action removed as requested; implementing canonical Gallery/Home ranking, browser review pending.
+**State:** Active. Gallery/Home shared sorting, Gallery Manual handoff and Home Semi-Automatic mixed rank committed; runtime review pending. Gallery sort confirmation and Create-position preview remain open.
 
 ## Ownership / restrictions
 - Gallery/Artwork Admin form, metadata, sorting, Materials and public Artwork presentation. Bounded historical publication read-time projection required for Artwork date migration. Respect Worker 1's Exhibition work and Worker 2's Media/Storage lifecycle.
@@ -33,14 +33,24 @@
 
 ## Gallery Settings canonical dialog (2026-11-11)
 - `GalleryWorkspaceUploadSettings::gallerySettingsAction` uses the same responsive two-column `Grid::make()->columns(['md' => 2])` contract as Home Settings; only Gallery title spans the complete row. Removed full-row spans from the other fourteen fields and increased modal to the shared Large editorial width so two-column controls fit.
-- Every field uses `AdminControl` factory; obsolete raw Filament imports removed. The former `hintIcon('heroicon-o-light-bulb')` is retired. Real `AdminHelp` bulb appears with Artwork order and auto-publish labels; auto-publish explanation is preserved in the central help popup instead of a separate full-width helper paragraph. `AdminHelp::label` is the common owner, not a Gallery-only icon/popover. Existing values, ordering, fields and sort-once header action remain unchanged.
+- Every field uses `AdminControl` factory; obsolete raw Filament imports removed. The former `hintIcon('heroicon-o-light-bulb')` is retired. Real `AdminHelp` bulb appears with Artwork order and auto-publish labels; auto-publish explanation is preserved in the central help popup instead of a separate full-width helper paragraph. `AdminHelp::label` is the common owner, not a Gallery-only icon/popover. Existing settings except the now-retired one-shot sort action remain in the canonical dialog.
 - Source-only correction. No local browser or narrow dialog tests performed through GitHub connector. Home is assigned to active Dev Worker 6; do not edit Home's private helper during the Gallery assignment.
+
+## Ranking source results (2026-11-16)
+- `258e4d5`: Deleted the one-shot `sortArtworksByDateOnce` Gallery action and its obsolete help/tooltip. No alternative one-shot sorter.
+- `d53dde3`, `90f694c`, `8aa7c6b`: Shared canonical `ArtworkSort` defines four modes for Gallery and Home Source Rules: Artwork's year/month/day (newest/oldest), primary MediaAsset's actual upload timestamp (newest/oldest, missing uploads last). Existing `artwork_categories.sort_mode` varchar(16) requires short persisted Gallery keys `newest`, `oldest_artwork`, `newest_added`, `oldest_added`, plus `manual`. Home retains its old source keys; no schema migration.
+- `cb2eec6`, `4de6fe9`, `e2c13b9`: Selecting a Gallery mode materializes its current visible ordering into canonical Artwork position values, and selecting Manual retains it. Drag, Move, bulk move or explicit Edit Position automatically switches mode to Manual, preserving that ranking and canonical Gallery audit. Active search/status/readiness filters still prevent drag.
+- `09c23fd`, `9d9519a`: Edit Position now has its own explicit field-update handler so stale position in the edit form cannot override a new sort mode when changing metadata. Source-only; verify Filament change/notification behavior in browser.
+- `872b1bd`, `fd91ac8`: Home Semi-Automatic persists one `source_profiles.semi_automatic.sourced_order` within its existing source profile (no parallel table, store or migration). Sourcing determines candidates; manual and automatic candidates are ranked together by Stage drag/Move. Newly sourced candidates append in source order; ineligible manual candidates retain rank keys. Automatic and Manual semantics untouched. Sequential rotation changes Current/Next labels, not editable rank.
+- `8e4ff0f`: Legacy Home fixed manual candidate now includes `enabled=true` to prevent a missing-array-key issue. This is a plausible cause of earlier crashes, not proof that all user-observed crashes are resolved.
+- **Incomplete:** Conditional confirmation + diff preview when changing Gallery sort rule, only for genuinely changed positions; Create Artwork form's optional user-overridden/prefilled Position. Current automatic modes still insert newly created/moved-in Artworks at the correct ranked location in the display using canonical sort. Do not claim those UX controls are implemented.
+- No PHP runtime, database mutation, browser verification, CI, tests, deploy or migration was executed by this worker. Testing worker owns test authorship, and no global audit is needed. Real browser smoke: Gallery five modes, nullable dates/media, add/move, explicit rank transition; Home Semi ranking/membership/reload and previous crash reproduction.
 
 ## Ranking rework (2026-11-16)
 - User explicitly retracted earlier temporary acceptance of the Gallery "Sort once by artwork date" header action. Removed its entire `extraModalFooterActions` implementation (including obsolete behavior/tooltip), and removed the obsolete Help text referencing it. Keep it removed; Gallery now needs mode selection as the sole sorting owner.
 - User assigns a bounded shared sorting concern to Dev Worker 4 across Gallery and Home, while Dev Worker 6 remains the broader Home visual/editorial owner. Avoid editing unrelated Home UI/source-workspace presentation and coordinate ordering changes through the existing service/resolver owners.
 
 ## Next
-- User to review Gallery Settings in refreshed local preview: two columns at medium/large widths, natural one-column reflow at narrow width; shared bulb behavior, toggle/select alignment, autocomplete and save/reopen. Adjust the actual ordering and retained settings only after the user's next decision.
-- Gallery's one-time date-sort header command is retired. Implement selectable ongoing sort rules plus explicit manual ranking handoff, then Home Semi-Automatic rank persistence. Do not reopen completed migration/schema/history preflight.
-- Validation requires explicit deployment authorization and a short-lived database/media snapshot before the separately selected update/cutover operation. Do not deploy automatically.
+- User/browser review: verify Gallery five modes, the reversion to Manual after drag/Position (without notification duplication), and Home Semi-Automatic mixed manual/automatic candidate rank and source changes. Fix observed failures at owners.
+- The conditional sort-change confirmation and Create form's initial Position preview remain explicit open tasks; do not implement ad hoc modal/JS that bypasses central `AdminDialog` save lifecycle. Coordinate Home Stage UI with active Worker 6.
+- Local historical date migration/read-only checks already completed; do not reopen them. Validation is unchanged and still needs independent approval for deployment/cutover.
