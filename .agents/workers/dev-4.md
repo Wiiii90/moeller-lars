@@ -2,7 +2,7 @@
 
 **Lease:** 8  
 **Branch:** dev  
-**State:** Active. Gallery Settings canonical two-column schema and shared bulb committed; browser review pending.
+**State:** Active. One-time Gallery date-sort action removed as requested; implementing canonical Gallery/Home ranking, browser review pending.
 
 ## Ownership / restrictions
 - Gallery/Artwork Admin form, metadata, sorting, Materials and public Artwork presentation. Bounded historical publication read-time projection required for Artwork date migration. Respect Worker 1's Exhibition work and Worker 2's Media/Storage lifecycle.
@@ -36,7 +36,11 @@
 - Every field uses `AdminControl` factory; obsolete raw Filament imports removed. The former `hintIcon('heroicon-o-light-bulb')` is retired. Real `AdminHelp` bulb appears with Artwork order and auto-publish labels; auto-publish explanation is preserved in the central help popup instead of a separate full-width helper paragraph. `AdminHelp::label` is the common owner, not a Gallery-only icon/popover. Existing values, ordering, fields and sort-once header action remain unchanged.
 - Source-only correction. No local browser or narrow dialog tests performed through GitHub connector. Home is assigned to active Dev Worker 6; do not edit Home's private helper during the Gallery assignment.
 
+## Ranking rework (2026-11-16)
+- User explicitly retracted earlier temporary acceptance of the Gallery "Sort once by artwork date" header action. Removed its entire `extraModalFooterActions` implementation (including obsolete behavior/tooltip), and removed the obsolete Help text referencing it. Keep it removed; Gallery now needs mode selection as the sole sorting owner.
+- User assigns a bounded shared sorting concern to Dev Worker 4 across Gallery and Home, while Dev Worker 6 remains the broader Home visual/editorial owner. Avoid editing unrelated Home UI/source-workspace presentation and coordinate ordering changes through the existing service/resolver owners.
+
 ## Next
 - User to review Gallery Settings in refreshed local preview: two columns at medium/large widths, natural one-column reflow at narrow width; shared bulb behavior, toggle/select alignment, autocomplete and save/reopen. Adjust the actual ordering and retained settings only after the user's next decision.
-- Gallery's Sort once by artwork date stays in the header unchanged by request. Check the new full-width Dimensions layout if still needed; do not reopen the completed local migration/schema/history preflight.
+- Gallery's one-time date-sort header command is retired. Implement selectable ongoing sort rules plus explicit manual ranking handoff, then Home Semi-Automatic rank persistence. Do not reopen completed migration/schema/history preflight.
 - Validation requires explicit deployment authorization and a short-lived database/media snapshot before the separately selected update/cutover operation. Do not deploy automatically.
