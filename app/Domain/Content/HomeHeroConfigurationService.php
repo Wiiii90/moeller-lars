@@ -128,7 +128,7 @@ final class HomeHeroConfigurationService
         $legacyFixed = $this->nullablePositiveInt($artwork['fixed_artwork_id'] ?? null);
         if ($mode !== 'automatic' && $manual === [] && ! array_key_exists('manual_group', $stored)
             && $legacyFixed !== null && in_array($legacyMode, ['fixed', 'manual'], true)) {
-            $manual = [['artwork_id' => $legacyFixed, 'weight' => self::WEIGHT_TOTAL]];
+            $manual = [['artwork_id' => $legacyFixed, 'weight' => self::WEIGHT_TOTAL, 'enabled' => true]];
         }
         $legacyRule = ($artwork['newest_by'] ?? null) === 'added' ? 'newest_media_added' : 'newest_artwork';
         return [
