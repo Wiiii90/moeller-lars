@@ -2,7 +2,7 @@
 
 **Lease:** 8  
 **Branch:** dev  
-**State:** Active. Gallery/Home shared sorting, Gallery Manual handoff and Home Semi-Automatic mixed rank committed; runtime review pending. Gallery sort confirmation and Create-position preview remain open.
+**State:** Active. Shared Gallery/Home ranking, Gallery Create Position preview and Home Semi-Automatic mixed rank committed; browser and PHP runtime verification pending. Conditional sort-change confirmation remains optional and unimplemented.
 
 ## Ownership / restrictions
 - Gallery/Artwork Admin form, metadata, sorting, Materials and public Artwork presentation. Bounded historical publication read-time projection required for Artwork date migration. Respect Worker 1's Exhibition work and Worker 2's Media/Storage lifecycle.
@@ -43,7 +43,11 @@
 - `09c23fd`, `9d9519a`: Edit Position now has its own explicit field-update handler so stale position in the edit form cannot override a new sort mode when changing metadata. Source-only; verify Filament change/notification behavior in browser.
 - `872b1bd`, `fd91ac8`: Home Semi-Automatic persists one `source_profiles.semi_automatic.sourced_order` within its existing source profile (no parallel table, store or migration). Sourcing determines candidates; manual and automatic candidates are ranked together by Stage drag/Move. Newly sourced candidates append in source order; ineligible manual candidates retain rank keys. Automatic and Manual semantics untouched. Sequential rotation changes Current/Next labels, not editable rank.
 - `8e4ff0f`: Legacy Home fixed manual candidate now includes `enabled=true` to prevent a missing-array-key issue. This is a plausible cause of earlier crashes, not proof that all user-observed crashes are resolved.
-- **Incomplete:** Conditional confirmation + diff preview when changing Gallery sort rule, only for genuinely changed positions; Create Artwork form's optional user-overridden/prefilled Position. Current automatic modes still insert newly created/moved-in Artworks at the correct ranked location in the display using canonical sort. Do not claim those UX controls are implemented.
+- **Implemented in the current continuation:** `7443b25` prevents a disabled/selected Manual candidate from reappearing as an automatic duplicate while its Manual source is enabled, hides inactive Manual Stage rows when that whole source is disabled, and retains hidden rank keys when currently visible Semi-Automatic members are moved.
+- `45794a6`: Shared `ArtworkSort::suggestedPosition` predicts the new Artwork rank by the same partial date / Media Added / NULLS LAST / tie-break semantics, without creating a temporary database record.
+- `424c85b`: The existing Add Artwork form now exposes Position, prefilled for its current Gallery sort. Only an *explicit* Position edit is submitted as an override. The existing `ArtworkDraftService` and audited `GalleryEditorialService` place it and switch to Manual. Otherwise active sort rules continue sourcing correctly; batch creation has no override.
+- `f7f090e`: Only the Create variant of the canonical partial-date control uses Livewire live entanglement, so selecting dates can refresh the suggested Position. Existing Edit autosave behavior remains unchanged. Media selection also refreshes the preview.
+- **Still optional:** A conditional, canonical confirmation with a true before/after rank difference for changing Gallery source rule. Do not create a second one-shot sort command or native browser confirm. Source-only review included a bracket-balance check for 11 PHP files, not `php -l` or browser execution. No data, CI, tests, deploy or migrations were executed.
 - No PHP runtime, database mutation, browser verification, CI, tests, deploy or migration was executed by this worker. Testing worker owns test authorship, and no global audit is needed. Real browser smoke: Gallery five modes, nullable dates/media, add/move, explicit rank transition; Home Semi ranking/membership/reload and previous crash reproduction.
 
 ## Ranking rework (2026-11-16)
@@ -52,5 +56,5 @@
 
 ## Next
 - User/browser review: verify Gallery five modes, the reversion to Manual after drag/Position (without notification duplication), and Home Semi-Automatic mixed manual/automatic candidate rank and source changes. Fix observed failures at owners.
-- The conditional sort-change confirmation and Create form's initial Position preview remain explicit open tasks; do not implement ad hoc modal/JS that bypasses central `AdminDialog` save lifecycle. Coordinate Home Stage UI with active Worker 6.
+- Browser acceptance pending: verify new Artwork Position suggestions after date/media changes, intentional position overrides, mode change to Manual, and Home Semi-Automatic when Manual source and individual members are disabled. Conditional sort-change confirmation remains optional and unimplemented; never bypass `AdminDialog` or introduce duplicate UI. Coordinate Home Stage UI with Worker 6.
 - Local historical date migration/read-only checks already completed; do not reopen them. Validation is unchanged and still needs independent approval for deployment/cutover.
