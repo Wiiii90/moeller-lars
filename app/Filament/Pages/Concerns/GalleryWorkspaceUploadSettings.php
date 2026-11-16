@@ -60,7 +60,7 @@ trait GalleryWorkspaceUploadSettings
                             ->label(AdminHelp::label(
                                 'Artwork order',
                                 'Gallery artwork ordering',
-                                'Manual uses saved positions. Automatic order follows the selected Artwork date or Media Added rule. Manually changing a position switches the Gallery back to Manual.',
+                                'Manual uses saved positions. Date and Media Added modes continuously order the Gallery. A drag, Move or Position edit switches to Manual and keeps that sequence.',
                             ))
                             ->options(GalleryPresentation::SORT_OPTIONS)
                             ->default(GalleryPresentation::SORT_MANUAL)

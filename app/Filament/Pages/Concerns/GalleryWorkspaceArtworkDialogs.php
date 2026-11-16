@@ -118,7 +118,7 @@ trait GalleryWorkspaceArtworkDialogs
             ->schema(fn (array $arguments): array => $dialog->schema(
                 autosave: true,
                 positionCount: count($this->artworkDataset),
-                positionEditable: ($this->galleryContext['sort_mode'] ?? GalleryPresentation::SORT_MANUAL) === GalleryPresentation::SORT_MANUAL,
+                positionEditable: true,
                 primaryReadOnly: (string) $this->actionArtwork($arguments)->fresh()->getAttribute('state') === 'published',
                 onPrimaryMediaChanged: function (?int $assetId) use ($dialog, $arguments): void {
                     if (! $dialog->changePrimaryMedia($this->actionArtwork($arguments), $assetId)) {
@@ -138,8 +138,12 @@ trait GalleryWorkspaceArtworkDialogs
                 // while the existing Gallery order service owns the ranking.
                 $changed = DB::transaction(function () use ($dialog, $data, $arguments): bool {
                     $artwork = $this->actionArtwork($arguments);
+                    $currentIds = $this->orderedArtworkIds();
+                    $oldRank = array_search((int) $artwork->getKey(), $currentIds, true);
+                    $explicitPositionChange = array_key_exists('position', $data)
+                        && $oldRank !== false && (int) $data['position'] !== $oldRank + 1;
                     $metadataChanged = $dialog->save($artwork, $data, savePrimaryMedia: false);
-                    $orderChanged = array_key_exists('position', $data)
+                    $orderChanged = $explicitPositionChange
                         && $this->moveArtworkToPosition((int) $artwork->getKey(), $data['position']);
 
                     return $metadataChanged || $orderChanged;

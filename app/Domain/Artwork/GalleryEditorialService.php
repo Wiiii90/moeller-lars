@@ -74,8 +74,10 @@ final class GalleryEditorialService
                 // Reify the selected visual ranking into the canonical positions.
                 // Returning to Manual keeps the existing sorted result, not an
                 // unrelated older hidden ranking.
-                $newOrder = GalleryPresentation::orderArtworks($fresh->artworks()->getQuery(), $fresh)
-                    ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
+                $newOrder = GalleryPresentation::sortMode($fresh) === GalleryPresentation::SORT_MANUAL
+                    ? $beforeOrder
+                    : GalleryPresentation::orderArtworks($fresh->artworks()->getQuery(), $fresh)
+                        ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
                 $this->writePositions($fresh, $newOrder, $beforeOrder, $actor);
             }
 

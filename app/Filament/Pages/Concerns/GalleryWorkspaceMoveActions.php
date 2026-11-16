@@ -25,9 +25,7 @@ trait GalleryWorkspaceMoveActions
 
         if (! $this->artworkReorderingAvailable()) {
             app(AdminNotifier::class)->notification(
-                title: ($this->galleryContext['sort_mode'] ?? GalleryPresentation::SORT_MANUAL) !== GalleryPresentation::SORT_MANUAL
-                    ? 'Switch to Manual sorting to reorder'
-                    : 'Clear filters to reorder',
+                title: 'Clear filters to reorder',
                 status: 'warning',
             );
 
@@ -90,9 +88,6 @@ trait GalleryWorkspaceMoveActions
      */
     private function moveArtworkToPosition(int $artworkId, mixed $position): bool
     {
-        if (($this->galleryContext['sort_mode'] ?? GalleryPresentation::SORT_MANUAL) !== GalleryPresentation::SORT_MANUAL) {
-            throw ValidationException::withMessages(['position' => 'Switch the Gallery to Manual sorting to change Position.']);
-        }
         $rank = filter_var($position, FILTER_VALIDATE_INT);
         $count = count($this->orderedArtworkIds());
         if ($rank === false || $rank < 1 || $rank > $count) {
@@ -126,9 +121,7 @@ trait GalleryWorkspaceMoveActions
 
         if (! $this->artworkReorderingAvailable()) {
             app(AdminNotifier::class)->notification(
-                title: ($this->galleryContext['sort_mode'] ?? GalleryPresentation::SORT_MANUAL) !== GalleryPresentation::SORT_MANUAL
-                    ? 'Switch to Manual sorting to reorder'
-                    : 'Clear filters to reorder',
+                title: 'Clear filters to reorder',
                 status: 'warning',
             );
 
@@ -272,8 +265,7 @@ trait GalleryWorkspaceMoveActions
 
     private function artworkReorderingAvailable(): bool
     {
-        return ($this->galleryContext['sort_mode'] ?? GalleryPresentation::SORT_MANUAL) === GalleryPresentation::SORT_MANUAL
-            && trim($this->search) === ''
+        return trim($this->search) === ''
             && $this->statusFilter === 'any'
             && $this->readinessFilter === 'any';
     }

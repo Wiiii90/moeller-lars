@@ -1,12 +1,9 @@
 <x-filament-panels::page>
     @php
-        $reorderEnabled = ($galleryContext['sort_mode'] ?? 'manual') === 'manual'
-            && trim($search) === ''
+        $reorderEnabled = trim($search) === ''
             && $statusFilter === 'any'
             && $readinessFilter === 'any';
-        $reorderDisabledReason = ($galleryContext['sort_mode'] ?? 'manual') !== 'manual'
-            ? 'Switch to Manual sorting to reorder'
-            : 'Clear filters to reorder';
+        $reorderDisabledReason = 'Clear filters to reorder';
         $selectedIds = array_map('intval', $selectedArtworkIds);
         $selectedArtworks = collect($artworkDataset)->filter(static fn (array $row): bool =>
             in_array((int) $row['id'], $selectedIds, true)

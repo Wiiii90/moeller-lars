@@ -96,6 +96,7 @@ trait GalleryWorkspaceSelectionSupport
         /** @var ArtworkCategory $gallery */
         $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
         app(GalleryEditorialService::class)->reorderArtworks($gallery, $orderedIds);
+        $this->loadGallery((int) $gallery->getKey());
     }
 
     private function clearSelection(): void
