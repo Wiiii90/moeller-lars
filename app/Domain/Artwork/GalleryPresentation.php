@@ -50,12 +50,18 @@ final class GalleryPresentation
 
     public const SORT_NEWEST = 'newest';
 
+    // Gallery sort_mode is varchar(16); Home's source-rule keys live in JSON.
+    // Use short persisted Gallery keys but the exact same ArtworkSort algorithms.
+    public const SORT_NEWEST_MEDIA = 'newest_added';
+
+    public const SORT_OLDEST_MEDIA = 'oldest_added';
+
     public const SORT_OPTIONS = [
         self::SORT_MANUAL => 'Manual',
         self::SORT_NEWEST => 'Newest by Artwork',
         ArtworkSort::OLDEST_ARTWORK => 'Oldest by Artwork',
-        ArtworkSort::NEWEST_MEDIA_ADDED => 'Newest by Media Added',
-        ArtworkSort::OLDEST_MEDIA_ADDED => 'Oldest by Media Added',
+        self::SORT_NEWEST_MEDIA => 'Newest by Media Added',
+        self::SORT_OLDEST_MEDIA => 'Oldest by Media Added',
     ];
 
     public static function sortMode(ArtworkCategory $gallery): string
@@ -78,7 +84,14 @@ final class GalleryPresentation
         }
 
         // Historical persisted "newest" is the same canonical Artwork rule.
-        return ArtworkSort::apply($query, $mode === self::SORT_NEWEST ? ArtworkSort::NEWEST_ARTWORK : $mode);
+        $rule = match ($mode) {
+            self::SORT_NEWEST => ArtworkSort::NEWEST_ARTWORK,
+            self::SORT_NEWEST_MEDIA => ArtworkSort::NEWEST_MEDIA_ADDED,
+            self::SORT_OLDEST_MEDIA => ArtworkSort::OLDEST_MEDIA_ADDED,
+            default => $mode,
+        };
+
+        return ArtworkSort::apply($query, $rule);
     }
 
     /** Kept for existing SQL consumers; ArtworkSort owns these expressions. */
