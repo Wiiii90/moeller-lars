@@ -468,7 +468,9 @@ final class HomeHeroConfigurationService
             throw ValidationException::withMessages(['candidate' => 'Only Semi-Automatic has a mixed candidate ranking.']);
         }
 
-        $manualKeys = array_map(self::memberKey(...), $configuration['manual_group']);
+        $manualKeys = $configuration['manual_group_enabled']
+            ? array_map(self::memberKey(...), $configuration['manual_group'])
+            : [];
         $resolved = app(HomeHeroResolver::class)->resolve($fresh);
         $activeKeys = $resolved['group']->map(
             static fn (HomeHeroCandidate $candidate): string => $candidate->key(),
@@ -491,9 +493,22 @@ final class HomeHeroConfigurationService
             throw ValidationException::withMessages(['candidate' => 'The Hero candidates changed. Reload and try again.']);
         }
 
+        // Replace only the currently visible rank slots. Inactive source
+        // members retain their saved places for when the source is enabled
+        // again; newly sourced members follow the existing saved slots.
+        $visible = array_fill_keys($before, true);
+        $stored = [];
+        $index = 0;
+        foreach ($configuration['sourced_order'] as $key) {
+            $stored[] = isset($visible[$key]) ? $keys[$index++] : $key;
+        }
+        foreach (array_slice($keys, $index) as $key) {
+            $stored[] = $key;
+        }
+
         return $this->updateArtworkSettings(
             $fresh,
-            ['sourced_order' => $keys],
+            ['sourced_order' => $stored],
             ['before' => $before, 'after' => $keys],
         );
     }

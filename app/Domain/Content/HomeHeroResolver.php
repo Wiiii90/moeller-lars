@@ -115,11 +115,16 @@ final class HomeHeroResolver
         $group = $manual;
         if ($remaining > 0) {
             $excluded = $configuration['disabled_auto_artwork_ids'];
-            // An explicitly selected Artwork cannot appear twice in the same
-            // mixed group, even when its Gallery is enabled for automatic use.
-            foreach ($manual as $candidate) {
-                if ($candidate->artwork() instanceof Artwork) {
-                    $excluded[] = (int) $candidate->record->getKey();
+            // When the Manual source is active, all its saved Artwork
+            // members reserve their identity, including disabled/unavailable
+            // members. Disabling one must not silently source it again as
+            // an automatic duplicate. A completely disabled Manual source
+            // reserves none, so the automatic source remains independent.
+            if ($semi && $configuration['manual_group_enabled']) {
+                foreach ($configuration['manual_group'] as $member) {
+                    if (isset($member['artwork_id'])) {
+                        $excluded[] = (int) $member['artwork_id'];
+                    }
                 }
             }
             $automatic = $this->artworks->configuredHomeCandidates(

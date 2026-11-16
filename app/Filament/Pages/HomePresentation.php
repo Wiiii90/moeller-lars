@@ -1518,12 +1518,14 @@ final class HomePresentation extends Page
             return $row;
         })->all();
         if ($this->heroGroupSource === 'semi_automatic') {
-            $manualKeys = array_map(HomeHeroConfigurationService::memberKey(...), $this->manualHeroGroup);
+            $manualRows = $this->manualHeroGroupEnabled
+                ? $this->manualHeroRows($settings, $resolution) : [];
+            $manualKeys = array_column($manualRows, 'id');
             $automaticRows = array_values(array_filter(
                 $this->heroRailRows,
                 static fn (array $row): bool => ! in_array($row['id'], $manualKeys, true),
             ));
-            $combined = [...$this->manualHeroRows($settings, $resolution), ...$automaticRows];
+            $combined = [...$manualRows, ...$automaticRows];
             $byKey = collect($combined)->keyBy('id');
             $keys = app(HomeHeroConfigurationService::class)->rankSourcedKeys(
                 $byKey->keys()->all(),
