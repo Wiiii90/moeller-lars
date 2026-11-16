@@ -58,6 +58,9 @@ final class GalleryEditorialService
             /** @var ArtworkCategory $fresh */
             $fresh = ArtworkCategory::query()->whereKey($gallery->getKey())->lockForUpdate()->firstOrFail();
             $oldName = (string) $fresh->getAttribute('name');
+            $oldMode = GalleryPresentation::sortMode($fresh);
+            $beforeOrder = GalleryPresentation::orderArtworks($fresh->artworks()->getQuery(), $fresh)
+                ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
             $fresh->fill($validated);
 
             if (! $fresh->isDirty()) {
@@ -66,6 +69,15 @@ final class GalleryEditorialService
 
             $nameChanged = $fresh->isDirty('name');
             $fresh->save();
+
+            if (GalleryPresentation::sortMode($fresh) !== $oldMode) {
+                // Reify the selected visual ranking into the canonical positions.
+                // Returning to Manual keeps the existing sorted result, not an
+                // unrelated older hidden ranking.
+                $newOrder = GalleryPresentation::orderArtworks($fresh->artworks()->getQuery(), $fresh)
+                    ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
+                $this->writePositions($fresh, $newOrder, $beforeOrder, $actor);
+            }
 
             if ($nameChanged) {
                 /** @var SiteSection|null $section */
@@ -195,52 +207,62 @@ final class GalleryEditorialService
         $freshGallery = ArtworkCategory::query()->findOrFail($gallery->getKey());
         /** @var Collection<int, Artwork> $freshArtworks */
         $freshArtworks = $freshGallery->artworks()->get();
-        if (GalleryPresentation::sortMode($freshGallery) !== GalleryPresentation::SORT_MANUAL) {
-            throw ValidationException::withMessages(['sort_mode' => 'Switch the Gallery to Manual ordering to move Artworks.']);
-        }
         $this->validateArtworkIds($artworkIds, $freshArtworks);
 
         DB::transaction(function () use ($freshGallery, $artworkIds, $actor): void {
             /** @var ArtworkCategory $lockedGallery */
             $lockedGallery = ArtworkCategory::query()->whereKey($freshGallery->getKey())->lockForUpdate()->firstOrFail();
             /** @var Collection<int, Artwork> $lockedArtworks */
-            $lockedArtworks = $lockedGallery->artworks()
-                ->orderBy('position')
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get();
+            $lockedArtworks = $lockedGallery->artworks()->orderBy('id')->lockForUpdate()->get();
             $this->validateArtworkIds($artworkIds, $lockedArtworks);
-            $beforeOrder = $lockedArtworks
-                ->pluck('id')
-                ->map(static fn (mixed $id): int => (int) $id)
-                ->values()
-                ->all();
+            $beforeOrder = GalleryPresentation::orderArtworks($lockedGallery->artworks()->getQuery(), $lockedGallery)
+                ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
 
-            $artworksById = $lockedArtworks->keyBy(fn (Artwork $artwork): int => (int) $artwork->getKey());
-            $changed = false;
-            foreach ($artworkIds as $position => $artworkId) {
-                $artwork = $artworksById->get($artworkId);
-                if ((int) $artwork->getAttribute('position') !== $position) {
-                    $artwork->setAttribute('position', $position);
-                    $artwork->save();
-                    $changed = true;
-                }
+            if (GalleryPresentation::sortMode($lockedGallery) !== GalleryPresentation::SORT_MANUAL) {
+                // An explicit drag, move or Position edit is the user's decision
+                // to take ownership of the current sorted sequence.
+                $lockedGallery->setAttribute('sort_mode', GalleryPresentation::SORT_MANUAL);
+                $lockedGallery->save();
+                $this->adminAuditService->record($actor, 'artwork_category.updated', 'artwork_category', $lockedGallery->getKey());
             }
 
-            if ($changed) {
-                $this->adminAuditService->recordOrdering(
-                    $actor,
-                    'artwork_category.gallery_reordered',
-                    'artwork_category',
-                    (int) $lockedGallery->getKey(),
-                    'gallery-artworks:'.(int) $lockedGallery->getKey(),
-                    $beforeOrder,
-                    $artworkIds,
-                );
-            }
+            $this->writePositions($lockedGallery, $artworkIds, $beforeOrder, $actor, $lockedArtworks);
         });
 
         return $freshGallery->fresh();
+    }
+
+    /**
+     * @param list<int> $orderedIds
+     * @param list<int> $beforeOrder
+     * @param Collection<int, Artwork>|null $lockedArtworks
+     */
+    private function writePositions(ArtworkCategory $gallery, array $orderedIds, array $beforeOrder, $actor, ?Collection $lockedArtworks = null): void
+    {
+        $lockedArtworks ??= $gallery->artworks()->orderBy('id')->lockForUpdate()->get();
+        $this->validateArtworkIds($orderedIds, $lockedArtworks);
+        $artworksById = $lockedArtworks->keyBy(fn (Artwork $artwork): int => (int) $artwork->getKey());
+
+        foreach ($orderedIds as $position => $artworkId) {
+            $artwork = $artworksById->get($artworkId);
+            if ((int) $artwork->getAttribute('position') === $position) {
+                continue;
+            }
+            $artwork->setAttribute('position', $position);
+            $artwork->save();
+        }
+
+        if ($beforeOrder !== $orderedIds) {
+            $this->adminAuditService->recordOrdering(
+                $actor,
+                'artwork_category.gallery_reordered',
+                'artwork_category',
+                (int) $gallery->getKey(),
+                'gallery-artworks:'.(int) $gallery->getKey(),
+                $beforeOrder,
+                $orderedIds,
+            );
+        }
     }
 
     /** @param Collection<int, Artwork> $artworks */
