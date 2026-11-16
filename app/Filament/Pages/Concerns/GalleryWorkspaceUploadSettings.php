@@ -29,7 +29,6 @@ trait GalleryWorkspaceUploadSettings
 
                 return [
                     'name' => (string) $gallery->getAttribute('name'),
-                    'show_on_home' => (bool) $gallery->getAttribute('show_on_home'),
                     'landscape_detail_enabled' => GalleryPresentation::enabled($gallery),
                     'portrait_detail_enabled' => GalleryPresentation::portraitEnabled($gallery),
                     'artwork_page_surface_mode' => GalleryPresentation::artworkPageSurfaceMode($gallery),
@@ -55,7 +54,6 @@ trait GalleryWorkspaceUploadSettings
                             ->required()
                             ->maxLength(160)
                             ->columnSpanFull(),
-                        AdminControl::toggle('show_on_home', 'Eligible for homepage presentation'),
                         AdminControl::select('sort_mode')
                             ->label(AdminHelp::label(
                                 'Artwork order',
@@ -117,7 +115,6 @@ trait GalleryWorkspaceUploadSettings
                 try {
                     $updated = $service->update($gallery, [
                         'name' => $data['name'],
-                        'show_on_home' => (bool) ($data['show_on_home'] ?? false),
                         'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? false,
                         'portrait_detail_enabled' => $data['portrait_detail_enabled'] ?? false,
                         'artwork_page_surface_mode' => $data['artwork_page_surface_mode'] ?? GalleryPresentation::ARTWORK_SURFACE_INHERIT,

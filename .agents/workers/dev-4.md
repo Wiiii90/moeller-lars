@@ -31,6 +31,11 @@
 - Confirm Artwork forms, sorting and public portrait/landscape fit in browser when user provides concrete feedback. Testing worker owns migration/restore and responsive regression tests; Docs worker owns durable accepted documentation.
 - Deferred/out-of-scope: stale multi-admin form concurrency; old orphan Artwork slots and historical extra-media metadata; Worker 2's media cleanup/deletion; Worker 1's Exhibition date migration.
 
+## Home-owned Gallery source preference (2026-11-16)
+- Removed `show_on_home` from Gallery Settings fill state, form schema and update payload. Gallery no longer renders or submits a Homepage eligibility control; ordinary Gallery autosave can no longer disable Home sourcing by defaulting a missing form value to false.
+- The existing `ArtworkCategory.show_on_home` field is intentionally retained as **one** persisted preference: the Home source workspace already owns its single-gallery and bulk eligibility controls. `GalleryEditorialService` continues accepting that field on calls from Home, preserving selection, published eligibility filtering and audit behavior. No new storage, parallel boolean, migration, or Home editor was added.
+- Gallery Settings now begins with Artwork order after Gallery title; keep the overall order as-is until user reviews it. Browser review pending; no runtime checks, CI, deployments or database mutations.
+
 ## Gallery Settings canonical dialog (2026-11-11)
 - `GalleryWorkspaceUploadSettings::gallerySettingsAction` uses the same responsive two-column `Grid::make()->columns(['md' => 2])` contract as Home Settings; only Gallery title spans the complete row. Removed full-row spans from the other fourteen fields and increased modal to the shared Large editorial width so two-column controls fit.
 - Every field uses `AdminControl` factory; obsolete raw Filament imports removed. The former `hintIcon('heroicon-o-light-bulb')` is retired. Real `AdminHelp` bulb appears with Artwork order and auto-publish labels; auto-publish explanation is preserved in the central help popup instead of a separate full-width helper paragraph. `AdminHelp::label` is the common owner, not a Gallery-only icon/popover. Existing settings except the now-retired one-shot sort action remain in the canonical dialog.
