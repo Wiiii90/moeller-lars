@@ -46,7 +46,7 @@ final class ArtworkEditDialog
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true, ?Closure $onPositionChanged = null): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
@@ -125,14 +125,7 @@ final class ArtworkEditDialog
 
                     $material,
                     ...($positionCount !== null ? [
-                        TextInput::make('position')
-                            ->label('Position')
-                            ->numeric()
-                            ->integer()
-                            ->minValue(1)
-                            ->maxValue(max(1, $positionCount))
-                            ->required()
-                            ->disabled(! $positionEditable),
+                        $this->positionControl($positionCount, $positionEditable, $onPositionChanged),
                     ] : []),
 
                     AdminDimensionsControl::make(),
@@ -140,6 +133,28 @@ final class ArtworkEditDialog
                     ...AdminRichText::schema('description', 'Description', 10000),
                 ]),
         ];
+    }
+
+    /**
+     * Position is an explicit user mutation, not data to reapply whenever an
+     * unrelated Artwork field autosaves while the ranked list changes.
+     */
+    private function positionControl(int $count, bool $editable, ?Closure $onPositionChanged): TextInput
+    {
+        $field = TextInput::make('position')
+            ->label('Position')
+            ->numeric()
+            ->integer()
+            ->minValue(1)
+            ->maxValue(max(1, $count))
+            ->required()
+            ->disabled(! $editable);
+
+        if ($onPositionChanged instanceof Closure) {
+            $field->live(onBlur: true)->afterStateUpdated($onPositionChanged);
+        }
+
+        return $field;
     }
 
     /**

@@ -15,7 +15,6 @@ use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\Artwork;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -130,23 +129,34 @@ trait GalleryWorkspaceArtworkDialogs
                         status: 'success',
                     );
                 },
+                onPositionChanged: function (mixed $position) use ($arguments): void {
+                    try {
+                        if (! $this->moveArtworkToPosition(
+                            (int) $this->actionArtwork($arguments)->getKey(), $position,
+                        )) {
+                            return;
+                        }
+                    } catch (ValidationException $exception) {
+                        $this->notifyValidationFailure('Gallery order was not updated', $exception);
+
+                        return;
+                    }
+
+                    $this->refreshWorkspaceAfterMutation();
+                    $this->forceRender();
+                    app(AdminNotifier::class)->notification(
+                        title: 'Gallery order updated',
+                        status: 'success',
+                    );
+                },
             ))
             ->extraModalFooterActions(fn (array $arguments): array => $this->artworkEditHeaderActions($arguments))
             ->action(function (array $data, array $arguments) use ($dialog): void {
-                // Artwork metadata and the Gallery ranking share one transaction,
-                // while the existing Gallery order service owns the ranking.
-                $changed = DB::transaction(function () use ($dialog, $data, $arguments): bool {
-                    $artwork = $this->actionArtwork($arguments);
-                    $currentIds = $this->orderedArtworkIds();
-                    $oldRank = array_search((int) $artwork->getKey(), $currentIds, true);
-                    $explicitPositionChange = array_key_exists('position', $data)
-                        && $oldRank !== false && (int) $data['position'] !== $oldRank + 1;
-                    $metadataChanged = $dialog->save($artwork, $data, savePrimaryMedia: false);
-                    $orderChanged = $explicitPositionChange
-                        && $this->moveArtworkToPosition((int) $artwork->getKey(), $data['position']);
-
-                    return $metadataChanged || $orderChanged;
-                });
+                // Position is saved only by the explicit field-change owner,
+                // never replayed from a stale Edit form on metadata autosave.
+                $changed = $dialog->save(
+                    $this->actionArtwork($arguments), $data, savePrimaryMedia: false,
+                );
                 $this->refreshWorkspaceAfterMutation();
                 if ($changed) {
                     $this->forceRender();
