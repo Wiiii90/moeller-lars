@@ -9,6 +9,7 @@ use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 final class HomeHeroConfigurationService
@@ -40,6 +41,7 @@ final class HomeHeroConfigurationService
      *     manual_group_enabled:bool,
      *     disabled_auto_artwork_ids:list<int>,
      *     sourced_weights:array<string,int>,
+     *     sourced_order:list<string>,
      *     display_strategy:string,
      *     manual_group:list<array{artwork_id?:int,media_asset_id?:int,weight:int,enabled:bool}>,
      *     manual_group_count:int,
@@ -140,6 +142,7 @@ final class HomeHeroConfigurationService
             'disabled_auto_artwork_ids' => $mode !== 'manual'
                 ? $this->readDisabledAutoArtworkIds($source['disabled_auto_artwork_ids'] ?? []) : [],
             'sourced_weights' => $mode === 'manual' ? [] : $this->readSourcedWeights($source['sourced_weights'] ?? []),
+            'sourced_order' => $mode === 'semi_automatic' ? $this->readSourcedOrder($source['sourced_order'] ?? []) : [],
         ];
     }
 
@@ -172,6 +175,7 @@ final class HomeHeroConfigurationService
             }
             if ($mode === 'semi_automatic') {
                 $profiles[$mode]['manual_group_enabled'] = $profile['manual_group_enabled'];
+                $profiles[$mode]['sourced_order'] = $profile['sourced_order'];
             }
         }
         return $profiles;
@@ -201,6 +205,9 @@ final class HomeHeroConfigurationService
             $sourcedWeights = array_key_exists('sourced_weights', $input)
                 ? $this->validatedSourcedWeights($input['sourced_weights'])
                 : $profile['sourced_weights'];
+            $sourcedOrder = array_key_exists('sourced_order', $input)
+                ? $this->validatedSourcedOrder($input['sourced_order'])
+                : $profile['sourced_order'];
             $displayStrategy = $this->requestedDisplayStrategy($input, $profile['display_strategy']);
             $sourceRule = $this->enum(
                 $input['source_rule'] ?? $profile['source_rule'],
@@ -238,6 +245,7 @@ final class HomeHeroConfigurationService
             $manualSequenceChanged = $this->manualGroupKeys($manualGroup) !== $this->manualGroupKeys($profile['manual_group'])
                 || array_map(static fn (array $member): bool => $member['enabled'], $manualGroup)
                     !== array_map(static fn (array $member): bool => $member['enabled'], $profile['manual_group']);
+            $sourcedOrderChanged = $sourcedOrder !== $profile['sourced_order'];
             $intervalChanged = $rotationInterval !== $profile['rotation_interval'];
             $strategyChanged = $displayStrategy !== $profile['display_strategy'];
             $automaticGroupDefinitionChanged = $groupSource !== 'manual'
@@ -246,7 +254,7 @@ final class HomeHeroConfigurationService
                     || $manualGroupEnabled !== $profile['manual_group_enabled']);
             if ($displayStrategy === 'sequential'
                 && ($rotationStartedAt === null || $manualSequenceChanged || $intervalChanged
-                    || $strategyChanged || $automaticGroupDefinitionChanged)) {
+                    || $strategyChanged || $automaticGroupDefinitionChanged || $sourcedOrderChanged)) {
                 $rotationStartedAt = CarbonImmutable::now('UTC')->toIso8601String();
             }
 
@@ -268,6 +276,7 @@ final class HomeHeroConfigurationService
             }
             if ($groupSource === 'semi_automatic') {
                 $profiles[$groupSource]['manual_group_enabled'] = $manualGroupEnabled;
+                $profiles[$groupSource]['sourced_order'] = $sourcedOrder;
             }
 
             $artwork['show_details'] = $showDetails;
@@ -444,6 +453,84 @@ final class HomeHeroConfigurationService
             ['manual_group' => array_map(static fn (string $key): array => $byKey[$key], $keys)],
             ['before' => $expected, 'after' => $keys],
         );
+    }
+
+    /**
+     * Semi-Automatic keeps the selected/sourced membership independent from
+     * its user-authored ranking. Disabled Manual members retain their place.
+     * @param list<string> $keys
+     */
+    public function reorderSourcedGroup(HomePresentationSetting $settings, array $keys): bool
+    {
+        $fresh = $settings->fresh();
+        $configuration = $this->configuration($fresh);
+        if ($configuration['group_source'] !== 'semi_automatic') {
+            throw ValidationException::withMessages(['candidate' => 'Only Semi-Automatic has a mixed candidate ranking.']);
+        }
+
+        $manualKeys = array_map(self::memberKey(...), $configuration['manual_group']);
+        $resolved = app(HomeHeroResolver::class)->resolve($fresh);
+        $activeKeys = $resolved['group']->map(
+            static fn (HomeHeroCandidate $candidate): string => $candidate->key(),
+        )->all();
+        $before = $this->rankSourcedKeys(
+            array_values(array_unique([...$manualKeys, ...$activeKeys])),
+            $configuration['sourced_order'],
+        );
+        if ($keys === $before) {
+            return false;
+        }
+        if (! array_is_list($keys) || count($keys) !== count(array_unique($keys))) {
+            throw ValidationException::withMessages(['candidate' => 'The Hero candidate order contains duplicates.']);
+        }
+        $left = $before;
+        $right = $keys;
+        sort($left);
+        sort($right);
+        if ($left !== $right) {
+            throw ValidationException::withMessages(['candidate' => 'The Hero candidates changed. Reload and try again.']);
+        }
+
+        return $this->updateArtworkSettings(
+            $fresh,
+            ['sourced_order' => $keys],
+            ['before' => $before, 'after' => $keys],
+        );
+    }
+
+    /**
+     * Apply saved rank to the current source membership; newly sourced
+     * candidates follow known ranks, preserving the incoming source order.
+     * @param list<string> $keys
+     * @param list<string> $savedOrder
+     * @return list<string>
+     */
+    public function rankSourcedKeys(array $keys, array $savedOrder): array
+    {
+        $available = array_fill_keys($keys, true);
+        $ordered = [];
+        foreach ([...$savedOrder, ...$keys] as $key) {
+            if (! isset($available[$key])) {
+                continue;
+            }
+            unset($available[$key]);
+            $ordered[] = $key;
+        }
+
+        return $ordered;
+    }
+
+    /** @param Collection<int,HomeHeroCandidate> $group
+     * @param list<string> $savedOrder
+     * @return Collection<int,HomeHeroCandidate>
+     */
+    public function rankSourcedCandidates(Collection $group, array $savedOrder): Collection
+    {
+        $byKey = $group->keyBy(static fn (HomeHeroCandidate $candidate): string => $candidate->key());
+
+        return collect($this->rankSourcedKeys($byKey->keys()->all(), $savedOrder))
+            ->map(static fn (string $key): HomeHeroCandidate => $byKey->get($key))
+            ->values();
     }
 
     public function updateCandidateWeight(HomePresentationSetting $settings, string $key, int $basisPoints): bool
@@ -751,6 +838,37 @@ final class HomeHeroConfigurationService
      *
      * @return array<string,int>
      */
+    /** @return list<string> */
+    private function readSourcedOrder(mixed $value): array
+    {
+        if (! is_array($value) || ! array_is_list($value)) {
+            return [];
+        }
+
+        $keys = [];
+        foreach ($value as $key) {
+            if (is_string($key) && preg_match('/^(artwork|media):[1-9][0-9]*$/D', $key)) {
+                $keys[] = $key;
+            }
+        }
+
+        return array_values(array_unique(array_slice($keys, 0, 1000)));
+    }
+
+    /** @return list<string> */
+    private function validatedSourcedOrder(mixed $value): array
+    {
+        if (! is_array($value) || ! array_is_list($value) || count($value) > 1000) {
+            throw ValidationException::withMessages(['candidate' => 'The mixed Hero ranking is invalid.']);
+        }
+        $keys = $this->readSourcedOrder($value);
+        if (count($keys) !== count($value)) {
+            throw ValidationException::withMessages(['candidate' => 'The mixed Hero ranking contains invalid or duplicate keys.']);
+        }
+
+        return $keys;
+    }
+
     private function readSourcedWeights(mixed $value): array
     {
         if (! is_array($value) || array_is_list($value)) {

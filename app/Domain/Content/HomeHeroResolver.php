@@ -131,6 +131,10 @@ final class HomeHeroResolver
             $group = $manual->concat($automatic)->values();
         }
 
+        if ($semi) {
+            $group = $this->configuration->rankSourcedCandidates($group, $configuration['sourced_order']);
+        }
+
         $weights = $this->configuration->sourcedGroupWeights(
             $group,
             $configuration['sourced_weights'],
