@@ -91,4 +91,6 @@ This is now a **Docs normalization gate**: translate in place to English, preser
 
 ## Immediate organizational objective
 
-Continue artist-feedback development without inventing a freeze. Maintain Issue/milestone hygiene while work moves. When the user declares the v0.4 Dev freeze, drive the bounded #198 → #199 → #214 closeout sequence, then prepare the separately authorized history-cleanup/main-promotion gate.
+Current next action: perform the planned **Validation → local artist-state sync** before the next substantial Validation update. Copy the artist-curated Validation PostgreSQL data and matching canonical media to the normal local preview state, verify the transfer, then start current `dev` locally so its forward migrations advance that copied artist dataset. Validation itself remains unchanged during this rehearsal. The user has explicitly approved proceeding with this workflow; resume from the export/transfer/import step, but always re-read current `dev` and current platform contracts before giving concrete operator commands.
+
+In parallel, artist-feedback development remains active; do not invent a freeze. Maintain Issue/milestone hygiene while work moves. When the user declares the v0.4 Dev freeze, drive the bounded #198 → #199 → #214 closeout sequence, then prepare the separately authorized history-cleanup/main-promotion gate.
