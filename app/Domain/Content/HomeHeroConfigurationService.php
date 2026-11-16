@@ -4,6 +4,7 @@ namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Artwork\GalleryPresentation;
+use App\Domain\Artwork\ArtworkSort;
 use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use Carbon\CarbonImmutable;
@@ -18,12 +19,7 @@ final class HomeHeroConfigurationService
 
     public const WEIGHT_TOTAL = 10000;
 
-    public const SOURCE_RULES = [
-        'newest_media_added' => 'Newest by Media Added',
-        'newest_artwork' => 'Newest by Artwork',
-        'oldest_media_added' => 'Oldest by Media Added',
-        'oldest_artwork' => 'Oldest by Artwork',
-    ];
+    public const SOURCE_RULES = ArtworkSort::SOURCE_RULES;
 
     /** @var array{count:int,unit:string} */
     public const DEFAULT_ROTATION_INTERVAL = [

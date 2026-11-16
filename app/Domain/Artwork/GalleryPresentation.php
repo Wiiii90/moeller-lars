@@ -52,7 +52,10 @@ final class GalleryPresentation
 
     public const SORT_OPTIONS = [
         self::SORT_MANUAL => 'Manual',
-        self::SORT_NEWEST => 'Newest artwork date',
+        self::SORT_NEWEST => 'Newest by Artwork',
+        ArtworkSort::OLDEST_ARTWORK => 'Oldest by Artwork',
+        ArtworkSort::NEWEST_MEDIA_ADDED => 'Newest by Media Added',
+        ArtworkSort::OLDEST_MEDIA_ADDED => 'Oldest by Media Added',
     ];
 
     public static function sortMode(ArtworkCategory $gallery): string
@@ -69,15 +72,19 @@ final class GalleryPresentation
      */
     public static function orderArtworks(Builder $query, ArtworkCategory $gallery): Builder
     {
-        return self::sortMode($gallery) === self::SORT_NEWEST
-            ? self::orderArtworksByDate($query)
-            : $query->orderBy('position')->orderBy('id');
+        $mode = self::sortMode($gallery);
+        if ($mode === self::SORT_MANUAL) {
+            return $query->orderBy('position')->orderBy('id');
+        }
+
+        // Historical persisted "newest" is the same canonical Artwork rule.
+        return ArtworkSort::apply($query, $mode === self::SORT_NEWEST ? ArtworkSort::NEWEST_ARTWORK : $mode);
     }
 
-    /** Shared by Gallery, one-time Manual sorting and public Home candidates. */
-    public const DATE_ORDER_SQL = 'year DESC NULLS LAST, month DESC NULLS LAST, day DESC NULLS LAST, created_at DESC, id DESC';
+    /** Kept for existing SQL consumers; ArtworkSort owns these expressions. */
+    public const DATE_ORDER_SQL = ArtworkSort::DATE_DESC_SQL;
 
-    public const DATE_ORDER_ASC_SQL = 'year ASC NULLS LAST, month ASC NULLS LAST, day ASC NULLS LAST, created_at ASC, id ASC';
+    public const DATE_ORDER_ASC_SQL = ArtworkSort::DATE_ASC_SQL;
 
     /** @template TModel of \Illuminate\Database\Eloquent\Model
      * @param  Builder<TModel>  $query
@@ -85,7 +92,7 @@ final class GalleryPresentation
      */
     public static function orderArtworksByDate(Builder $query, bool $oldestFirst = false): Builder
     {
-        return $query->orderByRaw($oldestFirst ? self::DATE_ORDER_ASC_SQL : self::DATE_ORDER_SQL);
+        return ArtworkSort::apply($query, $oldestFirst ? ArtworkSort::OLDEST_ARTWORK : ArtworkSort::NEWEST_ARTWORK);
     }
 
     public const EDGE_DISABLED = 'disabled';

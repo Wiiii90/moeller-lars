@@ -74,7 +74,7 @@ class PublicArtworkQuery
         if ($excludeIds !== []) {
             $query->whereNotIn('id', $excludeIds);
         }
-        $this->applyConfiguredHomeOrdering($query, $sourceRule);
+        ArtworkSort::apply($query, $sourceRule);
 
         /** @var Collection<int, Artwork> $artworks */
         $artworks = $query
@@ -188,28 +188,6 @@ class PublicArtworkQuery
                 }
             })
             ->first();
-    }
-
-    /** @param Builder<Artwork> $query */
-    private function applyConfiguredHomeOrdering(Builder $query, string $sourceRule): void
-    {
-        if (in_array($sourceRule, ['newest_media_added', 'oldest_media_added'], true)) {
-            // Every eligible Artwork has exactly one viable primary media link.
-            // Sort by the file's upload time, not the Artwork record's creation.
-            $primaryMediaAdded = \App\Models\MediaAsset::query()
-                ->select('media_assets.created_at')
-                ->join('artwork_media', 'artwork_media.media_asset_id', '=', 'media_assets.id')
-                ->whereColumn('artwork_media.artwork_id', 'artworks.id')
-                ->where('artwork_media.role', 'primary')
-                ->limit(1);
-            $direction = $sourceRule === 'oldest_media_added' ? 'asc' : 'desc';
-            $query->orderBy($primaryMediaAdded, $direction)
-                ->orderBy('artworks.id', $direction);
-
-            return;
-        }
-
-        GalleryPresentation::orderArtworksByDate($query, $sourceRule === 'oldest_artwork');
     }
 
     /** @return Builder<Artwork> */
