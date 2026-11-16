@@ -144,10 +144,10 @@
                                     x-bind:class="{ 'is-current': activeId === $el.dataset.candidateKey }"
                                     data-candidate-key="{{ $row['id'] }}"
                                     wire:key="home-hero-row-{{ $row['id'] }}"
-                                    @if ($isManual) wire:sort:item="{{ $row['id'] }}" @endif
+                                    @if ($isManual || $heroGroupSource === 'semi_automatic') wire:sort:item="{{ $row['id'] }}" @endif
                                 >
                                     <span class="home-hero-candidate__position"><span class="admin-position">{{ $index + 1 }}</span></span>
-                                    @if ($isManual)
+                                    @if ($isManual || $heroGroupSource === 'semi_automatic')
                                         <button class="admin-drag-handle" type="button" wire:sort:handle aria-label="Drag {{ $row['title'] }}">⋮⋮</button>
                                     @else
                                         <span class="home-hero-candidate__drag-spacer" aria-hidden="true"></span>
@@ -195,6 +195,12 @@
                                             <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Delete" label="Remove"
                                                 wire:click="removeHeroCandidate('{{ $row['id'] }}')" />
                                         @elseif ($row['is_automatic'] ?? false)
+                                            @if ($heroGroupSource === 'semi_automatic')
+                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp" :disabled="! $row['can_move_up']"
+                                                    wire:click="moveHeroArtwork('{{ $row['id'] }}', 'up')" />
+                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveDown" :disabled="! $row['can_move_down']"
+                                                    wire:click="moveHeroArtwork('{{ $row['id'] }}', 'down')" />
+                                            @endif
                                             <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Unpublish" label="Disable"
                                                 wire:click="setAutomaticHeroCandidateEnabled({{ (int) substr($row['id'], 8) }}, false)" />
                                         @endif

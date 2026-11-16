@@ -543,7 +543,9 @@ final class HomePresentation extends Page
         if (! in_array($this->heroGroupSource, ['manual', 'semi_automatic'], true)) {
             return;
         }
-        $ids = array_map(HomeHeroConfigurationService::memberKey(...), $this->manualHeroGroup);
+        $semi = $this->heroGroupSource === 'semi_automatic';
+        $ids = $semi ? array_column($this->heroRailRows, 'id')
+            : array_map(HomeHeroConfigurationService::memberKey(...), $this->manualHeroGroup);
         $from = array_search($target, $ids, true);
         if ($from === false) {
             throw ValidationException::withMessages(['manual_group' => 'The Hero group changed. Reload and try again.']);
@@ -552,7 +554,10 @@ final class HomePresentation extends Page
         array_splice($ids, $from, 1);
         $position = max(0, min($position, count($ids)));
         array_splice($ids, $position, 0, [$moved]);
-        $changed = app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
+        $service = app(HomeHeroConfigurationService::class);
+        $changed = $semi
+            ? $service->reorderSourcedGroup($this->settings(), $ids)
+            : $service->reorderManualGroup($this->settings(), $ids);
         $this->reloadWorkspace();
         if ($changed) {
             app(AdminNotifier::class)->notification('Hero candidate order updated', status: 'success');
@@ -565,7 +570,9 @@ final class HomePresentation extends Page
             || ! in_array($direction, ['up', 'down'], true)) {
             return;
         }
-        $ids = array_map(HomeHeroConfigurationService::memberKey(...), $this->manualHeroGroup);
+        $semi = $this->heroGroupSource === 'semi_automatic';
+        $ids = $semi ? array_column($this->heroRailRows, 'id')
+            : array_map(HomeHeroConfigurationService::memberKey(...), $this->manualHeroGroup);
         $index = array_search($key, $ids, true);
         if ($index === false) {
             return;
@@ -575,7 +582,10 @@ final class HomePresentation extends Page
             return;
         }
         [$ids[$index], $ids[$to]] = [$ids[$to], $ids[$index]];
-        $changed = app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
+        $service = app(HomeHeroConfigurationService::class);
+        $changed = $semi
+            ? $service->reorderSourcedGroup($this->settings(), $ids)
+            : $service->reorderManualGroup($this->settings(), $ids);
         $this->reloadWorkspace();
         if ($changed) {
             app(AdminNotifier::class)->notification('Hero candidate order updated', status: 'success');
@@ -1486,9 +1496,13 @@ final class HomePresentation extends Page
                 })->values()->all();
         }
 
-        $sequence = $this->heroDisplayStrategy === 'sequential' ? $resolution['sequence'] : $resolution['group'];
+        // The sequence displayed for editing is the saved rank, not today's
+        // rotation offset. Only the Current/Next labels follow rotation.
+        $sequence = $resolution['group'];
+        $rotationKeys = $resolution['sequence']
+            ->map(static fn (HomeHeroCandidate $candidate): string => $candidate->key())->all();
         $currentId = $current instanceof HomeHeroCandidate ? $current->key() : null;
-        $this->heroRailRows = $sequence->values()->map(function (HomeHeroCandidate $candidate, int $index) use ($currentId, $resolution): array {
+        $this->heroRailRows = $sequence->values()->map(function (HomeHeroCandidate $candidate) use ($currentId, $resolution, $rotationKeys): array {
             $row = $this->candidateRow($candidate);
             $row['eligible'] = true;
             $row['is_manual'] = false;
@@ -1496,8 +1510,9 @@ final class HomePresentation extends Page
             $weight = $resolution['weights'][$candidate->key()] ?? 0;
             $row['weight'] = $weight;
             $row['percentage'] = number_format($weight / 100, 2, '.', '');
+            $rotationRank = array_search($candidate->key(), $rotationKeys, true);
             $row['sequence_label'] = $this->heroDisplayStrategy === 'sequential'
-                ? ($index === 0 ? 'Current' : ($index === 1 ? 'Next' : 'Then'))
+                ? ($rotationRank === 0 ? 'Current' : ($rotationRank === 1 ? 'Next' : 'Then'))
                 : ($row['id'] === $currentId ? 'Current' : null);
 
             return $row;
@@ -1508,7 +1523,23 @@ final class HomePresentation extends Page
                 $this->heroRailRows,
                 static fn (array $row): bool => ! in_array($row['id'], $manualKeys, true),
             ));
-            $this->heroRailRows = [...$this->manualHeroRows($settings, $resolution), ...$automaticRows];
+            $combined = [...$this->manualHeroRows($settings, $resolution), ...$automaticRows];
+            $byKey = collect($combined)->keyBy('id');
+            $keys = app(HomeHeroConfigurationService::class)->rankSourcedKeys(
+                $byKey->keys()->all(),
+                $resolution['configuration']['sourced_order'],
+            );
+            $this->heroRailRows = array_map(
+                static function (string $key, int $index) use ($byKey, $keys): array {
+                    $row = $byKey->get($key);
+                    $row['can_move_up'] = $index > 0;
+                    $row['can_move_down'] = $index < count($keys) - 1;
+
+                    return $row;
+                },
+                $keys,
+                array_keys($keys),
+            );
         }
     }
 
