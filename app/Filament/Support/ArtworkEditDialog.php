@@ -63,7 +63,9 @@ final class ArtworkEditDialog
             $material->columnSpanFull();
         }
 
-        $dateControl = AdminPartialDateControl::make()
+        $dateControl = AdminPartialDateControl::make(
+            liveUpdates: $creating && $onCreateOrderSourceChanged instanceof Closure,
+        )
             ->rule(static fn (): Closure => static function (string $attribute, mixed $value, Closure $fail): void {
                 try {
                     ArtworkDate::normalize($value);

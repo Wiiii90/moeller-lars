@@ -14,6 +14,7 @@ final class AdminPartialDateControl
         ?string $label = null,
         ?string $help = null,
         ?string $region = null,
+        bool $liveUpdates = false,
     ): ViewField {
         $accessibleLabel = $label ?? 'Artwork date';
         $shownLabel = $help === null ? $accessibleLabel : new HtmlString(
@@ -27,6 +28,7 @@ final class AdminPartialDateControl
             ->viewData([
                 'region' => $region ?? RegionalFormats::publicRegion(),
                 'accessibleLabel' => $accessibleLabel,
+                'liveUpdates' => $liveUpdates,
             ]);
     }
 }

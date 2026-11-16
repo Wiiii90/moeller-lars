@@ -1,7 +1,7 @@
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
     <div
         class="admin-partial-date"
-        x-data="adminPartialDateControl($wire.entangle('{{ $getStatePath() }}'), @js($region))"
+        x-data="adminPartialDateControl($wire.entangle('{{ $getStatePath() }}'){{ $liveUpdates ? '.live' : '' }}, @js($region))"
         x-on:keydown.escape.window="close()"
         x-on:resize.window="reposition()"
         x-on:scroll.window="reposition()"
