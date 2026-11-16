@@ -365,7 +365,8 @@ final class HomePresentation extends Page
             Action::make('editHeroGroup')
                 ->label('Edit Group')
                 ->visible(fn (): bool => $this->heroGroupSource !== 'automatic')
-                ->modalHeading('Edit Manual Sourced Artworks')
+                ->modalHeading(fn (): string => $this->heroGroupSource === 'semi_automatic'
+                    ? 'Edit Hero Candidates' : 'Edit Manual Sourced Artworks')
                 ->fillForm(fn (): array => ['pending_media_asset_id' => null])
                 ->schema(fn (): array => app(HomeHeroGroupDialog::class)->schema())
                 // The picker persists on change and row actions persist directly.
@@ -375,13 +376,10 @@ final class HomePresentation extends Page
         );
     }
 
-    /** Reuse the current Hero Stage projection rather than maintaining a second table dataset. */
-    public function manualHeroEditorRows(): array
+    /** The Edit dialog and Stage share the same ranked source projection. */
+    public function heroGroupEditorRows(): array
     {
-        return array_values(array_filter(
-            $this->heroRailRows,
-            static fn (array $row): bool => (bool) ($row['is_manual'] ?? false),
-        ));
+        return $this->heroRailRows;
     }
 
     /** The Storage picker commits through the same audited Hero owner as Stage actions. */

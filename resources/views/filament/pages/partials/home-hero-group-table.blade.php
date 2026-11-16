@@ -1,5 +1,5 @@
 {{-- Shared ranked Admin table; compact single-line identity keeps every row at the same height. --}}
-<x-admin.table class="admin-table--data admin-table--ranked admin-table--dialog-inset home-hero-group-table" aria-label="Manual Sourced Artworks">
+<x-admin.table class="admin-table--data admin-table--ranked admin-table--dialog-inset home-hero-group-table" aria-label="Hero candidates">
     <table class="admin-table--six-grid">
         <colgroup>
             <col class="admin-table__col-position">
@@ -16,6 +16,7 @@
         </thead>
         <tbody wire:sort="sortHeroArtwork">
             @forelse ($rows as $row)
+                @php $isManual = (bool) ($row['is_manual'] ?? false); @endphp
                 <tr wire:key="home-hero-group-member-{{ $row['id'] }}" wire:sort:item="{{ $row['id'] }}">
                     <td class="admin-table__position">
                         <span class="admin-position">{{ $loop->iteration }}</span>
@@ -45,20 +46,27 @@
                             <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveDown"
                                 :disabled="$loop->last"
                                 wire:click="moveHeroArtwork('{{ $row['id'] }}', 'down')" />
-                            <x-admin.row-action
-                                :action="$row['disabled'] ? \App\Filament\Support\AdminRowAction::Publish : \App\Filament\Support\AdminRowAction::Unpublish"
-                                :label="$row['disabled'] ? 'Enable' : 'Disable'"
-                                wire:click="setManualHeroCandidateEnabled('{{ $row['id'] }}', {{ $row['disabled'] ? 'true' : 'false' }})" />
-                            <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Delete"
-                                label="Remove"
-                                wire:click="removeHeroCandidate('{{ $row['id'] }}')" />
+                            @if ($isManual)
+                                <x-admin.row-action
+                                    :action="($row['disabled'] ?? false) ? \App\Filament\Support\AdminRowAction::Publish : \App\Filament\Support\AdminRowAction::Unpublish"
+                                    :label="($row['disabled'] ?? false) ? 'Enable' : 'Disable'"
+                                    wire:click="setManualHeroCandidateEnabled('{{ $row['id'] }}', {{ ($row['disabled'] ?? false) ? 'true' : 'false' }})" />
+                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Delete"
+                                    label="Remove"
+                                    wire:click="removeHeroCandidate('{{ $row['id'] }}')" />
+                            @else
+                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Unpublish"
+                                    label="Disable"
+                                    wire:click="setAutomaticHeroCandidateEnabled({{ (int) substr($row['id'], 8) }}, false)" />
+                                <span class="home-source-table__action-slot" aria-hidden="true"></span>
+                            @endif
                         </x-admin.toolbar>
                     </td>
                 </tr>
             @empty
                 <tr>
                     <td colspan="4" class="admin-table__empty-cell">
-                        <x-admin.empty-state title="No manual candidates" minimal />
+                        <x-admin.empty-state title="No sourced Hero candidates" minimal />
                     </td>
                 </tr>
             @endforelse

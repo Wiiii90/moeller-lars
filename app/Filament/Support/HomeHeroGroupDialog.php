@@ -39,7 +39,7 @@ final class HomeHeroGroupDialog
                 ->columnSpanFull(),
             View::make('filament.pages.partials.home-hero-group-table')
                 ->viewData(fn ($livewire): array => [
-                    'rows' => $livewire instanceof HomePresentation ? $livewire->manualHeroEditorRows() : [],
+                    'rows' => $livewire instanceof HomePresentation ? $livewire->heroGroupEditorRows() : [],
                 ])
                 ->columnSpanFull(),
         ];
