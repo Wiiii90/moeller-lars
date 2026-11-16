@@ -1,5 +1,5 @@
 {{-- Shared ranked Admin table; compact single-line identity keeps every row at the same height. --}}
-<x-admin.table class="admin-table--data admin-table--ranked home-hero-group-table" aria-label="Manual Sourced Artworks">
+<x-admin.table class="admin-table--data admin-table--ranked admin-table--dialog-inset home-hero-group-table" aria-label="Manual Sourced Artworks">
     <table class="admin-table--six-grid">
         <colgroup>
             <col class="admin-table__col-position">

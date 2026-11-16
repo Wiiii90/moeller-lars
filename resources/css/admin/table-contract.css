@@ -120,6 +120,14 @@
     padding-left: var(--admin-table-edge-inset) !important;
 }
 
+/* Embedded Edit tables keep symmetrical breathing room inside the modal
+ * without changing the shared row, column or action geometry. This named
+ * variant belongs to the table shell, not to a page-specific selector. */
+.admin-table--dialog-inset {
+    box-sizing: border-box;
+    padding-inline: var(--admin-table-edge-inset);
+}
+
 .admin-table__ordering-heading {
     text-align: left !important;
 }
