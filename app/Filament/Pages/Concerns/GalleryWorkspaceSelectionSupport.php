@@ -119,7 +119,7 @@ trait GalleryWorkspaceSelectionSupport
             'sort_mode' => GalleryPresentation::sortMode($gallery),
             'show_artwork_information' => GalleryPresentation::showArtworkInformation($gallery),
             'caption_layout' => GalleryPresentation::captionLayout($gallery),
-            'artwork_page_surface_mode' => GalleryPresentation::artworkPageSurfaceMode($gallery),
+            'artwork_page_layout' => GalleryPresentation::artworkPageLayout($gallery),
             'video_sound_enabled' => GalleryPresentation::allowVideoSound($gallery),
             'path' => '/'.ltrim((string) $gallery->getAttribute('slug'), '/'),
             'preview_url' => app(SitePreviewContext::class)->previewUrlFor($section),

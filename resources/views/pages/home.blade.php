@@ -6,7 +6,7 @@
 
 @if ($template === \App\Domain\Content\HomeTemplate::Artwork)
     @section('content_class', ($expandLandscape || $expandPortrait) ? 'site-content--fitted-artwork site-content--home-hero-fitted' : '')
-    @section('artwork_header_divider', \App\Domain\Artwork\GalleryPresentation::artworkPageDividerForMode($artworkPageSurfaceMode) ?? '')
+    @section('artwork_header_divider', \App\Domain\Content\HomeHeroConfigurationService::artworkPageDividerForMode($artworkPageSurfaceMode) ?? '')
     @section('artwork_menu_surface_wide', $artworkMenuSurfaceWide ? '1' : '')
 @endif
 

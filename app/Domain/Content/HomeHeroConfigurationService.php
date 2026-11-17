@@ -14,6 +14,27 @@ use Illuminate\Validation\ValidationException;
 
 final class HomeHeroConfigurationService
 {
+    public const ARTWORK_SURFACE_INHERIT = 'inherit';
+
+    public const ARTWORK_SURFACE_JOINED = 'joined';
+
+    public const ARTWORK_SURFACE_SEPARATE = 'separate';
+
+    public const ARTWORK_SURFACE_OPTIONS = [
+        self::ARTWORK_SURFACE_INHERIT => 'Follow General',
+        self::ARTWORK_SURFACE_JOINED => 'No gap',
+        self::ARTWORK_SURFACE_SEPARATE => 'Separate Surface',
+    ];
+
+    public static function artworkPageDividerForMode(string $mode): ?string
+    {
+        return match ($mode) {
+            self::ARTWORK_SURFACE_JOINED => 'fine',
+            self::ARTWORK_SURFACE_SEPARATE => 'separate',
+            default => null,
+        };
+    }
+
     public const DEFAULT_GROUP_SIZE = 12;
 
     public const MAX_GROUP_SIZE = 50;
@@ -89,8 +110,8 @@ final class HomeHeroConfigurationService
             'portrait_detail_enabled' => (bool) ($artwork['portrait_detail_enabled'] ?? false),
             'artwork_page_surface_mode' => $this->enum(
                 $artwork['artwork_page_surface_mode'] ?? null,
-                array_keys(GalleryPresentation::ARTWORK_SURFACE_OPTIONS),
-                GalleryPresentation::ARTWORK_SURFACE_INHERIT,
+                array_keys(self::ARTWORK_SURFACE_OPTIONS),
+                self::ARTWORK_SURFACE_INHERIT,
             ),
             'artwork_menu_surface_wide' => (bool) ($artwork['artwork_menu_surface_wide'] ?? false),
             'show_media_credits' => (bool) ($artwork['show_media_credits'] ?? false),
@@ -230,7 +251,7 @@ final class HomeHeroConfigurationService
             $expandPortrait = (bool) ($input['portrait_detail_enabled'] ?? $current['portrait_detail_enabled']);
             $pageSurfaceMode = $this->enum(
                 $input['artwork_page_surface_mode'] ?? $current['artwork_page_surface_mode'],
-                array_keys(GalleryPresentation::ARTWORK_SURFACE_OPTIONS),
+                array_keys(self::ARTWORK_SURFACE_OPTIONS),
                 $current['artwork_page_surface_mode'],
             );
             $wideArtworkMenu = (bool) ($input['artwork_menu_surface_wide'] ?? $current['artwork_menu_surface_wide']);

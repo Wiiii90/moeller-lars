@@ -470,10 +470,17 @@ SQL;
         return match ($table) {
             'artworks' => $this->hasOldArtworkDates($checkpoint)
                 ? self::HISTORICAL_ARTWORK_DATE_PAYLOAD : 'version_row.payload',
-            'artwork_categories' => "(version_row.payload || jsonb_build_object(
-                'artwork_menu_surface_wide',
-                COALESCE((version_row.payload->>'artwork_menu_surface_wide')::boolean, false)
-            ))",
+            'artwork_categories' => <<<'SQL'
+(CASE WHEN jsonb_exists(version_row.payload, 'artwork_page_layout')
+    THEN version_row.payload
+    ELSE (version_row.payload - 'landscape_detail_enabled' - 'landscape_detail_scale'
+        - 'portrait_detail_enabled' - 'artwork_page_surface_mode' - 'artwork_menu_surface_wide'
+        || jsonb_build_object('artwork_page_layout',
+            CASE WHEN COALESCE((version_row.payload->>'landscape_detail_enabled')::boolean, false)
+                   OR COALESCE((version_row.payload->>'portrait_detail_enabled')::boolean, false)
+                THEN 'expanded' ELSE 'standard' END))
+END)
+SQL,
             'site_sections' => <<<'SQL'
 (version_row.payload || jsonb_build_object(
     'meta_description',
@@ -530,7 +537,7 @@ SQL,
                             ->whereRaw("jsonb_exists(payload, 'date_text')");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'artwork_categories')
-                            ->whereRaw("NOT jsonb_exists(payload, 'artwork_menu_surface_wide')");
+                            ->whereRaw("NOT jsonb_exists(payload, 'artwork_page_layout')");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'site_sections')
                             ->whereRaw("NOT jsonb_exists(payload, 'meta_description')");

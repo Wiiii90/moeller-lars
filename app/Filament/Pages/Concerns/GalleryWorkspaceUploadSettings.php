@@ -40,10 +40,7 @@ trait GalleryWorkspaceUploadSettings
                 try {
                     $updated = $service->update($gallery, [
                         'name' => $data['name'],
-                        'landscape_detail_enabled' => $data['landscape_detail_enabled'] ?? false,
-                        'portrait_detail_enabled' => $data['portrait_detail_enabled'] ?? false,
-                        'artwork_page_surface_mode' => $data['artwork_page_surface_mode'] ?? GalleryPresentation::ARTWORK_SURFACE_INHERIT,
-                        'artwork_menu_surface_wide' => $data['artwork_menu_surface_wide'] ?? false,
+                        'artwork_page_layout' => $data['artwork_page_layout'] ?? GalleryPresentation::ARTWORK_PAGE_STANDARD,
                         'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
                         'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
                         // Sort changes are exclusively committed through the
@@ -96,7 +93,7 @@ trait GalleryWorkspaceUploadSettings
     private function gallerySettingsFields(bool $stage): Grid
     {
         $name = AdminControl::text('name', 'Gallery title')
-            ->required()->maxLength(160)->columnSpanFull();
+            ->required(! $stage)->maxLength(160)->columnSpanFull();
 
         $order = AdminControl::select('sort_mode')
             ->label(AdminHelp::label(
@@ -106,7 +103,7 @@ trait GalleryWorkspaceUploadSettings
             ))
             ->options(GalleryPresentation::SORT_OPTIONS)
             ->default(GalleryPresentation::SORT_MANUAL)
-            ->required()
+            ->required(! $stage)
             ->live()
             // Never submit this field through the generic Edit autosave.
             ->extraAlpineAttributes(['x-on:change.stop' => 'true'], merge: true)
@@ -164,7 +161,7 @@ trait GalleryWorkspaceUploadSettings
                 ),
                 $this->gallerySettingControl(
                     AdminControl::select('caption_layout', 'Caption arrangement')
-                        ->options(GalleryPresentation::CAPTION_LAYOUTS)->required(),
+                        ->options(GalleryPresentation::CAPTION_LAYOUTS)->required(! $stage),
                     'caption_layout', $stage,
                 ),
                 $this->gallerySettingControl(
@@ -173,28 +170,16 @@ trait GalleryWorkspaceUploadSettings
                 ),
                 $autoPublish,
                 $this->gallerySettingControl(
-                    AdminControl::toggle('landscape_detail_enabled', 'Expand landscape Artwork pages'),
-                    'landscape_detail_enabled', $stage,
-                ),
-                $this->gallerySettingControl(
-                    AdminControl::toggle('portrait_detail_enabled', 'Expand portrait Artwork pages'),
-                    'portrait_detail_enabled', $stage,
-                ),
-                $this->gallerySettingControl(
-                    AdminControl::select('artwork_page_surface_mode', 'Artwork page surface')
-                        ->options(GalleryPresentation::ARTWORK_SURFACE_OPTIONS)
-                        ->default(GalleryPresentation::ARTWORK_SURFACE_INHERIT)->required(),
-                    'artwork_page_surface_mode', $stage,
-                ),
-                $this->gallerySettingControl(
-                    AdminControl::toggle('artwork_menu_surface_wide', 'Match Menu surface to Artwork page width')
-                        ->default(false),
-                    'artwork_menu_surface_wide', $stage,
+                    AdminControl::select('artwork_page_layout', 'Artwork page layout')
+                        ->options(GalleryPresentation::ARTWORK_PAGE_LAYOUTS)
+                        ->default(GalleryPresentation::ARTWORK_PAGE_STANDARD)
+                        ->required(! $stage),
+                    'artwork_page_layout', $stage,
                 ),
                 $this->gallerySettingControl(
                     AdminControl::select('artwork_divider', 'Between Artworks')
                         ->options(GalleryPresentation::DIVIDER_OPTIONS)
-                        ->default(GalleryPresentation::DIVIDER_NONE)->required(),
+                        ->default(GalleryPresentation::DIVIDER_NONE)->required(! $stage),
                     'artwork_divider', $stage,
                 ),
                 $this->gallerySettingControl(
@@ -204,7 +189,7 @@ trait GalleryWorkspaceUploadSettings
                             GalleryPresentation::EDGE_HIDDEN => 'Hide unavailable arrows',
                             GalleryPresentation::EDGE_CYCLIC => 'Cyclic (last ↔ first)',
                         ])
-                        ->default(GalleryPresentation::EDGE_DISABLED)->required(),
+                        ->default(GalleryPresentation::EDGE_DISABLED)->required(! $stage),
                     'edge_navigation_mode', $stage,
                 ),
             ]);
@@ -231,10 +216,7 @@ trait GalleryWorkspaceUploadSettings
     {
         return [
             'name' => (string) $gallery->getAttribute('name'),
-            'landscape_detail_enabled' => GalleryPresentation::enabled($gallery),
-            'portrait_detail_enabled' => GalleryPresentation::portraitEnabled($gallery),
-            'artwork_page_surface_mode' => GalleryPresentation::artworkPageSurfaceMode($gallery),
-            'artwork_menu_surface_wide' => GalleryPresentation::wideArtworkMenu($gallery),
+            'artwork_page_layout' => GalleryPresentation::artworkPageLayout($gallery),
             'edge_navigation_mode' => GalleryPresentation::edgeMode($gallery),
             'artwork_divider' => GalleryPresentation::divider($gallery),
             'sort_mode' => GalleryPresentation::sortMode($gallery),
@@ -341,10 +323,7 @@ trait GalleryWorkspaceUploadSettings
             'show_media_copyright',
             'caption_layout',
             'video_sound_enabled',
-            'landscape_detail_enabled',
-            'portrait_detail_enabled',
-            'artwork_page_surface_mode',
-            'artwork_menu_surface_wide',
+            'artwork_page_layout',
             'artwork_divider',
             'edge_navigation_mode',
         ];

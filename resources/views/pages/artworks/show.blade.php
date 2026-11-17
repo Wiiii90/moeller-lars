@@ -27,9 +27,8 @@
         $nextArtwork ??= $sequence->first();
     }
     $preview = app(\App\Domain\Content\SitePreviewContext::class);
-    $fitLandscape = ! $isVideo && $thumbnailWidth > $thumbnailHeight && $presentation::enabled($category);
-    $fitPortrait = ! $isVideo && $thumbnailHeight > $thumbnailWidth && $presentation::portraitEnabled($category);
-    $fitArtwork = $fitLandscape || $fitPortrait;
+    $fitArtwork = ! $isVideo
+        && $presentation::artworkPageLayout($category) === $presentation::ARTWORK_PAGE_EXPANDED;
 
     // A saved Rich Text fragment such as <p></p> is not visible editorial
     // content. Do not emit its decorative divider when the safe rendered body
@@ -40,13 +39,11 @@
         || preg_match('/<(?:img|figure|video|audio|table|hr)\\b/i', $renderedDescription) === 1;
 @endphp
 
-{{-- Orientation is determined from the public image dimensions before decoding. --}}
-@section('content_class', $fitLandscape
-    ? 'site-content--landscape-artwork site-content--fitted-artwork'
-    : ($fitPortrait ? 'site-content--portrait-artwork site-content--fitted-artwork' : ''))
-
-@section('artwork_header_divider', $presentation::artworkPageDividerOverride($category) ?? '')
-@section('artwork_menu_surface_wide', $presentation::wideArtworkMenu($category) ? '1' : '')
+{{-- Standard follows General's width; Expanded fits both image orientations
+     and the outer Menu paper to the same page surface. General alone owns
+     whether the Menu and content are connected or separated. --}}
+@section('content_class', $fitArtwork ? 'site-content--fitted-artwork' : '')
+@section('artwork_menu_surface_wide', $fitArtwork ? '1' : '')
 
 @section('title', $artwork->title.' — Lars Möller')
 @section('meta_description', trim(strip_tags((string) $artwork->description)) ?: $artwork->title.' — Lars Möller')

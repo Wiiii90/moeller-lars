@@ -94,44 +94,21 @@ final class GalleryPresentation
 
     public const EDGE_MODES = [self::EDGE_DISABLED, self::EDGE_HIDDEN, self::EDGE_CYCLIC];
 
-    public const ARTWORK_SURFACE_INHERIT = 'inherit';
+    public const ARTWORK_PAGE_STANDARD = 'standard';
 
-    public const ARTWORK_SURFACE_JOINED = 'joined';
+    public const ARTWORK_PAGE_EXPANDED = 'expanded';
 
-    public const ARTWORK_SURFACE_SEPARATE = 'separate';
-
-    public const ARTWORK_SURFACE_OPTIONS = [
-        self::ARTWORK_SURFACE_INHERIT => 'Follow General',
-        self::ARTWORK_SURFACE_JOINED => 'No gap',
-        self::ARTWORK_SURFACE_SEPARATE => 'Separate Surface',
+    public const ARTWORK_PAGE_LAYOUTS = [
+        self::ARTWORK_PAGE_STANDARD => 'Standard',
+        self::ARTWORK_PAGE_EXPANDED => 'Expanded',
     ];
 
-    public static function artworkPageSurfaceMode(ArtworkCategory $gallery): string
+    public static function artworkPageLayout(ArtworkCategory $gallery): string
     {
-        $value = $gallery->getAttribute('artwork_page_surface_mode');
+        $layout = $gallery->getAttribute('artwork_page_layout');
 
-        return is_string($value) && array_key_exists($value, self::ARTWORK_SURFACE_OPTIONS)
-            ? $value : self::ARTWORK_SURFACE_INHERIT;
-    }
-
-    public static function artworkPageDividerOverride(ArtworkCategory $gallery): ?string
-    {
-        return self::artworkPageDividerForMode(self::artworkPageSurfaceMode($gallery));
-    }
-
-    /** Both Gallery Artwork detail and Home Hero use the same public surface grammar. */
-    public static function artworkPageDividerForMode(string $mode): ?string
-    {
-        return match ($mode) {
-            self::ARTWORK_SURFACE_JOINED => 'fine',
-            self::ARTWORK_SURFACE_SEPARATE => 'separate',
-            default => null,
-        };
-    }
-
-    public static function wideArtworkMenu(ArtworkCategory $gallery): bool
-    {
-        return (bool) $gallery->getAttribute('artwork_menu_surface_wide');
+        return is_string($layout) && array_key_exists($layout, self::ARTWORK_PAGE_LAYOUTS)
+            ? $layout : self::ARTWORK_PAGE_STANDARD;
     }
 
     public const DIVIDER_NONE = 'none';
@@ -171,33 +148,14 @@ final class GalleryPresentation
             }
             $values['sort_mode'] = $data['sort_mode'];
         }
-        if (array_key_exists('artwork_menu_surface_wide', $data)) {
-            $wide = $data['artwork_menu_surface_wide'];
-            if (! is_bool($wide) && ! in_array($wide, [0, 1, '0', '1'], true)) {
-                throw ValidationException::withMessages(['artwork_menu_surface_wide' => 'Choose whether the Menu surface matches the Artwork page width.']);
+        if (array_key_exists('artwork_page_layout', $data)) {
+            $layout = $data['artwork_page_layout'];
+            if (! is_string($layout) || ! array_key_exists($layout, self::ARTWORK_PAGE_LAYOUTS)) {
+                throw ValidationException::withMessages([
+                    'artwork_page_layout' => 'Choose Standard or Expanded Artwork page layout.',
+                ]);
             }
-            $values['artwork_menu_surface_wide'] = (bool) $wide;
-        }
-        if (array_key_exists('artwork_page_surface_mode', $data)) {
-            $mode = $data['artwork_page_surface_mode'];
-            if (! is_string($mode) || ! array_key_exists($mode, self::ARTWORK_SURFACE_OPTIONS)) {
-                throw ValidationException::withMessages(['artwork_page_surface_mode' => 'Choose how Artwork pages relate to the Menu surface.']);
-            }
-            $values['artwork_page_surface_mode'] = $mode;
-        }
-        if (array_key_exists('portrait_detail_enabled', $data)) {
-            $enabled = $data['portrait_detail_enabled'];
-            if (! is_bool($enabled) && ! in_array($enabled, [0, 1, '0', '1'], true)) {
-                throw ValidationException::withMessages(['portrait_detail_enabled' => 'Choose whether portrait Artwork pages use viewport height.']);
-            }
-            $values['portrait_detail_enabled'] = (bool) $enabled;
-        }
-        if (array_key_exists('landscape_detail_enabled', $data)) {
-            $enabled = $data['landscape_detail_enabled'];
-            if (! is_bool($enabled) && ! in_array($enabled, [0, 1, '0', '1'], true)) {
-                throw ValidationException::withMessages(['landscape_detail_enabled' => 'Choose whether landscape details can expand.']);
-            }
-            $values['landscape_detail_enabled'] = (bool) $enabled;
+            $values['artwork_page_layout'] = $layout;
         }
         if (array_key_exists('artwork_divider', $data)) {
             $variant = $data['artwork_divider'];
@@ -214,16 +172,6 @@ final class GalleryPresentation
         }
 
         return $values;
-    }
-
-    public static function enabled(ArtworkCategory $gallery): bool
-    {
-        return (bool) $gallery->getAttribute('landscape_detail_enabled');
-    }
-
-    public static function portraitEnabled(ArtworkCategory $gallery): bool
-    {
-        return (bool) $gallery->getAttribute('portrait_detail_enabled');
     }
 
     public static function divider(ArtworkCategory $gallery): string
