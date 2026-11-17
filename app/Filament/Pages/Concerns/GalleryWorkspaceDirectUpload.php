@@ -262,13 +262,21 @@ trait GalleryWorkspaceDirectUpload
 
         // Filament validates exactly the same schema as standalone Add Artwork.
         $state = $this->stagedArtworkForm->getState();
-        DB::transaction(function () use ($selected, $state): void {
-            $this->createStagedArtwork(
-                $selected, $state,
-                app(\App\Domain\Admin\AdminAutoPublishPreferences::class)
-                    ->enabled(\App\Domain\Admin\AdminAutoPublishPreferences::GALLERY),
-            );
-        });
+        try {
+            DB::transaction(function () use ($selected, $state): void {
+                $this->createStagedArtwork(
+                    $selected, $state,
+                    app(\App\Domain\Admin\AdminAutoPublishPreferences::class)
+                        ->enabled(\App\Domain\Admin\AdminAutoPublishPreferences::GALLERY),
+                );
+            });
+        } catch (ValidationException $exception) {
+            // Failure rolls back Artwork creation, media links and audit.
+            // The queued item and its current editorial form remain intact.
+            $this->notifyValidationFailure('Staged Artwork not created', $exception);
+
+            return;
+        }
         $this->forgetCompletedStagedArtworks([$id]);
         app(AdminNotifier::class)->notification(title: 'Artwork created', status: 'success');
     }
@@ -298,20 +306,36 @@ trait GalleryWorkspaceDirectUpload
             $items = array_reverse($items);
         }
 
-        DB::transaction(function () use ($items): void {
-            foreach ($items as $row) {
-                $data = is_array($row['form'] ?? null) ? $row['form'] : [];
-                if ($data === []) {
-                    $data = [
-                        'title' => $row['title'],
-                        'slug' => '',
-                        'primary_media_asset_id' => $row['media_asset_id'],
-                        'position_explicit' => false,
-                    ];
+        try {
+            DB::transaction(function () use ($items): void {
+                foreach ($items as $row) {
+                    $data = is_array($row['form'] ?? null) ? $row['form'] : [];
+                    if ($data === []) {
+                        $data = [
+                            'title' => $row['title'],
+                            'slug' => '',
+                            'primary_media_asset_id' => $row['media_asset_id'],
+                            'position_explicit' => false,
+                        ];
+                    }
+                    try {
+                        $this->createStagedArtwork($row, $data, false);
+                    } catch (ValidationException $exception) {
+                        $detail = collect($exception->errors())->flatten()->first();
+
+                        throw ValidationException::withMessages([
+                            'artworks' => (string) $row['title'].': '.
+                                (is_string($detail) ? $detail : 'This Artwork is not valid.'),
+                        ]);
+                    }
                 }
-                $this->createStagedArtwork($row, $data, false);
-            }
-        });
+            });
+        } catch (ValidationException $exception) {
+            // All-or-nothing: no queue item disappears after a failed batch.
+            $this->notifyValidationFailure('No staged Artworks were created', $exception);
+
+            return;
+        }
         $count = count($items);
         $this->forgetCompletedStagedArtworks(array_map(
             static fn (array $row): int => (int) $row['media_asset_id'], $items,
