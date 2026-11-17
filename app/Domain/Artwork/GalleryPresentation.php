@@ -83,15 +83,7 @@ final class GalleryPresentation
             return $query->orderBy('position')->orderBy('id');
         }
 
-        // Historical persisted "newest" is the same canonical Artwork rule.
-        $rule = match ($mode) {
-            self::SORT_NEWEST => ArtworkSort::NEWEST_ARTWORK,
-            self::SORT_NEWEST_MEDIA => ArtworkSort::NEWEST_MEDIA_ADDED,
-            self::SORT_OLDEST_MEDIA => ArtworkSort::OLDEST_MEDIA_ADDED,
-            default => $mode,
-        };
-
-        return ArtworkSort::apply($query, $rule);
+        return ArtworkSort::apply($query, $mode);
     }
 
     public const EDGE_DISABLED = 'disabled';

@@ -27,9 +27,10 @@ final class ArtworkSort
     public const DATE_ASC_SQL = 'artworks.year ASC NULLS LAST, artworks.month ASC NULLS LAST, artworks.day ASC NULLS LAST, artworks.created_at ASC, artworks.id ASC';
 
     /**
-     * Preview the insertion rank without writing a provisional Artwork.
-     * Uses exactly the persisted Gallery rule and its NULLS LAST tie order;
-     * a new Artwork has the newest id and creation timestamp.
+     * Estimate a draft's insertion rank without writing a provisional Artwork.
+     * Actual persistence and public rendering always use apply() in SQL.
+     * The new id and created_at are unknown until insertion; ties and
+     * concurrent edits can shift this non-authoritative form suggestion.
      */
     public static function suggestedPosition(ArtworkCategory $gallery, ?string $date, ?int $mediaAssetId): int
     {
@@ -38,12 +39,7 @@ final class ArtworkSort
             return 1;
         }
 
-        $rule = match ($mode) {
-            GalleryPresentation::SORT_NEWEST => self::NEWEST_ARTWORK,
-            GalleryPresentation::SORT_NEWEST_MEDIA => self::NEWEST_MEDIA_ADDED,
-            GalleryPresentation::SORT_OLDEST_MEDIA => self::OLDEST_MEDIA_ADDED,
-            default => $mode,
-        };
+        $rule = self::canonicalRule($mode);
         $oldest = in_array($rule, [self::OLDEST_ARTWORK, self::OLDEST_MEDIA_ADDED], true);
         $mediaOrder = in_array($rule, [self::NEWEST_MEDIA_ADDED, self::OLDEST_MEDIA_ADDED], true);
         $existing = GalleryPresentation::orderArtworks(
@@ -124,12 +120,28 @@ final class ArtworkSort
         return $date->getTimestamp() * 1000000 + (int) $date->format('u');
     }
 
+    /**
+     * Gallery persists compact sort keys in varchar(16), whereas Home
+     * already stores canonical source-rule keys in JSON. Both resolve here.
+     * No second sorting algorithm or compatibility forwarding layer.
+     */
+    private static function canonicalRule(string $rule): string
+    {
+        return match ($rule) {
+            GalleryPresentation::SORT_NEWEST => self::NEWEST_ARTWORK,
+            GalleryPresentation::SORT_NEWEST_MEDIA => self::NEWEST_MEDIA_ADDED,
+            GalleryPresentation::SORT_OLDEST_MEDIA => self::OLDEST_MEDIA_ADDED,
+            default => $rule,
+        };
+    }
+
     /** @template T of \Illuminate\Database\Eloquent\Model
      * @param Builder<T> $query
      * @return Builder<T>
      */
     public static function apply(Builder $query, string $rule): Builder
     {
+        $rule = self::canonicalRule($rule);
         if ($rule === self::NEWEST_ARTWORK || $rule === self::OLDEST_ARTWORK) {
             return $query->orderByRaw($rule === self::OLDEST_ARTWORK ? self::DATE_ASC_SQL : self::DATE_DESC_SQL);
         }
