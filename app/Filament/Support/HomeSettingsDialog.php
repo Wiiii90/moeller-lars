@@ -192,7 +192,7 @@ final class HomeSettingsDialog
                     $this->heroDisplayToggle('landscape_detail_enabled', 'Expand landscape Hero artworks', $persistHeroToggle),
                     $this->heroDisplayToggle('portrait_detail_enabled', 'Expand portrait Hero artworks', $persistHeroToggle),
                     AdminControl::select('artwork_page_surface_mode', 'Artwork page surface')
-                        ->options(GalleryPresentation::ARTWORK_SURFACE_OPTIONS)
+                        ->options(HomeHeroConfigurationService::ARTWORK_SURFACE_OPTIONS)
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
                     $this->heroDisplayToggle('artwork_menu_surface_wide', 'Match Menu surface to Artwork page width', $persistHeroToggle),

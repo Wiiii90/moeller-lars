@@ -111,6 +111,11 @@
 - Ordinary Add Artwork modal action now says `Create artwork` rather than promising publication when Auto-publish is enabled, because unfinished drafts must always remain creatable; actual notifications differentiate Draft from Published.
 - Source-only; actual CSS/layout measurements on Desktop/Phone and historical Gallery snapshot parity are not runtime-verified.
 
+## Home Hero surface consumer check — 2026-11-18
+
+- The independent Home Hero still uses its own JSON-backed surface choices; those were not retired with the Gallery Artwork override. `HomeSettingsDialog` now reads `HomeHeroConfigurationService::ARTWORK_SURFACE_OPTIONS`, the current Home owner, rather than the removed GalleryPresentation surface constant. No Home layout or persistence semantics changed.
+- Direct caller correction found in the bounded code review; browser/runtime verification outstanding.
+
 ## Acceptance gates and remaining risks
 
 1. **Source is committed, not browser-accepted**. Confirm PHP/Filament parsing, Livewire `stagedArtworkForm` init/fill and field dehydration, uploader-to-queue state, stage mobile switcher, input scrolling, iframe Content Security Policy, thumbnail/video rendering, and rapid selection/race behavior in refreshed local preview. No PHP lint/browser/test suite was run through GitHub-only access.
