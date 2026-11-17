@@ -165,6 +165,17 @@
         .gallery-workspace__stage > :is(.gallery-stage__upload, .gallery-stage__workspace, .gallery-stage__preview) {
             padding-inline: 0;
         }
+
+        /* The shared minimal selector activates grid panes, but Gallery
+         * needs a vertical flex layout for its scrollable editor/preview. */
+        .gallery-workspace__stage.admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="1"][aria-pressed="true"])
+            .gallery-stage__upload[data-admin-stage-pane][data-admin-stage-slot="1"],
+        .gallery-workspace__stage.admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="2"][aria-pressed="true"])
+            .gallery-stage__workspace[data-admin-stage-pane][data-admin-stage-slot="2"],
+        .gallery-workspace__stage.admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="3"][aria-pressed="true"])
+            .gallery-stage__preview[data-admin-stage-pane][data-admin-stage-slot="3"] {
+            display: flex !important;
+        }
     }
 }
 

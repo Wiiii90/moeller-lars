@@ -88,6 +88,11 @@ final class GalleryWorkspace extends Page
 
     public ?int $galleryStagePreviewArtworkId = null;
 
+    public int $galleryStagePreviewRevision = 0;
+
+    /** Queue size when the current file-upload run began. */
+    public int $directPrimaryBatchStartCount = 0;
+
     /** @var list<array{media_asset_id:int,title:string}> */
     public array $pendingBatchArtworkMedia = [];
 
@@ -153,7 +158,10 @@ final class GalleryWorkspace extends Page
 
     public function previewGalleryArtwork(int $artworkId): void
     {
-        if (! in_array($artworkId, array_map('intval', array_column($this->artworkDataset, 'id')), true)) {
+        $previewable = collect($this->artworkDataset)
+            ->contains(static fn (array $artwork): bool => (int) $artwork['id'] === $artworkId
+                && ($artwork['state'] ?? null) === 'published');
+        if (! $previewable) {
             return;
         }
         $this->galleryStagePreview = 'artwork';
@@ -165,14 +173,20 @@ final class GalleryWorkspace extends Page
         if (! in_array($direction, ['previous', 'next'], true)) {
             return;
         }
-        $ids = array_map('intval', array_column($this->artworkDataset, 'id'));
+        $ids = array_values(array_map(
+            static fn (array $artwork): int => (int) $artwork['id'],
+            array_filter(
+                $this->artworkDataset,
+                static fn (array $artwork): bool => ($artwork['state'] ?? null) === 'published',
+            ),
+        ));
         if ($ids === []) {
             $this->previewGalleryStage();
             return;
         }
         $from = array_search($this->galleryStagePreviewArtworkId, $ids, true);
         if ($from === false) {
-            $this->previewGalleryArtwork($ids[0]);
+            $this->previewGalleryArtwork($direction === 'previous' ? $ids[array_key_last($ids)] : $ids[0]);
             return;
         }
         $target = $from + ($direction === 'next' ? 1 : -1);
@@ -189,7 +203,8 @@ final class GalleryWorkspace extends Page
             return $this->galleryContext['preview_url'] ?? null;
         }
         foreach ($this->artworkDataset as $artwork) {
-            if ((int) $artwork['id'] === $this->galleryStagePreviewArtworkId) {
+            if ((int) $artwork['id'] === $this->galleryStagePreviewArtworkId
+                && ($artwork['state'] ?? null) === 'published') {
                 return route('preview.artworks.show', ['slug' => $artwork['slug']]);
             }
         }

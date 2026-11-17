@@ -43,6 +43,10 @@
         @php
             $stagedPreview = $galleryStagePreview === 'staged' ? $this->stagedArtworkPreview() : null;
             $stagePublicUrl = $this->galleryStagePreviewUrl();
+            $stagePreviewableCount = count(array_filter(
+                $artworkDataset,
+                static fn (array $artwork): bool => ($artwork['state'] ?? null) === 'published',
+            ));
         @endphp
         <section class="gallery-workspace__stage admin-visual-stage admin-visual-stage--triptych admin-focus-stage"
             aria-label="Gallery upload, settings, artwork editor and preview">
@@ -193,9 +197,9 @@
                         <button class="admin-action" type="button" wire:click="previewGalleryStage"
                             aria-pressed="{{ $galleryStagePreview === 'gallery' ? 'true' : 'false' }}">Gallery</button>
                         <button class="admin-action" type="button" wire:click="stepGalleryPreview('previous')"
-                            @disabled($artworkDataset === []) aria-label="Previous Artwork">‹</button>
+                            @disabled($stagePreviewableCount === 0) aria-label="Previous Artwork">‹</button>
                         <button class="admin-action" type="button" wire:click="stepGalleryPreview('next')"
-                            @disabled($artworkDataset === []) aria-label="Next Artwork">›</button>
+                            @disabled($stagePreviewableCount === 0) aria-label="Next Artwork">›</button>
                     </div>
                 </header>
 
@@ -211,7 +215,7 @@
                             <span>{{ $stagedPreview['title'] }}</span>
                         </div>
                     @elseif ($stagePublicUrl)
-                        <iframe wire:key="gallery-stage-frame-{{ md5($stagePublicUrl) }}"
+                        <iframe wire:key="gallery-stage-frame-{{ md5($stagePublicUrl) }}-{{ $galleryStagePreviewRevision }}"
                             src="{{ $stagePublicUrl }}"
                             title="{{ $galleryStagePreview === 'artwork' ? 'Interactive Artwork preview' : 'Interactive Gallery preview' }}"
                             loading="eager" allowfullscreen></iframe>

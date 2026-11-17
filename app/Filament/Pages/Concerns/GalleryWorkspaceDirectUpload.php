@@ -25,12 +25,11 @@ trait GalleryWorkspaceDirectUpload
         app(AdminMediaUploadFeedback::class)->failure($message);
     }
 
-    /** Begin a selected stack without retaining stale assets from an earlier upload. */
+    /** Each transfer appends to the unfinished queue without replacing edits. */
     public function beginDirectPrimaryMediaBatch(): void
     {
-        // Keep previously uploaded, unfinished Artwork entries when more
-        // images/videos are added. Preserve the active form before transfer.
         $this->rememberStagedArtworkChanges();
+        $this->directPrimaryBatchStartCount = count($this->pendingBatchArtworkMedia);
     }
 
     /**
@@ -63,7 +62,8 @@ trait GalleryWorkspaceDirectUpload
         $failed = max(0, min(10000, $failed));
         $duplicates = max(0, min(10000, $duplicates));
         $rows = $this->pendingBatchArtworkMedia;
-        $added = count($rows);
+        $added = max(0, count($rows) - $this->directPrimaryBatchStartCount);
+        $this->directPrimaryBatchStartCount = count($rows);
         $summary = app(AdminMediaUploadFeedback::class)->batch(
             $added, $duplicates, $failed, $errors, 'gallery',
         );

@@ -190,6 +190,8 @@ trait GalleryWorkspaceDataProjection
         $this->loadGalleryDataset();
         $this->projectArtworks();
         $this->refreshGalleryMetrics();
+        // The embedded public iframe otherwise retains the old page.
+        $this->galleryStagePreviewRevision++;
     }
 
     private function refreshGalleryMetrics(): void
