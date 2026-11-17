@@ -4,7 +4,7 @@
 - **Lease:** 16 (new chat explicitly replacing lease 14; old holder is stale)
 - **Takeover baseline:** `a8654ca4c5bc657c3dfc41ca48e8d8695399080b` (read current source again before each code write)
 - **Current assigned scope:** Pages → Home Hero Artwork sourcing, candidate management/rotation, Stage and Settings integration, public hero display; previously owned Home Under Construction and Custom editor parity. Other Dev workers own Dashboard, General Appearance, Gallery, Pages and dialog-wide redesign.
-- **Immediate task:** Verify and complete the just-committed Global / One per Gallery selection feature described in the user's handoff. Do not implement speculative further selection strategies before a separate user decision.
+- **Current state:** Source-level takeover review completed against feature commit `6cead912493024749dab8db9bec6991ba9c49d26` and the later `dev` tree through this review. Implementation is committed; interactive browser acceptance remains pending. Do not introduce additional selection strategies without another user decision.
 
 ## Current implemented contract (handoff; source and browser acceptance to be checked)
 
@@ -24,8 +24,9 @@
 
 ## Verification and handoff
 
-- **Source review:** verify final selection commit and direct consumers, migration/serialization boundaries, source rules and list capacity, profile save/restore and Stage/Settings parity.
+- **Source review — completed:** Commit `6cead912493024749dab8db9bec6991ba9c49d26` implements Selection in `HomeHeroConfigurationService`, `PublicArtworkQuery`, `ArtworkSort`, `HomeHeroResolver`, `HomePresentation`, `HomeSettingsDialog`, Home Stage Blade and Home CSS. Confirmed that Gallery exclusions precede database ranking, Manual Artwork IDs are reserved in Semi-Automatic, profiles preserve Global Source Size, 50-candidate truncation is surfaced on Stage, and current Stage/Settings save through the shared Home service. No PHP execution, database queries or rendered browser interaction occurred.
 - **Browser acceptance still required:** Global unchanged; each of four per-Gallery rules, unpublished/empty/excluded Gallery and fallback, disabled automatic candidates, Manual overlap in Semi-Automatic, 50-cap warning, saved Global Size restoration, Random/Sequential/Top Only preview, Settings/Stage persistence and public Home, wide/narrow layouts.
 - **Adjacent pending visual review:** Random Chance 0.00/20.00/100.00 not clipped; current Edit Group single-line rows, symmetric modal inset and labeled-vs-icon actions; Home Stage status and responsive layout; gallery table selection/bulk actions; video/month rotation; Custom/Under Construction parity.
 - **Testing owner:** Dev must not edit tests or general documentation. No Continuous Integration, Validation/Production deployment, main promotion or browser acceptance may be claimed without actual authorized execution.
-- **Next:** finish source-level review of the new Selection option, correct only genuine in-scope defects if found, and provide the exact checked commit, changed files and unverified browser checks.
+- **Out-of-scope observation:** Manual Storage media and automatic Gallery Artworks have distinct typed candidate identities. An explicitly selected Storage MediaAsset may also be the primary media of an automatically sourced Artwork, so a visually repeated image is possible. No automatic cross-type de-duplication was added without a decided content policy; the requested same-Artwork-ID suppression is implemented.
+- **Next:** user browser review of the current dev Home Stage, Settings and public Home; fix only reproducible in-scope defects, then discuss optional N per Gallery / Balanced extensions if requested.
