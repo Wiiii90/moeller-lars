@@ -69,6 +69,7 @@ trait GalleryWorkspaceDataProjection
                 'analytics_key' => (string) ($artwork->getAttribute('analytics_key') ?? ''),
                 'sequence' => $index + 1,
                 'title' => (string) $artwork->getAttribute('title'),
+                'slug' => (string) $artwork->getAttribute('slug'),
                 'state' => (string) $artwork->getAttribute('state'),
                 'state_label' => ucfirst((string) $artwork->getAttribute('state')),
                 'readiness_label' => $this->readinessLabel($artwork, $galleryPublished, $primaries->count(), $primaryAsset, $primary),

@@ -117,6 +117,10 @@ trait GalleryWorkspaceSelectionSupport
             'slug' => (string) $gallery->getAttribute('slug'),
             'state' => (string) $section->getAttribute('state'),
             'sort_mode' => GalleryPresentation::sortMode($gallery),
+            'show_artwork_information' => GalleryPresentation::showArtworkInformation($gallery),
+            'caption_layout' => GalleryPresentation::captionLayout($gallery),
+            'artwork_page_surface_mode' => GalleryPresentation::artworkPageSurfaceMode($gallery),
+            'video_sound_enabled' => GalleryPresentation::allowVideoSound($gallery),
             'path' => '/'.ltrim((string) $gallery->getAttribute('slug'), '/'),
             'preview_url' => app(SitePreviewContext::class)->previewUrlFor($section),
             'public_url' => $section->getAttribute('state') === 'published'
