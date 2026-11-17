@@ -25,23 +25,7 @@ final class ArtworkPublicationService
         $fresh = Artwork::query()
             ->with(['category.siteSection', 'artworkMedia.mediaAsset.variants'])
             ->findOrFail($artwork->getKey());
-        /** @var Collection<int, ArtworkMedia> $primaries */
-        $primaries = $fresh->getRelation('artworkMedia')->where('role', 'primary')->values();
-        $primary = $primaries->count() === 1 ? $primaries->first() : null;
-        /** @var ArtworkCategory|null $category */
-        $category = $fresh->getRelationValue('category');
-        /** @var SiteSection|null $siteSection */
-        $siteSection = $category?->getRelationValue('siteSection');
-        $mediaAsset = $primary?->getRelationValue('mediaAsset');
-
-        if (
-            ! $category
-            || ! $siteSection instanceof SiteSection
-            || $siteSection->getAttribute('state') !== 'published'
-            || ! $primary instanceof ArtworkMedia
-            || ! $mediaAsset instanceof MediaAsset
-            || ! $this->mediaReady($mediaAsset, $primary->getAttribute('alt_text_override'))
-        ) {
+        if (! $this->isPublishable($fresh)) {
             throw ValidationException::withMessages(['state' => 'This artwork is not ready to publish.']);
         }
 
@@ -58,6 +42,36 @@ final class ArtworkPublicationService
         });
 
         return $fresh->fresh(['category', 'artworkMedia.mediaAsset.variants']);
+    }
+
+    /** Auto-publish is opportunistic. An unfinished Artwork remains a draft. */
+    public function canPublish(Artwork $artwork): bool
+    {
+        /** @var Artwork $fresh */
+        $fresh = Artwork::query()
+            ->with(['category.siteSection', 'artworkMedia.mediaAsset.variants'])
+            ->findOrFail($artwork->getKey());
+
+        return $this->isPublishable($fresh);
+    }
+
+    private function isPublishable(Artwork $artwork): bool
+    {
+        /** @var Collection<int, ArtworkMedia> $primaries */
+        $primaries = $artwork->getRelation('artworkMedia')->where('role', 'primary')->values();
+        $primary = $primaries->count() === 1 ? $primaries->first() : null;
+        /** @var ArtworkCategory|null $category */
+        $category = $artwork->getRelationValue('category');
+        /** @var SiteSection|null $siteSection */
+        $section = $category?->getRelationValue('siteSection');
+        $asset = $primary?->getRelationValue('mediaAsset');
+
+        return $category instanceof ArtworkCategory
+            && $section instanceof SiteSection
+            && $section->getAttribute('state') === 'published'
+            && $primary instanceof ArtworkMedia
+            && $asset instanceof MediaAsset
+            && $this->mediaReady($asset, $primary->getAttribute('alt_text_override'));
     }
 
     public function unpublish(Artwork $artwork): Artwork

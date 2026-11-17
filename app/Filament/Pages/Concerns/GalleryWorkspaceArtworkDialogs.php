@@ -68,7 +68,7 @@ trait GalleryWorkspaceArtworkDialogs
                 }
                 unset($payload['position_explicit']);
                 $autoPublish = app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::GALLERY);
-                DB::transaction(function () use ($payload, $asset, $data, $autoPublish): void {
+                $published = DB::transaction(function () use ($payload, $asset, $data, $autoPublish): bool {
                     $artwork = app(ArtworkDraftService::class)->create($payload);
                     if ($asset instanceof MediaAsset) {
                         app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
@@ -79,25 +79,20 @@ trait GalleryWorkspaceArtworkDialogs
                             );
                         }
                     }
-                    if ($autoPublish) {
-                        try {
-                            app(ArtworkPublicationService::class)->publish($artwork);
-                        } catch (ValidationException $exception) {
-                            // Keep publication readiness feedback on an actual
-                            // Create field. The encompassing transaction still
-                            // rolls back the draft, media link and audit.
-                            throw ValidationException::withMessages([
-                                'primary_media_asset_id' => collect($exception->errors())->flatten()->first()
-                                    ?? 'Publishing requires a published Gallery and eligible primary media.',
-                            ]);
-                        }
+                    $publication = app(ArtworkPublicationService::class);
+                    if ($autoPublish && filled($data['title'] ?? null) && $publication->canPublish($artwork)) {
+                        $publication->publish($artwork);
+
+                        return true;
                     }
+
+                    return false;
                 });
 
                 $this->pendingPrimaryMediaAssetId = null;
                 $this->refreshWorkspaceAfterMutation();
                 app(AdminNotifier::class)->notification(
-                    title: $autoPublish ? 'Artwork published' : 'Artwork draft created',
+                    title: $published ? 'Artwork published' : 'Artwork draft created',
                     status: 'success',
                 );
             });

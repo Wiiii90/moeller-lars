@@ -98,6 +98,13 @@
 - Gallery Stage and modal share the one new control, with Stage-only Filament `required(false)` for nonessential control presentation; underlying Gallery domain validation still protects actual persisted constraints. No surface-mode compatibility bridge or Gallery-specific alternate rendering remains.
 - Runtime validation and database migration execution **not performed** by this chat. Publication schema parity, historical checkpoint read-only preflight and functional public browser review are required before Validation rollout.
 
+## Empty Artwork draft and staged form requirements — 2026-11-18
+
+- A Gallery Artwork **draft** can be created without title, slug, image, ALT, date, medium or description. The DB still requires a stable title and unique slug, so the existing `ArtworkDraftService::create` single owner generates an internal `Untitled` title and an available public slug only when input is blank. It does not make the Artwork public. The same domain path serves the regular Add modal and the Stage queue; retired the Stage-specific slug generator rather than preserving two algorithms.
+- The shared Artwork Create schema does not mark Title or suggested Position as mandatory. Edit still requires a nonblank title. Stage Gallery Settings controls remain visually optional (no red star) even when a submitted invalid value is rejected by the central Gallery service.
+- Automatic publication is attempted only for an actually eligible finished Artwork with an explicitly provided title. `ArtworkPublicationService::canPublish` uses exactly the same readiness check as manual Publish, without duplicating it in Stage/Modal. When incomplete, creation succeeds as Draft rather than rolling back; public manual Publish remains strict. The full Gallery dialog's help explains the new behavior. This is not an opt-out of public eligibility or the preexisting media policies.
+- Source changes committed only; PHP runtime, empty-form submission and actual Studio browser still need checking. No test files, CI, deploy or database operations triggered.
+
 ## Acceptance gates and remaining risks
 
 1. **Source is committed, not browser-accepted**. Confirm PHP/Filament parsing, Livewire `stagedArtworkForm` init/fill and field dehydration, uploader-to-queue state, stage mobile switcher, input scrolling, iframe Content Security Policy, thumbnail/video rendering, and rapid selection/race behavior in refreshed local preview. No PHP lint/browser/test suite was run through GitHub-only access.

@@ -130,7 +130,7 @@ trait GalleryWorkspaceUploadSettings
             ->label(AdminHelp::label(
                 'Auto-publish new Artworks',
                 'Automatic Artwork publishing',
-                'Only available media with suitable ALT text and a published Gallery can be published. If the checks fail, creation is rejected without keeping a partial draft.',
+                'Eligible new Artworks are published automatically; unfinished Artworks remain editable drafts.',
             ))
             ->live()
             ->afterStateUpdated(function (mixed $state): void {

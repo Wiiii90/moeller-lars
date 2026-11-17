@@ -89,7 +89,7 @@ final class ArtworkEditDialog
             Grid::make($compact ? ['default' => 1] : ['md' => 2])
                 ->schema([
                     TextInput::make('title')
-                        ->required()
+                        ->required(! $creating)
                         ->maxLength(240)
                         ->live(onBlur: true)
                         ->afterStateUpdated(function (?string $state, callable $set, callable $get): void {
@@ -170,7 +170,7 @@ final class ArtworkEditDialog
             ->integer()
             ->minValue(1)
             ->maxValue(max(1, $count))
-            ->required()
+            ->required(false)
             ->disabled(! $editable);
 
         if ($onPositionChanged instanceof Closure) {

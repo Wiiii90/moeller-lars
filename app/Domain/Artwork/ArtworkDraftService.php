@@ -8,6 +8,7 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -38,6 +39,21 @@ final class ArtworkDraftService
             : null;
         if ($requestedPosition === false || ($requestedPosition !== null && $requestedPosition < 1)) {
             throw ValidationException::withMessages(['position' => 'Choose a positive Artwork position.']);
+        }
+
+        // Drafts may be created without any editorial input. Preserve the
+        // database's stable public identity requirements without imposing
+        // publishing requirements on unfinished Artworks.
+        $data['title'] = trim((string) ($data['title'] ?? '')) ?: 'Untitled';
+        if (blank($data['slug'] ?? null)) {
+            $base = mb_substr(Str::slug($data['title']), 0, 155);
+            $base = $base !== '' ? $base : 'artwork';
+            $slug = $base;
+            $suffix = 2;
+            while (Artwork::query()->where('slug', $slug)->exists()) {
+                $slug = $base.'-'.$suffix++;
+            }
+            $data['slug'] = $slug;
         }
 
         $data = $this->validatedEditorialData($data);

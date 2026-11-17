@@ -16,7 +16,6 @@ use App\Domain\Media\MediaTypePolicy;
 use App\Models\Artwork;
 use App\Models\MediaAsset;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 trait GalleryWorkspaceDirectUpload
@@ -215,7 +214,7 @@ trait GalleryWorkspaceDirectUpload
     }
 
     /** The single and batch commands both delegate to the canonical Artwork owners. */
-    private function createStagedArtwork(array $row, array $data, bool $publish): void
+    private function createStagedArtwork(array $row, array $data, bool $publish): bool
     {
         $assetId = (int) $row['media_asset_id'];
         $asset = MediaAsset::query()->whereKey($assetId)->where('state', 'available')->first();
@@ -225,12 +224,7 @@ trait GalleryWorkspaceDirectUpload
             ]);
         }
 
-        $title = trim((string) ($data['title'] ?? ''));
-        if (blank($data['slug'] ?? null)) {
-            $data['slug'] = $this->uniqueBatchArtworkSlug($title);
-        }
-
-        $explicit = (bool) ($data['position_explicit'] ?? false);
+         $explicit = (bool) ($data['position_explicit'] ?? false);
         $payload = $this->normalizeArtworkFormData($data);
         if (! $explicit) {
             unset($payload['position']);
@@ -243,9 +237,14 @@ trait GalleryWorkspaceDirectUpload
         if ($alt !== null) {
             app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($artwork, $alt);
         }
-        if ($publish) {
-            app(\App\Domain\Artwork\ArtworkPublicationService::class)->publish($artwork);
+        $publication = app(\App\Domain\Artwork\ArtworkPublicationService::class);
+        if ($publish && filled($data['title'] ?? null) && $publication->canPublish($artwork)) {
+            $publication->publish($artwork);
+
+            return true;
         }
+
+        return false;
     }
 
     public function createSelectedStagedArtwork(): void
@@ -263,8 +262,8 @@ trait GalleryWorkspaceDirectUpload
         // Filament validates exactly the same schema as standalone Add Artwork.
         $state = $this->stagedArtworkForm->getState();
         try {
-            DB::transaction(function () use ($selected, $state): void {
-                $this->createStagedArtwork(
+            $published = DB::transaction(function () use ($selected, $state): bool {
+                return $this->createStagedArtwork(
                     $selected, $state,
                     app(\App\Domain\Admin\AdminAutoPublishPreferences::class)
                         ->enabled(\App\Domain\Admin\AdminAutoPublishPreferences::GALLERY),
@@ -278,7 +277,10 @@ trait GalleryWorkspaceDirectUpload
             return;
         }
         $this->forgetCompletedStagedArtworks([$id]);
-        app(AdminNotifier::class)->notification(title: 'Artwork created', status: 'success');
+        app(AdminNotifier::class)->notification(
+            title: $published ? 'Artwork published' : 'Artwork draft created',
+            status: 'success',
+        );
     }
 
     /** Entire batch is atomic; a validation failure leaves the queue intact. */
@@ -385,18 +387,4 @@ trait GalleryWorkspaceDirectUpload
         return $title === '' ? 'Untitled' : $title;
     }
 
-    private function uniqueBatchArtworkSlug(string $title): string
-    {
-        $base = Str::slug($title);
-        $base = $base === '' ? 'artwork' : mb_substr($base, 0, 160);
-        $slug = $base;
-        $suffix = 2;
-
-        while (Artwork::query()->where('slug', $slug)->exists()) {
-            $slug = $base.'-'.$suffix;
-            $suffix++;
-        }
-
-        return $slug;
-    }
 }
