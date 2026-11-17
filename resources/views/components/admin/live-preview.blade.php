@@ -11,10 +11,12 @@
     x-bind:data-preview-device="previewDevice"
     x-data="{
         resizeObserver: null,
+        fitFrame: null,
+        frameShortcuts: [],
+        pointerInside: false,
         previewDevice: 'desktop',
-        // Match the standalone Preview's actual browser viewport when both
-        // tabs share a window. The preview is scaled visually, not reflowed
-        // inside the smaller Admin pane.
+        // Both pages use fixed real browser layout viewports, visually
+        // fitted to the Admin pane without changing public media queries.
         fitScale: 1,
         zoom: 1,
         minZoom: 1,
@@ -31,13 +33,34 @@
         dragStartPanY: 0,
         init() {
             this.$nextTick(() => {
-                this.fitPreview()
-                this.resizeObserver = new ResizeObserver(() => this.fitPreview())
-                this.resizeObserver.observe(this.$refs.viewport)
+                this.resizeObserver = new ResizeObserver(() => this.scheduleFit())
+                if (this.$refs.viewport) this.resizeObserver.observe(this.$refs.viewport)
+                this.scheduleFit()
             })
         },
         destroy() {
             this.resizeObserver?.disconnect()
+            if (this.fitFrame !== null) cancelAnimationFrame(this.fitFrame)
+            this.unbindFrameShortcuts()
+            this.cancelPanGesture()
+        },
+        scheduleFit() {
+            if (this.fitFrame !== null) return
+            this.fitFrame = requestAnimationFrame(() => {
+                this.fitFrame = null
+                this.fitPreview()
+            })
+        },
+        setDevice(device) {
+            if (! ['desktop', 'mobile'].includes(device) || this.previewDevice === device) return
+            this.cancelPanGesture()
+            this.previewDevice = device
+            this.zoom = this.minZoom
+            this.panX = 0
+            this.panY = 0
+            this.panMode = false
+            this.spacePan = false
+            this.$nextTick(() => this.scheduleFit())
         },
         zoomPercent() {
             return `${Math.round(this.zoom * 100)}%`
@@ -139,6 +162,8 @@
         handleSpaceDown(event) {
             if (event.code !== 'Space' || this.zoom <= this.minZoom || event.repeat || this.shortcutTargetIsInteractive(event.target)) return
 
+            // Do not hijack Space on unrelated Admin controls or workspaces.
+            if (! this.pointerInside && ! this.$el.contains(document.activeElement)) return
             event.preventDefault()
             this.spacePan = true
         },
@@ -159,7 +184,12 @@
                 this.cancelPanGesture()
             }
         },
+        unbindFrameShortcuts() {
+            for (const remove of this.frameShortcuts) remove()
+            this.frameShortcuts = []
+        },
         bindFrameShortcuts() {
+            this.unbindFrameShortcuts()
             const frame = this.$refs.frame
             if (! frame || frame.tagName !== 'IFRAME') return
 
@@ -173,9 +203,17 @@
             }
             if (! documentRef || ! windowRef) return
 
-            documentRef.addEventListener('keydown', (event) => this.handleSpaceDown(event))
-            documentRef.addEventListener('keyup', (event) => this.handleSpaceUp(event))
-            windowRef.addEventListener('blur', () => this.cancelSpacePan())
+            const down = (event) => this.handleSpaceDown(event)
+            const up = (event) => this.handleSpaceUp(event)
+            const blur = () => this.cancelSpacePan()
+            documentRef.addEventListener('keydown', down)
+            documentRef.addEventListener('keyup', up)
+            windowRef.addEventListener('blur', blur)
+            this.frameShortcuts.push(
+                () => documentRef.removeEventListener('keydown', down),
+                () => documentRef.removeEventListener('keyup', up),
+                () => windowRef.removeEventListener('blur', blur),
+            )
         },
         startPan(event) {
             if (this.zoom <= this.minZoom || (! this.panMode && ! this.spacePan) || (event.button !== undefined && event.button !== 0)) return
@@ -222,7 +260,7 @@
         },
     }"
     @if ($refreshOnAppearance) x-on:general-appearance-updated.window="refreshPreview()" @endif
-    x-on:resize.window="$nextTick(() => fitPreview())"
+    x-on:resize.window="scheduleFit()"
     x-on:keydown.window="handleSpaceDown($event)"
     x-on:keyup.window="handleSpaceUp($event)"
     x-on:blur.window="cancelSpacePan()"
@@ -235,20 +273,20 @@
                 <button
                     class="admin-action admin-stage-tool-icon"
                     type="button"
-                    x-on:click="previewDevice = 'desktop'; resetZoom(); $nextTick(() => fitPreview())"
+                    x-on:click="setDevice('desktop')"
                     x-bind:class="{ 'is-primary': previewDevice === 'desktop' }"
                     x-bind:aria-pressed="(previewDevice === 'desktop').toString()"
-                    title="Desktop preview"
+                    title="Desktop preview · 1440 × 900 CSS pixels"
                 >
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceDesktop->mini()" />
                 </button>
                 <button
                     class="admin-action admin-stage-tool-icon"
                     type="button"
-                    x-on:click="previewDevice = 'mobile'; resetZoom(); $nextTick(() => fitPreview())"
+                    x-on:click="setDevice('mobile')"
                     x-bind:class="{ 'is-primary': previewDevice === 'mobile' }"
                     x-bind:aria-pressed="(previewDevice === 'mobile').toString()"
-                    title="Phone preview"
+                    title="Phone preview · 390 × 844 CSS pixels"
                 >
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceMobile->mini()" />
                 </button>
@@ -321,7 +359,9 @@
     </x-admin.stage-tool-row>
 
 
-    <div x-ref="viewport" class="admin-live-preview__viewport">
+    <div x-ref="viewport" class="admin-live-preview__viewport"
+        x-on:pointerenter="pointerInside = true"
+        x-on:pointerleave="pointerInside = false; cancelSpacePan()">
         <div x-ref="surface" wire:ignore.self class="admin-live-preview__surface">
             <div x-ref="page" wire:ignore.self class="admin-live-preview__page"
                 x-bind:class="{
@@ -337,7 +377,7 @@
                     <iframe x-ref="frame" wire:ignore class="admin-live-preview__frame"
                         src="{{ $url }}" title="{{ $frameTitle }}"
                         loading="eager" tabindex="0" allowfullscreen
-                        x-on:load="$nextTick(() => { fitPreview(); bindFrameShortcuts(); })"></iframe>
+                        x-on:load="$nextTick(() => { scheduleFit(); bindFrameShortcuts(); })"></iframe>
                 @else
                     <div x-ref="frame" wire:ignore.self class="admin-live-preview__frame admin-live-preview__frame--content">
                         <x-admin.empty-state title="Preview unavailable" minimal />

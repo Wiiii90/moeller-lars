@@ -75,6 +75,12 @@
 - Gallery now invokes the same shared `x-admin.live-preview` component with its authenticated Working Gallery/Artwork URL or the selected unsaved media via a named content slot. Existing Gallery / Previous / Next navigation remains in the Gallery-owned header, while shared controls implement Desktop/Phone, Zoom, Pan, Reset and Open. Removed Gallery's raw iframe surface and feature-local CSS. A real iframe is used only for saved public content; staged media uses the same sized canvas with its Artwork caption.
 - The shared content's `wire:ignore.self` protects calculated canvas styles during Livewire child-content updates without preventing text/image morphing. Focused browser review is still required, particularly Stage editing, source switching and General's responsive pane split. No deployment, database change or runtime checks were run.
 
+## Preview stability follow-up — 2026-11-17
+
+- The existing preview now schedules fits through one animation frame, coalescing ResizeObserver and window-resize updates; switching Desktop/Phone resets Zoom/Pan state and then fits the correct preset, instead of briefly transforming the previous device size. Real CSS viewport preset dimensions appear in the device-button tooltips.
+- Repeated iframe load/refresh now detaches its previous embedded-document Space/blur handlers before binding new ones and clears them on Alpine teardown. Space-driven Pan only captures keyboard input while the Preview has pointer/focus; unrelated Admin controls remain unaffected.
+- These are source-level improvements to the **one** canonical preview owner. Not an assertion of browser-tested visual stability; check actual General/Gallery browser sizing, Zoom/Pan interaction and post-save iframe reload in the local preview.
+
 ## Acceptance gates and remaining risks
 
 1. **Source is committed, not browser-accepted**. Confirm PHP/Filament parsing, Livewire `stagedArtworkForm` init/fill and field dehydration, uploader-to-queue state, stage mobile switcher, input scrolling, iframe Content Security Policy, thumbnail/video rendering, and rapid selection/race behavior in refreshed local preview. No PHP lint/browser/test suite was run through GitHub-only access.
