@@ -190,9 +190,10 @@ trait GalleryWorkspaceDataProjection
         $this->loadGalleryDataset();
         $this->projectArtworks();
         $this->refreshGalleryMetrics();
-        // The canonical Preview owner refreshes its current iframe without
-        // remounting the device/zoom state after an editorial mutation.
-        $this->dispatch('gallery-preview-updated');
+        // The canonical Preview owner refreshes without remounting controls.
+        // Pass the current route because an editorial update can change an
+        // Artwork slug while retaining the selected Artwork identity.
+        $this->dispatch('gallery-preview-updated', url: $this->galleryStagePreviewUrl());
     }
 
     private function refreshGalleryMetrics(): void
