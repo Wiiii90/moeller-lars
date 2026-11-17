@@ -220,12 +220,24 @@
                     @if ($galleryStagePreview === 'staged' && $stagedPreview !== null)
                         <div class="gallery-stage__draft-preview">
                             @if ($stagedPreview['kind'] === 'image')
-                                <img src="{{ $stagedPreview['url'] }}" alt="" loading="eager" decoding="async">
+                                <img src="{{ $stagedPreview['url'] }}" alt="{{ $stagedPreview['alt'] }}" loading="eager" decoding="async">
                             @else
                                 <video src="{{ $stagedPreview['url'] }}" @if ($stagedPreview['poster']) poster="{{ $stagedPreview['poster'] }}" @endif
                                     controls muted playsinline preload="metadata" aria-label="Staged Artwork video"></video>
                             @endif
-                            <span>{{ $stagedPreview['title'] }}</span>
+                            <div class="gallery-stage__draft-caption">
+                                <strong>{{ $stagedPreview['title'] }}</strong>
+                                @php
+                                    $previewDetails = array_values(array_filter([
+                                        $stagedPreview['date'],
+                                        $stagedPreview['dimensions'],
+                                        $stagedPreview['medium'],
+                                    ], static fn (?string $value): bool => filled($value)));
+                                @endphp
+                                @if ($previewDetails !== [])
+                                    <span>{{ implode(' · ', $previewDetails) }}</span>
+                                @endif
+                            </div>
                         </div>
                     @elseif ($stagePublicUrl)
                         <iframe wire:key="gallery-stage-frame-{{ md5($stagePublicUrl) }}-{{ $galleryStagePreviewRevision }}"

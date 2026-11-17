@@ -4,6 +4,8 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminMediaUploadFeedback;
 use App\Domain\Admin\AdminNotifier;
+use App\Domain\Artwork\ArtworkDate;
+use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
@@ -155,7 +157,7 @@ trait GalleryWorkspaceDirectUpload
         );
     }
 
-    /** @return array{kind:string,url:string,poster:?string,title:string}|null */
+    /** @return array{kind:string,url:string,poster:?string,title:string,date:?string,medium:?string,dimensions:?string,alt:string}|null */
     public function stagedArtworkPreview(): ?array
     {
         $id = $this->selectedStagedMediaAssetId;
@@ -174,12 +176,41 @@ trait GalleryWorkspaceDirectUpload
         }
         $thumbnail = $image ? MediaPreviewVariant::imageThumbnail($asset) : null;
         $poster = $video ? MediaPreviewVariant::videoPoster($asset) : null;
+        $form = is_array($this->stagedArtworkData) ? $this->stagedArtworkData : [];
+
+        // Read the same Artwork display grammar as public pages; incomplete
+        // form fields are expected and must not throw during a live preview.
+        $date = null;
+        try {
+            $draft = new Artwork;
+            $draft->forceFill(ArtworkDate::normalize($form['artwork_date'] ?? null));
+            $date = ArtworkDate::display($draft);
+        } catch (ValidationException) {
+            // Date validation stays with the actual editor on submission.
+        }
+
+        $dimensions = null;
+        try {
+            $dimensions = ArtworkDimensions::compose(
+                $form['dimension_height'] ?? null,
+                $form['dimension_width'] ?? null,
+                $form['dimension_depth'] ?? null,
+                $form['dimension_unit'] ?? null,
+                null,
+            );
+        } catch (ValidationException) {
+            // Partial dimensions remain visible in the form, not the preview.
+        }
 
         return [
             'kind' => $image ? 'image' : 'video',
             'url' => $thumbnail !== null ? route('admin.media.variant', $thumbnail) : route('admin.media.original', $asset),
             'poster' => $poster !== null ? route('admin.media.variant', $poster) : null,
-            'title' => (string) ($this->stagedArtworkData['title'] ?? $asset->getAttribute('original_filename')),
+            'title' => (string) ($form['title'] ?? $asset->getAttribute('original_filename')),
+            'date' => $date,
+            'medium' => filled($form['medium'] ?? null) ? trim((string) $form['medium']) : null,
+            'dimensions' => $dimensions,
+            'alt' => (string) ($form['primary_alt_text'] ?? $asset->getAttribute('alt_text') ?? ''),
         ];
     }
 

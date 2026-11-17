@@ -146,16 +146,33 @@
 .gallery-stage__draft-preview > :is(img, video) {
     display: block;
     max-width: 100%;
-    max-height: calc(100% - 2rem);
+    max-height: calc(100% - 4.75rem);
     min-height: 0;
     object-fit: contain;
 }
 
-.gallery-stage__draft-preview > span {
-    max-width: 100%;
+.gallery-stage__draft-caption {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    align-content: start;
+    gap: .2rem;
+    text-align: center;
+}
+
+.gallery-stage__draft-caption > :is(strong, span) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.gallery-stage__draft-caption strong {
+    font-weight: 600;
+    color: var(--admin-text);
+    font-size: .82rem;
+}
+
+.gallery-stage__draft-caption span {
     font-size: .75rem;
     color: var(--admin-muted);
 }
