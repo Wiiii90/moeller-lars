@@ -2,7 +2,7 @@
 
 **Lease:** 8  
 **Branch:** dev  
-**State:** Active — Gallery Stage Settings parity and upload process visibility corrected in source; local browser and PHP runtime acceptance still pending.
+**State:** Active — Gallery preview refresh, Standard/Expanded Artwork page layout, one-way publication schema cutover, and optional Artwork drafts committed. Local migration execution, checkpoint preflight and browser/runtime acceptance remain pending.
 
 ## Owner and working boundaries
 
@@ -116,15 +116,17 @@
 - The independent Home Hero still uses its own JSON-backed surface choices; those were not retired with the Gallery Artwork override. `HomeSettingsDialog` now reads `HomeHeroConfigurationService::ARTWORK_SURFACE_OPTIONS`, the current Home owner, rather than the removed GalleryPresentation surface constant. No Home layout or persistence semantics changed.
 - Direct caller correction found in the bounded code review; browser/runtime verification outstanding.
 
-## Acceptance gates and remaining risks
+## Current acceptance gates and remaining risks — 2026-11-18
 
-1. **Source is committed, not browser-accepted**. Confirm PHP/Filament parsing, Livewire `stagedArtworkForm` init/fill and field dehydration, uploader-to-queue state, stage mobile switcher, input scrolling, iframe Content Security Policy, thumbnail/video rendering, and rapid selection/race behavior in refreshed local preview. No PHP lint/browser/test suite was run through GitHub-only access.
-2. Exercise multiple image and video uploads; add more while existing unsaved edits remain; switch 2+ queued items; Create one, Create all drafts, remove from Stage, then ordinary Add Artwork independent of queued uploads. Verify failures preserve queue and every successful save removes only completed entries.
-3. Verify sort-confirm cancel/apply/no-difference behavior, Gallery quick controls shared persistence and preview refresh; preview next/previous for published Artwork only; Stage Preview back to Gallery. Watch for exact form field spacing, responsiveness and interaction consistency with Home/Storage Stage.
-4. Consider existing full-form autosave and queued form values on Livewire requests: unsaved edits are held in memory until explicitly saved. There is no persistence guarantee across page reload; uploaded media remains in Storage. Do not make a hidden persistence model without user decision.
-5. Review bulk Create with explicit positions/duplicate slugs and auto-publish semantics before declaring this fully functional. Preserve the user-facing **Create all drafts** contract or add a clearly explicit choice, not a silent publishing side effect. Keep Media/Storage cleanup out of Gallery ownership.
-6. The existing public Preview and General device-frame preview are separate contexts; a future shared conceptual preview belongs to a coordinated design pass, not an unapproved General refactor. No Validation rollout or DB migration authorized.
+1. **Apply the new Gallery layout migration locally before evaluating this change.** The forward-only migration updates both `public` and `committed` schemas under PublicationSnapshot's advisory lock. The previous independent orientation, surface, menu-width and scale columns are physically retired. No migration has been executed by this GitHub-only worker.
+2. Check `PublicationSchemaGuard::assertParity()` for ArtworkCategory after migration, then `PublicationVersionService::verifyCheckpointReadOnly()` for known checkpoints including the current Live version. Historical payloads remain immutable; the existing read/restore projection must support them without unknown-field fallback. Do not run destructive Stage/Revert unless separately approved.
+3. In local browser, toggle Show Artwork information on a Gallery with visible Artwork cards, verify the **actual shared iframe** reloads and caption changes immediately, then navigate to an individual Artwork page and back. Current preview mutations preserve zoom/device state; another worker has updated the shared component since the initial Gallery refresh commit.
+4. Inspect Gallery `Artwork page layout`: Standard respects General widths, Expanded fits both portrait and landscape images and the outer Menu paper, while the inner Menu navigation retains General's content width and no Gallery-specific gap/divider override remains. Test normal Desktop, narrow Desktop and Phone. The Home Hero's separate existing JSON Surface preferences have not been changed.
+5. Confirm Stage Settings controls have no red required markers; normal Create and Staged Create can submit blank editorial fields to create an `Untitled` Draft with an available slug. Even when Auto-publish is on, incomplete works stay Draft, while genuinely ready works can publish. Manual Publish still requires actual eligibility.
+6. Run focused browser acceptance for multi-file staging, selective and bulk create, ALT/media preservation, switching queued items, Gallery sorting confirmation, and preview navigation. Existing source checks do not establish PHP parsing, migration safety or absence of visual glitches; do not claim full acceptance before the live run. No CI, test modification, deployment or server mutation authorized.
 
 ## Next
-- Continue focused Stage integration repairs, prioritizing correctness over UI additions.
-- When source issues are resolved, request targeted browser acceptance without unnecessary audits, tests, backups or deployment.
+
+- Review local migration output and actual Gallery/Artwork browser behavior; correct only observed owner-level failures.
+- Coordinate General's separate full-width Menu feature request with Worker 7 instead of silently adding a new General option.
+- Keep Worker 2's Storage lifecycle and Worker 6's separate Home Hero configuration outside Gallery's refactor.
