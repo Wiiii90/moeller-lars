@@ -43,6 +43,11 @@ final class HomeHeroConfigurationService
 
     public const SOURCE_RULES = ArtworkSort::SOURCE_RULES;
 
+    public const SELECTION_MODES = [
+        'global' => 'Global',
+        'one_per_gallery' => 'One per Gallery',
+    ];
+
     /** @var array{count:int,unit:string} */
     public const DEFAULT_ROTATION_INTERVAL = [
         'count' => 1,
@@ -69,6 +74,7 @@ final class HomeHeroConfigurationService
      *     rotation_interval:array{count:int,unit:string},
      *     rotation_started_at:?string,
      *     source_rule:string,
+     *     selection_mode:string,
      *     group_size:int,
      *     show_details:bool,
      *     show_gallery_link:bool,
@@ -157,6 +163,9 @@ final class HomeHeroConfigurationService
             'rotation_interval' => $this->readRotationInterval($source['rotation_interval'] ?? null),
             'rotation_started_at' => $this->readRotationStartedAt($source['rotation_started_at'] ?? null),
             'source_rule' => $this->enum($source['source_rule'] ?? null, array_keys(self::SOURCE_RULES), $legacyRule),
+            'selection_mode' => $mode === 'manual' ? 'global' : $this->enum(
+                $source['selection_mode'] ?? null, array_keys(self::SELECTION_MODES), 'global',
+            ),
             'group_size' => $this->boundedGroupSize($source['group_size'] ?? null),
             'manual_group' => $manual,
             'manual_group_enabled' => $mode === 'semi_automatic' ? (bool) ($source['manual_group_enabled'] ?? true) : $mode === 'manual',
@@ -187,6 +196,7 @@ final class HomeHeroConfigurationService
             ];
             if ($mode !== 'manual') {
                 $profiles[$mode]['source_rule'] = $profile['source_rule'];
+                $profiles[$mode]['selection_mode'] = $profile['selection_mode'];
                 $profiles[$mode]['group_size'] = $profile['group_size'];
                 $profiles[$mode]['sourced_weights'] = $profile['sourced_weights'];
                 $profiles[$mode]['disabled_auto_artwork_ids'] = $profile['disabled_auto_artwork_ids'];
@@ -235,6 +245,11 @@ final class HomeHeroConfigurationService
                 array_keys(self::SOURCE_RULES),
                 $profile['source_rule'],
             );
+            $selectionMode = $this->enum(
+                $input['selection_mode'] ?? $profile['selection_mode'],
+                array_keys(self::SELECTION_MODES),
+                $profile['selection_mode'],
+            );
             $groupSize = $this->validatedGroupSize($input['group_size'] ?? $profile['group_size']);
             $manualGroup = array_key_exists('manual_group', $input)
                 ? $this->normalizeManualGroup($input['manual_group'])
@@ -271,6 +286,7 @@ final class HomeHeroConfigurationService
             $strategyChanged = $displayStrategy !== $profile['display_strategy'];
             $automaticGroupDefinitionChanged = $groupSource !== 'manual'
                 && ($groupSize !== $profile['group_size'] || $sourceRule !== $profile['source_rule']
+                    || $selectionMode !== $profile['selection_mode']
                     || $disabledAutoIds !== $profile['disabled_auto_artwork_ids']
                     || $manualGroupEnabled !== $profile['manual_group_enabled']);
             if ($displayStrategy === 'sequential'
@@ -288,6 +304,7 @@ final class HomeHeroConfigurationService
             $profiles[$groupSource]['rotation_started_at'] = $rotationStartedAt;
             if ($groupSource !== 'manual') {
                 $profiles[$groupSource]['source_rule'] = $sourceRule;
+                $profiles[$groupSource]['selection_mode'] = $selectionMode;
                 $profiles[$groupSource]['group_size'] = $groupSize;
                 $profiles[$groupSource]['sourced_weights'] = $sourcedWeights;
                 $profiles[$groupSource]['disabled_auto_artwork_ids'] = $disabledAutoIds;
@@ -319,7 +336,7 @@ final class HomeHeroConfigurationService
                 $artwork['manual_group_enabled'], $artwork['disabled_auto_artwork_ids'],
                 $artwork['display_strategy'], $artwork['rotation_interval'],
                 $artwork['rotation_started_at'], $artwork['source_rule'],
-                $artwork['group_size'], $artwork['newest_by'],
+                $artwork['selection_mode'], $artwork['group_size'], $artwork['newest_by'],
                 $artwork['hero_mode'], $artwork['automatic_selection'],
                 $artwork['fixed_artwork_id'], $artwork['pool_rule'],
                 $artwork['pool_year'], $artwork['manual_include_ids'],

@@ -9,6 +9,7 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use LogicException;
 
 class PublicArtworkQuery
@@ -82,6 +83,55 @@ class PublicArtworkQuery
             ->get();
 
         return $artworks;
+    }
+
+    /**
+     * One candidate for each eligible Gallery, using precisely the same
+     * ArtworkSort ordering as Global sourcing. The SQL window operates on
+     * the canonical eligible set, before the overall group cap, so a Gallery
+     * with an excluded newest Artwork can still contribute its next newest.
+     *
+     * @return Collection<int, Artwork>
+     */
+    public function homeGalleryRepresentatives(
+        string $sourceRule = 'newest_artwork',
+        array $excludeIds = [],
+        int $limit = 50,
+    ): Collection {
+        $ranked = $this->homeQuery()->select('artworks.id')
+            ->selectRaw(
+                'ROW_NUMBER() OVER (PARTITION BY artworks.artwork_category_id ORDER BY '
+                .ArtworkSort::orderClause($sourceRule).') AS gallery_rank',
+            );
+        if ($excludeIds !== []) {
+            $ranked->whereNotIn('artworks.id', $excludeIds);
+        }
+
+        $representativeIds = DB::query()->fromSub($ranked->toBase(), 'ranked_home_artworks')
+            ->where('gallery_rank', 1)
+            ->select('id');
+
+        $query = $this->homeQuery()->whereIn('artworks.id', $representativeIds);
+        ArtworkSort::apply($query, $sourceRule);
+
+        /** @var Collection<int, Artwork> $artworks */
+        $artworks = $query->limit(max(1, min($limit, 50)))->get();
+
+        return $artworks;
+    }
+
+    /**
+     * Number of eligible Galleries after exclusions, independent of the
+     * candidate cap. Used to surface overflow rather than silently hiding it.
+     */
+    public function eligibleHomeGalleryCount(array $excludeIds = []): int
+    {
+        $query = $this->homeQuery();
+        if ($excludeIds !== []) {
+            $query->whereNotIn('artworks.id', $excludeIds);
+        }
+
+        return (int) $query->distinct()->count('artworks.artwork_category_id');
     }
 
     /** @return Collection<int, Artwork> */

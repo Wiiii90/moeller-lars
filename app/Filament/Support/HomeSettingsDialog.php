@@ -61,6 +61,7 @@ final class HomeSettingsDialog
             'group_source' => $hero['group_source'],
             'display_strategy' => $hero['display_strategy'],
             'source_rule' => $hero['source_rule'],
+            'selection_mode' => $hero['selection_mode'],
             'group_size' => $hero['group_size'],
             'rotation_interval_count' => $hero['rotation_interval']['count'],
             'rotation_interval_unit' => $hero['rotation_interval']['unit'],
@@ -126,21 +127,21 @@ final class HomeSettingsDialog
                             $profile = $this->heroConfiguration->configuration($this->resolver->settings(), $state);
                             $set('group_size', $profile['group_size']);
                             $set('source_rule', $profile['source_rule']);
+                            $set('selection_mode', $profile['selection_mode']);
                             $set('display_strategy', $profile['display_strategy']);
                             $set('rotation_interval_count', $profile['rotation_interval']['count']);
                             $set('rotation_interval_unit', $profile['rotation_interval']['unit']);
                         })
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                    TextInput::make('group_size')
+                    Select::make('selection_mode')
                         ->label(self::helpLabel(
-                            'Source Size',
-                            'Hero source size',
-                            'Maximum number of active Hero candidates. Automatic selects this many from eligible Galleries. Semi-Automatic counts enabled Manual candidates first and fills the remaining places from eligible Galleries.',
+                            'Selection',
+                            'How Hero candidates are distributed',
+                            'Global chooses candidates across all enabled Galleries. One per Gallery chooses one eligible Artwork from each Gallery using Source Rule, with an automatically determined group size.',
                         ))
-                        ->numeric()
-                        ->minValue(1)
-                        ->maxValue(HomeHeroConfigurationService::MAX_GROUP_SIZE)
+                        ->options(HomeHeroConfigurationService::SELECTION_MODES)
                         ->required()
+                        ->live()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') !== 'manual'),
                     Select::make('source_rule')
                         ->label(self::helpLabel(
@@ -151,6 +152,18 @@ final class HomeSettingsDialog
                         ->options(HomeHeroConfigurationService::SOURCE_RULES)
                         ->required()
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') !== 'manual'),
+                    TextInput::make('group_size')
+                        ->label(self::helpLabel(
+                            'Source Size',
+                            'Hero source size',
+                            'Maximum number of active Hero candidates with Global selection. Semi-Automatic counts enabled Manual candidates first. One per Gallery derives its size automatically.',
+                        ))
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(HomeHeroConfigurationService::MAX_GROUP_SIZE)
+                        ->required()
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                            && $get('group_source') !== 'manual' && $get('selection_mode') === 'global'),
                     Select::make('display_strategy')
                         ->label(self::helpLabel(
                             'Display Strategy',
@@ -256,6 +269,7 @@ final class HomeSettingsDialog
                 $input += [
                     'display_strategy' => $data['display_strategy'] ?? $current['display_strategy'],
                     'source_rule' => $data['source_rule'] ?? $current['source_rule'],
+                    'selection_mode' => $data['selection_mode'] ?? $current['selection_mode'],
                     'group_size' => $data['group_size'] ?? $current['group_size'],
                     'rotation_interval_count' => $data['rotation_interval_count'] ?? $current['rotation_interval']['count'],
                     'rotation_interval_unit' => $data['rotation_interval_unit'] ?? $current['rotation_interval']['unit'],

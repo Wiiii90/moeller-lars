@@ -106,6 +106,14 @@
                             </label>
                             @if ($heroGroupSource !== 'manual')
                                 <label class="admin-data-field">
+                                    <span>{{ __('Selection') }}</span>
+                                    <select wire:change="updateHeroStageSetting('selection_mode', $event.target.value)" aria-label="Hero selection mode">
+                                        @foreach (\App\Domain\Content\HomeHeroConfigurationService::SELECTION_MODES as $value => $label)
+                                            <option value="{{ $value }}" @selected($heroSelectionMode === $value)>{{ __($label) }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                                <label class="admin-data-field">
                                     <span>{{ __('Source Rule') }}</span>
                                     <select wire:change="updateHeroStageSetting('source_rule', $event.target.value)" aria-label="Hero source rule">
                                         @foreach (\App\Domain\Content\HomeHeroConfigurationService::SOURCE_RULES as $value => $label)
@@ -115,8 +123,14 @@
                                 </label>
                                 <label class="admin-data-field">
                                     <span>{{ __('Source Size') }}</span>
-                                    <input type="number" min="1" max="{{ \App\Domain\Content\HomeHeroConfigurationService::MAX_GROUP_SIZE }}"
-                                        step="1" value="{{ $heroGroupSize }}" wire:change="updateHeroStageSetting('group_size', $event.target.value)" aria-label="Hero source size">
+                                    @if ($heroSelectionMode === 'one_per_gallery')
+                                        <input type="number" readonly value="{{ $candidatePoolCount }}"
+                                            aria-label="Automatically calculated Hero source size"
+                                            title="{{ __('Automatically determined from eligible Galleries and enabled Manual candidates') }}">
+                                    @else
+                                        <input type="number" min="1" max="{{ \App\Domain\Content\HomeHeroConfigurationService::MAX_GROUP_SIZE }}"
+                                            step="1" value="{{ $heroGroupSize }}" wire:change="updateHeroStageSetting('group_size', $event.target.value)" aria-label="Hero source size">
+                                    @endif
                                 </label>
                             @endif
                             <label class="admin-data-field">

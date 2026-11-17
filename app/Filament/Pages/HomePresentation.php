@@ -115,6 +115,8 @@ final class HomePresentation extends Page
 
     public string $heroSourceRule = 'newest_artwork';
 
+    public string $heroSelectionMode = 'global';
+
     public int $heroGroupSize = HomeHeroConfigurationService::DEFAULT_GROUP_SIZE;
 
     /** @var list<array{artwork_id?:int,media_asset_id?:int,weight:int,enabled:bool}> */
@@ -460,6 +462,11 @@ final class HomePresentation extends Page
             if (! in_array($value, ['ordered', 'random', 'sequential'], true)) {
                 throw ValidationException::withMessages(['display_strategy' => 'Choose a valid Hero strategy.']);
             }
+        } elseif ($field === 'selection_mode') {
+            if ($configuration['group_source'] === 'manual'
+                || ! is_string($value) || ! array_key_exists($value, HomeHeroConfigurationService::SELECTION_MODES)) {
+                throw ValidationException::withMessages(['selection_mode' => 'Choose a valid Hero selection mode.']);
+            }
         } elseif ($field === 'source_rule') {
             if ($configuration['group_source'] === 'manual'
                 || ! is_string($value) || ! array_key_exists($value, HomeHeroConfigurationService::SOURCE_RULES)) {
@@ -467,8 +474,8 @@ final class HomePresentation extends Page
             }
         } elseif ($field === 'group_size') {
             $size = filter_var($value, FILTER_VALIDATE_INT);
-            if ($configuration['group_source'] === 'manual' || $size === false
-                || $size < 1 || $size > HomeHeroConfigurationService::MAX_GROUP_SIZE) {
+            if ($configuration['group_source'] === 'manual' || $configuration['selection_mode'] !== 'global'
+                || $size === false || $size < 1 || $size > HomeHeroConfigurationService::MAX_GROUP_SIZE) {
                 throw ValidationException::withMessages(['group_size' => 'Source Size must be between 1 and 50.']);
             }
             $value = $size;
@@ -1414,6 +1421,7 @@ final class HomePresentation extends Page
         $this->excludedHeroRows = [];
         $this->heroDisplayStrategy = $heroConfiguration['display_strategy'];
         $this->heroSourceRule = $heroConfiguration['source_rule'];
+        $this->heroSelectionMode = $heroConfiguration['selection_mode'];
         $this->heroGroupSize = $heroConfiguration['group_size'];
         $this->manualHeroGroup = $heroConfiguration['manual_group'];
         $this->rotationIntervalCount = $heroConfiguration['rotation_interval']['count'];
@@ -1461,6 +1469,35 @@ final class HomePresentation extends Page
 
         $resolution = app(HomeHeroResolver::class)->resolve($settings);
         $this->candidatePoolCount = $resolution['group']->count();
+        if ($this->heroGroupSource !== 'manual' && $this->heroSelectionMode === 'one_per_gallery') {
+            $excludedIds = $this->disabledAutoHeroIds;
+            $manualKeys = [];
+            if ($this->heroGroupSource === 'semi_automatic' && $this->manualHeroGroupEnabled) {
+                foreach ($this->manualHeroGroup as $member) {
+                    if (isset($member['artwork_id'])) {
+                        // Manual Artwork identities must never be sourced twice.
+                        $excludedIds[] = (int) $member['artwork_id'];
+                    }
+                    if ($member['enabled']) {
+                        $manualKeys[] = HomeHeroConfigurationService::memberKey($member);
+                    }
+                }
+            }
+            $eligibleGalleries = $publicArtworks->eligibleHomeGalleryCount(array_values(array_unique($excludedIds)));
+            $manualCount = $resolution['group']->filter(
+                static fn (HomeHeroCandidate $candidate): bool => in_array($candidate->key(), $manualKeys, true),
+            )->count();
+            $this->sourceGalleryCount = $eligibleGalleries;
+            if ($manualCount + $eligibleGalleries > HomeHeroConfigurationService::MAX_GROUP_SIZE) {
+                $this->selectionIssue = sprintf(
+                    'One per Gallery exceeds the %d-candidate limit (%d Manual + %d Galleries). Only the first %d eligible Galleries can contribute; reduce enabled Galleries or Manual candidates.',
+                    HomeHeroConfigurationService::MAX_GROUP_SIZE,
+                    $manualCount,
+                    $eligibleGalleries,
+                    max(0, HomeHeroConfigurationService::MAX_GROUP_SIZE - $manualCount),
+                );
+            }
+        }
         $this->nextRotationAt = $resolution['next_rotation_at']?->toIso8601String();
         $current = $resolution['current'];
         if ($current instanceof HomeHeroCandidate) {

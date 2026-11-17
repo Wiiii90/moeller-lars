@@ -135,29 +135,36 @@ final class ArtworkSort
         };
     }
 
+    /**
+     * The single SQL ordering contract shared by ordinary Artwork lists and
+     * the per-Gallery representative window. No duplicate date/media rule.
+     */
+    public static function orderClause(string $rule): string
+    {
+        $rule = self::canonicalRule($rule);
+        if ($rule === self::NEWEST_ARTWORK || $rule === self::OLDEST_ARTWORK) {
+            return $rule === self::OLDEST_ARTWORK ? self::DATE_ASC_SQL : self::DATE_DESC_SQL;
+        }
+
+        if ($rule === self::NEWEST_MEDIA_ADDED || $rule === self::OLDEST_MEDIA_ADDED) {
+            $direction = $rule === self::OLDEST_MEDIA_ADDED ? 'ASC' : 'DESC';
+
+            return "(SELECT media_assets.created_at FROM media_assets
+                    JOIN artwork_media ON artwork_media.media_asset_id = media_assets.id
+                    WHERE artwork_media.artwork_id = artworks.id AND artwork_media.role = 'primary'
+                    ORDER BY artwork_media.position, artwork_media.id LIMIT 1)
+                    {$direction} NULLS LAST, artworks.id {$direction}";
+        }
+
+        throw new \InvalidArgumentException('Unsupported Artwork ordering rule.');
+    }
+
     /** @template T of \Illuminate\Database\Eloquent\Model
      * @param Builder<T> $query
      * @return Builder<T>
      */
     public static function apply(Builder $query, string $rule): Builder
     {
-        $rule = self::canonicalRule($rule);
-        if ($rule === self::NEWEST_ARTWORK || $rule === self::OLDEST_ARTWORK) {
-            return $query->orderByRaw($rule === self::OLDEST_ARTWORK ? self::DATE_ASC_SQL : self::DATE_DESC_SQL);
-        }
-
-        if ($rule === self::NEWEST_MEDIA_ADDED || $rule === self::OLDEST_MEDIA_ADDED) {
-            $direction = $rule === self::OLDEST_MEDIA_ADDED ? 'ASC' : 'DESC';
-
-            return $query->orderByRaw(
-                "(SELECT media_assets.created_at FROM media_assets
-                    JOIN artwork_media ON artwork_media.media_asset_id = media_assets.id
-                    WHERE artwork_media.artwork_id = artworks.id AND artwork_media.role = 'primary'
-                    ORDER BY artwork_media.position, artwork_media.id LIMIT 1)
-                    {$direction} NULLS LAST, artworks.id {$direction}",
-            );
-        }
-
-        throw new \InvalidArgumentException('Unsupported Artwork ordering rule.');
+        return $query->orderByRaw(self::orderClause($rule));
     }
 }

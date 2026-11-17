@@ -105,13 +105,15 @@ final class HomeHeroResolver
     private function automaticGroup(array $configuration): array
     {
         $semi = $configuration['group_source'] === 'semi_automatic';
+        $perGallery = $configuration['selection_mode'] === 'one_per_gallery';
+        $capacity = $perGallery ? HomeHeroConfigurationService::MAX_GROUP_SIZE : $configuration['group_size'];
         $manual = $semi && $configuration['manual_group_enabled']
             ? $this->selectedCandidates(array_values(array_filter(
                 $configuration['manual_group'], static fn (array $member): bool => $member['enabled'],
-            )))->take($configuration['group_size'])->values()
+            )))->take($capacity)->values()
             : new Collection;
 
-        $remaining = max(0, $configuration['group_size'] - $manual->count());
+        $remaining = max(0, $capacity - $manual->count());
         $group = $manual;
         if ($remaining > 0) {
             $excluded = $configuration['disabled_auto_artwork_ids'];
@@ -127,11 +129,12 @@ final class HomeHeroResolver
                     }
                 }
             }
-            $automatic = $this->artworks->configuredHomeCandidates(
-                $remaining,
-                $configuration['source_rule'],
-                array_values(array_unique($excluded)),
-            )->map(static fn (Artwork $artwork): HomeHeroCandidate => HomeHeroCandidate::fromArtwork($artwork))
+            $excluded = array_values(array_unique($excluded));
+            $artworks = $perGallery
+                ? $this->artworks->homeGalleryRepresentatives($configuration['source_rule'], $excluded, $remaining)
+                : $this->artworks->configuredHomeCandidates($remaining, $configuration['source_rule'], $excluded);
+            $automatic = $artworks
+                ->map(static fn (Artwork $artwork): HomeHeroCandidate => HomeHeroCandidate::fromArtwork($artwork))
                 ->values();
             $group = $manual->concat($automatic)->values();
         }

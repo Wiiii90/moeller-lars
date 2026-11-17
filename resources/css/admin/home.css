@@ -132,7 +132,7 @@
  * column allocation, not separate label, input or select styling. */
 .home-hero-stage-settings {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, .75fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.45fr) minmax(0, .7fr) minmax(0, 1fr);
     gap: .4rem;
     min-width: 0;
 }
