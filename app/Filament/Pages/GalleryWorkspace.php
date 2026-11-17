@@ -18,6 +18,7 @@ use App\Models\Artwork;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Pages\Page;
+use Filament\Schemas\Schema;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Session;
 use Livewire\WithFileUploads;
@@ -76,6 +77,17 @@ final class GalleryWorkspace extends Page
 
     public ?int $pendingPrimaryMediaAssetId = null;
 
+    /** @var array<string, mixed>|null Unsaved fields for the selected media file. */
+    public ?array $stagedArtworkData = [];
+
+    public ?int $selectedStagedMediaAssetId = null;
+
+    public string $galleryStagePanel = 'settings';
+
+    public string $galleryStagePreview = 'gallery';
+
+    public ?int $galleryStagePreviewArtworkId = null;
+
     /** @var list<array{media_asset_id:int,title:string}> */
     public array $pendingBatchArtworkMedia = [];
 
@@ -99,6 +111,90 @@ final class GalleryWorkspace extends Page
         $this->loadGalleryAnalytics();
         $this->projectArtworks();
         $this->refreshGalleryMetrics();
+    }
+
+    public function stagedArtworkForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components(app(\App\Filament\Support\ArtworkEditDialog::class)->schema(
+                creating: true,
+                primaryReadOnly: true,
+                positionCount: count($this->artworkDataset) + 1,
+                onPositionChanged: static function (mixed $state, callable $set): void {
+                    $set('position_explicit', true);
+                },
+                onCreateOrderSourceChanged: function (callable $get, callable $set): void {
+                    if ((bool) $get('position_explicit')) {
+                        return;
+                    }
+                    $gallery = \App\Models\ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+                    $set('position', \App\Domain\Artwork\ArtworkSort::suggestedPosition(
+                        $gallery, $get('artwork_date'), $this->selectedStagedMediaAssetId,
+                    ));
+                },
+            ))
+            ->statePath('stagedArtworkData');
+    }
+
+    public function selectGalleryStagePanel(string $panel): void
+    {
+        if (! in_array($panel, ['settings', 'queue'], true)) {
+            return;
+        }
+        $this->rememberStagedArtworkChanges();
+        $this->galleryStagePanel = $panel;
+    }
+
+    public function previewGalleryStage(): void
+    {
+        $this->galleryStagePreview = 'gallery';
+        $this->galleryStagePreviewArtworkId = null;
+    }
+
+    public function previewGalleryArtwork(int $artworkId): void
+    {
+        if (! in_array($artworkId, array_map('intval', array_column($this->artworkDataset, 'id')), true)) {
+            return;
+        }
+        $this->galleryStagePreview = 'artwork';
+        $this->galleryStagePreviewArtworkId = $artworkId;
+    }
+
+    public function stepGalleryPreview(string $direction): void
+    {
+        if (! in_array($direction, ['previous', 'next'], true)) {
+            return;
+        }
+        $ids = array_map('intval', array_column($this->artworkDataset, 'id'));
+        if ($ids === []) {
+            $this->previewGalleryStage();
+            return;
+        }
+        $from = array_search($this->galleryStagePreviewArtworkId, $ids, true);
+        if ($from === false) {
+            $this->previewGalleryArtwork($ids[0]);
+            return;
+        }
+        $target = $from + ($direction === 'next' ? 1 : -1);
+        if (isset($ids[$target])) {
+            $this->previewGalleryArtwork($ids[$target]);
+        } elseif ($direction === 'next') {
+            $this->previewGalleryStage();
+        }
+    }
+
+    public function galleryStagePreviewUrl(): ?string
+    {
+        if ($this->galleryStagePreview !== 'artwork' || $this->galleryStagePreviewArtworkId === null) {
+            return $this->galleryContext['preview_url'] ?? null;
+        }
+        foreach ($this->artworkDataset as $artwork) {
+            if ((int) $artwork['id'] === $this->galleryStagePreviewArtworkId) {
+                return route('preview.artworks.show', ['slug' => $artwork['slug']]);
+            }
+        }
+
+        return $this->galleryContext['preview_url'] ?? null;
     }
 
     public function getTitle(): string
