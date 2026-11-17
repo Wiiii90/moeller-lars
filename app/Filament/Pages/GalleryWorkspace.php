@@ -157,7 +157,7 @@ final class GalleryWorkspace extends Page
     {
         $this->galleryStagePreview = 'gallery';
         $this->galleryStagePreviewArtworkId = null;
-        $this->dispatch('gallery-preview-updated', url: $this->galleryStagePreviewUrl());
+        $this->dispatch('gallery-preview-updated', url: $this->galleryStagePreviewUrl(), title: $this->galleryStagePreviewTitle());
     }
 
     public function previewGalleryArtwork(int $artworkId): void
@@ -170,7 +170,7 @@ final class GalleryWorkspace extends Page
         }
         $this->galleryStagePreview = 'artwork';
         $this->galleryStagePreviewArtworkId = $artworkId;
-        $this->dispatch('gallery-preview-updated', url: $this->galleryStagePreviewUrl());
+        $this->dispatch('gallery-preview-updated', url: $this->galleryStagePreviewUrl(), title: $this->galleryStagePreviewTitle());
     }
 
     public function stepGalleryPreview(string $direction): void
@@ -200,6 +200,13 @@ final class GalleryWorkspace extends Page
         } elseif ($direction === 'next') {
             $this->previewGalleryStage();
         }
+    }
+
+    public function galleryStagePreviewTitle(): string
+    {
+        return $this->galleryStagePreview === 'artwork'
+            ? 'Interactive Artwork preview'
+            : 'Interactive Gallery preview';
     }
 
     public function galleryStagePreviewUrl(): ?string

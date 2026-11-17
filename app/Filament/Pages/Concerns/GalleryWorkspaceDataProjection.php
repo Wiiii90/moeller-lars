@@ -193,7 +193,7 @@ trait GalleryWorkspaceDataProjection
         // The canonical Preview owner refreshes without remounting controls.
         // Pass the current route because an editorial update can change an
         // Artwork slug while retaining the selected Artwork identity.
-        $this->dispatch('gallery-preview-updated', url: $this->galleryStagePreviewUrl());
+        $this->dispatch('gallery-preview-updated', url: $this->galleryStagePreviewUrl(), title: $this->galleryStagePreviewTitle());
     }
 
     private function refreshGalleryMetrics(): void

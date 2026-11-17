@@ -189,7 +189,7 @@
                     class="gallery-stage__live-preview"
                     :heading="false"
                     :url="$galleryStagePreview === 'staged' ? null : $stagePublicUrl"
-                    :frame-title="$galleryStagePreview === 'artwork' ? 'Interactive Artwork preview' : 'Interactive Gallery preview'"
+                    :frame-title="$this->galleryStagePreviewTitle()"
                     wire:key="gallery-live-preview"
                 >
                     @if ($galleryStagePreview === 'staged' && $stagedPreview !== null)

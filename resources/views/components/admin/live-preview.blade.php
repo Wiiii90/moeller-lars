@@ -288,6 +288,7 @@
             // preview's device/zoom state; Appearance edits reload the current.
             const source = typeof detail?.url === 'string' && detail.url !== ''
                 ? detail.url : frame.src
+            if (typeof detail?.title === 'string' && detail.title !== '') frame.title = detail.title
             const url = new URL(source, window.location.origin)
             url.searchParams.set('_appearance', Date.now().toString())
             frame.src = url.toString()
