@@ -109,6 +109,90 @@ final class GalleryEditorialService
         });
     }
 
+    /**
+     * Show exactly which visible Artwork ranks a sort-mode transition would
+     * alter. No changes or shadow ordering are stored for this preview.
+     *
+     * @return array{from:string,to:string,changes:list<array{title:string,from:int,to:int}>,signature:string}
+     */
+    public function previewSortChange(ArtworkCategory $gallery, string $targetMode): array
+    {
+        if (! array_key_exists($targetMode, GalleryPresentation::SORT_OPTIONS)) {
+            throw ValidationException::withMessages(['sort_mode' => 'Choose a supported Gallery order.']);
+        }
+
+        $currentMode = GalleryPresentation::sortMode($gallery);
+        $artworks = $gallery->artworks();
+        $before = GalleryPresentation::orderArtworks($artworks->getQuery(), $gallery)
+            ->pluck('artworks.id')->map(static fn (mixed $id): int => (int) $id)->all();
+
+        if ($currentMode === $targetMode || $targetMode === GalleryPresentation::SORT_MANUAL) {
+            // Manual inherits the visible order; it never restores an obsolete
+            // hidden ranking from positions written by an earlier mode.
+            $after = $before;
+        } else {
+            $proposed = clone $gallery;
+            $proposed->setAttribute('sort_mode', $targetMode);
+            $after = GalleryPresentation::orderArtworks($proposed->artworks()->getQuery(), $proposed)
+                ->pluck('artworks.id')->map(static fn (mixed $id): int => (int) $id)->all();
+        }
+
+        $priorPositions = array_flip($before);
+        $titles = $gallery->artworks()->pluck('title', 'id');
+        $changes = [];
+        foreach ($after as $index => $id) {
+            $previous = $priorPositions[$id] + 1;
+            $next = $index + 1;
+            if ($previous === $next) {
+                continue;
+            }
+
+            $changes[] = [
+                'title' => (string) ($titles[$id] ?? 'Artwork #'.$id),
+                'from' => $previous,
+                'to' => $next,
+            ];
+        }
+
+        return [
+            'from' => $currentMode,
+            'to' => $targetMode,
+            'changes' => $changes,
+            'signature' => hash('sha256', json_encode(
+                [$gallery->getKey(), $currentMode, $targetMode, $before, $after],
+                JSON_THROW_ON_ERROR,
+            )),
+        ];
+    }
+
+    /**
+     * The approval covers one exact order snapshot; a concurrent edit,
+     * insertion or mode change invalidates the confirmation.
+     */
+    public function confirmSortChange(ArtworkCategory $gallery, string $targetMode, string $signature): bool
+    {
+        return DB::transaction(function () use ($gallery, $targetMode, $signature): bool {
+            /** @var ArtworkCategory $fresh */
+            $fresh = ArtworkCategory::query()->whereKey($gallery->getKey())->lockForUpdate()->firstOrFail();
+            $preview = $this->previewSortChange($fresh, $targetMode);
+
+            if (! hash_equals($preview['signature'], $signature)) {
+                throw ValidationException::withMessages([
+                    'sort_mode' => 'The Gallery order changed while the dialog was open. Review the new order before applying.',
+                ]);
+            }
+
+            if ($preview['from'] === $targetMode) {
+                return false;
+            }
+
+            return $this->update($fresh, [
+                'name' => (string) $fresh->getAttribute('name'),
+                'sort_mode' => $targetMode,
+            ])->wasChanged();
+        });
+    }
+
     public function changeSlug(ArtworkCategory $gallery, string $slug): ArtworkCategory
     {
         $actor = $this->adminAuditService->requireActor();
