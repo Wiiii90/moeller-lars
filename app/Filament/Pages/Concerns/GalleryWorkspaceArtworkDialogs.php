@@ -99,7 +99,7 @@ trait GalleryWorkspaceArtworkDialogs
 
         return AdminDialog::create(
             $action,
-            app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::GALLERY) ? 'Create and publish' : 'Create draft',
+            'Create artwork',
             AdminDialogSize::Large,
         );
     }

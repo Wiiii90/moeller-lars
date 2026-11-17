@@ -657,6 +657,16 @@ body {
     overflow-wrap: break-word;
 }
 
+/* Expanded Artwork and Home Hero use the same bounded public geometry.
+   The ordinary reading width is General-owned; these values are active only
+   for a fitted Artwork and never produce a viewport overflow. */
+@media (min-width: 64.001rem) {
+    body.public-site:has(.site-content--fitted-artwork) {
+        --public-fitted-paper-width: min(88vw, 88rem);
+        --public-fitted-image-width: min(82vw, 80rem);
+    }
+}
+
 /* Expanded Artwork images retain aspect ratio; the surrounding Menu paper
    follows the same width while its inner navigation retains General's measure. */
 .site-content--fitted-artwork .artwork-detail__media {

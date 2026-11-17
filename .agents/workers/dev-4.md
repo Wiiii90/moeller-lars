@@ -105,6 +105,12 @@
 - Automatic publication is attempted only for an actually eligible finished Artwork with an explicitly provided title. `ArtworkPublicationService::canPublish` uses exactly the same readiness check as manual Publish, without duplicating it in Stage/Modal. When incomplete, creation succeeds as Draft rather than rolling back; public manual Publish remains strict. The full Gallery dialog's help explains the new behavior. This is not an opt-out of public eligibility or the preexisting media policies.
 - Source changes committed only; PHP runtime, empty-form submission and actual Studio browser still need checking. No test files, CI, deploy or database operations triggered.
 
+## Fitted public geometry and create action language — 2026-11-18
+
+- Source owner review found `--public-fitted-paper-width` and `--public-fitted-image-width` referenced but **not defined** in the public stylesheet, so former portrait/landscape expansion frequently fell back to General's normal dimensions and appeared broken even after a saved toggle. The canonical public CSS now defines bounded Desktop fitted widths (up to 88rem paper at 88vw, up to 80rem image at 82vw) only for actually fitted pages, including Home Hero's existing shared fitted grammar. Below the existing 64.001rem breakpoint the established standard General geometry applies. The actual Menu content remains capped at General's `--public-shell-max`, while its outer connected surface tracks the expanded page.
+- Ordinary Add Artwork modal action now says `Create artwork` rather than promising publication when Auto-publish is enabled, because unfinished drafts must always remain creatable; actual notifications differentiate Draft from Published.
+- Source-only; actual CSS/layout measurements on Desktop/Phone and historical Gallery snapshot parity are not runtime-verified.
+
 ## Acceptance gates and remaining risks
 
 1. **Source is committed, not browser-accepted**. Confirm PHP/Filament parsing, Livewire `stagedArtworkForm` init/fill and field dehydration, uploader-to-queue state, stage mobile switcher, input scrolling, iframe Content Security Policy, thumbnail/video rendering, and rapid selection/race behavior in refreshed local preview. No PHP lint/browser/test suite was run through GitHub-only access.
