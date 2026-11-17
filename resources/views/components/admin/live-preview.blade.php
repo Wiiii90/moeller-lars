@@ -330,7 +330,7 @@
                     'is-dragging': dragging,
                 }">
                 @isset($content)
-                    <div x-ref="frame" class="admin-live-preview__frame admin-live-preview__frame--content">
+                    <div x-ref="frame" wire:ignore.self class="admin-live-preview__frame admin-live-preview__frame--content">
                         {{ $content }}
                     </div>
                 @elseif (filled($url))
@@ -339,7 +339,7 @@
                         loading="eager" tabindex="0" allowfullscreen
                         x-on:load="$nextTick(() => { fitPreview(); bindFrameShortcuts(); })"></iframe>
                 @else
-                    <div x-ref="frame" class="admin-live-preview__frame admin-live-preview__frame--content">
+                    <div x-ref="frame" wire:ignore.self class="admin-live-preview__frame admin-live-preview__frame--content">
                         <x-admin.empty-state title="Preview unavailable" minimal />
                     </div>
                 @endif

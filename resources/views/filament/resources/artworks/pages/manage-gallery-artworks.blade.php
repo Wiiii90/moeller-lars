@@ -185,38 +185,38 @@
                     </div>
                 </header>
 
-                <div class="gallery-stage__preview-surface">
+                <x-admin.live-preview
+                    class="gallery-stage__live-preview"
+                    :heading="false"
+                    :url="$galleryStagePreview === 'staged' ? null : $stagePublicUrl"
+                    :frame-title="$galleryStagePreview === 'artwork' ? 'Interactive Artwork preview' : 'Interactive Gallery preview'"
+                    wire:key="gallery-live-preview-{{ $galleryStagePreview }}-{{ $galleryStagePreviewArtworkId ?? 0 }}-{{ $galleryStagePreviewRevision }}"
+                >
                     @if ($galleryStagePreview === 'staged' && $stagedPreview !== null)
-                        <div class="gallery-stage__draft-preview">
-                            @if ($stagedPreview['kind'] === 'image')
-                                <img src="{{ $stagedPreview['url'] }}" alt="{{ $stagedPreview['alt'] }}" loading="eager" decoding="async">
-                            @else
-                                <video src="{{ $stagedPreview['url'] }}" @if ($stagedPreview['poster']) poster="{{ $stagedPreview['poster'] }}" @endif
-                                    controls muted playsinline preload="metadata" aria-label="Staged Artwork video"></video>
-                            @endif
-                            <div class="gallery-stage__draft-caption">
-                                <strong>{{ $stagedPreview['title'] }}</strong>
-                                @php
-                                    $previewDetails = array_values(array_filter([
-                                        $stagedPreview['date'],
-                                        $stagedPreview['dimensions'],
-                                        $stagedPreview['medium'],
-                                    ], static fn (?string $value): bool => filled($value)));
-                                @endphp
-                                @if ($previewDetails !== [])
-                                    <span>{{ implode(' · ', $previewDetails) }}</span>
+                        <x-slot:content>
+                            <div class="gallery-stage__draft-preview">
+                                @if ($stagedPreview['kind'] === 'image')
+                                    <img src="{{ $stagedPreview['url'] }}" alt="{{ $stagedPreview['alt'] }}" loading="eager" decoding="async">
+                                @else
+                                    <video src="{{ $stagedPreview['url'] }}"
+                                        @if ($stagedPreview['poster']) poster="{{ $stagedPreview['poster'] }}" @endif
+                                        controls muted playsinline preload="metadata" aria-label="Staged Artwork video"></video>
                                 @endif
+                                <div class="gallery-stage__draft-caption">
+                                    <strong>{{ $stagedPreview['title'] }}</strong>
+                                    @php
+                                        $previewDetails = array_values(array_filter([
+                                            $stagedPreview['date'], $stagedPreview['dimensions'], $stagedPreview['medium'],
+                                        ], static fn (?string $value): bool => filled($value)));
+                                    @endphp
+                                    @if ($previewDetails !== [])
+                                        <span>{{ implode(' · ', $previewDetails) }}</span>
+                                    @endif
+                                </div>
                             </div>
-                        </div>
-                    @elseif ($stagePublicUrl)
-                        <iframe wire:key="gallery-stage-frame-{{ md5($stagePublicUrl) }}-{{ $galleryStagePreviewRevision }}"
-                            src="{{ $stagePublicUrl }}"
-                            title="{{ $galleryStagePreview === 'artwork' ? 'Interactive Artwork preview' : 'Interactive Gallery preview' }}"
-                            loading="eager" allowfullscreen></iframe>
-                    @else
-                        <x-admin.empty-state title="Gallery preview unavailable" minimal />
+                        </x-slot:content>
                     @endif
-                </div>
+                </x-admin.live-preview>
             </div>
         </section>
 
