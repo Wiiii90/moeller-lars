@@ -40,6 +40,21 @@
             @endforeach
         </x-admin.metrics>
 
+        @php
+            $stagedPreview = $galleryStagePreview === 'staged' ? $this->stagedArtworkPreview() : null;
+            $stagePublicUrl = $this->galleryStagePreviewUrl();
+        @endphp
+        <section class="gallery-workspace__stage admin-visual-stage admin-visual-stage--triptych admin-focus-stage"
+            aria-label="Gallery upload, settings, artwork editor and preview">
+            <x-admin.stage-switcher
+                storage-key="admin-stage.gallery"
+                default-pane="settings"
+                :panes="['upload' => 'Upload', 'settings' => 'Editor', 'preview' => 'Preview']"
+                aria-label="Gallery Stage"
+            />
+
+            <div class="gallery-stage__upload admin-visual-stage__pane" data-admin-stage-pane="upload" data-admin-stage-slot="1">
+                <h2 class="admin-section__kicker admin-visual-stage__heading">Upload Media</h2>
         <div class="admin-gallery-upload" aria-label="Add artwork from media">
             <div
                 class="admin-gallery-upload__dropzone"
@@ -94,7 +109,118 @@
             </div>
         </div>
 
+            </div>
 
+            <div class="gallery-stage__workspace admin-visual-stage__pane" data-admin-stage-pane="settings" data-admin-stage-slot="2">
+                <header class="gallery-stage__workspace-header">
+                    <h2 class="admin-section__kicker admin-visual-stage__heading">Gallery editor</h2>
+                    <div class="admin-stage-tabs gallery-stage__workspace-tabs" role="group" aria-label="Gallery Stage editor mode">
+                        <button class="admin-action {{ $galleryStagePanel === 'settings' ? 'is-primary' : '' }}" type="button"
+                            wire:click="selectGalleryStagePanel('settings')" aria-pressed="{{ $galleryStagePanel === 'settings' ? 'true' : 'false' }}">Settings</button>
+                        <button class="admin-action {{ $galleryStagePanel === 'queue' ? 'is-primary' : '' }}" type="button"
+                            wire:click="selectGalleryStagePanel('queue')" aria-pressed="{{ $galleryStagePanel === 'queue' ? 'true' : 'false' }}"
+                            @disabled($pendingBatchArtworkMedia === [])>Staged ({{ count($pendingBatchArtworkMedia) }})</button>
+                    </div>
+                </header>
+
+                @if ($galleryStagePanel === 'queue' && $pendingBatchArtworkMedia !== [])
+                    <div class="gallery-stage__queue" aria-label="Media awaiting Artwork creation">
+                        @foreach ($pendingBatchArtworkMedia as $index => $item)
+                            <button type="button" class="admin-action gallery-stage__queue-item {{ $selectedStagedMediaAssetId === (int) $item['media_asset_id'] ? 'is-primary' : '' }}"
+                                wire:key="gallery-staged-media-{{ $item['media_asset_id'] }}"
+                                wire:click="selectStagedArtwork({{ (int) $item['media_asset_id'] }})"
+                                aria-pressed="{{ $selectedStagedMediaAssetId === (int) $item['media_asset_id'] ? 'true' : 'false' }}">
+                                <span class="admin-position">{{ $index + 1 }}</span>
+                                <span>{{ (string) ($item['form']['title'] ?? $item['title']) }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+                    @if ($selectedStagedMediaAssetId !== null)
+                        <div class="gallery-stage__form-scroll" wire:key="gallery-staged-editor-{{ $selectedStagedMediaAssetId }}">
+                            {{ $this->stagedArtworkForm }}
+                        </div>
+                        <div class="gallery-stage__editor-actions admin-toolbar" aria-label="Staged Artwork actions">
+                            <button class="admin-action is-primary" type="button" wire:click="createSelectedStagedArtwork"
+                                wire:loading.attr="disabled" wire:target="createSelectedStagedArtwork">Create artwork</button>
+                            @if (count($pendingBatchArtworkMedia) > 1)
+                                <button class="admin-action" type="button" wire:click="createAllStagedArtworks"
+                                    wire:loading.attr="disabled" wire:target="createAllStagedArtworks">Create all drafts</button>
+                            @endif
+                            <button class="admin-action" type="button"
+                                wire:click="removeStagedArtwork({{ $selectedStagedMediaAssetId }})">Remove from Stage</button>
+                        </div>
+                    @endif
+                @else
+                    <div class="gallery-stage__settings" aria-label="Gallery quick settings">
+                        <label class="admin-data-field">
+                            <span>Artwork order</span>
+                            <select wire:key="gallery-stage-sort-{{ $galleryContext['sort_mode'] }}"
+                                wire:change="changeGalleryStageSort($event.target.value)" aria-label="Artwork order">
+                                @foreach (\App\Domain\Artwork\GalleryPresentation::SORT_OPTIONS as $mode => $label)
+                                    <option value="{{ $mode }}" @selected($galleryContext['sort_mode'] === $mode)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="admin-data-field">
+                            <span>Artwork page surface</span>
+                            <select wire:change="updateGalleryStageSetting('artwork_page_surface_mode', $event.target.value)">
+                                @foreach (\App\Domain\Artwork\GalleryPresentation::ARTWORK_SURFACE_OPTIONS as $mode => $label)
+                                    <option value="{{ $mode }}" @selected($galleryContext['artwork_page_surface_mode'] === $mode)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="gallery-stage__toggle-field">
+                            <span>Show Artwork information</span>
+                            <input type="checkbox" @checked($galleryContext['show_artwork_information'])
+                                wire:change="updateGalleryStageSetting('show_artwork_information', $event.target.checked)">
+                        </label>
+                        <label class="admin-data-field">
+                            <span>Caption arrangement</span>
+                            <select wire:change="updateGalleryStageSetting('caption_layout', $event.target.value)">
+                                @foreach (\App\Domain\Artwork\GalleryPresentation::CAPTION_LAYOUTS as $mode => $label)
+                                    <option value="{{ $mode }}" @selected($galleryContext['caption_layout'] === $mode)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                    </div>
+                @endif
+            </div>
+
+            <div class="gallery-stage__preview admin-visual-stage__pane" data-admin-stage-pane="preview" data-admin-stage-slot="3">
+                <header class="gallery-stage__preview-header">
+                    <h2 class="admin-section__kicker admin-visual-stage__heading">Live preview</h2>
+                    <div class="admin-stage-tool-group" role="group" aria-label="Gallery preview navigation">
+                        <button class="admin-action" type="button" wire:click="previewGalleryStage"
+                            aria-pressed="{{ $galleryStagePreview === 'gallery' ? 'true' : 'false' }}">Gallery</button>
+                        <button class="admin-action" type="button" wire:click="stepGalleryPreview('previous')"
+                            @disabled($artworkDataset === []) aria-label="Previous Artwork">‹</button>
+                        <button class="admin-action" type="button" wire:click="stepGalleryPreview('next')"
+                            @disabled($artworkDataset === []) aria-label="Next Artwork">›</button>
+                    </div>
+                </header>
+
+                <div class="gallery-stage__preview-surface">
+                    @if ($galleryStagePreview === 'staged' && $stagedPreview !== null)
+                        <div class="gallery-stage__draft-preview">
+                            @if ($stagedPreview['kind'] === 'image')
+                                <img src="{{ $stagedPreview['url'] }}" alt="" loading="eager" decoding="async">
+                            @else
+                                <video src="{{ $stagedPreview['url'] }}" @if ($stagedPreview['poster']) poster="{{ $stagedPreview['poster'] }}" @endif
+                                    controls muted playsinline preload="metadata" aria-label="Staged Artwork video"></video>
+                            @endif
+                            <span>{{ $stagedPreview['title'] }}</span>
+                        </div>
+                    @elseif ($stagePublicUrl)
+                        <iframe wire:key="gallery-stage-frame-{{ md5($stagePublicUrl) }}"
+                            src="{{ $stagePublicUrl }}"
+                            title="{{ $galleryStagePreview === 'artwork' ? 'Interactive Artwork preview' : 'Interactive Gallery preview' }}"
+                            loading="eager" allowfullscreen></iframe>
+                    @else
+                        <x-admin.empty-state title="Gallery preview unavailable" minimal />
+                    @endif
+                </div>
+            </div>
+        </section>
 
         <div class="gallery-workspace__result-surface">
             <x-admin.controls class="admin-data-controls--dashboard-responsive gallery-workspace__controls" aria-label="Gallery controls" metric-grid :filter-count="2" :search-span="2">
