@@ -77,6 +77,9 @@ final class GalleryWorkspace extends Page
 
     public ?int $pendingPrimaryMediaAssetId = null;
 
+    /** @var array<string, mixed> Canonical Gallery Settings form state. */
+    public array $galleryStageSettingsData = [];
+
     /** @var array<string, mixed>|null Unsaved fields for the selected media file. */
     public ?array $stagedArtworkData = [];
 
@@ -116,6 +119,7 @@ final class GalleryWorkspace extends Page
         $this->loadGalleryAnalytics();
         $this->projectArtworks();
         $this->refreshGalleryMetrics();
+        $this->refreshGalleryStageSettings();
     }
 
     public function stagedArtworkForm(Schema $schema): Schema

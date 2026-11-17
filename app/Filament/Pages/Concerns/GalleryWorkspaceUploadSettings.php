@@ -13,7 +13,11 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\ArtworkCategory;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 
@@ -23,110 +27,10 @@ trait GalleryWorkspaceUploadSettings
     {
         $action = Action::make('gallerySettings')
             ->label('Settings')
-            ->fillForm(function (): array {
-                /** @var ArtworkCategory $gallery */
-                $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
-
-                return [
-                    'name' => (string) $gallery->getAttribute('name'),
-                    'landscape_detail_enabled' => GalleryPresentation::enabled($gallery),
-                    'portrait_detail_enabled' => GalleryPresentation::portraitEnabled($gallery),
-                    'artwork_page_surface_mode' => GalleryPresentation::artworkPageSurfaceMode($gallery),
-                    'artwork_menu_surface_wide' => GalleryPresentation::wideArtworkMenu($gallery),
-                    'edge_navigation_mode' => GalleryPresentation::edgeMode($gallery),
-                    'artwork_divider' => GalleryPresentation::divider($gallery),
-                    'sort_mode' => GalleryPresentation::sortMode($gallery),
-                    'video_sound_enabled' => GalleryPresentation::allowVideoSound($gallery),
-                    'show_artwork_information' => GalleryPresentation::showArtworkInformation($gallery),
-                    'show_media_credits' => GalleryPresentation::showMediaCredits($gallery),
-                    'show_media_copyright' => GalleryPresentation::showMediaCopyright($gallery),
-                    'caption_layout' => GalleryPresentation::captionLayout($gallery),
-                    'auto_publish_new_artworks' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::GALLERY),
-                ];
-            })
-            ->schema([
-                // The shared Gallery controls use two columns; the title spans the row.
-                // Home-only eligibility is edited exclusively in the Home workspace.
-                Grid::make()
-                    ->columns(['md' => 2])
-                    ->schema([
-                        AdminControl::text('name', 'Gallery title')
-                            ->required()
-                            ->maxLength(160)
-                            ->columnSpanFull(),
-                        AdminControl::select('sort_mode')
-                            ->label(AdminHelp::label(
-                                'Artwork order',
-                                'Gallery artwork ordering',
-                                'Manual uses saved positions. Date and Media Added modes continuously order the Gallery. A drag, Move or Position edit switches to Manual and keeps that sequence.',
-                            ))
-                            ->options(GalleryPresentation::SORT_OPTIONS)
-                            ->default(GalleryPresentation::SORT_MANUAL)
-                            ->required()
-                            ->live()
-                            // AdminDialog::edit otherwise autosaves every bubbled
-                            // change. Only the confirmation Action may commit a
-                            // sort-mode change, even if no positions will move.
-                            ->extraAlpineAttributes(['x-on:change.stop' => 'true'], merge: true)
-                            ->afterStateUpdated(function (mixed $state, callable $set): void {
-                                /** @var ArtworkCategory $gallery */
-                                $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
-                                $currentMode = GalleryPresentation::sortMode($gallery);
-                                $set('sort_mode', $currentMode);
-
-                                if (! is_string($state) || $state === $currentMode) {
-                                    return;
-                                }
-
-                                $preview = app(GalleryEditorialService::class)->previewSortChange($gallery, $state);
-                                $this->mountAction('changeGallerySort', [
-                                    'sort_mode' => $state,
-                                    'signature' => $preview['signature'],
-                                ]);
-                            }),
-                        AdminControl::toggle('show_artwork_information', 'Show Artwork information below each work'),
-                        AdminControl::toggle('show_media_credits', 'Show authored Media File credits'),
-                        AdminControl::toggle('show_media_copyright', 'Show configured copyright notices'),
-                        AdminControl::select('caption_layout', 'Caption arrangement')
-                            ->options(GalleryPresentation::CAPTION_LAYOUTS)
-                            ->required(),
-                        AdminControl::toggle('video_sound_enabled', 'Allow visitors to unmute looping Gallery videos'),
-                        AdminControl::toggle('auto_publish_new_artworks')
-                            ->label(AdminHelp::label(
-                                'Auto-publish new Artworks',
-                                'Automatic Artwork publishing',
-                                'Only available media with suitable ALT text and a published Gallery can be published. If the checks fail, creation is rejected without keeping a partial draft.',
-                            ))
-                            ->live()
-                            ->afterStateUpdated(static function (mixed $state): void {
-                                if (app(AdminAutoPublishPreferences::class)->update(
-                                    AdminAutoPublishPreferences::GALLERY, (bool) $state,
-                                )) {
-                                    app(AdminNotifier::class)->notification(title: 'Gallery settings saved', status: 'success');
-                                }
-                            }),
-                        AdminControl::toggle('landscape_detail_enabled', 'Expand landscape Artwork pages'),
-                        AdminControl::toggle('portrait_detail_enabled', 'Expand portrait Artwork pages'),
-                        AdminControl::select('artwork_page_surface_mode', 'Artwork page surface')
-                            ->options(GalleryPresentation::ARTWORK_SURFACE_OPTIONS)
-                            ->default(GalleryPresentation::ARTWORK_SURFACE_INHERIT)
-                            ->required(),
-                        AdminControl::toggle('artwork_menu_surface_wide', 'Match Menu surface to Artwork page width')
-                            ->default(false),
-                        AdminControl::select('artwork_divider', 'Between Artworks')
-                            ->options(GalleryPresentation::DIVIDER_OPTIONS)
-                            ->default(GalleryPresentation::DIVIDER_NONE)
-                            ->required(),
-                        AdminControl::select('edge_navigation_mode', 'Artwork navigation at sequence ends')
-                            ->options([
-                                GalleryPresentation::EDGE_DISABLED => 'Disabled arrows (default)',
-                                GalleryPresentation::EDGE_HIDDEN => 'Hide unavailable arrows',
-                                GalleryPresentation::EDGE_CYCLIC => 'Cyclic (last ↔ first)',
-                            ])
-                            ->default(GalleryPresentation::EDGE_DISABLED)
-                            ->required(),
-                    ]),
-            ])
+            ->fillForm(fn (): array => $this->gallerySettingsValues(
+                ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']),
+            ))
+            ->schema([$this->gallerySettingsFields(false)])
             ->modalHeading('Gallery settings')
             ->action(function (array $data): void {
                 /** @var ArtworkCategory $gallery */
@@ -167,6 +71,7 @@ trait GalleryWorkspaceUploadSettings
                 $this->loadGallery((int) $gallery->getKey());
                 $this->loadMoveTargets();
                 $this->refreshWorkspaceAfterMutation();
+                $this->refreshGalleryStageSettings();
                 $preferenceChanged = app(AdminAutoPublishPreferences::class)->update(
                     AdminAutoPublishPreferences::GALLERY,
                     (bool) ($data['auto_publish_new_artworks']
@@ -181,6 +86,180 @@ trait GalleryWorkspaceUploadSettings
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /**
+     * The Gallery Stage and the existing full modal render exactly the same
+     * control definitions. Only column count and save timing differ.
+     * Homepage selection is deliberately absent: Home owns that setting.
+     */
+    private function gallerySettingsFields(bool $stage): Grid
+    {
+        $name = AdminControl::text('name', 'Gallery title')
+            ->required()->maxLength(160)->columnSpanFull();
+
+        $order = AdminControl::select('sort_mode')
+            ->label(AdminHelp::label(
+                'Artwork order',
+                'Gallery artwork ordering',
+                'Manual uses saved positions. Date and Media Added modes continuously order the Gallery. A drag, Move or Position edit switches to Manual and keeps that sequence.',
+            ))
+            ->options(GalleryPresentation::SORT_OPTIONS)
+            ->default(GalleryPresentation::SORT_MANUAL)
+            ->required()
+            ->live()
+            // Never submit this field through the generic Edit autosave.
+            ->extraAlpineAttributes(['x-on:change.stop' => 'true'], merge: true)
+            ->afterStateUpdated(function (mixed $state, callable $set) use ($stage): void {
+                /** @var ArtworkCategory $gallery */
+                $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+                $currentMode = GalleryPresentation::sortMode($gallery);
+                $set('sort_mode', $currentMode);
+                if (! is_string($state) || $state === $currentMode) {
+                    return;
+                }
+                if ($stage) {
+                    $this->changeGalleryStageSort($state);
+                    return;
+                }
+                $preview = app(GalleryEditorialService::class)->previewSortChange($gallery, $state);
+                $this->mountAction('changeGallerySort', [
+                    'sort_mode' => $state,
+                    'signature' => $preview['signature'],
+                ]);
+            });
+
+        $autoPublish = AdminControl::toggle('auto_publish_new_artworks')
+            ->label(AdminHelp::label(
+                'Auto-publish new Artworks',
+                'Automatic Artwork publishing',
+                'Only available media with suitable ALT text and a published Gallery can be published. If the checks fail, creation is rejected without keeping a partial draft.',
+            ))
+            ->live()
+            ->afterStateUpdated(function (mixed $state): void {
+                if (app(AdminAutoPublishPreferences::class)->update(
+                    AdminAutoPublishPreferences::GALLERY, (bool) $state,
+                )) {
+                    app(AdminNotifier::class)->notification(
+                        title: 'Gallery settings saved', status: 'success',
+                    );
+                }
+            });
+
+        return Grid::make($stage ? ['default' => 1] : ['default' => 1, 'md' => 2])
+            ->schema([
+                $this->gallerySettingControl($name, 'name', $stage),
+                $order,
+                $this->gallerySettingControl(
+                    AdminControl::toggle('show_artwork_information', 'Show Artwork information below each work'),
+                    'show_artwork_information', $stage,
+                ),
+                $this->gallerySettingControl(
+                    AdminControl::toggle('show_media_credits', 'Show authored Media File credits'),
+                    'show_media_credits', $stage,
+                ),
+                $this->gallerySettingControl(
+                    AdminControl::toggle('show_media_copyright', 'Show configured copyright notices'),
+                    'show_media_copyright', $stage,
+                ),
+                $this->gallerySettingControl(
+                    AdminControl::select('caption_layout', 'Caption arrangement')
+                        ->options(GalleryPresentation::CAPTION_LAYOUTS)->required(),
+                    'caption_layout', $stage,
+                ),
+                $this->gallerySettingControl(
+                    AdminControl::toggle('video_sound_enabled', 'Allow visitors to unmute looping Gallery videos'),
+                    'video_sound_enabled', $stage,
+                ),
+                $autoPublish,
+                $this->gallerySettingControl(
+                    AdminControl::toggle('landscape_detail_enabled', 'Expand landscape Artwork pages'),
+                    'landscape_detail_enabled', $stage,
+                ),
+                $this->gallerySettingControl(
+                    AdminControl::toggle('portrait_detail_enabled', 'Expand portrait Artwork pages'),
+                    'portrait_detail_enabled', $stage,
+                ),
+                $this->gallerySettingControl(
+                    AdminControl::select('artwork_page_surface_mode', 'Artwork page surface')
+                        ->options(GalleryPresentation::ARTWORK_SURFACE_OPTIONS)
+                        ->default(GalleryPresentation::ARTWORK_SURFACE_INHERIT)->required(),
+                    'artwork_page_surface_mode', $stage,
+                ),
+                $this->gallerySettingControl(
+                    AdminControl::toggle('artwork_menu_surface_wide', 'Match Menu surface to Artwork page width')
+                        ->default(false),
+                    'artwork_menu_surface_wide', $stage,
+                ),
+                $this->gallerySettingControl(
+                    AdminControl::select('artwork_divider', 'Between Artworks')
+                        ->options(GalleryPresentation::DIVIDER_OPTIONS)
+                        ->default(GalleryPresentation::DIVIDER_NONE)->required(),
+                    'artwork_divider', $stage,
+                ),
+                $this->gallerySettingControl(
+                    AdminControl::select('edge_navigation_mode', 'Artwork navigation at sequence ends')
+                        ->options([
+                            GalleryPresentation::EDGE_DISABLED => 'Disabled arrows (default)',
+                            GalleryPresentation::EDGE_HIDDEN => 'Hide unavailable arrows',
+                            GalleryPresentation::EDGE_CYCLIC => 'Cyclic (last ↔ first)',
+                        ])
+                        ->default(GalleryPresentation::EDGE_DISABLED)->required(),
+                    'edge_navigation_mode', $stage,
+                ),
+            ]);
+    }
+
+    private function gallerySettingControl(TextInput|Select|Toggle $field, string $name, bool $stage): TextInput|Select|Toggle
+    {
+        if (! $stage) {
+            return $field;
+        }
+        if ($field instanceof TextInput) {
+            $field->live(onBlur: true);
+        } else {
+            $field->live();
+        }
+
+        return $field->afterStateUpdated(function (mixed $state) use ($name): void {
+            $this->updateGalleryStageSetting($name, $state);
+        });
+    }
+
+    /** @return array<string,mixed> */
+    private function gallerySettingsValues(ArtworkCategory $gallery): array
+    {
+        return [
+            'name' => (string) $gallery->getAttribute('name'),
+            'landscape_detail_enabled' => GalleryPresentation::enabled($gallery),
+            'portrait_detail_enabled' => GalleryPresentation::portraitEnabled($gallery),
+            'artwork_page_surface_mode' => GalleryPresentation::artworkPageSurfaceMode($gallery),
+            'artwork_menu_surface_wide' => GalleryPresentation::wideArtworkMenu($gallery),
+            'edge_navigation_mode' => GalleryPresentation::edgeMode($gallery),
+            'artwork_divider' => GalleryPresentation::divider($gallery),
+            'sort_mode' => GalleryPresentation::sortMode($gallery),
+            'video_sound_enabled' => GalleryPresentation::allowVideoSound($gallery),
+            'show_artwork_information' => GalleryPresentation::showArtworkInformation($gallery),
+            'show_media_credits' => GalleryPresentation::showMediaCredits($gallery),
+            'show_media_copyright' => GalleryPresentation::showMediaCopyright($gallery),
+            'caption_layout' => GalleryPresentation::captionLayout($gallery),
+            'auto_publish_new_artworks' => app(AdminAutoPublishPreferences::class)
+                ->enabled(AdminAutoPublishPreferences::GALLERY),
+        ];
+    }
+
+    public function galleryStageSettingsForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([$this->gallerySettingsFields(true)])
+            ->statePath('galleryStageSettingsData');
+    }
+
+    private function refreshGalleryStageSettings(): void
+    {
+        /** @var ArtworkCategory $gallery */
+        $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+        $this->galleryStageSettingsForm->fill($this->gallerySettingsValues($gallery));
     }
 
     public function changeGallerySortAction(): Action
@@ -222,6 +301,7 @@ trait GalleryWorkspaceUploadSettings
 
                 $this->loadGallery((int) $gallery->getKey());
                 $this->refreshWorkspaceAfterMutation();
+                $this->refreshGalleryStageSettings();
                 if ($changed) {
                     app(AdminNotifier::class)->notification(
                         title: 'Gallery order updated',
@@ -251,17 +331,25 @@ trait GalleryWorkspaceUploadSettings
         );
     }
 
-    /** Only a small subset is mirrored as Stage quick controls. */
+    /** Stage controls save through the same single Gallery editorial owner. */
     public function updateGalleryStageSetting(string $field, mixed $value): void
     {
-        if (! in_array($field, ['show_artwork_information', 'caption_layout', 'artwork_page_surface_mode', 'video_sound_enabled'], true)) {
+        $editable = [
+            'name',
+            'show_artwork_information',
+            'show_media_credits',
+            'show_media_copyright',
+            'caption_layout',
+            'video_sound_enabled',
+            'landscape_detail_enabled',
+            'portrait_detail_enabled',
+            'artwork_page_surface_mode',
+            'artwork_menu_surface_wide',
+            'artwork_divider',
+            'edge_navigation_mode',
+        ];
+        if (! in_array($field, $editable, true)) {
             return;
-        }
-        if (in_array($field, ['show_artwork_information', 'video_sound_enabled'], true)) {
-            $value = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-            if ($value === null) {
-                return;
-            }
         }
 
         /** @var ArtworkCategory $gallery */
@@ -270,13 +358,17 @@ trait GalleryWorkspaceUploadSettings
             $updated = app(GalleryEditorialService::class)->update($gallery, [$field => $value]);
         } catch (ValidationException $exception) {
             $this->notifyValidationFailure('Gallery setting was not saved', $exception);
+            $this->refreshGalleryStageSettings();
             return;
         }
 
         if ($updated->wasChanged()) {
             $this->loadGallery((int) $gallery->getKey());
             $this->refreshWorkspaceAfterMutation();
-            app(AdminNotifier::class)->notification(title: 'Gallery settings saved', status: 'success');
+            $this->refreshGalleryStageSettings();
+            app(AdminNotifier::class)->notification(
+                title: 'Gallery settings saved', status: 'success',
+            );
         }
     }
 

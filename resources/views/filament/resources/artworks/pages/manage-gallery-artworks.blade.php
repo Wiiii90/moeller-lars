@@ -155,46 +155,8 @@
                         </div>
                     @endif
                 @else
-                    <div class="gallery-stage__settings" aria-label="Gallery quick settings">
-                        <label class="admin-data-field">
-                            <span>Artwork order</span>
-                            <select wire:key="gallery-stage-sort-{{ $galleryContext['sort_mode'] }}"
-                                x-on:change='
-                                    const mode = $event.target.value
-                                    $event.target.value = @js($galleryContext["sort_mode"])
-                                    $wire.changeGalleryStageSort(mode)
-                                ' aria-label="Artwork order">
-                                @foreach (\App\Domain\Artwork\GalleryPresentation::SORT_OPTIONS as $mode => $label)
-                                    <option value="{{ $mode }}" @selected($galleryContext['sort_mode'] === $mode)>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <label class="admin-data-field">
-                            <span>Artwork page surface</span>
-                            <select wire:change="updateGalleryStageSetting('artwork_page_surface_mode', $event.target.value)">
-                                @foreach (\App\Domain\Artwork\GalleryPresentation::ARTWORK_SURFACE_OPTIONS as $mode => $label)
-                                    <option value="{{ $mode }}" @selected($galleryContext['artwork_page_surface_mode'] === $mode)>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <label class="gallery-stage__toggle-field">
-                            <span>Show Artwork information</span>
-                            <input type="checkbox" @checked($galleryContext['show_artwork_information'])
-                                wire:change="updateGalleryStageSetting('show_artwork_information', $event.target.checked)">
-                        </label>
-                        <label class="admin-data-field">
-                            <span>Caption arrangement</span>
-                            <select wire:change="updateGalleryStageSetting('caption_layout', $event.target.value)">
-                                @foreach (\App\Domain\Artwork\GalleryPresentation::CAPTION_LAYOUTS as $mode => $label)
-                                    <option value="{{ $mode }}" @selected($galleryContext['caption_layout'] === $mode)>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <button class="admin-action admin-action--with-icon gallery-stage__all-settings"
-                            type="button" wire:click="mountAction('gallerySettings')">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
-                            <span class="admin-action__label">All Gallery settings</span>
-                        </button>
+                    <div class="gallery-stage__settings" aria-label="Gallery settings">
+                        {{ $this->galleryStageSettingsForm }}
                     </div>
                 @endif
             </div>
