@@ -12,6 +12,6 @@
 
 | Dev Worker 6 | 14 | Active — Home Hero Stage source updated; browser review pending | Pages → Home: Hero Artwork candidate management/rotation/stage; Under Construction and Custom settings/editor parity; checks on video and month rotation; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 13 | Active — General Appearance preview corrections | Appearance Global/Title/Menu/Page/Legal, preview geometry/persistence, Regional Formats hints | [dev-7.md](workers/dev-7.md) |
-| Dev Worker 8 | 15 | Active — awaiting assignment | New Dev worker activated; no feature scope assigned yet | [dev-8.md](workers/dev-8.md) |
+| Dev Worker 8 | 15 | Active — shared dialog styling and structural audit | Central Dialog frame and grouping contract; Stage/toolbar capability parity rules; identify cross-feature follow-ups without editing other workers' owned dialogs | [dev-8.md](workers/dev-8.md) |
 
 Only activated Dev workers receive a row and their own `.agents/workers/dev-N.md` record. This roster belongs exclusively to `dev` and must never receive Docs, Testing or Refactor worker entries. Follow the [shared worker protocol](README.md) for atomic registration, takeover and lease updates.

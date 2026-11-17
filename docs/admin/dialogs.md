@@ -162,6 +162,16 @@ Width and content composition are separate concerns. A `Large` dialog must use i
 
 Fields in editorial dialogs should follow the **actual editing task and related controls**, not the persistence schema's property order.
 
+For forms with multiple distinct tasks, use the existing `AdminForm::section()`
+to group related controls under a short, factual heading. Keep the group order
+consistent with the task flow, not database column order. A group boundary
+should be visible through shared heading, spacing and restrained dividers,
+not a stack of colored cards, rounded panels or redundant explanatory copy.
+Do not fabricate sections for one or two fields or duplicate labels as section
+headings. Preserve the actual persistence, validation and responsive column
+behavior when regrouping. Dialog-specific section implementations and styling
+must not fork the shared `admin-form-section` owner.
+
 For multi-field `Large` create/edit dialogs:
 
 - compose normal controls as a responsive two-column grid on desktop;

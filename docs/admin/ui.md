@@ -454,6 +454,30 @@ If a browser pass shows one stage or separator at a different vertical position,
 
 Shared admin navigation/action semantics use `App\Filament\Support\AdminIcon`. Prefer semantic catalog entries over scattered Heroicon literals for meanings already represented by the catalog, and keep distinct meanings visually distinguishable rather than reusing one glyph for unrelated concepts.
 
+### Stage is supplementary; toolbar access is complete
+
+The Visual Stage is an optional shortcut and presentation surface, **not the
+exclusive owner of a feature**. Its primary purpose is to surface the most
+important basic operations, a preview or data visualization, and convenient
+quick-add or direct-edit interactions. Artists must be able to complete the
+same editorial workflow without opening or using the Stage.
+
+Every setting, filter, selection and state-changing operation exposed through a
+Stage must also be reachable from the workspace's Search/Toolbar controls or
+from the Settings, Add, Manage or other clearly named actions opened there.
+These paths must use the same existing domain owner, permission checks,
+validation, persistence and change feedback; a second feature implementation
+for the dialog path is prohibited. Stage-only *passive visualization* may be
+supplementary, but it must not be required to discover or perform an action.
+When a Stage is hidden, reduced for Narrow/Minimal layouts or not yet built,
+no editorial capability may disappear.
+
+For each new or revised Stage, review a concrete parity inventory: list every
+Stage control, its equivalent toolbar/dialog entry, and its mutation owner;
+verify the path without Stage interaction at Wide and Minimal widths. If a
+Stage-only operation is found, restore access through the existing toolbar and
+dialog actions instead of making the Stage mandatory.
+
 See [Admin browser workflow](browser-review.md) for the direct/worker browser-reconciliation loop around these contracts.
 
 ### Gradient tables and stable Appearance Stage height
