@@ -260,6 +260,7 @@
         },
     }"
     @if ($refreshOnAppearance) x-on:general-appearance-updated.window="refreshPreview()" @endif
+    x-on:gallery-preview-updated.window="refreshPreview()"
     x-on:resize.window="scheduleFit()"
     x-on:keydown.window="handleSpaceDown($event)"
     x-on:keyup.window="handleSpaceUp($event)"

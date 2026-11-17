@@ -86,6 +86,11 @@
 - Source-only Blade directive check exposed an inherited `@isset($content)` with `@elseif` and `@endif`, which is not a valid conditional block; changed it to `@if (isset($content))` for the shared content / URL / empty fallback. Rechecked conditional counts (four matching `@if`/`@endif` in the reusable component; Gallery's own blocks also balanced).
 - Do not claim runtime validation; the local PHP Blade compiler and the browser still need a real check after the new component is loaded.
 
+## Gallery preview refresh — 2026-11-18
+
+- Reported: toggling Artwork captions shows a success notification but the shared Gallery iframe retains its old document. The existing revision-only Livewire key cannot reliably update a `wire:ignore` iframe. The established `GalleryWorkspaceDataProjection::refreshWorkspaceAfterMutation` dispatches a scoped `gallery-preview-updated` browser event after the Working data has changed. The **existing central** `x-admin.live-preview` owner receives it and calls its already-defined `refreshPreview()`, which cache-busts the current iframe URL. There is no duplicate preview renderer, polling, or new persistence field.
+- Source-only: reload behavior still awaits live browser verification on Gallery list and individual Artwork pages, including rapid subsequent settings changes.
+
 ## Acceptance gates and remaining risks
 
 1. **Source is committed, not browser-accepted**. Confirm PHP/Filament parsing, Livewire `stagedArtworkForm` init/fill and field dehydration, uploader-to-queue state, stage mobile switcher, input scrolling, iframe Content Security Policy, thumbnail/video rendering, and rapid selection/race behavior in refreshed local preview. No PHP lint/browser/test suite was run through GitHub-only access.
