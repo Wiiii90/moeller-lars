@@ -369,7 +369,7 @@
                     'is-pan-enabled': zoom > minZoom && (panMode || spacePan),
                     'is-dragging': dragging,
                 }">
-                @isset($content)
+                @if (isset($content))
                     <div x-ref="frame" wire:ignore.self class="admin-live-preview__frame admin-live-preview__frame--content">
                         {{ $content }}
                     </div>

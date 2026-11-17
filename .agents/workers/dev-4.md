@@ -81,6 +81,11 @@
 - Repeated iframe load/refresh now detaches its previous embedded-document Space/blur handlers before binding new ones and clears them on Alpine teardown. Space-driven Pan only captures keyboard input while the Preview has pointer/focus; unrelated Admin controls remain unaffected.
 - These are source-level improvements to the **one** canonical preview owner. Not an assertion of browser-tested visual stability; check actual General/Gallery browser sizing, Zoom/Pan interaction and post-save iframe reload in the local preview.
 
+## Shared Preview template correction — 2026-11-17
+
+- Source-only Blade directive check exposed an inherited `@isset($content)` with `@elseif` and `@endif`, which is not a valid conditional block; changed it to `@if (isset($content))` for the shared content / URL / empty fallback. Rechecked conditional counts (four matching `@if`/`@endif` in the reusable component; Gallery's own blocks also balanced).
+- Do not claim runtime validation; the local PHP Blade compiler and the browser still need a real check after the new component is loaded.
+
 ## Acceptance gates and remaining risks
 
 1. **Source is committed, not browser-accepted**. Confirm PHP/Filament parsing, Livewire `stagedArtworkForm` init/fill and field dehydration, uploader-to-queue state, stage mobile switcher, input scrolling, iframe Content Security Policy, thumbnail/video rendering, and rapid selection/race behavior in refreshed local preview. No PHP lint/browser/test suite was run through GitHub-only access.
