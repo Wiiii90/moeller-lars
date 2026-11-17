@@ -137,6 +137,18 @@ final class GalleryEditorialService
                 ->pluck('artworks.id')->map(static fn (mixed $id): int => (int) $id)->all();
         }
 
+        $beforeIds = $before;
+        $afterIds = $after;
+        sort($beforeIds);
+        sort($afterIds);
+        if ($beforeIds !== $afterIds) {
+            // A concurrent add/move/delete changed the membership between
+            // the two read queries. Never show a misleading position diff.
+            throw ValidationException::withMessages([
+                'sort_mode' => 'Gallery artworks changed while calculating the order. Reopen Settings and try again.',
+            ]);
+        }
+
         $priorPositions = array_flip($before);
         $titles = $gallery->artworks()->pluck('title', 'id');
         $changes = [];
