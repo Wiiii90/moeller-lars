@@ -388,15 +388,17 @@ final class GalleryEditorialService
     /** @return array<string,mixed> */
     private function validateData(array $data, bool $update): array
     {
-        $name = trim((string) ($data['name'] ?? ''));
-        if ($name === '' || mb_strlen($name) > 160) {
-            throw ValidationException::withMessages(['name' => 'The Gallery name is invalid.']);
+        // Create requires a name. Updates are partial mutations, including
+        // individual Stage controls; omitting the name must never be treated
+        // as an attempt to replace it with an empty string.
+        $validated = GalleryPresentation::validateSettings($data);
+        if (! $update || array_key_exists('name', $data)) {
+            $name = trim((string) ($data['name'] ?? ''));
+            if ($name === '' || mb_strlen($name) > 160) {
+                throw ValidationException::withMessages(['name' => 'The Gallery name is invalid.']);
+            }
+            $validated['name'] = $name;
         }
-
-        $validated = [
-            'name' => $name,
-            ...GalleryPresentation::validateSettings($data),
-        ];
 
         if (array_key_exists('show_on_home', $data)) {
             if (! is_bool($data['show_on_home']) && ! in_array($data['show_on_home'], [0, 1, '0', '1'], true)) {
