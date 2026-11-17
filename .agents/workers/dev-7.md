@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 13 (active)  
-**Status:** Corrected over-tall More space Stage with a stable, capped height; embedded Desktop preview remains a scaled same-viewport overview, not a pixel-sized equivalent; browser acceptance outstanding.
+**Status:** Divider/preview parity diagnosis scoped to the real effective Public layout and paper-contour layers; local-browser execution still outstanding.
 
 ## Ownership and accepted decisions
 - General → Appearance (Global, Title, Menu, Page and Legal), Regional Formats, Admin live Preview and their direct Public consumers.
@@ -42,6 +42,12 @@
 - The embedded Desktop preview renders exactly one real `/preview` iframe at the logical parent window dimensions and scales the complete desktop view to fit the half-width Admin pane. At e.g. 1900px logical desktop width, shrinking to ~550px makes the text and artwork naturally tiny. A legible *full* desktop at the same time as full-width parity is physically impossible within the small pane; no new preview modes or duplicated renderer were introduced.
 - The faint extra line reported earlier appears intermittently; its computed origin is not browser-verified. No unproven CSS overlay was added. Separate Home Random Hero HTTP requests can choose different artwork.
 - Regression assertions updated for stable, below-viewport and <=54rem expanded sizing; **tests not executed**.
+
+## Divider parity finding and targeted browser qualification (2026-11-17)
+- **Verified source precedence:** `resources/views/pages/home.blade.php` supplies `artwork_header_divider` derived from Home's `artwork_page_surface_mode`, which can override the General `header_divider_mode` (`fine` or `separate`) in `resources/views/layouts/app.blade.php`. This is an existing deliberate Home/Artwork consumer override, not proof of stale iframe state. Do not remove it without an explicit product decision.
+- **Additional possible visual cause:** `public-presentation.css` owns Menu border independently of connected-paper contours and backing via pseudoelements. The embedded iframe uses a fractional CSS scale; CSS border absence cannot by itself prove absence of all anti-aliased contour pixels.
+- Replaced the old incomplete one-mode parity test with an explicit diagnostic browser test spanning all five Menu-to-page options, full page frame/menu/content CSS painting layers, semantic effective-vs-selected divider and same-viewport bounds. It attaches screenshots of the No-divider header in both presentations plus a JSON report exposing Home overrides. No alternate renderer or production-side diagnostic bridge introduced.
+- No browser is connected to this chat's authenticated local Windows preview at `127.0.0.1:8001`, and this container has no project checkout/database. **The browser test was authored but NOT run**; actual pixel attribution is unresolved. Prior user restriction prohibited running tests; the user now requests focused diagnosis, not a broad suite or deployment.
 
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
