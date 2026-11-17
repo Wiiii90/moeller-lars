@@ -1,6 +1,6 @@
 # Dev workstream — branch-local coordination
 
-**Next lease token:** 16
+**Next lease token:** 17
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
@@ -10,7 +10,7 @@
 | Dev Worker 4 | 8 | Active — Gallery preview refresh and Standard/Expanded layout consolidated; empty drafts enabled; DB migration/browser qualification pending | Gallery/Artwork public presentation, Stage Settings, publication-projected layout cutover, shared preview; no Media lifecycle | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 11 | Active — Pages preview findings | Pages settings semantics/consistency; failed page-type switch must restore the persisted selection | [dev-5.md](workers/dev-5.md) |
 
-| Dev Worker 6 | 14 | Active — Home Hero Stage source updated; browser review pending | Pages → Home: Hero Artwork candidate management/rotation/stage; Under Construction and Custom settings/editor parity; checks on video and month rotation; no tests/deployment | [dev-6.md](workers/dev-6.md) |
+| Dev Worker 6 | 16 | Active — replacement chat; One per Gallery source review and browser acceptance pending | Pages → Home: Hero Artwork candidate management, Gallery selection, source profiles, Stage/Settings and public resolver; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 13 | Active — General Appearance preview corrections | Appearance Global/Title/Menu/Page/Legal, preview geometry/persistence, Regional Formats hints | [dev-7.md](workers/dev-7.md) |
 | Dev Worker 8 | 15 | Active — shared dialog styling and structural audit | Central Dialog frame and grouping contract; Stage/toolbar capability parity rules; identify cross-feature follow-ups without editing other workers' owned dialogs | [dev-8.md](workers/dev-8.md) |
 
