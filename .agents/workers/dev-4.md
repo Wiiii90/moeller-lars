@@ -2,7 +2,7 @@
 
 **Lease:** 8  
 **Branch:** dev  
-**State:** Active — Gallery triptych Stage implemented in source; integration and browser acceptance outstanding.
+**State:** Active — Gallery triptych Stage and staged Artwork create/review paths committed; targeted PHP runtime and visual/browser acceptance still pending.
 
 ## Owner and working boundaries
 
@@ -38,6 +38,13 @@
 - `createSelectedStagedArtwork` uses the same full form schema validation as normal Add, and the selected queue id owns the media link (a disabled input cannot silently switch media). `createAllStagedArtworks` wraps all items in one transaction, preserving queue on validation failure; its action explicitly says **Create all drafts**. An explicitly edited Position is handled by the existing Gallery owner and may switch mode to Manual.
 - A staged media preview shows the selected original/thumbnail and current edited title; a Gallery/Artwork preview shows the authenticated Working preview route. After successful completion of the final queue entry, Stage returns to middle Settings and right Gallery.
 - The General preview is currently **not** an already shared standalone renderer: it owns homepage-specific device transforms. Do not move or duplicate General during this Gallery assignment.
+
+## Continued Stage fixes — 2026-11-17
+
+- `bda5cc4`: Stage Artwork-order select immediately restores the persisted mode in the HTML when a confirmation is requested, so cancelling does not leave a visually selected but uncommitted mode. Quick Settings provides a direct action to the canonical full Gallery Settings modal. Preview previous/next buttons now use central `AdminIcon` artwork navigation icon definitions instead of arbitrary glyphs.
+- `77fcab4`: Staged preview now renders Artwork title, optional normalized regional Artwork date, composed dimensions, material and the ALT override, using **only the existing `ArtworkDate` and `ArtworkDimensions` canonical domain formatters**. Incomplete in-progress date/dimensions are ignored in preview until valid; form validation still owns errors. Image/video preview and caption share one component; no separate renderer or persisted field.
+- `c9126f4`: Single Stage submit catches domain validation, reports via the existing central Gallery error notifier and preserves selected media/form on failure. All-drafts submit catches per-item validation, reports which filename/row caused failure and rolls back **every** create in its enclosing transaction. Nothing is dequeued before successful completion. Existing editor's `getState()` validation is still evaluated normally.
+- Source structural review after these changes: PHP delimiter balance inspected in GalleryWorkspace, GalleryWorkspaceDirectUpload, ArtworkEditDialog and GalleryWorkspaceUploadSettings; Stage Blade matched 29 div pairs, 2 section/header pairs, 22 if/endif, 6 foreach/endforeach; Gallery CSS brace count balanced. **These are source-level checks only**, not PHP parser lint, Filament/Livewire runtime validation or browser acceptance.
 
 ## Acceptance gates and remaining risks
 
