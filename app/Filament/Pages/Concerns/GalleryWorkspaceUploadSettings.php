@@ -62,7 +62,28 @@ trait GalleryWorkspaceUploadSettings
                             ))
                             ->options(GalleryPresentation::SORT_OPTIONS)
                             ->default(GalleryPresentation::SORT_MANUAL)
-                            ->required(),
+                            ->required()
+                            ->live()
+                            // AdminDialog::edit otherwise autosaves every bubbled
+                            // change. Only the confirmation Action may commit a
+                            // sort-mode change, even if no positions will move.
+                            ->extraAlpineAttributes(['x-on:change.stop' => 'true'], merge: true)
+                            ->afterStateUpdated(function (mixed $state, callable $set): void {
+                                /** @var ArtworkCategory $gallery */
+                                $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+                                $currentMode = GalleryPresentation::sortMode($gallery);
+                                $set('sort_mode', $currentMode);
+
+                                if (! is_string($state) || $state === $currentMode) {
+                                    return;
+                                }
+
+                                $preview = app(GalleryEditorialService::class)->previewSortChange($gallery, $state);
+                                $this->mountAction('changeGallerySort', [
+                                    'sort_mode' => $state,
+                                    'signature' => $preview['signature'],
+                                ]);
+                            }),
                         AdminControl::toggle('show_artwork_information', 'Show Artwork information below each work'),
                         AdminControl::toggle('show_media_credits', 'Show authored Media File credits'),
                         AdminControl::toggle('show_media_copyright', 'Show configured copyright notices'),
@@ -121,7 +142,9 @@ trait GalleryWorkspaceUploadSettings
                         'artwork_menu_surface_wide' => $data['artwork_menu_surface_wide'] ?? false,
                         'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
                         'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
-                        'sort_mode' => $data['sort_mode'] ?? GalleryPresentation::SORT_MANUAL,
+                        // Sort changes are exclusively committed through the
+                        // confirmed Action, never the Edit modal's autosave.
+                        'sort_mode' => GalleryPresentation::sortMode($gallery),
                         'video_sound_enabled' => $data['video_sound_enabled'] ?? false,
                         'show_artwork_information' => $data['show_artwork_information'] ?? true,
                         'show_media_credits' => $data['show_media_credits'] ?? false,
@@ -158,6 +181,66 @@ trait GalleryWorkspaceUploadSettings
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    public function changeGallerySortAction(): Action
+    {
+        $service = app(GalleryEditorialService::class);
+        $preview = function (array $arguments) use ($service): array {
+            /** @var ArtworkCategory $gallery */
+            $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+
+            return $service->previewSortChange(
+                $gallery,
+                (string) ($arguments['sort_mode'] ?? ''),
+            );
+        };
+
+        $action = Action::make('changeGallerySort')
+            ->modalContent(fn (array $arguments): View => view(
+                'filament.resources.artworks.partials.sort-change-confirmation',
+                ['changes' => $preview($arguments)['changes']],
+            ))
+            ->action(function (array $arguments) use ($service): void {
+                /** @var ArtworkCategory $gallery */
+                $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+
+                try {
+                    $changed = $service->confirmSortChange(
+                        $gallery,
+                        (string) ($arguments['sort_mode'] ?? ''),
+                        (string) ($arguments['signature'] ?? ''),
+                    );
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Gallery order was not changed', $exception);
+                    $this->replaceMountedAction('gallerySettings');
+
+                    return;
+                }
+
+                $this->loadGallery((int) $gallery->getKey());
+                $this->refreshWorkspaceAfterMutation();
+                if ($changed) {
+                    app(AdminNotifier::class)->notification(
+                        title: 'Gallery order updated',
+                        status: 'success',
+                    );
+                }
+
+                // Reopen the existing editor with persisted values rather
+                // than restoring the old selected mode in the parent form.
+                $this->replaceMountedAction('gallerySettings');
+            });
+
+        return AdminDialog::confirm(
+            $action,
+            'Change Gallery order?',
+            fn (array $arguments): string => 'Apply '.(GalleryPresentation::SORT_OPTIONS[(string) ($arguments['sort_mode'] ?? '')] ?? 'the selected order').'? '
+                .count($preview($arguments)['changes']).' Artwork positions will change.',
+            'Apply order',
+            false,
+            fn (array $arguments): bool => $preview($arguments)['changes'] !== [],
+        );
     }
 
     public function materialPresetsAction(): Action
