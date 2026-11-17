@@ -82,9 +82,10 @@
                             : @js(count($pendingBatchArtworkMedia)) + ' staged'
                         ">{{ count($pendingBatchArtworkMedia) }} staged</span>
                 </div>
-                <div class="admin-gallery-upload__progress" x-show="phase === 'uploading' || phase === 'processing'"
-                    x-bind:class="{ 'is-processing': phase === 'processing' }" x-cloak
-                    role="progressbar" aria-label="Media upload status"
+                <div class="admin-gallery-upload__progress"
+                    x-bind:class="{ 'is-processing': phase === 'processing' }"
+                    x-bind:role="phase === 'uploading' || phase === 'processing' ? 'progressbar' : null"
+                    aria-label="Media upload status"
                     aria-valuemin="0" aria-valuemax="100"
                     x-bind:aria-valuenow="phase === 'uploading' ? progress : null"
                     x-bind:aria-valuetext="phase === 'processing' ? 'File transfer completed; media processing in progress' : null">
@@ -112,12 +113,13 @@
                                 JPEG, PNG, WebP (max {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} megapixels); MP4 and WebM. Interrupted transfers can be resumed by selecting the same file.
                             </span>
                             <span x-show="phase === 'result'" x-text="result" x-cloak></span>
+                            <span class="gallery-stage__upload-guidance" x-show="phase === 'idle' || phase === 'result'">
+                                Files are saved in Storage first. Review and create their Artworks under Staged.
+                                You can add more files at any time.
+                            </span>
                         </div>
                     </div>
                 </div>
-                <p class="gallery-stage__upload-guidance">
-                    Files are saved in Storage first. Review and create their Artworks under <strong>Staged</strong>. You can add more files at any time.
-                </p>
             </div>
 
             <div class="gallery-stage__workspace admin-visual-stage__pane" data-admin-stage-pane="settings" data-admin-stage-slot="2">

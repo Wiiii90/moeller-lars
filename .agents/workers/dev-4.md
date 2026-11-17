@@ -62,6 +62,12 @@
 - Added the existing canonical class to the **existing** Gallery result wrapper (which already owns Search, Filters and Gallery actions). No extra DOM wrapper, Gallery CSS override, new token or duplicated border rule. The shared `.admin-visual-stage-followup .admin-data-controls` selector also handles control spacing.
 - Source-level verified the exact markup adjacency and shared selector. Visual browser acceptance still pending; do not claim rendered alignment was measured.
 
+## Shared responsive preview request — 2026-11-17
+
+- User now explicitly requests using **General's actual device-responsive public preview** on Gallery, extracting it to one shared canonical component for both. Preserve desktop/phone viewport modes, zoom controls, pan mode (including keyboard Space), iframe interaction, refreshing and open-preview links. Remove **decorative desktop/phone frames and browser/address chrome on both consumers**. Stabilize scale on resized Stage panes, using valid real CSS viewport dimensions instead of fitting artificial chrome. The General page's larger Appearance settings/editor remain Dev Worker 7's ownership; only shared preview and its exact General consumer are in scope under the user's explicit request.
+- Upload correction: removed separate helper paragraph beneath the Gallery dropzone, moved its Storage → Staged → create/add-more explanation inside existing dropzone copy, aligned Ready/status rail to the shared Stage tool row control height and reserved the original 3px progress track even when idle so transfer start cannot shift the dropzone. Old helper CSS is now scoped inside the uploader, not an exterior Stage margin.
+- Pending in this request: central Preview component extraction and both consumers, preserving all functional General shortcuts and preview refresh behavior. Scope limited to existing preview owner, CSS and direct pages; no deploy, database mutation or unrelated General refactor.
+
 ## Acceptance gates and remaining risks
 
 1. **Source is committed, not browser-accepted**. Confirm PHP/Filament parsing, Livewire `stagedArtworkForm` init/fill and field dehydration, uploader-to-queue state, stage mobile switcher, input scrolling, iframe Content Security Policy, thumbnail/video rendering, and rapid selection/race behavior in refreshed local preview. No PHP lint/browser/test suite was run through GitHub-only access.
