@@ -87,9 +87,12 @@
             const height = viewport.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
             if (width <= 0 || height <= 0) return
             // No artificial browser chrome, device border or integer rounding.
-            const scale = Math.min(width / targetWidth, height / targetHeight)
+            // Never upscale a smaller document: 1:1 is the sharp native
+            // rendering reference, and Fit can only reduce its pixels.
+            const scale = Math.min(1, width / targetWidth, height / targetHeight)
             if (! Number.isFinite(scale) || scale <= 0) return
             this.fitScale = scale
+            this.maxZoom = Math.max(3, Math.ceil(1 / scale))
             surface.style.width = `${targetWidth * scale}px`
             surface.style.height = `${targetHeight * scale}px`
             page.style.width = `${targetWidth * scale}px`
@@ -131,6 +134,24 @@
             this.panY = 0
             this.panMode = false
             this.spacePan = false
+            this.applyPreviewTransform()
+        },
+        showActualPixels() {
+            if (this.fitScale <= 0) return
+            this.cancelPanGesture()
+            const page = this.$refs.page
+            if (! page) return
+
+            // The same real iframe is inspected at 1 CSS pixel per pixel.
+            // Keep its center visible and use existing pan/zoom controls.
+            const nextZoom = 1 / this.fitScale
+            const ratio = nextZoom / this.zoom
+            const centerX = page.clientWidth / 2
+            const centerY = page.clientHeight / 2
+            this.panX = centerX - ((centerX - this.panX) * ratio)
+            this.panY = centerY - ((centerY - this.panY) * ratio)
+            this.zoom = nextZoom
+            this.clampPan()
             this.applyPreviewTransform()
         },
         changeZoom(step) {
@@ -352,6 +373,11 @@
                 aria-label="Reset preview zoom to 100%"
                 x-text="zoomPercent()"
             ></button>
+            <button class="admin-action admin-live-preview__actual-pixels" type="button"
+                x-on:click="showActualPixels()"
+                x-bind:disabled="fitScale >= 1 || Math.abs(fitScale * zoom - 1) < 0.001"
+                aria-label="Show preview at actual pixel size"
+                title="Inspect without visual scaling (1:1)">1:1</button>
             <button
                 class="admin-action admin-stage-tool-icon"
                 type="button"
