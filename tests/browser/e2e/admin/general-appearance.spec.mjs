@@ -210,43 +210,27 @@ test('General More space keeps one height through conditional Title fields and t
   }
 });
 
-test('General divider and paper contours match standalone preview at equal viewport', async ({ page, context }, testInfo) => {
+test('General read-only preview diagnosis records effective divider and every paper layer', async ({ page, context }, testInfo) => {
+  // This particular test is safe against the existing local-preview database:
+  // unlike editor mutation tests, it never changes or restores saved settings.
   await signIn(page);
   await page.setViewportSize({ width: 1900, height: 1000 });
   await page.goto('/admin/general');
 
   const stage = page.locator('.general-appearance-stage');
   await stage.getByRole('button', { name: 'Menu', exact: true }).click();
-  const divider = stage.locator('[data-appearance-panel="menu"]')
-    .getByRole('combobox', { name: 'Menu to page', exact: true });
-  const originalDivider = await divider.inputValue();
+  const selected = await stage.locator('[data-appearance-panel="menu"]')
+    .getByRole('combobox', { name: 'Menu to page', exact: true }).inputValue();
   const frame = stage.locator('.general-live-preview__device iframe');
   const embedded = page.frameLocator('.general-live-preview__device iframe');
-  const direct = await context.newPage();
-  const reports = [];
+  const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
 
-  // Every URL change is triggered by the single persisted General event.
-  // Reading a still-mounted iframe does not establish that it has reloaded.
-  const saveAndLoad = async value => {
-    if (await divider.inputValue() === value) return;
-    const previousUrl = await frame.evaluate(el => el.contentWindow?.location.href);
-    const response = page.waitForResponse(r => new URL(r.url()).pathname.endsWith('/livewire/update'));
-    await divider.selectOption(value);
-    expect((await response).ok(), 'General autosave must complete').toBe(true);
-    await expect.poll(() => frame.evaluate(el => el.contentWindow?.location.href))
-      .not.toBe(previousUrl);
-    await expect(embedded.locator('meta[data-public-layout]')).toHaveCount(1);
-  };
-
-  const presentation = () => {
+  const effective = () => {
     const rect = el => {
       const box = el.getBoundingClientRect();
-      return {
-        left: box.left, right: box.right,
-        top: box.top, bottom: box.bottom, width: box.width,
-      };
+      return { left: box.left, top: box.top, width: box.width, height: box.height };
     };
-    const style = (el, pseudo) => {
+    const appearance = (el, pseudo) => {
       if (!el) return null;
       const css = getComputedStyle(el, pseudo);
       return {
@@ -257,118 +241,105 @@ test('General divider and paper contours match standalone preview at equal viewp
         boxShadow: css.boxShadow, opacity: css.opacity,
       };
     };
-    const query = selector => document.querySelector(selector);
-    const header = query('.site-header');
-    const menu = query('.site-navigation');
-    const content = query('#content');
-    const surface = query('.site-navigation-surface');
-    const frameDecoration = query('.public-paper-decoration');
-    const navRail = query('.site-navigation__rail:not([hidden]), .site-navigation__submenu:not([hidden])');
-    const meta = query('meta[data-public-layout]');
-    if (!header || !menu || !content || !meta) throw new Error('Missing Public layout owner');
+    const get = selector => document.querySelector(selector);
+    const header = get('.site-header');
+    const menu = get('.site-navigation');
+    const content = get('#content');
+    const meta = get('meta[data-public-layout]');
+    const paper = get('.public-paper-frame');
+    const surface = get('.site-navigation-surface');
+    const decoration = get('.public-paper-decoration');
+    const navRail = get('.site-navigation__rail:not([hidden]), .site-navigation__submenu:not([hidden])');
+    if (!header || !menu || !content || !meta || !paper) {
+      throw new Error('Public layout incomplete; cannot compare preview surfaces');
+    }
+
     return {
-      viewport: { width: innerWidth, height: innerHeight },
+      logicalViewport: { width: innerWidth, height: innerHeight },
       effectiveDivider: meta.dataset.publicLayoutDividerMode,
       frameStyle: meta.dataset.publicLayoutFrameStyle,
-      bodyClass: document.body.className,
       headerClass: header.className,
-      paperClass: query('.public-paper-frame')?.className ?? '',
-      header: rect(header),
-      menu: rect(menu),
-      content: rect(content),
-      menuBorder: style(menu),
-      menuBefore: style(menu, '::before'),
-      menuAfter: style(menu, '::after'),
-      headerAfter: style(header, '::after'),
-      surface: style(surface),
-      surfaceBefore: style(surface, '::before'),
-      surfaceAfter: style(surface, '::after'),
-      decoration: style(frameDecoration),
-      decorationBefore: style(frameDecoration, '::before'),
-      decorationAfter: style(frameDecoration, '::after'),
-      navigationBacking: style(navRail, '::before'),
-      contentBefore: style(content, '::before'),
-      contentAfter: style(content, '::after'),
+      paperClass: paper.className,
+      bodyClass: document.body.className,
+      headerBounds: rect(header),
+      menuBounds: rect(menu),
+      contentBounds: rect(content),
+      menuStyle: appearance(menu),
+      menuBefore: appearance(menu, '::before'),
+      menuAfter: appearance(menu, '::after'),
+      headerAfter: appearance(header, '::after'),
+      surfaceStyle: appearance(surface),
+      surfaceBefore: appearance(surface, '::before'),
+      surfaceAfter: appearance(surface, '::after'),
+      decorationStyle: appearance(decoration),
+      decorationBefore: appearance(decoration, '::before'),
+      decorationAfter: appearance(decoration, '::after'),
+      navigationBacking: appearance(navRail, '::before'),
+      contentBefore: appearance(content, '::before'),
+      contentAfter: appearance(content, '::after'),
     };
   };
-  // Same evaluator is executed inside the real public document for both
-  // surfaces; this does not construct an alternate Public renderer.
-  const capture = async (surface, name) => {
-    const details = await surface.evaluate(presentation);
-    if (name === 'embedded') {
-      const actualWidth = await frame.evaluate(el => el.contentWindow?.innerWidth);
-      expect(details.viewport.width).toBe(actualWidth);
-    }
-    return details;
-  };
 
+  const standalone = await context.newPage();
   try {
-    const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
-    await direct.setViewportSize(viewport);
+    await standalone.setViewportSize(viewport);
+    await standalone.goto('/preview');
+    await expect.poll(() => frame.evaluate(el => el.contentWindow?.innerWidth))
+      .toBe(viewport.width);
+    await expect.poll(() => frame.evaluate(el => el.contentWindow?.innerHeight))
+      .toBe(viewport.height);
+    await expect(embedded.locator('meta[data-public-layout]')).toHaveCount(1);
 
-    // Start with a deliberately changed choice so a saved no-op cannot
-    // masquerade as a missing preview-refresh event.
-    await saveAndLoad(originalDivider === 'menu' ? 'fine' : 'menu');
+    const iframeState = await embedded.locator('body.public-site').evaluate(effective);
+    const directState = await standalone.locator('body.public-site').evaluate(effective);
+    const comparison = {
+      selectedInGeneral: selected,
+      effectiveOnHome: directState.effectiveDivider,
+      homeOrPageOverride: selected !== directState.effectiveDivider,
+      parentScale: await frame.evaluate(el => getComputedStyle(el).transform),
+      embedded: iframeState,
+      standalone: directState,
+    };
+    await testInfo.attach('general-preview-divider-diagnosis.json', {
+      body: Buffer.from(JSON.stringify(comparison, null, 2)),
+      contentType: 'application/json',
+    });
+    await testInfo.attach('general-preview-header-embedded.png', {
+      body: await embedded.locator('.site-header').screenshot(),
+      contentType: 'image/png',
+    });
+    await testInfo.attach('general-preview-header-standalone.png', {
+      body: await standalone.locator('.site-header').screenshot(),
+      contentType: 'image/png',
+    });
 
-    for (const selected of ['fine', 'menu', 'separate', 'full', 'full_gap']) {
-      await saveAndLoad(selected);
-      await direct.goto('/preview');
-      const frameData = await capture(embedded.locator('body.public-site'), 'embedded');
-      const directData = await capture(direct.locator('body.public-site'), 'direct');
-      const report = {
-        selectedInGeneral: selected,
-        effectiveOnHome: directData.effectiveDivider,
-        homeOverridesGeneral: directData.effectiveDivider !== selected,
-        embedded: frameData,
-        direct: directData,
-      };
-      reports.push(report);
+    // The HOME override (if configured) may legitimately differ from
+    // General's field. The effective server-rendered Public mode must
+    // nevertheless agree between the two real Preview documents.
+    expect(iframeState.effectiveDivider).toBe(directState.effectiveDivider);
+    expect(iframeState.frameStyle).toBe(directState.frameStyle);
+    expect(iframeState.headerClass).toBe(directState.headerClass);
+    expect(iframeState.paperClass).toBe(directState.paperClass);
+    expect(iframeState.bodyClass).toBe(directState.bodyClass);
+    expect(iframeState.logicalViewport).toEqual(directState.logicalViewport);
 
-      expect(frameData.effectiveDivider).toBe(directData.effectiveDivider);
-      expect(frameData.frameStyle).toBe(directData.frameStyle);
-      expect(frameData.bodyClass).toBe(directData.bodyClass);
-      expect(frameData.headerClass).toBe(directData.headerClass);
-      expect(frameData.paperClass).toBe(directData.paperClass);
-      expect(frameData.viewport).toEqual(directData.viewport);
-
-      // CSS rules are expected to agree at the same logical viewport.
-      // An extra *rasterized* line with identical values instead points
-      // toward transformed-iframe compositing or a separate paper contour.
-      for (const key of [
-        'menuBorder', 'menuBefore', 'menuAfter', 'headerAfter',
-        'surface', 'surfaceBefore', 'surfaceAfter', 'decoration',
-        'decorationBefore', 'decorationAfter', 'navigationBacking',
-        'contentBefore', 'contentAfter',
-      ]) {
-        expect(frameData[key], key + ' differs in ' + selected).toEqual(directData[key]);
-      }
-      for (const key of ['header', 'menu', 'content']) {
-        for (const dimension of ['left', 'top', 'width']) {
-          expect(Math.abs(frameData[key][dimension] - directData[key][dimension]))
-            .toBeLessThan(2);
-        }
-      }
-
-      if (selected === 'fine') {
-        // Capture actual pixels and structural diagnostics side-by-side;
-        // "No divider" alone does not remove exterior paper contours.
-        await testInfo.attach('embedded-no-divider.png', {
-          body: await embedded.locator('.site-header').screenshot(),
-          contentType: 'image/png',
-        });
-        await testInfo.attach('standalone-no-divider.png', {
-          body: await direct.locator('.site-header').screenshot(),
-          contentType: 'image/png',
-        });
+    for (const key of [
+      'menuStyle', 'menuBefore', 'menuAfter', 'headerAfter',
+      'surfaceStyle', 'surfaceBefore', 'surfaceAfter',
+      'decorationStyle', 'decorationBefore', 'decorationAfter',
+      'navigationBacking', 'contentBefore', 'contentAfter',
+    ]) {
+      expect(iframeState[key], key + ' differs between Preview documents')
+        .toEqual(directState[key]);
+    }
+    for (const key of ['headerBounds', 'menuBounds', 'contentBounds']) {
+      for (const dimension of ['left', 'top', 'width']) {
+        expect(Math.abs(iframeState[key][dimension] - directState[key][dimension]))
+          .toBeLessThan(2);
       }
     }
   } finally {
-    await testInfo.attach('general-divider-render-diagnostics.json', {
-      body: Buffer.from(JSON.stringify(reports, null, 2)),
-      contentType: 'application/json',
-    });
-    await saveAndLoad(originalDivider);
-    await direct.close();
+    await standalone.close();
   }
 });
 
