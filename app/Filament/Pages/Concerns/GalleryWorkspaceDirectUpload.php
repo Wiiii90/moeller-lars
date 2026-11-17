@@ -8,19 +8,12 @@ use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaPreviewVariant;
+use App\Domain\Artwork\ArtworkSort;
+use App\Models\ArtworkCategory;
 use App\Domain\Media\MediaTypePolicy;
-use App\Filament\Support\Dialogs\AdminDialog;
-use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\Artwork;
 use App\Models\MediaAsset;
-use Filament\Actions\Action;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -35,8 +28,9 @@ trait GalleryWorkspaceDirectUpload
     /** Begin a selected stack without retaining stale assets from an earlier upload. */
     public function beginDirectPrimaryMediaBatch(): void
     {
-        $this->pendingPrimaryMediaAssetId = null;
-        $this->pendingBatchArtworkMedia = [];
+        // Keep previously uploaded, unfinished Artwork entries when more
+        // images/videos are added. Preserve the active form before transfer.
+        $this->rememberStagedArtworkChanges();
     }
 
     /**
@@ -74,128 +68,240 @@ trait GalleryWorkspaceDirectUpload
             $added, $duplicates, $failed, $errors, 'gallery',
         );
 
-        if ($added === 1) {
-            $this->pendingPrimaryMediaAssetId = (int) $rows[0]['media_asset_id'];
-            $this->pendingBatchArtworkMedia = [];
-            $this->mountAction('addArtwork');
-        } elseif ($added > 1) {
-            $this->mountAction('batchAddArtworks');
+        if ($added > 0) {
+            $this->selectStagedArtwork((int) $rows[array_key_last($rows)]['media_asset_id']);
         }
 
         return ['summary' => $summary, 'added' => $added, 'failed' => $failed, 'duplicates' => $duplicates];
     }
 
-    public function batchAddArtworksAction(): Action
+    /** Remember unsaved editorial state against one uploaded Storage asset. */
+    private function rememberStagedArtworkChanges(): void
     {
-        return AdminDialog::create(
-            Action::make('batchAddArtworks')
-                ->label('Add artworks')
-                ->modalHeading('Add artworks')
-                ->fillForm(fn (): array => ['artworks' => $this->pendingBatchArtworkMedia])
-                ->schema([
-                    Repeater::make('artworks')
-                        ->label('New artwork drafts')
-                        ->extraAttributes(['class' => 'gallery-batch-artworks'])
-                        ->schema([
-                            Hidden::make('media_asset_id'),
-                            Placeholder::make('visual')
-                                ->label('Media')
-                                ->content(fn (callable $get): HtmlString|string => $this->batchArtworkVisual((int) $get('media_asset_id'))),
-                            Placeholder::make('filename')
-                                ->label('File')
-                                ->content(fn (callable $get): string => $this->batchArtworkFilename((int) $get('media_asset_id'))),
-                            TextInput::make('title')
-                                ->label('Title')
-                                ->required()
-                                ->maxLength(240),
-                            Textarea::make('primary_alt_text')
-                                ->label('Primary media ALT text')
-                                ->rows(2)
-                                ->maxLength(500)
-                                ->columnSpanFull()
-                                ->helperText('Describe the image or video for screen readers. Required to publish unless the Media File already has ALT text.'),
-                        ])
-                        ->columns(3)
-                        ->addable(false)
-                        ->deletable(false)
-                        ->reorderable(false),
-                ])
-                ->action(function (array $data): void {
-                    $rows = is_array($data['artworks'] ?? null) ? array_values($data['artworks']) : [];
-                    $pendingIds = collect($this->pendingBatchArtworkMedia)
-                        ->pluck('media_asset_id')
-                        ->map(static fn (mixed $id): int => (int) $id)
-                        ->sort()
-                        ->values()
-                        ->all();
-                    $submittedIds = collect($rows)
-                        ->map(static fn (mixed $row): int => is_array($row) ? (int) ($row['media_asset_id'] ?? 0) : 0)
-                        ->filter(static fn (int $id): bool => $id > 0)
-                        ->sort()
-                        ->values()
-                        ->all();
+        if ($this->selectedStagedMediaAssetId === null || ! is_array($this->stagedArtworkData)) {
+            return;
+        }
 
-                    if ($pendingIds === [] || $submittedIds !== $pendingIds || count($rows) !== count($pendingIds)) {
-                        throw ValidationException::withMessages([
-                            'artworks' => 'The uploaded media selection changed. Review the batch and try again.',
-                        ]);
-                    }
+        foreach ($this->pendingBatchArtworkMedia as &$row) {
+            if ((int) $row['media_asset_id'] === $this->selectedStagedMediaAssetId) {
+                $row['form'] = $this->stagedArtworkData;
+                break;
+            }
+        }
+        unset($row);
+    }
 
-                    $galleryId = (int) $this->galleryContext['id'];
-                    $assets = MediaAsset::query()
-                        ->whereIn('id', $pendingIds)
-                        ->where('state', 'available')
-                        ->get()
-                        ->keyBy(static fn (MediaAsset $asset): int => (int) $asset->getKey());
+    public function selectStagedArtwork(int $assetId): void
+    {
+        $selected = null;
+        foreach ($this->pendingBatchArtworkMedia as $row) {
+            if ((int) $row['media_asset_id'] === $assetId) {
+                $selected = $row;
+                break;
+            }
+        }
+        if ($selected === null) {
+            return;
+        }
 
-                    if ($assets->count() !== count($pendingIds)) {
-                        throw ValidationException::withMessages([
-                            'artworks' => 'One or more uploaded files in Storage are no longer available.',
-                        ]);
-                    }
+        $this->rememberStagedArtworkChanges();
+        $this->selectedStagedMediaAssetId = $assetId;
+        $this->galleryStagePanel = 'queue';
+        $this->galleryStagePreview = 'staged';
+        $this->galleryStagePreviewArtworkId = null;
+        $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+        $form = is_array($selected['form'] ?? null) ? $selected['form'] : [];
+        if ($form === []) {
+            $form = [
+                'title' => (string) $selected['title'],
+                'slug' => '',
+                'primary_media_asset_id' => $assetId,
+                'primary_alt_text' => null,
+                'artwork_date' => null,
+                'medium' => null,
+                'description' => null,
+                'position' => ArtworkSort::suggestedPosition($gallery, null, $assetId),
+                'position_explicit' => false,
+            ];
+        }
+        $this->stagedArtworkData = $form;
+        $this->stagedArtworkForm->fill($form);
+    }
 
-                    DB::transaction(function () use ($rows, $assets, $galleryId): void {
-                        foreach ($rows as $row) {
-                            if (! is_array($row)) {
-                                continue;
-                            }
+    public function removeStagedArtwork(int $assetId): void
+    {
+        $this->rememberStagedArtworkChanges();
+        $this->pendingBatchArtworkMedia = array_values(array_filter(
+            $this->pendingBatchArtworkMedia,
+            static fn (array $row): bool => (int) $row['media_asset_id'] !== $assetId,
+        ));
+        if ($this->selectedStagedMediaAssetId === $assetId) {
+            $this->selectedStagedMediaAssetId = null;
+            $this->stagedArtworkData = [];
+            if ($this->pendingBatchArtworkMedia !== []) {
+                $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[0]['media_asset_id']);
+            } else {
+                $this->galleryStagePanel = 'settings';
+                $this->previewGalleryStage();
+            }
+        }
 
-                            $assetId = (int) ($row['media_asset_id'] ?? 0);
-                            $title = preg_replace('/\s+/u', ' ', trim((string) ($row['title'] ?? '')));
-                            $title = is_string($title) ? $title : trim((string) ($row['title'] ?? ''));
-                            if ($title === '') {
-                                throw ValidationException::withMessages(['artworks' => 'Each uploaded file needs an artwork title.']);
-                            }
-
-                            $asset = $assets->get($assetId);
-                            if (! $asset instanceof MediaAsset || ! $this->isGalleryPrimaryVisual($asset)) {
-                                throw ValidationException::withMessages(['artworks' => 'Each artwork requires an available image or video Media File.']);
-                            }
-
-                            $artwork = app(ArtworkDraftService::class)->create([
-                                'artwork_category_id' => $galleryId,
-                                'slug' => $this->uniqueBatchArtworkSlug($title),
-                                'title' => $title,
-                            ]);
-                            app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
-                            if (filled($row['primary_alt_text'] ?? null)) {
-                                app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($artwork, (string) $row['primary_alt_text']);
-                            }
-                        }
-                    });
-
-                    $count = count($rows);
-                    $this->pendingBatchArtworkMedia = [];
-                    $this->refreshWorkspaceAfterMutation();
-                    app(AdminNotifier::class)->notification(
-                        title: $count.' artworks added',
-                        body: 'The new artworks were created as drafts with their uploaded files from Storage as primary media.',
-                        status: 'success',
-                    );
-                }),
-            'Add artworks',
-            AdminDialogSize::Large,
+        app(AdminNotifier::class)->notification(
+            title: 'Media removed from Stage',
+            body: 'The uploaded file remains available in Storage.',
+            status: 'success',
         );
+    }
+
+    /** @return array{kind:string,url:string,poster:?string,title:string}|null */
+    public function stagedArtworkPreview(): ?array
+    {
+        $id = $this->selectedStagedMediaAssetId;
+        if ($id === null) {
+            return null;
+        }
+        $asset = MediaAsset::query()->with('variants')->whereKey($id)->where('state', 'available')->first();
+        if (! $asset instanceof MediaAsset) {
+            return null;
+        }
+        $mime = (string) $asset->getAttribute('mime_type');
+        $image = MediaTypePolicy::isImage($mime);
+        $video = MediaTypePolicy::isVideo($mime);
+        if (! $image && ! $video) {
+            return null;
+        }
+        $thumbnail = $image ? MediaPreviewVariant::imageThumbnail($asset) : null;
+        $poster = $video ? MediaPreviewVariant::videoPoster($asset) : null;
+
+        return [
+            'kind' => $image ? 'image' : 'video',
+            'url' => $thumbnail !== null ? route('admin.media.variant', $thumbnail) : route('admin.media.original', $asset),
+            'poster' => $poster !== null ? route('admin.media.variant', $poster) : null,
+            'title' => (string) ($this->stagedArtworkData['title'] ?? $asset->getAttribute('original_filename')),
+        ];
+    }
+
+    /** The single and batch commands both delegate to the canonical Artwork owners. */
+    private function createStagedArtwork(array $row, array $data, bool $publish): void
+    {
+        $assetId = (int) $row['media_asset_id'];
+        $asset = MediaAsset::query()->whereKey($assetId)->where('state', 'available')->first();
+        if (! $asset instanceof MediaAsset || ! $this->isGalleryPrimaryVisual($asset)) {
+            throw ValidationException::withMessages([
+                'stagedArtworkData.primary_media_asset_id' => 'The uploaded Media File is no longer available.',
+            ]);
+        }
+
+        $title = trim((string) ($data['title'] ?? ''));
+        if (blank($data['slug'] ?? null)) {
+            $data['slug'] = $this->uniqueBatchArtworkSlug($title);
+        }
+
+        $explicit = (bool) ($data['position_explicit'] ?? false);
+        $payload = $this->normalizeArtworkFormData($data);
+        if (! $explicit) {
+            unset($payload['position']);
+        }
+        unset($payload['position_explicit']);
+        $alt = filled($data['primary_alt_text'] ?? null) ? (string) $data['primary_alt_text'] : null;
+
+        $artwork = app(ArtworkDraftService::class)->create($payload);
+        app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
+        if ($alt !== null) {
+            app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($artwork, $alt);
+        }
+        if ($publish) {
+            app(\App\Domain\Artwork\ArtworkPublicationService::class)->publish($artwork);
+        }
+    }
+
+    public function createSelectedStagedArtwork(): void
+    {
+        $id = $this->selectedStagedMediaAssetId;
+        if ($id === null) {
+            return;
+        }
+        $selected = collect($this->pendingBatchArtworkMedia)
+            ->first(static fn (array $row): bool => (int) $row['media_asset_id'] === $id);
+        if (! is_array($selected)) {
+            return;
+        }
+
+        // Filament validates exactly the same schema as standalone Add Artwork.
+        $state = $this->stagedArtworkForm->getState();
+        DB::transaction(function () use ($selected, $state): void {
+            $this->createStagedArtwork(
+                $selected, $state,
+                app(\App\Domain\Admin\AdminAutoPublishPreferences::class)
+                    ->enabled(\App\Domain\Admin\AdminAutoPublishPreferences::GALLERY),
+            );
+        });
+        $this->forgetCompletedStagedArtworks([$id]);
+        app(AdminNotifier::class)->notification(title: 'Artwork created', status: 'success');
+    }
+
+    /** Entire batch is atomic; a validation failure leaves the queue intact. */
+    public function createAllStagedArtworks(): void
+    {
+        if ($this->pendingBatchArtworkMedia === []) {
+            return;
+        }
+        $selected = $this->selectedStagedMediaAssetId;
+        $selectedState = $selected !== null ? $this->stagedArtworkForm->getState() : null;
+        $this->rememberStagedArtworkChanges();
+        $items = $this->pendingBatchArtworkMedia;
+        foreach ($items as &$row) {
+            if ((int) $row['media_asset_id'] === $selected && is_array($selectedState)) {
+                $row['form'] = $selectedState;
+            }
+        }
+        unset($row);
+
+        // Manual Create inserts at the start. Process in reverse so the
+        // resulting manual sequence preserves the uploaded queue order.
+        $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+        if (\App\Domain\Artwork\GalleryPresentation::sortMode($gallery)
+            === \App\Domain\Artwork\GalleryPresentation::SORT_MANUAL) {
+            $items = array_reverse($items);
+        }
+
+        DB::transaction(function () use ($items): void {
+            foreach ($items as $row) {
+                $data = is_array($row['form'] ?? null) ? $row['form'] : [];
+                if ($data === []) {
+                    $data = [
+                        'title' => $row['title'],
+                        'slug' => '',
+                        'primary_media_asset_id' => $row['media_asset_id'],
+                        'position_explicit' => false,
+                    ];
+                }
+                $this->createStagedArtwork($row, $data, false);
+            }
+        });
+        $count = count($items);
+        $this->forgetCompletedStagedArtworks(array_map(
+            static fn (array $row): int => (int) $row['media_asset_id'], $items,
+        ));
+        app(AdminNotifier::class)->notification(title: $count.' Artwork drafts created', status: 'success');
+    }
+
+    /** Uploaded originals always remain in Storage when staging ends. */
+    private function forgetCompletedStagedArtworks(array $assetIds): void
+    {
+        $this->pendingBatchArtworkMedia = array_values(array_filter(
+            $this->pendingBatchArtworkMedia,
+            static fn (array $row): bool => ! in_array((int) $row['media_asset_id'], $assetIds, true),
+        ));
+        $this->selectedStagedMediaAssetId = null;
+        $this->stagedArtworkData = [];
+        $this->refreshWorkspaceAfterMutation();
+        if ($this->pendingBatchArtworkMedia === []) {
+            $this->galleryStagePanel = 'settings';
+            $this->previewGalleryStage();
+        } else {
+            $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[0]['media_asset_id']);
+        }
     }
 
     private function isGalleryPrimaryVisual(MediaAsset $asset): bool
@@ -211,6 +317,7 @@ trait GalleryWorkspaceDirectUpload
         return [
             'media_asset_id' => (int) $asset->getKey(),
             'title' => $this->defaultArtworkTitle((string) $asset->getAttribute('original_filename')),
+            'form' => [],
         ];
     }
 
@@ -219,45 +326,6 @@ trait GalleryWorkspaceDirectUpload
         $title = trim((string) pathinfo($filename, PATHINFO_FILENAME));
 
         return $title === '' ? 'Untitled' : $title;
-    }
-
-    private function batchArtworkFilename(int $assetId): string
-    {
-        $asset = MediaAsset::query()->find($assetId);
-
-        return $asset instanceof MediaAsset ? (string) $asset->getAttribute('original_filename') : 'Unavailable Media File';
-    }
-
-    private function batchArtworkVisual(int $assetId): HtmlString|string
-    {
-        /** @var MediaAsset|null $asset */
-        $asset = MediaAsset::query()->with('variants')->find($assetId);
-        if (! $asset instanceof MediaAsset || $asset->getAttribute('state') !== 'available') {
-            return 'Media unavailable';
-        }
-
-        $mime = (string) $asset->getAttribute('mime_type');
-        $filename = e((string) $asset->getAttribute('original_filename'));
-        if (MediaTypePolicy::isImage($mime)) {
-            $variant = MediaPreviewVariant::imageThumbnail($asset);
-            $url = $variant === null
-                ? route('admin.media.original', $asset)
-                : route('admin.media.variant', $variant);
-
-            return new HtmlString('<div class="admin-component-image-preview"><img src="'.e($url).'" alt="" loading="lazy" decoding="async"><span>'.$filename.'</span></div>');
-        }
-
-        if (MediaTypePolicy::isVideo($mime)) {
-            $url = route('admin.media.original', $asset);
-            $poster = MediaPreviewVariant::videoPoster($asset);
-            $posterAttribute = $poster !== null
-                ? ' poster="'.e(route('admin.media.variant', $poster)).'"'
-                : '';
-
-            return new HtmlString('<div class="admin-component-image-preview"><video src="'.e($url).'"'.$posterAttribute.' width="176" height="132" preload="metadata" muted playsinline aria-label="Video preview for '.$filename.'"></video><span>'.$filename.'</span></div>');
-        }
-
-        return 'Unsupported Media File';
     }
 
     private function uniqueBatchArtworkSlug(string $title): string
