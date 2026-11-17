@@ -11,6 +11,7 @@
 @import './admin/table-contract.css';
 @import './admin/six-cell-contract.css';
 @import './admin/stage.css';
+@import './admin/live-preview.css';
 @import './admin/typography.css';
 @import './admin/analytics.css';
 @import './admin/activity.css';

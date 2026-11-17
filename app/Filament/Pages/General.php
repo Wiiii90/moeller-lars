@@ -520,10 +520,8 @@ final class General extends Page
                         ->columns(3)
                         ->extraAttributes(fn ($livewire): array => [
                             'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--split',
-                            'x-data' => "{ appearanceTab: 'global', moreSpace: false, previewDevice: 'desktop' }",
+                            'x-data' => "{ appearanceTab: 'global', moreSpace: false }",
                             'x-bind:class' => "{ 'admin-visual-stage--expanded': moreSpace }",
-                            'data-preview-device' => 'desktop',
-                            'x-bind:data-preview-device' => 'previewDevice',
                             'aria-label' => 'General settings and live public preview',
                         ])
                         ->columnSpanFull(),

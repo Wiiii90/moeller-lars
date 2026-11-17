@@ -1,4 +1,4 @@
-/* General appearance controls and device-aware public preview. */
+/* General Appearance controls and shared preview pane layout. */
 
 /*
  * General wide/compact preview split:
@@ -41,12 +41,12 @@
     min-height: 0;
 }
 
-.general-appearance-stage[data-preview-device="desktop"] {
+.general-appearance-stage {
     --admin-stage-divider-axis: 50%;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 }
-
-.general-appearance-stage[data-preview-device="mobile"] {
+/* The preview owns device state; this parent owns only column placement. */
+.general-appearance-stage:has(.admin-live-preview[data-preview-device="mobile"]) {
     --admin-stage-divider-axis: 66.666667%;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) !important;
 }
@@ -171,10 +171,7 @@
     margin: 0;
 }
 
-.general-stage-kicker,
-.general-live-preview__title {
-    line-height: 1.2;
-}
+.general-stage-kicker { line-height: 1.2; }
 
 /* Canonical line-based General controls. */
 .admin-general .fi-input-wrp {
@@ -390,161 +387,6 @@
     .general-legal-settings > .fi-sc > :first-child {
         grid-column: 1 !important;
     }
-}
-
-/* Preview header shares the exact heading and tool-row grammar with the
- * Appearance side. Icon geometry and separator strokes live in stage.css
- * and primitives.css, while the zoom percentage retains its specialised
- * shared zoom-value control in general-interactions.css. */
-.general-live-preview__title {
-    min-width: 0;
-}
-
-/* Preview frame */
-.general-live-preview__viewport {
-    box-sizing: border-box;
-    display: grid;
-    min-width: 0;
-    min-height: 0;
-    /* Same toolbar-to-content rhythm as the adjacent Appearance form.
-     * Keep the fitted browser top-aligned as More space enlarges its viewport. */
-    padding: calc(var(--admin-section-gap) + .5rem) 0 .35rem;
-    place-items: start center;
-    overflow: hidden;
-    background: transparent;
-}
-
-.general-live-preview__device {
-    position: relative;
-    box-sizing: border-box;
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    width: 1px;
-    height: 1px;
-    max-width: 100%;
-    max-height: 100%;
-    overflow: hidden;
-    border: 1px solid color-mix(in srgb, var(--admin-text) 42%, var(--admin-line-strong));
-    outline: 1px solid color-mix(in srgb, var(--admin-line-strong) 55%, transparent);
-    outline-offset: -2px;
-    background: var(--admin-surface);
-    box-shadow: 0 .18rem .5rem color-mix(in srgb, #000 9%, transparent);
-}
-
-.general-live-preview__device.is-desktop {
-    border-radius: .32rem;
-}
-
-.general-live-preview__device.is-mobile {
-    grid-template-rows: minmax(0, 1fr) auto;
-    border-radius: 1rem;
-    box-shadow:
-        inset 0 0 0 1px color-mix(in srgb, var(--admin-text) 18%, transparent),
-        0 .18rem .5rem color-mix(in srgb, #000 9%, transparent);
-}
-
-.general-live-preview__browser {
-    display: grid;
-    min-width: 0;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: .4rem;
-    padding: .2rem .35rem;
-    align-items: center;
-    border-bottom: 1px solid var(--admin-line-strong);
-    background: color-mix(in srgb, var(--admin-subtle) 84%, var(--admin-surface));
-    user-select: none;
-}
-
-.general-live-preview__browser-dots {
-    display: inline-flex;
-    gap: .18rem;
-    align-items: center;
-}
-
-.general-live-preview__browser-dots i {
-    display: block;
-    width: .26rem;
-    height: .26rem;
-    border-radius: 50%;
-    background: var(--admin-line-strong);
-}
-
-.general-live-preview__address {
-    display: flex;
-    min-width: 0;
-    height: .9rem;
-    gap: .3rem;
-    padding: 0 .3rem;
-    align-items: center;
-    overflow: hidden;
-    border: 1px solid var(--admin-line);
-    border-radius: .16rem;
-    background: var(--admin-surface);
-    color: var(--admin-muted);
-    font-size: .5rem;
-    line-height: 1;
-    white-space: nowrap;
-}
-
-.general-live-preview__favicon {
-    display: grid;
-    width: .62rem;
-    height: .62rem;
-    flex: 0 0 .62rem;
-    place-items: center;
-}
-
-.general-live-preview__favicon img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.general-live-preview__address span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.general-live-preview__page {
-    position: relative;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-    background: #fff;
-    isolation: isolate;
-    pointer-events: auto;
-}
-
-.general-live-preview__device.is-mobile .general-live-preview__browser {
-    grid-row: 2;
-    grid-template-columns: minmax(0, 1fr);
-    padding-inline: .3rem;
-    border-top: 1px solid var(--admin-line-strong);
-    border-bottom: 0;
-}
-
-.general-live-preview__device.is-mobile .general-live-preview__browser-dots {
-    display: none;
-}
-
-.general-live-preview__device.is-mobile .general-live-preview__page {
-    grid-row: 1;
-}
-
-.general-live-preview__device iframe {
-    position: absolute;
-    z-index: 1;
-    top: 0;
-    left: 0;
-    display: block;
-    border: 0;
-    background: #fff;
-    pointer-events: auto !important;
-    touch-action: auto;
-    transform-origin: top left;
-    backface-visibility: hidden;
 }
 
 /* Social Media is deliberately small: no search/filter/selection layer. */

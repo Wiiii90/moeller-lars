@@ -1,0 +1,98 @@
+/* Canonical public viewport shared by General and Gallery.
+ * Real 1440 × 900 Desktop / 390 × 844 Phone CSS viewports, no browser or
+ * device-frame decoration. Consumer pages own their outer pane placement. */
+.admin-live-preview {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    gap: 0;
+    overflow: hidden;
+}
+.admin-live-preview:not(:has(> .admin-live-preview__title)) {
+    grid-template-rows: auto minmax(0, 1fr);
+}
+.admin-live-preview__title { min-width: 0; line-height: 1.2; }
+.admin-live-preview__viewport {
+    box-sizing: border-box;
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+    padding: calc(var(--admin-section-gap) + .5rem) 0 .35rem;
+    place-items: start center;
+    overflow: hidden;
+}
+.admin-live-preview__surface {
+    box-sizing: border-box;
+    display: block;
+    position: relative;
+    width: 1px;
+    height: 1px;
+    max-width: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    background: #fff;
+}
+.admin-live-preview__page {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    isolation: isolate;
+    background: #fff;
+}
+.admin-live-preview__frame {
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: #fff;
+    transform-origin: top left;
+    backface-visibility: hidden;
+    touch-action: auto;
+}
+.admin-live-preview__frame--content { overflow: hidden; }
+.admin-live-preview__zoom-value {
+    display: grid;
+    width: 3rem;
+    height: 1.75rem;
+    padding: 0;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: .2rem;
+    background: transparent;
+    color: var(--admin-muted);
+    font: inherit;
+    font-size: .6rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    cursor: pointer;
+}
+.admin-live-preview__zoom-value:hover:not(:disabled),
+.admin-live-preview__zoom-value:focus-visible,
+.admin-live-preview__zoom-value.is-active {
+    border-color: var(--admin-line-strong);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+    outline: none;
+}
+.admin-live-preview__zoom-value:disabled { opacity: 1; cursor: default; }
+.admin-live-preview__page.is-zoomed { cursor: default; touch-action: auto; user-select: auto; }
+.admin-live-preview__page.is-zoomed iframe { pointer-events: auto; user-select: auto; }
+.admin-live-preview__pan-layer {
+    position: absolute;
+    z-index: 3;
+    inset: 0;
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+.admin-live-preview__page.is-dragging .admin-live-preview__pan-layer { cursor: grabbing; }
