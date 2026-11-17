@@ -56,6 +56,12 @@
 - **Source-only sanity:** Stage and modal names/labels/options come from a single field construction function; the prior Stage-only toggle and "All Gallery settings" button are absent; Gallery name validation is partial-update safe. No CI, PHP runtime lint, browser or E2E verification was run through the GitHub connector. Avoid asserting the new controls/progress layout is visually accepted.
 - **Next localized browser gate:** Reload local preview. Toggle any Gallery option (must not produce name-validation notification); inspect every Gallery stage setting, including help bulbs and sort confirmation; verify auto-publish and modal updates roundtrip; scroll inner Stage settings without a visible track; select multiple files and observe status/progress through Storage transfer, Staged queue and individual creation. Inspect at ordinary and Minimal widths. Preview framing/layout remains a separate user design decision.
 
+## Stage-to-controls boundary — 2026-11-17
+
+- The Gallery Stage originally ended directly before `gallery-workspace__result-surface`, but the wrapper lacked the canonical `admin-visual-stage-followup` marker used by Analytics, Activity and Storage. Consequently the shared `data-workspace.css` adjacency selector did not apply its `--admin-section-space` margin, `--admin-section-gap` top padding and `--admin-line-strong` top divider.
+- Added the existing canonical class to the **existing** Gallery result wrapper (which already owns Search, Filters and Gallery actions). No extra DOM wrapper, Gallery CSS override, new token or duplicated border rule. The shared `.admin-visual-stage-followup .admin-data-controls` selector also handles control spacing.
+- Source-level verified the exact markup adjacency and shared selector. Visual browser acceptance still pending; do not claim rendered alignment was measured.
+
 ## Acceptance gates and remaining risks
 
 1. **Source is committed, not browser-accepted**. Confirm PHP/Filament parsing, Livewire `stagedArtworkForm` init/fill and field dehydration, uploader-to-queue state, stage mobile switcher, input scrolling, iframe Content Security Policy, thumbnail/video rendering, and rapid selection/race behavior in refreshed local preview. No PHP lint/browser/test suite was run through GitHub-only access.

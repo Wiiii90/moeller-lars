@@ -218,7 +218,7 @@
             </div>
         </section>
 
-        <div class="gallery-workspace__result-surface">
+        <div class="gallery-workspace__result-surface admin-visual-stage-followup">
             <x-admin.controls class="admin-data-controls--dashboard-responsive gallery-workspace__controls" aria-label="Gallery controls" metric-grid :filter-count="2" :search-span="2">
                 <x-slot:search>
                     <label class="admin-data-field">
