@@ -124,6 +124,7 @@ final class GalleryWorkspace extends Page
             ->components(app(\App\Filament\Support\ArtworkEditDialog::class)->schema(
                 creating: true,
                 primaryReadOnly: true,
+                compact: true,
                 positionCount: count($this->artworkDataset) + 1,
                 onPositionChanged: static function (mixed $state, callable $set): void {
                     $set('position_explicit', true);

@@ -47,7 +47,7 @@ final class ArtworkEditDialog
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true, ?Closure $onPositionChanged = null, ?Closure $onCreateOrderSourceChanged = null): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true, ?Closure $onPositionChanged = null, ?Closure $onCreateOrderSourceChanged = null, bool $compact = false): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
@@ -84,8 +84,9 @@ final class ArtworkEditDialog
         }
 
         return [
-            Grid::make()
-                ->columns(['md' => 2])
+            // Stage editor is one metric-aligned third of the workspace;
+            // do not inherit Filament's default lg two-column constraint.
+            Grid::make($compact ? ['default' => 1] : ['md' => 2])
                 ->schema([
                     TextInput::make('title')
                         ->required()
@@ -116,7 +117,9 @@ final class ArtworkEditDialog
                         ->disabled($primaryReadOnly)
                         ->selectablePlaceholder(! $primaryReadOnly)
                         ->extraFieldWrapperAttributes($primaryReadOnly ? [
-                            'title' => 'Unpublish this Artwork before changing or removing its primary Media File.',
+                            'title' => $creating
+                                ? 'This Media File belongs to the selected Gallery Stage item.'
+                                : 'Unpublish this Artwork before changing or removing its primary Media File.',
                         ] : [], merge: true)
                         ->live()
                         ->afterStateUpdated(static function (mixed $state, callable $set, callable $get) use ($onPrimaryMediaChanged, $creating, $onCreateOrderSourceChanged): void {

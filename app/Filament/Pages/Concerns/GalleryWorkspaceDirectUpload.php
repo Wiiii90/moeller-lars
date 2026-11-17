@@ -124,6 +124,8 @@ trait GalleryWorkspaceDirectUpload
                 'position_explicit' => false,
             ];
         }
+        // The queue row, not a disabled form control, owns the media link.
+        $form['primary_media_asset_id'] = $assetId;
         $this->stagedArtworkData = $form;
         $this->stagedArtworkForm->fill($form);
     }
