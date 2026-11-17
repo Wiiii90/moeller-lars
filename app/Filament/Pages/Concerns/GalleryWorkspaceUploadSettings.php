@@ -235,8 +235,12 @@ trait GalleryWorkspaceUploadSettings
         return AdminDialog::confirm(
             $action,
             'Change Gallery order?',
-            fn (array $arguments): string => 'Apply '.(GalleryPresentation::SORT_OPTIONS[(string) ($arguments['sort_mode'] ?? '')] ?? 'the selected order').'? '
-                .count($preview($arguments)['changes']).' Artwork positions will change.',
+            function (array $arguments) use ($preview): string {
+                $count = count($preview($arguments)['changes']);
+                $label = GalleryPresentation::SORT_OPTIONS[(string) ($arguments['sort_mode'] ?? '')] ?? 'the selected order';
+
+                return 'Apply '.$label.'? '.$count.' Artwork '.($count === 1 ? 'position' : 'positions').' will change.';
+            },
             'Apply order',
             false,
             fn (array $arguments): bool => $preview($arguments)['changes'] !== [],
