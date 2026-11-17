@@ -159,7 +159,11 @@
                         <label class="admin-data-field">
                             <span>Artwork order</span>
                             <select wire:key="gallery-stage-sort-{{ $galleryContext['sort_mode'] }}"
-                                wire:change="changeGalleryStageSort($event.target.value)" aria-label="Artwork order">
+                                x-on:change='
+                                    const mode = $event.target.value
+                                    $event.target.value = @js($galleryContext["sort_mode"])
+                                    $wire.changeGalleryStageSort(mode)
+                                ' aria-label="Artwork order">
                                 @foreach (\App\Domain\Artwork\GalleryPresentation::SORT_OPTIONS as $mode => $label)
                                     <option value="{{ $mode }}" @selected($galleryContext['sort_mode'] === $mode)>{{ $label }}</option>
                                 @endforeach
@@ -186,6 +190,11 @@
                                 @endforeach
                             </select>
                         </label>
+                        <button class="admin-action admin-action--with-icon gallery-stage__all-settings"
+                            type="button" wire:click="mountAction('gallerySettings')">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
+                            <span class="admin-action__label">All Gallery settings</span>
+                        </button>
                     </div>
                 @endif
             </div>
@@ -197,9 +206,13 @@
                         <button class="admin-action" type="button" wire:click="previewGalleryStage"
                             aria-pressed="{{ $galleryStagePreview === 'gallery' ? 'true' : 'false' }}">Gallery</button>
                         <button class="admin-action" type="button" wire:click="stepGalleryPreview('previous')"
-                            @disabled($stagePreviewableCount === 0) aria-label="Previous Artwork">‹</button>
+                            @disabled($stagePreviewableCount === 0) aria-label="Previous Artwork" title="Previous Artwork">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Previous->mini()" class="admin-action__icon" />
+                        </button>
                         <button class="admin-action" type="button" wire:click="stepGalleryPreview('next')"
-                            @disabled($stagePreviewableCount === 0) aria-label="Next Artwork">›</button>
+                            @disabled($stagePreviewableCount === 0) aria-label="Next Artwork" title="Next Artwork">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Next->mini()" class="admin-action__icon" />
+                        </button>
                     </div>
                 </header>
 
