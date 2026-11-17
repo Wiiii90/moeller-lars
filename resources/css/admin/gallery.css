@@ -99,16 +99,6 @@
     height: 0;
 }
 
-.gallery-stage__toggle-field {
-    display: flex;
-    min-height: var(--admin-control-height);
-    justify-content: space-between;
-    gap: .6rem;
-    align-items: center;
-    color: var(--admin-text);
-    font-size: .77rem;
-}
-
 .gallery-stage__queue {
     display: flex;
     flex: 0 0 auto;
