@@ -190,7 +190,7 @@
                     :heading="false"
                     :url="$galleryStagePreview === 'staged' ? null : $stagePublicUrl"
                     :frame-title="$galleryStagePreview === 'artwork' ? 'Interactive Artwork preview' : 'Interactive Gallery preview'"
-                    wire:key="gallery-live-preview-{{ $galleryStagePreview }}-{{ $galleryStagePreviewArtworkId ?? 0 }}-{{ $galleryStagePreviewRevision }}"
+                    wire:key="gallery-live-preview"
                 >
                     @if ($galleryStagePreview === 'staged' && $stagedPreview !== null)
                         <x-slot:content>

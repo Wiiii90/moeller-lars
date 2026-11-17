@@ -159,6 +159,7 @@ final class GalleryWorkspace extends Page
     {
         $this->galleryStagePreview = 'gallery';
         $this->galleryStagePreviewArtworkId = null;
+        $this->dispatch('gallery-preview-updated', url: $this->galleryStagePreviewUrl());
     }
 
     public function previewGalleryArtwork(int $artworkId): void
@@ -171,6 +172,7 @@ final class GalleryWorkspace extends Page
         }
         $this->galleryStagePreview = 'artwork';
         $this->galleryStagePreviewArtworkId = $artworkId;
+        $this->dispatch('gallery-preview-updated', url: $this->galleryStagePreviewUrl());
     }
 
     public function stepGalleryPreview(string $direction): void

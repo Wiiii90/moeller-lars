@@ -1,10 +1,11 @@
-/* Canonical public viewport shared by General and Gallery.
- * Real 1440 × 900 Desktop / 390 × 844 Phone CSS viewports, no browser or
- * device-frame decoration. Consumer pages own their outer pane placement. */
+/* Shared interactive Preview: responsive browser width or selected
+ * desktop/phone viewport, fitted visually inside each Admin Stage pane.
+ * Consumer pages own outer placement; this component owns its controls. */
 .admin-live-preview {
     box-sizing: border-box;
     display: grid;
     grid-template-rows: auto auto minmax(0, 1fr);
+    container: admin-live-preview / inline-size;
     width: 100%;
     height: 100%;
     min-width: 0;
@@ -16,6 +17,34 @@
     grid-template-rows: auto minmax(0, 1fr);
 }
 .admin-live-preview__title { min-width: 0; line-height: 1.2; }
+/* One canonical responsive toolbar, including narrow Gallery panes. */
+.admin-live-preview .admin-stage-tool-row {
+    flex-wrap: wrap;
+    row-gap: .2rem;
+    padding-block: .2rem;
+}
+.admin-live-preview__width-select {
+    box-sizing: border-box;
+    width: 6.8rem;
+    min-width: 0;
+    max-width: 100%;
+    height: var(--admin-header-control-size);
+    padding: 0 .25rem;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: .2rem;
+    background: var(--admin-surface);
+    color: var(--admin-text);
+    font: inherit;
+    font-size: .7rem;
+}
+.admin-live-preview__width-select:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+@container admin-live-preview (max-width: 24rem) {
+    .admin-live-preview .admin-control-separator { display: none; }
+    .admin-live-preview .admin-stage-tool-row { justify-content: flex-start; }
+}
 .admin-live-preview__viewport {
     box-sizing: border-box;
     display: grid;
@@ -55,10 +84,15 @@
     border: 0;
     background: #fff;
     transform-origin: top left;
-    backface-visibility: hidden;
+    /* A 2D scale needs no forced backface compositing layer. */
     touch-action: auto;
 }
-.admin-live-preview__frame--content { overflow: hidden; }
+.admin-live-preview__frame--content {
+    overflow: hidden;
+    /* An unsaved Stage item has no Public route. Its real canvas width is
+     * nevertheless an independent CSS responsive container. */
+    container: staged-preview / inline-size;
+}
 .admin-live-preview__zoom-value {
     display: grid;
     width: 3rem;

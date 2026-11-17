@@ -15,8 +15,10 @@
         frameShortcuts: [],
         pointerInside: false,
         previewDevice: 'desktop',
-        // Both pages use fixed real browser layout viewports, visually
-        // fitted to the Admin pane without changing public media queries.
+        // The browser-sized Desktop mode and explicit width presets reflow the
+        // real Public iframe; only the resulting visual is scaled to the pane.
+        desktopWidth: 'window',
+        mobileWidth: '390',
         fitScale: 1,
         zoom: 1,
         minZoom: 1,
@@ -71,9 +73,15 @@
             const page = this.$refs.page
             const frame = this.$refs.frame
             if (! viewport || ! surface || ! page || ! frame) return
+            if (frame.tagName !== 'IFRAME' && this.frameShortcuts.length) this.unbindFrameShortcuts()
             // A real CSS-pixel layout viewport; only the outer visual is scaled.
-            const targetWidth = this.previewDevice === 'mobile' ? 390 : 1440
-            const targetHeight = this.previewDevice === 'mobile' ? 844 : 900
+            const mobile = this.previewDevice === 'mobile'
+            const targetWidth = mobile
+                ? Number(this.mobileWidth)
+                : (this.desktopWidth === 'window' ? window.innerWidth : Number(this.desktopWidth))
+            const targetHeight = mobile
+                ? Math.round(targetWidth * 844 / 390)
+                : (this.desktopWidth === 'window' ? window.innerHeight : 900)
             const style = getComputedStyle(viewport)
             const width = viewport.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
             const height = viewport.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
@@ -248,19 +256,24 @@
         cancelPanGesture() {
             this.endPan(null)
         },
-        refreshPreview() {
+        refreshPreview(detail = {}) {
             const frame = this.$refs.frame
-            if (! frame || frame.tagName !== 'IFRAME') return
+            if (! frame || frame.tagName !== 'IFRAME') {
+                this.scheduleFit()
+                return
+            }
 
-            // An already-persisted Appearance change must not wait on a
-            // timeout that can be cancelled when Livewire morphs this pane.
-            const url = new URL(frame.src, window.location.origin)
+            // Gallery selections can change the URL without remounting the
+            // preview's device/zoom state; Appearance edits reload the current.
+            const source = typeof detail?.url === 'string' && detail.url !== ''
+                ? detail.url : frame.src
+            const url = new URL(source, window.location.origin)
             url.searchParams.set('_appearance', Date.now().toString())
             frame.src = url.toString()
         },
     }"
     @if ($refreshOnAppearance) x-on:general-appearance-updated.window="refreshPreview()" @endif
-    x-on:gallery-preview-updated.window="refreshPreview()"
+    x-on:gallery-preview-updated.window="refreshPreview($event.detail); scheduleFit()"
     x-on:resize.window="scheduleFit()"
     x-on:keydown.window="handleSpaceDown($event)"
     x-on:keyup.window="handleSpaceUp($event)"
@@ -277,7 +290,7 @@
                     x-on:click="setDevice('desktop')"
                     x-bind:class="{ 'is-primary': previewDevice === 'desktop' }"
                     x-bind:aria-pressed="(previewDevice === 'desktop').toString()"
-                    title="Desktop preview · 1440 × 900 CSS pixels"
+                    title="Desktop preview at selected viewport width"
                 >
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceDesktop->mini()" />
                 </button>
@@ -287,10 +300,35 @@
                     x-on:click="setDevice('mobile')"
                     x-bind:class="{ 'is-primary': previewDevice === 'mobile' }"
                     x-bind:aria-pressed="(previewDevice === 'mobile').toString()"
-                    title="Phone preview · 390 × 844 CSS pixels"
+                    title="Phone preview at selected viewport width"
                 >
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceMobile->mini()" />
                 </button>
+        </div>
+        <div class="admin-stage-tool-group admin-live-preview__width-group" role="group" aria-label="Preview viewport width">
+            <select class="admin-live-preview__width-select"
+                x-show="previewDevice === 'desktop'"
+                x-model="desktopWidth"
+                x-on:change="scheduleFit()"
+                aria-label="Desktop preview width"
+                title="Simulated desktop viewport width">
+                <option value="window">Window width</option>
+                <option value="1024">1024 px</option>
+                <option value="1280">1280 px</option>
+                <option value="1440">1440 px</option>
+                <option value="1920">1920 px</option>
+            </select>
+            <select class="admin-live-preview__width-select"
+                x-show="previewDevice === 'mobile'"
+                x-model="mobileWidth"
+                x-on:change="scheduleFit()"
+                aria-label="Phone preview width"
+                title="Simulated phone viewport width" x-cloak>
+                <option value="320">320 px</option>
+                <option value="360">360 px</option>
+                <option value="390">390 px</option>
+                <option value="430">430 px</option>
+            </select>
         </div>
         <span class="admin-control-separator" aria-hidden="true"></span>
         <div class="admin-stage-tool-group" role="group" aria-label="Preview zoom">

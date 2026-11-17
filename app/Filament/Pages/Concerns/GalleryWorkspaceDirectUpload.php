@@ -129,6 +129,7 @@ trait GalleryWorkspaceDirectUpload
         $form['primary_media_asset_id'] = $assetId;
         $this->stagedArtworkData = $form;
         $this->stagedArtworkForm->fill($form);
+        $this->dispatch('gallery-preview-updated');
     }
 
     public function removeStagedArtwork(int $assetId): void

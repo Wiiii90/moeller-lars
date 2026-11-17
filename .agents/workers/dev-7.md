@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 13 (active)  
-**Status:** Divider/preview parity diagnosis scoped to the real effective Public layout and paper-contour layers; local-browser execution still outstanding.
+**Status:** Shared Preview device widths and Gallery lifecycle updated; source committed, browser acceptance outstanding.
 
 ## Ownership and accepted decisions
 - General → Appearance (Global, Title, Menu, Page and Legal), Regional Formats, Admin live Preview and their direct Public consumers.
@@ -53,6 +53,13 @@
 - The existing iframe uses CSS `transform: scale(fitScale * zoom)` plus `backface-visibility: hidden`. The direct Public route is untransformed. No production change is warranted until its effective mode and CSS drawing layers can be compared in the **real** user browser.
 - A local, synthetic Chromium experiment confirmed CSS `zoom` can keep a 1900px iframe logical width while shrinking it visually; direct zoom on the iframe caused unreliable automated click targeting and is **not** accepted as an interaction-preserving replacement. Do not silently switch the preview's scale owner.
 - Next bounded step is a read-only Chrome Developer Tools inspection **inside the already authenticated Admin browser**. Inspect the loaded iframe's effective `meta[data-public-layout]`, Header class, computed Menu border and Content top versus a freshly fetched `/preview` response. No new repo tests, test credentials, diagnostic production UI, deployment or Public frame-style changes.
+
+## Shared Preview viewport and staged Gallery fixes (2026-11-18)
+- The shared Preview now defaults Desktop to the current Admin browser width and height, with selectable Desktop widths 1024/1280/1440/1920 and Phone widths 320/360/390/430; the actual iframe reflows at those CSS pixel widths, not at the Admin card width. The existing one-owner toolbar wraps in narrow panes, including Gallery.
+- Unnecessary backface compositing on the transformed Preview frame removed; CSS scaling still applies and remaining subpixel hairline behavior requires browser acceptance.
+- Gallery's former dynamic Livewire preview key destroyed selected device/zoom/pan on every Gallery/Artwork/Staged selection. The component now has one stable key; the existing Gallery preview event receives a selected Public URL when Gallery/Artwork changes, and staged selection triggers its existing fit path. Source switching does not intentionally reset device and zoom.
+- Unsaved staged media have no public route or fully published Public Artwork page. Their image/video and edited caption are now laid out by a real responsive CSS container at the chosen Preview viewport width, including a mobile-width layout. This is a staged media review, not a claim of identical Public Artwork markup before creation.
+- No tests, local browser acceptance, CI, deployment, media mutation or database migration performed.
 
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
