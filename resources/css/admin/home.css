@@ -110,6 +110,8 @@
 }
 
 .home-hero-rail {
+    /* Heading and every row share one fixed Chance/Actions axis. */
+    --home-hero-candidate-tracks: 1.9rem 1.75rem 3.7rem minmax(0, 1fr) 5.5rem 7.25rem;
     display: flex;
     min-width: 0;
     flex-direction: column;
@@ -165,7 +167,7 @@
 
 .home-hero-candidate__heading {
     display: grid;
-    grid-template-columns: 1.9rem 1.75rem 3.7rem minmax(0, 1fr) 4.75rem 7.25rem;
+    grid-template-columns: var(--home-hero-candidate-tracks);
     gap: .3rem;
     align-items: end;
     min-width: 0;
@@ -209,7 +211,7 @@
 
 .home-hero-candidate {
     display: grid;
-    grid-template-columns: 1.9rem 1.75rem 3.7rem minmax(0, 1fr) 4.75rem 7.25rem;
+    grid-template-columns: var(--home-hero-candidate-tracks);
     gap: .3rem;
     min-width: 0;
     padding: .42rem .4rem;
@@ -287,8 +289,11 @@
 }
 
 .home-hero-weight {
+    display: flex;
     grid-column: 5;
     min-width: 0;
+    align-items: center;
+    justify-content: center;
     color: var(--admin-muted);
 }
 

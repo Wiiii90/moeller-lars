@@ -387,15 +387,16 @@
     border-bottom-color: var(--admin-accent);
 }
 
-/* Native percentage fields in Stage/table editing reuse the same inline-input
- * chrome and semantic change event. Percentage unit/width have one shared owner. */
+/* One compact number-and-unit control for Stage and table editing.
+ * The full six-digit 100.00 must remain visible beside its percent unit. */
 .admin-inline-percentage {
-    display: inline-flex;
+    display: inline-grid;
     box-sizing: border-box;
-    width: 4.15rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 5.25rem;
     max-width: 100%;
     min-width: 0;
-    gap: .18rem;
+    gap: .125rem;
     align-items: center;
     color: var(--admin-muted);
     font-size: var(--admin-font-size-table-compact);
@@ -404,9 +405,18 @@
 }
 
 .admin-inline-percentage > .admin-inline-percentage__input {
-    flex: 1 1 auto;
-    min-width: 0;
     width: 100%;
+    min-width: 0;
+    padding-inline: .25rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    appearance: textfield;
+}
+
+.admin-inline-percentage__input::-webkit-inner-spin-button,
+.admin-inline-percentage__input::-webkit-outer-spin-button {
+    margin: 0;
+    appearance: none;
 }
 
 .admin-inline-percentage > span {
