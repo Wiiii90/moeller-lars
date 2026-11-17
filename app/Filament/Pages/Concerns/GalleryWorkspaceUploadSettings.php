@@ -213,7 +213,9 @@ trait GalleryWorkspaceUploadSettings
                     );
                 } catch (ValidationException $exception) {
                     $this->notifyValidationFailure('Gallery order was not changed', $exception);
-                    $this->replaceMountedAction('gallerySettings');
+                    if (($arguments['source'] ?? '') !== 'stage') {
+                        $this->replaceMountedAction('gallerySettings');
+                    }
 
                     return;
                 }
@@ -229,7 +231,9 @@ trait GalleryWorkspaceUploadSettings
 
                 // Reopen the existing editor with persisted values rather
                 // than restoring the old selected mode in the parent form.
-                $this->replaceMountedAction('gallerySettings');
+                if (($arguments['source'] ?? '') !== 'stage') {
+                    $this->replaceMountedAction('gallerySettings');
+                }
             });
 
         return AdminDialog::confirm(
@@ -245,6 +249,56 @@ trait GalleryWorkspaceUploadSettings
             false,
             fn (array $arguments): bool => $preview($arguments)['changes'] !== [],
         );
+    }
+
+    /** Only a small subset is mirrored as Stage quick controls. */
+    public function updateGalleryStageSetting(string $field, mixed $value): void
+    {
+        if (! in_array($field, ['show_artwork_information', 'caption_layout', 'artwork_page_surface_mode', 'video_sound_enabled'], true)) {
+            return;
+        }
+        if (in_array($field, ['show_artwork_information', 'video_sound_enabled'], true)) {
+            $value = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($value === null) {
+                return;
+            }
+        }
+
+        /** @var ArtworkCategory $gallery */
+        $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+        try {
+            $updated = app(GalleryEditorialService::class)->update($gallery, [$field => $value]);
+        } catch (ValidationException $exception) {
+            $this->notifyValidationFailure('Gallery setting was not saved', $exception);
+            return;
+        }
+
+        if ($updated->wasChanged()) {
+            $this->loadGallery((int) $gallery->getKey());
+            $this->refreshWorkspaceAfterMutation();
+            app(AdminNotifier::class)->notification(title: 'Gallery settings saved', status: 'success');
+        }
+    }
+
+    public function changeGalleryStageSort(string $mode): void
+    {
+        /** @var ArtworkCategory $gallery */
+        $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+        if ($mode === GalleryPresentation::sortMode($gallery)) {
+            return;
+        }
+        try {
+            $preview = app(GalleryEditorialService::class)->previewSortChange($gallery, $mode);
+        } catch (ValidationException $exception) {
+            $this->notifyValidationFailure('Gallery order was not updated', $exception);
+            return;
+        }
+
+        $this->mountAction('changeGallerySort', [
+            'sort_mode' => $mode,
+            'signature' => $preview['signature'],
+            'source' => 'stage',
+        ]);
     }
 
     public function materialPresetsAction(): Action
