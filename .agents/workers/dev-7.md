@@ -43,11 +43,10 @@
 - The faint extra line reported earlier appears intermittently; its computed origin is not browser-verified. No unproven CSS overlay was added. Separate Home Random Hero HTTP requests can choose different artwork.
 - Regression assertions updated for stable, below-viewport and <=54rem expanded sizing; **tests not executed**.
 
-## Divider parity finding and targeted browser qualification (2026-11-17)
-- **Verified source precedence:** `resources/views/pages/home.blade.php` supplies `artwork_header_divider` derived from Home's `artwork_page_surface_mode`, which can override the General `header_divider_mode` (`fine` or `separate`) in `resources/views/layouts/app.blade.php`. This is an existing deliberate Home/Artwork consumer override, not proof of stale iframe state. Do not remove it without an explicit product decision.
-- **Additional possible visual cause:** `public-presentation.css` owns Menu border independently of connected-paper contours and backing via pseudoelements. The embedded iframe uses a fractional CSS scale; CSS border absence cannot by itself prove absence of all anti-aliased contour pixels.
-- Replaced the old incomplete one-mode parity test with a **strictly read-only diagnostic**: it compares the saved General choice, effective Home divider and frame-menu-content CSS drawing layers at the same logical viewport, attaching both header screenshots and a structured JSON report. It does not mutate the potentially persistent local-preview database or add a second Public renderer. Other existing tests may mutate settings and must only run on disposable test data.
-- No browser is connected to this chat's authenticated local Windows preview at `127.0.0.1:8001`, and this container has no project checkout/database. **The read-only browser test was authored but NOT run**; actual pixel attribution is unresolved. Prior user restriction prohibited running tests; the user now requests focused diagnosis, not a broad suite or deployment.
+## Rejected one-off browser diagnostic removed (2026-11-17)
+- User rejected the one-off read-only Playwright divider diagnostic, which also failed at admin login due to absent disposable browser credentials. Removed the entire test from the canonical browser suite; do not keep it as a skipped/alias variant or require a test login for General preview diagnosis.
+- A direct browser investigation of the existing Admin iframe is preferred if a real browser session is available; current repo connection alone cannot access the user's local session. Investigate the Admin viewport scaling, framing and source-specific effective styles without patching unknown Public CSS.
+- Existing other General browser tests remain unchanged. Frame Styles continue to be deferred.
 
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
