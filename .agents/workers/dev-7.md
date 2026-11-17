@@ -48,6 +48,12 @@
 - A direct browser investigation of the existing Admin iframe is preferred if a real browser session is available; current repo connection alone cannot access the user's local session. Investigate the Admin viewport scaling, framing and source-specific effective styles without patching unknown Public CSS.
 - Existing other General browser tests remain unchanged. Frame Styles continue to be deferred.
 
+## Embedded Preview investigation — scoped source and screenshot evidence (2026-11-17)
+- Reviewed user screenshots, including the original near-header crop, against the current Public divider and paper-contour owners. The observed thin horizontal seam lies immediately below the navigation at the join of white Menu/Content areas, not in the Admin fake browser chrome. Its appearance only in the reduced embedded view is **consistent with** fractional scaling of independently painted layers revealing the gray Public background, but the screenshot alone cannot distinguish a raster seam from a stale effective Menu divider.
+- The existing iframe uses CSS `transform: scale(fitScale * zoom)` plus `backface-visibility: hidden`. The direct Public route is untransformed. No production change is warranted until its effective mode and CSS drawing layers can be compared in the **real** user browser.
+- A local, synthetic Chromium experiment confirmed CSS `zoom` can keep a 1900px iframe logical width while shrinking it visually; direct zoom on the iframe caused unreliable automated click targeting and is **not** accepted as an interaction-preserving replacement. Do not silently switch the preview's scale owner.
+- Next bounded step is a read-only Chrome Developer Tools inspection **inside the already authenticated Admin browser**. Inspect the loaded iframe's effective `meta[data-public-layout]`, Header class, computed Menu border and Content top versus a freshly fetched `/preview` response. No new repo tests, test credentials, diagnostic production UI, deployment or Public frame-style changes.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.
