@@ -170,7 +170,7 @@
 
             <div class="gallery-stage__preview admin-visual-stage__pane" data-admin-stage-pane="preview" data-admin-stage-slot="3">
                 <header class="gallery-stage__preview-header">
-                    <h2 class="admin-section__kicker admin-visual-stage__heading">Live preview</h2>
+                    <h2 class="admin-section__kicker admin-visual-stage__heading">{{ $galleryStagePreview === 'staged' ? 'Staged media preview' : 'Live preview' }}</h2>
                     <div class="admin-stage-tool-group" role="group" aria-label="Gallery preview navigation">
                         <button class="admin-action" type="button" wire:click="previewGalleryStage"
                             aria-pressed="{{ $galleryStagePreview === 'gallery' ? 'true' : 'false' }}">Gallery</button>

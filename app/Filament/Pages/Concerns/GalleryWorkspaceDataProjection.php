@@ -190,9 +190,8 @@ trait GalleryWorkspaceDataProjection
         $this->loadGalleryDataset();
         $this->projectArtworks();
         $this->refreshGalleryMetrics();
-        // Changes to Working Gallery settings must refresh the public
-        // document inside the shared wire:ignore preview iframe as well.
-        $this->galleryStagePreviewRevision++;
+        // The canonical Preview owner refreshes its current iframe without
+        // remounting the device/zoom state after an editorial mutation.
         $this->dispatch('gallery-preview-updated');
     }
 

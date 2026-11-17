@@ -91,8 +91,6 @@ final class GalleryWorkspace extends Page
 
     public ?int $galleryStagePreviewArtworkId = null;
 
-    public int $galleryStagePreviewRevision = 0;
-
     /** Queue size when the current file-upload run began. */
     public int $directPrimaryBatchStartCount = 0;
 
