@@ -57,62 +57,67 @@
                 aria-label="Gallery Stage"
             />
 
-            <div class="gallery-stage__upload admin-visual-stage__pane" data-admin-stage-pane="upload" data-admin-stage-slot="1">
-                <h2 class="admin-section__kicker admin-visual-stage__heading">Upload Media</h2>
-        <div class="admin-gallery-upload" aria-label="Add artwork from media">
-            <div
-                class="admin-gallery-upload__dropzone"
+            <div class="gallery-stage__upload admin-visual-stage__pane" data-admin-stage-pane="upload"
+                data-admin-stage-slot="1"
                 x-data="{
-                    phase: 'idle', progress: 0, fileCount: 0,
-                    completed: 0, result: '',
+                    phase: 'idle', progress: 0, fileCount: 0, completed: 0, result: '',
                     async uploadFiles(input) {
                         await window.adminMediaUploader(this, input, $wire, 'gallery')
                     },
                 }"
-                x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
-            >
-                <input
-                    class="admin-gallery-upload__input"
-                    type="file"
-                    x-on:change="uploadFiles($el)"
-                    x-bind:disabled="phase === 'uploading' || phase === 'processing'"
-                    accept="{{ implode(',', [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES]) }}"
-                    aria-label="Upload primary images or videos for new artworks"
-                    multiple
-                >
-                <div class="admin-gallery-upload__copy">
-                    <strong
+                x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()">
+                <h2 class="admin-section__kicker admin-visual-stage__heading">Upload Media</h2>
+                <div class="gallery-stage__upload-status" role="status" aria-live="polite" aria-atomic="true">
+                    <span x-text="
+                        phase === 'uploading' ? 'Uploading to Storage'
+                        : phase === 'processing' ? 'Processing uploaded media'
+                        : phase === 'result' ? 'Upload finished'
+                        : 'Ready for new files'
+                    ">Ready for new files</span>
+                    <span class="gallery-stage__upload-status-value"
                         x-text="
-                            phase === 'uploading'
-                                ? `Uploading file ${completed + 1} of ${fileCount} · ${progress}%`
-                                : phase === 'processing'
-                                    ? `Transfer complete · Checking and processing file ${completed + 1} of ${fileCount}…`
-                                    : phase === 'result'
-                                        ? result
-                                        : 'Drop images or videos here or choose from your device'
-                        "
-                    >{{ __('Drop images or videos here or choose from your device') }}</strong>
-                    <span x-show="phase === 'idle'">JPEG, PNG, WebP (max {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} megapixels); MP4, WebM. File size is limited by available site storage. Interrupted uploads can be resumed by selecting the same file.</span>
+                            phase === 'uploading' ? (completed + 1) + ' / ' + fileCount
+                            : phase === 'processing' ? fileCount + ' / ' + fileCount
+                            : phase === 'result' ? 'Review Staged'
+                            : @js(count($pendingBatchArtworkMedia)) + ' staged'
+                        ">{{ count($pendingBatchArtworkMedia) }} staged</span>
                 </div>
-                <div
-                    class="admin-gallery-upload__progress"
-                    x-show="phase === 'uploading' || phase === 'processing'"
-                    x-bind:class="{ 'is-processing': phase === 'processing' }"
-                    x-cloak
-                    role="progressbar"
-                    aria-label="Media upload status"
-                    aria-valuemin="0"
-                    aria-valuemax="100"
+                <div class="admin-gallery-upload__progress" x-show="phase === 'uploading' || phase === 'processing'"
+                    x-bind:class="{ 'is-processing': phase === 'processing' }" x-cloak
+                    role="progressbar" aria-label="Media upload status"
+                    aria-valuemin="0" aria-valuemax="100"
                     x-bind:aria-valuenow="phase === 'uploading' ? progress : null"
-                    x-bind:aria-valuetext="phase === 'processing' ? 'File transfer finished; server processing in progress' : null"
-                >
+                    x-bind:aria-valuetext="phase === 'processing' ? 'File transfer completed; media processing in progress' : null">
                     <span class="admin-gallery-upload__progress-track" aria-hidden="true">
-                        <span class="admin-gallery-upload__progress-fill" x-bind:style="`width: ${progress}%`"></span>
+                        <span class="admin-gallery-upload__progress-fill" x-bind:style="'width: ' + progress + '%'"></span>
                     </span>
                 </div>
-            </div>
-        </div>
-
+                <div class="admin-gallery-upload" aria-label="Add artwork from media">
+                    <div class="admin-gallery-upload__dropzone">
+                        <input class="admin-gallery-upload__input" type="file"
+                            x-on:change="uploadFiles($el)"
+                            x-bind:disabled="phase === 'uploading' || phase === 'processing'"
+                            accept="{{ implode(',', [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES]) }}"
+                            aria-label="Upload primary images or videos for new artworks"
+                            multiple>
+                        <div class="admin-gallery-upload__copy">
+                            <strong
+                                x-text="
+                                    phase === 'uploading' ? 'Uploading file ' + (completed + 1) + ' of ' + fileCount + ' · ' + progress + '%'
+                                    : phase === 'processing' ? 'Transfer complete · Processing media…'
+                                    : 'Drop images or videos here, or choose files'
+                                "
+                            >Drop images or videos here, or choose files</strong>
+                            <span x-show="phase === 'idle'">
+                                JPEG, PNG, WebP (max {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} megapixels); MP4 and WebM. Interrupted transfers can be resumed by selecting the same file.
+                            </span>
+                            <span x-show="phase === 'result'" x-text="result" x-cloak></span>
+                        </div>
+                    </div>
+                </div>
+                <p class="gallery-stage__upload-guidance">
+                    Files are saved in Storage first. Review and create their Artworks under <strong>Staged</strong>. You can add more files at any time.
+                </p>
             </div>
 
             <div class="gallery-stage__workspace admin-visual-stage__pane" data-admin-stage-pane="settings" data-admin-stage-slot="2">
