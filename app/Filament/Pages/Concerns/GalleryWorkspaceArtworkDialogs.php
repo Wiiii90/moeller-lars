@@ -17,6 +17,7 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 

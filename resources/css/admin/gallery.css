@@ -181,10 +181,6 @@
     line-height: 1.35;
 }
 
-.admin-gallery-upload__copy span.is-error {
-    color: var(--admin-danger);
-}
-
 .admin-gallery-upload__progress {
     position: absolute;
     right: 1.1rem;
@@ -351,19 +347,6 @@
 
 .dark .gallery-workspace__primary-action {
     background: rgba(20, 20, 20, .78);
-}
-
-.gallery-workspace__drag-handle {
-    cursor: grab;
-}
-
-.gallery-workspace__drag-handle:active {
-    cursor: grabbing;
-}
-
-.gallery-workspace__drag-handle[aria-disabled="true"] {
-    opacity: .42;
-    cursor: not-allowed;
 }
 
 .gallery-workspace__order-action {

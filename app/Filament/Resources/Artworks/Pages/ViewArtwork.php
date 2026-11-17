@@ -40,7 +40,10 @@ class ViewArtwork extends ViewRecord
                 ->state(function (Artwork $record): ?string {
                     /** @var ArtworkCategory|null $category */
                     $category = $record->getRelationValue('category');
-                    if ($record->getAttribute('state') !== 'published' || $category?->getAttribute('state') !== 'published') {
+                    // The publication state belongs to the Gallery's SiteSection,
+                    // not to ArtworkCategory, which has no "state" column.
+                    if ($record->getAttribute('state') !== 'published'
+                        || $category?->siteSection?->getAttribute('state') !== 'published') {
                         return null;
                     }
 
