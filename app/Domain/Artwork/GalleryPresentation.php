@@ -94,20 +94,6 @@ final class GalleryPresentation
         return ArtworkSort::apply($query, $rule);
     }
 
-    /** Kept for existing SQL consumers; ArtworkSort owns these expressions. */
-    public const DATE_ORDER_SQL = ArtworkSort::DATE_DESC_SQL;
-
-    public const DATE_ORDER_ASC_SQL = ArtworkSort::DATE_ASC_SQL;
-
-    /** @template TModel of \Illuminate\Database\Eloquent\Model
-     * @param  Builder<TModel>  $query
-     * @return Builder<TModel>
-     */
-    public static function orderArtworksByDate(Builder $query, bool $oldestFirst = false): Builder
-    {
-        return ArtworkSort::apply($query, $oldestFirst ? ArtworkSort::OLDEST_ARTWORK : ArtworkSort::NEWEST_ARTWORK);
-    }
-
     public const EDGE_DISABLED = 'disabled';
 
     public const EDGE_HIDDEN = 'hidden';

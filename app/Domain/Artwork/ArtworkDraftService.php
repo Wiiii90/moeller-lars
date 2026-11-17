@@ -164,7 +164,6 @@ final class ArtworkDraftService
             'year',
             'month',
             'day',
-            'exclude_from_home',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
 
@@ -184,7 +183,6 @@ final class ArtworkDraftService
             'year' => ['nullable', 'integer', 'min:1000', 'max:9999'],
             'month' => ['nullable', 'integer', 'between:1,12'],
             'day' => ['nullable', 'integer', 'between:1,31'],
-            'exclude_from_home' => ['sometimes', 'boolean'],
         ]);
         $validator->validate();
         ArtworkDate::validateParts(array_merge([

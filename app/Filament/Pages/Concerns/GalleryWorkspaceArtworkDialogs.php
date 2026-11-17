@@ -35,7 +35,6 @@ trait GalleryWorkspaceArtworkDialogs
                     $this->pendingPrimaryMediaAssetId,
                 ),
                 'position_explicit' => false,
-                'exclude_from_home' => 0,
             ])
             ->schema($this->artworkCreateFormSchema())
             ->modalHeading('Add artwork')

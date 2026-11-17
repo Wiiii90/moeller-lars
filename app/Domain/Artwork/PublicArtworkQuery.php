@@ -50,7 +50,7 @@ class PublicArtworkQuery
     {
         /** @var Collection<int, Artwork> $artworks */
         $artworks = $this->homeQuery()
-            ->orderByRaw(GalleryPresentation::DATE_ORDER_SQL)
+            ->orderByRaw(ArtworkSort::DATE_DESC_SQL)
             ->limit(max(1, min($limit, 50)))
             ->get();
 
@@ -95,7 +95,7 @@ class PublicArtworkQuery
         /** @var Collection<int, Artwork> $artworks */
         $artworks = $this->homeQuery()
             ->where('year', $latestYear)
-            ->orderByRaw(GalleryPresentation::DATE_ORDER_SQL)
+            ->orderByRaw(ArtworkSort::DATE_DESC_SQL)
             ->get();
 
         return $artworks;
@@ -145,7 +145,7 @@ class PublicArtworkQuery
 
         /** @var Collection<int, Artwork> $artworks */
         $artworks = $query
-            ->orderByRaw(GalleryPresentation::DATE_ORDER_SQL)
+            ->orderByRaw(ArtworkSort::DATE_DESC_SQL)
             ->limit(max(1, min($limit, 50)))
             ->get();
 
