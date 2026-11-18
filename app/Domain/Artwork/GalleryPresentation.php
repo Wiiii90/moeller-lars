@@ -3,6 +3,7 @@
 namespace App\Domain\Artwork;
 
 use App\Domain\Content\DividerVariant;
+use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
@@ -138,6 +139,44 @@ final class GalleryPresentation
     public static function viewerNavigationEnabled(ArtworkCategory $gallery): bool
     {
         return $gallery->getAttribute('viewer_navigation_enabled') !== false;
+    }
+
+    /**
+     * Gallery-only visual drift, never Artwork sort order or saved metadata.
+     * A stable Gallery+Artwork hash produces five small horizontal offsets.
+     * Avoid the same side twice in succession for a composed, non-repeating
+     * rhythm. The CSS grid keeps every resulting placement inside General's
+     * Content width, even for large landscape images.
+     *
+     * @param iterable<Artwork> $artworks Already in canonical Gallery order
+     * @return array<int, int> Artwork ID => offset in [-2, 2]
+     */
+    public static function indexCardOffsets(iterable $artworks, ArtworkCategory $gallery): array
+    {
+        $offsets = [];
+        $previous = null;
+
+        foreach ($artworks as $artwork) {
+            $id = (int) $artwork->getKey();
+            $hash = (int) sprintf('%u', crc32($gallery->getKey().':'.$id));
+            $offset = ($hash % 5) - 2;
+
+            if ($previous !== null && ($offset === $previous || ($offset * $previous) > 0)) {
+                // Select a different side or the neutral position, without
+                // depending on request-time randomness or storing UI state.
+                $candidates = array_values(array_filter(
+                    [-2, -1, 0, 1, 2],
+                    static fn (int $candidate): bool => $candidate !== $previous
+                        && ($candidate === 0 || $previous === 0 || ($candidate * $previous) < 0),
+                ));
+                $offset = $candidates[(intdiv($hash, 5) % count($candidates))];
+            }
+
+            $offsets[$id] = $offset;
+            $previous = $offset;
+        }
+
+        return $offsets;
     }
 
     public const DIVIDER_NONE = 'none';

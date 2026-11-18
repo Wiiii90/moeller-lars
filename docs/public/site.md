@@ -275,7 +275,7 @@ Responsive behavior is content-driven across **Wide**, **Compact**, **Narrow** a
 - The configured Public artwork maximum and shell width jointly determine a single fluid `--public-content-inset`: it never falls below the mobile minimum or exceeds the authored padding, and reduces continuously as the shell approaches the artwork width. Navigation rails and content padding consume the same viewport/shell-derived **length**, not context-dependent percentages; an Inside title keeps the author-configured reading inset and 44px left/right cyclic-arrow tracks even when arrows are temporarily hidden. Narrowing the viewport must not make an existing rail or artwork area wider, increase the number of visible pages through a geometry reset, or remove necessary overflow arrows. The 46rem threshold belongs only to feature content whose actual composition changes there; it must not independently resize the shared navigation controls, header title or shell padding.
 - The Public shell and its responsive navigation rail continue to derive horizontal geometry from General's `Page width` and `Content padding` settings. This cleanup does not silently change those saved values, add responsive controls, or introduce another breakpoint-specific geometry owner.
 - Populated Public sheets size intrinsically to actual content rather than forcing a viewport-dependent or `15rem` minimum on every route. Only a genuinely empty Gallery, Exhibitions, Blog or Custom section **without an enabled page heading** expands its white content surface to the bottom of the viewport, leaving `--public-shell-gap` above and below without an unnecessary scrollbar on adequately tall viewports. This is detected from existing rendered child elements; no controller-side duplicate empty-state flags or separate render path are introduced. Longer content retains natural document scrolling. Its vertical inset (`2rem`) and the equal external page margins (`.75rem`) do not vary with viewport width. Header title area (`4.7rem`) and type (`1.75rem`) retain a stable vertical footprint; only the established left-to-center title composition switch remains.
-- Gallery and Artwork spacing is a single `3.55rem` token, without the old Minimal breakpoint collapse. CV-specific presentation rules live exclusively in `custom-pages.css`; generic Rich Text semantics stay in `public-content.css`. Feature-specific responsive composition remains local to its component stylesheet.
+- Individual Artwork pages retain the General-owned `3.55rem` section-spacing token. Public Gallery lists now have their own larger viewport-aware Artwork gap and image-height ceiling, local to `public-presentation.css`; this does not affect Home or Artwork detail. CV-specific presentation rules live exclusively in `custom-pages.css`; generic Rich Text semantics stay in `public-content.css`. Feature-specific responsive composition remains local to its component stylesheet.
 - browser acceptance includes continuous resizing through intermediate widths, not only fixed desktop/tablet/mobile presets.
 
 Reliability/accessibility/responsive improvements must not replace the artist-specific composition with generic portfolio/card templates.
@@ -339,6 +339,38 @@ synchronously during first request. **Slow server responses or initial
 regeneration are not fixed by scroll buffering**; before changing publication
 access, variant integrity, sendfile, storage or cache behavior, inspect real
 response timings and variant availability in the running preview.
+
+### Gallery index image composition (2026-11-18)
+
+The public Gallery keeps its authored, vertically ordered Artwork sequence
+inside General's Content width. Its temporary (not yet artist-configurable)
+presentation values live on `.artwork-list`: an image-height ceiling of
+`min(86svh, calc(100svh - 9rem))`, a natural-width media display with
+`object-fit: contain`, and an Artwork-to-Artwork gap of
+`clamp(5rem, 13svh, 9rem)`. The remaining viewport is reserved for the
+sticky Menu and ordinary Artwork information. The outer Artwork slot has a
+minimum height of `max(0px, calc(100svh - 9rem))` so short landscape works
+receive comparable breathing room; long rights/captions still expand naturally,
+without forcing an exact one-image-per-viewport promise in every case.
+
+`GalleryPresentation::indexCardOffsets()` uses a stable Gallery+Artwork hash
+and a neighbor constraint to choose one of five restrained lateral placements.
+The CSS grid distributes only **unused** Content width, so a near-full-width
+landscape has little or no displacement, a narrower portrait can shift more,
+and no shift causes horizontal overflow. At 40rem and below, all placement
+tracks become symmetrical. Positions are presentation-only: no Artwork sort
+value, persisted field or publication/Viewer sequence changes. A Gallery-only
+media-and-information composition keeps the footer (Artwork information,
+Media credits and Copyright) the same **rendered width as its image** via
+inline-size containment. Existing per-field visibility and left/center/right
+arrangement controls still own the actual text alignment. Gallery video
+footprints retain their previous full-width behavior. The separate Home
+Artwork card and individual Artwork pages are unchanged.
+
+This composition is source implemented. Full-width image, long metadata,
+narrow/zoomed viewport and Gallery video acceptance still require a real
+local application browser pass; isolated Chromium geometry checks are useful
+but are not end-to-end acceptance.
 
 ## Gallery and Artwork ordering
 

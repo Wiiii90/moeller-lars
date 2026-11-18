@@ -786,7 +786,7 @@ body.public-site:has(.site-content--fitted-image) .site-header {
        Artwork information instead of sizing portraits from the paper width.
        A later Gallery setting can own these two values without changing the
        Artwork card or Home/individual Artwork consumers. */
-    --gallery-artwork-height: min(80svh, calc(100svh - 11rem));
+    --gallery-artwork-height: min(86svh, calc(100svh - 9rem));
     --gallery-artwork-gap: clamp(5rem, 13svh, 9rem);
     display: block;
     width: min(100%, var(--public-art-max));
@@ -817,9 +817,76 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 
 /* Gallery index only: larger breathing room while retaining the same
    vertical Artwork sequence and General-owned Content width. */
+/* Allocate almost a viewport to each Artwork. Short landscape images are
+   centered in their own editorial slot; large portraits remain naturally
+   sized and long metadata may extend the slot rather than being clipped. */
 .artwork-list > .artwork-card {
+    --gallery-drift-left: 1fr;
+    --gallery-drift-right: 1fr;
+    display: grid;
+    grid-template-columns:
+        minmax(0, var(--gallery-drift-left))
+        minmax(0, max-content)
+        minmax(0, var(--gallery-drift-right));
+    align-content: center;
     width: 100%;
+    min-height: max(0px, calc(100svh - 9rem));
     margin-bottom: var(--gallery-artwork-gap);
+}
+
+/* Deterministic five-stop drift. Track fractions divide only the space left
+   after intrinsic media sizing. Wide works stay nearly centered and no
+   composition can escape the General-owned Content width. */
+.artwork-list > .artwork-card--gallery-shift-0 {
+    --gallery-drift-left: 3fr;
+    --gallery-drift-right: 5fr;
+}
+.artwork-list > .artwork-card--gallery-shift-1 {
+    --gallery-drift-left: 4fr;
+    --gallery-drift-right: 5fr;
+}
+.artwork-list > .artwork-card--gallery-shift-3 {
+    --gallery-drift-left: 5fr;
+    --gallery-drift-right: 4fr;
+}
+.artwork-list > .artwork-card--gallery-shift-4 {
+    --gallery-drift-left: 5fr;
+    --gallery-drift-right: 3fr;
+}
+.artwork-list .artwork-card__composition {
+    grid-column: 2;
+    width: fit-content;
+    max-width: 100%;
+    min-width: 0;
+}
+/* Keep the existing Gallery video footprint when a poster is absent or
+   the browser reports a generic intrinsic video size. The visual drift and
+   image-width caption alignment target still image Artworks only. */
+.artwork-list .artwork-card__composition--video {
+    grid-column: 1 / -1;
+    width: 100%;
+}
+.artwork-list .artwork-card__composition--video > .artwork-card__link {
+    width: 100%;
+}
+/* Metadata must not make the intrinsic image/caption grouping wider than the
+   actual displayed image. Inline-size containment still allows natural text
+   height and wrapping; both rights and Artwork information keep their
+   independently configured left/center/right arrangements. */
+.artwork-list .artwork-card__composition > .artwork-card__footer,
+.artwork-list .artwork-card__composition > .public-video__controls {
+    contain: inline-size;
+    width: 100%;
+    min-width: 0;
+}
+@media (max-width: 40rem) {
+    .artwork-list > .artwork-card--gallery-index {
+        --gallery-drift-left: 1fr;
+        --gallery-drift-right: 1fr;
+    }
+    .artwork-list .artwork-card__composition {
+        max-width: 100%;
+    }
 }
 .artwork-list > .artwork-card:last-child {
     margin-bottom: 0;
@@ -838,14 +905,14 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 .artwork-list .artwork-card__link {
     width: fit-content;
     max-width: 100%;
-    margin-inline: auto;
+    margin-inline: 0;
 }
 .artwork-list .artwork-card__image {
     width: auto;
     max-width: 100%;
     height: auto;
     max-height: var(--gallery-artwork-height);
-    margin-inline: auto;
+    margin-inline: 0;
     object-fit: contain;
 }
 .artwork-list .artwork-card__video {

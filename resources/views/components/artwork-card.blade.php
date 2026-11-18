@@ -1,4 +1,4 @@
-@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => null, 'heroNavigation' => false, 'enableViewer' => null, 'eager' => false, 'priority' => null, 'galleryBuffered' => false, 'allowVideoSound' => false, 'showMediaCredits' => null, 'showMediaCopyright' => null, 'captionLayout' => null])
+@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => null, 'heroNavigation' => false, 'enableViewer' => null, 'eager' => false, 'priority' => null, 'galleryBuffered' => false, 'allowVideoSound' => false, 'showMediaCredits' => null, 'showMediaCopyright' => null, 'captionLayout' => null, 'galleryIndex' => false, 'galleryShift' => 0])
 
 @php
     $originalUrl = $media->originalUrl($artwork);
@@ -55,12 +55,18 @@
     $titleLinked = $detailPageEnabled && $configuration['enabled'] && $configuration['visible']['title'];
 @endphp
 
-<article class="artwork-card">
+<article class="artwork-card{{ $galleryIndex ? ' artwork-card--gallery-index artwork-card--gallery-shift-'.(max(-2, min(2, (int) $galleryShift)) + 2) : '' }}">
     <x-artwork-navigation
         :category="$category"
         :show-gallery-link="$showCategoryLink"
         :hero-navigation="$heroNavigation"
     />
+
+    @if ($galleryIndex)
+        {{-- Gallery-only intrinsic media/caption group. Home and individual
+             Artwork layouts retain their own established presentation. --}}
+        <div class="artwork-card__composition{{ $isVideo ? ' artwork-card__composition--video' : '' }}">
+    @endif
 
     @if ($viewerActive)
         <a
@@ -155,6 +161,10 @@
         <div class="artwork-card__footer">
             <x-artwork-caption :artwork="$artwork" :rows="$informationRows"
                 :detail-url="$titleLinked ? $detailUrl : null" />
+        </div>
+    @endif
+
+    @if ($galleryIndex)
         </div>
     @endif
 </article>
