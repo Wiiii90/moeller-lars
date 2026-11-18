@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 15 (active)  
-**Status:** Admin/Public scrollbar contracts and source regressions reconciled; the existing Filament lock is retained and passes isolated source-level checks. Browser acceptance pending.
+**Status:** Public Inside Menu title-to-navigation spacing corrected at the existing column owner; Admin/Public scrollbar contract cleanup remains intact. Browser acceptance pending.
 
 ## Ownership and user decisions
 - Own shared Admin dialog window presentation, semantic grouping rules and the Stage-to-Toolbar completeness contract.
@@ -57,6 +57,12 @@
 - The source tests still exercise long/short/nested Filament locks, and also assert the intended hidden-scrollbar CSS; browser specs now assert no root gutter, hidden native chrome, stable modal geometry and retained background scroll-lock, rather than describing visible scrollbars. Isolated execution of all five JavaScript test callbacks against the current published source passed, and the browser specification parsed syntactically after stripping module imports; this is **not** an official Node test command or a browser run.
 - The version-locked Filament patch remains fully intact: only a source comment and its printed success text were adjusted so they do not suggest a visible scrollbar. Removing or simplifying its long-page fixed-body/scroll-restoration behavior would require cross-browser runtime evidence that is not available in this task.
 - User-selectable Public scrollbar modes are intentionally unresolved.
+
+## Public Inside Menu title/navigation spacing (2026-11-18)
+- User identified an excessively large and viewport-sensitive blank region immediately after the Inside Menu title. Scope is one shared Public title/menu composition; General editor settings and Public navigation algorithms are untouched.
+- Root cause: `public-presentation.css` gives the title a `minmax(15rem, 32%)` rail for the shared fit/stack contract, but left alignment placed the title at that rail's **outer** edge, so all unused rail width appeared as an unstable gap before the navigation.
+- Repair the existing title rail's own layout: in nonstacked Inside Left, justify the title toward the adjacent navigation (`flex-end`); mirror it for Inside Right (`flex-start`). The actual rail/fit contract, arrow hit tracks, stacked/mobile title alignment, shared content insets and View/General behavior are unchanged. The resulting gap from title to navigation rail is not proportional to the viewport; no additional CSS override, new token, breakpoint or JavaScript observer was introduced.
+- Static source review confirms both left/right cases target the canonical Inside title heading without affecting stacked/hidden/Above modes. No browser screenshot or geometrical measurement performed. The existing `tests/js/public-header.test.mjs` semantics are unaffected because column allocation and stacking logic were not changed.
 
 ## Verification and next actions
 - Source review: confirmed the central dialog window radius remains `.25rem` in `dialog-contract.css`, and checked current affected dialog source. Existing modal header actions intentionally remain round; no change requested to action buttons.

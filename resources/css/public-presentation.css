@@ -2075,7 +2075,8 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
 .site-header--name-inside:not(.is-title-stacked):not(.site-header--title-hidden) .site-navigation > .site-name-heading {
     grid-column: 1;
     grid-row: 1;
-    justify-content: flex-start;
+    /* Anchor the title against navigation, not the distant outer column edge. */
+    justify-content: flex-end;
 }
 
 .site-header--name-inside:not(.is-title-stacked):not(.site-header--title-hidden) :is(.site-navigation__rail, .site-navigation__submenu) {
@@ -2090,7 +2091,8 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
 
 .site-header--name-inside.site-header--title-align-right:not(.is-title-stacked):not(.site-header--title-hidden) .site-navigation > .site-name-heading {
     grid-column: 2;
-    justify-content: flex-end;
+    /* Mirror the left-side composition: keep the title beside the Menu. */
+    justify-content: flex-start;
 }
 
 .site-header--name-inside.site-header--title-align-right:not(.is-title-stacked):not(.site-header--title-hidden) :is(.site-navigation__rail, .site-navigation__submenu) {
