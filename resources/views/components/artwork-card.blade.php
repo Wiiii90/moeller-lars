@@ -15,9 +15,6 @@
     $category = $artwork->getRelationValue('category');
     $thumbnailWidth = (int) ($thumbnail?->getAttribute('width') ?? 0);
     $thumbnailHeight = (int) ($thumbnail?->getAttribute('height') ?? 0);
-    $galleryAspect = $galleryIndex && ! $isVideo && $thumbnailWidth > 0 && $thumbnailHeight > 0
-        ? round($thumbnailWidth / $thumbnailHeight, 8)
-        : null;
     $preview = app(\App\Domain\Content\SitePreviewContext::class);
     $detailUrl = $preview->url(route('artworks.show', $artwork->slug));
     $presentation = \App\Domain\Artwork\GalleryPresentation::class;
@@ -58,20 +55,7 @@
     $titleLinked = $detailPageEnabled && $configuration['enabled'] && $configuration['visible']['title'];
 @endphp
 
-@if ($galleryAspect !== null)
-    {{-- The public style nonce permits a per-Artwork numeric sizing token
-         without forbidden inline style attributes or layout JavaScript. --}}
-    @push('public-component-styles')
-        <style nonce="{{ request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE) }}">
-            .artwork-card--gallery-ratio[data-gallery-artwork="{{ (int) $artwork->getKey() }}"] {
-                --gallery-image-aspect: {{ $galleryAspect }};
-            }
-        </style>
-    @endpush
-@endif
-
-<article class="artwork-card{{ $galleryIndex ? ' artwork-card--gallery-index artwork-card--gallery-shift-'.(max(-2, min(2, (int) $galleryShift)) + 2) : '' }}{{ $galleryAspect !== null ? ' artwork-card--gallery-ratio' : '' }}"
-    @if ($galleryAspect !== null) data-gallery-artwork="{{ (int) $artwork->getKey() }}" @endif>
+<article class="artwork-card{{ $galleryIndex ? ' artwork-card--gallery-index artwork-card--gallery-shift-'.(max(-2, min(2, (int) $galleryShift)) + 2) : '' }}">
     <x-artwork-navigation
         :category="$category"
         :show-gallery-link="$showCategoryLink"

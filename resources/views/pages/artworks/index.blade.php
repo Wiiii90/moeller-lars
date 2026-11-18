@@ -3,7 +3,6 @@
 @section('title', $category->name.' — Lars Möller')
 @section('meta_description', $section->metaDescriptionOr($category->name.' — Lars Möller'))
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath(app(\App\Routing\SiteNodeRoute::class)->path($section)))
-@section('content_class', 'site-content--gallery-index')
 
 @section('content')
     @php

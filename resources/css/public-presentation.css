@@ -574,9 +574,9 @@ body {
     }
 }
 
-/* Expanded Artwork may give its media more room, while captions and credits
- * stay on the centered Artwork track. Description prose uses General's full
- * available Page width, not a second fixed reading-width restriction. */
+/* Expanded Artwork may give the media more room, but the caption and
+ * editorial text always retain General's normal centered reading track.
+ * This is a detail-page presentation, not a global Menu/Page width override. */
 .site-content--fitted-artwork .artwork-detail__media {
     width: min(100%, var(--public-fitted-image-width, var(--public-art-max)));
     margin-inline: auto;
@@ -588,6 +588,7 @@ body {
     height: auto;
 }
 .site-content--fitted-artwork .artwork-detail__footer,
+.site-content--fitted-artwork .artwork-detail__narrative,
 .site-content--fitted-artwork .artwork-detail__credits {
     width: min(100%, var(--public-art-max));
     max-width: 100%;
@@ -714,10 +715,8 @@ body.public-site:has(.site-content--fitted-image) .site-header {
         margin-inline: 0;
     }
     .site-content--artwork-museum .artwork-detail__narrative {
-        /* Museum retains its media/metadata columns, but the long-form
-           description and divider sit beneath both at full Page width. */
-        grid-column: 1 / -1;
-        grid-row: 4;
+        grid-column: 2;
+        grid-row: 3;
         width: 100%;
         margin-inline: 0;
         margin-top: .7rem;
@@ -782,14 +781,9 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     margin: .76rem 0 0;
 }
 
-/* Gallery paper follows the widest height-fitted Artwork, up to the real
-   viewport width. General's normal shell remains the minimum, and Menu
-   geometry is unchanged. Without this the 650px reading track silently
-   prevents landscape Artworks from reaching the intended image height. */
-#content.site-content--gallery-index {
-    width: fit-content;
-    min-width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
-    max-width: calc(100% - (2 * var(--public-gutter)));
+/* Gallery alone reduces the top inset; General continues to own the
+   real Menu and Page widths, padding and shared sheet alignment. */
+#content:has(> .public-content-reveal > .artwork-list) {
     padding-top: 1rem;
 }
 
@@ -798,18 +792,11 @@ body.public-site:has(.site-content--fitted-image) .site-header {
        Artwork information instead of sizing portraits from the paper width.
        A later Gallery setting can own these two values without changing the
        Artwork card or Home/individual Artwork consumers. */
-    --gallery-artwork-height: min(94svh, calc(100svh - 6rem));
+    --gallery-artwork-height: min(82svh, calc(100svh - 9rem));
     --gallery-artwork-gap: clamp(2.5rem, 6.5svh, 4.5rem);
     display: block;
-    width: max-content;
-    max-width: 100%;
-    /* Keep video-only Galleries on General's ordinary artwork track. A
-       max-content Gallery otherwise collapses to the native 300px video
-       placeholder width when no still image contributes intrinsic width. */
-    min-width: min(
-        var(--public-art-max),
-        calc(100dvw - 2 * var(--public-gutter) - 2 * var(--public-content-inset))
-    );
+    width: min(100%, var(--public-art-max));
+    min-width: 0;
     margin-inline: auto;
 }
 
@@ -827,18 +814,6 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 .artwork-card,
 .artwork-detail {
     margin-bottom: var(--public-section-gap);
-}
-
-/* Artwork media and its metadata retain their original image-sized track,
-   while description and divider can use the full General-owned Page width.
-   This is specific to detail pages; Gallery and Home cards stay untouched. */
-.artwork-detail {
-    width: 100%;
-}
-.artwork-detail__media,
-.artwork-detail__footer {
-    width: min(100%, var(--public-art-max));
-    margin-inline: auto;
 }
 
 .artwork-card:last-child,
@@ -864,8 +839,8 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     min-height: max(0px, calc(100svh - 12rem));
     margin-bottom: var(--gallery-artwork-gap);
 }
-/* The first Artwork starts near the Menu rather than being centered in a
-   mostly empty full-viewport slot. Later cards retain their vertical rhythm. */
+/* The first Artwork starts at the top of its content, rather than being
+   centered in a viewport-height slot with a large blank upper region. */
 .artwork-list > .artwork-card:first-child {
     min-height: 0;
     align-content: start;
@@ -901,8 +876,7 @@ body.public-site:has(.site-content--fitted-image) .site-header {
    image-width caption alignment target still image Artworks only. */
 .artwork-list .artwork-card__composition--video {
     grid-column: 1 / -1;
-    width: min(100%, var(--public-art-max));
-    justify-self: center;
+    width: 100%;
 }
 .artwork-list .artwork-card__composition--video > .artwork-card__link {
     width: 100%;
@@ -952,13 +926,6 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     max-height: var(--gallery-artwork-height);
     margin-inline: 0;
     object-fit: contain;
-}
-/* When variant dimensions are known, allow upscaling to the Gallery height
-   ceiling without stretching beyond the available horizontal space. The
-   browser derives height from the original aspect ratio on width reduction,
-   keeping the caption aligned with the actually rendered media width. */
-.artwork-list .artwork-card--gallery-ratio .artwork-card__image {
-    width: calc(var(--gallery-artwork-height) * var(--gallery-image-aspect));
 }
 .artwork-list .artwork-card__video {
     max-height: var(--gallery-artwork-height);
@@ -1207,8 +1174,7 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 }
 
 .artwork-detail__narrative {
-    width: 100%;
-    min-width: 0;
+    max-width: 36rem;
     margin-top: 2rem;
     padding-top: 1rem;
     border-top: var(--public-divider-width) solid var(--public-divider);
