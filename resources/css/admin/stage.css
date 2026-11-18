@@ -22,6 +22,18 @@
     margin-top: var(--admin-section-space);
 }
 
+/* Responsive Stage panes keep their native scroll behavior without adding
+ * a scrollbar rail that shifts content or divider alignment. */
+.admin-visual-stage [data-admin-stage-pane] {
+    scrollbar-width: none;
+}
+
+.admin-visual-stage [data-admin-stage-pane]::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
 
 /* Leading-edge invariant: the first visual cell starts on the workspace edge.
  * Feature panes may own right/interior breathing room, never a left indent on

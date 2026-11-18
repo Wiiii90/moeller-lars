@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 15 (active)  
-**Status:** Public root scrollbar geometry correction implemented; browser acceptance pending. Shared Admin popup and media-selector styling retained.
+**Status:** Admin root, Sidebar, dialog and Stage scrollbar presentation corrected; legacy dialog thumb and Storage gutter styling retired. Browser acceptance pending.
 
 ## Ownership and user decisions
 - Own shared Admin dialog window presentation, semantic grouping rules and the Stage-to-Toolbar completeness contract.
@@ -44,6 +44,17 @@
 - Direct consumers: public routes (Home, Gallery, Artwork, Exhibitions, Blog, Custom Pages), narrow/desktop and embedded Public Preview, native exhibition-map dialog, fullscreen Artwork Viewer. No Admin asset was modified.
 - Browser acceptance to verify with two same-width Public routes of different lengths and an image-heavy route: identical Main/Menu/chevron x coordinates on overflow transition; native keyboard/wheel/touch scrolling and sticky header; no blank scrollbar gutter; opening/closing fullscreen Viewer and exhibition map at original scroll position; Preview desktop vs touch iframe; no sideways overflow and no jumping on Livewire navigation. No such browser run was available in this connector-only source task.
 - A documentation-only follow-up for the Docs owner is needed: `docs/public/site.md` still describes a visible native root scrollbar and reserved Viewer gutter. Dev is not authorized to rewrite general manuals as part of this change; hand off after user browser review.
+
+## Admin scrollbar stability (2026-11-18)
+- The user accepts hidden native scrollbars on Public for now, requests the same for Admin with special attention to dialog stability and removal of obsolete code. Public scrollbar preference controls are deferred, not implemented.
+- Reviewed shared Admin layout, dialog, Stage, Media styles, dialog positioning JavaScript, the pinned/version-guarded Filament scroll-lock patch and its existing targeted regression checks.
+- The Admin root `html.fi` and Sidebar `.fi-sidebar-nav` now hide scrollbar chrome without changing native document/sidebar scroll ownership or creating a permanent gutter. Existing auto-gutter reset remains authoritative.
+- `dialog-contract.css` replaces obsolete thin scrollbar thumb/track decoration with a hidden native modal-content scrollbar; wheel, touch and keyboard scrolling remain intended, with Filament still owning focus, Escape, background lock and restoration.
+- Storage deletion reference scroll areas no longer reserve a stable scrollbar gutter. Shared Visual Stage panes hide their own scrollbar chrome; preexisting Gallery/Home/Storage feature scroll styles, table geometry and transient popover behavior were left unchanged.
+- The Filament Support patch is **retained intentionally**, including nested and long/short document locks, until real browser testing confirms any alteration is safe. It is not a redundant second scroll implementation and was not modified or replaced by event listeners, body padding or fixed layout offsets.
+- Required browser acceptance (not run): long and short pages, scroll at nonzero position, dialog open/change/autosave/close/animation, nested Select/Rich Text, backdrop wheel block, Sidebar and Stage inner scrolling, Storage references, Firefox and Chromium. Check unchanged `documentElement.clientWidth`, modal coordinates and exact restored `scrollY`.
+- The existing role-wide contract and Admin Dialog documentation still describe *visible* scrollbars. Today's newer explicit user instruction overrides this presentation detail. Docs/Testing should reconcile after browser review; Dev does not edit general docs or tests.
+- User-selectable Public scrollbar modes are intentionally unresolved.
 
 ## Verification and next actions
 - Source review: confirmed the central dialog window radius remains `.25rem` in `dialog-contract.css`, and checked current affected dialog source. Existing modal header actions intentionally remain round; no change requested to action buttons.

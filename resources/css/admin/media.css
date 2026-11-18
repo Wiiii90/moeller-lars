@@ -806,7 +806,13 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     border-block: 1px solid var(--admin-line);
-    scrollbar-gutter: stable;
+    scrollbar-width: none;
+}
+
+.media-delete-dialog__references::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
 }
 
 .media-delete-dialog__references > div {
