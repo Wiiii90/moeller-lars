@@ -41,8 +41,8 @@ img {
 
 /* The Public paper follows the intrinsic height of Header + Content.
  * Only the body fills the viewport with the configured background. Letting
- * this frame grow to 100dvh extended the outer paper contours and backing
- * far below the last artwork on short pages. Sticky remains document-owned. */
+ * this frame grow to 100dvh extended the paper surface far below the last
+ * artwork on short pages. Sticky remains document-owned. */
 body.public-site .public-paper-frame {
     position: relative;
     display: flex;

@@ -82,9 +82,12 @@ test('public CSP authorizes real styles and scripts across SPA navigation and ba
     expect(await page.evaluate(() => window.__spaDocumentIdentity)).toBe('retained');
     expect(await authorizedPublicStyles(page, initialNonce)).toBeCloseTo(secondWidth, 0);
     states.push(await publicStyleState(page, 'forward', initialNonce));
-    expect(states[1].layout).not.toEqual(states[0].layout);
+    // Only the per-page media scale changes in this fixture. Shared General
+    // widths remain the same on each real document navigation; the old
+    // URL-derived decorative folio position is no longer part of layout.
+    expect(states[1].layout).toEqual(states[0].layout);
     expect(states[2].layout).toEqual(states[0].layout);
-    expect(states[3].layout).toEqual(states[1].layout);
+    expect(states[3].layout).toEqual(states[0].layout);
     await test.info().attach('public-style-states', {
         body: JSON.stringify({ states, violations: await page.evaluate(() => window.__publicCspViolations) }, null, 2),
         contentType: 'application/json',
@@ -105,9 +108,9 @@ async function publicStyleState(page, stage, activeNonce) {
         inlineStyles: [...document.querySelectorAll('[style]')].map((element) => ({
             tag: element.tagName, id: element.id, value: element.getAttribute('style'),
         })),
-        layout: ['--public-shell-max', '--public-art-max', '--public-content-padding', '--public-folio-left-top']
+        layout: ['--public-shell-max', '--public-art-max', '--public-content-padding']
             .map((name) => [name, getComputedStyle(document.documentElement).getPropertyValue(name).trim()]),
-        expectedLayout: ['publicLayoutShell', 'publicLayoutArt', 'publicLayoutPadding', 'folioLeftTop']
+        expectedLayout: ['publicLayoutShell', 'publicLayoutArt', 'publicLayoutPadding']
             .map((name) => document.querySelector('meta[data-public-layout]').dataset[name]),
         rootStyle: document.documentElement.getAttribute('style'),
         revealStyle: document.querySelector('.public-content-reveal').getAttribute('style'),

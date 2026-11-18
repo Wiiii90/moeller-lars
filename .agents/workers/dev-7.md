@@ -67,6 +67,12 @@
 - Updated the existing feature and Public SPA tests and the canonical Public contract; no new test suite. No test run, migration execution, build, CI or deployment. The separate Preview chat's shared Admin component was not modified.
 - Real browser acceptance pending: normal and expanded Artwork, Gallery, long/short, narrow views, linked/separate surfaces, all divider modes and configured gradients.
 
+## Targeted retired-frame hygiene audit (2026-11-18)
+- Rechecked the real Public JavaScript modules, Public stylesheets, Blade consumers and relevant browser/Feature/JavaScript tests for retired contour variants, URL-seeded folio values and animation ownership. No current Public animation or watcher for the former contour system remains; `resources/js/public-paper-frame.js` is already absent. Exhibition-cover and Artwork/Journal animation behavior is unrelated and deliberately preserved.
+- Found a missed **live browser regression**: `tests/browser/e2e/public/public-spa-navigation.spec.mjs` still compared deleted `--public-folio-left-top` with `folioLeftTop` and expected that random, URL-derived decoration to change across navigation. Removed the obsolete check and made the fixture assert stable General geometry while retaining actual nonce/style/media-transition assertions.
+- Removed the final outdated Public foundation comment describing current exterior contours. The former one-way migrations and `PublicAppearance::frameStyle(..., fromStorage: true)` remain intentionally for legitimate persistent/historical data. Historical docs describing removed animation engines are source history, not active code.
+- No runtime/browser test, build, migration or deployment performed.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.
