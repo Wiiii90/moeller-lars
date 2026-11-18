@@ -166,6 +166,50 @@
     color: var(--admin-text) !important;
 }
 
+/* Popup shells share the dialog contour. Feature components retain control
+ * over their own content, dimensions and placement. */
+.fi-dropdown-panel,
+.fi-fo-color-picker-panel,
+.fi-fo-date-time-picker-panel,
+.fi-fo-rich-editor-floating-toolbar {
+    border-radius: var(--admin-overlay-corner-radius) !important;
+}
+
+/* Popup lists still scroll via wheel, touch, trackpad and keyboard; only the
+ * visible scrollbars are removed. This does not affect modal/document locking. */
+:is(
+    .fi-dropdown-panel,
+    .fi-dropdown-list,
+    .fi-select-input-dropdown,
+    .fi-select-input-options-ctn,
+    .fi-fo-color-picker-panel,
+    .fi-fo-date-time-picker-panel,
+    .fi-fo-rich-editor-floating-toolbar,
+    .admin-rich-text-popover,
+    .admin-partial-date__popover,
+    .admin-help__popover
+) {
+    scrollbar-width: none;
+    scrollbar-gutter: auto;
+}
+
+:is(
+    .fi-dropdown-panel,
+    .fi-dropdown-list,
+    .fi-select-input-dropdown,
+    .fi-select-input-options-ctn,
+    .fi-fo-color-picker-panel,
+    .fi-fo-date-time-picker-panel,
+    .fi-fo-rich-editor-floating-toolbar,
+    .admin-rich-text-popover,
+    .admin-partial-date__popover,
+    .admin-help__popover
+)::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
 /* Filament's searchable/multi Select renders its own popover rather than a
  * native <select>. The popover is still part of the same admin control grammar.
  * Keep these selectors global to the admin theme because Filament may anchor
@@ -173,7 +217,7 @@
 .fi-select-input-dropdown {
     overflow: hidden;
     border: 1px solid var(--admin-line-strong) !important;
-    border-radius: 0 !important;
+    border-radius: var(--admin-overlay-corner-radius) !important;
     background: var(--admin-control-popover-surface) !important;
     color: var(--admin-text) !important;
     box-shadow: 0 .7rem 2rem rgba(0, 0, 0, .12) !important;
@@ -519,7 +563,7 @@
     box-sizing: border-box;
     place-items: center;
     border: 1px solid var(--admin-line-strong);
-    border-radius: .25rem;
+    border-radius: var(--admin-overlay-corner-radius);
     background: var(--admin-surface);
     box-shadow: 0 .4rem 1.3rem rgb(0 0 0 / 12%);
 }
@@ -633,7 +677,7 @@
     overflow-y: auto;
     padding: .65rem;
     border: 1px solid var(--admin-line);
-    border-radius: 0;
+    border-radius: var(--admin-overlay-corner-radius);
     background: var(--admin-control-popover-surface);
     box-shadow: 0 10px 28px rgb(0 0 0 / .18);
     color: var(--admin-text);

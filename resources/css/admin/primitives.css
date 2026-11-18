@@ -5,6 +5,8 @@
     --admin-line: #dedede;
     --admin-line-strong: #bdbdbd;
     --admin-surface: #fff;
+    /* Shared contour for blocking dialogs and transient popup surfaces. */
+    --admin-overlay-corner-radius: .25rem;
     --admin-subtle: #f7f7f6;
     /* Shared state hues, consumed by Dashboard and Home. */
     --admin-row-highlight-unread: color-mix(in srgb, var(--admin-accent) 6%, var(--admin-surface));

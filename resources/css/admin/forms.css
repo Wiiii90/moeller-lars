@@ -446,6 +446,7 @@
     overflow-wrap: anywhere;
     padding: .55rem .65rem;
     border: 1px solid var(--admin-line-strong, #999);
+    border-radius: var(--admin-overlay-corner-radius);
     background: var(--admin-control-popover-surface, var(--admin-surface, #fff));
     color: var(--admin-text, #222);
     box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / .12);
@@ -613,7 +614,7 @@
     width: min(20rem, 100%);
     padding: .75rem;
     border: 1px solid var(--admin-line-strong);
-    border-radius: 0;
+    border-radius: var(--admin-overlay-corner-radius);
     background: var(--admin-control-popover-surface, #fff);
     color: var(--admin-text);
     box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / .12);

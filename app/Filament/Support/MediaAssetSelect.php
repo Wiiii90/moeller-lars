@@ -15,10 +15,6 @@ final class MediaAssetSelect
 {
     private const OPTION_LABEL_CACHE = 'admin.media_asset_select.option_labels';
 
-    private const INITIAL_PREVIEW_LIMIT = 24;
-
-    private const SEARCH_RESULT_LIMIT = 30;
-
     public static function make(
         string $name,
         string $relationship,
@@ -46,7 +42,9 @@ final class MediaAssetSelect
                 return self::optionLabel($record, $includeDimensions, true);
             })
             ->preload()
-            ->optionsLimit(self::INITIAL_PREVIEW_LIMIT)
+            // Filament limits relationship preloads by default. Expose every
+            // eligible Storage file instead of silently hiding older assets.
+            ->optionsLimit(PHP_INT_MAX)
             ->getSearchResultsUsing(fn (string $search): array => self::searchOptions(
                 $search,
                 $imagesOnly,
@@ -144,9 +142,10 @@ final class MediaAssetSelect
             $query->orderBy('original_filename')->orderBy('id');
         }
 
-        $assets = $query->with('variants')
-            ->limit($term === '' ? self::INITIAL_PREVIEW_LIMIT : self::SEARCH_RESULT_LIMIT)
-            ->get();
+        // Select's native option list has no incremental scroll pagination.
+        // Return the complete eligible set so older assets remain discoverable;
+        // preview <img> elements below still defer image downloads until shown.
+        $assets = $query->with('variants')->get();
         foreach ($assets as $asset) {
             self::primeOptionLabel($asset, $includeDimensions, $visual);
         }

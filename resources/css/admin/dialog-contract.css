@@ -59,7 +59,7 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     max-height: calc(100dvh - var(--admin-dialog-layer-block-start) - 2rem);
     /* One restrained window contour for native Actions and framework-owned
      * security/account dialogs; child controls retain their own geometry. */
-    border-radius: .25rem !important;
+    border-radius: var(--admin-overlay-corner-radius) !important;
 }
 
 /* A visual Storage Select owns a positioned, scrollable contact sheet inside
