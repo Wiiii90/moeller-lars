@@ -782,6 +782,12 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 }
 
 .artwork-list {
+    /* Gallery-only image presentation. Reserve space for the sticky Menu and
+       Artwork information instead of sizing portraits from the paper width.
+       A later Gallery setting can own these two values without changing the
+       Artwork card or Home/individual Artwork consumers. */
+    --gallery-artwork-height: min(80svh, calc(100svh - 11rem));
+    --gallery-artwork-gap: clamp(5rem, 13svh, 9rem);
     display: block;
     width: min(100%, var(--public-art-max));
     min-width: 0;
@@ -799,20 +805,6 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     margin-left: auto;
 }
 
-.artwork-list .artwork-card {
-    width: 100%;
-}
-
-/* Divided Galleries keep the ordinary total artwork-to-artwork rhythm,
-   splitting it symmetrically around each canonical divider. No leading or
-   trailing separator, and no doubled card margin at row boundaries. */
-.artwork-list--divided > .artwork-card {
-    margin-bottom: 0;
-}
-.artwork-list--divided > .artwork-list__divider {
-    margin-block: calc(var(--public-section-gap) / 2);
-}
-
 .artwork-card,
 .artwork-detail {
     margin-bottom: var(--public-section-gap);
@@ -821,6 +813,44 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 .artwork-card:last-child,
 .artwork-detail:last-child {
     margin-bottom: 0;
+}
+
+/* Gallery index only: larger breathing room while retaining the same
+   vertical Artwork sequence and General-owned Content width. */
+.artwork-list > .artwork-card {
+    width: 100%;
+    margin-bottom: var(--gallery-artwork-gap);
+}
+.artwork-list > .artwork-card:last-child {
+    margin-bottom: 0;
+}
+/* With dividers, split the same total spacing equally around each line. */
+.artwork-list--divided > .artwork-card {
+    margin-bottom: 0;
+}
+.artwork-list--divided > .artwork-list__divider {
+    margin-block: calc(var(--gallery-artwork-gap) / 2);
+}
+
+/* Unlike the Home Hero and individual Artwork pages, an index card is sized
+   by the image's intrinsic aspect ratio, constrained by both the Content
+   column and a common viewport-height ceiling. No crop or width stretch. */
+.artwork-list .artwork-card__link {
+    width: fit-content;
+    max-width: 100%;
+    margin-inline: auto;
+}
+.artwork-list .artwork-card__image {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: var(--gallery-artwork-height);
+    margin-inline: auto;
+    object-fit: contain;
+}
+.artwork-list .artwork-card__video {
+    max-height: var(--gallery-artwork-height);
+    object-fit: contain;
 }
 
 .artwork-card__link,
