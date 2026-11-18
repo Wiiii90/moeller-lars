@@ -2,8 +2,6 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Content\HomePresentationResolver;
-use App\Domain\Content\SiteSectionType;
 use App\Models\SiteSection;
 use Filament\Navigation\NavigationItem;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -14,7 +12,6 @@ final class SiteNavigation
 {
     public function __construct(
         private readonly SiteNodePresentation $presentation,
-        private readonly HomePresentationResolver $home,
     ) {}
 
     /** @return array<NavigationItem> */
@@ -26,10 +23,6 @@ final class SiteNavigation
         // remain accessible here immediately after their Pages mutation.
         $sections = SiteSection::query()
             ->with('customPageSetting')
-            ->when(
-                $this->home->skipEnabled(),
-                static fn ($query) => $query->where('type', '<>', SiteSectionType::Home->value),
-            )
             ->orderBy('position')
             ->orderBy('id')
             ->get();
