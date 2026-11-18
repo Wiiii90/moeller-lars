@@ -51,8 +51,7 @@
             data-public-layout-divider-mode="{{ $effectiveHeaderDivider }}"
             data-public-layout-artwork-wide-menu="{{ $artworkWideMenu ? '1' : '0' }}"
             data-public-layout-divider-color="{{ $publicHeaderDividerColor ?? '' }}"
-            data-public-layout-divider-gradient="{{ $publicHeaderDividerGradientCss ?? '' }}"
->
+            data-public-layout-divider-gradient="{{ $publicHeaderDividerGradientCss ?? '' }}">
         @if (is_string($publicStyleNonce) && $publicStyleNonce !== '')
             <style data-public-layout-style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif @if ($publicMenuBackgroundCss !== null) --public-menu-background: {{ $publicMenuBackgroundCss }};@endif @if ($publicContentBackgroundCss !== null) --public-content-background: {{ $publicContentBackgroundCss }};@endif @if ($publicHeaderColor !== null) --public-title-color: {{ $publicHeaderColor }};@endif @if ($publicHeaderGradientCss !== null) --public-title-paint: {{ $publicHeaderGradientCss }};@endif @if ($publicHeaderDividerColor !== null) --public-separator-color: {{ $publicHeaderDividerColor }};@endif @if ($publicHeaderDividerGradientCss !== null) --public-separator-gradient: {{ $publicHeaderDividerGradientCss }}; --public-separator-paint: {{ $publicHeaderDividerGradientCss }};@endif --public-title-size: {{ $publicHeaderSize }}; --public-title-min-size: {{ $publicHeaderMinSize }}; --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; }</style>
         @endif
