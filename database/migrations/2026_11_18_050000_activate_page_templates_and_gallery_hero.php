@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
 
 return new class extends Migration
 {
@@ -16,7 +15,7 @@ return new class extends Migration
             // backfilled by the preceding migration and must remain unique.
             $homeCount = DB::table("{$schema}.site_sections")->where('is_home', true)->count();
             if ($homeCount !== 1) {
-                throw new RuntimeException("Expected exactly one protected Home page in {$schema}.");
+                throw new \RuntimeException("Expected exactly one protected Home page in {$schema}.");
             }
 
             DB::statement("ALTER TABLE {$schema}.site_sections ADD COLUMN public_site_gate boolean NOT NULL DEFAULT false");
@@ -27,7 +26,7 @@ return new class extends Migration
 
             $home = DB::table("{$schema}.site_sections")->where('is_home', true)->first();
             if ($home === null || $home->type !== 'home') {
-                throw new RuntimeException("The {$schema} Home section cannot be migrated safely.");
+                throw new \RuntimeException("The {$schema} Home section cannot be migrated safely.");
             }
 
             DB::table("{$schema}.site_sections")->where('id', $home->id)->update([
@@ -66,6 +65,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        throw new RuntimeException('The Home Page Type cutover is irreversible without a deliberate data migration.');
+        throw new \RuntimeException('The Home Page Type cutover is irreversible without a deliberate data migration.');
     }
 };
