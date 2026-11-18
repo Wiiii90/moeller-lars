@@ -82,8 +82,16 @@
     isolation: isolate;
 }
 
+/* The Slideshow reserves independent outside rails for its arrows. An
+   almost-full-width video cannot put the buttons on top of its content. */
 .journal-entry-gallery--slideshow {
-    width: min(100%, 34rem);
+    --journal-slideshow-rail: clamp(2.5rem, 6vw, 3rem);
+    width: min(100%, 42rem);
+    height: calc(var(--journal-gallery-stage-height) + 2.25rem);
+}
+
+.journal-entry-gallery--slideshow:not(:has(> .journal-entry-gallery__controls)) {
+    height: var(--journal-gallery-stage-height);
 }
 
 /* The Carousel's center frame is almost identical in width to Slideshow,
@@ -104,6 +112,16 @@
     min-width: 0;
     min-height: 0;
     place-items: center;
+}
+
+/* All visible Slideshow media stay on the same centered stage track.
+   The arrows occupy the reserved paper rails, never the actual media. */
+.journal-entry-gallery--slideshow .journal-entry-gallery__item {
+    right: var(--journal-slideshow-rail);
+    bottom: auto;
+    left: var(--journal-slideshow-rail);
+    width: calc(100% - 2 * var(--journal-slideshow-rail));
+    height: var(--journal-gallery-stage-height);
 }
 
 .journal-entry-gallery--slideshow .journal-entry-gallery__item[hidden],
@@ -168,9 +186,9 @@
     visibility: hidden;
 }
 
-/* Navigation overlays the image stage. The status is top-centered so the
-   optional caption remains unobscured below the artwork. Only real controls
-   intercept pointers, preserving Viewer triggers and native video controls. */
+/* Navigation uses a transparent control layer. Slideshow puts arrows in
+   outside side rails and the counter below; Carousel retains its own stage
+   geometry. Only buttons intercept pointers, preserving image and video UI. */
 .journal-entry-gallery--slideshow .journal-entry-gallery__controls,
 .journal-entry-gallery--carousel .journal-entry-gallery__controls {
     position: absolute;
@@ -192,6 +210,25 @@
     line-height: 1.35;
 }
 
+/* Slideshow controls align exactly with the real image-stage centerline;
+   the index lives in its own row below all artwork/caption content. */
+.journal-entry-gallery--slideshow .journal-entry-gallery__controls {
+    grid-template-columns: var(--journal-slideshow-rail) minmax(0, 1fr) var(--journal-slideshow-rail);
+    grid-template-rows: var(--journal-gallery-stage-height) 2.25rem;
+}
+
+.journal-entry-gallery--slideshow .journal-entry-gallery__controls button:first-child,
+.journal-entry-gallery--slideshow .journal-entry-gallery__controls button:last-child {
+    grid-row: 1;
+}
+
+.journal-entry-gallery--slideshow .journal-entry-gallery__controls [data-journal-slide-status] {
+    grid-row: 2;
+    align-self: center;
+    margin: 0;
+    padding: 0;
+}
+
 /* Carousel arrows belong to the active central media edge. Keeping the
    controls inside its 68% track leaves both side previews unobscured. */
 .journal-entry-gallery--carousel .journal-entry-gallery__controls {
@@ -207,9 +244,9 @@
     width: 2.75rem;
     height: 2.75rem;
     padding: 0;
-    border: 1px solid rgba(145, 137, 128, .4);
+    border: 0;
     border-radius: 0;
-    background: rgba(255, 255, 255, .88);
+    background: transparent;
     color: #514941;
     cursor: pointer;
     pointer-events: auto;
@@ -233,8 +270,8 @@
     justify-self: center;
     align-self: start;
     margin: .35rem 0 0;
-    padding: .18rem .5rem;
-    background: rgba(255, 255, 255, .88);
+    padding: 0;
+    background: transparent;
     pointer-events: none;
 }
 
@@ -246,14 +283,28 @@
 
 .journal-entry-gallery__controls button:hover,
 .journal-entry-gallery__controls button:focus-visible {
-    border-color: rgba(145, 137, 128, .7);
-    background: #fff;
     color: #181512;
 }
 
 .journal-entry-gallery__controls button:focus-visible {
     outline: 1px dotted currentColor;
     outline-offset: 2px;
+}
+
+/* At tight content widths, prioritize the entire original artwork.
+   Navigation moves underneath rather than squeezing a video between rails or
+   overlapping its native playback controls. */
+@container (max-width: 30rem) {
+    .journal-entry-gallery--slideshow .journal-entry-gallery__item {
+        right: 0;
+        left: 0;
+        width: 100%;
+    }
+
+    .journal-entry-gallery--slideshow .journal-entry-gallery__controls button:first-child,
+    .journal-entry-gallery--slideshow .journal-entry-gallery__controls button:last-child {
+        grid-row: 2;
+    }
 }
 
 /* Exhibition maps are loaded only inside one native dialog. Leaflet's

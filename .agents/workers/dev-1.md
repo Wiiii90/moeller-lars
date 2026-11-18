@@ -4,6 +4,12 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Slideshow navigation alignment refinement (2026-11-18)
+
+- User screenshot shows the introduced semi-transparent square arrow controls over an almost full-width video and a boxed `4 / 4` counter above the stage. Previous behavior placed the counter beneath the Slideshow.
+- `resources/css/journal-presentation.css` now reserves a central, fixed-size media track plus side navigation rails so regular images/videos never have buttons over their content. Slideshow index sits in a distinct bottom row, unboxed. At narrow *content-container* widths arrows and index all sit below the unchanged image stage. Both Slideshow and Carousel buttons/counters lose decorative border/background boxes; accessible button dimensions, visible focus, fixed image stage, viewer/video semantics and underlying Carousel peeks remain intact.
+- **Verification:** source only; check wide/narrow galleries, native video controls, portrait/landscape changes, hidden/one-item slideshows and Carousel in browser before visual acceptance. No tests, browser run, deployment or migration executed.
+
 ## Slideshow stage and opt-in Carousel (2026-11-18)
 
 - **User scope:** Put the former lower Slideshow arrow navigation on the media, make arrows flush on the same stage side rails, remove portrait/landscape layout jumping, and offer a new Carousel option with a central image and partial previous/next peeks. Do not automatically select Carousel for any existing Blog/Exhibition.
@@ -67,4 +73,4 @@
 
 ## Next
 
-Have the artist review Slideshow overlay/stability and opt-in Carousel with mixed media, alongside Blog width and prior Contact/Exhibition fixes, in a fresh local preview; hand regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
+Have the artist review the screenshot-driven Slideshow unboxed side-rail/below-counter alignment and responsive fallback, plus opt-in Carousel and mixed media, in a fresh local preview; hand regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.

@@ -535,8 +535,12 @@ change any existing saved selection.
 
 The shared `journal-gallery` Blade component and `journal-presentation.js`
 own Slideshow/Carousel navigation. Slideshow and Carousel reuse a fixed,
-responsive, uncropped media stage with aligned overlay navigation instead of
-allowing differently shaped images to resize the controls or following prose.
+responsive, uncropped media stage instead of allowing differently shaped
+images to resize controls or following prose. Slideshow arrows use plain,
+unboxed controls on reserved side rails outside the media; its unboxed media
+counter lives below the stage. On tight content widths the arrows join the
+counter below, preserving usable image/video width and native video controls.
+Carousel retains its independent peek geometry and unboxed controls.
 Carousel displays the active media at Slideshow-like scale, plus the previous
 and next *real* media as partial, dimmed side previews. Side previews are
 `inert` and aria-hidden; they are never duplicated or played in the
