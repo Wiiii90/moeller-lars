@@ -1,8 +1,8 @@
 # Dev Worker 7 — General Appearance
 
 **Branch:** `dev`  
-**Lease:** 13 (active)  
-**Status:** General Backing rewritten to one full paper per Menu/Page surface, awaiting real-browser acceptance.
+**Lease:** 18 (active; replaced previous chat on 2026-11-18)  
+**Status:** Replaced chat, continuing General Backing Menu/Page seam verification. Source correction was recorded by the previous lease; real-browser acceptance is still outstanding.
 
 ## Ownership and accepted decisions
 - General → Appearance (Global, Title, Menu, Page and Legal), Regional Formats, Admin live Preview and their direct Public consumers.

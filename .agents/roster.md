@@ -1,6 +1,6 @@
 # Dev workstream — branch-local coordination
 
-**Next lease token:** 18
+**Next lease token:** 19
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
@@ -11,7 +11,7 @@
 | Dev Worker 5 | 11 | Active — Pages preview findings | Pages settings semantics/consistency; failed page-type switch must restore the persisted selection | [dev-5.md](workers/dev-5.md) |
 
 | Dev Worker 6 | 16 | Active — targeted source corrections committed; local Preview/browser acceptance outstanding | Home Hero: Dummy Galleries, candidate ranking/selection, Stage/Settings, public resolver, shared Create dialog; no tests/deployment | [dev-6.md](workers/dev-6.md) |
-| Dev Worker 7 | 13 | Active — General Appearance preview corrections | Appearance Global/Title/Menu/Page/Legal, preview geometry/persistence, Regional Formats hints | [dev-7.md](workers/dev-7.md) |
+| Dev Worker 7 | 18 | Active — replaced chat; General Backing seam source review, browser acceptance pending | Appearance Global/Title/Menu/Page/Legal, preview geometry/persistence, Regional Formats hints | [dev-7.md](workers/dev-7.md) |
 | Dev Worker 8 | 15 | Active — shared Admin dialog presentation and Public root scroll geometry | Shared popup/dialog visuals, Stage/toolbar parity contract; Public document scrollbar layout stability only (no Admin modal scroll-lock changes) | [dev-8.md](workers/dev-8.md) |
 
 Only activated Dev workers receive a row and their own `.agents/workers/dev-N.md` record. This roster belongs exclusively to `dev` and must never receive Docs, Testing or Refactor worker entries. Follow the [shared worker protocol](README.md) for atomic registration, takeover and lease updates.
