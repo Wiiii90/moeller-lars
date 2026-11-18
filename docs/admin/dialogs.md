@@ -319,7 +319,7 @@ The Admin root, Sidebar and native dialog content keep their existing scroll con
 - Do not replace the accepted long/short behavior with upstream
   `overflow: hidden`, `scrollbar-gutter: stable`, permanent body padding,
   synthetic short-page scrollbars or independent application lock counters.
-  Validate no scrollbar flash through the actual close/leave animation.
+  Validate no transient document-width change, background-scroll jump or dialog-position shift through the actual close/leave animation.
 
 Opening or closing a blocking admin task dialog keeps Filament as the sole lifecycle and document-scroll-lock owner. The pinned `filament/support` v5.7.6 bundle is corrected **at build time** by `scripts/patch-filament-scroll-lock.php` before `filament:upgrade` publishes the asset; the runtime retains one Filament lock counter. Hiding scrollbar chrome in CSS does **not** remove the need to freeze background scroll and restore the document position. The patch has two legitimate states based on document scroll range at the first acquire: on a long page, it keeps the root's scroll geometry and fixes the body in place while restoring its original position on release; on a short page, it only hides root overflow, because there is no background scroll range to freeze. In particular **never set body position, min-height, or a forced scroll range on short pages**: detaching and restoring the body can change document geometry during modal close. All touched inline styles and the original scroll position are restored on final unlock. The patch fails loudly for an unreviewed Filament version and never adds a second Alpine modal or application-level global scroll interceptor.
 

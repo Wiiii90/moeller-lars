@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 15 (active)  
-**Status:** Admin root, Sidebar, dialog and Stage scrollbar presentation corrected; legacy dialog thumb and Storage gutter styling retired. Browser acceptance pending.
+**Status:** Admin/Public scrollbar contracts and source regressions reconciled; the existing Filament lock is retained and passes isolated source-level checks. Browser acceptance pending.
 
 ## Ownership and user decisions
 - Own shared Admin dialog window presentation, semantic grouping rules and the Stage-to-Toolbar completeness contract.
@@ -54,7 +54,7 @@
 - The Filament Support patch is **retained intentionally**, including nested and long/short document locks, until real browser testing confirms any alteration is safe. It is not a redundant second scroll implementation and was not modified or replaced by event listeners, body padding or fixed layout offsets.
 - Required browser acceptance (not run): long and short pages, scroll at nonzero position, dialog open/change/autosave/close/animation, nested Select/Rich Text, backdrop wheel block, Sidebar and Stage inner scrolling, Storage references, Firefox and Chromium. Check unchanged `documentElement.clientWidth`, modal coordinates and exact restored `scrollY`.
 - The user explicitly requested completion of non-browser follow-up, including existing contract/test inconsistencies. Updated the exact affected rule in `AGENTS.md`, targeted Admin Dialog/Responsive and Public Site documentation, and the existing source/browser regression specifications on `dev`; there is no new file family or general documentation restructuring. Browser tests were **not run**.
-- The source tests still exercise long/short/nested Filament locks, and also assert the intended hidden-scrollbar CSS; browser specs now assert no root gutter, hidden native chrome, stable modal geometry and retained background scroll-lock, rather than describing visible scrollbars.
+- The source tests still exercise long/short/nested Filament locks, and also assert the intended hidden-scrollbar CSS; browser specs now assert no root gutter, hidden native chrome, stable modal geometry and retained background scroll-lock, rather than describing visible scrollbars. Isolated execution of all five JavaScript test callbacks against the current published source passed, and the browser specification parsed syntactically after stripping module imports; this is **not** an official Node test command or a browser run.
 - The version-locked Filament patch remains fully intact: only a source comment and its printed success text were adjusted so they do not suggest a visible scrollbar. Removing or simplifying its long-page fixed-body/scroll-restoration behavior would require cross-browser runtime evidence that is not available in this task.
 - User-selectable Public scrollbar modes are intentionally unresolved.
 
