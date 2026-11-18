@@ -124,6 +124,7 @@ final class MediaAssetSelect
         ?array $allowedMimeTypes = null,
         ?Closure $modifyQueryUsing = null,
         bool $visual = false,
+        ?int $maxResults = null,
     ): array {
         /** @var Builder<MediaAsset> $query */
         $query = MediaAsset::query();
@@ -145,6 +146,11 @@ final class MediaAssetSelect
         // Select's native option list has no incremental scroll pagination.
         // Return the complete eligible set so older assets remain discoverable;
         // preview <img> elements below still defer image downloads until shown.
+        if ($maxResults !== null) {
+            // Keep the default Storage picker complete. Composite controls
+            // explicitly choose a bounded initial/search sample.
+            $query->limit(max(1, min($maxResults, 100)));
+        }
         $assets = $query->with('variants')->get();
         foreach ($assets as $asset) {
             self::primeOptionLabel($asset, $includeDimensions, $visual);

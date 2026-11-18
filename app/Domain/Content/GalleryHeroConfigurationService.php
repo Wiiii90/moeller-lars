@@ -702,7 +702,7 @@ final class GalleryHeroConfigurationService
     public function addDummyArtwork(GalleryHeroSetting $settings, int $galleryId, int $artworkId): bool
     {
         $artwork = app(\App\Domain\Artwork\PublicArtworkQuery::class)
-            ->homeCandidatesByIds([$artworkId])->first();
+            ->editorialHomeCandidatesByIds([$artworkId])->first();
         if (! $artwork instanceof \App\Models\Artwork) {
             throw ValidationException::withMessages(['pending_candidate' => 'Choose an eligible Artwork.']);
         }

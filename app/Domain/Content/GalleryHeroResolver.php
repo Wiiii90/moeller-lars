@@ -162,9 +162,9 @@ final class GalleryHeroResolver
     }
 
     /** Read all stored Dummy members for the Home editor, including inactive ones. */
-    public function dummyCandidates(array $members, int $sourceId, string $sourceName): Collection
+    public function dummyCandidates(array $members, int $sourceId, string $sourceName, bool $editorial = false): Collection
     {
-        return $this->selectedCandidates($members, $sourceId, $sourceName);
+        return $this->selectedCandidates($members, $sourceId, $sourceName, $editorial);
     }
 
     /**
@@ -233,7 +233,7 @@ final class GalleryHeroResolver
      * @param list<array<string,int>> $members
      * @return Collection<int,GalleryHeroCandidate>
      */
-    private function selectedCandidates(array $members, ?int $sourceId = null, ?string $sourceName = null): Collection
+    private function selectedCandidates(array $members, ?int $sourceId = null, ?string $sourceName = null, bool $editorial = false): Collection
     {
         $artworkIds = [];
         $mediaIds = [];
@@ -245,7 +245,9 @@ final class GalleryHeroResolver
             }
         }
 
-        $artworks = $this->artworks->homeCandidatesByIds($artworkIds)->keyBy('id');
+        $artworks = ($editorial
+            ? $this->artworks->editorialHomeCandidatesByIds($artworkIds)
+            : $this->artworks->homeCandidatesByIds($artworkIds))->keyBy('id');
         $media = MediaAsset::query()->whereIn('id', $mediaIds)->where('state', 'available')
             ->with(['variants', 'artworks.category'])->get()->keyBy('id');
         $candidates = new Collection;

@@ -18,6 +18,7 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\GalleryHeroSettingsDialog;
 use App\Filament\Support\GalleryHeroDummyGalleryDialog;
+use App\Filament\Support\ArtworkEditDialog;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\GalleryHeroSetting;
@@ -251,6 +252,67 @@ final class GalleryHeroWorkspace extends Page
     public function clearDraftDummyGallery(): void
     {
         $this->draftDummyMembers = [];
+    }
+
+    /**
+     * The source-table Edit button edits the Artwork candidate, never follows
+     * the Gallery link (which already lives on the Gallery title). Use the
+     * canonical Artwork dialog and editorial service; Home owns only refresh.
+     */
+    public function editHeroArtworkAction(): Action
+    {
+        $dialog = app(ArtworkEditDialog::class);
+
+        return AdminDialog::edit(
+            Action::make('editHeroArtwork')
+                ->label('Edit Artwork')
+                ->modalHeading('Edit Artwork')
+                ->fillForm(fn (array $arguments): array => $dialog->fill($this->heroArtworkForAction($arguments)))
+                ->schema(fn (array $arguments): array => $dialog->schema(
+                    autosave: true,
+                    primaryReadOnly: $this->heroArtworkForAction($arguments)->getAttribute('state') === 'published',
+                    onPrimaryMediaChanged: function (?int $assetId) use ($dialog, $arguments): void {
+                        if (! $dialog->changePrimaryMedia($this->heroArtworkForAction($arguments), $assetId)) {
+                            return;
+                        }
+                        $this->reloadWorkspace();
+                        app(AdminNotifier::class)->notification(title: 'Artwork primary media saved', status: 'success');
+                    },
+                    onInformationChanged: function () use ($dialog, $arguments): void {
+                        // Native Repeater movement does not emit the ordinary
+                        // Admin Edit change event. Persist via the same owner.
+                        $state = $this->getMountedActionSchema()->getRawState();
+                        if (! is_array($state) || ! $dialog->save(
+                            $this->heroArtworkForAction($arguments), $state, savePrimaryMedia: false,
+                        )) {
+                            return;
+                        }
+                        $this->reloadWorkspace();
+                        app(AdminNotifier::class)->notification(title: 'Artwork information saved', status: 'success');
+                    },
+                ))
+                ->action(function (array $arguments, array $data) use ($dialog): void {
+                    if (! $dialog->save($this->heroArtworkForAction($arguments), $data, savePrimaryMedia: false)) {
+                        return;
+                    }
+                    $this->reloadWorkspace();
+                    app(AdminNotifier::class)->notification(title: 'Artwork saved', status: 'success');
+                }),
+            AdminDialogSize::Large,
+        );
+    }
+
+    private function heroArtworkForAction(array $arguments): Artwork
+    {
+        $id = (int) ($arguments['artwork'] ?? 0);
+        if ($id <= 0) {
+            throw ValidationException::withMessages(['artwork' => 'Choose an existing Artwork.']);
+        }
+
+        /** @var Artwork $artwork */
+        $artwork = Artwork::query()->with('category')->findOrFail($id);
+
+        return $artwork;
     }
 
     /** Editing an existing Dummy Gallery autosaves immediately. */

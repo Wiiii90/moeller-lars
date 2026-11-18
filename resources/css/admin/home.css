@@ -12,7 +12,8 @@
  * Construction component templates reuse Custom Page's hierarchy geometry,
  * including a permanent editable Component column and flexible Content. */
 .home-source-table {
-    --home-source-actions-width: var(--admin-row-actions-three-static-width);
+    --home-source-actions-width: var(--admin-row-actions-edit-state-delete-width);
+    --admin-row-actions-width: var(--home-source-actions-width);
 }
 
 .home-source-table--gallery-order {
@@ -38,7 +39,22 @@
 
 /* The actions header, column and stable row rail share one source-mode width. */
 .home-source-table__col-actions {
-    width: calc(var(--home-source-actions-width) + .5rem);
+    width: var(--home-source-actions-width);
+}
+.home-source-table .admin-table__actions .admin-row-actions-heading {
+    width: var(--home-source-actions-width);
+    margin-inline-start: 0;
+    padding-inline-start: .25rem;
+}
+@container admin-table (max-width: 64rem) {
+    .home-source-table--gallery-order table {
+        --home-source-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
+    }
+}
+@container admin-table (max-width: 38rem) {
+    .home-source-table:not(.home-source-table--gallery-order) table {
+        --home-source-actions-width: var(--admin-row-actions-edit-state-delete-compact-width);
+    }
 }
 
 .home-source-table__gallery-link {
@@ -169,27 +185,6 @@
     overflow: visible;
 }
 
-.home-hero-candidate__heading {
-    display: grid;
-    grid-template-columns: var(--home-hero-candidate-tracks);
-    gap: .3rem;
-    align-items: end;
-    min-width: 0;
-    padding: .14rem .4rem 0;
-}
-
-.home-hero-candidate__heading {
-    color: var(--admin-muted);
-    font-size: .58rem;
-    font-weight: 700;
-    letter-spacing: .07em;
-    text-transform: uppercase;
-}
-
-.home-hero-candidate__heading-position { grid-column: 1 / span 2; }
-.home-hero-candidate__heading-chance { grid-column: 5; text-align: center; }
-.home-hero-candidate__heading-actions { grid-column: 6; text-align: center; }
-
 .home-hero-rail__rows {
     box-sizing: border-box;
     min-height: 0;
@@ -310,7 +305,7 @@
     display: flex;
     grid-column: 6;
     flex-wrap: nowrap;
-    justify-content: flex-end;
+    justify-content: flex-start;
     gap: .12rem;
     min-width: 0;
 }

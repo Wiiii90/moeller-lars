@@ -1,6 +1,6 @@
 {{-- Source-level controls stay present on the first expanded candidate row. --}}
 @if ($candidate)
-    <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable {{ str_starts_with($heroSourceRule, 'gallery_') ? 'admin-row-actions--move-state-delete' : 'admin-row-actions--three-static' }} admin-toolbar home-source-table__row-actions home-source-table__candidate-actions">
+    <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable {{ str_starts_with($heroSourceRule, 'gallery_') ? 'admin-row-actions--move-state-delete' : 'admin-row-actions--edit-state-delete' }} admin-toolbar home-source-table__row-actions home-source-table__candidate-actions">
         @if (str_starts_with($heroSourceRule, 'gallery_'))
             @if ($showSourceActions ?? false)
                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp"
@@ -17,12 +17,17 @@
                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
                     label="Edit"
                     wire:click="mountAction('editDummyGallery', { gallery: {{ $groupId }} })" />
-            @elseif ($sourceWorkspaceUrl ?? null)
+            @elseif (str_starts_with($candidate['id'], 'artwork:'))
                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
-                    :href="$sourceWorkspaceUrl" wire:navigate />
+                    label="Edit"
+                    wire:click="mountAction('editHeroArtwork', { artwork: {{ (int) substr($candidate['id'], 8) }} })" />
             @else
                 <span class="home-source-table__action-slot" aria-hidden="true"></span>
             @endif
+        @elseif (str_starts_with($candidate['id'], 'artwork:'))
+            <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
+                label="Edit"
+                wire:click="mountAction('editHeroArtwork', { artwork: {{ (int) substr($candidate['id'], 8) }} })" />
         @else
             <span class="home-source-table__action-slot" aria-hidden="true"></span>
         @endif

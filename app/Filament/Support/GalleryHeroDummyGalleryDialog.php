@@ -35,6 +35,9 @@ final class GalleryHeroDummyGalleryDialog
                 ->placeholder('Choose Artwork or Storage')
                 ->searchable()
                 ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
+                // Initial options must be available before typing; the
+                // subsequent search uses the same Working/editorial owner.
+                ->options(fn (): array => self::candidateOptions(''))
                 ->allowHtml()
                 ->getSearchResultsUsing(self::candidateOptions(...))
                 ->getOptionLabelUsing(self::selectedCandidateLabel(...))
@@ -86,7 +89,7 @@ final class GalleryHeroDummyGalleryDialog
     private static function candidateOptions(string $search): array
     {
         $options = [];
-        foreach (app(PublicArtworkQuery::class)->searchHomeCandidates($search, 30, false) as $artwork) {
+        foreach (app(PublicArtworkQuery::class)->searchEditorialHomeCandidates($search, 30) as $artwork) {
             $key = 'artwork:'.$artwork->getKey();
             $image = ArtworkResource::thumbnailUrl($artwork);
             $preview = $image === null
@@ -114,6 +117,7 @@ final class GalleryHeroDummyGalleryDialog
                                 ->where('state', 'available'))));
             },
             visual: true,
+            maxResults: 30,
         );
         foreach ($mediaOptions as $id => $label) {
             $options['media:'.$id] = $label;
@@ -128,7 +132,7 @@ final class GalleryHeroDummyGalleryDialog
             return null;
         }
         if ($matches[1] === 'artwork') {
-            $artwork = app(PublicArtworkQuery::class)->homeCandidatesByIds([(int) $matches[2]])->first();
+            $artwork = app(PublicArtworkQuery::class)->editorialHomeCandidatesByIds([(int) $matches[2]])->first();
             return $artwork instanceof Artwork ? e((string) $artwork->getAttribute('title')) : null;
         }
 

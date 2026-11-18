@@ -128,11 +128,6 @@
                                 </select>
                             </label>
                         </div>
-                        <div class="home-hero-candidate__heading" aria-hidden="true">
-                            <span class="home-hero-candidate__heading-position">{{ __('Position') }}</span>
-                            <span class="home-hero-candidate__heading-chance">{{ $heroDisplayStrategy === 'random' ? __('Chance') : '' }}</span>
-                            <span class="home-hero-candidate__heading-actions">{{ __('Actions') }}</span>
-                        </div>
                     </header>
 
                     @if ($heroRailRows !== [] || $excludedHeroRows !== [])
@@ -409,7 +404,7 @@
                                 </td>
                                 <td class="admin-table__actions">
                                     @if (! $expanded || $firstCandidate === null)
-                                        <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable {{ str_starts_with($heroSourceRule, 'gallery_') ? 'admin-row-actions--move-state-delete' : 'admin-row-actions--three-static' }} admin-toolbar home-source-table__row-actions">
+                                        <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable {{ str_starts_with($heroSourceRule, 'gallery_') ? 'admin-row-actions--move-state-delete' : 'admin-row-actions--edit-state-delete' }} admin-toolbar home-source-table__row-actions">
                                             @if (str_starts_with($heroSourceRule, 'gallery_'))
                                                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                                     :disabled="$sourceSearch !== ''" wire:click="moveHeroSource({{ $groupId }}, 'up')" />
@@ -419,9 +414,10 @@
                                             @if ($manualSource)
                                                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
                                                     label="Edit" wire:click="mountAction('editDummyGallery', { gallery: {{ $groupId }} })" />
-                                            @elseif ($gallery['workspace_url'])
+                                            @elseif ($firstCandidate && str_starts_with($firstCandidate['id'], 'artwork:'))
                                                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
-                                                    :href="$gallery['workspace_url']" wire:navigate />
+                                                    label="Edit"
+                                                    wire:click="mountAction('editHeroArtwork', { artwork: {{ (int) substr($firstCandidate['id'], 8) }} })" />
                                             @else
                                                 <span class="home-source-table__action-slot" aria-hidden="true"></span>
                                             @endif
@@ -438,7 +434,7 @@
                                             @endif
                                         </div>
                                     @else
-                                        @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $firstCandidate, 'manualSource' => $manualSource, 'groupId' => $groupId, 'sourceWorkspaceUrl' => $gallery['workspace_url'], 'showSourceActions' => true])
+                                        @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $firstCandidate, 'manualSource' => $manualSource, 'groupId' => $groupId, 'showSourceActions' => true])
                                     @endif
                                 </td>
                                 <td class="admin-table__selection admin-table__selection--trailing">
@@ -492,7 +488,7 @@
             </x-admin.table>
 
             @if ($heroGroupSource !== 'automatic')
-                <x-admin.add-row :icon="\App\Filament\Support\AdminIcon::Gallery" wire:click="mountAction('addDummyGallery')">{{ __('Add Dummy Gallery') }}</x-admin.add-row>
+                <x-admin.add-row wire:click="mountAction('addDummyGallery')">{{ __('Add Dummy Gallery') }}</x-admin.add-row>
             @endif
 
             @if ($sourceRows->total() > $sourceRows->perPage() || $sourceRows->currentPage() > 1)

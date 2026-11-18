@@ -44,6 +44,11 @@
     );
     --admin-row-actions-two-static-width: 9.5rem;
     --admin-row-actions-three-static-width: 15.5rem;
+    --admin-row-actions-edit-state-delete-width: calc(
+        var(--admin-row-action-slot-edit-width) + var(--admin-row-action-slot-state-width)
+        + var(--admin-row-action-slot-delete-width) + .5rem
+    );
+    --admin-row-actions-edit-state-delete-compact-width: calc(3 * 1.35rem + 2 * .45rem);
     --admin-row-actions-state-open-width: 14.5rem;
     --admin-row-actions-move-edit-delete-width: calc(
         var(--admin-row-action-slot-move-up-width) + var(--admin-row-action-slot-move-down-width)
@@ -340,6 +345,15 @@
     --admin-row-actions-columns: max-content max-content max-content;
 }
 
+/* Fixed Edit / Enable-Disable / Delete slots for Source tables. */
+.admin-row-actions--edit-state-delete {
+    --admin-row-actions-width: var(--admin-row-actions-edit-state-delete-width);
+    --admin-row-actions-columns:
+        minmax(var(--admin-row-action-slot-edit-width), max-content)
+        minmax(var(--admin-row-action-slot-state-width), max-content)
+        minmax(var(--admin-row-action-slot-delete-width), max-content);
+}
+
 .admin-row-actions--four-static {
     --admin-row-actions-width: var(--admin-row-actions-four-static-width);
     --admin-row-actions-columns:
@@ -485,6 +499,7 @@
         .admin-row-actions--state-open,
         .admin-row-actions--two-static,
         .admin-row-actions--three-static,
+        .admin-row-actions--edit-state-delete,
         .admin-row-actions--four-static
     ) {
         --admin-row-actions-columns: repeat(var(--admin-row-action-count), 1.35rem);
@@ -498,12 +513,14 @@
     .admin-row-actions--state-open { --admin-row-action-count: 2; }
     .admin-row-actions--two-static { --admin-row-action-count: 2; }
     .admin-row-actions--three-static { --admin-row-action-count: 3; }
+    .admin-row-actions--edit-state-delete { --admin-row-action-count: 3; }
     .admin-row-actions--four-static { --admin-row-action-count: 4; }
 
     :is(
         .admin-row-actions--state-open,
         .admin-row-actions--two-static,
         .admin-row-actions--three-static,
+        .admin-row-actions--edit-state-delete,
         .admin-row-actions--four-static
     ) .admin-action {
         width: 1.35rem !important;
@@ -517,6 +534,7 @@
         .admin-row-actions--state-open,
         .admin-row-actions--two-static,
         .admin-row-actions--three-static,
+        .admin-row-actions--edit-state-delete,
         .admin-row-actions--four-static
     ) .admin-action__label {
         display: none !important;

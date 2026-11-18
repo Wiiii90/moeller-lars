@@ -199,10 +199,40 @@ class PublicArtworkQuery
         return $artworks;
     }
 
-    /** @return Collection<int, Artwork> */
+    /**
+     * Home's public candidate search respects publication. The Dummy Gallery
+     * editor has its own explicit Working selection, without altering public
+     * visibility, Home automatic eligibility or the published Hero resolver.
+     *
+     * @return Collection<int, Artwork>
+     */
     public function searchHomeCandidates(string $search, int $limit = 30, bool $requireHomeGallery = true): Collection
     {
-        $query = $requireHomeGallery ? $this->homeQuery() : $this->publicQuery();
+        return $this->searchCandidates(
+            $requireHomeGallery ? $this->homeQuery() : $this->publicQuery(), $search, $limit,
+        );
+    }
+
+    /** @return Collection<int, Artwork> */
+    public function searchEditorialHomeCandidates(string $search, int $limit = 30): Collection
+    {
+        return $this->searchCandidates($this->editorialQuery(), $search, $limit);
+    }
+
+    /** @return Collection<int, Artwork> */
+    public function editorialHomeCandidatesByIds(array $ids): Collection
+    {
+        $ids = $this->normalizedIds($ids);
+        if ($ids === []) {
+            return new Collection;
+        }
+
+        return $this->editorialQuery()->whereIn('id', $ids)->get();
+    }
+
+    /** @return Collection<int, Artwork> */
+    private function searchCandidates(Builder $query, string $search, int $limit): Collection
+    {
         $term = trim($search);
 
         if ($term !== '') {
@@ -279,9 +309,28 @@ class PublicArtworkQuery
     }
 
     /** @return Builder<Artwork> */
+    private function editorialQuery(): Builder
+    {
+        return $this->availablePresentationQuery()->where('state', '<>', 'archived');
+    }
+
+    /** @return Builder<Artwork> */
     private function publicQuery(): Builder
     {
-        $query = Artwork::query()
+        $query = $this->availablePresentationQuery();
+        if ($this->preview->active()) {
+            $query->where('state', '<>', 'archived');
+        } else {
+            $query->where('state', 'published');
+        }
+
+        return $query;
+    }
+
+    /** @return Builder<Artwork> */
+    private function availablePresentationQuery(): Builder
+    {
+        return Artwork::query()
             ->with(['category.siteSection', 'artworkMedia.mediaAsset.variants'])
             // This read model drives public AND preview artwork cards. Neither
             // can render an incomplete draft without one viable primary asset.
@@ -308,14 +357,6 @@ class PublicArtworkQuery
                             });
                     });
             });
-
-        if ($this->preview->active()) {
-            $query->where('state', '<>', 'archived');
-        } else {
-            $query->where('state', 'published');
-        }
-
-        return $query;
     }
 
     /** @param list<mixed> $ids
