@@ -453,6 +453,9 @@ final class HomeHeroConfigurationService
                 $key = $identity === null ? null : self::memberKey($identity);
                 $title = is_array($member) && is_string($member['title'] ?? null)
                     ? trim($member['title']) : null;
+                if ($title === '') {
+                    $title = null;
+                }
                 $year = is_array($member) ? $this->datePart($member['year'] ?? null, 1, 9999) : null;
                 $month = is_array($member) ? $this->datePart($member['month'] ?? null, 1, 12) : null;
                 $day = is_array($member) ? $this->datePart($member['day'] ?? null, 1, 31) : null;

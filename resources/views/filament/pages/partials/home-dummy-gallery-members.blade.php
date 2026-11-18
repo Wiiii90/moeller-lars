@@ -6,7 +6,7 @@
             <col style="width: 4.2rem">
             <col style="width: 3.5rem">
             <col style="width: 3.5rem">
-            <col class="admin-table__col-actions-move-state-remove">
+            <col class="home-dummy-gallery-table__col-actions">
         </colgroup>
         <thead>
             <tr>
@@ -52,7 +52,7 @@
                         </td>
                     @endforeach
                     <td class="admin-table__actions">
-                        <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical">
+                        <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--two-static">
                             <x-admin.row-action
                                 :action="($member['disabled'] ?? false) ? \App\Filament\Support\AdminRowAction::Publish : \App\Filament\Support\AdminRowAction::Unpublish"
                                 :label="($member['disabled'] ?? false) ? 'Enable' : 'Disable'"

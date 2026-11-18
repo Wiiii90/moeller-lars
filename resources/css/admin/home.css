@@ -357,6 +357,19 @@
  * single-line identity, without the retired manual-order controls. */
 .home-dummy-gallery-table {
     --home-source-thumb-height: 1.9rem;
+    --admin-row-actions-two-static-width: calc(
+        var(--admin-row-action-slot-state-width) + var(--admin-row-action-slot-delete-width) + .25rem
+    );
+}
+
+.home-dummy-gallery-table__col-actions {
+    width: calc(var(--admin-row-actions-two-static-width) + .5rem);
+}
+
+@container admin-table (max-width: 38rem) {
+    .home-dummy-gallery-table__col-actions {
+        width: calc(2 * 1.35rem + .45rem + .5rem);
+    }
 }
 
 .home-dummy-gallery-table .home-source-table__candidate-inline {

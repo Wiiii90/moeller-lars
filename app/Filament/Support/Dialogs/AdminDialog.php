@@ -154,9 +154,10 @@ final class AdminDialog
                     ->iconButton()
                     ->color('gray')
                     ->extraAttributes(['class' => 'admin-dialog__header-action'])
-                    ->action(function (Action $action) use ($onClear): void {
-                        $livewire = $action->getLivewire();
-                        $livewire->getMountedActionSchema()->fill([]);
+                    ->action(function (Action $parentAction, $livewire) use ($onClear): void {
+                        // The nested Clear action cannot call Filament's protected
+                        // getMountedActionSchema(); resolve its parent's public schema.
+                        $livewire->getSchema('mountedActionSchema'.$parentAction->getNestingIndex())?->fill([]);
                         $onClear?->__invoke($livewire);
                         $livewire->forceRender();
                     })
