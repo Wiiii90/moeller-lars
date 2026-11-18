@@ -16,7 +16,7 @@ export function initializePublicMediaPlayback(root = document) {
         const active = shouldPlayPublicVideo(
             intersections.get(video) === true,
             document.visibilityState === 'visible',
-            !video.closest('[hidden]') && video.isConnected,
+            !video.closest('[hidden], [data-journal-slide][aria-hidden="true"]') && video.isConnected,
             reducedMotion.matches,
         );
         if (!active) {
@@ -62,10 +62,12 @@ export function initializePublicMediaPlayback(root = document) {
 
     const syncAll = () => videos.forEach(synchronize);
     document.addEventListener('visibilitychange', syncAll);
+    document.addEventListener('journal:gallery-change', syncAll);
     reducedMotion.addEventListener?.('change', syncAll);
 
     return () => {
         document.removeEventListener('visibilitychange', syncAll);
+        document.removeEventListener('journal:gallery-change', syncAll);
         reducedMotion.removeEventListener?.('change', syncAll);
         observer?.disconnect();
         listeners.forEach(([button, toggle]) => button.removeEventListener('click', toggle));

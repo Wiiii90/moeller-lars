@@ -524,16 +524,33 @@ presentation is otherwise unchanged. Rich Text keeps its existing authored
 content and embedded media rules. The long-term site-wide copyright/footer
 policy remains open for a separate explicit design pass.
 
-Blog gallery presentation is now an authored per-post setting with four options:
-`sequence` (the existing uncropped, vertical image sequence, preserved as the
-default for old posts), `grid`, `mosaic`, and `slideshow`. This persisted
-setting is validated and updated through the canonical BlogEditorialService,
-exposed through the common Journal Editor, and stored in both tracked
-Publication schemas. `JournalMosaicColumns`, the shared `journal-gallery`
-Blade component and the existing slideshow JS own all gallery arrangements.
-Artwork images remain uncropped. The complete Blog detail is now an editorial
-folio with a framed cover, structured rich-text reading measure, optional
-gallery and return link; the accepted external sheet silhouette is retained.
+Blog gallery presentation is an authored per-post setting with five options:
+`sequence` (the existing uncropped vertical sequence and historical default),
+`grid`, `mosaic`, `slideshow`, and `carousel`. Exhibitions offer Grid, Mosaic,
+Slideshow and Carousel while preserving their Grid default and Gallery-enabled
+publication gate. Both new and existing choices use the canonical editorial
+validation, shared Journal Editor and existing Working/Committed
+`gallery_presentation` string column; adding Carousel does not migrate or
+change any existing saved selection.
+
+The shared `journal-gallery` Blade component and `journal-presentation.js`
+own Slideshow/Carousel navigation. Slideshow and Carousel reuse a fixed,
+responsive, uncropped media stage with aligned overlay navigation instead of
+allowing differently shaped images to resize the controls or following prose.
+Carousel displays the active media at Slideshow-like scale, plus the previous
+and next *real* media as partial, dimmed side previews. Side previews are
+`inert` and aria-hidden; they are never duplicated or played in the
+background. An authored Gallery only uses Carousel when explicitly selected.
+`JournalMosaicColumns` continues to own Mosaic. The existing Gallery image
+viewer, mixed image/video assets and optional Exhibition credits keep their
+separate owners. No new model, route or persistence field is added. Browser
+acceptance for varying artwork aspect ratios, caption lengths, small screens,
+and video/Viewer navigation remains outstanding.
+
+Artwork images remain uncropped. The complete Blog detail remains an
+editorial folio with a framed cover, structured rich-text reading measure,
+optional gallery and return link; the accepted external sheet silhouette is
+retained.
 
 No second Blog model, route, content source, publication path, editorial
 action or settings control is introduced. Share only the outer-sheet identity

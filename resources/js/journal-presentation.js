@@ -1,31 +1,83 @@
-function initializeSlideshow(root) {
+// The two authored moving-gallery presentations share one page-local
+// navigation owner. The fixed CSS stage never derives height from the active
+// image, so portrait/landscape changes cannot move controls or following text.
+function initializeSteppedGallery(root) {
     const slides = Array.from(root.querySelectorAll('[data-journal-slide]'));
-    if (slides.length <= 1) return;
-
+    const isCarousel = root.hasAttribute('data-journal-carousel');
     const previous = root.querySelector('[data-journal-slide-prev]');
     const next = root.querySelector('[data-journal-slide-next]');
     const status = root.querySelector('[data-journal-slide-status]');
     let index = 0;
+    let lastDirection = 'next';
 
-    const render = () => {
-        slides.forEach((slide, position) => {
-            const active = position === index;
-            slide.hidden = !active;
-            slide.setAttribute('aria-hidden', active ? 'false' : 'true');
+    // Prepare only adjacent image assets. Hidden lazy images otherwise wait
+    // until navigation, briefly presenting an empty frame on fast switches.
+    const prepareNeighbors = () => {
+        if (slides.length === 0) return;
+        const nearby = new Set([
+            index,
+            (index + 1) % slides.length,
+            (index - 1 + slides.length) % slides.length,
+        ]);
+        nearby.forEach((position) => {
+            slides[position].querySelectorAll('img[loading="lazy"]').forEach((image) => {
+                image.loading = 'eager';
+            });
         });
-        if (status) status.textContent = `${index + 1} / ${slides.length}`;
     };
 
-    previous?.addEventListener('click', () => {
+    const render = () => {
+        prepareNeighbors();
+        slides.forEach((slide, position) => {
+            const active = position === index;
+            const forward = (position - index + slides.length) % slides.length;
+            const backward = (index - position + slides.length) % slides.length;
+            let slot = active ? 'active' : null;
+            if (isCarousel && slides.length > 1 && !active) {
+                // With only two real slides the same item is both adjacent
+                // neighbors. Show it once, on the last navigated side.
+                if (slides.length === 2) {
+                    slot = lastDirection;
+                } else if (forward === 1) {
+                    slot = 'next';
+                } else if (backward === 1) {
+                    slot = 'previous';
+                }
+            }
+
+            slide.hidden = slot === null;
+            slide.setAttribute('aria-hidden', active ? 'false' : 'true');
+            slide.inert = !active;
+            if (slot !== null) slide.dataset.journalSlidePosition = slot;
+            else delete slide.dataset.journalSlidePosition;
+            if (!active) slide.querySelectorAll('video').forEach((video) => video.pause());
+        });
+        if (status) status.textContent = `${index + 1} / ${slides.length}`;
+        // Reconcile the existing Public playback owner immediately when a
+        // previously peeked/hidden video becomes the active frame.
+        root.dispatchEvent(new Event('journal:gallery-change', { bubbles: true }));
+    };
+
+    const goPrevious = () => {
+        lastDirection = 'previous';
         index = (index - 1 + slides.length) % slides.length;
         render();
-    });
-    next?.addEventListener('click', () => {
+    };
+    const goNext = () => {
+        lastDirection = 'next';
         index = (index + 1) % slides.length;
         render();
-    });
+    };
 
+    previous?.addEventListener('click', goPrevious);
+    next?.addEventListener('click', goNext);
     render();
+
+    return () => {
+        previous?.removeEventListener('click', goPrevious);
+        next?.removeEventListener('click', goNext);
+        slides.forEach((slide) => slide.querySelectorAll('video').forEach((video) => video.pause()));
+    };
 }
 
 // Leaflet is a local, version-pinned asset. Only visitors explicitly opening
@@ -221,8 +273,9 @@ function initializeExhibitionVideoPreview(button) {
 }
 
 export function initializeJournalPresentation() {
-    document.querySelectorAll('[data-journal-slideshow]').forEach(initializeSlideshow);
     const disposers = [
+        ...Array.from(document.querySelectorAll('[data-journal-slideshow], [data-journal-carousel]'))
+            .map(initializeSteppedGallery),
         ...Array.from(document.querySelectorAll('[data-exhibition-map-open]'))
             .map(initializeExhibitionMap),
         ...Array.from(document.querySelectorAll('[data-exhibition-video-play]'))

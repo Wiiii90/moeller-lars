@@ -320,7 +320,7 @@ final class ExhibitionEditorialService
             'country' => ['nullable', 'string', 'max:160'],
             'external_url' => ['nullable', 'string', 'max:2048'],
             'gallery_enabled' => ['nullable', 'boolean'],
-            'gallery_presentation' => ['nullable', Rule::in(['grid', 'mosaic', 'slideshow'])],
+            'gallery_presentation' => ['nullable', Rule::in(['grid', 'mosaic', 'slideshow', 'carousel'])],
             'image_viewer_enabled' => ['sometimes', 'boolean'],
             'map_enabled' => ['nullable', 'boolean'],
         ])->validate();

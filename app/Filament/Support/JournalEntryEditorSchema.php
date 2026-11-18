@@ -161,6 +161,7 @@ final class JournalEntryEditorSchema
                     'grid' => __('Grid'),
                     'mosaic' => __('Mosaic'),
                     'slideshow' => __('Slideshow'),
+                    'carousel' => __('Carousel'),
                 ])
                 ->default('sequence')
                 ->required(),
@@ -186,6 +187,7 @@ final class JournalEntryEditorSchema
                     'grid' => __('Grid'),
                     'mosaic' => __('Mosaic'),
                     'slideshow' => __('Slideshow'),
+                    'carousel' => __('Carousel'),
                 ])
                 ->default('grid')
                 ->required()

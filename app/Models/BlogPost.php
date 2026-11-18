@@ -30,7 +30,7 @@ class BlogPost extends Model
     {
         $value = (string) ($this->getAttribute('gallery_presentation') ?? 'sequence');
 
-        return in_array($value, ['sequence', 'grid', 'mosaic', 'slideshow'], true) ? $value : 'sequence';
+        return in_array($value, ['sequence', 'grid', 'mosaic', 'slideshow', 'carousel'], true) ? $value : 'sequence';
     }
 
     public function siteSection(): BelongsTo

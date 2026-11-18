@@ -67,74 +67,175 @@
 
 }
 
-.journal-entry-gallery--slideshow {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    width: min(100%, 34rem);
+/* Slideshow and Carousel share a fixed, responsive image stage. Its block
+   size never depends on the active image's intrinsic portrait/landscape ratio
+   or caption length. The existing gallery modes are intentionally untouched. */
+.journal-entry-gallery--slideshow,
+.journal-entry-gallery--carousel {
+    --journal-gallery-stage-height: min(32rem, 67dvh);
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    height: var(--journal-gallery-stage-height);
     min-width: 0;
-    gap: .65rem;
-    justify-items: stretch;
     margin-inline: auto;
+    isolation: isolate;
 }
 
-.journal-entry-gallery--slideshow .journal-entry-gallery__item[hidden] {
-    display: none;
+.journal-entry-gallery--slideshow {
+    width: min(100%, 34rem);
 }
 
-/* One restrained image stage, regardless of portrait or landscape source.
-   Do not crop original works or let portrait frames consume a full page. */
-.journal-entry-gallery--slideshow .journal-entry-gallery__item {
-    grid-column: 1;
-    grid-row: 1;
+/* The Carousel's center frame is almost identical in width to Slideshow,
+   while the 16% gutters preview the previous and next real media items. */
+.journal-entry-gallery--carousel {
+    width: min(100%, 50rem);
+    overflow: hidden;
+}
+
+.journal-entry-gallery--slideshow .journal-entry-gallery__item,
+.journal-entry-gallery--carousel .journal-entry-gallery__item {
+    position: absolute;
+    inset: 0;
     display: grid;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
     min-width: 0;
-    min-height: min(20rem, 50dvh);
+    min-height: 0;
     place-items: center;
 }
 
-.journal-entry-gallery--slideshow .journal-entry-media {
-    display: block;
-    width: fit-content;
-    max-width: 100%;
-    margin: 0 auto;
+.journal-entry-gallery--slideshow .journal-entry-gallery__item[hidden],
+.journal-entry-gallery--carousel .journal-entry-gallery__item[hidden] {
+    display: none;
 }
 
-.journal-entry-gallery--slideshow .journal-entry-media img {
+/* The figure allocates caption space within the *same* fixed stage; media
+   fit the remaining row instead of resizing the stage or cropping the work. */
+.journal-entry-gallery--slideshow .journal-entry-media,
+.journal-entry-gallery--carousel .journal-entry-media {
+    display: grid;
+    box-sizing: border-box;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: center;
+    justify-items: center;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+}
+
+.journal-entry-gallery--slideshow .journal-entry-media :is(img, video),
+.journal-entry-gallery--carousel .journal-entry-media :is(img, video) {
     display: block;
     width: auto;
     max-width: 100%;
-    max-height: min(29rem, 60dvh);
     height: auto;
+    max-height: 100%;
+    min-height: 0;
     object-fit: contain;
 }
 
-.journal-entry-gallery__controls {
-    grid-column: 1;
-    grid-row: 2;
+.journal-entry-gallery--slideshow .journal-entry-media figcaption,
+.journal-entry-gallery--carousel .journal-entry-media figcaption {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding-inline: .2rem;
+    text-align: center;
+}
+
+.journal-entry-gallery--carousel .journal-entry-gallery__item {
+    right: auto;
+    left: 16%;
+    width: 68%;
+}
+
+.journal-entry-gallery--carousel .journal-entry-gallery__item[data-journal-slide-position="previous"] {
+    transform: translateX(calc(-100% - .75rem));
+    opacity: .62;
+}
+
+.journal-entry-gallery--carousel .journal-entry-gallery__item[data-journal-slide-position="next"] {
+    transform: translateX(calc(100% + .75rem));
+    opacity: .62;
+}
+
+.journal-entry-gallery--carousel .journal-entry-gallery__item:not([data-journal-slide-position="active"]) figcaption {
+    visibility: hidden;
+}
+
+/* Navigation overlays the image stage. The status is top-centered so the
+   optional caption remains unobscured below the artwork. Only real controls
+   intercept pointers, preserving Viewer triggers and native video controls. */
+.journal-entry-gallery--slideshow .journal-entry-gallery__controls,
+.journal-entry-gallery--carousel .journal-entry-gallery__controls {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    gap: .7rem;
+    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+    grid-template-rows: auto minmax(0, 1fr);
     align-items: center;
-    margin: .15rem 0 0;
-    color: #61574e;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+    color: #514941;
     font-family: var(--public-index-typeface);
-    font-size: .84rem;
+    font-size: .82rem;
     font-variant-numeric: tabular-nums;
     line-height: 1.35;
 }
 
+/* Carousel arrows belong to the active central media edge. Keeping the
+   controls inside its 68% track leaves both side previews unobscured. */
+.journal-entry-gallery--carousel .journal-entry-gallery__controls {
+    right: auto;
+    left: 16%;
+    width: 68%;
+}
+
 .journal-entry-gallery__controls button {
     display: inline-flex;
-    justify-content: center;
     align-items: center;
-    width: 2.1rem;
-    height: 2.1rem;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
     padding: 0;
-    border: 0;
+    border: 1px solid rgba(145, 137, 128, .4);
     border-radius: 0;
-    background: transparent;
+    background: rgba(255, 255, 255, .88);
     color: #514941;
     cursor: pointer;
+    pointer-events: auto;
+}
+
+.journal-entry-gallery__controls button:first-child {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    justify-self: start;
+}
+
+.journal-entry-gallery__controls button:last-child {
+    grid-column: 3;
+    grid-row: 1 / -1;
+    justify-self: end;
+}
+
+.journal-entry-gallery__controls [data-journal-slide-status] {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    align-self: start;
+    margin: .35rem 0 0;
+    padding: .18rem .5rem;
+    background: rgba(255, 255, 255, .88);
+    pointer-events: none;
 }
 
 .journal-entry-gallery__controls button .public-icon {
@@ -145,20 +246,14 @@
 
 .journal-entry-gallery__controls button:hover,
 .journal-entry-gallery__controls button:focus-visible {
+    border-color: rgba(145, 137, 128, .7);
+    background: #fff;
     color: #181512;
 }
 
 .journal-entry-gallery__controls button:focus-visible {
     outline: 1px dotted currentColor;
     outline-offset: 2px;
-}
-
-.journal-entry-gallery__controls button:first-child {
-    justify-self: start;
-}
-
-.journal-entry-gallery__controls button:last-child {
-    justify-self: end;
 }
 
 /* Exhibition maps are loaded only inside one native dialog. Leaflet's

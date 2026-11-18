@@ -288,7 +288,7 @@ final class BlogEditorialService
             throw ValidationException::withMessages(['body' => 'The blog content must be text.']);
         }
         $presentation = $data['gallery_presentation'] ?? null;
-        if ($presentation !== null && (! is_string($presentation) || ! in_array($presentation, ['sequence', 'grid', 'mosaic', 'slideshow'], true))) {
+        if ($presentation !== null && (! is_string($presentation) || ! in_array($presentation, ['sequence', 'grid', 'mosaic', 'slideshow', 'carousel'], true))) {
             throw ValidationException::withMessages(['gallery_presentation' => 'Choose a supported Gallery presentation.']);
         }
         $viewer = $data['image_viewer_enabled'] ?? false;

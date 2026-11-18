@@ -4,6 +4,13 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Slideshow stage and opt-in Carousel (2026-11-18)
+
+- **User scope:** Put the former lower Slideshow arrow navigation on the media, make arrows flush on the same stage side rails, remove portrait/landscape layout jumping, and offer a new Carousel option with a central image and partial previous/next peeks. Do not automatically select Carousel for any existing Blog/Exhibition.
+- **Implementation:** The shared `journal-gallery` component marks either Slideshow or Carousel and preserves all existing Sequence/Grid/Mosaic paths. `journal-presentation.css` gives both a definite, responsive, caption-aware media stage, overlays arrow buttons at its edges with a separate top status label, and clips the Carousel's real neighboring media in dimmed side tracks without cloning content. `journal-presentation.js` owns both step modes, two-item behavior, `hidden`/`inert`/ARIA state and video pause on navigation, with page-disposal cleanup. The existing Public autoplay owner is signaled after each slide change and treats neighboring/aria-hidden Carousel videos as inactive. Only the current and adjacent lazy gallery images are prefetched to reduce visual blank frames, without eagerly loading the entire gallery.
+- **Persistence/editor:** Add Carousel to Blog and Exhibition public model allowlists, editorial validation and the respective existing Journal Gallery presentation Select. Existing defaults remain Blog Sequence and Exhibition Grid. The stored `gallery_presentation` is a 24-character string in Working/Committed, so no new DB column or migration is required.
+- **Evidence:** Source and GitHub readback only. Browser acceptance pending for portrait/landscape image stability, captions, image Viewer, mixed video, two/three-item carousels, responsive peeks, active/a11y navigation, live preview, working vs committed state. No test suite, CI, preview launch or deployment requested/performed.
+
 ## Blog width correction (2026-11-18)
 
 - **User observation:** The previous Exhibition, Custom Page and Artwork description width corrections did not cover Blog. Current source independently constrained both `blog-page` and `blog-post` to the Artwork's `--public-art-max` reading track (650px), and additionally constrained excerpts and the full article body to `38rem`.
@@ -60,4 +67,4 @@
 
 ## Next
 
-Have the artist review the Blog index/article full-width fix alongside the Contact Form, Exhibition and earlier width corrections in a fresh local preview; hand browser regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
+Have the artist review Slideshow overlay/stability and opt-in Carousel with mixed media, alongside Blog width and prior Contact/Exhibition fixes, in a fresh local preview; hand regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.

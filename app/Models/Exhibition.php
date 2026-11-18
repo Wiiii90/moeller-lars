@@ -294,7 +294,7 @@ class Exhibition extends Model
     {
         $presentation = (string) ($this->getAttribute('gallery_presentation') ?? 'grid');
 
-        return in_array($presentation, ['grid', 'mosaic', 'slideshow'], true) ? $presentation : 'grid';
+        return in_array($presentation, ['grid', 'mosaic', 'slideshow', 'carousel'], true) ? $presentation : 'grid';
     }
 
     public function shouldShowPublicMap(?CarbonInterface $date = null): bool
