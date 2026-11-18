@@ -4,7 +4,6 @@ namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
-use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
@@ -687,9 +686,7 @@ final class SitePages extends Page
             $this->parentOptions[(int) $group['id']] = (string) ($group['navigation_label'] ?: $group['title']);
         }
 
-        // Match public navigation: published pages and the Home-only menu switch.
-        // Editorial rows remain present regardless of their menu visibility.
-        $skipHome = app(HomePresentationResolver::class)->skipEnabled();
+        // Match public navigation eligibility while retaining hidden editorial rows.
         $this->metrics = [
             'total' => count($allRows),
             'published' => count(array_filter($allRows, static fn (array $row): bool => $row['state'] === 'published')),
@@ -698,7 +695,7 @@ final class SitePages extends Page
             'children' => count(array_filter($allRows, static fn (array $row): bool => $row['parent_id'] !== null)),
             'navigation' => count(array_filter($allRows, static fn (array $row): bool => $row['state'] === 'published' && (
                 $row['type'] !== SiteSectionType::Home->value
-                || (! $skipHome && $row['show_in_navigation'])
+                || $row['show_in_navigation']
             )
             )),
             'galleries' => count(array_filter($allRows, static fn (array $row): bool => $row['type'] === SiteSectionType::Gallery->value)),

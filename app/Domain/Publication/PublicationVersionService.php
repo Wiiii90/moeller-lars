@@ -507,6 +507,7 @@ SQL,
     END
 ))
 SQL,
+            'home_presentation_settings' => "(version_row.payload - 'skip_home' - 'skip_target_section_id' || jsonb_build_object('template', CASE WHEN version_row.payload->>'template' = 'skip_home' THEN 'artwork' ELSE version_row.payload->>'template' END))",
             'media_variants' => "(version_row.payload - 'transform_profile')",
             // Admin confirmation is now a per-user preference, not published
             // site content. Preserve old immutable snapshots without the field.
@@ -548,6 +549,9 @@ SQL,
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'site_sections')
                             ->whereRaw("NOT jsonb_exists(payload, 'meta_description') OR (payload->>'type' = 'gallery' AND COALESCE(payload->>'template', '') = '')");
+                    })->orWhere(static function ($rows): void {
+                        $rows->where('table_name', 'home_presentation_settings')
+                            ->whereRaw("jsonb_exists(payload, 'skip_home') OR jsonb_exists(payload, 'skip_target_section_id') OR payload->>'template' = 'skip_home'");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'media_variants')
                             ->whereRaw("jsonb_exists(payload, 'transform_profile')");

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['template', 'configuration', 'skip_home', 'skip_target_section_id'])]
+#[Fillable(['template', 'configuration'])]
 #[Guarded(['id', 'site_section_id'])]
 final class HomePresentationSetting extends Model
 {
@@ -16,8 +16,6 @@ final class HomePresentationSetting extends Model
     {
         return [
             'configuration' => 'array',
-            'skip_home' => 'boolean',
-            'skip_target_section_id' => 'integer',
         ];
     }
 
@@ -25,12 +23,6 @@ final class HomePresentationSetting extends Model
     public function siteSection(): BelongsTo
     {
         return $this->belongsTo(SiteSection::class);
-    }
-
-    /** @return BelongsTo<SiteSection, $this> */
-    public function skipTargetSection(): BelongsTo
-    {
-        return $this->belongsTo(SiteSection::class, 'skip_target_section_id');
     }
 
     public function template(): HomeTemplate

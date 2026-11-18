@@ -59,10 +59,6 @@
 
 /* Home component and nested-child sequences now use the same canonical
  * five-action rails as Custom Page, including publication state. */
-.home-skip-tools {
-    padding: .85rem 0;
-}
-
 .home-hero-surface {
     min-width: 0;
     align-items: stretch;
@@ -525,42 +521,3 @@
         gap: .25rem;
     }
 }
-
-.home-workspace__skip-row {
-    display: grid;
-    grid-template-columns: minmax(12rem, 1fr) auto auto;
-    gap: 1rem;
-    min-height: 3.6rem;
-    align-items: center;
-}
-
-.home-workspace__skip-row > div:first-child {
-    display: grid;
-    min-width: 0;
-    gap: .12rem;
-}
-
-.home-workspace__skip-row strong {
-    color: var(--admin-text);
-    font-size: .8rem;
-    font-weight: 600;
-}
-
-.home-workspace__skip-row span {
-    color: var(--admin-muted);
-    font-size: .7rem;
-}
-
-.home-workspace__redirect-expression {
-    display: inline-flex;
-    gap: .45rem;
-    align-items: center;
-    color: var(--admin-muted);
-}
-
-.home-workspace__redirect-expression code {
-    color: var(--admin-text);
-    font-size: .7rem;
-}
-
-

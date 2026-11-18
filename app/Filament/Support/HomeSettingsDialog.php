@@ -31,7 +31,6 @@ final class HomeSettingsDialog
         private readonly HomePresentationResolver $resolver,
         private readonly HomePresentationEditorialService $editorial,
         private readonly HomeHeroConfigurationService $heroConfiguration,
-        private readonly HomeRoutingDialog $routingDialog,
     ) {}
 
     /** @return array<string, mixed> */
@@ -43,7 +42,7 @@ final class HomeSettingsDialog
         $section = $this->homeSection($settings);
 
         return [
-            'template' => $settings->template()->contentTemplate()->value,
+            'template' => $settings->template()->value,
             'show_details' => $hero['show_details'],
             'show_gallery_link' => $hero['show_gallery_link'],
             'show_navigation' => $hero['show_navigation'],
@@ -66,7 +65,6 @@ final class HomeSettingsDialog
             'rotation_interval_count' => $hero['rotation_interval']['count'],
             'rotation_interval_unit' => $hero['rotation_interval']['unit'],
             'public_site_gate' => (bool) ($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? false),
-            ...$this->routingDialog->fill($settings),
             'show_in_navigation' => (bool) $section->getAttribute('show_in_navigation'),
             'auto_publish_new_components' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::HOME),
             ...SitePageHeading::formState($section),
@@ -99,11 +97,9 @@ final class HomeSettingsDialog
                         ->columnSpanFull(),
                     AdminControl::toggle('public_site_gate', 'Temporarily gate the public site')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
-                    ...$this->routingDialog->schema(),
                     AdminControl::toggle('show_in_navigation', 'Show in public navigation')
                         ->live()
-                        ->visible(fn (callable $get): bool => ! (bool) $get('skip_home'))
-                        ->afterStateUpdated(function (mixed $state): void {
+                                                ->afterStateUpdated(function (mixed $state): void {
                             if ($this->saveNavigationVisibility((bool) $state)) {
                                 app(AdminNotifier::class)->notification(
                                     title: 'Home navigation updated',
@@ -242,7 +238,7 @@ final class HomeSettingsDialog
         $settings = $this->resolver->settings();
         $changed = false;
         $template = HomeTemplate::tryFrom((string) ($data['template'] ?? ''));
-        if (! $template instanceof HomeTemplate || ! $template->isContentTemplate()) {
+        if (! $template instanceof HomeTemplate) {
             throw ValidationException::withMessages(['template' => 'Choose a Home content template.']);
         }
 
@@ -294,7 +290,6 @@ final class HomeSettingsDialog
             throw ValidationException::withMessages(['home' => 'Home settings changed while editing. Reload and try again.']);
         }
 
-        $changed = $this->routingDialog->save($data) || $changed;
         if (array_key_exists('show_in_navigation', $data)) {
             $changed = $this->saveNavigationVisibility((bool) $data['show_in_navigation']) || $changed;
         }
@@ -313,10 +308,6 @@ final class HomeSettingsDialog
 
     public function changeTemplate(HomeTemplate $template): bool
     {
-        if (! $template->isContentTemplate()) {
-            throw ValidationException::withMessages(['template' => 'Choose a Home content template.']);
-        }
-
         return $this->editorial->updateSettings($this->resolver->settings(), $template, []);
     }
 
@@ -325,13 +316,10 @@ final class HomeSettingsDialog
         return $this->resolver->template()->label();
     }
 
-    /** @return array{template:string,skip_home:bool,skip_target_label:?string} */
+    /** @return array{template:string} */
     public function tableState(): array
     {
-        return [
-            'template' => $this->resolver->template()->value,
-            ...$this->routingDialog->tableState(),
-        ];
+        return ['template' => $this->resolver->template()->value];
     }
 
     private static function helpLabel(string $label, string $title, string $body): HtmlString

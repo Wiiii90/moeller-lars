@@ -7,21 +7,17 @@ use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
-use App\Routing\SiteNodeRoute;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use LogicException;
 
 final class HomePresentationResolver
 {
     public function __construct(
         private readonly PublicMedia $media,
-        private readonly SiteNodeRoute $routes,
         private readonly SitePreviewContext $preview,
         private readonly SafeRichTextRenderer $richText,
         private readonly HomePresentationEditorialService $editorial,
         private readonly HomeHeroConfigurationService $heroConfiguration,
         private readonly HomeHeroResolver $hero,
-        private readonly HomeRoutingSettingsService $routing,
     ) {}
 
     public function settings(): HomePresentationSetting
@@ -41,12 +37,7 @@ final class HomePresentationResolver
 
     public function template(): HomeTemplate
     {
-        return $this->settings()->template()->contentTemplate();
-    }
-
-    public function skipEnabled(): bool
-    {
-        return $this->routing->enabled($this->settings());
+        return $this->settings()->template();
     }
 
     public function publicGateActive(): bool
@@ -56,7 +47,7 @@ final class HomePresentationResolver
         }
 
         $settings = $this->settings();
-        if ($settings->template()->contentTemplate() !== HomeTemplate::UnderConstruction) {
+        if ($settings->template() !== HomeTemplate::UnderConstruction) {
             return false;
         }
 
@@ -65,41 +56,16 @@ final class HomePresentationResolver
         return (bool) ($configuration['under_construction']['public_site_gate'] ?? false);
     }
 
-    public function skipTarget(): ?SiteSection
-    {
-        return $this->skipTargetForSettings($this->settings());
-    }
-
-    public function skipTargetUrl(bool $preview = false): ?string
-    {
-        $target = $this->skipTarget();
-        if (! $target instanceof SiteSection) {
-            return null;
-        }
-
-        if ($preview) {
-            return $this->preview->previewUrlFor($target);
-        }
-
-        return $this->routes->url($target);
-    }
-
     /** @return array<string, mixed> */
     public function presentation(): array
     {
         $settings = $this->settings();
-        $template = $settings->template()->contentTemplate();
+        $template = $settings->template();
         $configuration = $this->editorial->configuration($settings);
         $heroConfiguration = $this->heroConfiguration->configuration($settings);
         $heroResolution = $template === HomeTemplate::Artwork
             ? $this->hero->resolve($settings)
             : null;
-        $target = $this->skipTargetForSettings($settings);
-        $skipHome = $this->routing->enabled($settings);
-        $targetUrl = $target instanceof SiteSection
-            ? ($this->preview->active() ? $this->preview->previewUrlFor($target) : $this->routes->url($target))
-            : null;
-
         $presentation = match ($template) {
             HomeTemplate::Artwork => [
                 'template' => $template,
@@ -132,15 +98,11 @@ final class HomePresentationResolver
                 false,
                 (bool) $configuration['custom']['image_viewer_enabled'],
             ),
-            HomeTemplate::SkipHome => throw new LogicException('Legacy Skip Home must normalize to a content template.'),
         };
 
         return [
             ...$presentation,
             'pageSection' => $settings->getRelation('siteSection'),
-            'skipHome' => $skipHome,
-            'target' => $target,
-            'targetUrl' => $targetUrl,
         ];
     }
 
@@ -153,58 +115,6 @@ final class HomePresentationResolver
     public function referencesMedia(HomePresentationSetting $settings, int $mediaAssetId): bool
     {
         return in_array($mediaAssetId, $this->mediaIds($settings), true);
-    }
-
-    private function skipTargetForSettings(HomePresentationSetting $settings): ?SiteSection
-    {
-        $configuredId = $this->routing->configuredTargetId($settings);
-        if ($configuredId !== null) {
-            /** @var SiteSection|null $configured */
-            $configured = SiteSection::query()->find($configuredId);
-            if ($configured instanceof SiteSection
-                && $configured->getAttribute('parent_id') === null
-                && $configured->nodeType() !== SiteSectionType::Home
-                && $configured->nodeType()->hasPublicPage()
-                && (string) $configured->getAttribute('state') === 'published'
-                && $this->routes->path($configured) !== null) {
-                return $configured;
-            }
-        }
-
-        /** @var SiteSection|null $home */
-        $home = $settings->getRelationValue('siteSection');
-        if (! $home instanceof SiteSection) {
-            $home = SiteSection::query()
-                ->where('type', SiteSectionType::Home->value)
-                ->whereNull('parent_id')
-                ->first();
-        }
-        if (! $home instanceof SiteSection) {
-            return null;
-        }
-
-        $position = (int) $home->getAttribute('position');
-        $id = (int) $home->getKey();
-
-        /** @var EloquentCollection<int, SiteSection> $candidates */
-        $candidates = SiteSection::query()
-            ->whereNull('parent_id')
-            ->where('state', 'published')
-            ->where(function ($query) use ($position, $id): void {
-                $query->where('position', '>', $position)
-                    ->orWhere(function ($samePosition) use ($position, $id): void {
-                        $samePosition->where('position', $position)->where('id', '>', $id);
-                    });
-            })
-            ->orderBy('position')
-            ->orderBy('id')
-            ->get();
-
-        return $candidates->first(function (SiteSection $section): bool {
-            return $section->nodeType()->hasPublicPage()
-                && $section->nodeType() !== SiteSectionType::Home
-                && $this->routes->path($section) !== null;
-        });
     }
 
     /** @param list<array<string, mixed>> $components

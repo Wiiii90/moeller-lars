@@ -10,7 +10,6 @@ use App\Models\PublicContentSetting;
 use App\Models\User;
 use Closure;
 use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
@@ -20,16 +19,14 @@ final class PagesSettingsDialog
     public function __construct(
         private readonly AdminSettingsService $settings,
         private readonly SiteSectionOrderService $order,
-        private readonly HomeRoutingDialog $homeRouting,
     ) {}
 
-    /** @return array{navigation_nesting_enabled:bool,skip_home:bool,skip_target_section_id:?int,pages_auto_publish:bool,pages_delete_without_confirmation:bool} */
+    /** @return array{navigation_nesting_enabled:bool,pages_auto_publish:bool,pages_delete_without_confirmation:bool} */
     public function fill(): array
     {
         return [
             'navigation_nesting_enabled' => PublicContentSetting::navigationNestingEnabled(),
             'pages_delete_without_confirmation' => (bool) (Filament::auth()->user()?->getAttribute('pages_delete_without_confirmation') ?? false),
-            ...$this->homeRouting->fill(),
             'pages_auto_publish' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::PAGES),
         ];
     }
@@ -46,8 +43,6 @@ final class PagesSettingsDialog
                 $persistOnToggle([
                     'navigation_nesting_enabled' => $get('navigation_nesting_enabled'),
                     'pages_delete_without_confirmation' => $get('pages_delete_without_confirmation'),
-                    'skip_home' => $get('skip_home'),
-                    'skip_target_section_id' => $get('skip_target_section_id'),
                     'pages_auto_publish' => $get('pages_auto_publish'),
                 ]);
             };
@@ -73,7 +68,6 @@ final class PagesSettingsDialog
                 ->schema([
                     $nesting,
                     $deleteWithoutConfirmation,
-                    Group::make($this->homeRouting->schema($onToggleUpdated)),
                     $autoPublish,
                 ]),
         ];
@@ -87,7 +81,7 @@ final class PagesSettingsDialog
         $enabled = (bool) ($data['navigation_nesting_enabled'] ?? true);
 
         return DB::transaction(function () use ($data, $settings, $wasEnabled, $enabled): bool {
-            $changed = $this->homeRouting->save($data);
+            $changed = false;
 
             if ($wasEnabled && ! $enabled) {
                 $changed = $this->order->flattenHierarchy() > 0 || $changed;

@@ -655,50 +655,6 @@
     padding-left: 0;
 }
 
-/* Home's destination menu is a regular table-row action, not a toolbar
- * selection trigger. Use the existing menu surface, but NOT the
- * .admin-selection__anchor toolbar container (min-height: 2.5rem): its height
- * plus row padding exceeds the standard hierarchy row's 3.4rem minimum.
- * No additional row height or local height compensation is necessary. */
-.admin-pages__redirect-target {
-    position: relative;
-    z-index: 10;
-    min-width: 0;
-    grid-column: span 2;
-}
-
-/* Very long page names may not push Edit or Skip Home off their slots. */
-.admin-pages__redirect-target > .admin-action {
-    max-width: 100%;
-    min-width: 0 !important;
-    overflow: hidden;
-}
-
-.admin-pages__redirect-target > .admin-action .admin-action__label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.admin-pages__redirect-target .admin-selection__menu {
-    right: auto;
-    left: 0;
-    max-width: min(20rem, calc(100vw - 1rem));
-    max-height: min(22rem, 60vh);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-}
-
-.admin-pages__redirect-target .admin-selection__menu > .admin-action {
-    width: 100% !important;
-    min-width: 0 !important;
-    justify-content: flex-start !important;
-    padding-inline: .5rem !important;
-    white-space: normal;
-    text-align: left;
-}
-
 .admin-pages__action-placeholder {
     display: block;
     min-width: 0;

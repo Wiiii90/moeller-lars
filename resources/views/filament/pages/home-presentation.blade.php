@@ -600,29 +600,6 @@
 
             <x-admin.add-row wire:click="mountAction('addComponent')">{{ __('Add component') }}</x-admin.add-row>
 
-        @elseif ($template === 'skip_home')
-            <div class="home-skip-tools admin-data-control-group" aria-label="Skip Home actions">
-                <span class="admin-data-control-label">{{ __('Skip Home') }}</span>
-                <div class="admin-toolbar admin-editorial-actions home-workspace-actions">
-                    <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('settings')">
-                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
-                        <span class="admin-action__label">{{ __('Settings') }}</span>
-                    </button>
-                    <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener">
-                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
-                        <span class="admin-action__label">{{ __('Preview') }}</span>
-                    </a>
-                </div>
-            </div>
-            @if ($skipTarget)
-                <div class="home-workspace__skip-row">
-                    <div><strong>{{ $skipTarget['label'] }}</strong><span>{{ $skipTarget['type'] }} | {{ $skipTarget['path'] }}</span></div>
-                    <div class="home-workspace__redirect-expression" aria-label="Current Home redirect"><code>/</code><span aria-hidden="true">→</span><code>{{ $skipTarget['path'] }}</code></div>
-                    <a class="admin-action" href="{{ $skipTarget['url'] }}" target="_blank" rel="noopener">{{ __('Open target') }}</a>
-                </div>
-            @else
-                <x-admin.empty-state title="No redirect target" minimal />
-            @endif
         @endif
     </x-admin.workspace>
 

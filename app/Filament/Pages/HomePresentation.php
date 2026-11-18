@@ -14,7 +14,6 @@ use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomeHeroResolver;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomePresentationResolver;
-use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\PublicLegalContent;
 use App\Domain\Content\RichTextMediaReference;
@@ -38,7 +37,6 @@ use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
-use App\Routing\SiteNodeRoute;
 use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
@@ -200,13 +198,6 @@ final class HomePresentation extends Page
         'dividers' => 0,
         'media_references' => 0,
     ];
-
-    public bool $skipHome = false;
-
-    public ?int $skipTargetSectionId = null;
-
-    /** @var array<string,mixed>|null */
-    public ?array $skipTarget = null;
 
     public bool $homeAnalyticsLoaded = false;
 
@@ -1606,7 +1597,6 @@ final class HomePresentation extends Page
         $settings = $this->settings();
         $configuration = app(HomePresentationEditorialService::class)->configuration($settings);
         $heroConfiguration = app(HomeHeroConfigurationService::class)->configuration($settings);
-        $routingConfiguration = app(HomeRoutingSettingsService::class)->configuration($settings);
         $this->settingsId = (int) $settings->getKey();
         $this->homeSectionId = (int) $settings->getAttribute('site_section_id');
         $template = $settings->template();
@@ -1628,15 +1618,12 @@ final class HomePresentation extends Page
         $this->rotationIntervalUnit = $heroConfiguration['rotation_interval']['unit'];
         $this->rotationStartedAt = $heroConfiguration['rotation_started_at'];
         $this->publicSiteGate = (bool) $configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'];
-        $this->skipHome = $routingConfiguration['skip_home'];
-        $this->skipTargetSectionId = $routingConfiguration['skip_target_section_id'];
 
         $this->selectionIssue = null;
         $this->currentArtwork = null;
         $this->heroRailRows = [];
         $this->componentDataset = [];
         $this->components = [];
-        $this->skipTarget = null;
         $this->eligibleArtworkCount = 0;
         $this->sourceGalleryCount = 0;
         $this->newestEligibleYear = null;
@@ -1652,7 +1639,6 @@ final class HomePresentation extends Page
         match ($template) {
             HomeTemplate::Artwork => $this->loadArtworkWorkspace($settings),
             HomeTemplate::UnderConstruction, HomeTemplate::Custom => $this->loadComponentWorkspace($template, $configuration),
-            HomeTemplate::SkipHome => $this->loadSkipWorkspace(),
         };
         $this->refreshMetrics();
     }
@@ -1864,22 +1850,6 @@ final class HomePresentation extends Page
 
             return $term === '' || str_contains((string) ($component['search_text'] ?? ''), $term);
         })->values()->all();
-    }
-
-    private function loadSkipWorkspace(): void
-    {
-        $target = app(HomePresentationResolver::class)->skipTarget();
-        if (! $target instanceof SiteSection) {
-            return;
-        }
-        $path = app(SiteNodeRoute::class)->path($target);
-        $this->skipTarget = [
-            'id' => (int) $target->getKey(),
-            'label' => (string) ($target->getAttribute('navigation_label') ?: $target->getAttribute('title')),
-            'type' => $target->nodeType()->label($target->journalTemplate()),
-            'path' => $path ?? '—',
-            'url' => app(SiteNodeRoute::class)->url($target),
-        ];
     }
 
     private function refreshMetrics(): void

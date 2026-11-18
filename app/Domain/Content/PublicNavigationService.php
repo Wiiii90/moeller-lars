@@ -13,7 +13,6 @@ final class PublicNavigationService
     public function __construct(
         private readonly SitePreviewContext $preview,
         private readonly SiteNodeRoute $routes,
-        private readonly HomePresentationResolver $home,
     ) {}
 
     /** @return Collection<int, covariant array{position: int, tie_breaker: int, label: string, url: ?string, current: bool, active: bool, children: list<array{label: string, url: ?string, current: bool}>}> */
@@ -26,15 +25,11 @@ final class PublicNavigationService
             $query->where('state', 'published');
         }
 
-        // Home alone has an additional menu switch. Skip Home remains a
-        // separate routing choice that always excludes Home from the menu.
+        // Only Home has an independent public-menu visibility switch.
         $query->where(static function (Builder $sections): void {
             $sections->where('type', '<>', SiteSectionType::Home->value)
                 ->orWhere('show_in_navigation', true);
         });
-        if ($this->home->skipEnabled()) {
-            $query->where('type', '<>', SiteSectionType::Home->value);
-        }
 
         /** @var EloquentCollection<int, SiteSection> $sections */
         $sections = $query->orderBy('position')->orderBy('id')->get();
@@ -53,7 +48,7 @@ final class PublicNavigationService
                 $children[$parentId][] = $section;
             } else {
                 // A published child does not become invisible merely because
-                // its editorial parent is unpublished or Home is skipped.
+                // its editorial parent is unpublished.
                 $roots[] = $section;
             }
         }
