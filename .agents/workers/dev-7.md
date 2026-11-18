@@ -70,7 +70,7 @@
 ## Targeted retired-frame hygiene audit (2026-11-18)
 - Rechecked the real Public JavaScript modules, Public stylesheets, Blade consumers and relevant browser/Feature/JavaScript tests for retired contour variants, URL-seeded folio values and animation ownership. No current Public animation or watcher for the former contour system remains; `resources/js/public-paper-frame.js` is already absent. Exhibition-cover and Artwork/Journal animation behavior is unrelated and deliberately preserved.
 - Found a missed **live browser regression**: `tests/browser/e2e/public/public-spa-navigation.spec.mjs` still compared deleted `--public-folio-left-top` with `folioLeftTop` and expected that random, URL-derived decoration to change across navigation. Removed the obsolete check and made the fixture assert stable General geometry while retaining actual nonce/style/media-transition assertions.
-- Removed the final outdated Public foundation comment describing current exterior contours. The former one-way migrations and `PublicAppearance::frameStyle(..., fromStorage: true)` remain intentionally for legitimate persistent/historical data. Historical docs describing removed animation engines are source history, not active code.
+- Removed the final outdated Public foundation comment describing current exterior contours, plus the canonical Public-site document's obsolete claim that `public-paper-frame.js` owns paper contours. The former one-way migrations and `PublicAppearance::frameStyle(..., fromStorage: true)` remain intentionally for legitimate persistent/historical data. Historical docs describing removed animation engines are source history, not active code.
 - No runtime/browser test, build, migration or deployment performed.
 
 ## Verification and open gates
