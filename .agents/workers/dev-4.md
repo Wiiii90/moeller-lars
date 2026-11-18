@@ -2,7 +2,7 @@
 
 **Lease:** 17  
 **Branch:** dev  
-**State:** Active — Expanded Artwork viewport fitting/reading-track fix prepared on dev; runtime/browser acceptance and Gallery migration remain pending.
+**State:** Active — integrated Artwork information, reusable panel and arrangement controls, viewer/detail-page gating and Museum implementation in progress; browser acceptance pending.
 
 ## Chat takeover — 2026-11-18
 
@@ -228,3 +228,12 @@
 - The Expanded Artwork caption, narrative and file credits now use the centered `--public-art-max` General reading track even when the image itself spreads wider. Ordinary artwork/card caption presentation and configured General shell width stay unchanged.
 - A bounded Chromium **synthetic markup/CSS smoke check** exercised 1690×860, 1280×720, 800×430 (200%-zoom-equivalent CSS viewport), 740×540 and 390×844 and an intentionally long description; it confirmed that footer fits without unintended page scroll for short descriptions and that lengthy descriptions retain document scrolling. This is **not actual application/browser acceptance**, which remains pending.
 - Newly discussed Gallery-specific transparency, artwork-color-generated gradients and Museum mode remain a product-design discussion only. Do not commit new background settings or migration/publication paths without agreed ownership and appearance precedence; page-level surface overrides should reuse the canonical `PublicAppearance`/Site Page model rather than a parallel CSS system.
+
+## Integrated Artwork settings implementation — active plan, 2026-11-18
+
+- User explicitly authorized the complete Gallery/Artwork presentation redesign on `dev`, including consistent Gallery Stage and Settings modal with immediate persist/Working preview, per-Artwork overrides, reusable active-panel and drag/button arrangement controls, and preserved Gallery ordering.
+- Scope: one canonical Artwork information model (Title, Date, Dimensions, Material, Media credits, Copyright), Gallery defaults and field-level per-Artwork override, shared responsive row/side placement; separate optional Media Viewer, optional Individual Artwork Pages with Default/Expanded/Museum compositions and navigation.
+- Confirmed owners: `GalleryWorkspaceUploadSettings` shares Stage/modal schema and `GalleryEditorialService` persistence; `ArtworkEditDialog` shares editable Artwork fields; `ArtworkDraftService` persists editorial data; `GalleryPresentation` and `artwork-card/artwork-caption/show` own public presentation. `PublicationSnapshot` tracks both Gallery and Artwork tables. Preserve old checkpoint projection and committed schema parity; do not write tests or deploy.
+- Reuse existing Filament 5 Schema/Toggle or Checkbox, Repeater and `admin-drag-handle`/MoveUp/MoveDown interaction conventions. Consolidate, do not duplicate Stage/modal save paths or presentation owners.
+- The previous Pages/General appearance and Gallery palette discussions stay **out of scope**. Existing Gallery media rights inheritance must remain data-owned by MediaAsset. No further changes to user settings, home hero controls, Gallery ranking, or media lifecycle.
+- Progress: source owners and current migration/publication boundaries identified; implementation pending. Update this living record with exact committed features, checks and unresolved runtime concerns after each implementation slice.
