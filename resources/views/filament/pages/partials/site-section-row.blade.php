@@ -74,6 +74,8 @@
                     <option value="{{ $value }}" @selected(($homeState['template'] ?? null) === $value)>{{ $templateLabel }}</option>
                 @endforeach
             </select>
+        @elseif ($section['type'] === \App\Domain\Content\SiteSectionType::Gallery->value)
+            <span class="admin-inline-control-value">{{ __($section['template'] === \App\Domain\Content\GalleryTemplate::Showcase->value ? 'Showcase' : 'Hero Artworks') }}</span>
         @elseif ($section['type'] === \App\Domain\Content\SiteSectionType::Journal->value)
             <select
                 class="admin-inline-select"

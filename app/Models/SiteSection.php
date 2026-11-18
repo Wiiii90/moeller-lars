@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SitePageHeading;
 use App\Domain\Content\SiteSectionType;
@@ -94,8 +95,12 @@ final class SiteSection extends Model
                 if (! is_string($template) || JournalTemplate::tryFrom($template) === null) {
                     throw ValidationException::withMessages(['template' => 'A Journal page requires a supported template.']);
                 }
+            } elseif ($nodeType === SiteSectionType::Gallery) {
+                if (! is_string($template) || GalleryTemplate::tryFrom($template) === null) {
+                    throw ValidationException::withMessages(['template' => 'A Gallery page requires a supported template.']);
+                }
             } elseif ($template !== null) {
-                throw ValidationException::withMessages(['template' => 'Only Journal pages may select a template.']);
+                throw ValidationException::withMessages(['template' => 'Only Gallery and Journal pages may select a template.']);
             }
 
             if ($nodeType === SiteSectionType::Gallery) {
@@ -194,6 +199,15 @@ final class SiteSection extends Model
         }
 
         return JournalTemplate::from((string) $this->getAttribute('template'));
+    }
+
+    public function galleryTemplate(): ?GalleryTemplate
+    {
+        if ($this->nodeType() !== SiteSectionType::Gallery) {
+            return null;
+        }
+
+        return GalleryTemplate::from((string) $this->getAttribute('template'));
     }
 
     public function parent(): BelongsTo

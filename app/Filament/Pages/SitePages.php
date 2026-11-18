@@ -785,6 +785,7 @@ final class SitePages extends Page
     ): array {
         $type = $section->nodeType();
         $journalTemplate = $section->journalTemplate();
+        $galleryTemplate = $section->galleryTemplate();
         $navigationLabel = $section->getAttribute('navigation_label');
         $sectionId = (int) $section->getKey();
 
@@ -805,7 +806,7 @@ final class SitePages extends Page
         return [
             'id' => (int) $section->getKey(),
             'type' => $type->value,
-            'template' => $journalTemplate?->value,
+            'template' => $journalTemplate?->value ?? $galleryTemplate?->value,
             'type_label' => $type->label(),
             'title' => (string) $section->getAttribute('title'),
             'navigation_label' => $navigationLabel,

@@ -3,6 +3,7 @@
 namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\SiteSectionPathPolicy;
 use App\Domain\Content\SiteSectionType;
 use App\Models\Artwork;
@@ -34,6 +35,7 @@ final class GalleryEditorialService
 
             SiteSection::query()->create([
                 'type' => SiteSectionType::Gallery->value,
+                'template' => GalleryTemplate::Showcase->value,
                 'title' => (string) $gallery->getAttribute('name'),
                 'navigation_label' => (string) $gallery->getAttribute('name'),
                 'slug' => (string) $gallery->getAttribute('slug'),

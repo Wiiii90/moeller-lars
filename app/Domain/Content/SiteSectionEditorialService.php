@@ -3,6 +3,7 @@
 namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Content\GalleryTemplate;
 use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
@@ -692,7 +693,7 @@ final class SiteSectionEditorialService
                 'show_on_home' => false,
             ]);
 
-            return [$slug, null, (int) $gallery->getKey()];
+            return [$slug, GalleryTemplate::Showcase->value, (int) $gallery->getKey()];
         }
 
         throw ValidationException::withMessages(['type' => 'Home cannot be selected as a conversion target.']);
