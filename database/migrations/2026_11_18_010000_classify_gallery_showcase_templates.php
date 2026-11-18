@@ -24,6 +24,15 @@ return new class extends Migration
 
     public function down(): void
     {
+        // Old schema cannot represent Hero Artworks. Refuse a destructive
+        // rollback rather than silently erase an artist-selected template.
+        foreach (['public', 'committed'] as $schema) {
+            if (DB::table("{$schema}.site_sections")
+                ->where('type', 'gallery')->where('template', 'hero_artworks')->exists()) {
+                throw new \RuntimeException("Cannot roll back {$schema} Gallery templates while Hero Artworks pages exist.");
+            }
+        }
+
         foreach (['public', 'committed'] as $schema) {
             DB::statement("ALTER TABLE {$schema}.site_sections DROP CONSTRAINT IF EXISTS site_sections_template_check");
             DB::statement("UPDATE {$schema}.site_sections SET template = NULL WHERE type = 'gallery'");
