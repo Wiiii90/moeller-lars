@@ -1,21 +1,11 @@
 <!doctype html>
 @php
     $publicStyleNonce = request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE);
-    // URL-keyed corner positions are available before the first render.
-    $folioSeed = hexdec(substr(hash('sha256', '/'.ltrim(request()->path(), '/')), 0, 8));
     $artworkHeaderDivider = trim($__env->yieldContent('artwork_header_divider', ''));
     $effectiveHeaderDivider = in_array($artworkHeaderDivider, ['fine', 'separate'], true)
         ? $artworkHeaderDivider : $publicHeaderDivider;
     $artworkWideMenu = trim($__env->yieldContent('artwork_menu_surface_wide', '')) === '1';
     $fittedArtwork = str_contains($__env->yieldContent('content_class'), 'site-content--fitted-artwork');
-    $folioPlacement = [
-        'leftTop' => (16 + (($folioSeed >> 1) % 11)).'px',
-        'leftBottom' => (46 + (($folioSeed >> 5) % 19)).'px',
-        'rightTop' => (45 + (($folioSeed >> 9) % 22)).'px',
-        'rightBottom' => (13 + (($folioSeed >> 13) % 12)).'px',
-        'menuLeftBottom' => (37 + (($folioSeed >> 17) % 10)).'%',
-        'menuRightBottom' => (6 + (($folioSeed >> 21) % 8)).'%',
-    ];
 @endphp
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
@@ -62,14 +52,9 @@
             data-public-layout-artwork-wide-menu="{{ $artworkWideMenu ? '1' : '0' }}"
             data-public-layout-divider-color="{{ $publicHeaderDividerColor ?? '' }}"
             data-public-layout-divider-gradient="{{ $publicHeaderDividerGradientCss ?? '' }}"
-            data-folio-left-top="{{ $folioPlacement['leftTop'] }}"
-            data-folio-left-bottom="{{ $folioPlacement['leftBottom'] }}"
-            data-folio-right-top="{{ $folioPlacement['rightTop'] }}"
-            data-folio-right-bottom="{{ $folioPlacement['rightBottom'] }}"
-            data-folio-menu-left-bottom="{{ $folioPlacement['menuLeftBottom'] }}"
-            data-folio-menu-right-bottom="{{ $folioPlacement['menuRightBottom'] }}">
+>
         @if (is_string($publicStyleNonce) && $publicStyleNonce !== '')
-            <style data-public-layout-style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif @if ($publicMenuBackgroundCss !== null) --public-menu-background: {{ $publicMenuBackgroundCss }};@endif @if ($publicContentBackgroundCss !== null) --public-content-background: {{ $publicContentBackgroundCss }};@endif @if ($publicHeaderColor !== null) --public-title-color: {{ $publicHeaderColor }};@endif @if ($publicHeaderGradientCss !== null) --public-title-paint: {{ $publicHeaderGradientCss }};@endif @if ($publicHeaderDividerColor !== null) --public-separator-color: {{ $publicHeaderDividerColor }};@endif @if ($publicHeaderDividerGradientCss !== null) --public-separator-gradient: {{ $publicHeaderDividerGradientCss }}; --public-separator-paint: {{ $publicHeaderDividerGradientCss }};@endif --public-title-size: {{ $publicHeaderSize }}; --public-title-min-size: {{ $publicHeaderMinSize }}; --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; --public-folio-left-top: {{ $folioPlacement['leftTop'] }}; --public-folio-left-bottom: {{ $folioPlacement['leftBottom'] }}; --public-folio-right-top: {{ $folioPlacement['rightTop'] }}; --public-folio-right-bottom: {{ $folioPlacement['rightBottom'] }}; --public-menu-left-bottom: {{ $folioPlacement['menuLeftBottom'] }}; --public-menu-right-bottom: {{ $folioPlacement['menuRightBottom'] }}; }</style>
+            <style data-public-layout-style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif @if ($publicMenuBackgroundCss !== null) --public-menu-background: {{ $publicMenuBackgroundCss }};@endif @if ($publicContentBackgroundCss !== null) --public-content-background: {{ $publicContentBackgroundCss }};@endif @if ($publicHeaderColor !== null) --public-title-color: {{ $publicHeaderColor }};@endif @if ($publicHeaderGradientCss !== null) --public-title-paint: {{ $publicHeaderGradientCss }};@endif @if ($publicHeaderDividerColor !== null) --public-separator-color: {{ $publicHeaderDividerColor }};@endif @if ($publicHeaderDividerGradientCss !== null) --public-separator-gradient: {{ $publicHeaderDividerGradientCss }}; --public-separator-paint: {{ $publicHeaderDividerGradientCss }};@endif --public-title-size: {{ $publicHeaderSize }}; --public-title-min-size: {{ $publicHeaderMinSize }}; --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; }</style>
         @endif
         {{-- Dynamic component dimensions live in nonce-authorized CSS, never
              forbidden inline style attributes. --}}
@@ -83,17 +68,15 @@
                 aria-label="Artist preview mode"
             >PREVIEW</div>
         @endif
-        {{-- One paper/frame ownership decision for every Public template.
-             Incompatible shapes (landscape, transparent or detached title)
-             keep two independent sheets, never mismatched joined outlines. --}}
+        {{-- Only geometrically connected Menu/Page is one paper; transparent
+             pages, detached titles and unlike paper widths stay separate. --}}
         @php
-            $paperCompatible = ! ($publicHeaderPosition === 'below' && $publicHeaderVisible)
+            $paperConnected = ! ($publicHeaderPosition === 'below' && $publicHeaderVisible)
                 && ! $publicPageTransparent
-                && (! $fittedArtwork || ($artworkWideMenu && in_array($effectiveHeaderDivider, ['fine', 'menu', 'full'], true)));
-            $paperConnected = $paperCompatible && in_array($effectiveHeaderDivider, ['fine', 'menu'], true);
+                && (! $fittedArtwork || $artworkWideMenu)
+                && in_array($effectiveHeaderDivider, ['fine', 'menu'], true);
         @endphp
-        <div class="public-paper-frame @if ($paperCompatible) public-paper-frame--compatible @endif @if ($paperConnected) public-paper-frame--connected @endif">
-            <div class="public-paper-decoration" aria-hidden="true"></div>
+        <div class="public-paper-frame @if ($paperConnected) public-paper-frame--connected @endif">
         <header class="site-header @if ($artworkWideMenu) site-header--artwork-wide-menu @endif site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--divider-{{ $effectiveHeaderDivider }} site-header--title-align-{{ $publicHeaderAlignment }} site-header--mobile-title-align-{{ $publicHeaderMobileAlignment }} @if ($publicHeaderGradientCss !== null) site-header--gradient-title @endif @unless ($publicHeaderVisible) site-header--title-hidden @endunless @if ($publicHeaderAutoScale) site-header--title-fluid @endif">
             @if ($publicHeaderVisible && ($publicHeaderPosition === 'below' || $__env->hasSection('hide_navigation')))
                 <x-public.artist-name :home-url="$homeUrl" :title="$publicHeaderText" />

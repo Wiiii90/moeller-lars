@@ -53,9 +53,9 @@ export function applyPublicLayoutFromMeta() {
     if (!config) return;
     // Exactly one current frame variant after Livewire navigation. The
     // rendering owner remains server-side; this merely replays meta state.
-    const frameStyles = ['layered', 'continuous', 'contours', 'backing', 'plain'];
+    const frameStyles = ['plain', 'backing'];
     const frameStyle = frameStyles.includes(config.dataset.publicLayoutFrameStyle)
-        ? config.dataset.publicLayoutFrameStyle : 'layered';
+        ? config.dataset.publicLayoutFrameStyle : 'plain';
     for (const candidate of frameStyles) {
         document.body.classList.toggle('public-site--frame-' + candidate, candidate === frameStyle);
     }
@@ -86,12 +86,6 @@ export function applyPublicLayoutFromMeta() {
         '--public-content-padding': config.dataset.publicLayoutPadding,
         '--public-title-size': config.dataset.publicLayoutTitleSize,
         '--public-title-min-size': config.dataset.publicLayoutTitleMinSize,
-        '--public-folio-left-top': config.dataset.folioLeftTop,
-        '--public-folio-left-bottom': config.dataset.folioLeftBottom,
-        '--public-folio-right-top': config.dataset.folioRightTop,
-        '--public-folio-right-bottom': config.dataset.folioRightBottom,
-        '--public-menu-left-bottom': config.dataset.folioMenuLeftBottom,
-        '--public-menu-right-bottom': config.dataset.folioMenuRightBottom,
     };
     for (const [name, value] of Object.entries(declarations)) {
         if (value) rule.style.setProperty(name, value);

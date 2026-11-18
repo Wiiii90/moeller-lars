@@ -152,13 +152,19 @@ test('public layout follows the destination metadata through CSSOM without inser
         assert.equal(headerClasses.has('site-header--divider-full'), false);
         assert.equal(headerClasses.has('site-header--divider-menu'), true);
         assert.equal(headerClasses.has('site-header--name-above'), true);
-        assert.equal(frameClasses.has('public-site--frame-layered'), true);
+        assert.equal(frameClasses.has('public-site--frame-plain'), true);
+        assert.equal(frameClasses.has('public-site--frame-backing'), false);
         assert.deepEqual(Object.fromEntries(values), {
             '--public-page': 'linear-gradient(45deg, #112233, #445566)',
             '--public-shell-max': '1120px',
             '--public-art-max': '960px',
             '--public-content-padding': '48px',
         });
+
+        meta.dataset.publicLayoutFrameStyle = 'backing';
+        applyPublicLayoutFromMeta();
+        assert.equal(frameClasses.has('public-site--frame-plain'), false);
+        assert.equal(frameClasses.has('public-site--frame-backing'), true);
 
         values.clear();
         meta.dataset.publicLayoutBackground = '';

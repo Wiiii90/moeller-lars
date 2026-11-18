@@ -174,7 +174,7 @@ final class General extends Page
             }
         }
 
-        $data['frame_style'] = PublicAppearance::frameStyle($data['frame_style'] ?? null);
+        $data['frame_style'] = PublicAppearance::frameStyle($data['frame_style'] ?? null, fromStorage: true);
         $data['menu_type'] = PublicAppearance::menuType($data['menu_type'] ?? null);
         $data['header_name_visible'] = $data['header_name_visible'] === null ? true : (bool) $data['header_name_visible'];
         $data['header_name_text'] = PublicAppearance::headerText($data['header_name_text'] ?? null);

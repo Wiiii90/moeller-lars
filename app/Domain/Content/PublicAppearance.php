@@ -81,18 +81,26 @@ final class PublicAppearance
     }
 
     public const FRAME_STYLES = [
-        'layered' => 'Layered paper',
-        'continuous' => 'Layered paper · continuous contours',
-        'contours' => 'Contours only',
-        'backing' => 'Backing only',
         'plain' => 'Plain',
+        'backing' => 'Backing',
     ];
 
-    public static function frameStyle(mixed $value): string
+    public static function frameStyle(mixed $value, bool $fromStorage = false): string
     {
-        $value ??= 'layered';
+        $value ??= 'plain';
+
+        // Historical checkpoints remain immutable. Normalize former options
+        // only when reading saved values, never for a new editor selection.
+        if ($fromStorage) {
+            $value = match ($value) {
+                'layered', 'continuous' => 'backing',
+                'contours' => 'plain',
+                default => $value,
+            };
+        }
+
         if (! is_string($value) || ! array_key_exists($value, self::FRAME_STYLES)) {
-            throw ValidationException::withMessages(['frame_style' => 'Choose a supported frame style.']);
+            throw ValidationException::withMessages(['frame_style' => 'Choose Plain or Backing.']);
         }
 
         return $value;

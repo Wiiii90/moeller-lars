@@ -104,7 +104,7 @@ preloads. The Admin Vite entrypoints and Filament bundle stay unchanged.
 General
 layout CSS variables are reapplied from server-rendered metadata at the swap
 boundary, so new nonces cannot invalidate the artist's configured background
-or widths. The static contour presentation is independent of the SPA transport.
+or widths. The Frame presentation is independent of the SPA transport.
 
 ## Site navigation
 
@@ -131,10 +131,25 @@ introduced.
 
 ## Public paper, title and surface composition
 
-The Public paper outline is **static**. The server-rendered `public-paper-frame` encloses Header and Content without introducing a second scroll owner. Physically compatible, connected Menu/Page surfaces share the single decorative `public-paper-decoration` contour; separate or transparent surfaces use their existing individual sheet edges. Blade decides compatibility from the concrete header and page presentation; CSS owns the final shape. Both horizontal folio-edge outsets use the same Public design token, never page-specific artificial line matching. Header fit observes window/font changes and actual visible Menu geometry, not its own layout writes.
+The Public paper has two Frame styles: **Plain** (default, no outer
+decoration) and **Backing** (two full-size, crisp paper planes). The existing
+`public-paper-frame` wraps Header and Content without changing document
+scroll ownership or their natural content heights. The same unblurred
+box-shadow layers follow the real physical Menu/Page surfaces, including
+Expanded Artwork and its wider outer Menu paper. No route-randomized contour
+positions, clipped edge pieces or separate frame renderer remain.
+Independent Menu/Page surfaces each own their backing. Connected Menu/Page
+uses a single stack on Page, preventing an artificial stroke at their join.
+Transparent Page never receives backing. The global Background, Menu/Page
+gradients, width settings and Menu-to-page divider remain independent.
 
-The frame is an **intrinsically content-sized flex item** (`flex: 0 0 auto` in `resources/css/app.css`); the body, not the frame, fills the viewport's remaining height. Contour return uses the frame's actual content-paper height, trailing content padding and one shared return inset. Populated pages do not receive an artificial viewport-driven stretch. Empty/min-height page cases retain their own layout rules and need browser acceptance. There is **no** `public-paper-frame.js`, observer-driven measurement/writes, animation, timeout or duplicated frame engine. The six route-deterministic values retained in nonce-authorized layout metadata belong to the legacy separate-sheet geometry, not an active animation.
-
+The stored `frame_style` column remains 12 characters and defaults to
+`plain`. A one-way migration changes former Backing-bearing `layered`
+and `continuous` values to `backing` and `contours` to `plain` in
+Working and Committed settings. Immutable historical checkpoints remain
+unchanged: the canonical `PublicAppearance::frameStyle` storage-read boundary
+normalizes their old values, whereas new editor writes reject the retired
+choices.
 
 The artist title uses one shared, HTML-escaped plain-text value (default `Lars Möller`) for its visible label, home anchor and accessibility text. Hiding it removes its reserved Menu column/row. An unset title color inherits contextual ink.
 
@@ -167,20 +182,10 @@ existing independent Divider color:
 - `full_gap`: **Full-width divider and separate surfaces** — a
   viewport-width line centered between independent surfaces.
 
-Global **Frame style** controls exterior presentation independently:
-`layered` (Layered paper: white strokes plus gray backing),
-`continuous` (Layered paper · continuous contours: one shared line
-across even separated equal-width sheets; two gray backings remain),
-`contours` (Contours only), `backing` (Backing only), and `plain`
-(Plain). No second decoration implementation per option; these
-selectors enable or disable the components of the same shared owner.
-The stored `frame_style` column remains unchanged (12 characters)
-and the existing `layered` default is preserved. SPA layout metadata
-synchronizes exactly one server-defined frame style without page reload.
-
-These variants remain subject to real-browser visual acceptance across
-regular, landscape, narrow and long-page routes.
-
+Global **Frame style** offers only **Plain** and **Backing**.
+The shared Public stylesheet owns both presentations on all pages; browser
+acceptance is still required across Gallery, expanded Artwork, narrow and
+long-page views and all divider configurations.
 
 ## Global public appearance surfaces
 

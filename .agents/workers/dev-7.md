@@ -2,11 +2,11 @@
 
 **Branch:** `dev`  
 **Lease:** 13 (active)  
-**Status:** Shared Preview device widths and Gallery lifecycle updated; source committed, browser acceptance outstanding.
+**Status:** General Frame Style reduction and full-paper Backing rewrite staged for dev; visual browser acceptance outstanding.
 
 ## Ownership and accepted decisions
 - General → Appearance (Global, Title, Menu, Page and Legal), Regional Formats, Admin live Preview and their direct Public consumers.
-- Frame Style variants and rendering are **deferred** until the upcoming Public Preview review; do not expand or redesign them in this assignment.
+- User explicitly authorized replacing the Frame Styles on 2026-11-18: only Plain (first/default) and Backing, with the latter rebuilt from complete paper planes. Do not restore the former contour options.
 - User specifically authorized writing/updating the directly relevant regression tests on `dev`, **without executing any tests**. No CI, other branch changes or deployment.
 - Do not alter existing saved artist data, add duplicate renderers or invent legal copy. Coordinate shared Admin popover changes with other Dev workers, especially Dashboard ownership.
 
@@ -60,6 +60,12 @@
 - Gallery's former dynamic Livewire preview key destroyed selected device/zoom/pan on every Gallery/Artwork/Staged selection. The component now has one stable key; its obsolete revision counter and increment were deleted; the existing Gallery preview event receives a selected Public URL when Gallery/Artwork changes, and staged selection triggers its existing fit path. The Gallery mutation refresh supplies the current public route and the canonical Gallery/Artwork iframe title so renamed Artwork slugs or mode changes cannot leave a stale URL or accessible label. Source switching does not intentionally reset device and zoom.
 - Unsaved staged media have no public route or fully published Public Artwork page. Their image/video and edited caption are now laid out by a real responsive CSS container at the chosen Preview viewport width, including a mobile-width layout. This is a staged media review (now explicitly labeled in Gallery), not a claim of identical Public Artwork markup before creation.
 - No tests, local browser acceptance, CI, deployment, media mutation or database migration performed.
+
+## General Frame Style retirement and paper redesign (2026-11-18)
+- User retired Layered, Continuous Contours and Contours Only; Plain is the default/first option, Backing is the second. The editor rejects retired styles while stored historical records normalize through PublicAppearance; Working and Committed settings migrate to the closest remaining style and their SQL default becomes Plain.
+- Public paper composition no longer uses URL-seeded coordinates, partial edge contours, rail clip-paths or the decorative root overlay. The only non-Plain frame is a stack of two complete, opaque rectangular sheets behind the physical Menu/Page boxes at whatever widths their actual layout produces. Connected paper has only one shadow owner to avoid creating a fake Menu divider; transparent Page has none. Wide Artwork paints the backing on its true outer Menu surface, not the narrow navigation.
+- Updated the existing feature and Public SPA tests and the canonical Public contract; no new test suite. No test run, migration execution, build, CI or deployment. The separate Preview chat's shared Admin component was not modified.
+- Real browser acceptance pending: normal and expanded Artwork, Gallery, long/short, narrow views, linked/separate surfaces, all divider modes and configured gradients.
 
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.

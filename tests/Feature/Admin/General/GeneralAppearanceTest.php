@@ -49,6 +49,29 @@ it('offers only Inside, Above and Below positions and persists Inside Right', fu
         ->and(PublicContentSetting::general()->getAttribute('header_name_alignment'))->toBe('right');
 });
 
+it('offers only Plain and Backing Frame styles and maps historical stored choices', function (): void {
+    expect(PublicAppearance::FRAME_STYLES)->toBe([
+        'plain' => 'Plain',
+        'backing' => 'Backing',
+    ])->and(PublicAppearance::frameStyle(null))->toBe('plain')
+        ->and(PublicAppearance::frameStyle('layered', fromStorage: true))->toBe('backing')
+        ->and(PublicAppearance::frameStyle('continuous', fromStorage: true))->toBe('backing')
+        ->and(PublicAppearance::frameStyle('contours', fromStorage: true))->toBe('plain');
+
+    foreach (['layered', 'continuous', 'contours'] as $retired) {
+        expect(fn () => PublicAppearance::frameStyle($retired))
+            ->toThrow(ValidationException::class);
+    }
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'frame_style' => 'backing',
+    ]);
+    Livewire::test(General::class)->assertSet('data.frame_style', 'backing')
+        ->set('data.frame_style', 'plain')
+        ->assertHasNoErrors();
+    expect(PublicContentSetting::general()->getAttribute('frame_style'))->toBe('plain');
+});
+
 it('validates and persists the configured Menu type', function (): void {
     $page = Livewire::test(General::class)
         ->assertSet('data.menu_type', 'cyclic_inline')

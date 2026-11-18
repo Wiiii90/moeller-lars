@@ -31,7 +31,7 @@ final class PublicSiteContext
             'faviconVariant' => $faviconVariant,
             'isPreview' => $this->preview->active(),
             'homeUrl' => $this->preview->homeUrl(),
-            'publicFrameStyle' => PublicAppearance::frameStyle($settings->getAttribute('frame_style')),
+            'publicFrameStyle' => PublicAppearance::frameStyle($settings->getAttribute('frame_style'), fromStorage: true),
             'publicBackgroundCss' => PublicAppearance::backgroundCss($settings),
             'publicMenuBackgroundCss' => PublicAppearance::surfaceCss($settings, 'menu_background'),
             'publicContentBackgroundCss' => PublicAppearance::surfaceCss($settings, 'page_background'),
