@@ -786,8 +786,8 @@ body.public-site:has(.site-content--fitted-image) .site-header {
        Artwork information instead of sizing portraits from the paper width.
        A later Gallery setting can own these two values without changing the
        Artwork card or Home/individual Artwork consumers. */
-    --gallery-artwork-height: min(86svh, calc(100svh - 9rem));
-    --gallery-artwork-gap: clamp(5rem, 13svh, 9rem);
+    --gallery-artwork-height: min(94svh, calc(100svh - 6rem));
+    --gallery-artwork-gap: clamp(2.5rem, 6.5svh, 4.5rem);
     display: block;
     width: min(100%, var(--public-art-max));
     min-width: 0;
@@ -815,8 +815,8 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     margin-bottom: 0;
 }
 
-/* Gallery index only: larger breathing room while retaining the same
-   vertical Artwork sequence and General-owned Content width. */
+/* Gallery index only: independent vertical rhythm while retaining the
+   canonical Artwork sequence and General-owned Content width. */
 /* Allocate almost a viewport to each Artwork. Short landscape images are
    centered in their own editorial slot; large portraits remain naturally
    sized and long metadata may extend the slot rather than being clipped. */
@@ -830,7 +830,7 @@ body.public-site:has(.site-content--fitted-image) .site-header {
         minmax(0, var(--gallery-drift-right));
     align-content: center;
     width: 100%;
-    min-height: max(0px, calc(100svh - 9rem));
+    min-height: max(0px, calc(100svh - 12rem));
     margin-bottom: var(--gallery-artwork-gap);
 }
 

@@ -345,11 +345,11 @@ response timings and variant availability in the running preview.
 The public Gallery keeps its authored, vertically ordered Artwork sequence
 inside General's Content width. Its temporary (not yet artist-configurable)
 presentation values live on `.artwork-list`: an image-height ceiling of
-`min(86svh, calc(100svh - 9rem))`, a natural-width media display with
+`min(94svh, calc(100svh - 6rem))`, a natural-width media display with
 `object-fit: contain`, and an Artwork-to-Artwork gap of
-`clamp(5rem, 13svh, 9rem)`. The remaining viewport is reserved for the
+`clamp(2.5rem, 6.5svh, 4.5rem)`. The remaining viewport is reserved for the
 sticky Menu and ordinary Artwork information. The outer Artwork slot has a
-minimum height of `max(0px, calc(100svh - 9rem))` so short landscape works
+minimum height of `max(0px, calc(100svh - 12rem))` so short landscape works
 receive comparable breathing room; long rights/captions still expand naturally,
 without forcing an exact one-image-per-viewport promise in every case.
 

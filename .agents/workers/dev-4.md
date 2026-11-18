@@ -2,7 +2,7 @@
 
 **Lease:** 17
 **Branch:** dev
-**State:** Source-updated — Public Gallery metadata alignment, deterministic offset rhythm and taller viewport composition prepared for dev; full browser/runtime acceptance pending.
+**State:** Source-updated — user-requested taller Gallery images and tighter Artwork rhythm, retaining stable drift and image-width captions; browser/runtime acceptance pending.
 
 ## Current assignment and owner
 
@@ -81,3 +81,10 @@ The current screenshots show unacceptable large spaces and rounded nested Repeat
 - Build existing local Preview from current `dev`; visually check image/caption/rights edges and the intentionally varied offset on real media and long rights.
 - Check first and subsequent cards, page headings, sticky Menu, optional Gallery divider and video, mobile and 200% zoom; ensure no image crop, no empty/missing-image shift and normal document scroll.
 - Confirm responsive visual acceptance and recheck separate Home Hero and individual Artwork pages. Do not call this completed before a real runtime/browser review.
+
+## Public Gallery image height and spacing tuning — 2026-11-18
+
+- User asked to make Gallery images taller again and reduce Artwork-to-Artwork separation. Kept the prior deterministic lateral drift, intrinsic image-width captions, rights, user-controlled information arrangement and Gallery-only presentation boundary unchanged.
+- Single canonical CSS owner: `resources/css/public-presentation.css`. Raised the Gallery media maximum from `min(86svh, calc(100svh - 9rem))` to `min(94svh, calc(100svh - 6rem))`; reduced the total gap from `clamp(5rem, 13svh, 9rem)` to `clamp(2.5rem, 6.5svh, 4.5rem)`; reduced the card's minimum viewport slot from `100svh - 9rem` to `100svh - 12rem` so short landscape media do not retain excessive internal blank space despite the tighter external gap. Divided Galleries still use half of the same total gap per side. Existing images remain uncropped and metadata can extend the slot naturally.
+- Updated the directly governing section of `docs/public/site.md` together with the source and worker record. No new setting, database field, JavaScript, Home style, individual Artwork page change, deployment or Continuous Integration run.
+- Static source and CSS brace checks are possible via the connector; genuine local browser acceptance on portrait/landscape, short viewports, 200% zoom, long credits and Gallery dividers remains pending. Increasing the image ceiling deliberately leaves less guaranteed room for long captions, which may extend the document naturally.
