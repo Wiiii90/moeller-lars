@@ -60,7 +60,7 @@ services:
   # Optional authenticated browser-engine comparison inside the shared
   # Gallery/General Live Preview. No external port or public renderer route.
   preview-renderer:
-    profiles: ["preview"]
+    profiles: ["browser-preview"]
     build:
       context: .
       dockerfile: docker/preview-renderer/Dockerfile
