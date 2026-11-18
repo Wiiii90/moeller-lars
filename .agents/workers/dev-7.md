@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 13 (active)  
-**Status:** General Frame Style reduced to Plain/Backing on dev; full-paper Backing implemented, visual browser acceptance outstanding.
+**Status:** General Backing rewritten to one full paper per Menu/Page surface, awaiting real-browser acceptance.
 
 ## Ownership and accepted decisions
 - General → Appearance (Global, Title, Menu, Page and Legal), Regional Formats, Admin live Preview and their direct Public consumers.
@@ -61,11 +61,11 @@
 - Unsaved staged media have no public route or fully published Public Artwork page. Their image/video and edited caption are now laid out by a real responsive CSS container at the chosen Preview viewport width, including a mobile-width layout. This is a staged media review (now explicitly labeled in Gallery), not a claim of identical Public Artwork markup before creation.
 - No tests, local browser acceptance, CI, deployment, media mutation or database migration performed.
 
-## General Frame Style retirement and paper redesign (2026-11-18)
-- User retired Layered, Continuous Contours and Contours Only; Plain is the default/first option, Backing is the second. The editor rejects retired styles while stored historical records normalize through PublicAppearance; Working and Committed settings migrate to the closest remaining style and their SQL default becomes Plain.
-- Public paper composition no longer uses URL-seeded coordinates, partial edge contours, rail clip-paths or the decorative root overlay. The only non-Plain frame is a stack of two complete, opaque rectangular sheets behind the physical Menu/Page boxes at whatever widths their actual layout produces. Connected paper has only one shadow owner to avoid creating a fake Menu divider; transparent Page has none. Wide Artwork paints the backing on its true outer Menu surface, not the narrow navigation.
-- Updated the existing feature and Public SPA tests and the canonical Public contract; no new test suite. No test run, migration execution, build, CI or deployment. The separate Preview chat's shared Admin component was not modified.
-- Real browser acceptance pending: normal and expanded Artwork, Gallery, long/short, narrow views, linked/separate surfaces, all divider modes and configured gradients.
+## General Frame Style — single-sheet Backing (2026-11-18)
+- The user rejected the previous two-shadow implementation and the skip-Menu rule for connected layouts after reviewing Gallery and Artwork screenshots and scrolling defects. The only choices remain Plain (default) and Backing.
+- Backing now draws exactly ONE full-size `::before` paper underneath each visible Menu and Content sheet. The real `site-navigation-surface` is the single Menu paper owner in every viewport (also wide Artwork); the actual navigation may be narrower. `#content` owns the Page underlay. Both are isolated stacking contexts, with a shared constant top-left offset to avoid a sticky Menu's trailing background overpainting scrolling Content. The old double `box-shadow` and the conditional connected-paper class/skip rule are deleted; no new page-specific exceptions or second renderer.
+- Storage migration, two-choice enum and historical checkpoint normalization from earlier Frame cutover remain unchanged; the separate Admin Live Preview workstream remains untouched. Tests, build, CI, migration execution and deployment were not run.
+- **Unverified:** real-browser visual geometry and scrolling on Gallery, regular/expanded Artwork, connected/separate dividers and narrow pages must be accepted before calling this fixed.
 
 ## Targeted retired-frame hygiene audit (2026-11-18)
 - Rechecked the real Public JavaScript modules, Public stylesheets, Blade consumers and relevant browser/Feature/JavaScript tests for retired contour variants, URL-seeded folio values and animation ownership. No current Public animation or watcher for the former contour system remains; `resources/js/public-paper-frame.js` is already absent. Exhibition-cover and Artwork/Journal animation behavior is unrelated and deliberately preserved.

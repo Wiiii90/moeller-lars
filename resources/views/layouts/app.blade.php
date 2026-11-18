@@ -5,7 +5,6 @@
     $effectiveHeaderDivider = in_array($artworkHeaderDivider, ['fine', 'separate'], true)
         ? $artworkHeaderDivider : $publicHeaderDivider;
     $artworkWideMenu = trim($__env->yieldContent('artwork_menu_surface_wide', '')) === '1';
-    $fittedArtwork = str_contains($__env->yieldContent('content_class'), 'site-content--fitted-artwork');
 @endphp
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
@@ -67,15 +66,9 @@
                 aria-label="Artist preview mode"
             >PREVIEW</div>
         @endif
-        {{-- Only geometrically connected Menu/Page is one paper; transparent
-             pages, detached titles and unlike paper widths stay separate. --}}
-        @php
-            $paperConnected = ! ($publicHeaderPosition === 'below' && $publicHeaderVisible)
-                && ! $publicPageTransparent
-                && (! $fittedArtwork || $artworkWideMenu)
-                && in_array($effectiveHeaderDivider, ['fine', 'menu'], true);
-        @endphp
-        <div class="public-paper-frame @if ($paperConnected) public-paper-frame--connected @endif">
+        {{-- The Menu and Page each own one real backing surface in Backing
+             mode; Plain leaves both surfaces unadorned. --}}
+        <div class="public-paper-frame">
         <header class="site-header @if ($artworkWideMenu) site-header--artwork-wide-menu @endif site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--divider-{{ $effectiveHeaderDivider }} site-header--title-align-{{ $publicHeaderAlignment }} site-header--mobile-title-align-{{ $publicHeaderMobileAlignment }} @if ($publicHeaderGradientCss !== null) site-header--gradient-title @endif @unless ($publicHeaderVisible) site-header--title-hidden @endunless @if ($publicHeaderAutoScale) site-header--title-fluid @endif">
             @if ($publicHeaderVisible && ($publicHeaderPosition === 'below' || $__env->hasSection('hide_navigation')))
                 <x-public.artist-name :home-url="$homeUrl" :title="$publicHeaderText" />

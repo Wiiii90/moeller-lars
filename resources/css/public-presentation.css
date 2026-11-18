@@ -25,12 +25,10 @@
     --public-short-page-min-height: 15rem;
     --public-section-gap: 3.55rem;
     --public-page: #777;
-    /* Two complete paper planes follow each physical surface. */
-    --public-backing-near: #f3f0eb;
-    --public-backing-far: #d9d3ca;
-    --public-backing-stack:
-        -.25rem .35rem 0 0 var(--public-backing-near),
-        -.55rem .75rem 0 0 var(--public-backing-far);
+    /* One full paper underneath each physical front sheet. A fixed offset
+     * means the same geometry on mobile, Gallery and expanded Artwork. */
+    --public-backing-color: #d9d3ca;
+    --public-backing-offset: .45rem;
     /* Independent global Menu and Page surfaces; both initially white. */
     --public-menu-background: #fff;
     --public-content-background: #fff;
@@ -94,19 +92,27 @@ body {
     background-attachment: fixed;
 }
 
-/* Header navigation and page content share one centered shell geometry. */
-.site-navigation,
+/* Menu and Page have one shared shell width. The Menu's real paper box
+ * lives on its surface at every viewport, not only for expanded Artwork.
+ * The navigation inside may be narrower, but never changes the paper box. */
+.site-navigation-surface,
 #content {
     width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
     min-width: 0;
     margin-inline: auto;
 }
-
-/* Navigation owns its actual Menu surface; inner rails are not paper layers. */
-.site-navigation {
+.site-navigation-surface {
     position: relative;
+    display: block;
     order: 1;
     background: var(--public-menu-background);
+}
+.site-navigation {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    margin-inline: auto;
+    background: transparent;
 }
 @media (scripting: enabled) {
     .site-navigation[data-site-navigation]:not([data-navigation-ready]) {
@@ -681,12 +687,6 @@ body {
     }
 
 
-}
-
-/* With the option off (or on narrow screens) this wrapper has no box;
-   the established header layout and its navigation rules are unchanged. */
-.site-navigation-surface {
-    display: contents;
 }
 
 
@@ -1920,28 +1920,32 @@ html:has(.artwork-viewer[open]) {
     background: var(--public-separator-paint, var(--public-separator-color, rgba(255, 255, 255, .68)));
 }
 
-/* Plain has no exterior decoration. Backing consists of two complete,
- * opaque rectangles beneath the real Menu/Page surfaces. Each box-shadow
- * is a full sheet, not a line or clipped edge. No random offsets or
- * viewport-dependent paper reconstruction are needed.
+/* Backing is ONE physical, opaque sheet behind each visible front sheet.
+ * This selector is the only Backing renderer in the Public application.
+ * The Menu surface is a real box in every layout, including sticky headers,
+ * Gallery and wide Artwork. The Page uses its natural #content rectangle.
  *
- * Connected Menu/Page shares one white front sheet. Only its Page carries
- * backing, so a separate Menu shadow cannot draw a false divider at the join. */
-body.public-site--frame-backing #content:not(.site-content--transparent),
-body.public-site--frame-backing .public-paper-frame:not(.public-paper-frame--connected) .site-navigation {
-    box-shadow: var(--public-backing-stack);
+ * Move both backing sheets left and UP rather than down: a sticky Menu must
+ * never paint a trailing strip over Content while the document scrolls.
+ * A complete 100% by 100% plane replaces all box shadows and edge fragments.
+ * Isolation keeps the underlay above the site's background, behind its own
+ * front sheet, and out of the foreground/menu hit targets. */
+body.public-site--frame-backing .site-navigation-surface,
+body.public-site--frame-backing #content:not(.site-content--transparent) {
+    isolation: isolate;
 }
-
-/* Expanded Artwork's outer Menu paper is wider than its navigation. The
- * actual outer paper owns the same Backing; its inner rail never does. */
-@media (min-width: 64.001rem) {
-    body.public-site--frame-backing .site-header--artwork-wide-menu .site-navigation {
-        box-shadow: none;
-    }
-    body.public-site--frame-backing .public-paper-frame:not(.public-paper-frame--connected)
-    .site-header--artwork-wide-menu .site-navigation-surface {
-        box-shadow: var(--public-backing-stack);
-    }
+body.public-site--frame-backing .site-navigation-surface::before,
+body.public-site--frame-backing #content:not(.site-content--transparent)::before {
+    position: absolute;
+    z-index: -1;
+    top: calc(-1 * var(--public-backing-offset));
+    left: calc(-1 * var(--public-backing-offset));
+    display: block;
+    width: 100%;
+    height: 100%;
+    content: "";
+    pointer-events: none;
+    background: var(--public-backing-color);
 }
 
 .site-header--name-inside,

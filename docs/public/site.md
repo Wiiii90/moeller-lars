@@ -132,16 +132,18 @@ introduced.
 ## Public paper, title and surface composition
 
 The Public paper has two Frame styles: **Plain** (default, no outer
-decoration) and **Backing** (two full-size, crisp paper planes). The existing
-`public-paper-frame` wraps Header and Content without changing document
-scroll ownership or their natural content heights. The same unblurred
-box-shadow layers follow the real physical Menu/Page surfaces, including
-Expanded Artwork and its wider outer Menu paper. No route-randomized contour
-positions, clipped edge pieces or separate frame renderer remain.
-Independent Menu/Page surfaces each own their backing. Connected Menu/Page
-uses a single stack on Page, preventing an artificial stroke at their join.
-Transparent Page never receives backing. The global Background, Menu/Page
-gradients, width settings and Menu-to-page divider remain independent.
+decoration) and **Backing** (one complete sheet under each existing Menu/Page
+surface). The same real `site-navigation-surface` owns the Menu paper at all
+viewports, including expanded Artwork where only the navigation inside it is
+narrower. `#content` owns the Page paper. Both surfaces use one shared
+offset and the same absolute full-size `::before` underlay behind their
+respective backgrounds; no box-shadow stack, route-seeded contours, clipped
+edge pieces or separate frame renderer remain. Their backing follows natural
+dimensions and scroll behavior without relying on the other surface's width,
+divider setting or connectedness. The Menu's underlay is offset toward the
+top-left, rather than trailing below its sticky edge into the moving Content.
+A transparent Page receives no backing. Document scrolling and the independent
+Menu-to-page divider, background, gradient and width settings remain unchanged.
 
 The stored `frame_style` column remains 12 characters and defaults to
 `plain`. A one-way migration changes former Backing-bearing `layered`
@@ -456,8 +458,9 @@ repeated corner ornaments or new entry rules.
 No artwork is cropped or covered.
 The existing artist name and navigation retain their independent layout owners.
 
-When Backing is chosen, its two complete lower sheets and the Blog's small
-angled corner strokes are the only accepted paper accents. These Blog
+When Backing is chosen, each real Menu/Page surface gets one lower sheet;
+the Blog's small angled corner strokes remain a separate editorial accent.
+These Blog
 strokes may enter the configured content padding but never displace text into
 it; they alternate to the left or right with the cover composition. The
 translucent headline washes, Exhibition date marks, heading backgrounds,
