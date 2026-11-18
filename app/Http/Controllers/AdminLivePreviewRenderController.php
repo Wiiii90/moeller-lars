@@ -47,14 +47,21 @@ final class AdminLivePreviewRenderController
         $profile = PreviewDeviceProfiles::find($input['profile']);
         abort_unless($profile !== null, 422);
 
+        // Only the encrypted Laravel session cookie is needed by the
+        // protected Preview. Do not forward the artist's entire cookie jar.
+        $sessionCookie = (string) config('session.cookie');
+        $cookie = collect(explode(';', (string) $request->headers->get('Cookie', '')))
+            ->map(static fn (string $part): string => trim($part))
+            ->first(static fn (string $part): bool => str_starts_with($part, $sessionCookie.'='));
+        abort_unless(is_string($cookie) && $cookie !== '', 401);
+
         try {
             $render = Http::connectTimeout(2)
                 ->timeout(18)
                 ->withToken($token)
                 ->withHeaders([
-                    // Encrypted browser cookies are forwarded unchanged across
-                    // the private application-to-renderer boundary. Never log.
-                    'Cookie' => (string) $request->headers->get('Cookie', ''),
+                    // Forward only the already-encrypted session cookie.
+                    'Cookie' => $cookie,
                     'Accept' => 'image/png',
                 ])
                 ->post(rtrim($endpoint, '/').'/render', [

@@ -122,9 +122,11 @@
     </x-admin.stage-tool-row>
 
 
-    <div x-ref="viewport" class="admin-live-preview__viewport"
+    <div x-ref="viewport" class="admin-live-preview__viewport" tabindex="0"
         x-on:pointerenter="pointerInside = true"
-        x-on:pointerleave="pointerInside = false; cancelSpacePan()">
+        x-on:pointerleave="pointerInside = false; cancelSpacePan()"
+        x-on:wheel="handleSnapshotWheel($event)"
+        x-on:keydown="handleSnapshotKeydown($event)">
         <div x-ref="surface" wire:ignore.self class="admin-live-preview__surface">
             <div x-ref="page" wire:ignore.self class="admin-live-preview__page"
                 x-bind:class="{

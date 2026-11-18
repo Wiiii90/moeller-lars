@@ -146,6 +146,13 @@ async function render(payload, cookieHeader) {
             Math.max(document.documentElement.scrollWidth, document.body.scrollWidth)
                 > document.documentElement.clientWidth + 1,
         );
+        // A viewport scroll can activate lazy-loaded artwork images.
+        await page.waitForFunction(() => [...document.images]
+            .filter((img) => {
+                const bounds = img.getBoundingClientRect();
+                return bounds.bottom > 0 && bounds.top < window.innerHeight;
+            })
+            .every((img) => img.complete), null, { timeout: 3500 }).catch(() => {});
         const png = await page.screenshot({
             type: 'png', scale: 'css', animations: 'disabled',
             timeout: 10000,
@@ -157,6 +164,11 @@ async function render(payload, cookieHeader) {
 }
 
 createServer(async (req, res) => {
+    if (req.method === 'GET' && req.url === '/health') {
+        res.writeHead(204, { 'Cache-Control': 'no-store' });
+        res.end();
+        return;
+    }
     if (req.method !== 'POST' || req.url !== '/render') {
         respond(res, 404, 'Not found.');
         return;

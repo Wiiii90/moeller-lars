@@ -18,6 +18,9 @@ export function adminLivePreview(element) {
         horizontalOverflow: false,
         snapshotAbort: null,
         snapshotRequest: 0,
+        snapshotScrollY: 0,
+        snapshotScrollMax: 0,
+        snapshotWheelDelay: null,
         fitScale: 1,
         zoom: 1,
         minZoom: 1,
@@ -45,6 +48,7 @@ export function adminLivePreview(element) {
             this.unbindFrameShortcuts()
             this.cancelPanGesture()
             this.snapshotAbort?.abort()
+            if (this.snapshotWheelDelay !== null) clearTimeout(this.snapshotWheelDelay)
             if (this.snapshotUrl) URL.revokeObjectURL(this.snapshotUrl)
         },
         scheduleFit() {
@@ -64,6 +68,8 @@ export function adminLivePreview(element) {
             this.selectedProfile = value
             this.previewDevice = profiles[value].category
             this.rotated = false
+            this.snapshotScrollY = 0
+            this.snapshotScrollMax = 0
             this.changeViewport()
         },
         setEngine(value) {
@@ -97,6 +103,8 @@ export function adminLivePreview(element) {
             })
         },
         rotateViewport() {
+            this.snapshotScrollY = 0
+            this.snapshotScrollMax = 0
             this.rotated = ! this.rotated
             this.changeViewport()
         },
@@ -322,6 +330,38 @@ export function adminLivePreview(element) {
                 this.horizontalOverflow = false
             }
         },
+        scrollSnapshot(amount) {
+            if (this.engine === 'interactive' || this.snapshotLoading || ! this.snapshotUrl) return
+            const next = Math.max(0, Math.min(this.snapshotScrollMax,
+                Math.round(this.snapshotScrollY + amount)))
+            if (next === this.snapshotScrollY) return
+            this.snapshotScrollY = next
+            if (this.snapshotWheelDelay !== null) clearTimeout(this.snapshotWheelDelay)
+            this.snapshotWheelDelay = setTimeout(() => {
+                this.snapshotWheelDelay = null
+                this.requestSnapshot()
+            }, 160)
+        },
+        handleSnapshotWheel(event) {
+            if (this.engine === 'interactive') return
+            event.preventDefault()
+            this.scrollSnapshot(event.deltaY)
+        },
+        handleSnapshotKeydown(event) {
+            if (this.engine === 'interactive') return
+            const height = this.viewportSize()[1]
+            const amount = {
+                ArrowDown: 80,
+                ArrowUp: -80,
+                PageDown: height * .8,
+                PageUp: -height * .8,
+                Home: -this.snapshotScrollMax,
+                End: this.snapshotScrollMax,
+            }[event.key]
+            if (amount === undefined) return
+            event.preventDefault()
+            this.scrollSnapshot(amount)
+        },
         async requestSnapshot() {
             if (this.engine === 'interactive' || ! this.currentUrl) return
             this.snapshotAbort?.abort()
@@ -348,6 +388,7 @@ export function adminLivePreview(element) {
                         profile: this.selectedProfile,
                         orientation: this.rotated ? 'rotated' : 'default',
                         engine: this.engine,
+                        scroll_y: this.snapshotScrollY,
                     }),
                     signal: controller.signal,
                 })
@@ -356,6 +397,8 @@ export function adminLivePreview(element) {
                     throw new Error(payload.message || 'Browser rendering is unavailable.')
                 }
                 const overflow = response.headers.get('X-Preview-Overflow-X') === '1'
+                const maxY = Number(response.headers.get('X-Preview-Scroll-Max') ?? 0)
+                const scrollY = Number(response.headers.get('X-Preview-Scroll-Y') ?? 0)
                 const blob = await response.blob()
                 const imageUrl = URL.createObjectURL(blob)
                 if (controller.signal.aborted || revision !== this.snapshotRequest) {
@@ -364,6 +407,8 @@ export function adminLivePreview(element) {
                 }
                 this.snapshotUrl = imageUrl
                 this.horizontalOverflow = overflow
+                this.snapshotScrollMax = Number.isFinite(maxY) ? Math.max(0, maxY) : 0
+                this.snapshotScrollY = Number.isFinite(scrollY) ? Math.max(0, scrollY) : 0
             } catch (error) {
                 if (controller.signal.aborted || revision !== this.snapshotRequest) return
                 this.snapshotError = error?.message || 'Unable to render browser comparison.'
