@@ -10,8 +10,10 @@ return new class extends Migration
         foreach (['public', 'committed'] as $schema) {
             // Existing Gallery rows retain their own category, Artworks and
             // settings. Only the presentation template gains a name.
-            DB::statement("UPDATE {$schema}.site_sections SET template = 'showcase' WHERE type = 'gallery'");
+            // The existing check allows Gallery templates to be NULL only.
+            // Remove it before classifying preserved Gallery rows as Showcase.
             DB::statement("ALTER TABLE {$schema}.site_sections DROP CONSTRAINT IF EXISTS site_sections_template_check");
+            DB::statement("UPDATE {$schema}.site_sections SET template = 'showcase' WHERE type = 'gallery' AND template IS NULL");
             DB::statement("ALTER TABLE {$schema}.site_sections ADD CONSTRAINT site_sections_template_check CHECK (
                 (type = 'journal' AND template IN ('blog', 'exhibitions'))
                 OR (type = 'gallery' AND template IN ('showcase', 'hero_artworks'))
