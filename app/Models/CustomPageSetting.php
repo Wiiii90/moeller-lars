@@ -525,19 +525,6 @@ final class CustomPageSetting extends Model
                     }
                 }
             }
-            if ($type === 'contact_form') {
-                $state = $child['form_state'] ?? 'enabled';
-                if (! is_string($state) || ! in_array($state, ['enabled', 'under_construction'], true)) {
-                    throw ValidationException::withMessages(['blocks' => 'Contact form presentation state is invalid.']);
-                }
-                $statusText = $child['status_text'] ?? null;
-                if ($state === 'under_construction' && (! is_string($statusText) || trim($statusText) === '')) {
-                    throw ValidationException::withMessages(['blocks' => 'Contact Form needs status text while under construction.']);
-                }
-                if ($statusText !== null && (! is_string($statusText) || mb_strlen($statusText) > 500)) {
-                    throw ValidationException::withMessages(['blocks' => 'Contact form status text is too long.']);
-                }
-            }
         }
     }
 
@@ -597,8 +584,6 @@ final class CustomPageSetting extends Model
                 'contact_form' => [
                     'type' => 'contact_form',
                     'published' => $published,
-                    'form_state' => ($child['form_state'] ?? 'enabled') === 'under_construction' ? 'under_construction' : 'enabled',
-                    'status_text' => $this->nullableTrimmedString($child['status_text'] ?? null),
                 ],
             };
         }

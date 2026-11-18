@@ -4,6 +4,13 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Contact Form: remove Under Construction presentation (2026-11-18)
+
+- User-directed removal of the legacy Contact Form presentation selector and its status-text field from the Custom Page component editor. The existing published/unpublished Contact child toggle remains the visibility control, also for Home's shared Contact components.
+- `CustomPageSetting` now normalizes Contact children to canonical type/publication only. Persisted `form_state=under_construction` is ignored at runtime and obsolete keys are discarded on canonical writes. Historical restoration retains only the former `hidden` mode as unpublished; previous Under Construction entries become normal forms when published.
+- The public Contact component renders the actual form for every published Contact Form child, never its placeholder. `PublicContactController` checks existence without the retired presentation state. Existing CSRF, honeypot, server validation, delivery readiness, mail, audit and feedback remain unchanged.
+- **Verification:** source only. Admin/preview/browser, real public submission, historical publication and restore still require verification. No DB migration, tests, CI or deployment performed.
+
 ## Public page text width — scoped cross-owner correction (2026-11-18)
 
 - **User-reported root problem:** Custom Pages, plus individual Artwork detail descriptions and dividers, occupied only part of the General-configured content width. The hard-coded `--public-art-max` (650px) was applied to the entire Custom Page and Artwork detail roots even when General allowed a larger sheet; Artwork narrative additionally had a 36rem cap and fitted-mode second 650px cap.
@@ -47,4 +54,4 @@
 
 ## Next
 
-Have the artist review the Exhibition corrections and the Custom Page/Artwork description width fix in a fresh local preview; hand browser/regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
+Have the artist review the Contact Form removal and submission/visibility for previously Under Construction entries, plus earlier Exhibition and width corrections; hand regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.

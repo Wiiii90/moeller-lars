@@ -111,8 +111,7 @@ class PublicContactController extends Controller
 
                     foreach ($settings->contactChildren($block) as $child) {
                         if (($child['type'] ?? null) === 'contact_form'
-                            && CustomPageSetting::contactChildPublished($child)
-                            && ($child['form_state'] ?? 'enabled') === 'enabled') {
+                            && CustomPageSetting::contactChildPublished($child)) {
                             return true;
                         }
                     }
@@ -144,8 +143,7 @@ class PublicContactController extends Controller
             }
             foreach ($schema->contactChildren($block) as $child) {
                 if (($child['type'] ?? null) === 'contact_form'
-                    && CustomPageSetting::contactChildPublished($child)
-                    && ($child['form_state'] ?? 'enabled') === 'enabled') {
+                    && CustomPageSetting::contactChildPublished($child)) {
                     return true;
                 }
             }

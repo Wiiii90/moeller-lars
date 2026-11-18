@@ -60,16 +60,13 @@ final class HistoricalCustomPageBlockCanonicalizer
     {
         $children = $block['children'] ?? null;
         if (! is_array($children) || ! array_is_list($children)) {
+            // Retain the historical hidden/unpublished choice only.
+            // The removed Under Construction mode becomes a normal contact form.
             $formState = is_string($block['form_state'] ?? null) ? $block['form_state'] : 'enabled';
             $platforms = array_values(array_unique(array_filter(
                 is_array($block['social_platforms'] ?? null) ? $block['social_platforms'] : [],
                 static fn (mixed $platform): bool => is_string($platform),
             )));
-            $statusText = is_string($block['status_text'] ?? null) ? trim($block['status_text']) : null;
-            if ($statusText === '') {
-                $statusText = null;
-            }
-
             $block['children'] = [
                 [
                     'type' => 'public_email',
@@ -83,8 +80,6 @@ final class HistoricalCustomPageBlockCanonicalizer
                 [
                     'type' => 'contact_form',
                     'published' => (bool) ($block['show_form'] ?? true) && $formState !== 'hidden',
-                    'form_state' => $formState === 'under_construction' ? 'under_construction' : 'enabled',
-                    'status_text' => $statusText,
                 ],
             ];
         }

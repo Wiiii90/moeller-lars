@@ -645,26 +645,11 @@ trait CustomPageWorkspaceComponentActions
             $data['contact_social_selected'][$platform] = (bool) $value;
         } elseif (in_array($key, [
             'title', 'contact_email_enabled', 'contact_social_enabled',
-            'contact_form_enabled', 'contact_form_state', 'contact_status_text',
+            'contact_form_enabled',
         ], true)) {
             $data[$key] = $value;
         } else {
             throw new \InvalidArgumentException('Unknown Contact field.');
-        }
-
-        // Presentation and status text form one dependent editorial value.
-        // If no status is authored yet, retain "Under construction" in the
-        // mounted form as a draft until the text is entered. When it arrives,
-        // save both fields atomically; no partial update or false notification.
-        if ($key === 'contact_form_state' || $key === 'contact_status_text') {
-            $form = $this->getMountedActionSchema()->getRawState();
-            $state = $key === 'contact_form_state' ? $value : ($form['contact_form_state'] ?? $data['contact_form_state']);
-            $status = $key === 'contact_status_text' ? $value : ($form['contact_status_text'] ?? $data['contact_status_text']);
-            $data['contact_form_state'] = $state;
-            $data['contact_status_text'] = $status;
-            if ($state === 'under_construction' && blank($status)) {
-                return;
-            }
         }
 
         try {

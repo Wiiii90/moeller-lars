@@ -142,21 +142,6 @@ trait CustomPageWorkspaceForms
                         ->default(! $insideImage)->disabled($insideImage)->live(),
                     'contact_form_enabled', $onContactChange,
                 ),
-                $this->contactEditorField(
-                    Select::make('contact_form_state')
-                        ->label('Form presentation')
-                        ->options(['enabled' => __('Enabled'), 'under_construction' => __('Under construction')])
-                        ->default('enabled')->live()
-                        ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled')),
-                    'contact_form_state', $onContactChange,
-                ),
-                $this->contactEditorField(
-                    TextInput::make('contact_status_text')
-                        ->label('Status text')->maxLength(500)
-                        ->required(fn (Get $get): bool => (bool) $get('contact_form_enabled') && $get('contact_form_state') === 'under_construction')
-                        ->visible(fn (Get $get): bool => (bool) $get('contact_form_enabled') && $get('contact_form_state') === 'under_construction'),
-                    'contact_status_text', $onContactChange, blur: true,
-                ),
             ],
             'legal_disclaimer' => [
                 Placeholder::make('legal_disclaimer_note')

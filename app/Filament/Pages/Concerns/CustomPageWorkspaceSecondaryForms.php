@@ -42,8 +42,6 @@ trait CustomPageWorkspaceSecondaryForms
                 ->mapWithKeys(fn (string $label, string $platform): array => [
                     $platform => in_array($platform, $data['contact_social_platforms'], true),
                 ])->all();
-            $data['contact_form_state'] = is_array($form) ? ($form['form_state'] ?? 'enabled') : 'enabled';
-            $data['contact_status_text'] = is_array($form) ? ($form['status_text'] ?? null) : null;
         }
         if (($block['type'] ?? null) === 'divider') {
             $data['variant'] = in_array($block['variant'] ?? null, array_keys(self::DIVIDER_LABELS), true)
@@ -160,7 +158,6 @@ trait CustomPageWorkspaceSecondaryForms
         // options until they are explicitly edited, not when they are hidden.
         $children = $existing !== null ? (new CustomPageSetting)->contactChildren($existing) : [];
         $social = collect($children)->firstWhere('type', 'social_links');
-        $form = collect($children)->firstWhere('type', 'contact_form');
         $previousPlatforms = is_array($social) ? ($social['social_platforms'] ?? []) : [];
         $selection = $data['contact_social_selected'] ?? null;
         $platforms = is_array($selection)
@@ -174,11 +171,6 @@ trait CustomPageWorkspaceSecondaryForms
             ]
             : ($data['contact_social_platforms'] ?? ($existing !== null
                 ? $previousPlatforms : array_keys($this->availableSocialPlatforms)));
-        $formState = $data['contact_form_state']
-            ?? (is_array($form) ? ($form['form_state'] ?? 'enabled') : 'enabled');
-        $statusText = $data['contact_status_text']
-            ?? (is_array($form) ? ($form['status_text'] ?? null) : null);
-
         return [
             'type' => 'contact',
             'published' => $published,
@@ -193,8 +185,6 @@ trait CustomPageWorkspaceSecondaryForms
                 [
                     'type' => 'contact_form',
                     'published' => (bool) ($data['contact_form_enabled'] ?? true),
-                    'form_state' => $formState === 'under_construction' ? 'under_construction' : 'enabled',
-                    'status_text' => filled($statusText) ? trim((string) $statusText) : null,
                 ],
             ],
         ];

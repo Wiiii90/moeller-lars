@@ -60,16 +60,7 @@
                 </div>
             @endif
         @elseif ($childType === 'contact_form')
-            @php
-                $formState = ($child['form_state'] ?? 'enabled') === 'under_construction' ? 'under_construction' : 'enabled';
-                $statusText = is_string($child['status_text'] ?? null) ? $child['status_text'] : null;
-            @endphp
             <div class="custom-page__contact-child">
-                @if ($formState === 'under_construction')
-                    @if (is_string($statusText) && trim($statusText) !== '')
-                        <p class="contact-status contact-status--quiet" role="status">{{ $statusText }}</p>
-                    @endif
-                @else
                     @if (session('contact_success'))
                         <p
                             class="contact-message"
@@ -112,7 +103,6 @@
 
                         <button type="submit">Send message</button>
                     </form>
-                @endif
             </div>
         @endif
 
