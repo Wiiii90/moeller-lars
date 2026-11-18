@@ -736,7 +736,6 @@ final class ListMediaAssets extends Page
                     TextInput::make('alt_text')
                         ->label('Default ALT text')
                         ->hint(AdminHelp::make('ALT text help', 'A description for screen readers. It describes the actual photograph or video, not copyright.'))
-                        ->helperText('Describe the image content and function. Usage-specific ALT may override it.')
                         ->maxLength(500)
                         ->nullable(),
                     TextInput::make('credit')
@@ -767,26 +766,22 @@ final class ListMediaAssets extends Page
                     TextInput::make('file_creator')
                         ->label('Photographer / file creator')
                         ->hint(AdminHelp::make('File creator help', 'Who made this particular photograph or video? They may be different from the artist who made the depicted artwork.'))
-                        ->helperText('Enter the photographer only if known; the artwork creator may differ.')
                         ->maxLength(240)
                         ->nullable(),
                     TextInput::make('file_rights_holder')
                         ->label('Photo rights holder')
                         ->hint(AdminHelp::make('Photo rights holder help', 'The person or organization entitled to license the photograph. This is not necessarily the photographer or artist.'))
-                        ->helperText('Who holds rights in this particular image, if known.')
                         ->maxLength(240)
                         ->nullable(),
                     Textarea::make('rights_usage_terms')
                         ->label('Specific usage terms')
                         ->hint(AdminHelp::make('Usage terms help', 'Record permission details or restrictions agreed for this media file. Leave empty if none are specified.'))
-                        ->helperText('Optional asset-specific permissions and restrictions.')
                         ->maxLength(2000)
                         ->rows(3)
                         ->nullable(),
                     TextInput::make('license_inquiry_url')
                         ->label('License / rights inquiry URL')
                         ->hint(AdminHelp::make('License URL help', 'An optional HTTPS address where visitors can request rights information. It does not grant a license automatically.'))
-                        ->helperText('Optional HTTPS contact or license-information URL; not a grant of an open license.')
                         ->url()
                         ->maxLength(2048)
                         ->nullable(),

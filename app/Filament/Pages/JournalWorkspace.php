@@ -453,7 +453,6 @@ final class JournalWorkspace extends Page
                     TextInput::make('slug')->label('Public URL slug')->required()->maxLength(80)
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
                     AdminControl::toggle('auto_publish_new_entries', 'Auto-publish new Journal entries')
-                        ->helperText('Creates and publishes only when all publication checks pass. If an entry is not ready, no partial draft is created.')
                         ->live()
                         ->afterStateUpdated(static function (mixed $state): void {
                             if (app(AdminAutoPublishPreferences::class)->update(
