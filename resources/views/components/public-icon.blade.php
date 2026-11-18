@@ -42,6 +42,12 @@
         @case('arrow-right')
             <path d="M4 12h16m-7-7 7 7-7 7" />
             @break
+        @case('play')
+            <path d="m8 5 11 7-11 7z" />
+            @break
+        @case('pause')
+            <path d="M8 5v14M16 5v14" />
+            @break
         @case('volume-muted')
             <path d="M11 5 6 9H3v6h3l5 4zM17 9l5 6m0-6-5 6" />
             @break

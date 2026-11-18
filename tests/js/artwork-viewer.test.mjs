@@ -4,6 +4,7 @@ import {
     adjacentIndex,
     calculateFittedSize,
     normalizeViewerKind,
+    volumeFromPercent,
     pinchFromGestureStart,
     zoomAroundPoint,
 } from '../../resources/js/artwork-viewer.js';
@@ -49,4 +50,14 @@ test('viewer admits only image and video primary media', () => {
     assert.equal(normalizeViewerKind('image'), 'image');
     assert.equal(normalizeViewerKind('video'), 'video');
     assert.throws(() => normalizeViewerKind('audio'), /image and video media only/);
+});
+
+test('viewer volume control accepts 0–100 percent and clamps malformed range values', () => {
+    assert.equal(volumeFromPercent(0), 0);
+    assert.equal(volumeFromPercent(35), .35);
+    assert.equal(volumeFromPercent('85'), .85);
+    assert.equal(volumeFromPercent(100), 1);
+    assert.equal(volumeFromPercent(-25), 0);
+    assert.equal(volumeFromPercent(140), 1);
+    assert.equal(volumeFromPercent('invalid'), 1);
 });

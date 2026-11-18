@@ -239,6 +239,8 @@ body.public-site .site-header {
 [data-viewer-missing][hidden],
 [data-viewer-image][hidden],
 [data-viewer-video][hidden],
+[data-viewer-video-controls][hidden],
+.artwork-viewer__video-controls [hidden],
 .artwork-viewer__controls button[hidden] {
     display: none;
 }
@@ -251,6 +253,7 @@ body.public-site .site-header {
     display: flex;
     align-items: center;
     gap: .38rem;
+    max-width: calc(100dvw - 1rem);
     margin: 0;
     padding: .36rem;
     border: 1px solid rgba(255, 255, 255, .18);
@@ -276,6 +279,56 @@ body.public-site .site-header {
     padding-inline: .55rem;
     font-size: .68rem;
     font-variant-numeric: tabular-nums;
+}
+
+/* One fullscreen Viewer toolbar. The native video timeline/fullscreen remain
+   available inside the media while playback and volume join navigation. */
+.artwork-viewer__video-controls {
+    display: flex;
+    align-items: center;
+    gap: .2rem;
+    min-width: 0;
+}
+.artwork-viewer__video-controls button {
+    flex: 0 0 auto;
+}
+.artwork-viewer__video-controls button span {
+    display: grid;
+    place-items: center;
+}
+.artwork-viewer__volume-field {
+    display: flex;
+    align-items: center;
+    min-height: 2.45rem;
+    padding-inline: .25rem .4rem;
+}
+.artwork-viewer__volume-field input {
+    display: block;
+    width: clamp(3.4rem, 16vw, 6rem);
+    height: 2.45rem;
+    margin: 0;
+    padding: 0;
+    accent-color: #fff;
+    cursor: pointer;
+}
+.artwork-viewer__volume-field input:disabled {
+    opacity: .32;
+    cursor: default;
+}
+.artwork-viewer__volume-field input:focus-visible {
+    outline: 1px solid #fff;
+    outline-offset: 2px;
+}
+.artwork-viewer__sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
 }
 
 .artwork-viewer__title {

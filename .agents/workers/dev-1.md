@@ -4,6 +4,13 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Shared fullscreen Viewer video controls (2026-11-18)
+
+- The user requests first-class playback controls in the existing fullscreen Viewer bottom toolbar, where video had no image zoom group: Play/Pause, Mute/Unmute and adjustable volume. A second media player or a detached overlay would conflict with the shared Viewer contract.
+- Added a video-only compact control group to the canonical `artwork-viewer.blade.php` toolbar; reused existing Public SVG icon component (adding only Play/Pause), modal CSS and the sole `artwork-viewer.js` controller. All controls synchronize from native video events, show only for video, disable while unavailable, preserve the same media element's native seeking/fullscreen and restore previous audible volume on unmute. Video volume/mute preferences persist while navigating within one open Viewer and reset on a fresh opening. Slider Left/Right keys are not intercepted as navigation.
+- Added bounded volume-scale unit assertions and a browser regression assertion that an image Viewer hides video controls; the previous image navigation/zoom layout remains unchanged.
+- **Verification:** source/commit readback only. Real modal video playback, native controls, keyboard/slider focus, error/recovery, media switching, narrow touch layout and browser execution remain pending. No CI, test run, deployment or migration initiated.
+
 ## Slideshow navigation alignment refinement (2026-11-18)
 
 - User screenshot shows the introduced semi-transparent square arrow controls over an almost full-width video and a boxed `4 / 4` counter above the stage. Previous behavior placed the counter beneath the Slideshow.
@@ -73,4 +80,4 @@
 
 ## Next
 
-Have the artist review the screenshot-driven Slideshow unboxed side-rail/below-counter alignment and responsive fallback, plus opt-in Carousel and mixed media, in a fresh local preview; hand regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
+Have the artist review modal Viewer video controls (Play/Pause, Mute, volume, native seek, keyboard and mixed-media transitions), with Slideshow and Carousel, in a fresh local preview; hand regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.

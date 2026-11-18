@@ -9,6 +9,12 @@ export function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
 }
 
+/** Translate the native 0–100 range into HTMLMediaElement's 0–1 volume. */
+export function volumeFromPercent(value) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? clamp(numeric, 0, 100) / 100 : 1;
+}
+
 export function meaningfulAttentionSeconds(milliseconds, minimum = MIN_ATTENTION_MS) {
     const duration = Number(milliseconds);
     if (!Number.isFinite(duration) || duration < minimum) return null;
@@ -128,10 +134,19 @@ export function initializeArtworkViewer(root = document) {
     const zoomOut = dialog.querySelector('[data-viewer-zoom-out]');
     const reset = dialog.querySelector('[data-viewer-reset]');
     const zoomIn = dialog.querySelector('[data-viewer-zoom-in]');
+    const videoControls = dialog.querySelector('[data-viewer-video-controls]');
+    const playPause = dialog.querySelector('[data-viewer-play-pause]');
+    const playIcon = dialog.querySelector('[data-viewer-play-icon]');
+    const pauseIcon = dialog.querySelector('[data-viewer-pause-icon]');
+    const muteButton = dialog.querySelector('[data-viewer-mute]');
+    const volumeOnIcon = dialog.querySelector('[data-viewer-volume-on-icon]');
+    const volumeMutedIcon = dialog.querySelector('[data-viewer-volume-muted-icon]');
+    const volumeRange = dialog.querySelector('[data-viewer-volume]');
     const pageLink = dialog.querySelector('[data-viewer-page-link]');
     const title = dialog.querySelector('[data-viewer-title]');
 
-    if (!stage || !image || !video || !loading || !missing || !close || !previous || !next || !zoomOut || !reset || !zoomIn || !pageLink || !title) {
+    if (!stage || !image || !video || !loading || !missing || !close || !previous || !next || !zoomOut || !reset || !zoomIn
+        || !videoControls || !playPause || !playIcon || !pauseIcon || !muteButton || !volumeOnIcon || !volumeMutedIcon || !volumeRange || !pageLink || !title) {
         throw new Error('Artwork viewer is missing required controls.');
     }
 
@@ -149,6 +164,9 @@ export function initializeArtworkViewer(root = document) {
     let attentionKey = null;
     let attentionStartedAt = null;
     let attentionAccumulatedMs = 0;
+    let preferredVolume = 1;
+    let preferredMuted = false;
+    let lastAudibleVolume = 1;
 
     const currentItem = () => items[index] ?? null;
     const currentIsImage = () => currentItem()?.kind === 'image';
@@ -217,7 +235,38 @@ export function initializeArtworkViewer(root = document) {
         // Controls can disable themselves at zoom and sequence boundaries.
         // Keep keyboard input in the native dialog on an enabled control.
         const focused = document.activeElement;
-        if ([previous, next, zoomOut, zoomIn, reset].includes(focused) && focused.disabled) close.focus();
+        if (([previous, next, zoomOut, zoomIn, reset].includes(focused) && focused.disabled)
+            || (videoControls.contains(focused) && (videoControls.hidden || focused.disabled))) close.focus();
+    };
+
+    // Native playback UI retains seeking/fullscreen. Both surfaces observe
+    // the same video element, including changes made via native controls.
+    const synchronizeVideoControls = () => {
+        const active = currentItem()?.kind === 'video';
+        videoControls.hidden = !active;
+        const usable = active && !video.hidden && !video.error;
+        playPause.disabled = !usable;
+        muteButton.disabled = !usable;
+        volumeRange.disabled = !usable;
+
+        const playing = usable && !video.paused && !video.ended;
+        playIcon.hidden = playing;
+        pauseIcon.hidden = !playing;
+        const playLabel = playing ? 'Pause video' : 'Play video';
+        playPause.setAttribute('aria-label', playLabel);
+        playPause.title = playLabel;
+
+        const muted = video.muted || video.volume === 0;
+        volumeOnIcon.hidden = muted;
+        volumeMutedIcon.hidden = !muted;
+        muteButton.setAttribute('aria-pressed', String(muted));
+        const muteLabel = muted ? 'Unmute video' : 'Mute video';
+        // A toggle keeps its stable accessible name; aria-pressed exposes
+        // the change while the tooltip describes the next action.
+        muteButton.title = muteLabel;
+        volumeRange.value = String(Math.round(video.volume * 100));
+        volumeRange.setAttribute('aria-valuetext', muted ? 'Muted' : `${Math.round(video.volume * 100)} percent`);
+        preserveControlFocus();
     };
 
     const updateTransform = () => {
@@ -270,6 +319,7 @@ export function initializeArtworkViewer(root = document) {
         video.removeAttribute('aria-label');
         video.hidden = true;
         video.load();
+        synchronizeVideoControls();
     };
 
     const showItem = (nextIndex) => {
@@ -306,10 +356,14 @@ export function initializeArtworkViewer(root = document) {
 
         if (item.kind === 'video') {
             video.setAttribute('aria-label', item.alt);
+            video.volume = preferredVolume;
+            video.muted = preferredMuted;
             video.src = item.src;
             video.load();
+            synchronizeVideoControls();
             return;
         }
+        synchronizeVideoControls();
 
         image.alt = item.alt;
         image.src = item.src;
@@ -325,6 +379,9 @@ export function initializeArtworkViewer(root = document) {
         items = normalized;
         zoomTracked.clear();
         resetAttention();
+        preferredVolume = 1;
+        preferredMuted = false;
+        lastAudibleVolume = 1;
         showItem(start);
         if (normalized[start].analyticsKey) trackMatomoEvent('Artwork', 'artwork_open', normalized[start].analyticsKey, null, root);
         dialog.showModal();
@@ -389,6 +446,46 @@ export function initializeArtworkViewer(root = document) {
     zoomIn.addEventListener('click', () => changeZoom(state.scale * 1.25));
     reset.addEventListener('click', resetState);
 
+    playPause.addEventListener('click', () => {
+        if (currentItem()?.kind !== 'video' || video.hidden || video.error) return;
+        if (!video.paused && !video.ended) {
+            video.pause();
+            return;
+        }
+        const attempt = video.play();
+        attempt?.catch(() => synchronizeVideoControls());
+    });
+    muteButton.addEventListener('click', () => {
+        if (currentItem()?.kind !== 'video' || video.hidden || video.error) return;
+        if (video.muted || video.volume === 0) {
+            if (video.volume === 0) video.volume = lastAudibleVolume || 1;
+            video.muted = false;
+        } else {
+            lastAudibleVolume = video.volume;
+            video.muted = true;
+        }
+        synchronizeVideoControls();
+    });
+    volumeRange.addEventListener('input', () => {
+        if (currentItem()?.kind !== 'video' || video.hidden || video.error) return;
+        const volume = volumeFromPercent(volumeRange.value);
+        if (volume > 0) lastAudibleVolume = volume;
+        video.volume = volume;
+        video.muted = volume === 0;
+        synchronizeVideoControls();
+    });
+
+    for (const eventName of ['play', 'playing', 'pause', 'ended', 'loadedmetadata', 'volumechange']) {
+        video.addEventListener(eventName, () => {
+            if (eventName === 'volumechange' && currentItem()?.kind === 'video') {
+                preferredVolume = video.volume;
+                preferredMuted = video.muted;
+                if (!video.muted && video.volume > 0) lastAudibleVolume = video.volume;
+            }
+            synchronizeVideoControls();
+        });
+    }
+
     image.addEventListener('load', () => {
         const item = currentItem();
         if (!item || item.kind !== 'image' || image.src !== expectedSrc) return;
@@ -416,6 +513,7 @@ export function initializeArtworkViewer(root = document) {
         loading.hidden = true;
         missing.hidden = true;
         video.hidden = false;
+        synchronizeVideoControls();
         resumeAttention();
     };
     video.addEventListener('loadeddata', videoReady);
@@ -427,6 +525,7 @@ export function initializeArtworkViewer(root = document) {
         loading.hidden = true;
         video.hidden = true;
         missing.hidden = false;
+        synchronizeVideoControls();
     });
 
     stage.addEventListener('wheel', (event) => {
@@ -506,8 +605,9 @@ export function initializeArtworkViewer(root = document) {
     dialog.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') return;
         const nativeVideoKeyboard = !currentIsImage() && event.target === video;
-        if (!nativeVideoKeyboard && event.key === 'ArrowLeft' && !previous.disabled) { event.preventDefault(); previous.click(); }
-        if (!nativeVideoKeyboard && event.key === 'ArrowRight' && !next.disabled) { event.preventDefault(); next.click(); }
+        const volumeKeyboard = event.target === volumeRange;
+        if (!nativeVideoKeyboard && !volumeKeyboard && event.key === 'ArrowLeft' && !previous.disabled) { event.preventDefault(); previous.click(); }
+        if (!nativeVideoKeyboard && !volumeKeyboard && event.key === 'ArrowRight' && !next.disabled) { event.preventDefault(); next.click(); }
         if (!currentIsImage() || !zoomAllowed()) return;
         if (event.key === '+' || event.key === '=') { event.preventDefault(); changeZoom(state.scale * 1.25); }
         if (event.key === '-' || event.key === '_') { event.preventDefault(); changeZoom(state.scale / 1.25); }
@@ -523,6 +623,7 @@ export function initializeArtworkViewer(root = document) {
     dialog.addEventListener('close', () => {
         flushAttention();
         clearMedia();
+        videoControls.hidden = true;
         expectedSrc = '';
         pointers.clear();
         state = { scale: 1, x: 0, y: 0 };
@@ -561,6 +662,7 @@ export function initializeArtworkViewer(root = document) {
         // Disposal precedes Livewire's snapshot. Close events are asynchronous,
         // so clear owned media and the initialization marker synchronously.
         clearMedia();
+        videoControls.hidden = true;
         expectedSrc = '';
         pointers.clear();
         delete dialog.dataset.viewerInitialized;

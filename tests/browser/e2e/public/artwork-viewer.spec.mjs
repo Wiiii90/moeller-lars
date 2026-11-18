@@ -62,6 +62,7 @@ test('Gallery viewer decodes public originals and supports bounded zoom, pan, na
     expect(headers['x-sendfile']).toBeUndefined();
     expect(headers.etag).toBe(`"${first.original.sha256}"`);
     expect(createHash('sha256').update(await response.body()).digest('hex')).toBe(first.original.sha256);
+    await expect(dialog.locator('[data-viewer-video-controls]')).toBeHidden();
     const zoomIn = dialog.getByRole('button', { name: 'Zoom in', exact: true });
     const zoomOut = dialog.getByRole('button', { name: 'Zoom out', exact: true });
     const reset = dialog.getByRole('button', { name: 'Reset zoom', exact: true });

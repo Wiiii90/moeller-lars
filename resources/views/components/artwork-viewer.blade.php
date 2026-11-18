@@ -33,6 +33,20 @@
             <button type="button" data-viewer-zoom-out aria-label="Zoom out" title="Zoom out"><x-public-icon name="minus" /></button>
             <button type="button" class="artwork-viewer__reset" data-viewer-reset aria-label="Reset zoom" title="Reset zoom">100%</button>
             <button type="button" data-viewer-zoom-in aria-label="Zoom in" title="Zoom in"><x-public-icon name="plus" /></button>
+            <div class="artwork-viewer__video-controls" data-viewer-video-controls role="group" aria-label="Video playback controls" hidden>
+                <button type="button" data-viewer-play-pause aria-label="Play video" title="Play video" disabled>
+                    <span data-viewer-play-icon><x-public-icon name="play" /></span>
+                    <span data-viewer-pause-icon hidden><x-public-icon name="pause" /></span>
+                </button>
+                <button type="button" data-viewer-mute aria-label="Mute video" aria-pressed="false" title="Mute video" disabled>
+                    <span data-viewer-volume-on-icon><x-public-icon name="volume-on" /></span>
+                    <span data-viewer-volume-muted-icon hidden><x-public-icon name="volume-muted" /></span>
+                </button>
+                <label class="artwork-viewer__volume-field">
+                    <span class="artwork-viewer__sr-only">Video volume</span>
+                    <input type="range" data-viewer-volume min="0" max="100" step="1" value="100" disabled>
+                </label>
+            </div>
             <button type="button" data-viewer-next aria-label="Next media" title="Next media"><x-public-icon name="chevron-right" /></button>
         </div>
 
