@@ -305,30 +305,23 @@ body {
     grid-row: auto;
 }
 
-/* The parent-specific return is visually distinct from the cyclic chevrons.
-   Both the label and icon share one accessible button; long names truncate
-   rather than consuming the child navigation's available width. */
+/* Every child level uses the same icon-only return button. The parent
+   name remains in the button's accessible label rather than taking rail width. */
 .site-navigation__back {
     display: inline-flex;
+    width: 2.75rem;
+    min-width: 2.75rem;
     min-height: 2.95rem;
     height: 100%;
-    min-width: 0;
-    max-width: min(38%, 10rem);
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     margin: 0;
-    padding: .9rem .4rem .82rem 0;
+    padding: 0;
     align-items: center;
-    justify-content: flex-start;
-    gap: .38rem;
+    justify-content: center;
     appearance: none;
     border: 0;
     background: transparent;
     color: var(--public-index-ink);
-    font-family: var(--public-index-typeface);
-    font-size: 15px;
-    font-weight: 400;
-    letter-spacing: 0;
-    line-height: 1.15;
     cursor: pointer;
 }
 
@@ -339,26 +332,9 @@ body {
     stroke-width: 1.45;
 }
 
-.site-navigation__back-label {
-    display: block;
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    text-decoration-line: underline;
-    text-decoration-color: transparent;
-    text-decoration-thickness: 1px;
-    text-underline-offset: .42em;
-}
-
 .site-navigation__back:hover,
 .site-navigation__back:focus-visible {
     color: #292f2b;
-}
-
-.site-navigation__back:hover .site-navigation__back-label,
-.site-navigation__back:focus-visible .site-navigation__back-label {
-    text-decoration-color: var(--public-active);
 }
 
 .site-navigation__back:focus-visible {

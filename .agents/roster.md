@@ -14,6 +14,6 @@
 | Dev Worker 7 | 18 | Active — replaced chat; General Backing seam source review, browser acceptance pending | Appearance Global/Title/Menu/Page/Legal, preview geometry/persistence, Regional Formats hints | [dev-7.md](workers/dev-7.md) |
 | Dev Worker 8 | 15 | Active — Admin scrollbar stability and dialog legacy cleanup | Shared dialog/popover visuals; native root, Sidebar, modal and Stage scrolling without visible rails; Public behavior retained, artist options deferred | [dev-8.md](workers/dev-8.md) |
 
-| Dev Worker 9 | 21 | Active — awaiting first navigation task | Navigation: public/admin navigation as requested; coordinate shared menu/Page owners before implementation | [dev-9.md](workers/dev-9.md) |
+| Dev Worker 9 | 21 | Active — icon-only Public nested return committed; browser review pending | Public cyclic inline navigation and child Back control; shared General/Pages scopes remain with current owners | [dev-9.md](workers/dev-9.md) |
 
 Only activated Dev workers receive a row and their own `.agents/workers/dev-N.md` record. This roster belongs exclusively to `dev` and must never receive Docs, Testing or Refactor worker entries. Follow the [shared worker protocol](README.md) for atomic registration, takeover and lease updates.
