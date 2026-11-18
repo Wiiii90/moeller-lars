@@ -1278,24 +1278,65 @@ final class HomePresentation extends Page
         return [array_values(array_unique($groups)), array_values(array_unique($candidateKeys))];
     }
 
-    /** @return array{enable:bool,disable:bool,remove:bool} */
+    /** @return array{0:int,1:string} */
+    private static function selectedSourceMember(string $selection): array
+    {
+        [$sourceId, $candidateKey] = explode('|', $selection, 2);
+        return [(int) $sourceId, $candidateKey];
+    }
+
+    /** Selection is independent from whichever source-table page is visible. */
     public function selectedSourceCapabilities(): array
     {
         [$groups, $keys] = $this->selectedSourceTargets();
-        $rows = collect($this->sourceRows()->items());
-        $selectedGroups = $rows->filter(static fn (array $row): bool => in_array((int) $row['id'], $groups, true));
-        $enable = $selectedGroups->contains(static fn (array $row): bool => ! $row['preference_enabled'] && $row['can_enable']);
-        $disable = $selectedGroups->contains(static fn (array $row): bool => $row['preference_enabled']);
-        $remove = $selectedGroups->contains(static fn (array $row): bool => $row['standalone']);
+        $regularIds = array_values(array_filter($groups, static fn (int $id): bool => $id > 0));
+        $regular = ArtworkCategory::query()->whereKey($regularIds)->with('siteSection')->get();
+        $dummy = collect($this->dummyGalleries)->keyBy('id');
 
-        foreach ($rows as $row) {
-            foreach ($row['candidates'] as $candidate) {
-                if (! in_array(self::sourceCandidateSelectionId((int) $row['id'], $candidate['id']), $keys, true)) {
+        $enable = $regular->contains(static fn (ArtworkCategory $gallery): bool =>
+            ! (bool) $gallery->getAttribute('show_on_home')
+            && $gallery->getRelationValue('siteSection')?->getAttribute('state') === 'published');
+        $disable = $regular->contains(static fn (ArtworkCategory $gallery): bool =>
+            (bool) $gallery->getAttribute('show_on_home'));
+        $remove = false;
+        foreach ($groups as $id) {
+            if ($id >= 0 || ! $dummy->has($id)) {
+                continue;
+            }
+            $group = $dummy->get($id);
+            $enable = $enable || ! $group['enabled'];
+            $disable = $disable || $group['enabled'];
+            $remove = true;
+        }
+
+        $activeRegular = collect([...$this->heroRailRows, ...$this->excludedHeroRows])
+            ->filter(static fn (array $row): bool => $row['is_automatic'] ?? false)
+            ->keyBy(static fn (array $row): string =>
+                self::sourceCandidateSelectionId((int) ($row['gallery_id'] ?? 0), $row['id']));
+
+        foreach ($keys as $selection) {
+            [$sourceId, $candidateKey] = self::selectedSourceMember($selection);
+            if ($sourceId > 0) {
+                $candidate = $activeRegular->get($selection);
+                if (! is_array($candidate)) {
                     continue;
                 }
                 $enable = $enable || ($candidate['disabled'] ?? false);
                 $disable = $disable || ! ($candidate['disabled'] ?? false);
-                $remove = $remove || $row['standalone'];
+                continue;
+            }
+            $gallery = $dummy->get($sourceId);
+            if (! is_array($gallery)) {
+                continue;
+            }
+            foreach ($gallery['members'] as $member) {
+                if (HomeHeroConfigurationService::memberKey($member) !== $candidateKey) {
+                    continue;
+                }
+                $enable = $enable || ! $member['enabled'];
+                $disable = $disable || $member['enabled'];
+                $remove = true;
+                break;
             }
         }
 
@@ -1308,46 +1349,53 @@ final class HomePresentation extends Page
         if ($groups === [] && $keys === []) {
             return;
         }
+
         $service = app(HomeHeroConfigurationService::class);
         $changed = DB::transaction(function () use ($groups, $keys, $enabled, $service): int {
             $count = 0;
-            foreach ($this->sourceRows()->items() as $row) {
-                $id = (int) $row['id'];
-                if (in_array($id, $groups, true)) {
-                    if ($id < 0) {
-                        $count += (int) $service->updateDummyGallery(
-                            $this->settings(), $id, ['enabled' => $enabled],
-                        );
-                    } elseif ($id > 0) {
-                        $gallery = ArtworkCategory::query()->with('siteSection')->findOrFail($id);
-                        if ((bool) $gallery->getAttribute('show_on_home') !== $enabled
-                            && (! $enabled || $gallery->getRelationValue('siteSection')?->getAttribute('state') === 'published')) {
-                            $updated = app(GalleryEditorialService::class)->update($gallery, [
-                                'name' => (string) $gallery->getAttribute('name'),
-                                'description' => $gallery->getAttribute('description'),
-                                'show_on_home' => $enabled,
-                            ]);
-                            $count += (int) $updated->wasChanged('show_on_home');
-                        }
-                    }
-                }
-                foreach ($row['candidates'] as $candidate) {
-                    if (! in_array(self::sourceCandidateSelectionId((int) $row['id'], $candidate['id']), $keys, true)) {
-                        continue;
-                    }
-                    if ($id < 0) {
-                        $count += (int) $service->setDummyMemberEnabled(
-                            $this->settings(), $id, $candidate['id'], $enabled,
-                        );
-                    } elseif (str_starts_with($candidate['id'], 'artwork:')) {
-                        $count += (int) $service->setAutomaticCandidateEnabled(
-                            $this->settings(), (int) substr($candidate['id'], 8), $enabled,
-                        );
-                    }
+
+            // Candidate state changes first: disabling a whole Gallery must
+            // not invalidate a candidate selection in the same transaction.
+            foreach ($keys as $selection) {
+                [$sourceId, $key] = self::selectedSourceMember($selection);
+                if ($sourceId < 0) {
+                    $count += (int) $service->setDummyMemberEnabled(
+                        $this->settings(), $sourceId, $key, $enabled,
+                    );
+                } elseif ($sourceId > 0 && str_starts_with($key, 'artwork:')) {
+                    $count += (int) $service->setAutomaticCandidateEnabled(
+                        $this->settings(), (int) substr($key, 8), $enabled,
+                    );
                 }
             }
+
+            foreach ($groups as $id) {
+                if ($id < 0) {
+                    $count += (int) $service->updateDummyGallery(
+                        $this->settings(), $id, ['enabled' => $enabled],
+                    );
+                }
+            }
+
+            $regularIds = array_values(array_filter($groups, static fn (int $id): bool => $id > 0));
+            $galleries = ArtworkCategory::query()->whereKey($regularIds)
+                ->with('siteSection')->orderBy('id')->lockForUpdate()->get();
+            foreach ($galleries as $gallery) {
+                if ((bool) $gallery->getAttribute('show_on_home') === $enabled
+                    || ($enabled && $gallery->getRelationValue('siteSection')?->getAttribute('state') !== 'published')) {
+                    continue;
+                }
+                $updated = app(GalleryEditorialService::class)->update($gallery, [
+                    'name' => (string) $gallery->getAttribute('name'),
+                    'description' => $gallery->getAttribute('description'),
+                    'show_on_home' => $enabled,
+                ]);
+                $count += (int) $updated->wasChanged('show_on_home');
+            }
+
             return $count;
         });
+
         $this->clearSourceSelection();
         $this->reloadWorkspace();
         if ($changed > 0) {
@@ -1366,29 +1414,26 @@ final class HomePresentation extends Page
                 ->action(function (): void {
                     [$groups, $keys] = $this->selectedSourceTargets();
                     $service = app(HomeHeroConfigurationService::class);
-                    $count = 0;
-                    DB::transaction(function () use ($groups, $keys, $service, &$count): void {
-                        foreach ($this->sourceRows()->items() as $row) {
-                            $id = (int) $row['id'];
-                            if ($id >= 0) {
-                                continue;
-                            }
-                            if (in_array($id, $groups, true)) {
-                                $count += (int) $service->removeDummyGallery($this->settings(), $id);
-                                continue;
-                            }
-                            foreach ($row['candidates'] as $candidate) {
-                                if (in_array(self::sourceCandidateSelectionId($id, $candidate['id']), $keys, true)) {
-                                    $count += (int) $service->removeDummyMember(
-                                        $this->settings(), $id, $candidate['id'],
-                                    );
-                                }
-                            }
+                    $removed = DB::transaction(function () use ($groups, $keys, $service): int {
+                        $count = 0;
+                        $deleted = array_fill_keys(array_filter(
+                            $groups, static fn (int $id): bool => $id < 0,
+                        ), true);
+                        foreach (array_keys($deleted) as $id) {
+                            $count += (int) $service->removeDummyGallery($this->settings(), (int) $id);
                         }
+                        foreach ($keys as $selection) {
+                            [$sourceId, $key] = self::selectedSourceMember($selection);
+                            if ($sourceId >= 0 || isset($deleted[$sourceId])) {
+                                continue;
+                            }
+                            $count += (int) $service->removeDummyMember($this->settings(), $sourceId, $key);
+                        }
+                        return $count;
                     });
                     $this->clearSourceSelection();
                     $this->reloadWorkspace();
-                    if ($count > 0) {
+                    if ($removed > 0) {
                         app(AdminNotifier::class)->notification(
                             title: 'Selected Dummy Gallery memberships removed',
                             status: 'success',
