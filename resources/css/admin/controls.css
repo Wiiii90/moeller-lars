@@ -789,40 +789,76 @@
     min-width: 0;
 }
 
-/* The canonical Arrangement control is a compact Filament table repeater.
- * Native sort drag + Move up/down share its single ordering state. Its table
- * intentionally uses the Admin table's type, rows and zero-radius grammar;
- * the control itself owns this presentation in every consuming dialog. */
-.admin-arrangement-control {
+/* The shared Arrangement control deliberately retains the real table at
+ * Stage width. Filament's generic table Repeater switches to rounded,
+ * padded card rows below its @xl container threshold; that presentation
+ * contradicts this control's fixed compact table contract. Override the
+ * native component at its own stable, explicitly named root only. */
+.admin-arrangement-control.fi-fo-table-repeater {
     min-width: 0;
     margin-top: .2rem;
     padding-top: .45rem;
     border-top: 1px solid var(--admin-line);
 }
-.admin-arrangement-control :is(.fi-repeater, .fi-repeater-table, .fi-repeater-item) {
-    border-radius: 0;
-    box-shadow: none;
-}
-.admin-arrangement-control table {
+.admin-arrangement-control.fi-fo-table-repeater > table {
+    display: table;
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     border-spacing: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
 }
-.admin-arrangement-control th {
-    padding: .25rem .3rem;
-    color: var(--admin-muted);
+.admin-arrangement-control.fi-fo-table-repeater > table > thead {
+    display: table-header-group;
+    white-space: normal;
+}
+.admin-arrangement-control.fi-fo-table-repeater > table > tbody {
+    display: table-row-group;
+}
+.admin-arrangement-control.fi-fo-table-repeater > table > tbody > tr {
+    display: table-row;
+    padding: 0;
+    gap: 0;
+}
+.admin-arrangement-control.fi-fo-table-repeater > table > tbody > tr > td {
+    display: table-cell;
+    padding: .22rem .2rem;
+    vertical-align: middle;
+    font-size: var(--admin-font-size-table-body);
+}
+.admin-arrangement-control.fi-fo-table-repeater > table > thead > tr > th {
+    padding: .25rem .2rem;
+    border-radius: 0;
     font-size: var(--admin-font-size-table-header);
+    color: var(--admin-muted);
     font-weight: 600;
     text-align: left;
 }
-.admin-arrangement-control td {
-    padding: .22rem .3rem;
-    vertical-align: middle;
-    border-bottom: 1px solid var(--admin-line);
-    font-size: var(--admin-font-size-table-body);
+.admin-arrangement-control.fi-fo-table-repeater > table > tbody > tr > td .fi-fo-field,
+.admin-arrangement-control.fi-fo-table-repeater > table > tbody > tr > td .fi-in-entry {
+    row-gap: 0;
 }
-/* The native drag action retains its actual sortable behavior but uses
- * the same dotted grab affordance as x-admin's established drag button. */
+.admin-arrangement-control.fi-fo-table-repeater .fi-fo-field-label-content,
+.admin-arrangement-control.fi-fo-table-repeater .fi-in-entry-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.admin-arrangement-control.fi-fo-table-repeater .fi-fo-table-repeater-actions {
+    display: flex;
+    gap: .15rem;
+    padding: .12rem;
+}
+.admin-arrangement-control.fi-fo-table-repeater .fi-in-entry-content {
+    padding: 0 .2rem;
+}
+/* Keep Filament's actual sortable button, but use the dotted visual grammar
+ * of the shared admin-drag-handle; the same action remains draggable. */
 .admin-arrangement-control [x-sortable-handle] svg {
     display: none;
 }
