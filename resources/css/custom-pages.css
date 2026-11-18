@@ -267,9 +267,6 @@
 .custom-page__contact .contact-details__row + .contact-details__row {
     margin-top: .48rem;
 }
-.custom-page__contact .contact-status {
-    margin-bottom: 1rem;
-}
 /* All contact fields are single-column and full width. */
 .custom-page__contact .contact-form {
     display: block;
