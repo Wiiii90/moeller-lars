@@ -574,9 +574,9 @@ body {
     }
 }
 
-/* Expanded Artwork may give the media more room, but the caption and
- * editorial text always retain General's normal centered reading track.
- * This is a detail-page presentation, not a global Menu/Page width override. */
+/* Expanded Artwork may give its media more room, while captions and credits
+ * stay on the centered Artwork track. Description prose uses General's full
+ * available Page width, not a second fixed reading-width restriction. */
 .site-content--fitted-artwork .artwork-detail__media {
     width: min(100%, var(--public-fitted-image-width, var(--public-art-max)));
     margin-inline: auto;
@@ -588,7 +588,6 @@ body {
     height: auto;
 }
 .site-content--fitted-artwork .artwork-detail__footer,
-.site-content--fitted-artwork .artwork-detail__narrative,
 .site-content--fitted-artwork .artwork-detail__credits {
     width: min(100%, var(--public-art-max));
     max-width: 100%;
@@ -715,8 +714,10 @@ body.public-site:has(.site-content--fitted-image) .site-header {
         margin-inline: 0;
     }
     .site-content--artwork-museum .artwork-detail__narrative {
-        grid-column: 2;
-        grid-row: 3;
+        /* Museum retains its media/metadata columns, but the long-form
+           description and divider sit beneath both at full Page width. */
+        grid-column: 1 / -1;
+        grid-row: 4;
         width: 100%;
         margin-inline: 0;
         margin-top: .7rem;
@@ -814,6 +815,18 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 .artwork-card,
 .artwork-detail {
     margin-bottom: var(--public-section-gap);
+}
+
+/* Artwork media and its metadata retain their original image-sized track,
+   while description and divider can use the full General-owned Page width.
+   This is specific to detail pages; Gallery and Home cards stay untouched. */
+.artwork-detail {
+    width: 100%;
+}
+.artwork-detail__media,
+.artwork-detail__footer {
+    width: min(100%, var(--public-art-max));
+    margin-inline: auto;
 }
 
 .artwork-card:last-child,
@@ -1174,7 +1187,8 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 }
 
 .artwork-detail__narrative {
-    max-width: 36rem;
+    width: 100%;
+    min-width: 0;
     margin-top: 2rem;
     padding-top: 1rem;
     border-top: var(--public-divider-width) solid var(--public-divider);

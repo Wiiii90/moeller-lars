@@ -25,6 +25,6 @@
 
 ## Verification and next steps
 
-- Source comparison, Gallery-only selector checks, restored markup checks and basic balanced stylesheet braces executed. No real local browser, complete application run, CSS visual acceptance or runtime tests performed for this candidate.
+- Source comparison, Gallery-only selector checks, restored markup checks and stylesheet brace checks executed. Reconciled Dev Worker 1's simultaneous Artwork-detail narrative/full-width edits from `0e2357b` so the Gallery rollback does not revert independent Artwork-detail functionality. No complete application run, CSS visual acceptance or runtime tests performed for this candidate.
 - Next: inspect local Preview with the user's configured Page width/padding and Menu, both portrait and landscape at full desktop/mobile/zoom; verify page/header alignment, first item proximity, unchanged image aspect and footer width. Check galleries with headings/dividers/videos and long rights.
 - Once Public Gallery is accepted, resume Stage and Settings browser qualification, persistence, feedback, manual Draft/Publish and interactive Preview. The published public-site documentation still contains the older height value; hand off the accepted replacement to Docs for later consolidation.
