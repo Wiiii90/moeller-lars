@@ -71,42 +71,69 @@ final class HomeSettingsDialog
         ];
     }
 
-    /** @return list<mixed> */
-    public function schema(?Closure $persistHeroToggle = null): array
+    public function pageTemplateField(): Select
     {
-        $persistHeading = function (string $field, mixed $value): bool {
-            $section = $this->homeSection($this->resolver->settings());
-            $updated = app(SiteSectionEditorialService::class)->updatePageHeading($section, [$field => $value]);
+        return Select::make('template')
+            ->label(self::helpLabel(
+                'Template',
+                'Home templates',
+                'Hero Artwork displays selected artworks. Under Construction is a prepared content template, while Custom is fully editable.',
+            ))
+            ->options(array_map('__', HomeTemplate::options()))
+            ->required()
+            ->live();
+    }
 
-            return $updated->wasChanged($field);
-        };
+    /** @return list<mixed> */
+    public function pageSettingsSchema(): array
+    {
+        $persistHeading = $this->headingWriter();
 
         return [
             Grid::make()
                 ->columns(['default' => 1, 'lg' => 2])
                 ->schema([
-                    Select::make('template')
-                        ->label(self::helpLabel(
-                            'Template',
-                            'Home templates',
-                            'Hero Artwork displays selected artworks. Under Construction is a prepared content template, while Custom is fully editable. Each template retains its own settings and content when you switch between them.',
-                        ))
-                        ->options(array_map('__', HomeTemplate::options()))
-                        ->required()
-                        ->live()
-                        ->columnSpanFull(),
                     AdminControl::toggle('public_site_gate', 'Temporarily gate the public site')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
-                    AdminControl::toggle('show_in_navigation', 'Show in public navigation')
-                        ->live()
-                                                ->afterStateUpdated(function (mixed $state): void {
-                            if ($this->saveNavigationVisibility((bool) $state)) {
-                                app(AdminNotifier::class)->notification(
-                                    title: 'Home navigation updated',
-                                    status: 'success',
-                                );
-                            }
-                        }),
+                    $this->navigationField(),
+                    PageHeadingFields::headingToggle($persistHeading, 'Home settings saved'),
+                    ...PageHeadingFields::detailFields($persistHeading, 'Home settings saved'),
+                ]),
+        ];
+    }
+
+    private function headingWriter(): Closure
+    {
+        return function (string $field, mixed $value): bool {
+            $section = $this->homeSection($this->resolver->settings());
+            $updated = app(SiteSectionEditorialService::class)->updatePageHeading($section, [$field => $value]);
+
+            return $updated->wasChanged($field);
+        };
+    }
+
+    private function navigationField(): Toggle
+    {
+        return AdminControl::toggle('show_in_navigation', 'Show in public navigation')
+            ->live()
+            ->afterStateUpdated(function (mixed $state): void {
+                if ($this->saveNavigationVisibility((bool) $state)) {
+                    app(AdminNotifier::class)->notification(
+                        title: 'Home navigation updated',
+                        status: 'success',
+                    );
+                }
+            });
+    }
+
+    /** @return list<mixed> */
+    public function schema(?Closure $persistHeroToggle = null): array
+    {
+        return [
+            Grid::make()
+                ->columns(['default' => 1, 'lg' => 2])
+                ->schema([
+                    $this->pageTemplateField()->columnSpanFull(),
                     Select::make('group_source')
                         ->label(self::helpLabel(
                             'Source',
@@ -205,13 +232,11 @@ final class HomeSettingsDialog
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
                     $this->heroDisplayToggle('artwork_menu_surface_wide', 'Match Menu surface to Artwork page width', $persistHeroToggle),
                     $this->heroDisplayToggle('video_sound_enabled', 'Allow visitors to unmute looping Home videos', $persistHeroToggle),
-                    PageHeadingFields::headingToggle($persistHeading, 'Home settings saved'),
                     $this->heroDisplayToggle('enable_viewer', PublicImageViewer::TOGGLE_LABEL, $persistHeroToggle),
                     AdminControl::toggle('custom_image_viewer_enabled', PublicImageViewer::TOGGLE_LABEL)
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Custom->value),
                     AdminControl::toggle('construction_image_viewer_enabled', PublicImageViewer::TOGGLE_LABEL)
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
-                    ...PageHeadingFields::detailFields($persistHeading, 'Home settings saved'),
                     AdminControl::toggle('auto_publish_new_components', 'Auto-publish new components')
                         ->visible(fn (callable $get): bool => $get('template') !== HomeTemplate::Artwork->value)
                         ->live()
@@ -280,7 +305,7 @@ final class HomeSettingsDialog
             $field = $template === HomeTemplate::Custom ? 'custom_image_viewer_enabled' : 'construction_image_viewer_enabled';
             $input = ['image_viewer_enabled' => (bool) ($data[$field] ?? $current['image_viewer_enabled'])];
             if ($template === HomeTemplate::UnderConstruction) {
-                $input['public_site_gate'] = (bool) ($data['public_site_gate'] ?? false);
+                $input['public_site_gate'] = (bool) ($data['public_site_gate'] ?? $current['public_site_gate']);
             }
             $changed = $this->editorial->updateSettings($settings, $template, $input);
         }

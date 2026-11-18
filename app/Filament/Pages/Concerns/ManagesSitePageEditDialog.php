@@ -153,13 +153,14 @@ trait ManagesSitePageEditDialog
                 Grid::make()
                     ->columns(['md' => 2])
                     ->schema([
+                        $dialog->pageTemplateField(),
                         TextInput::make('name')->label('Name')->required()->maxLength(160),
                         TextInput::make('public_path')->label('Public slug')->disabled()->dehydrated(false),
                         TextInput::make('parent_page')->label('Parent page')->disabled()->dehydrated(false),
                         TextInput::make('position')->label('Position')->disabled()->dehydrated(false),
                         PageMetaDescriptionField::make(),
                     ]),
-                ...$dialog->schema(),
+                ...$dialog->pageSettingsSchema(),
             ])
             ->action(function (array $data) use ($dialog): void {
                 try {
