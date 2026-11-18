@@ -27,8 +27,8 @@
         $nextArtwork ??= $sequence->first();
     }
     $preview = app(\App\Domain\Content\SitePreviewContext::class);
-    $fitArtwork = ! $isVideo
-        && $presentation::artworkPageLayout($category) === $presentation::ARTWORK_PAGE_EXPANDED;
+    $expandedArtwork = $presentation::artworkPageLayout($category) === $presentation::ARTWORK_PAGE_EXPANDED;
+    $fitArtwork = $expandedArtwork && ! $isVideo;
 
     // A saved Rich Text fragment such as <p></p> is not visible editorial
     // content. Do not emit its decorative divider when the safe rendered body
@@ -39,11 +39,11 @@
         || preg_match('/<(?:img|figure|video|audio|table|hr)\\b/i', $renderedDescription) === 1;
 @endphp
 
-{{-- Standard follows General's width; Expanded fits both image orientations
-     and the outer Menu paper to the same page surface. General alone owns
-     whether the Menu and content are connected or separated. --}}
-@section('content_class', $fitArtwork ? 'site-content--fitted-artwork' : '')
-@section('artwork_menu_surface_wide', $fitArtwork ? '1' : '')
+{{-- Default follows General's width. Expanded keeps one fixed outer Page and
+     Menu sheet across images and videos, while only images use the fit stage.
+     General alone owns whether the Menu and Page are connected. --}}
+@section('content_class', $expandedArtwork ? 'site-content--fitted-artwork' : '')
+@section('artwork_menu_surface_wide', $expandedArtwork ? '1' : '')
 
 @section('title', $artwork->title.' — Lars Möller')
 @section('meta_description', trim(strip_tags((string) $artwork->description)) ?: $artwork->title.' — Lars Möller')

@@ -143,3 +143,9 @@
 - Gallery Stage Gallery title and Artwork order now occupy the same two-column first row at regular widths; all following Stage settings still consume full rows. The central Artwork-order help bulb remains intact. The Settings dialog shares the same definitions and becomes two columns at its existing breakpoint.
 - `Artwork page layout` options now display `Default` (persisted key remains `standard`) and `Expanded`, with no selectable empty placeholder. No new layout mode or migration was introduced by this refinement.
 - This source-only change is **not** browser-verified. Confirm one-row toolbar at Wide/Compact/Minimal, dropdown legibility, both device orientations and zoom/pan/iframe interaction, Stage Settings field columns and the modal. Separate current user feedback still requires a bounded Public Artwork viewport-height/scroll fit correction and investigation of the divider aliasing visible while scaled; do not claim those problems are resolved.
+
+## Expanded page frame continuation — 2026-11-18
+
+- Public Artwork Expanded previously used its wide Page/Menu frame only for images because `$fitArtwork` explicitly excluded videos. A separate `$expandedArtwork` flag now controls the outer sheet for both images and videos, with image-only fit markup retained. This removes a cross-Artwork width discontinuity without changing publication or Gallery settings.
+- The alleged double Menu divider is not present in current source: the wide Menu CSS already removes the inner narrow border, and the outer surface owns the line. The remaining screenshot artifact requires direct Public-versus-scaled-Preview browser geometry evidence; do not layer a speculative CSS override.
+- The requested viewport-height-constrained image and constant bottom paper margin are not yet implemented. Reconcile optional narrative/credits and variable header heights without clipping editorial content; a long description necessarily requires scroll rather than hidden text.
