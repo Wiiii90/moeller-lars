@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\AdminLivePreviewRenderController;
 use App\Http\Controllers\AdminMediaController;
 use App\Http\Controllers\AdminResumableMediaUploadController;
 use App\Http\Controllers\PublicArtworkController;
@@ -55,13 +54,6 @@ Route::middleware(ProtectArtistPreview::class)
             ->where('section', '[a-z0-9]+(?:-[a-z0-9]+)*')
             ->name('site.section');
     });
-
-// The canonical shared Admin preview can request a fresh screenshot from an
-// isolated, internally reachable browser renderer. Only protected /preview
-// paths are accepted; the controller checks the artist/admin permission again.
-Route::post('/admin/live-preview/render', AdminLivePreviewRenderController::class)
-    ->middleware(['auth', 'throttle:60,1'])
-    ->name('admin.live-preview.render');
 
 // Authenticated, CSRF-protected private staging. Each request contains at most
 // one 16 MiB chunk. Durable identity, offset and quota checks live in the service.

@@ -11,7 +11,6 @@
     x-bind:data-preview-device="previewDevice"
     data-preview-profiles='@json(\App\Domain\Content\PreviewDeviceProfiles::all())'
     data-preview-url="{{ $url }}"
-    data-preview-render-url="{{ route('admin.live-preview.render') }}"
     x-data="adminLivePreview($el)"
     @if ($refreshOnAppearance) x-on:general-appearance-updated.window="refreshPreview()" @endif
     x-on:gallery-preview-updated.window="refreshPreview($event.detail); scheduleFit()"
@@ -46,27 +45,8 @@
                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" />
             </button>
         </div>
-        @if (filled($url))
-            <div class="admin-stage-tool-group admin-live-preview__engine-group">
-                <select class="admin-live-preview__engine-select"
-                    x-model="engine" x-on:change="setEngine($event.target.value)"
-                    x-bind:title="rendererStatus() || 'Auto uses an appropriate browser for each device. Live keeps the page interactive.'"
-                    aria-label="Browser appearance">
-                    <option value="auto">Auto</option>
-                    <option value="live">Live</option>
-                    <option value="webkit">Safari</option>
-                    <option value="chromium">Chrome</option>
-                    <option value="firefox">Firefox</option>
-                </select>
-            </div>
-        @endif
-        <span class="admin-live-preview__issue" x-show="rendererStatus() !== ''" x-cloak
-            x-bind:title="rendererStatus()" x-bind:aria-label="rendererStatus()"
-            role="status">
-            <x-filament::icon icon="heroicon-o-exclamation-triangle" />
-        </span>
         <span class="admin-live-preview__issue" x-show="horizontalOverflow" x-cloak
-            title="The page is wider than this device screen" aria-label="Horizontal page overflow" role="status">
+            title="The page is wider than the selected device width" aria-label="Horizontal page overflow" role="status">
             <x-filament::icon icon="heroicon-o-exclamation-circle" />
         </span>
         <div class="admin-stage-tool-group admin-live-preview__zoom-group" role="group" aria-label="Preview zoom">
@@ -111,9 +91,7 @@
 
     <div x-ref="viewport" class="admin-live-preview__viewport" tabindex="0"
         x-on:pointerenter="pointerInside = true"
-        x-on:pointerleave="pointerInside = false; cancelSpacePan()"
-        x-on:wheel="handleSnapshotWheel($event)"
-        x-on:keydown="handleSnapshotKeydown($event)">
+        x-on:pointerleave="pointerInside = false; cancelSpacePan()">
         <div x-ref="surface" wire:ignore.self class="admin-live-preview__surface">
             <div x-ref="page" wire:ignore.self class="admin-live-preview__page"
                 x-bind:class="{
@@ -127,17 +105,9 @@
                     </div>
                 @elseif (filled($url))
                     <iframe x-ref="frame" wire:ignore class="admin-live-preview__frame"
-                        x-bind:class="{ 'is-snapshot-source': isShowingSnapshot() }"
                         src="{{ $url }}" title="{{ $frameTitle }}"
                         loading="eager" tabindex="0" allowfullscreen
                         x-on:load="$nextTick(() => onFrameLoad())"></iframe>
-                    <img x-ref="snapshotFrame" class="admin-live-preview__snapshot"
-                        x-show="isShowingSnapshot()" x-cloak
-                        x-bind:src="snapshotUrl || null"
-                        x-on:wheel.prevent.stop="handleSnapshotWheel($event)"
-                        x-on:pointerdown="$refs.viewport?.focus({ preventScroll: true })"
-                        title="Browser appearance preview. Select Live to interact with the page."
-                        alt="Rendered public page in the selected browser">
                 @else
                     <div x-ref="frame" wire:ignore.self class="admin-live-preview__frame admin-live-preview__frame--content">
                         <x-admin.empty-state title="Preview unavailable" minimal />
@@ -151,6 +121,6 @@
             </div>
         </div>
         <span class="admin-live-preview__sr-only" role="status" aria-live="polite"
-            x-text="rendererStatus() || (horizontalOverflow ? 'Horizontal page overflow detected' : '')"></span>
+            x-text="horizontalOverflow ? 'Horizontal page overflow detected' : ''"></span>
     </div>
 </aside>

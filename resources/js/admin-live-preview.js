@@ -1,7 +1,8 @@
-// Shared Gallery/General Live Preview: one layout viewport, one zoom/pan
-// lifecycle and optional isolated browser-engine rendering.
+// Shared Gallery/General Preview: actual responsive layout viewports, with
+// browser-local device preference and a single interactive Public frame.
 export function adminLivePreview(element) {
-    const profiles = JSON.parse(element.dataset.previewProfiles || '{}');
+    const profiles = JSON.parse(element.dataset.previewProfiles || '{}')
+    const preferenceKey = 'moeller-lars:admin-live-preview-device'
     return {
         resizeObserver: null,
         fitFrame: null,
@@ -10,17 +11,8 @@ export function adminLivePreview(element) {
         previewDevice: 'desktop',
         selectedProfile: 'desktop-laptop',
         rotated: false,
-        engine: 'auto',
-        comparisonUnavailable: false,
         currentUrl: element.dataset.previewUrl || '',
-        snapshotUrl: '',
-        snapshotLoading: false,
         horizontalOverflow: false,
-        snapshotAbort: null,
-        snapshotRequest: 0,
-        snapshotScrollY: 0,
-        snapshotScrollMax: 0,
-        snapshotWheelDelay: null,
         fitScale: 1,
         zoom: 1,
         minZoom: 1,
@@ -36,20 +28,39 @@ export function adminLivePreview(element) {
         dragStartPanX: 0,
         dragStartPanY: 0,
         init() {
+            // A device preference belongs to the artist's browser tab, not to
+            // a Gallery or a published site configuration.
+            try {
+                const saved = JSON.parse(sessionStorage.getItem(preferenceKey) || 'null')
+                if (saved && Object.hasOwn(profiles, saved.profile)) {
+                    this.selectedProfile = saved.profile
+                    this.previewDevice = profiles[saved.profile].category
+                    this.rotated = saved.rotated === true
+                }
+            } catch (_) {
+                // Private browsing may deny storage; the live preview still works.
+            }
             this.$nextTick(() => {
                 this.resizeObserver = new ResizeObserver(() => this.scheduleFit())
                 if (this.$refs.viewport) this.resizeObserver.observe(this.$refs.viewport)
                 this.scheduleFit()
             })
         },
+        saveDevicePreference() {
+            try {
+                sessionStorage.setItem(preferenceKey, JSON.stringify({
+                    profile: this.selectedProfile,
+                    rotated: this.rotated,
+                }))
+            } catch (_) {
+                // Storage is optional, never a prerequisite for preview.
+            }
+        },
         destroy() {
             this.resizeObserver?.disconnect()
             if (this.fitFrame !== null) cancelAnimationFrame(this.fitFrame)
             this.unbindFrameShortcuts()
             this.cancelPanGesture()
-            this.snapshotAbort?.abort()
-            if (this.snapshotWheelDelay !== null) clearTimeout(this.snapshotWheelDelay)
-            if (this.snapshotUrl) URL.revokeObjectURL(this.snapshotUrl)
         },
         scheduleFit() {
             if (this.fitFrame !== null) return
@@ -63,56 +74,13 @@ export function adminLivePreview(element) {
             this.selectedProfile = value
             this.previewDevice = profiles[value].category
             this.rotated = false
-            this.snapshotScrollY = 0
-            this.snapshotScrollMax = 0
+            this.saveDevicePreference()
             this.changeViewport()
-        },
-        activeEngine() {
-            if (this.engine !== 'auto') return this.engine
-            const platform = profiles[this.selectedProfile]?.platform
-            // Desktop keeps its live, interactive iframe. iOS and Android
-            // presets use their matching browser engine when available.
-            return platform === 'ios' ? 'webkit'
-                : platform === 'android' ? 'chromium' : 'live'
-        },
-        usesBrowserRenderer() {
-            return this.currentUrl !== '' && this.activeEngine() !== 'live'
-                && ! this.comparisonUnavailable
-        },
-        isShowingSnapshot() {
-            return this.snapshotUrl !== '' && this.activeEngine() !== 'live'
-        },
-        rendererStatus() {
-            if (! this.comparisonUnavailable || this.activeEngine() === 'live') return ''
-            const name = this.activeEngine() === 'webkit' ? 'Safari'
-                : this.activeEngine() === 'chromium' ? 'Chrome' : 'Firefox'
-            return `${name} comparison unavailable. Showing the live browser view instead.`
-        },
-        setEngine(value) {
-            if (! ['auto', 'live', 'chromium', 'webkit', 'firefox'].includes(value)) return
-            this.engine = value
-            // A deliberate mode change is also an explicit retry after an
-            // unavailable browser renderer has since been started.
-            this.comparisonUnavailable = false
-            this.snapshotAbort?.abort()
-            this.releaseSnapshot()
-            this.snapshotLoading = false
-            this.snapshotScrollY = 0
-            this.snapshotScrollMax = 0
-            if (this.usesBrowserRenderer()) this.requestSnapshot()
-            else this.updateViewportDiagnostics()
         },
         onFrameLoad() {
             this.scheduleFit()
             this.bindFrameShortcuts()
             this.updateViewportDiagnostics()
-            if (this.usesBrowserRenderer() && ! this.snapshotLoading && ! this.snapshotUrl) {
-                this.requestSnapshot()
-            }
-        },
-        releaseSnapshot() {
-            if (this.snapshotUrl) URL.revokeObjectURL(this.snapshotUrl)
-            this.snapshotUrl = ''
         },
         changeViewport() {
             this.cancelPanGesture()
@@ -121,16 +89,11 @@ export function adminLivePreview(element) {
             this.panY = 0
             this.panMode = false
             this.spacePan = false
-            this.$nextTick(() => {
-                this.scheduleFit()
-                if (this.usesBrowserRenderer()) this.requestSnapshot()
-                else this.updateViewportDiagnostics()
-            })
+            this.$nextTick(() => this.scheduleFit())
         },
         rotateViewport() {
-            this.snapshotScrollY = 0
-            this.snapshotScrollMax = 0
             this.rotated = ! this.rotated
+            this.saveDevicePreference()
             this.changeViewport()
         },
         viewportSize() {
@@ -168,13 +131,9 @@ export function adminLivePreview(element) {
             page.style.height = `${targetHeight * scale}px`
             frame.style.width = `${targetWidth}px`
             frame.style.height = `${targetHeight}px`
-            const snapshot = this.$refs.snapshotFrame
-            if (snapshot) {
-                snapshot.style.width = `${targetWidth}px`
-                snapshot.style.height = `${targetHeight}px`
-            }
             this.clampPan()
             this.applyPreviewTransform()
+            this.updateViewportDiagnostics()
         },
         applyPreviewTransform() {
             const frame = this.$refs.frame
@@ -184,13 +143,6 @@ export function adminLivePreview(element) {
             frame.style.left = `${this.panX}px`
             frame.style.top = `${this.panY}px`
             frame.style.transform = `scale(${this.fitScale * this.zoom})`
-            const snapshot = this.$refs.snapshotFrame
-            if (snapshot) {
-                snapshot.style.transformOrigin = 'top left'
-                snapshot.style.left = `${this.panX}px`
-                snapshot.style.top = `${this.panY}px`
-                snapshot.style.transform = frame.style.transform
-            }
         },
         clampPan() {
             const page = this.$refs.page
@@ -355,110 +307,6 @@ export function adminLivePreview(element) {
                 this.horizontalOverflow = false
             }
         },
-        scrollSnapshot(amount) {
-            if (! this.isShowingSnapshot() || this.snapshotLoading) return
-            const next = Math.max(0, Math.min(this.snapshotScrollMax,
-                Math.round(this.snapshotScrollY + amount)))
-            if (next === this.snapshotScrollY) return
-            this.snapshotScrollY = next
-            if (this.snapshotWheelDelay !== null) clearTimeout(this.snapshotWheelDelay)
-            this.snapshotWheelDelay = setTimeout(() => {
-                this.snapshotWheelDelay = null
-                this.requestSnapshot()
-            }, 160)
-        },
-        handleSnapshotWheel(event) {
-            if (! this.isShowingSnapshot()) return
-            event.preventDefault()
-            this.scrollSnapshot(event.deltaY)
-        },
-        handleSnapshotKeydown(event) {
-            if (! this.isShowingSnapshot()) return
-            const height = this.viewportSize()[1]
-            const amount = {
-                ArrowDown: 80,
-                ArrowUp: -80,
-                PageDown: height * .8,
-                PageUp: -height * .8,
-                Home: -this.snapshotScrollMax,
-                End: this.snapshotScrollMax,
-            }[event.key]
-            if (amount === undefined) return
-            event.preventDefault()
-            this.scrollSnapshot(amount)
-        },
-        async requestSnapshot() {
-            if (! this.usesBrowserRenderer()) return
-            const selectedEngine = this.activeEngine()
-            this.snapshotAbort?.abort()
-            const controller = new AbortController()
-            this.snapshotAbort = controller
-            const revision = ++this.snapshotRequest
-            this.snapshotLoading = true
-            this.horizontalOverflow = false
-            this.releaseSnapshot()
-            try {
-                const target = new URL(this.currentUrl, window.location.origin)
-                if (target.origin !== window.location.origin
-                    || ! /^\/preview(?:\/|$)/.test(target.pathname)) {
-                    throw new Error('Only an authenticated public preview can be compared.')
-                }
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? ''
-                const response = await fetch(element.dataset.previewRenderUrl, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-                    body: JSON.stringify({
-                        path: target.pathname,
-                        profile: this.selectedProfile,
-                        orientation: this.rotated ? 'rotated' : 'default',
-                        engine: selectedEngine,
-                        scroll_y: this.snapshotScrollY,
-                    }),
-                    signal: controller.signal,
-                })
-                if (! response.ok) {
-                    const payload = await response.json().catch(() => ({}))
-                    throw new Error(payload.message || 'Browser rendering is unavailable.')
-                }
-                const overflow = response.headers.get('X-Preview-Overflow-X') === '1'
-                const maxY = Number(response.headers.get('X-Preview-Scroll-Max') ?? 0)
-                const scrollY = Number(response.headers.get('X-Preview-Scroll-Y') ?? 0)
-                const blob = await response.blob()
-                // Reveal only a decoded screenshot; even an invalid renderer
-                // response must leave the live iframe completely usable.
-                const imageUrl = URL.createObjectURL(blob)
-                try {
-                    const picture = new Image()
-                    picture.src = imageUrl
-                    await picture.decode()
-                } catch (error) {
-                    URL.revokeObjectURL(imageUrl)
-                    throw new Error('The browser comparison could not be displayed.')
-                }
-                if (controller.signal.aborted || revision !== this.snapshotRequest) {
-                    URL.revokeObjectURL(imageUrl)
-                    return
-                }
-                this.snapshotUrl = imageUrl
-                this.comparisonUnavailable = false
-                this.horizontalOverflow = overflow
-                this.snapshotScrollMax = Number.isFinite(maxY) ? Math.max(0, maxY) : 0
-                this.snapshotScrollY = Number.isFinite(scrollY) ? Math.max(0, scrollY) : 0
-            } catch (error) {
-                if (controller.signal.aborted || revision !== this.snapshotRequest) return
-                // Keep the interactive page visible. An unavailable renderer
-                // must never turn the preview into an empty white screenshot.
-                this.comparisonUnavailable = true
-                this.releaseSnapshot()
-                this.updateViewportDiagnostics()
-            } finally {
-                if (revision === this.snapshotRequest) {
-                    this.snapshotLoading = false
-                    this.snapshotAbort = null
-                }
-            }
-        },
         refreshPreview(detail = {}) {
             const frame = this.$refs.frame
             if (! frame || frame.tagName !== 'IFRAME') {
@@ -474,15 +322,7 @@ export function adminLivePreview(element) {
             const url = new URL(source, window.location.origin)
             url.searchParams.set('_appearance', Date.now().toString())
             this.currentUrl = url.toString()
-            this.snapshotAbort?.abort()
-            this.snapshotLoading = false
-            this.releaseSnapshot()
-            this.snapshotScrollY = 0
-            this.snapshotScrollMax = 0
             frame.src = this.currentUrl
-            // The new iframe load is the one refresh boundary for both
-            // interactive and browser-engine views; don't double-request.
-
         },
     };
 }

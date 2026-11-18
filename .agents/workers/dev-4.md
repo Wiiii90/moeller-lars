@@ -2,7 +2,7 @@
 
 **Lease:** 17  
 **Branch:** dev  
-**State:** Active — shared responsive device Live Preview and private multi-engine browser renderer implemented on dev. Browser/runtime acceptance and the earlier Gallery migration, publication checkpoint and Artwork Divider/Expanded checks remain pending.
+**State:** Active — shared single-frame responsive Live Preview simplified on dev; runtime/browser acceptance, Gallery migration and earlier Artwork Divider/Expanded checks remain pending.
 
 ## Chat takeover — 2026-11-18
 
@@ -199,3 +199,13 @@
 ### Self-update safety for the PowerShell entrypoint
 
 - The canonical preview script now compares its own SHA-256 before and after Git's fast-forward. If the running file was replaced during synchronization, it invokes the updated script and exits its own stale execution path. This prevents future script edits from continuing an old in-memory `docker compose build` command after the source was updated. Existing preflight and working-tree safety checks are retained. This does **not** retroactively change a previously loaded script: on this first recovery, a one-time fast-forward before invoking the helper is the reliable bootstrap.
+
+## Simplify shared Live Preview to one interactive renderer — 2026-11-18
+
+- The artist clarified the final scope: only the **small embedded, interactive Gallery/General Preview**, not browser-engine comparison, native device control, separate browser services, screenshot infrastructure or a device-testing product.
+- `resources/js/admin-live-preview.js` retains one real responsive Working iframe and its existing shared Stage zoom/pan controls. Device profiles and rotation set an actual layout viewport before visual scaling. The selected profile and orientation persist only within the artist's browser tab through guarded `sessionStorage`; they are not Gallery settings or published website state. Zoom/pan reset between device selections. Existing Gallery and General successful-change events still reload the protected Working preview.
+- The shared Blade toolbar now contains only the device dropdown, rotation, zoom/fit, pan and Open actions; the compact real horizontal-overflow warning remains. All engine select, remote status/fallback, screenshots, transport, scroll-snapshot state and special styles were **removed**, not hidden.
+- `PreviewDeviceProfiles` retains 12 practical width/height profiles and touch scrollbar presentation, and removes unused physical pixel density and operating-system engine metadata. All output is rendered by the artist's current browser, **not by real iOS/Safari or Android/Chrome**; profiles establish CSS responsive layout decisions but cannot guarantee platform-specific icon/font/native-control fidelity.
+- Removed the standalone browser controller, Playwright screenshot server, renderer Dockerfile, optional renderer PowerShell script, its private HTTP route, services config, Compose service/environment and example-env secrets. The normal `scripts/local-preview.ps1` remains unchanged and has no Playwright dependency. Retain Playwright npm dependencies already used by **tests**; do not delete them.
+- No database schema, publication snapshot, media lifecycle or General Appearance controls were changed. Existing touch-only document-scrollbar styling in Public remains for the iframe. Static pre-commit checks confirmed JavaScript function syntax, balanced CSS and Blade directives, one device dropdown, absence of retired backend refs and intact protected Working preview/media services.
+- Source-only changes prepared; no local Docker/browser, browser acceptance, tests, deployment or migration executed. In local browser review, check device select and rotation in both Gallery and General, live refresh after save, staged previews, user scroll, zero-zoom Fit, overflow icon, realistic viewport scaling and session-tab persistence. Explain to the artist that same-browser rendering is **responsive emulation**, not an operating-system-accurate iPhone screenshot.

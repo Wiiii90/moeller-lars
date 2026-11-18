@@ -35,11 +35,6 @@ return [
         ],
     ],
 
-    'live_preview_renderer' => [
-        'endpoint' => env('LIVE_PREVIEW_RENDERER_ENDPOINT'),
-        'token' => env('LIVE_PREVIEW_RENDERER_TOKEN'),
-    ],
-
     'nominatim' => [
         'endpoint' => env('NOMINATIM_ENDPOINT', 'https://nominatim.openstreetmap.org/search'),
         'user_agent' => env('NOMINATIM_USER_AGENT', 'moeller-lars admin geocoder'),
