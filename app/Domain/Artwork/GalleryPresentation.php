@@ -20,17 +20,23 @@ final class GalleryPresentation
 
     public static function showArtworkInformation(ArtworkCategory $gallery): bool
     {
-        return $gallery->getAttribute('show_artwork_information') !== false;
+        $info = ArtworkInformation::gallery($gallery);
+        return $info['enabled'] && (
+            $info['visible']['title'] || $info['visible']['date']
+            || $info['visible']['dimensions'] || $info['visible']['material']
+        );
     }
 
     public static function showMediaCredits(ArtworkCategory $gallery): bool
     {
-        return (bool) $gallery->getAttribute('show_media_credits');
+        $info = ArtworkInformation::gallery($gallery);
+        return $info['enabled'] && $info['visible']['credits'];
     }
 
     public static function showMediaCopyright(ArtworkCategory $gallery): bool
     {
-        return (bool) $gallery->getAttribute('show_media_copyright');
+        $info = ArtworkInformation::gallery($gallery);
+        return $info['enabled'] && $info['visible']['copyright'];
     }
 
     public static function captionLayout(ArtworkCategory $gallery): string
@@ -98,9 +104,12 @@ final class GalleryPresentation
 
     public const ARTWORK_PAGE_EXPANDED = 'expanded';
 
+    public const ARTWORK_PAGE_MUSEUM = 'museum';
+
     public const ARTWORK_PAGE_LAYOUTS = [
         self::ARTWORK_PAGE_STANDARD => 'Default',
         self::ARTWORK_PAGE_EXPANDED => 'Expanded',
+        self::ARTWORK_PAGE_MUSEUM => 'Museum',
     ];
 
     public static function artworkPageLayout(ArtworkCategory $gallery): string
@@ -109,6 +118,26 @@ final class GalleryPresentation
 
         return is_string($layout) && array_key_exists($layout, self::ARTWORK_PAGE_LAYOUTS)
             ? $layout : self::ARTWORK_PAGE_STANDARD;
+    }
+
+    public static function viewerEnabled(ArtworkCategory $gallery): bool
+    {
+        return $gallery->getAttribute('media_viewer_enabled') !== false;
+    }
+
+    public static function artworkPagesEnabled(ArtworkCategory $gallery): bool
+    {
+        return $gallery->getAttribute('artwork_pages_enabled') !== false;
+    }
+
+    public static function viewerZoomEnabled(ArtworkCategory $gallery): bool
+    {
+        return $gallery->getAttribute('viewer_zoom_enabled') !== false;
+    }
+
+    public static function viewerNavigationEnabled(ArtworkCategory $gallery): bool
+    {
+        return $gallery->getAttribute('viewer_navigation_enabled') !== false;
     }
 
     public const DIVIDER_NONE = 'none';
@@ -135,6 +164,18 @@ final class GalleryPresentation
             }
             $values['caption_layout'] = $layout;
         }
+        if (array_key_exists('artwork_information', $data)) {
+            $values['artwork_information'] = ArtworkInformation::normalize($data['artwork_information']);
+        }
+        foreach (['media_viewer_enabled', 'artwork_pages_enabled', 'viewer_zoom_enabled', 'viewer_navigation_enabled'] as $field) {
+            if (! array_key_exists($field, $data)) {
+                continue;
+            }
+            if (! is_bool($data[$field]) && ! in_array($data[$field], [0, 1, '0', '1'], true)) {
+                throw ValidationException::withMessages([$field => 'Choose an enabled or disabled state.']);
+            }
+            $values[$field] = (bool) $data[$field];
+        }
         if (array_key_exists('video_sound_enabled', $data)) {
             $value = $data['video_sound_enabled'];
             if (! is_bool($value) && ! in_array($value, [0, 1, '0', '1'], true)) {
@@ -152,7 +193,7 @@ final class GalleryPresentation
             $layout = $data['artwork_page_layout'];
             if (! is_string($layout) || ! array_key_exists($layout, self::ARTWORK_PAGE_LAYOUTS)) {
                 throw ValidationException::withMessages([
-                    'artwork_page_layout' => 'Choose Default or Expanded Artwork page layout.',
+                    'artwork_page_layout' => 'Choose Default, Expanded or Museum Artwork page layout.',
                 ]);
             }
             $values['artwork_page_layout'] = $layout;

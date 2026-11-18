@@ -98,14 +98,16 @@ function normalizeItem(element) {
     const src = element.dataset.viewerSrc;
     const alt = element.dataset.viewerAlt;
     const title = element.dataset.viewerTitle;
-    const page = element.dataset.viewerPage;
+    const page = element.dataset.viewerPage || null;
+    const zoom = element.dataset.viewerZoom !== '0';
+    const navigation = element.dataset.viewerNavigation !== '0';
 
     const content = ['journal', 'content'].includes(element.dataset.viewerScope);
-    if (!key || !src || alt === undefined || !title || (!content && (!analyticsKey || !page))) {
+    if (!key || !src || alt === undefined || !title || (!content && !analyticsKey)) {
         throw new Error('Artwork viewer item is missing required canonical data.');
     }
 
-    return { key, analyticsKey, kind, mime, src, alt, title, page };
+    return { key, analyticsKey, kind, mime, src, alt, title, page, zoom, navigation };
 }
 
 export function initializeArtworkViewer(root = document) {
@@ -150,6 +152,8 @@ export function initializeArtworkViewer(root = document) {
 
     const currentItem = () => items[index] ?? null;
     const currentIsImage = () => currentItem()?.kind === 'image';
+    const zoomAllowed = () => currentItem()?.zoom !== false;
+    const navigationAllowed = () => currentItem()?.navigation !== false;
     const mediaVisible = () => currentIsImage() ? !image.hidden : !video.hidden;
     const now = () => window.performance?.now?.() ?? Date.now();
 
@@ -280,8 +284,10 @@ export function initializeArtworkViewer(root = document) {
         dragStart = null;
         pinchStart = null;
         title.textContent = item.title;
-        previous.disabled = adjacentIndex(index, -1, items.length) === null;
-        next.disabled = adjacentIndex(index, 1, items.length) === null;
+        previous.hidden = !item.navigation;
+        next.hidden = !item.navigation;
+        previous.disabled = !item.navigation || adjacentIndex(index, -1, items.length) === null;
+        next.disabled = !item.navigation || adjacentIndex(index, 1, items.length) === null;
         preserveControlFocus();
         pageLink.hidden = !item.page;
         if (item.page) pageLink.href = item.page;
@@ -296,7 +302,7 @@ export function initializeArtworkViewer(root = document) {
         stage.dataset.viewerKind = item.kind;
         stage.dataset.viewerZoomed = 'false';
         stage.dataset.viewerPannable = 'false';
-        setZoomControls(item.kind === 'image');
+        setZoomControls(item.kind === 'image' && item.zoom);
 
         if (item.kind === 'video') {
             video.setAttribute('aria-label', item.alt);
@@ -334,13 +340,14 @@ export function initializeArtworkViewer(root = document) {
     };
 
     const changeZoom = (nextScale, pointX = 0, pointY = 0) => {
-        if (!currentIsImage() || image.hidden || !expectedSrc) return;
+        if (!currentIsImage() || !zoomAllowed() || image.hidden || !expectedSrc) return;
         state = zoomAroundPoint(state, nextScale, pointX, pointY);
         updateTransform();
         trackZoomIfNeeded();
     };
 
     const navigate = (direction, action) => {
+        if (!navigationAllowed()) return;
         const destination = adjacentIndex(index, direction, items.length);
         if (destination === null) return;
         flushAttention();
@@ -423,14 +430,14 @@ export function initializeArtworkViewer(root = document) {
     });
 
     stage.addEventListener('wheel', (event) => {
-        if (!currentIsImage() || image.hidden || !expectedSrc) return;
+        if (!currentIsImage() || !zoomAllowed() || image.hidden || !expectedSrc) return;
         event.preventDefault();
         const point = stagePoint(event);
         changeZoom(state.scale * (event.deltaY < 0 ? 1.12 : 1 / 1.12), point.x, point.y);
     }, { passive: false });
 
     stage.addEventListener('dblclick', (event) => {
-        if (!currentIsImage() || image.hidden || !expectedSrc) return;
+        if (!currentIsImage() || !zoomAllowed() || image.hidden || !expectedSrc) return;
         event.preventDefault();
         if (state.scale > MIN_SCALE) {
             resetState();
@@ -441,7 +448,7 @@ export function initializeArtworkViewer(root = document) {
     });
 
     stage.addEventListener('pointerdown', (event) => {
-        if (!currentIsImage()) return;
+        if (!currentIsImage() || !zoomAllowed()) return;
         pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
         stage.setPointerCapture?.(event.pointerId);
         if (pointers.size === 1) dragStart = { x: event.clientX, y: event.clientY, panX: state.x, panY: state.y };
@@ -460,7 +467,7 @@ export function initializeArtworkViewer(root = document) {
     });
 
     stage.addEventListener('pointermove', (event) => {
-        if (!currentIsImage() || !pointers.has(event.pointerId)) return;
+        if (!currentIsImage() || !zoomAllowed() || !pointers.has(event.pointerId)) return;
         pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
         const values = [...pointers.values()];
         if (values.length >= 2 && pinchStart) {
@@ -501,7 +508,7 @@ export function initializeArtworkViewer(root = document) {
         const nativeVideoKeyboard = !currentIsImage() && event.target === video;
         if (!nativeVideoKeyboard && event.key === 'ArrowLeft' && !previous.disabled) { event.preventDefault(); previous.click(); }
         if (!nativeVideoKeyboard && event.key === 'ArrowRight' && !next.disabled) { event.preventDefault(); next.click(); }
-        if (!currentIsImage()) return;
+        if (!currentIsImage() || !zoomAllowed()) return;
         if (event.key === '+' || event.key === '=') { event.preventDefault(); changeZoom(state.scale * 1.25); }
         if (event.key === '-' || event.key === '_') { event.preventDefault(); changeZoom(state.scale / 1.25); }
         if (event.key === '0') { event.preventDefault(); resetState(); }

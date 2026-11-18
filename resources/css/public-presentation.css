@@ -684,6 +684,46 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     }
 }
 
+/* Museum is a different Artwork image/information composition, not a
+ * second information arrangement system. Below this width it becomes the
+ * existing responsive vertical presentation, including browser zoom. */
+@media (min-width: 64.001rem) {
+    .site-content--artwork-museum .artwork-detail {
+        display: grid;
+        grid-template-columns: minmax(0, 1.75fr) minmax(13rem, .7fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        column-gap: clamp(1rem, 3vw, 3rem);
+        align-items: start;
+    }
+    .site-content--artwork-museum .artwork-detail .artwork-folio {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+    .site-content--artwork-museum .artwork-detail__media {
+        grid-column: 1;
+        grid-row: 2 / span 2;
+        display: flex;
+        flex-direction: column;
+        align-self: stretch;
+        min-height: 0;
+        width: 100%;
+    }
+    .site-content--artwork-museum .artwork-detail__footer {
+        grid-column: 2;
+        grid-row: 2;
+        align-self: end;
+        width: 100%;
+        margin-inline: 0;
+    }
+    .site-content--artwork-museum .artwork-detail__narrative {
+        grid-column: 2;
+        grid-row: 3;
+        width: 100%;
+        margin-inline: 0;
+        margin-top: .7rem;
+    }
+}
+
 /* Artwork arrows remain on the original centered General-width track,
    independent of the landscape media's own size. */
 .artwork-detail .artwork-folio {
@@ -852,61 +892,79 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     text-align: right;
 }
 
-.artwork-caption-link {
+/* Artwork information uses one responsive arrangement independent of
+ * image width. Each row has three alignment tracks; the data model decides
+ * field inclusion and placement without empty metadata placeholders. */
+.artwork-caption {
     display: block;
-    width: fit-content;
-    max-width: 100%;
-    margin-left: auto;
+    width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+}
+.artwork-caption__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+    gap: .5rem;
+    width: 100%;
+    min-width: 0;
+    align-items: baseline;
+}
+.artwork-caption__row + .artwork-caption__row {
+    margin-top: .14rem;
+}
+.artwork-caption__group {
+    display: block;
+    min-width: 0;
+    font-family: var(--public-index-typeface);
+    font-size: .94rem;
+    line-height: 1.35;
+    color: #423b35;
+}
+.artwork-caption__group--left { grid-column: 1; text-align: left; }
+.artwork-caption__group--center { grid-column: 2; text-align: center; }
+.artwork-caption__group--right { grid-column: 3; text-align: right; }
+.artwork-caption__field + .artwork-caption__field::before { content: ", "; }
+.artwork-caption__field--title { font-style: italic; }
+.artwork-caption__field--date { font-style: normal; }
+.artwork-caption__field--dimensions,
+.artwork-caption__field--material,
+.artwork-caption__field--credits,
+.artwork-caption__field--copyright {
+    color: var(--public-muted);
+    font-family: var(--public-typeface);
+    font-size: .74rem;
+    letter-spacing: .018em;
+    line-height: 1.45;
+}
+.artwork-caption__field--credits,
+.artwork-caption__field--copyright {
+    font-variant-numeric: tabular-nums;
+}
+.artwork-caption__title-link {
     color: inherit;
     text-decoration: none;
     cursor: pointer;
 }
-
-.artwork-caption-link:focus-visible {
+.artwork-caption__title-link:focus-visible {
     outline: 1px dotted var(--public-artwork-line-hover);
-    outline-offset: 4px;
+    outline-offset: .2rem;
 }
-
-.artwork-caption {
-    display: block;
-    min-width: 0;
-    text-align: right;
-    overflow-wrap: anywhere;
-    text-wrap: pretty;
-}
-
-.artwork-caption__primary {
-    display: block;
-    color: #423b35;
-    font-family: var(--public-index-typeface);
-    font-size: .94rem;
-    font-weight: 400;
-    line-height: 1.35;
-}
-
-.artwork-caption__title {
-    font-style: italic;
-}
-
-.artwork-caption__year {
-    font-style: normal;
-    white-space: nowrap;
-}
-
-.artwork-caption__secondary {
-    display: block;
-    margin-top: .12rem;
-    color: var(--public-muted);
-    font-family: var(--public-typeface);
-    font-size: .74rem;
-    font-weight: 400;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: .018em;
-    line-height: 1.45;
+.artwork-detail__viewer-trigger--static { cursor: default; }
+@media (max-width: 40rem) {
+    .artwork-caption__row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        column-gap: .75rem;
+    }
+    .artwork-caption__group--left,
+    .artwork-caption__group--right { flex: 1 1 42%; }
+    .artwork-caption__group--center { flex: 1 1 100%; }
 }
 
 @media (hover: hover) and (pointer: fine) {
-    .artwork-caption-link:hover .artwork-caption__title {
+    .artwork-caption__title-link:hover {
         text-decoration: underline;
         text-decoration-thickness: 1px;
         text-underline-offset: .2em;

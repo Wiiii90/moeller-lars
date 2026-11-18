@@ -27,8 +27,12 @@
         $nextArtwork ??= $sequence->first();
     }
     $preview = app(\App\Domain\Content\SitePreviewContext::class);
-    $expandedArtwork = $presentation::artworkPageLayout($category) === $presentation::ARTWORK_PAGE_EXPANDED;
+    $layout = $presentation::artworkPageLayout($category);
+    $expandedArtwork = $layout !== $presentation::ARTWORK_PAGE_STANDARD;
+    $museumArtwork = $layout === $presentation::ARTWORK_PAGE_MUSEUM;
     $fitArtwork = $expandedArtwork && ! $isVideo;
+    $viewerEnabled = $presentation::viewerEnabled($category);
+    $informationRows = \App\Domain\Artwork\ArtworkInformation::rows($artwork, $primaryAsset);
 
     // A saved Rich Text fragment such as <p></p> is not visible editorial
     // content. Do not emit its decorative divider when the safe rendered body
@@ -37,12 +41,15 @@
     $plainDescription = html_entity_decode(strip_tags($renderedDescription), ENT_QUOTES | ENT_HTML5, 'UTF-8');
     $hasDescription = preg_match('/[^\\p{Z}\\s]/u', $plainDescription) === 1
         || preg_match('/<(?:img|figure|video|audio|table|hr)\\b/i', $renderedDescription) === 1;
+    // Never reserve an empty Museum information column. Without metadata
+    // or narrative, the presentation naturally becomes Expanded.
+    $museumArtwork = $museumArtwork && ($informationRows !== [] || $hasDescription);
 @endphp
 
 {{-- Only the detail page may expand the outer paper. Images use viewport-height
      fitting at every responsive width; videos retain their natural dimensions.
      General alone owns whether the Menu and Page are connected. --}}
-@section('content_class', $expandedArtwork ? 'site-content--fitted-artwork'.($fitArtwork ? ' site-content--fitted-image' : '') : '')
+@section('content_class', $expandedArtwork ? 'site-content--fitted-artwork'.($fitArtwork ? ' site-content--fitted-image' : '').($museumArtwork ? ' site-content--artwork-museum' : '') : '')
 @section('artwork_menu_surface_wide', $expandedArtwork ? '1' : '')
 
 @section('title', $artwork->title.' — Lars Möller')
@@ -66,6 +73,7 @@
             @if ($fitArtwork)
                 <div class="artwork-detail__image-stage">
             @endif
+            @if ($viewerEnabled)
             <a
                 class="artwork-detail__viewer-trigger"
                 href="{{ $originalUrl }}"
@@ -78,8 +86,13 @@
                 data-viewer-alt="{{ $media->altText($artwork) }}"
                 data-viewer-title="{{ $artwork->title }}"
                 data-viewer-page="{{ $preview->url(route('artworks.show', $artwork->slug)) }}"
+                data-viewer-zoom="{{ $presentation::viewerZoomEnabled($category) ? '1' : '0' }}"
+                data-viewer-navigation="{{ $presentation::viewerNavigationEnabled($category) ? '1' : '0' }}"
                 aria-label="Open {{ $artwork->title }} in media viewer"
             >
+            @else
+            <div class="artwork-detail__viewer-trigger artwork-detail__viewer-trigger--static">
+            @endif
                 @if ($isVideo)
                     <video
                         class="artwork-detail__video"
@@ -111,7 +124,11 @@
                         fetchpriority="high"
                     >
                 @endif
+            @if ($viewerEnabled)
             </a>
+            @else
+            </div>
+            @endif
             @if ($fitArtwork)
                 </div>
             @endif
@@ -125,21 +142,19 @@
         </div>
             @endif
 
-            <div class="artwork-detail__footer">
-                <x-artwork-caption :artwork="$artwork" />
-            </div>
         </div>
+
+        @if ($informationRows !== [])
+            <div class="artwork-detail__footer">
+                <x-artwork-caption :artwork="$artwork" :rows="$informationRows" />
+            </div>
+        @endif
 
         @if ($hasDescription)
             <div class="artwork-detail__narrative rich-text">{!! $renderedDescription !!}</div>
         @endif
 
-        @if ($primaryAsset->credit)
-            <div class="artwork-detail__credits">
-                <p class="artwork-credit">{{ $primaryAsset->credit }}</p>
-            </div>
-        @endif
-
+        @if ($viewerEnabled)
         <div class="artwork-viewer-sequence-data" hidden aria-hidden="true">
             @foreach ($sequence as $viewerArtwork)
                 @php
@@ -160,5 +175,6 @@
                 ></span>
             @endforeach
         </div>
+        @endif
     </article>
 @endsection

@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
-#[Fillable(['artwork_category_id', 'slug', 'title', 'medium', 'dimensions', 'description', 'state', 'position', 'legacy_date_raw', 'year', 'month', 'day', 'featured_on_home', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Fillable(['artwork_category_id', 'slug', 'title', 'medium', 'dimensions', 'description', 'artwork_information_override', 'state', 'position', 'legacy_date_raw', 'year', 'month', 'day', 'featured_on_home', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
 #[Guarded(['id'])]
 class Artwork extends Model
 {
@@ -20,6 +20,7 @@ class Artwork extends Model
     protected function casts(): array
     {
         return [
+            'artwork_information_override' => 'array',
             'year' => 'integer',
             'month' => 'integer',
             'day' => 'integer',

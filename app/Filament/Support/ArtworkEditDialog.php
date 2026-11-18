@@ -4,12 +4,16 @@ namespace App\Filament\Support;
 
 use App\Domain\Artwork\ArtworkDate;
 use App\Domain\Artwork\ArtworkDimensions;
+use App\Domain\Artwork\ArtworkInformation;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
+use App\Filament\Support\Controls\AdminControl;
+use App\Filament\Support\Controls\AdminArrangementControl;
+use App\Filament\Support\Controls\AdminPanelControl;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
@@ -30,7 +34,16 @@ final class ArtworkEditDialog
         $dimensions = ArtworkDimensions::split($artwork->getAttribute('dimensions'));
         $primary = $artwork->artworkMedia()->where('role', 'primary')->first();
 
+        $gallery = $artwork->getRelationValue('category');
+        $configuration = $gallery instanceof ArtworkCategory
+            ? ArtworkInformation::effective($gallery, $artwork)
+            : ArtworkInformation::defaults();
+        $overrides = $artwork->getAttribute('artwork_information_override');
+
         return [
+            ...ArtworkInformation::formValues($configuration),
+            'info_individual' => is_array($overrides),
+            'info_individual_arrangement' => is_array($overrides) && array_key_exists('arrangement', $overrides),
             'title' => $artwork->getAttribute('title'),
             'slug' => $artwork->getAttribute('slug'),
             'artwork_category_id' => $artwork->getAttribute('artwork_category_id'),
@@ -47,7 +60,7 @@ final class ArtworkEditDialog
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true, ?Closure $onPositionChanged = null, ?Closure $onCreateOrderSourceChanged = null, bool $compact = false): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true, ?Closure $onPositionChanged = null, ?Closure $onCreateOrderSourceChanged = null, bool $compact = false, ?Closure $onInformationChanged = null): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
@@ -150,12 +163,34 @@ final class ArtworkEditDialog
                     AdminDimensionsControl::make(),
 
                     ...AdminRichText::schema('description', 'Description', 10000),
+
+                    ...(! $creating ? [$this->individualInformationPanel($onInformationChanged)] : []),
                 ]),
             ...($creating && $positionCount !== null ? [
                 // Transient form intent only: never store a second ranking.
                 Hidden::make('position_explicit')->default(false),
             ] : []),
         ];
+    }
+
+    /** One individually enabled override panel on the same Artwork edit path. */
+    private function individualInformationPanel(?Closure $onChanged): \Filament\Schemas\Components\Group
+    {
+        $fields = [
+            AdminControl::checkbox('info_enabled', 'Show information')->live(),
+        ];
+        foreach (ArtworkInformation::FIELDS as $field => $label) {
+            $fields[] = AdminControl::checkbox('info_'.$field, $label)->live();
+        }
+        $fields[] = AdminControl::checkbox('info_individual_arrangement', 'Custom arrangement')->live();
+        $fields[] = AdminArrangementControl::make('info_arrangement', $onChanged)
+            ->visible(fn (callable $get): bool => (bool) $get('info_individual_arrangement'));
+
+        return AdminPanelControl::make(
+            'Individual Artwork information',
+            'info_individual',
+            $fields,
+        );
     }
 
     /**
@@ -289,6 +324,17 @@ final class ArtworkEditDialog
     private function normalizeArtworkFormData(array $data, ?int $galleryId, ?Artwork $original = null): array
     {
         $data['artwork_category_id'] = $galleryId;
+        if ($galleryId !== null && array_key_exists('info_individual', $data)) {
+            /** @var ArtworkCategory $gallery */
+            $gallery = ArtworkCategory::query()->findOrFail($galleryId);
+            $data['artwork_information_override'] = ArtworkInformation::individualFromForm($data, $gallery);
+        }
+        foreach (['info_enabled', 'info_individual', 'info_individual_arrangement', 'info_arrangement', ...array_map(
+            static fn (string $field): string => 'info_'.$field,
+            array_keys(ArtworkInformation::FIELDS),
+        )] as $field) {
+            unset($data[$field]);
+        }
         $data = array_merge($data, ArtworkDate::normalize($data['artwork_date'] ?? null));
         unset($data['artwork_date']);
         $data['medium'] = filled($data['medium'] ?? null) ? trim((string) $data['medium']) : null;

@@ -1,22 +1,29 @@
-@props(['artwork'])
+@props(['artwork', 'rows' => null, 'detailUrl' => null])
 
 @php
-    $title = trim((string) $artwork->title);
-    // Historical preset names may contain HTML entities. Decode for display
-    // only: persisted material values and existing Artwork associations stay intact.
-    $material = html_entity_decode(trim((string) ($artwork->medium ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    $size = \App\Domain\Artwork\ArtworkDimensions::display($artwork->dimensions) ?? '';
-    $artworkDate = \App\Domain\Artwork\ArtworkDate::display($artwork) ?? '';
-    // Numeric legacy H × W [× 0] uses the editorial default cm.
-    // Other artist-authored custom expressions remain unchanged.
-    $details = implode(', ', array_filter([$size, $material], static fn (string $value): bool => $value !== ''));
+    $rows ??= \App\Domain\Artwork\ArtworkInformation::rows($artwork);
 @endphp
 
-<span class="artwork-caption">
-    <span class="artwork-caption__primary">
-        <span class="artwork-caption__title">{{ $title }}</span>@if ($artworkDate !== '')<span class="artwork-caption__year">, {{ $artworkDate }}</span>@endif
+@if ($rows !== [])
+    <span class="artwork-caption">
+        @foreach ($rows as $row)
+            <span class="artwork-caption__row">
+                @foreach (['left', 'center', 'right'] as $alignment)
+                    @if ($row[$alignment] !== [])
+                        <span class="artwork-caption__group artwork-caption__group--{{ $alignment }}">
+                            @foreach ($row[$alignment] as $item)
+                                <span class="artwork-caption__field artwork-caption__field--{{ $item['field'] }}">
+                                    @if ($item['field'] === 'title' && filled($detailUrl))
+                                        <a class="artwork-caption__title-link" href="{{ $detailUrl }}">{{ $item['text'] }}</a>
+                                    @else
+                                        {{ $item['text'] }}
+                                    @endif
+                                </span>
+                            @endforeach
+                        </span>
+                    @endif
+                @endforeach
+            </span>
+        @endforeach
     </span>
-    @if ($details !== '')
-        <span class="artwork-caption__secondary">{{ $details }}</span>
-    @endif
-</span>
+@endif

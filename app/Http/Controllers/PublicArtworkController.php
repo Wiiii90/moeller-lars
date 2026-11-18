@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Artwork\PublicArtworkQuery;
+use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionPathPolicy;
@@ -61,13 +62,18 @@ class PublicArtworkController extends Controller
         ]);
     }
 
-    public function show(string $slug): View
+    public function show(string $slug): View|RedirectResponse
     {
         $artwork = $this->artworks->publishedBySlug($slug);
         abort_unless($artwork !== null, 404);
 
         /** @var ArtworkCategory $categoryRecord */
         $categoryRecord = $artwork->getRelationValue('category');
+        if (! GalleryPresentation::artworkPagesEnabled($categoryRecord)) {
+            // Preserve old bookmarked detail URLs without advertising pages
+            // that the artist deliberately disabled for this Gallery.
+            return redirect($this->preview->url(route('site.section', ['section' => $categoryRecord->slug])));
+        }
         $sectionQuery = SiteSection::query()
             ->where('type', SiteSectionType::Gallery->value)
             ->where('artwork_category_id', $categoryRecord->getKey());

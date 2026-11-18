@@ -177,6 +177,7 @@ final class ArtworkDraftService
             'medium',
             'dimensions',
             'description',
+            'artwork_information_override',
             'year',
             'month',
             'day',
@@ -196,11 +197,31 @@ final class ArtworkDraftService
             'medium' => ['nullable', 'string', 'max:240'],
             'dimensions' => ['nullable', 'string', 'max:240'],
             'description' => ['nullable', 'string', 'max:10000'],
+            'artwork_information_override' => ['nullable', 'array'],
             'year' => ['nullable', 'integer', 'min:1000', 'max:9999'],
             'month' => ['nullable', 'integer', 'between:1,12'],
             'day' => ['nullable', 'integer', 'between:1,31'],
         ]);
         $validator->validate();
+        if (is_array($payload['artwork_information_override'] ?? null)) {
+            $override = $payload['artwork_information_override'];
+            if (array_key_exists('visible', $override) && ! is_array($override['visible'])) {
+                throw ValidationException::withMessages(['artwork_information_override' => 'Invalid individual Artwork field selection.']);
+            }
+            foreach ($override['visible'] ?? [] as $field => $state) {
+                if (! array_key_exists($field, ArtworkInformation::FIELDS)
+                    || ! in_array($state, [true, false, 0, 1, '0', '1'], true)) {
+                    throw ValidationException::withMessages(['artwork_information_override' => 'Invalid individual Artwork field override.']);
+                }
+            }
+            if (array_key_exists('enabled', $override) && ! is_bool($override['enabled'])) {
+                throw ValidationException::withMessages(['artwork_information_override' => 'Invalid individual Artwork information state.']);
+            }
+            if (array_key_exists('arrangement', $override)) {
+                $override['arrangement'] = ArtworkInformation::arrangement($override['arrangement']);
+            }
+            $payload['artwork_information_override'] = $override;
+        }
         ArtworkDate::validateParts(array_merge([
             'year' => $artwork?->getAttribute('year'),
             'month' => $artwork?->getAttribute('month'),

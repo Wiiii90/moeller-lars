@@ -4,15 +4,19 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminAutoPublishPreferences;
+use App\Domain\Artwork\ArtworkInformation;
 use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\GalleryPresentation;
 use App\Filament\Support\Controls\AdminControl;
+use App\Filament\Support\Controls\AdminPanelControl;
+use App\Filament\Support\Controls\AdminArrangementControl;
 use App\Filament\Support\AdminHelp;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\ArtworkCategory;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -40,17 +44,18 @@ trait GalleryWorkspaceUploadSettings
                 try {
                     $updated = $service->update($gallery, [
                         'name' => $data['name'],
-                        'artwork_page_layout' => $data['artwork_page_layout'] ?? GalleryPresentation::ARTWORK_PAGE_STANDARD,
+                        'artwork_page_layout' => $data['artwork_page_layout'] ?? GalleryPresentation::artworkPageLayout($gallery),
                         'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
                         'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
                         // Sort changes are exclusively committed through the
                         // confirmed Action, never the Edit modal's autosave.
                         'sort_mode' => GalleryPresentation::sortMode($gallery),
                         'video_sound_enabled' => $data['video_sound_enabled'] ?? false,
-                        'show_artwork_information' => $data['show_artwork_information'] ?? true,
-                        'show_media_credits' => $data['show_media_credits'] ?? false,
-                        'show_media_copyright' => $data['show_media_copyright'] ?? false,
-                        'caption_layout' => $data['caption_layout'] ?? GalleryPresentation::CAPTION_RIGHTS_LEFT,
+                        'artwork_information' => $this->galleryInformationFromForm($data, $gallery),
+                        'media_viewer_enabled' => $data['media_viewer_enabled'] ?? GalleryPresentation::viewerEnabled($gallery),
+                        'viewer_zoom_enabled' => $data['viewer_zoom_enabled'] ?? GalleryPresentation::viewerZoomEnabled($gallery),
+                        'viewer_navigation_enabled' => $data['viewer_navigation_enabled'] ?? GalleryPresentation::viewerNavigationEnabled($gallery),
+                        'artwork_pages_enabled' => $data['artwork_pages_enabled'] ?? GalleryPresentation::artworkPagesEnabled($gallery),
                     ]);
                     $changed = $updated->wasChanged();
                 } catch (ValidationException $exception) {
@@ -151,56 +156,116 @@ trait GalleryWorkspaceUploadSettings
             ->schema([
                 $this->gallerySettingControl($name, 'name', $stage),
                 $order,
-                $this->gallerySettingControl(
-                    AdminControl::toggle('show_artwork_information', 'Show Artwork information below each work'),
-                    'show_artwork_information', $stage,
-                ),
-                $this->gallerySettingControl(
-                    AdminControl::toggle('show_media_credits', 'Show authored Media File credits'),
-                    'show_media_credits', $stage,
-                ),
-                $this->gallerySettingControl(
-                    AdminControl::toggle('show_media_copyright', 'Show configured copyright notices'),
-                    'show_media_copyright', $stage,
-                ),
-                $this->gallerySettingControl(
-                    AdminControl::select('caption_layout', 'Caption arrangement')
-                        ->options(GalleryPresentation::CAPTION_LAYOUTS)->required(! $stage),
-                    'caption_layout', $stage,
-                ),
+                $this->galleryInformationPanel($stage),
+                $this->galleryViewerPanel($stage),
+                $this->galleryDetailPagesPanel($stage),
                 $this->gallerySettingControl(
                     AdminControl::toggle('video_sound_enabled', 'Allow visitors to unmute looping Gallery videos'),
                     'video_sound_enabled', $stage,
                 ),
                 $autoPublish,
                 $this->gallerySettingControl(
-                    AdminControl::select('artwork_page_layout', 'Artwork page layout')
-                        ->options(GalleryPresentation::ARTWORK_PAGE_LAYOUTS)
-                        ->default(GalleryPresentation::ARTWORK_PAGE_STANDARD)
-                         ->placeholder(null)->selectablePlaceholder(false)
-                        ->required(! $stage),
-                    'artwork_page_layout', $stage,
-                ),
-                $this->gallerySettingControl(
                     AdminControl::select('artwork_divider', 'Between Artworks')
                         ->options(GalleryPresentation::DIVIDER_OPTIONS)
                         ->default(GalleryPresentation::DIVIDER_NONE)->required(! $stage),
                     'artwork_divider', $stage,
                 ),
-                $this->gallerySettingControl(
-                    AdminControl::select('edge_navigation_mode', 'Artwork navigation at sequence ends')
-                        ->options([
-                            GalleryPresentation::EDGE_DISABLED => 'Disabled arrows (default)',
-                            GalleryPresentation::EDGE_HIDDEN => 'Hide unavailable arrows',
-                            GalleryPresentation::EDGE_CYCLIC => 'Cyclic (last ↔ first)',
-                        ])
-                        ->default(GalleryPresentation::EDGE_DISABLED)->required(! $stage),
-                    'edge_navigation_mode', $stage,
-                ),
             ]);
     }
 
-    private function gallerySettingControl(TextInput|Select|Toggle $field, string $name, bool $stage): TextInput|Select|Toggle
+    /**
+     * All Artwork information fields use one Settings/Stage schema. The Stage
+     * persists through the Gallery editorial owner; modal changes use the
+     * existing Edit action and never introduce a second save controller.
+     */
+    private function galleryInformationPanel(bool $stage): \Filament\Schemas\Components\Group
+    {
+        $update = fn () => $this->updateGalleryInformationFromActiveForm($stage);
+        $fields = [];
+        foreach (ArtworkInformation::FIELDS as $field => $label) {
+            $checkbox = AdminControl::checkbox('info_'.$field, $label)->live();
+            $checkbox->afterStateUpdated($update);
+            $fields[] = $checkbox;
+        }
+
+        $fields[] = AdminArrangementControl::make('info_arrangement', $update);
+
+        return AdminPanelControl::make('Artwork information', 'info_enabled', $fields, $update);
+    }
+
+    private function galleryViewerPanel(bool $stage): \Filament\Schemas\Components\Group
+    {
+        return AdminPanelControl::make('Media viewer', 'media_viewer_enabled', [
+            $this->gallerySettingControl(
+                AdminControl::checkbox('viewer_zoom_enabled', 'Allow image zoom'),
+                'viewer_zoom_enabled', $stage,
+            ),
+            $this->gallerySettingControl(
+                AdminControl::checkbox('viewer_navigation_enabled', 'Allow previous / next navigation'),
+                'viewer_navigation_enabled', $stage,
+            ),
+        ], $stage ? fn (mixed $state) => $this->updateGalleryStageSetting('media_viewer_enabled', $state) : null);
+    }
+
+    private function galleryDetailPagesPanel(bool $stage): \Filament\Schemas\Components\Group
+    {
+        return AdminPanelControl::make('Individual Artwork Pages', 'artwork_pages_enabled', [
+            $this->gallerySettingControl(
+                AdminControl::select('artwork_page_layout', 'Artwork page layout')
+                    ->options(GalleryPresentation::ARTWORK_PAGE_LAYOUTS)
+                    ->default(GalleryPresentation::ARTWORK_PAGE_STANDARD)
+                    ->placeholder(null)->selectablePlaceholder(false)->required(! $stage),
+                'artwork_page_layout', $stage,
+            ),
+            $this->gallerySettingControl(
+                AdminControl::select('edge_navigation_mode', 'Artwork navigation at sequence ends')
+                    ->options([
+                        GalleryPresentation::EDGE_DISABLED => 'Disabled arrows',
+                        GalleryPresentation::EDGE_HIDDEN => 'Hide unavailable arrows',
+                        GalleryPresentation::EDGE_CYCLIC => 'Cyclic (last / first)',
+                    ])->default(GalleryPresentation::EDGE_DISABLED)->required(! $stage),
+                'edge_navigation_mode', $stage,
+            ),
+        ], $stage ? fn (mixed $state) => $this->updateGalleryStageSetting('artwork_pages_enabled', $state) : null);
+    }
+
+    /** @param array<string,mixed> $data */
+    private function galleryInformationFromForm(array $data, ArtworkCategory $gallery): array
+    {
+        if (! (bool) ($data['info_enabled'] ?? false)) {
+            // Filament does not dehydrate invisible child fields. Disabling
+            // presentation must never discard its configured arrangement.
+            $configured = ArtworkInformation::gallery($gallery);
+            $configured['enabled'] = false;
+            return $configured;
+        }
+        return ArtworkInformation::fromForm($data);
+    }
+
+    /** Both Stage and modal reorder actions persist immediately through one owner. */
+    private function updateGalleryInformationFromActiveForm(bool $stage): void
+    {
+        if ($stage) {
+            $state = $this->galleryStageSettingsData;
+        } else {
+            // Filament's Repeater reorder actions do not emit the native
+            // change event used by AdminDialog::edit(). Read the mounted
+            // schema directly and use the same audited mutation as Stage.
+            $state = $this->getMountedActionSchema()->getRawState();
+        }
+        if (! is_array($state) || ! array_key_exists('info_enabled', $state)) {
+            return;
+        }
+
+        /** @var ArtworkCategory $gallery */
+        $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+        $this->updateGalleryStageSetting(
+            'artwork_information',
+            $this->galleryInformationFromForm($state, $gallery),
+        );
+    }
+
+    private function gallerySettingControl(TextInput|Select|Toggle|Checkbox $field, string $name, bool $stage): TextInput|Select|Toggle|Checkbox
     {
         if (! $stage) {
             return $field;
@@ -229,10 +294,11 @@ trait GalleryWorkspaceUploadSettings
             'artwork_divider' => GalleryPresentation::divider($gallery),
             'sort_mode' => GalleryPresentation::sortMode($gallery),
             'video_sound_enabled' => GalleryPresentation::allowVideoSound($gallery),
-            'show_artwork_information' => GalleryPresentation::showArtworkInformation($gallery),
-            'show_media_credits' => GalleryPresentation::showMediaCredits($gallery),
-            'show_media_copyright' => GalleryPresentation::showMediaCopyright($gallery),
-            'caption_layout' => GalleryPresentation::captionLayout($gallery),
+            ...ArtworkInformation::formValues(ArtworkInformation::gallery($gallery)),
+            'media_viewer_enabled' => GalleryPresentation::viewerEnabled($gallery),
+            'viewer_zoom_enabled' => GalleryPresentation::viewerZoomEnabled($gallery),
+            'viewer_navigation_enabled' => GalleryPresentation::viewerNavigationEnabled($gallery),
+            'artwork_pages_enabled' => GalleryPresentation::artworkPagesEnabled($gallery),
             'auto_publish_new_artworks' => app(AdminAutoPublishPreferences::class)
                 ->enabled(AdminAutoPublishPreferences::GALLERY),
         ];
@@ -326,10 +392,10 @@ trait GalleryWorkspaceUploadSettings
     {
         $editable = [
             'name',
-            'show_artwork_information',
-            'show_media_credits',
-            'show_media_copyright',
-            'caption_layout',
+            'media_viewer_enabled',
+            'viewer_zoom_enabled',
+            'viewer_navigation_enabled',
+            'artwork_pages_enabled',
             'video_sound_enabled',
             'artwork_page_layout',
             'artwork_divider',

@@ -1,4 +1,4 @@
-@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'heroNavigation' => false, 'enableViewer' => true, 'eager' => false, 'priority' => null, 'galleryBuffered' => false, 'allowVideoSound' => false, 'showMediaCredits' => false, 'showMediaCopyright' => false, 'captionLayout' => 'rights_left'])
+@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => null, 'heroNavigation' => false, 'enableViewer' => null, 'eager' => false, 'priority' => null, 'galleryBuffered' => false, 'allowVideoSound' => false, 'showMediaCredits' => null, 'showMediaCopyright' => null, 'captionLayout' => null])
 
 @php
     $originalUrl = $media->originalUrl($artwork);
@@ -17,11 +17,37 @@
     $thumbnailHeight = (int) ($thumbnail?->getAttribute('height') ?? 0);
     $preview = app(\App\Domain\Content\SitePreviewContext::class);
     $detailUrl = $preview->url(route('artworks.show', $artwork->slug));
-    $asset = ($showMediaCredits || $showMediaCopyright) ? $media->primaryAsset($artwork) : null;
-    $credit = $showMediaCredits && $asset !== null ? trim((string) ($asset->getAttribute('credit') ?? '')) : '';
-    $copyright = $showMediaCopyright && $asset !== null ? trim((string) ($asset->effectiveCopyrightNotice() ?? '')) : '';
-    $mediaRights = implode(', ', array_filter([$credit, $copyright], static fn (string $value): bool => $value !== ''));
-    $rightsRight = $mediaRights !== '' && $captionLayout === 'rights_right';
+    $presentation = \App\Domain\Artwork\GalleryPresentation::class;
+    $viewerActive = $enableViewer === null ? $presentation::viewerEnabled($category) : (bool) $enableViewer;
+    $detailPageEnabled = $presentation::artworkPagesEnabled($category);
+    $configuration = \App\Domain\Artwork\ArtworkInformation::effective($category, $artwork);
+    if ($showDetails !== null || $showMediaCredits !== null || $showMediaCopyright !== null) {
+        // Home's explicit controls own Home presentation independently of
+        // the Gallery-specific selection. Avoid applying two hide policies.
+        $configuration['enabled'] = (bool) ($showDetails ?? false)
+            || (bool) ($showMediaCredits ?? false)
+            || (bool) ($showMediaCopyright ?? false);
+        if ($showDetails !== null) {
+            foreach (['title', 'date', 'dimensions', 'material'] as $field) {
+                $configuration['visible'][$field] = (bool) $showDetails;
+            }
+        }
+    }
+    // Home has its own explicit hero surface policy. Only its presentation
+    // choices override Gallery defaults; media metadata is still canonical.
+    if ($showMediaCredits !== null) {
+        $configuration['visible']['credits'] = (bool) $showMediaCredits;
+    }
+    if ($showMediaCopyright !== null) {
+        $configuration['visible']['copyright'] = (bool) $showMediaCopyright;
+    }
+    if ($captionLayout !== null) {
+        $configuration['arrangement'] = \App\Domain\Artwork\ArtworkInformation::defaultArrangement($captionLayout === 'rights_right');
+    }
+    $asset = ($configuration['visible']['credits'] || $configuration['visible']['copyright'])
+        ? $media->primaryAsset($artwork) : null;
+    $informationRows = \App\Domain\Artwork\ArtworkInformation::rows($artwork, $asset, $configuration);
+    $titleLinked = $detailPageEnabled && $configuration['enabled'] && $configuration['visible']['title'];
 @endphp
 
 <article class="artwork-card">
@@ -31,10 +57,10 @@
         :hero-navigation="$heroNavigation"
     />
 
-    @if ($enableViewer)
+    @if ($viewerActive)
         <a
             class="artwork-card__link"
-            href="{{ $detailUrl }}"
+            href="{{ $detailPageEnabled ? $detailUrl : $originalUrl }}"
             data-artwork-viewer-item
             data-artwork-viewer-trigger
             data-viewer-key="{{ $artwork->slug }}"
@@ -44,7 +70,9 @@
             data-viewer-src="{{ $originalUrl }}"
             data-viewer-alt="{{ $altText }}"
             data-viewer-title="{{ $artwork->title }}"
-            data-viewer-page="{{ $detailUrl }}"
+            data-viewer-page="{{ $detailPageEnabled ? $detailUrl : '' }}"
+            data-viewer-zoom="{{ $presentation::viewerZoomEnabled($category) ? '1' : '0' }}"
+            data-viewer-navigation="{{ $presentation::viewerNavigationEnabled($category) ? '1' : '0' }}"
             aria-label="Open {{ $artwork->title }} in media viewer"
         >
     @else
@@ -103,7 +131,7 @@
                 </noscript>
             @endif
         @endif
-    @if ($enableViewer)
+    @if ($viewerActive)
         </a>
     @else
         </div>
@@ -118,20 +146,10 @@
         </div>
     @endif
 
-    @if ($showDetails || $mediaRights !== '')
-        <div class="artwork-card__footer{{ $mediaRights !== '' ? ' artwork-card__footer--with-rights' : '' }}{{ $rightsRight ? ' artwork-card__footer--rights-right' : '' }}">
-            @if ($mediaRights !== '')
-                <span class="artwork-card__rights">{{ $mediaRights }}</span>
-            @endif
-            @if ($showDetails)
-            <a
-                class="artwork-caption-link"
-                href="{{ $detailUrl }}"
-                aria-label="View details for {{ $artwork->title }}"
-            >
-                <x-artwork-caption :artwork="$artwork" />
-            </a>
-            @endif
+    @if ($informationRows !== [])
+        <div class="artwork-card__footer">
+            <x-artwork-caption :artwork="$artwork" :rows="$informationRows"
+                :detail-url="$titleLinked ? $detailUrl : null" />
         </div>
     @endif
 </article>
