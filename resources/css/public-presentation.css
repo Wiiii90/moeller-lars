@@ -935,6 +935,10 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     display: none;
 }
 
+/* Artwork images are unframed. The former inset one-pixel outline drew
+   visible side seams on portraits and made the image look narrower than
+   its aligned information footer. Keep focus indicators on interactive
+   viewer/link controls instead of decorating the media itself. */
 .artwork-image,
 .artwork-card__image,
 .artwork-detail__image {
@@ -943,8 +947,6 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     max-width: 100%;
     height: auto;
     margin: 0;
-    outline: 1px solid rgba(50, 47, 44, .14);
-    outline-offset: -1px;
     box-shadow: none;
 }
 

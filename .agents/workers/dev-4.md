@@ -2,7 +2,7 @@
 
 **Lease:** 20
 **Branch:** dev
-**State:** Public Gallery desktop Artwork gap enlarged and first-image top inset aligned to General side Content padding; phone spacing retained. Artwork detail uses General width and aligned information/arrows. Source committed; browser acceptance pending.
+**State:** Shared decorative Artwork image/video outlines removed to eliminate visible 1px edge seams and apparent footer misalignment. Gallery spacing and Artwork detail General-width corrections retained. Source committed; browser acceptance pending.
 
 ## Ownership and current scope
 
@@ -16,6 +16,12 @@
 - General remains sole owner of Page/Menu width, Content padding and responsive bounds. The Gallery keeps stable lateral drift, natural proportions, and captions/credits/copyright at the actual rendered image width. A Gallery-only, nonce-authorized numeric image aspect token permits sizing each still to the smaller of the existing Content width and the image-height ceiling; unlike the rejected earlier implementation, the Gallery paper and Menu never expand. Smaller source thumbnails can scale to that bound. No new script, persistence field or alternate rendering path.
 - Gallery Artwork cards continue to take natural media-and-caption height without a viewport-minimum slot or vertical centering. **Vertical spacing is not randomized:** `--gallery-artwork-gap` is a consistent viewport-responsive CSS token; the deterministic Artwork-by-Artwork variation is lateral drift only. The desktop Artwork gap is now `clamp(3.5rem, 8svh, 5rem)`, raised from `clamp(2.5rem, 6.5svh, 4.5rem)`. The 40rem-and-below phone gap remains `clamp(1rem, 3svh, 2rem)` without changes; dividers continue splitting the current gap equally. Gallery `#content` top padding remains 1rem on phones and becomes `max(1rem, var(--public-content-inset))` above 40rem, following the effective General side padding when wider. The image-height ceiling remains `min(82svh, calc(100svh - 9rem))`, and image width, lateral drift, caption alignment, General Menu/Page widths and responsive paper rules are unchanged.
 - The only affected presentation owner is `resources/css/public-presentation.css`, with a conditional Gallery-only sizing token in the existing `resources/views/components/artwork-card.blade.php`. `resources/views/pages/artworks/index.blade.php` and General layout/width owners are unchanged; Home Hero, individual Artwork detail and gallery videos retain their existing presentation.
+
+## Artwork media edge styling — current correction
+
+- On the individual Artwork screenshot, a fine dark contour at both portrait-image edges originated from an inset `1px` decorative CSS outline on the shared `.artwork-image, .artwork-card__image, .artwork-detail__image` rule in `public-presentation.css`. That outline was inside the painted image and made its visible edge appear offset from the aligned information footer despite identical layout widths.
+- Removed the decorative media outline and its inward offset at the canonical source, not via a detail-only override. The same inset outline on shared Gallery/Artwork video media was removed from `app.css`; this avoids the same media-edge issue there. Existing keyboard focus indications on interactive links/controls remain intact. No changes to image dimensions, aspect ratios, Gallery offsets/gaps, General width/padding, text arrangement or Artwork Viewer behavior.
+- Source/CSS review only. A real Laravel Preview visual check of portrait/landscape Artwork details and Gallery cards/videos is still outstanding.
 
 ## Individual Artwork detail — current correction
 
