@@ -1,11 +1,18 @@
 .custom-page {
     --custom-page-component-gap: 1.15rem;
     display: flow-root;
-    width: min(100%, var(--public-art-max));
+    /* General's Page width and Content padding own the available width.
+       The narrower Artwork track must not halve entire Custom Pages. */
+    width: 100%;
     margin: 0 auto;
     color: var(--public-ink);
     font-size: .88rem;
     line-height: 1.55;
+}
+/* A Custom Page heading follows its full-width content, while headings on
+   Gallery and Journal keep their independently accepted reading track. */
+.public-content-reveal:has(> .custom-page:not(.custom-page--embedded)) > .public-page-heading {
+    width: 100%;
 }
 /* Nested text deliberately participates in the parent's float formatting
    context. No flow-root/grid wrapper may isolate it beside the image. */

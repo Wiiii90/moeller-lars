@@ -4,6 +4,13 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Public page text width — scoped cross-owner correction (2026-11-18)
+
+- **User-reported root problem:** Custom Pages, plus individual Artwork detail descriptions and dividers, occupied only part of the General-configured content width. The hard-coded `--public-art-max` (650px) was applied to the entire Custom Page and Artwork detail roots even when General allowed a larger sheet; Artwork narrative additionally had a 36rem cap and fitted-mode second 650px cap.
+- **Source fix:** `custom-pages.css` makes the root Custom Page and its own heading use the actual General inner width, preserving nested Image-child float semantics, other Page headings and the existing image size settings. `public-presentation.css` makes the Artwork detail root full width, keeps actual Artwork media/footer on their existing centered image-width track, and removes the extra narrative cap. For the intentional Museum two-column layout, only the long-form narrative moves below the media/metadata columns so its divider and text span the whole Page; the media and metadata layout stay intact. No shared `--public-art-max` change.
+- **Ownership:** This user-requested narrow cross-page correction does not transfer Gallery/Artwork ownership from Dev Worker 4 or shared Page architecture from Dev Worker 5; no changes to their files, settings or domain code.
+- **Evidence:** source only. Visual browser acceptance still needed for Standard, Expanded and Museum Artwork layouts, Custom Page text/divider/list/image-with-children, varying General Page widths and Content padding, and narrow/mobile screens. No tests, migrations, browser runs or deployments performed.
+
 ## Slideshow image height (2026-11-18)
 
 - Source adjustment only in `resources/css/journal-presentation.css`: slideshow image maximum height increased from `min(23rem, 49dvh)` to `min(29rem, 60dvh)`; its minimum stage height increased from `min(17rem, 43dvh)` to `min(20rem, 50dvh)`. Aspect ratio and `object-fit: contain` remain unchanged. Grid, Mosaic, other journal media and video rules remain untouched. Browser validation of portraits/landscapes, slideshow captions and narrow screens is outstanding.
@@ -40,4 +47,4 @@
 
 ## Next
 
-Have the artist review the 2026-11-18 Exhibition mixed-media, text-column and slideshow-height corrections in a fresh local preview; hand browser/regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
+Have the artist review the Exhibition corrections and the Custom Page/Artwork description width fix in a fresh local preview; hand browser/regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
