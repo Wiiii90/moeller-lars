@@ -300,7 +300,7 @@ final class SitePages extends Page
                 ->action(function (array $data, array $arguments): void {
                     /** @var SiteSection $section */
                     $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));
-                    if ($section->nodeType() === SiteSectionType::Home) {
+                    if ($section->isHome()) {
                         return;
                     }
 
@@ -336,7 +336,7 @@ final class SitePages extends Page
     {
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($sectionId);
-        if (! $section->nodeType()->canChangePublication()) {
+        if ($section->isHome() || ! $section->nodeType()->canChangePublication()) {
             return;
         }
 
@@ -386,7 +386,7 @@ final class SitePages extends Page
 
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($sectionId);
-        if (! $section->nodeType()->canDelete()) {
+        if ($section->isHome() || ! $section->nodeType()->canDelete()) {
             return;
         }
 
@@ -419,7 +419,7 @@ final class SitePages extends Page
     {
         $sections = $this->selectedSections();
         $eligibleIds = $sections
-            ->filter(static fn (SiteSection $section): bool => $section->nodeType()->canDelete())
+            ->filter(static fn (SiteSection $section): bool => ! $section->isHome() && $section->nodeType()->canDelete())
             ->modelKeys();
 
         // A selected parent owns the entire deletion transaction for its
@@ -433,7 +433,7 @@ final class SitePages extends Page
         $deleted = 0;
         $blocked = 0;
         foreach ($roots as $section) {
-            if (! $section->nodeType()->canDelete()) {
+            if ($section->isHome() || ! $section->nodeType()->canDelete()) {
                 $blocked++;
 
                 continue;
@@ -646,9 +646,9 @@ final class SitePages extends Page
             /** @var EloquentCollection<int, SiteSection> $children */
             $children = $section->getRelation('children');
             $label = $this->sectionLabel($section);
-            $isHome = $section->nodeType() === SiteSectionType::Home;
+            $isHome = $section->isHome();
             $previous = $topIndex > 0 ? $topLevel->values()->get($topIndex - 1) : null;
-            $previousIsHome = $previous instanceof SiteSection && $previous->nodeType() === SiteSectionType::Home;
+            $previousIsHome = $previous instanceof SiteSection && $previous->isHome();
             $row = $this->row(
                 $section,
                 0,
@@ -694,8 +694,7 @@ final class SitePages extends Page
             'top_level' => count($allGroups),
             'children' => count(array_filter($allRows, static fn (array $row): bool => $row['parent_id'] !== null)),
             'navigation' => count(array_filter($allRows, static fn (array $row): bool => $row['state'] === 'published' && (
-                $row['type'] !== SiteSectionType::Home->value
-                || $row['show_in_navigation']
+                ! $row['is_home'] || $row['show_in_navigation']
             )
             )),
             'galleries' => count(array_filter($allRows, static fn (array $row): bool => $row['type'] === SiteSectionType::Gallery->value)),
@@ -789,7 +788,7 @@ final class SitePages extends Page
         // Project the same deletion prerequisites enforced by the domain
         // services. Actual deletion must still revalidate locked records.
         $deleteHelp = match (true) {
-            ! $type->canDelete() => null,
+            $section->isHome() || ! $type->canDelete() => null,
             $type !== SiteSectionType::Journal && (string) $section->getAttribute('state') !== 'hidden' => 'Unpublish the page before deleting',
             $type === SiteSectionType::Gallery && Artwork::query()
                 ->where('artwork_category_id', (int) $section->getAttribute('artwork_category_id'))->exists() => 'Remove the Gallery artworks before deleting',
@@ -803,11 +802,12 @@ final class SitePages extends Page
         return [
             'id' => (int) $section->getKey(),
             'type' => $type->value,
+            'is_home' => $section->isHome(),
             'template' => $journalTemplate?->value ?? $galleryTemplate?->value,
             'type_label' => $type->label(),
             'title' => (string) $section->getAttribute('title'),
             'navigation_label' => $navigationLabel,
-            'show_in_navigation' => $type === SiteSectionType::Home
+            'show_in_navigation' => $section->isHome()
                 ? (bool) $section->getAttribute('show_in_navigation')
                 : true,
             'slug' => $section->getAttribute('slug'),
@@ -818,13 +818,13 @@ final class SitePages extends Page
             'parent_label' => $parentLabel,
             'has_children' => $hasChildren,
             'depth' => $depth,
-            'can_reorder' => $type !== SiteSectionType::Home,
+            'can_reorder' => ! $section->isHome(),
             'can_move_up' => $canMoveUp,
             'can_move_down' => $canMoveDown,
-            'can_delete' => $type->canDelete(),
-            'delete_available' => $type->canDelete() && $deleteHelp === null,
+            'can_delete' => ! $section->isHome() && $type->canDelete(),
+            'delete_available' => ! $section->isHome() && $type->canDelete() && $deleteHelp === null,
             'delete_help' => $deleteHelp,
-            'can_change_publication' => $type->canChangePublication(),
+            'can_change_publication' => ! $section->isHome() && $type->canChangePublication(),
             'can_convert' => $type->canConvert(),
             'filter_context' => false,
             'workspace_url' => app(SiteNodePresentation::class)->workspaceUrl($section),
@@ -906,7 +906,7 @@ final class SitePages extends Page
         $changed = 0;
         $blocked = 0;
         foreach ($sections as $section) {
-            if ($state === 'hidden' && ! $section->nodeType()->canChangePublication()) {
+            if ($state === 'hidden' && ($section->isHome() || ! $section->nodeType()->canChangePublication())) {
                 $blocked++;
 
                 continue;
@@ -957,7 +957,7 @@ final class SitePages extends Page
         foreach ($children as $child) {
             $parentId = (int) $child->getAttribute('parent_id');
             $parent = $parents->get($parentId);
-            if (! $parent instanceof SiteSection || ! $parent->nodeType()->canDelete()) {
+            if (! $parent instanceof SiteSection || $parent->isHome() || ! $parent->nodeType()->canDelete()) {
                 continue;
             }
 

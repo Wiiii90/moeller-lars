@@ -1,7 +1,7 @@
 @php
     $label = $section['navigation_label'] ?: $section['title'];
     $isChild = (int) $section['depth'] === 1;
-    $isHome = $section['type'] === \App\Domain\Content\SiteSectionType::Home->value;
+    $isHome = $section['is_home'];
     $homeState = $isHome ? app(\App\Filament\Support\HomeSettingsDialog::class)->tableState() : null;
     $homeTemplateOptions = $isHome ? \App\Domain\Content\HomeTemplate::options() : [];
 @endphp

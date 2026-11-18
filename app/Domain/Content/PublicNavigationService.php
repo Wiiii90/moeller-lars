@@ -27,7 +27,7 @@ final class PublicNavigationService
 
         // Only Home has an independent public-menu visibility switch.
         $query->where(static function (Builder $sections): void {
-            $sections->where('type', '<>', SiteSectionType::Home->value)
+            $sections->where('is_home', false)
                 ->orWhere('show_in_navigation', true);
         });
 

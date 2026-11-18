@@ -92,7 +92,7 @@ final class SiteSectionEditorialService
         return DB::transaction(function () use ($section, $visible): bool {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
-            if ($fresh->nodeType() !== SiteSectionType::Home) {
+            if (! $fresh->isHome()) {
                 throw ValidationException::withMessages(['show_in_navigation' => 'Only Home supports this navigation setting.']);
             }
 
@@ -287,7 +287,7 @@ final class SiteSectionEditorialService
         if (! in_array($state, ['published', 'hidden'], true)) {
             throw ValidationException::withMessages(['state' => 'The section publication state is invalid.']);
         }
-        if ($section->nodeType() === SiteSectionType::Home && $state !== 'published') {
+        if ($section->isHome() && $state !== 'published') {
             throw ValidationException::withMessages(['state' => 'Home is always published.']);
         }
 
@@ -296,7 +296,7 @@ final class SiteSectionEditorialService
         return DB::transaction(function () use ($section, $state, $parentSectionId, $actor): SiteSection {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
-            if ($fresh->nodeType() === SiteSectionType::Home && $state !== 'published') {
+            if ($fresh->isHome() && $state !== 'published') {
                 throw ValidationException::withMessages(['state' => 'Home is always published.']);
             }
 

@@ -474,7 +474,7 @@ final class GalleryEditorialService
         /** @var Builder<SiteSection> $query */
         $query = SiteSection::query();
         if ($parentSectionId === null) {
-            $query->whereNull('parent_id')->where('type', '<>', SiteSectionType::Home->value);
+            $query->whereNull('parent_id')->where('is_home', false);
         } else {
             $query->where('parent_id', $parentSectionId);
         }

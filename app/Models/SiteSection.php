@@ -74,6 +74,10 @@ final class SiteSection extends Model
                 throw ValidationException::withMessages(['type' => 'The site node type is invalid.']);
             }
 
+            if ($section->exists && $section->isDirty('is_home')) {
+                throw ValidationException::withMessages(['is_home' => 'The system Home page identity cannot be changed.']);
+            }
+
             if ($section->exists && $section->isDirty('type')) {
                 $originalType = SiteSectionType::tryFrom((string) $section->getRawOriginal('type'));
                 if ($originalType === SiteSectionType::Home || $nodeType === SiteSectionType::Home) {
@@ -121,7 +125,7 @@ final class SiteSection extends Model
                 throw ValidationException::withMessages(['slug' => $nodeType->label().' does not own a public URL slug.']);
             }
 
-            if ($nodeType === SiteSectionType::Home) {
+            if ($section->isHome()) {
                 if ((string) $section->getAttribute('state') !== 'published') {
                     throw ValidationException::withMessages(['state' => 'Home is always published.']);
                 }
@@ -177,7 +181,7 @@ final class SiteSection extends Model
         });
 
         self::deleting(function (self $section): void {
-            if ($section->nodeType() === SiteSectionType::Home) {
+            if ($section->isHome()) {
                 throw ValidationException::withMessages(['section' => 'Home cannot be deleted.']);
             }
         });

@@ -11,6 +11,10 @@ final class SiteNodeRoute
 {
     public function path(SiteSection $section): ?string
     {
+        if ($section->isHome()) {
+            return '/';
+        }
+
         return match ($section->nodeType()) {
             SiteSectionType::Home => '/',
             SiteSectionType::NavigationNode => null,
@@ -22,6 +26,10 @@ final class SiteNodeRoute
 
     public function url(SiteSection $section): ?string
     {
+        if ($section->isHome()) {
+            return route('home');
+        }
+
         return match ($section->nodeType()) {
             SiteSectionType::Home => route('home'),
             SiteSectionType::NavigationNode => null,
@@ -34,6 +42,10 @@ final class SiteNodeRoute
     public function isCurrent(SiteSection $section, ?Request $request = null): bool
     {
         $request ??= request();
+
+        if ($section->isHome()) {
+            return $request->routeIs('home', 'preview.home');
+        }
 
         return match ($section->nodeType()) {
             SiteSectionType::Home => $request->routeIs('home', 'preview.home'),
