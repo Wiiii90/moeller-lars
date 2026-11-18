@@ -8,6 +8,7 @@ use App\Domain\Artwork\ArtworkSort;
 use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -519,24 +520,44 @@ final class HomeHeroConfigurationService
         });
     }
 
-    /** @param array<string,mixed> $changes */
-    public function updateDummyGallery(HomePresentationSetting $settings, int $id, array $changes): bool
+    /**
+     * The Home setting is the transactional source of truth for every Dummy
+     * mutation. Never calculate a replacement membership list from a stale
+     * Livewire model before acquiring this row lock.
+     *
+     * @param Closure(array<int,array<string,mixed>>&):bool $mutate
+     */
+    private function mutateDummyGalleries(HomePresentationSetting $settings, Closure $mutate): bool
     {
-        return DB::transaction(function () use ($settings, $id, $changes): bool {
+        return DB::transaction(function () use ($settings, $mutate): bool {
             $fresh = HomePresentationSetting::query()->whereKey($settings->getKey())
                 ->lockForUpdate()->firstOrFail();
             $galleries = $this->configuration($fresh)['dummy_galleries'];
+            if (! $mutate($galleries)) {
+                return false;
+            }
+
+            return $this->updateArtworkSettings($fresh, ['dummy_galleries' => $galleries]);
+        });
+    }
+
+    /** @param array<string,mixed> $changes */
+    public function updateDummyGallery(HomePresentationSetting $settings, int $id, array $changes): bool
+    {
+        return $this->mutateDummyGalleries($settings, static function (array &$galleries) use ($id, $changes): bool {
             foreach ($galleries as &$gallery) {
                 if ($gallery['id'] !== $id) {
                     continue;
                 }
-                foreach (['name', 'enabled', 'members'] as $key) {
-                    if (array_key_exists($key, $changes)) {
-                        $gallery[$key] = $changes[$key];
+                $before = $gallery;
+                foreach (['name', 'enabled', 'members'] as $field) {
+                    if (array_key_exists($field, $changes)) {
+                        $gallery[$field] = $changes[$field];
                     }
                 }
+                $changed = $before !== $gallery;
                 unset($gallery);
-                return $this->updateArtworkSettings($fresh, ['dummy_galleries' => $galleries]);
+                return $changed;
             }
             throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
         });
@@ -544,121 +565,143 @@ final class HomeHeroConfigurationService
 
     public function removeDummyGallery(HomePresentationSetting $settings, int $id): bool
     {
-        $galleries = $this->configuration($settings)['dummy_galleries'];
-        $remaining = array_values(array_filter($galleries, static fn (array $gallery): bool => $gallery['id'] !== $id));
-        return count($remaining) === count($galleries) ? false
-            : $this->updateArtworkSettings($settings, ['dummy_galleries' => $remaining]);
+        return $this->mutateDummyGalleries($settings, static function (array &$galleries) use ($id): bool {
+            $count = count($galleries);
+            $galleries = array_values(array_filter(
+                $galleries, static fn (array $gallery): bool => $gallery['id'] !== $id,
+            ));
+            return count($galleries) !== $count;
+        });
     }
 
     public function addDummyMedia(HomePresentationSetting $settings, int $galleryId, int $mediaAssetId): bool
     {
         $asset = MediaAsset::query()->with('variants')->find($mediaAssetId);
         if (! $asset instanceof MediaAsset || ! HomeHeroCandidate::mediaIsEligible($asset)) {
-            throw ValidationException::withMessages(['pending_media_asset_id' => 'Choose an eligible image or video from Storage.']);
+            throw ValidationException::withMessages([
+                'pending_media_asset_id' => 'Choose an eligible image or video from Storage.',
+            ]);
         }
-        $galleries = $this->configuration($settings)['dummy_galleries'];
-        foreach ($galleries as &$gallery) {
-            if ($gallery['id'] !== $galleryId) {
-                continue;
+
+        return $this->mutateDummyGalleries($settings, static function (array &$galleries) use ($galleryId, $asset, $mediaAssetId): bool {
+            foreach ($galleries as &$gallery) {
+                if ($gallery['id'] !== $galleryId) {
+                    continue;
+                }
+                $gallery['members'][] = [
+                    'media_asset_id' => $mediaAssetId,
+                    'enabled' => true,
+                    'title' => (string) $asset->getAttribute('original_filename'),
+                    'year' => null,
+                    'month' => null,
+                    'day' => null,
+                ];
+                unset($gallery);
+                return true;
             }
-            $gallery['members'][] = [
-                'media_asset_id' => $mediaAssetId, 'enabled' => true,
-                'title' => (string) $asset->getAttribute('original_filename'),
-                'year' => null, 'month' => null, 'day' => null,
-            ];
-            unset($gallery);
-            return $this->updateArtworkSettings($settings, ['dummy_galleries' => $galleries]);
-        }
-        throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+            throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+        });
     }
 
     public function setDummyMemberEnabled(HomePresentationSetting $settings, int $galleryId, string $key, bool $enabled): bool
     {
-        $galleries = $this->configuration($settings)['dummy_galleries'];
-        foreach ($galleries as &$gallery) {
-            if ($gallery['id'] !== $galleryId) {
-                continue;
-            }
-            foreach ($gallery['members'] as &$member) {
-                if (self::memberKey($member) !== $key) {
+        return $this->mutateDummyGalleries($settings, static function (array &$galleries) use ($galleryId, $key, $enabled): bool {
+            foreach ($galleries as &$gallery) {
+                if ($gallery['id'] !== $galleryId) {
                     continue;
                 }
-                if ($member['enabled'] === $enabled) {
-                    return false;
+                foreach ($gallery['members'] as &$member) {
+                    if (self::memberKey($member) !== $key) {
+                        continue;
+                    }
+                    $changed = $member['enabled'] !== $enabled;
+                    $member['enabled'] = $enabled;
+                    unset($member, $gallery);
+                    return $changed;
                 }
-                $member['enabled'] = $enabled;
-                unset($member, $gallery);
-                return $this->updateArtworkSettings($settings, ['dummy_galleries' => $galleries]);
+                unset($gallery);
+                throw ValidationException::withMessages(['candidate' => 'Dummy Gallery member no longer exists.']);
             }
-            unset($gallery);
-            throw ValidationException::withMessages(['candidate' => 'Dummy Gallery member no longer exists.']);
-        }
-        throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+            throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+        });
     }
 
+    /** @param array<string,mixed> $changes */
     public function updateDummyMember(HomePresentationSetting $settings, int $galleryId, string $key, array $changes): bool
     {
-        $galleries = $this->configuration($settings)['dummy_galleries'];
-        foreach ($galleries as &$gallery) {
-            if ($gallery['id'] !== $galleryId) {
-                continue;
+        $fields = ['title', 'year', 'month', 'day'];
+        foreach (array_keys($changes) as $field) {
+            if (! in_array($field, $fields, true)) {
+                throw ValidationException::withMessages(['candidate' => 'Unknown Dummy Gallery field.']);
             }
-            foreach ($gallery['members'] as &$member) {
-                if (self::memberKey($member) !== $key) {
+        }
+        return $this->mutateDummyGalleries($settings, static function (array &$galleries) use ($galleryId, $key, $changes): bool {
+            foreach ($galleries as &$gallery) {
+                if ($gallery['id'] !== $galleryId) {
                     continue;
                 }
-                foreach (['title', 'year', 'month', 'day'] as $field) {
-                    if (array_key_exists($field, $changes)) {
-                        if (! isset($member['media_asset_id'])) {
-                            throw ValidationException::withMessages(['candidate' => 'Existing Artwork metadata is edited in its Artwork editor.']);
-                        }
-                        $member[$field] = $changes[$field];
+                foreach ($gallery['members'] as &$member) {
+                    if (self::memberKey($member) !== $key) {
+                        continue;
                     }
+                    if (! isset($member['media_asset_id'])) {
+                        throw ValidationException::withMessages([
+                            'candidate' => 'Existing Artwork metadata is edited in its Artwork editor.',
+                        ]);
+                    }
+                    $before = $member;
+                    foreach ($changes as $field => $value) {
+                        $member[$field] = $value;
+                    }
+                    $changed = $before !== $member;
+                    unset($member, $gallery);
+                    return $changed;
                 }
-                unset($member, $gallery);
-                return $this->updateArtworkSettings($settings, ['dummy_galleries' => $galleries]);
+                unset($gallery);
+                throw ValidationException::withMessages(['candidate' => 'Dummy Gallery member no longer exists.']);
             }
-            unset($gallery);
-            throw ValidationException::withMessages(['candidate' => 'Dummy Gallery member no longer exists.']);
-        }
-        throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+            throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+        });
     }
 
     public function addDummyArtwork(HomePresentationSetting $settings, int $galleryId, int $artworkId): bool
     {
-        $artwork = app(\App\Domain\Artwork\PublicArtworkQuery::class)->homeCandidatesByIds([$artworkId])->first();
+        $artwork = app(\App\Domain\Artwork\PublicArtworkQuery::class)
+            ->homeCandidatesByIds([$artworkId])->first();
         if (! $artwork instanceof \App\Models\Artwork) {
             throw ValidationException::withMessages(['pending_artwork_id' => 'Choose an eligible Artwork.']);
         }
-        $galleries = $this->configuration($settings)['dummy_galleries'];
-        foreach ($galleries as &$gallery) {
-            if ($gallery['id'] !== $galleryId) {
-                continue;
+        return $this->mutateDummyGalleries($settings, static function (array &$galleries) use ($galleryId, $artworkId): bool {
+            foreach ($galleries as &$gallery) {
+                if ($gallery['id'] !== $galleryId) {
+                    continue;
+                }
+                $gallery['members'][] = ['artwork_id' => $artworkId, 'enabled' => true];
+                unset($gallery);
+                return true;
             }
-            $gallery['members'][] = ['artwork_id' => $artworkId, 'enabled' => true];
-            unset($gallery);
-            return $this->updateArtworkSettings($settings, ['dummy_galleries' => $galleries]);
-        }
-        throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+            throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+        });
     }
 
     public function removeDummyMember(HomePresentationSetting $settings, int $galleryId, string $key): bool
     {
-        $galleries = $this->configuration($settings)['dummy_galleries'];
-        foreach ($galleries as &$gallery) {
-            if ($gallery['id'] !== $galleryId) {
-                continue;
+        return $this->mutateDummyGalleries($settings, static function (array &$galleries) use ($galleryId, $key): bool {
+            foreach ($galleries as &$gallery) {
+                if ($gallery['id'] !== $galleryId) {
+                    continue;
+                }
+                $before = count($gallery['members']);
+                $gallery['members'] = array_values(array_filter(
+                    $gallery['members'],
+                    static fn (array $member): bool => self::memberKey($member) !== $key,
+                ));
+                $changed = count($gallery['members']) !== $before;
+                unset($gallery);
+                return $changed;
             }
-            $oldCount = count($gallery['members']);
-            $gallery['members'] = array_values(array_filter(
-                $gallery['members'],
-                static fn (array $member): bool => self::memberKey($member) !== $key,
-            ));
-            $changed = count($gallery['members']) !== $oldCount;
-            unset($gallery);
-            return $changed && $this->updateArtworkSettings($settings, ['dummy_galleries' => $galleries]);
-        }
-        throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+            throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+        });
     }
 
     /** @return list<int> */
@@ -692,23 +735,31 @@ final class HomeHeroConfigurationService
         if (! in_array($direction, ['up', 'down'], true)) {
             throw ValidationException::withMessages(['source_order' => 'Invalid Gallery movement.']);
         }
-        $current = $this->configuration($settings);
-        $order = array_values(array_unique(array_merge(
-            array_values(array_filter($current['source_order'], static fn (int $id): bool => in_array($id, $visibleIds, true))),
-            $visibleIds,
-        )));
-        $position = array_search($sourceId, $order, true);
-        if ($position === false) {
-            throw ValidationException::withMessages(['source_order' => 'Gallery no longer in this Home source.']);
-        }
-        $target = $position + ($direction === 'up' ? -1 : 1);
-        if (! isset($order[$target])) {
-            return false;
-        }
-        [$order[$position], $order[$target]] = [$order[$target], $order[$position]];
-        return $this->updateArtworkSettings(
-            $settings, ['source_order' => $order], ['before' => $current['source_order'], 'after' => $order],
-        );
+        return DB::transaction(function () use ($settings, $sourceId, $direction, $visibleIds): bool {
+            $fresh = HomePresentationSetting::query()->whereKey($settings->getKey())
+                ->lockForUpdate()->firstOrFail();
+            $current = $this->configuration($fresh);
+            $order = array_values(array_unique(array_merge(
+                array_values(array_filter(
+                    $current['source_order'],
+                    static fn (int $id): bool => in_array($id, $visibleIds, true),
+                )),
+                $visibleIds,
+            )));
+            $position = array_search($sourceId, $order, true);
+            if ($position === false) {
+                throw ValidationException::withMessages(['source_order' => 'Gallery no longer in this Home source.']);
+            }
+            $target = $position + ($direction === 'up' ? -1 : 1);
+            if (! isset($order[$target])) {
+                return false;
+            }
+            [$order[$position], $order[$target]] = [$order[$target], $order[$position]];
+
+            // Gallery priority is a profile setting, not the obsolete
+            // manual Artwork ordering scope used by historical Audit records.
+            return $this->updateArtworkSettings($fresh, ['source_order' => $order]);
+        });
     }
 
     public function updateCandidateWeight(HomePresentationSetting $settings, string $key, int $basisPoints): bool
@@ -716,29 +767,33 @@ final class HomeHeroConfigurationService
         if ($basisPoints < 0 || $basisPoints > self::WEIGHT_TOTAL) {
             throw ValidationException::withMessages(['weight' => 'Hero percentage must be between 0 and 100.']);
         }
-        $fresh = $settings->fresh();
-        $configuration = $this->configuration($fresh);
-        if ($configuration['display_strategy'] !== 'random') {
-            throw ValidationException::withMessages(['weight' => 'Hero chances can be changed only for Random strategy.']);
-        }
 
-        $resolution = app(HomeHeroResolver::class)->resolve($fresh);
-        $candidates = $resolution['group']->values();
-        $keys = $candidates->map(static fn (HomeHeroCandidate $candidate): string => $candidate->key())->all();
-        if (! in_array($key, $keys, true)) {
-            throw ValidationException::withMessages(['candidate' => 'The sourced Hero candidate changed. Reload and try again.']);
-        }
-        $weights = $resolution['weights'];
-        $otherKeys = array_values(array_filter($keys, static fn (string $value): bool => $value !== $key));
-        $otherValues = array_map(static fn (string $value): int => $weights[$value] ?? 0, $otherKeys);
-        $newWeights = $configuration['sourced_weights'];
-        $newWeights[$key] = $otherKeys === [] ? self::WEIGHT_TOTAL : $basisPoints;
-        $allocated = $this->allocateBudget($otherValues, self::WEIGHT_TOTAL - $newWeights[$key]);
-        foreach ($otherKeys as $index => $otherKey) {
-            $newWeights[$otherKey] = $allocated[$index];
-        }
+        return DB::transaction(function () use ($settings, $key, $basisPoints): bool {
+            $fresh = HomePresentationSetting::query()->whereKey($settings->getKey())
+                ->lockForUpdate()->firstOrFail();
+            $configuration = $this->configuration($fresh);
+            if ($configuration['display_strategy'] !== 'random') {
+                throw ValidationException::withMessages(['weight' => 'Hero chances can be changed only for Random strategy.']);
+            }
 
-        return $this->updateArtworkSettings($fresh, ['sourced_weights' => $newWeights]);
+            $resolution = app(HomeHeroResolver::class)->resolve($fresh);
+            $candidates = $resolution['group']->values();
+            $keys = $candidates->map(static fn (HomeHeroCandidate $candidate): string => $candidate->key())->all();
+            if (! in_array($key, $keys, true)) {
+                throw ValidationException::withMessages(['candidate' => 'The sourced Hero candidate changed. Reload and try again.']);
+            }
+            $weights = $resolution['weights'];
+            $otherKeys = array_values(array_filter($keys, static fn (string $value): bool => $value !== $key));
+            $otherValues = array_map(static fn (string $value): int => $weights[$value] ?? 0, $otherKeys);
+            $newWeights = $configuration['sourced_weights'];
+            $newWeights[$key] = $otherKeys === [] ? self::WEIGHT_TOTAL : $basisPoints;
+            $allocated = $this->allocateBudget($otherValues, self::WEIGHT_TOTAL - $newWeights[$key]);
+            foreach ($otherKeys as $index => $otherKey) {
+                $newWeights[$otherKey] = $allocated[$index];
+            }
+
+            return $this->updateArtworkSettings($fresh, ['sourced_weights' => $newWeights]);
+        });
     }
 
     /** @return list<array{artwork_id?:int,media_asset_id?:int,weight:int,enabled:bool}> */
