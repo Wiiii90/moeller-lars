@@ -45,13 +45,11 @@ Do not record private host/access details here. No current deployed Validation S
 
 ## Local artist-state mirror from Validation
 
-Before the next substantial Validation update, copy the current artist-curated Validation state **locally** so local development uses the same real content the artist is editing on Validation. The primary purpose is development/migration rehearsal, not backup.
+**Completed rehearsal, 2026-11-18 (user-supplied operator output):** Validation's logical PostgreSQL dump and private media archive were transferred with matching SHA-256 checksums, then imported into the persistent local preview database/media mount. The import reported 768 extracted media files. Local `dev@5889f6bd56f5e47984f70e74e31053866b767397` started successfully, all listed forward migrations through `2026_11_18_000002` were marked Ran, and `php artisan media:verify` reported `ok: true`, 269 MediaAsset rows checked, zero failures. Preview startup/health passed; **artist/browser acceptance is not yet confirmed**.
 
-Bring over the matching PostgreSQL application data **and canonical media originals** into the local preview environment (or another isolated local application database/media copy if needed). Then apply the newest `dev` migrations and application code locally. This lets current development adapt against the artist's real data before deploying that same newer `dev` source to Validation.
+The source Validation database/media remain unchanged by this read-only export. The local mirror is a development/migration rehearsal, not a cutover candidate or a substitute for the independent Production backup/restore gate #38. Later Validation edits require a fresh matching data/media copy before an exact rehearsal; deployment still applies forward migrations independently to then-current Validation data.
 
-The local copy is allowed to advance beyond Validation's current schema: Validation itself remains unchanged until the later explicit preview/update. At deployment time the same forward migrations must still run against the then-current Validation data. If the artist has made additional edits since the local copy was taken, refresh/reconcile as needed before treating the rehearsal as exact.
-
-Having the data/media locally is a useful extra copy, but it is not the reason for the workflow and does not by itself close #38 or replace the platform backup contract.
+**Cleanup outstanding:** after the user verifies the local health and the staged cleanup command succeeds, confirm deletion of only the temporary transfer archive, redundant local-playground backup and former local media directory. Do not assume deletion from a command being provided. Server-side temporary export cleanup was prescribed but is not independently confirmed.
 
 ## Main / repository-history gate
 
@@ -91,6 +89,6 @@ This is now a **Docs normalization gate**: translate in place to English, preser
 
 ## Immediate organizational objective
 
-Current next action: perform the planned **Validation → local artist-state sync** before the next substantial Validation update. Copy the artist-curated Validation PostgreSQL data and matching canonical media to the normal local preview state, verify the transfer, then start current `dev` locally so its forward migrations advance that copied artist dataset. Validation itself remains unchanged during this rehearsal. The user has explicitly approved proceeding with this workflow; resume from the export/transfer/import step, but always re-read current `dev` and current platform contracts before giving concrete operator commands.
+Current next action: confirm the operator's **local temporary-export/backup/old-media cleanup** after the successful Validation-to-local import, then perform bounded local browser/editorial review against the imported artist data. No Validation update is authorized.
 
 In parallel, artist-feedback development remains active; do not invent a freeze. Maintain Issue/milestone hygiene while work moves. When the user declares the v0.4 Dev freeze, drive the bounded #198 → #199 → #214 closeout sequence, then prepare the separately authorized history-cleanup/main-promotion gate.
