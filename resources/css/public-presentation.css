@@ -811,11 +811,9 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     margin-bottom: 0;
 }
 
-/* Gallery index only: independent vertical rhythm while retaining the
-   canonical Artwork sequence and General-owned Content width. */
-/* Allocate almost a viewport to each Artwork. Short landscape images are
-   centered in their own editorial slot; large portraits remain naturally
-   sized and long metadata may extend the slot rather than being clipped. */
+/* Gallery index only: natural content-height cards. The configured gap
+   alone separates Artworks regardless of portrait or landscape ratio;
+   no viewport-sized grid slot can add hidden space around short images. */
 .artwork-list > .artwork-card {
     --gallery-drift-left: 1fr;
     --gallery-drift-right: 1fr;
@@ -824,16 +822,8 @@ body.public-site:has(.site-content--fitted-image) .site-header {
         minmax(0, var(--gallery-drift-left))
         minmax(0, max-content)
         minmax(0, var(--gallery-drift-right));
-    align-content: center;
     width: 100%;
-    min-height: max(0px, calc(100svh - 12rem));
     margin-bottom: var(--gallery-artwork-gap);
-}
-/* The first Artwork starts at the top of its content, rather than being
-   centered in a viewport-height slot with a large blank upper region. */
-.artwork-list > .artwork-card:first-child {
-    min-height: 0;
-    align-content: start;
 }
 
 /* Deterministic five-stop drift. Track fractions divide only the space left
@@ -884,12 +874,6 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 @media (max-width: 40rem) {
     .artwork-list {
         --gallery-artwork-gap: clamp(1rem, 3svh, 2rem);
-    }
-    /* Phones are a continuous Artwork sequence, not a series of nearly
-       empty viewport-height slots. The shared divided rhythm uses this gap. */
-    .artwork-list > .artwork-card {
-        min-height: 0;
-        align-content: start;
     }
     .artwork-list > .artwork-card--gallery-index {
         --gallery-drift-left: 1fr;
