@@ -311,6 +311,22 @@ final class HomeHeroConfigurationService
                 $profiles[$groupSource]['disabled_auto_artwork_ids'] = $disabledAutoIds;
             }
 
+            // A deleted Dummy Gallery must not leave priority entries behind:
+            // negative IDs can be reused by a later new Dummy Gallery.
+            $deletedSources = array_values(array_diff(
+                array_column($current['dummy_galleries'], 'id'),
+                array_column($dummyGalleries, 'id'),
+            ));
+            if ($deletedSources !== []) {
+                foreach ($profiles as &$sourceProfile) {
+                    $sourceProfile['source_order'] = array_values(array_filter(
+                        $sourceProfile['source_order'],
+                        static fn (int $id): bool => ! in_array($id, $deletedSources, true),
+                    ));
+                }
+                unset($sourceProfile);
+            }
+
             $artwork['show_details'] = $showDetails;
             $artwork['show_gallery_link'] = $showGalleryLink;
             $artwork['show_navigation'] = $showNavigation;
