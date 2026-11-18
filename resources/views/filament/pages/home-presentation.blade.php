@@ -413,7 +413,7 @@
                                     @endif
                                 </td>
                                 <td class="admin-table__actions">
-                                    @if (! $expanded)
+                                    @if (! $expanded || $firstCandidate === null)
                                         <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-state-delete admin-toolbar home-source-table__row-actions">
                                             <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                                 label="Move Gallery up" :disabled="! str_starts_with($heroSourceRule, 'gallery_') || $sourceSearch !== ''"
@@ -440,7 +440,7 @@
                                             @endif
                                         </div>
                                     @else
-                                        @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $firstCandidate, 'manualSource' => $manualSource, 'groupId' => $groupId])
+                                        @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $firstCandidate, 'manualSource' => $manualSource, 'groupId' => $groupId, 'showSourceActions' => true])
                                     @endif
                                 </td>
                                 <td class="admin-table__selection admin-table__selection--trailing">
@@ -466,7 +466,7 @@
                                             @include('filament.pages.partials.home-source-candidate-cell', ['candidate' => $candidate, 'groupId' => $groupId])
                                         </td>
                                         <td class="admin-table__actions">
-                                            @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $candidate, 'manualSource' => $manualSource, 'groupId' => $groupId])
+                                            @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $candidate, 'manualSource' => $manualSource, 'groupId' => $groupId, 'showSourceActions' => false])
                                         </td>
                                         <td class="admin-table__selection admin-table__selection--trailing">
                                             <input type="checkbox" value="{{ \App\Filament\Pages\HomePresentation::sourceCandidateSelectionId($groupId, $candidate['id']) }}"
