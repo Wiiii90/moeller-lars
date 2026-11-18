@@ -8,6 +8,10 @@ $Changes = git status --porcelain
 if ($LASTEXITCODE) { throw 'Git-Status fehlgeschlagen.' }
 if ($Changes) { throw 'Lokale Git-Aenderungen vorhanden. Erst committen, stashen oder verwerfen.' }
 
+# The script is parsed before execution. If Git updates this script itself,
+# restart from the new file rather than continuing the stale in-memory code.
+$OriginalScriptHash = (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash
+
 git switch dev
 if ($LASTEXITCODE) { throw 'git switch fehlgeschlagen.' }
 
@@ -21,6 +25,13 @@ foreach ($Attempt in 1..4) {
 }
 git merge --ff-only FETCH_HEAD
 if ($LASTEXITCODE) { throw 'Git-Fast-Forward fehlgeschlagen.' }
+
+$UpdatedScriptHash = (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash
+if ($UpdatedScriptHash -ne $OriginalScriptHash) {
+    Write-Host 'Preview script was updated; restarting the current version.'
+    & $PSCommandPath
+    return
+}
 
 $env:APP_GIT_SHA = (git rev-parse HEAD).Trim()
 if ($LASTEXITCODE) { throw 'Git SHA konnte nicht gelesen werden.' }
