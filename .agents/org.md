@@ -89,6 +89,8 @@ This is now a **Docs normalization gate**: translate in place to English, preser
 
 ## Immediate organizational objective
 
+**Server read-only preflight confirmed by operator, 2026-11-18 around 19:00 CET:** `server-platform-moeller-lars-validation status` reports app and PostgreSQL healthy, Pulse enabled/running, authenticated ingress enabled; Matomo browser tracking disabled, read-only reporting enabled (website ID 1, token present). App and Pulse running on immutable image digest `sha256:776f87dce3ea20b6b135c69557a5f66b995293e1dfbe02f55e4cf75478fec2f9`; this alone does not identify the Git SHA. Server root filesystem `45G` total / `26G` used / `20G` available, Validation media `2.0G`. `TEMP_EXPORT_ABSENT` confirms prior server export directory removed. Next read-only operator command reads `/app-release.json` and `php artisan migrate:status` inside the live Validation app. Do not start a new export or deploy until candidate and backup/recovery plan are selected. 
+
 **Validation preparation, 2026-11-18:** The user wants to prepare another protected Validation preview but explicitly does **not** select or approve the current `dev` commit for deployment. No preview-image publication, Validation mutation, Continuous Integration run or release promotion is authorized by preparation alone.
 
 - **Source position:** `dev` is moving with parallel workers (observed `afed72943b564fb4ea7cc70b8bdcdeebf6d7d37c`); the next candidate must be selected by its exact fresh commit, not assumed to be current HEAD.
