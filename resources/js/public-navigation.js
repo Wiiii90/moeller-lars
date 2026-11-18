@@ -174,6 +174,34 @@ function initializeNavigationWindow(surface, restoredWindows) {
         if (!cycling) return;
         render(advanceNavigationWindow(widths, visible, availableWidth, direction));
     };
+    // Main and child navigation share the same arrow-key contract and cyclic
+    // window. Focus follows visible controls, never hidden items or the page.
+    const focusableItems = () => Array.from(rail.querySelectorAll(
+        '[data-navigation-item]:not([hidden]) > .site-navigation__primary > :is(a, button)',
+    ));
+    const onArrowKey = (event) => {
+        if (event.defaultPrevented || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+            return;
+        }
+        const focused = document.activeElement;
+        if (!(focused instanceof HTMLElement) || !rail.contains(focused)) return;
+
+        const controls = focusableItems();
+        const current = controls.indexOf(focused);
+        if (current === -1) return;
+
+        event.preventDefault();
+        const direction = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1;
+        const nextItem = controls[current + direction];
+        if (nextItem) {
+            nextItem.focus({ preventScroll: true });
+        } else if (cycling) {
+            shift(direction);
+            const updated = focusableItems();
+            (direction === 1 ? updated[updated.length - 1] : updated[0])?.focus({ preventScroll: true });
+        }
+    };
+    rail.addEventListener('keydown', onArrowKey);
     previous.addEventListener('click', () => shift(-1));
     next.addEventListener('click', () => shift(1));
 
@@ -206,6 +234,7 @@ function initializeNavigationWindow(surface, restoredWindows) {
         },
         key: surfaceKey,
         destroy: () => {
+            rail.removeEventListener('keydown', onArrowKey);
             resizeObserver?.disconnect();
             if (!resizeObserver) window.removeEventListener('resize', refresh);
         },
@@ -291,21 +320,6 @@ function initializeNavigationLevels(container, mainSurface, main, restoredWindow
                 event.preventDefault();
                 showMain(true);
                 return;
-            }
-            if (!['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp'].includes(event.key)) return;
-            const links = Array.from(submenu.querySelectorAll('.site-navigation__item:not([hidden]) a'));
-            const current = links.indexOf(document.activeElement);
-            if (current === -1 || links.length === 0) return;
-            event.preventDefault();
-            const offset = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1;
-            const destination = current + offset;
-            if (destination >= 0 && destination < links.length) {
-                links[destination].focus();
-            } else {
-                const control = offset > 0 ? entry.window.next : entry.window.previous;
-                if (!control.hidden) control.click();
-                const updated = Array.from(submenu.querySelectorAll('.site-navigation__item:not([hidden]) a'));
-                (offset > 0 ? updated[updated.length - 1] : updated[0])?.focus();
             }
         });
     }

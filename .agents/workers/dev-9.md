@@ -2,17 +2,17 @@
 
 **Branch:** `dev`
 **Lease:** 21
-**State:** Active — icon-only nested navigation source change committed; browser acceptance pending
-**Claimed work:** Public cyclic inline navigation and its direct presentation. Coordinate shared General/Menu and Pages changes with existing workers.
+**State:** Active — scoped Public navigation refinements committed; browser acceptance pending
+**Claimed work:** Public cyclic inline navigation and child return controls. Shared General/Menu and Pages ownership stays with assigned workers.
 
 ## Current state
-- Activation and scoped edit followed branch-local `AGENTS.md`, Dev skill, shared worker protocol and roster.
-- Baseline before this change: `3f0a732c51edc60b671007ec017a71d0a4867f86`.
-- The common Public submenu return button is icon-only for every child level. The parent name remains in its accessible label; the existing separator and child entries remain.
-- The return control has a 44-pixel minimum horizontal target at the default root text size. Existing submenu state, selection, the return interaction and routable parent-page entries are unchanged.
-- Scope: `resources/views/layouts/app.blade.php` and `resources/css/public-presentation.css`. No test source or shared Admin/Page code was changed.
-- Verified: source and affected CSS owner reviewed. Not verified: local runtime, browser geometry, touch/keyboard interaction or user acceptance.
+- The shared child-level Back control is icon-only, retaining the parent name in its accessible label and the established separator.
+- Current refinement source baseline: `b95c22899e854c4f64bfc5cb66ca7ab5d32ed01c`.
+- Keyboard arrows navigate visible items on both main and child levels through the existing shared cyclic window owner; the former child-only duplicate handler was removed. Parent ArrowDown opens the child level without also moving focus in the main rail. Listeners are released on navigation disposal.
+- Hover and keyboard-focus feedback ease the existing underline and icon movement without changing the one-row geometry, menu timing or cyclic-window algorithm. Motion is absent for visitors preferring reduced motion.
+- Changed production owners: `resources/js/public-navigation.js` and `resources/css/public-presentation.css`. No tests or general documentation edited.
+- Verified: exact source changes, existing component ownership, branch lease and publication. Not verified: running browser interaction, pointer/keyboard visual geometry, actual smoothness or user acceptance.
 
 ## Next
-- Obtain browser review for child navigation at desktop and mobile widths, including ordinary routable parents and navigation-only Group Nodes.
-- Check the Back control's focus, click target, Escape behavior, separator spacing and cyclic overflow. Testing worker may reconcile existing navigation tests in its own branch.
+- Browser review at desktop/mobile widths with and without cyclic overflow. Check main/child arrow-key behavior, ArrowDown entering child levels, Back/Escape focus restoration, controls during page swaps and reduced-motion behavior.
+- Testing worker should reconcile any affected existing navigation tests on `testing`; no test source changes on `dev`.

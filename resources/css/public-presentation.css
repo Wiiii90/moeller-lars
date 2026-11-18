@@ -240,6 +240,31 @@ body {
     opacity: 0;
 }
 
+/* The cyclic window and level change remain immediate; only feedback inside
+   stable controls is eased, without animating menu width or position. */
+@media (prefers-reduced-motion: no-preference) {
+    .site-navigation__label::after {
+        transition: opacity 140ms ease;
+    }
+
+    .site-navigation__control > .public-icon,
+    .site-navigation__back > .public-icon {
+        transition: transform 140ms ease;
+    }
+
+    .site-navigation__control[data-direction="previous"]:is(:hover, :focus-visible) > .public-icon {
+        transform: translateX(-2px);
+    }
+
+    .site-navigation__control[data-direction="next"]:is(:hover, :focus-visible) > .public-icon {
+        transform: translateX(2px);
+    }
+
+    .site-navigation__back:is(:hover, :focus-visible) > .public-icon {
+        transform: translate(-1px, -1px);
+    }
+}
+
 .site-navigation__primary > :is(a, button, span) {
     width: 100%;
 }
