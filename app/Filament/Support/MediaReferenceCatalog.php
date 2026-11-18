@@ -304,7 +304,7 @@ final class MediaReferenceCatalog
     private function homeNode(): ?SiteSection
     {
         $node = $this->nodes()->first(
-            fn (SiteSection $candidate): bool => $candidate->nodeType() === SiteSectionType::Home,
+            fn (SiteSection $candidate): bool => $candidate->isHome(),
         );
 
         return $node instanceof SiteSection ? $node : null;

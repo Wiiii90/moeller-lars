@@ -277,7 +277,7 @@ class PublicMedia
     {
         /** @var HomePresentationSetting|null $settings */
         $settings = HomePresentationSetting::query()
-            ->whereHas('siteSection', fn ($query) => $query->where('type', SiteSectionType::Home->value))
+            ->whereHas('siteSection', fn ($query) => $query->where('is_home', true))
             ->first(['id', 'template', 'configuration']);
         if (! $settings instanceof HomePresentationSetting) {
             return false;

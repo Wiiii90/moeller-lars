@@ -137,7 +137,7 @@ trait ManagesSitePageEditDialog
             ->label('Edit')
             ->modalHeading(__('Edit page'))
             ->fillForm(function () use ($dialog): array {
-                $home = SiteSection::query()->where('type', SiteSectionType::Home->value)->firstOrFail();
+                $home = SiteSection::query()->where('is_home', true)->firstOrFail();
                 $this->pageDialogOriginals[(int) $home->getKey()] = $this->pageDialogPersistedState($home);
 
                 return [
@@ -165,7 +165,7 @@ trait ManagesSitePageEditDialog
             ->action(function (array $data) use ($dialog): void {
                 try {
                     $changed = DB::transaction(function () use ($dialog, $data): bool {
-                        $home = SiteSection::query()->where('type', SiteSectionType::Home->value)->lockForUpdate()->firstOrFail();
+                        $home = SiteSection::query()->where('is_home', true)->lockForUpdate()->firstOrFail();
                         $before = $this->pageDialogPersistedState($home);
                         $original = $this->pageDialogOriginals[(int) $home->getKey()] ?? [];
                         // Heading and routing controls own their own autosaves.

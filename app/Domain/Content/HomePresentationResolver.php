@@ -24,7 +24,7 @@ final class HomePresentationResolver
     {
         /** @var HomePresentationSetting|null $settings */
         $settings = HomePresentationSetting::query()
-            ->whereHas('siteSection', fn ($query) => $query->where('type', SiteSectionType::Home->value))
+            ->whereHas('siteSection', fn ($query) => $query->where('is_home', true))
             ->with('siteSection')
             ->first();
 

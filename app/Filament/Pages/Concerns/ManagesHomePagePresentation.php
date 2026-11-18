@@ -4,7 +4,6 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\HomeTemplate;
-use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Models\SiteSection;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +15,7 @@ trait ManagesHomePagePresentation
         try {
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
-            if ($section->nodeType() !== SiteSectionType::Home) {
+            if (! $section->isHome()) {
                 throw ValidationException::withMessages(['template' => 'Only Home has a Home template.']);
             }
 
