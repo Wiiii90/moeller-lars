@@ -540,34 +540,13 @@ body {
     overflow-wrap: break-word;
 }
 
-/* Expanded Artwork and Home Hero use the same bounded public geometry.
-   The ordinary reading width is General-owned; these values are active only
-   for a fitted Artwork and never produce a viewport overflow. */
-@media (min-width: 64.001rem) {
-    body.public-site:has(.site-content--fitted-artwork) {
-        --public-fitted-paper-width: min(88vw, 88rem);
-        --public-fitted-image-width: min(82vw, 80rem);
-    }
-}
-
-/* Expanded Artwork may give its media more room, while captions and credits
- * stay on the centered Artwork track. Description prose uses General's full
- * available Page width, not a second fixed reading-width restriction. */
-.site-content--fitted-artwork .artwork-detail__media {
-    width: min(100%, var(--public-fitted-image-width, var(--public-art-max)));
-    margin-inline: auto;
-}
-.site-content--fitted-artwork .artwork-detail__viewer-trigger,
-.site-content--fitted-artwork .artwork-detail__image {
+/* General owns the Page's physical width and Content inset for every
+ * Artwork detail layout. Expanded image fitting may size the image itself
+ * within this track; it must never widen the Page or Menu around it. */
+.site-content--fitted-artwork .artwork-detail__viewer-trigger {
     width: 100%;
     max-width: 100%;
     height: auto;
-}
-.site-content--fitted-artwork .artwork-detail__footer,
-.site-content--fitted-artwork .artwork-detail__credits {
-    width: min(100%, var(--public-art-max));
-    max-width: 100%;
-    margin-inline: auto;
 }
 
 /* Image fitting must not disappear at narrow widths or browser zoom.
@@ -610,7 +589,9 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 .site-content--fitted-image .artwork-detail__image {
     position: absolute;
     inset: 0;
-    width: auto;
+    /* The existing viewport fitting owner resolves the maximum visible
+       image width from the real General content track and image ratio. */
+    width: min(100%, var(--public-fitted-image-width));
     max-width: 100%;
     height: auto;
     max-height: 100%;
@@ -619,43 +600,9 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 }
 .site-content--fitted-image .artwork-detail__footer {
     flex: 0 0 auto;
-}
-
-@media (min-width: 64.001rem) {
-    /* A wider outer sheet is exclusive to Expanded Artwork. Its actual
-       Menu links keep General's configured reading width. */
-    #content.site-content--fitted-artwork {
-        width: min(calc(100% - 2 * var(--public-gutter)),
-            var(--public-fitted-paper-width, var(--public-shell-max)));
-        padding-inline: clamp(var(--public-mobile-inset), 2vw, 1.5rem);
-    }
-
-    .site-content--fitted-artwork .artwork-detail {
-        width: 100%;
-    }
-
-    .site-header--artwork-wide-menu .site-navigation-surface {
-        position: relative;
-        order: 1;
-        display: block;
-        width: min(calc(100% - 2 * var(--public-gutter)),
-            var(--public-fitted-paper-width, var(--public-shell-max)));
-        margin-inline: auto;
-        background: var(--public-menu-background);
-    }
-
-    .site-header--artwork-wide-menu .site-navigation {
-        width: min(100%, var(--public-shell-max));
-        margin-inline: auto;
-    }
-
-    .site-header--divider-menu.site-header--artwork-wide-menu .site-navigation {
-        border-bottom: 0;
-    }
-
-    .site-header--divider-menu.site-header--artwork-wide-menu .site-navigation-surface {
-        border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
-    }
+    /* Same computed width as the image, never the historical 650px
+       reading track. Information rows retain their own alignments. */
+    width: min(100%, var(--public-fitted-image-width, 100%));
 }
 
 /* Museum is a different Artwork image/information composition, not a
@@ -700,11 +647,19 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     }
 }
 
-/* Artwork arrows remain on the original centered General-width track,
-   independent of the landscape media's own size. */
+/* Artwork navigation marks the outer limits of the General-owned Content
+   track. Its 50px hit targets remain, but glyphs align to the actual left/
+   right edges rather than the historic narrow Artwork track. */
 .artwork-detail .artwork-folio {
-    width: min(100%, var(--public-art-max));
+    width: 100%;
+    padding-inline: 0;
     margin-inline: auto;
+}
+.artwork-detail .artwork-folio__leading > .artwork-folio__step {
+    justify-content: flex-start;
+}
+.artwork-detail .artwork-folio__trailing > .artwork-folio__step {
+    justify-content: flex-end;
 }
 /* The structural inner flow owns content width; Backing never changes it. */
 .public-content-reveal {
@@ -794,15 +749,16 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     margin-bottom: var(--public-section-gap);
 }
 
-/* Artwork media and its metadata retain their original image-sized track,
-   while description and divider can use the full General-owned Page width.
-   This is specific to detail pages; Gallery and Home cards stay untouched. */
+/* Detail Artworks may span the *actual* General Page content width, up to
+   the configured padding. There is no second 650px media or footer cap.
+   Fitted-image information is subsequently limited to its rendered width. */
 .artwork-detail {
     width: 100%;
 }
 .artwork-detail__media,
 .artwork-detail__footer {
-    width: min(100%, var(--public-art-max));
+    width: 100%;
+    min-width: 0;
     margin-inline: auto;
 }
 

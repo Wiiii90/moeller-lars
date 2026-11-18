@@ -48,6 +48,7 @@ function initializeArtworkDetailImage(root) {
 
     const clearFit = () => {
         fitStyle?.removeProperty('--public-fitted-image-width');
+        // Retire the previous fitted-paper override on SPA transitions.
         fitStyle?.removeProperty('--public-fitted-paper-width');
     };
 
@@ -63,14 +64,10 @@ function initializeArtworkDetailImage(root) {
         if (lifetime.signal.aborted || !fitStyle || !page || !detail || !stage
             || sourceWidth <= 0 || sourceHeight <= 0) return;
 
-        // Fit the image at every viewport width; only wide layouts resize the paper.
-        const wideLayout = window.matchMedia('(min-width: 64.001rem)').matches;
-        // The stage position and viewport height must share viewport coordinates.
-        const viewportWidth = document.documentElement.clientWidth;
-        const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-        const gutter = Math.min(1.5 * rem, Math.max(.65 * rem, .02 * viewportWidth));
-        const inset = gutter;
-        const availableWidth = Math.max(1, viewportWidth - 2 * gutter - 2 * inset);
+        // The General Page and its padding already resolve the actual usable
+        // track. Do not approximate it from viewport gutters or create a
+        // second, wider paper for landscape images.
+        const availableWidth = Math.max(1, stage.getBoundingClientRect().width);
         const pageStyle = getComputedStyle(page);
         const viewport = window.visualViewport;
         const viewportHeight = viewport?.height ?? window.innerHeight;
@@ -87,17 +84,7 @@ function initializeArtworkDetailImage(root) {
         const fittedWidth = Math.min(availableWidth, heightForImage * sourceWidth / sourceHeight);
 
         fitStyle.setProperty('--public-fitted-image-width', Math.max(1, Math.floor(fittedWidth)) + 'px');
-        if (wideLayout) {
-            const generalShellWidth = Number.parseFloat(getComputedStyle(document.documentElement)
-                .getPropertyValue('--public-shell-max')) || 0;
-            const paperWidth = Math.max(
-                fittedWidth + 2 * inset,
-                Math.min(viewportWidth - 2 * gutter, generalShellWidth),
-            );
-            fitStyle.setProperty('--public-fitted-paper-width', Math.ceil(paperWidth) + 'px');
-        } else {
-            fitStyle.removeProperty('--public-fitted-paper-width');
-        }
+        fitStyle.removeProperty('--public-fitted-paper-width');
     };
 
     const scheduleFit = () => {

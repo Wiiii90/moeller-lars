@@ -2,7 +2,7 @@
 
 **Lease:** 20
 **Branch:** dev
-**State:** Gallery image sizing remains within General's Content width and the existing height ceiling; desktop viewport-minimum Artwork slots removed, so portrait/landscape gaps use only the configured Gallery gap. Browser acceptance pending.
+**State:** Public Gallery index remains accepted source candidate; Artwork detail now shares General's true Content width, its footer tracks fitted image width, and arrows mark outer Content bounds. Source updated; browser acceptance pending.
 
 ## Ownership and current scope
 
@@ -17,6 +17,13 @@
 - Gallery-only upper Content padding stays at 1rem; **every** Gallery Artwork card now takes natural media-and-caption height, with no viewport-minimum slot and no vertical centering. The previous first-card and phone exceptions were consolidated into the Gallery base rule. The desktop gap remains `clamp(2.5rem, 6.5svh, 4.5rem)`, and at 40rem and below it remains `clamp(1rem, 3svh, 2rem)`. With dividers, the same gap is distributed equally around the divider. The image-height ceiling remains `min(82svh, calc(100svh - 9rem))`; General Content width can limit landscapes before the ceiling is reached. This change does not alter height/width calculations, responsive drift, media aspect ratios, or captions.
 - The only affected presentation owner is `resources/css/public-presentation.css`, with a conditional Gallery-only sizing token in the existing `resources/views/components/artwork-card.blade.php`. `resources/views/pages/artworks/index.blade.php` and General layout/width owners are unchanged; Home Hero, individual Artwork detail and gallery videos retain their existing presentation.
 
+## Individual Artwork detail — current correction
+
+- User requested that Artwork information align with each detail image, the Artwork navigation arrows mark the **maximum** image/content track, and images can extend to General's configured Content padding. The earlier `--public-art-max` 650px caps on detail media/footer/folio were a separate narrower constraint; the Expanded image's wide-paper/alternate-menu path was another.
+- Detail media, default metadata and navigation now use `width: 100%` of General's existing content box. The detail folio retains its generous tap targets while aligning its arrow glyphs with the left and right Content edges. General controls the shell, padding and responsive behavior for both Menu and Page; no Gallery index or Home changes.
+- Expanded image fitting remains owned by the existing `initializeArtworkDetailImage()` in `public-gallery-loading.js`, but its usable width is read from the actual image-stage box (not synthetic viewport gutters). The fitted image and metadata share its calculated width, bounded by the Content box, with the image centered and no extra paper enlargement. No second measurement script or layout data store. Standard media/footer are full-width; Museum retains its intentional side-information column with General-boundary sizing and full-width navigation.
+- Keep the independent Gallery opt-ins, native viewer interactions and the long description/divider under both Museum columns. The former artwork-wide header flag is not emitted by the detail route. Full Laravel application browser acceptance is pending, including Standard/Expanded/Museum and portrait/landscape/video at varied General widths, zoom and long metadata.
+
 ## Gallery Stage/Settings — retained acceptance target
 
 - Gallery Stage is the fixed-height upload / Settings-or-Staged-Editor / interactive Preview triptych. Stage and large Settings modal use the **same** `gallerySettingsFields(bool $stage)` schema and Gallery editorial mutation owner. Actual mutations refresh Preview; invalid/no-op must not emit success.
@@ -26,5 +33,5 @@
 ## Verification and next steps
 
 - Inspected the current Gallery CSS, single shared Artwork component and General width owner. Ran isolated headless Chromium layout fixtures at desktop (1600×900) and mobile (390×844) with landscape, portrait and smaller 500×281 image variants; measured content/image/footer widths and no horizontal overflow. The smaller variant now displays at the full allowed 650px desktop Content width without distortion; a 16:9 landscape necessarily remains below the height ceiling if the width cap is reached first. Additional mobile viewport fixtures (390×844, 420×600 and 375×350) confirmed compact computed gaps, removed minimum slots and preserved image/footer widths. **These are isolated geometry fixtures, not local Laravel application or artist-accepted browser reviews.**
-- Next: inspect local Preview with the user's configured Page width/padding and Menu, both portrait and landscape at desktop/mobile/zoom; confirm the actual visible gap from each caption/image bottom to the next Artwork is consistent regardless of orientation, including with optional dividers. Check Page/Menu alignment, image/footer widths, long rights, video and deferred images. Only source-level review, not an application browser run, has been performed for this gap correction.
+- Next: inspect local Preview with the user's configured General Page width and Content padding. Verify Artwork detail image, information and arrows at normal and expanded widths, both orientations, video, long credits, optional description, Museum mode, mobile and zoom. Confirm its real navigation endpoints and image/footer alignment as well as Gallery index rhythm. Only source-level review (not full Laravel browser acceptance) has been completed for the new detail correction.
 - Once Public Gallery is accepted, resume Stage and Settings browser qualification, persistence, feedback, manual Draft/Publish and interactive Preview. The published public-site documentation still contains the older height value; hand off the accepted replacement to Docs for later consolidation.

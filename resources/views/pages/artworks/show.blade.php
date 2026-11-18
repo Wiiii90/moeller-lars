@@ -50,8 +50,6 @@
      fitting at every responsive width; videos retain their natural dimensions.
      General alone owns whether the Menu and Page are connected. --}}
 @section('content_class', $expandedArtwork ? 'site-content--fitted-artwork'.($fitArtwork ? ' site-content--fitted-image' : '').($museumArtwork ? ' site-content--artwork-museum' : '') : '')
-@section('artwork_menu_surface_wide', $expandedArtwork ? '1' : '')
-
 @section('title', $artwork->title.' — Lars Möller')
 @section('meta_description', trim(strip_tags((string) $artwork->description)) ?: $artwork->title.' — Lars Möller')
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/artworks/'.$artwork->slug))
