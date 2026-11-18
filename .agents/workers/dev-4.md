@@ -2,7 +2,7 @@
 
 **Lease:** 17  
 **Branch:** dev  
-**State:** Active — replacement chat on 2026-11-18. Earlier Gallery preview/layout and empty-draft changes remain committed; local migration, publication-checkpoint preflight and browser/runtime acceptance remain pending.
+**State:** Active — shared responsive device Live Preview and private multi-engine browser renderer implemented on dev. Browser/runtime acceptance and the earlier Gallery migration, publication checkpoint and Artwork Divider/Expanded checks remain pending.
 
 ## Chat takeover — 2026-11-18
 
