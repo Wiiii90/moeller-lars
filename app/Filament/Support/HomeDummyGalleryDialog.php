@@ -31,14 +31,12 @@ final class HomeDummyGalleryDialog
             Select::make('pending_artwork_id')
                 ->label('Insert existing Artwork')
                 ->searchable()
-                ->getSearchResultsUsing(static fn (string $search): array => Artwork::query()
-                    ->where('state', 'published')
-                    ->whereRaw('LOWER(title) LIKE ?', ['%'.mb_strtolower(trim($search)).'%'])
-                    ->orderBy('title')
-                    ->limit(30)
-                    ->get(['id', 'title'])
-                    ->mapWithKeys(static fn (Artwork $artwork): array =>
-                        [(int) $artwork->getKey() => (string) $artwork->getAttribute('title')])->all())
+                ->getSearchResultsUsing(static fn (string $search): array =>
+                    app(\App\Domain\Artwork\PublicArtworkQuery::class)
+                        ->searchHomeCandidates($search, 30, false)
+                        ->mapWithKeys(static fn (Artwork $artwork): array =>
+                            [(int) $artwork->getKey() => (string) $artwork->getAttribute('title')])
+                        ->all())
                 ->getOptionLabelUsing(static fn ($value): ?string =>
                     Artwork::query()->whereKey($value)->value('title'))
                 ->live()

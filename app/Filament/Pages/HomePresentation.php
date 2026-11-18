@@ -1565,6 +1565,10 @@ final class HomePresentation extends Page
             }
             $regularEligible = $this->heroGroupSource === 'manual' ? 0
                 : $publicArtworks->eligibleHomeGalleryCount(array_values(array_unique($reserved)));
+            $regularSlots = $this->heroGroupSource === 'manual' ? 0
+                : $publicArtworks->eligibleHomeCandidateSlotsPerGallery(
+                    $this->heroGroupSize, array_values(array_unique($reserved)),
+                );
             $dummyPotential = 0;
             foreach ($activeDummy as $dummy) {
                 $candidates = app(HomeHeroResolver::class)->dummyCandidates(
@@ -1573,7 +1577,7 @@ final class HomePresentation extends Page
                 );
                 $dummyPotential += min($candidates->count(), $this->heroGroupSize);
             }
-            $potential = $dummyPotential + $regularEligible * $this->heroGroupSize;
+            $potential = $dummyPotential + $regularSlots;
             if ($potential > HomeHeroConfigurationService::MAX_GROUP_SIZE) {
                 $this->selectionIssue = sprintf(
                     'Per Gallery requests up to %d candidates from %d eligible sources, exceeding the %d-candidate limit. The active group is capped at %d.',

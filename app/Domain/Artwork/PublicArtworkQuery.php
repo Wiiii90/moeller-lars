@@ -135,6 +135,22 @@ class PublicArtworkQuery
         return (int) $query->distinct()->count('artworks.artwork_category_id');
     }
 
+    /** Count actual eligible per-Gallery slots before the public 50-item cap. */
+    public function eligibleHomeCandidateSlotsPerGallery(int $perGallery, array $excludeIds = []): int
+    {
+        $query = $this->homeQuery()->withoutEagerLoads();
+        if ($excludeIds !== []) {
+            $query->whereNotIn('artworks.id', $excludeIds);
+        }
+
+        return (int) $query
+            ->selectRaw('artworks.artwork_category_id, COUNT(*) AS gallery_candidates')
+            ->groupBy('artworks.artwork_category_id')
+            ->toBase()
+            ->get()
+            ->sum(static fn (object $row): int => min(max(1, min($perGallery, 50)), (int) $row->gallery_candidates));
+    }
+
     /** @return Collection<int, Artwork> */
     public function newestHomeCandidates(?int $latestYear = null): Collection
     {
@@ -180,9 +196,9 @@ class PublicArtworkQuery
     }
 
     /** @return Collection<int, Artwork> */
-    public function searchHomeCandidates(string $search, int $limit = 30): Collection
+    public function searchHomeCandidates(string $search, int $limit = 30, bool $requireHomeGallery = true): Collection
     {
-        $query = $this->homeQuery();
+        $query = $requireHomeGallery ? $this->homeQuery() : $this->publicQuery();
         $term = trim($search);
 
         if ($term !== '') {
