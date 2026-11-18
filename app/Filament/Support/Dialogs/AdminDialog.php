@@ -139,7 +139,7 @@ final class AdminDialog
         return self::base($action, $type, $size)
             ->modalSubmitAction(fn (Action $action): Action => $action
                 ->label($submitLabel)
-                ->icon(($submitIcon ?? AdminIcon::DialogSubmit)->value)
+                ->icon(($submitIcon ?? ($type === AdminDialogType::Create ? AdminIcon::Commit : AdminIcon::DialogSubmit))->value)
                 ->iconButton()
                 ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
             ->modalCancelAction(false);
