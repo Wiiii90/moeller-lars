@@ -366,9 +366,12 @@ final class HomePresentation extends Page
                 })
                 ->schema(fn (): array => app(HomeDummyGalleryDialog::class)->schema(0, true))
                 ->action(function (array $data): void {
-                    app(HomeHeroConfigurationService::class)->createDummyGallery(
+                    $created = app(HomeHeroConfigurationService::class)->createDummyGallery(
                         $this->settings(), (string) ($data['name'] ?? ''), $this->draftDummyMembers,
                     );
+                    if ($created === null) {
+                        return;
+                    }
                     $this->draftDummyMembers = [];
                     $this->reloadWorkspace();
                     app(AdminNotifier::class)->notification(title: 'Dummy Gallery added', status: 'success');

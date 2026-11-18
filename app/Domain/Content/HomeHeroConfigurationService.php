@@ -522,16 +522,42 @@ final class HomeHeroConfigurationService
         return $this->normalizeDummyGalleries($value, true);
     }
 
-    /** @param list<array<string,mixed>> $members */
-    public function createDummyGallery(HomePresentationSetting $settings, string $name, array $members = []): int
+    /** Pick the first unused readable name, without a persistent counter. */
+    private function defaultDummyGalleryName(array $galleries, ?int $excludeId = null): string
     {
+        $names = array_column(array_filter(
+            $galleries,
+            static fn (array $gallery): bool => $gallery['id'] !== $excludeId,
+        ), 'name');
+        $number = 1;
+        while (in_array('Dummy Gallery '.$number, $names, true)) {
+            $number++;
+        }
+
+        return 'Dummy Gallery '.$number;
+    }
+
+    /** @param list<array<string,mixed>> $members */
+    public function createDummyGallery(HomePresentationSetting $settings, string $name, array $members = []): ?int
+    {
+        $name = trim($name);
+        if ($name === '' && $members === []) {
+            return null;
+        }
+
         return DB::transaction(function () use ($settings, $name, $members): int {
             $fresh = HomePresentationSetting::query()->whereKey($settings->getKey())
                 ->lockForUpdate()->firstOrFail();
             $galleries = $this->configuration($fresh)['dummy_galleries'];
-            $id = min(0, ...array_column($galleries, 'id')) - 1;
-            $galleries[] = ['id' => $id, 'name' => trim($name), 'enabled' => true, 'members' => $members];
+            $id = min([0, ...array_column($galleries, 'id')]) - 1;
+            $galleries[] = [
+                'id' => $id,
+                'name' => $name !== '' ? $name : $this->defaultDummyGalleryName($galleries),
+                'enabled' => true,
+                'members' => $members,
+            ];
             $this->updateArtworkSettings($fresh, ['dummy_galleries' => $galleries]);
+
             return $id;
         });
     }
@@ -560,7 +586,7 @@ final class HomeHeroConfigurationService
     /** @param array<string,mixed> $changes */
     public function updateDummyGallery(HomePresentationSetting $settings, int $id, array $changes): bool
     {
-        return $this->mutateDummyGalleries($settings, static function (array &$galleries) use ($id, $changes): bool {
+        return $this->mutateDummyGalleries($settings, function (array &$galleries) use ($id, $changes): bool {
             foreach ($galleries as &$gallery) {
                 if ($gallery['id'] !== $id) {
                     continue;
@@ -568,7 +594,9 @@ final class HomeHeroConfigurationService
                 $before = $gallery;
                 foreach (['name', 'enabled', 'members'] as $field) {
                     if (array_key_exists($field, $changes)) {
-                        $gallery[$field] = $changes[$field];
+                        $gallery[$field] = $field === 'name' && trim((string) $changes[$field]) === ''
+                            ? $this->defaultDummyGalleryName($galleries, $id)
+                            : $changes[$field];
                     }
                 }
                 $changed = $before !== $gallery;

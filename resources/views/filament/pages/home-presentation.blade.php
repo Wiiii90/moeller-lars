@@ -78,11 +78,7 @@
                         <h2 class="admin-section__kicker home-hero-rail__title">{{ __('Hero Artwork') }}</h2>
                         <div class="home-hero-rail__simulation" aria-live="off">
                             <span>{{ __('Preview:') }}
-                                @if ($heroDisplayStrategy === 'sequential')
-                                    {{ __('Sequential') }} (<span x-text="simulatedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })">{{ $simulationAt->format('j M Y') }}</span>)
-                                @else
-                                    {{ $heroDisplayStrategy === 'random' ? __('Random') : __('Top Only') }}
-                                @endif
+                                <span x-text="simulatedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })">{{ $simulationAt->format('j M Y') }}</span>
                             </span>
                             <span class="home-hero-rail__simulation-separator" aria-hidden="true">|</span>
                             <span>{{ __('Next Rotation:') }}
@@ -494,7 +490,7 @@
             </x-admin.table>
 
             @if ($heroGroupSource !== 'automatic')
-                <x-admin.add-row wire:click="mountAction('addDummyGallery')">{{ __('Add Dummy Gallery') }}</x-admin.add-row>
+                <x-admin.add-row :icon="\App\Filament\Support\AdminIcon::Gallery" wire:click="mountAction('addDummyGallery')">{{ __('Add Dummy Gallery') }}</x-admin.add-row>
             @endif
 
             @if ($sourceRows->total() > $sourceRows->perPage() || $sourceRows->currentPage() > 1)
