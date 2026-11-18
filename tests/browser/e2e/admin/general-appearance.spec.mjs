@@ -119,9 +119,12 @@ test('General Appearance selects retain persisted choices across autosaves and f
     await choose('Menu', 'Menu to page', changedDivider);
 
     await page.reload();
-    await choose('Global', 'Frame style', changedFrame);
-    await choose('Page', 'Page background', changedPage);
-    await choose('Menu', 'Menu to page', changedDivider);
+    await stage.getByRole('button', { name: 'Global', exact: true }).click();
+    await expect(field('global', 'Frame style')).toHaveValue(changedFrame);
+    await stage.getByRole('button', { name: 'Page', exact: true }).click();
+    await expect(field('page', 'Page background')).toHaveValue(changedPage);
+    await stage.getByRole('button', { name: 'Menu', exact: true }).click();
+    await expect(field('menu', 'Menu to page')).toHaveValue(changedDivider);
 
     const publicPage = await context.newPage();
     try {
