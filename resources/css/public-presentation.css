@@ -1932,6 +1932,9 @@ html:has(.artwork-viewer[open]) {
  * the backing from painting over Content while the document scrolls. */
 body.public-site--frame-backing .site-navigation-surface,
 body.public-site--frame-backing #content:not(.site-content--transparent) {
+    /* The front-color repaint below is the only front background; Plain
+     * continues to use the surface's ordinary background directly. */
+    background: transparent;
     isolation: isolate;
 }
 body.public-site--frame-backing .site-navigation-surface::before,
