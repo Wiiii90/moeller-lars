@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 15 (active)  
-**Status:** Shared dialog contours, popup scrollbars and full Storage media selection implemented; browser/performance acceptance pending.
+**Status:** Public root scrollbar geometry correction implemented; browser acceptance pending. Shared Admin popup and media-selector styling retained.
 
 ## Ownership and user decisions
 - Own shared Admin dialog window presentation, semantic grouping rules and the Stage-to-Toolbar completeness contract.
@@ -35,6 +35,15 @@
 - The Rich Text `RichTextMediaPicker` child, secure selection payload and image insertion/persistence flows are untouched; no parallel media-picker implementation was added.
 - Server-side option pagination is not implemented in the native Filament Select; full result lists may be costly for large libraries, so benchmark with the real artist Storage dataset before claiming performance acceptance.
 - Updated the two canonical documents on shared control behavior and Rich Text media selection in place.
+
+## Public scrollbar geometry (2026-11-18)
+- User requested eliminating Public header/content/navigation shifts when desktop scrollbars appear/disappear, **without** permanent reserved gutters or extra scrollbar systems. Only Public is in scope now; defer all Admin scrollbar/dialog lifecycle changes.
+- Diagnosed actual Public root in `resources/css/app.css`, which owns document scroll and sticky header. Dynamic classic scrollbar width changes the root content width; `public-navigation.js` then legitimately refits menu arrows on the changed rail width. The map and fullscreen viewer separately used `scrollbar-gutter: stable` on the locked root.
+- Corrected the native Public root: hide only its visible scrollbar using `scrollbar-width: none` and `::-webkit-scrollbar`, retaining root scrolling. This removes gutter reflow without adding a scroll state, custom overlay, body-width compensation, Javascript event handler or fixed padding. No visible thumb is available for mouse dragging; wheel, touch, keyboard and anchor scrolling must be checked in the browser.
+- Consolidated modal root overflow locking for the native exhibition map and fullscreen Artwork Viewer in `app.css` and removed their now-obsolete gutter reservation. Eliminated the redundant Preview-touch-only scrollbar styling and old viewer lock from `public-presentation.css`. The rest of the Public layout, menu window algorithm, Artwork Viewer and modal lifecycles are untouched.
+- Direct consumers: public routes (Home, Gallery, Artwork, Exhibitions, Blog, Custom Pages), narrow/desktop and embedded Public Preview, native exhibition-map dialog, fullscreen Artwork Viewer. No Admin asset was modified.
+- Browser acceptance to verify with two same-width Public routes of different lengths and an image-heavy route: identical Main/Menu/chevron x coordinates on overflow transition; native keyboard/wheel/touch scrolling and sticky header; no blank scrollbar gutter; opening/closing fullscreen Viewer and exhibition map at original scroll position; Preview desktop vs touch iframe; no sideways overflow and no jumping on Livewire navigation. No such browser run was available in this connector-only source task.
+- A documentation-only follow-up for the Docs owner is needed: `docs/public/site.md` still describes a visible native root scrollbar and reserved Viewer gutter. Dev is not authorized to rewrite general manuals as part of this change; hand off after user browser review.
 
 ## Verification and next actions
 - Source review: confirmed the central dialog window radius remains `.25rem` in `dialog-contract.css`, and checked current affected dialog source. Existing modal header actions intentionally remain round; no change requested to action buttons.
