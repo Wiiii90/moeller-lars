@@ -73,6 +73,11 @@
 - Removed the final outdated Public foundation comment describing current exterior contours, plus the canonical Public-site document's obsolete claim that `public-paper-frame.js` owns paper contours. The former one-way migrations and `PublicAppearance::frameStyle(..., fromStorage: true)` remain intentionally for legitimate persistent/historical data. Historical docs describing removed animation engines are source history, not active code.
 - No runtime/browser test, build, migration or deployment performed.
 
+## General Backing Menu/Page seam correction (2026-11-18)
+- User showed an exact missing strip at the left Backing edge between sticky Menu and Content in a continuous configuration. The former Menu `::before` ended one shared offset (`.45rem`) before the real Menu bottom. The Content underlay begins at the corresponding offset, but the full-width, sticky, opaque Header masks its top. This produces a systematic background-colored seam although the front sheets appear visually joined.
+- The shared Backing painter now makes the existing Menu rear sheet reach the Menu's actual bottom (`height: calc(100% + var(--public-backing-offset))` with its negative top offset). It never protrudes below the Menu or creates another sheet. Both Menu and Content still use the same one-owner renderer. No Preview component, page-specific rule, new state or observer was added.
+- Source geometry was inspected but the rendered result still needs user browser acceptance, including scrolling and mismatched-width Artwork pages. No tests/build/deploy/migration were executed.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.

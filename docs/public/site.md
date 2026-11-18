@@ -143,8 +143,13 @@ route-seeded contours, clipped edge pieces or separate renderer remain. Their ba
 dimensions and scroll behavior without relying on the other surface's width,
 divider setting or connectedness. The Menu's underlay is offset toward the
 top-left, rather than trailing below its sticky edge into the moving Content.
-A transparent Page receives no backing. Document scrolling and the independent
-Menu-to-page divider, background, gradient and width settings remain unchanged.
+The Menu rear sheet reaches precisely to the Menu's lower edge, although
+its top is offset upward: the full-width sticky Header masks the overlapping
+top of the Content underlay, and stopping the Menu underlay one offset early
+would leave a false gap in a connected paper view. The extension ends at the
+Menu border and never trails into scrolling content. A transparent Page
+receives no backing. Document scrolling and the independent Menu-to-page
+divider, background, gradient and width settings remain unchanged.
 
 The stored `frame_style` column remains 12 characters and defaults to
 `plain`. A one-way migration changes former Backing-bearing `layered`

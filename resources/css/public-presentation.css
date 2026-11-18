@@ -1938,6 +1938,15 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::before
     left: calc(-1 * var(--public-backing-offset));
     background: var(--public-backing-color);
 }
+
+/* The sticky Header paints the page background across its entire width.
+ * It occludes the Content backing's top offset until the Content box begins.
+ * The Menu backing must therefore reach the real Menu bottom, not stop an
+ * offset early and leave a background-colored notch at the paper join.
+ * Its rear sheet never protrudes below the sticky Menu into scrolling content. */
+body.public-site--frame-backing .site-navigation-surface::before {
+    height: calc(100% + var(--public-backing-offset));
+}
 body.public-site--frame-backing .site-navigation-surface::after,
 body.public-site--frame-backing #content:not(.site-content--transparent)::after {
     z-index: -1;
