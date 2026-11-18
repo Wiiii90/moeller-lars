@@ -31,16 +31,16 @@ if (-not (Test-Path $AnalyticsDemo)) { throw "Lokale Analytics-Demo fehlt: $Anal
 # Never let a local Vite dev-server marker leak into the frozen preview image.
 Remove-Item 'public\hot' -Force -ErrorAction SilentlyContinue
 
-Write-Host "[2/3] Preview-Image bauen ($($env:APP_GIT_SHA.Substring(0, 7)))"
-docker compose build preview
-if ($LASTEXITCODE) { throw 'Lokaler Preview-Build fehlgeschlagen. Alter Preview-Container bleibt unangetastet.' }
+Write-Host "[2/3] Building application and browser-renderer images ($($env:APP_GIT_SHA.Substring(0, 7)))"
+docker compose build preview preview-renderer
+if ($LASTEXITCODE) { throw 'Preview build failed. Existing application remains untouched.' }
 
 docker volume create moeller-lars_postgres_data | Out-Null
 if ($LASTEXITCODE) { throw 'Lokales PostgreSQL-Volume konnte nicht bereitgestellt werden.' }
 
-Write-Host '[3/3] Preview und Bildrechte-Verarbeitung starten, Analytics laden'
-docker compose up -d --no-build --wait preview
-if ($LASTEXITCODE) { throw 'Lokaler Preview-Container konnte nicht gestartet werden.' }
+Write-Host '[3/3] Starting application, browser-renderer and media-rights worker'
+docker compose up -d --no-build --wait preview preview-renderer
+if ($LASTEXITCODE) { throw 'Preview application or browser renderer failed to start.' }
 
 docker compose up -d --no-build media-rights-worker
 if ($LASTEXITCODE) { throw 'Lokaler Bildrechte-Worker konnte nicht gestartet werden.' }

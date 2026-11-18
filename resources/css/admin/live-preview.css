@@ -55,12 +55,37 @@
     outline: 2px solid var(--admin-accent);
     outline-offset: 2px;
 }
-@container admin-live-preview (max-width: 24rem) {
-    .admin-live-preview__width-select { width: 5.75rem; }
-    .admin-live-preview__zoom-value { width: 2.2rem; }
+.admin-live-preview__device-profile { min-width: 0; flex: 0 1 auto; }
+.admin-live-preview__width-select {
+    width: clamp(7rem, 24cqi, 10rem);
+    text-overflow: ellipsis;
 }
-@container admin-live-preview (max-width: 20rem) {
+.admin-live-preview__engine-group { min-width: 0; }
+.admin-live-preview__engine-select {
+    width: clamp(4rem, 14cqi, 5.1rem);
+    min-width: 0;
+    height: var(--admin-header-control-size);
+    padding: 0 .15rem;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: .2rem;
+    background: var(--admin-surface);
+    color: var(--admin-text);
+    font: inherit;
+    font-size: .68rem;
+}
+.admin-live-preview__engine-select:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+@container admin-live-preview (max-width: 28rem) {
+    .admin-live-preview__device-buttons { display: none; }
+    .admin-live-preview__width-select { width: clamp(6.25rem, 33cqi, 8.5rem); }
+    .admin-live-preview__zoom-value { width: 2rem; }
+}
+@container admin-live-preview (max-width: 21rem) {
     .admin-live-preview__zoom-value { display: none; }
+    .admin-live-preview__engine-select { width: 4.05rem; }
+    .admin-live-preview__width-select { width: 6.4rem; }
 }
 .admin-live-preview__viewport {
     box-sizing: border-box;
@@ -109,6 +134,39 @@
     /* An unsaved Stage item has no Public route. Its real canvas width is
      * nevertheless an independent CSS responsive container. */
     container: staged-preview / inline-size;
+}
+.admin-live-preview__frame.is-snapshot-source {
+    visibility: hidden;
+    pointer-events: none;
+}
+.admin-live-preview__snapshot {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: #fff;
+    object-fit: fill;
+    pointer-events: none;
+}
+.admin-live-preview__viewport { position: relative; }
+.admin-live-preview__status {
+    position: absolute;
+    z-index: 5;
+    right: .2rem;
+    bottom: .5rem;
+    left: .2rem;
+    padding: .35rem .5rem;
+    background: var(--admin-surface);
+    color: var(--admin-text);
+    font-size: .68rem;
+    line-height: 1.25;
+    text-align: center;
+    pointer-events: none;
 }
 .admin-live-preview__zoom-value {
     display: grid;

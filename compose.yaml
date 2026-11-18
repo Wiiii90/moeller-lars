@@ -49,11 +49,29 @@ services:
       MATOMO_TRACKING_ENABLED: "false"
       MATOMO_REPORTING_ENABLED: "true"
       MOELLER_LARS_PERSISTENT_PREVIEW: "1"
+      LIVE_PREVIEW_RENDERER_ENDPOINT: "http://preview-renderer:3100"
+      LIVE_PREVIEW_RENDERER_TOKEN: ${LIVE_PREVIEW_RENDERER_TOKEN:-local-preview-internal-only-token}
     volumes:
       - ./storage/app/private:/var/www/html/storage/app/private
     depends_on:
       postgres:
         condition: service_healthy
+
+  # Optional authenticated browser-engine comparison inside the shared
+  # Gallery/General Live Preview. No external port or public renderer route.
+  preview-renderer:
+    profiles: ["preview"]
+    build:
+      context: .
+      dockerfile: docker/preview-renderer/Dockerfile
+    environment:
+      LIVE_PREVIEW_RENDERER_ORIGIN: "http://preview:8080"
+      LIVE_PREVIEW_RENDERER_TOKEN: ${LIVE_PREVIEW_RENDERER_TOKEN:-local-preview-internal-only-token}
+    depends_on:
+      preview:
+        condition: service_healthy
+    shm_size: "512m"
+    restart: unless-stopped
 
   media-rights-worker:
     profiles: ["preview"]

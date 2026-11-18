@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Domain\Content\PreviewDeviceProfiles;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\Response;
+use Throwable;
+
+final class AdminLivePreviewRenderController
+{
+    public function __invoke(Request $request): Response
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User && (bool) $user->getAttribute('is_admin'), 404);
+
+        $input = $request->validate([
+            'path' => ['required', 'string', 'max:500'],
+            'profile' => ['required', 'string', Rule::in(array_keys(PreviewDeviceProfiles::all()))],
+            'orientation' => ['required', Rule::in(['default', 'rotated'])],
+            'engine' => ['required', Rule::in(['chromium', 'webkit', 'firefox'])],
+        ]);
+
+        // Never allow the browser-facing request to select a host, port or
+        // arbitrary internal endpoint. Only the protected Working preview tree.
+        $path = $input['path'];
+        abort_unless(
+            preg_match('~^/preview(?:/|$)~D', $path) === 1
+            && ! str_contains($path, '..')
+            && ! str_contains($path, '//')
+            && ! str_contains($path, '%')
+            && ! str_contains($path, '?')
+            && ! str_contains($path, '#')
+            && ! str_contains($path, '\\'),
+            422,
+        );
+
+        $endpoint = config('services.live_preview_renderer.endpoint');
+        $token = config('services.live_preview_renderer.token');
+        if (! is_string($endpoint) || $endpoint === '' || ! is_string($token) || $token === '') {
+            return response()->json(['message' => 'Browser comparison is not configured.'], 503);
+        }
+
+        $profile = PreviewDeviceProfiles::find($input['profile']);
+        abort_unless($profile !== null, 422);
+
+        try {
+            $render = Http::connectTimeout(2)
+                ->timeout(18)
+                ->withToken($token)
+                ->withHeaders([
+                    // Encrypted browser cookies are forwarded unchanged across
+                    // the private application-to-renderer boundary. Never log.
+                    'Cookie' => (string) $request->headers->get('Cookie', ''),
+                    'Accept' => 'image/png',
+                ])
+                ->post(rtrim($endpoint, '/').'/render', [
+                    'path' => $path,
+                    'engine' => $input['engine'],
+                    'device' => $profile,
+                    'orientation' => $input['orientation'],
+                ]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json(['message' => 'Browser renderer is unavailable.'], 503);
+        }
+
+        if (! $render->successful() || ! str_starts_with((string) $render->header('Content-Type'), 'image/png')) {
+            return response()->json(['message' => 'Browser rendering failed.'], 503);
+        }
+
+        return response($render->body(), 200, [
+            'Content-Type' => 'image/png',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Robots-Tag' => 'noindex, nofollow, noarchive',
+            'X-Preview-Overflow-X' => (string) $render->header('X-Preview-Overflow-X', '0'),
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+}

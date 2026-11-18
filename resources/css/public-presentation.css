@@ -57,6 +57,17 @@ html {
     overflow-x: clip;
 }
 
+/* Only inside an artist's phone/tablet Preview iframe: emulate the
+   overlay/hidden document scrollbar of touch browsers without preventing
+   document scrolling or changing the delivered Public page. */
+html.public-preview--touch {
+    scrollbar-width: none;
+}
+html.public-preview--touch::-webkit-scrollbar {
+    display: none;
+    width: 0;
+}
+
 body {
     width: 100%;
     min-height: 100vh;

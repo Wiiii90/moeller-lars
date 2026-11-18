@@ -5,6 +5,8 @@ window.adminMediaUploadField = adminMediaUploadField;
 import './admin-action-titles.js';
 import './admin-dialog-geometry.js';
 import './admin-partial-date.js';
+import { adminLivePreview } from './admin-live-preview.js';
+window.adminLivePreview = adminLivePreview;
 import { adminHomeHeroStage } from './admin-home-stage.js';
 window.adminHomeHeroStage = adminHomeHeroStage;
 
