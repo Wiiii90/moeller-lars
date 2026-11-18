@@ -172,3 +172,7 @@
 - Engine-specific screenshots now support viewport-by-viewport document inspection: mouse wheel and Page Up/Down, Home/End or Arrow keys scroll the isolated browser page to the requested logical document offset, retaining real sticky-header behavior. The server returns the actual scroll position and maximum rather than generating one long composited screenshot; scroll requests are coalesced at the UI control owner.
 - The protected render endpoint now forwards only the encrypted Laravel session cookie instead of the full browser cookie jar. The renderer exposes an internal health endpoint; its Docker image checks it for actual startup readiness. Lazy images exposed by a scroll are allowed to finish before the screenshot.
 - Still pending genuine runtime checks: `php -l`, Node syntax/build, Docker Compose build/start, Playwright Chromium/WebKit/Firefox screenshot output, authenticated session handoff and browser visual parity. Do not describe a code commit as runtime completion.
+
+## Browser snapshot handoff correction — 2026-11-18
+
+- A focused post-commit source check detected that the earlier screenshot scroll payload and response headers had not survived the later security/health renderer revision. The controller and renderer now both accept and validate scroll offsets, retain the session-cookie-only boundary and renderer health check, and return actual scroll range/position to the shared preview client. Verified all three source owners expose the same request/response fields; runtime acceptance is still outstanding.

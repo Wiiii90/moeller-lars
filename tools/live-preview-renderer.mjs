@@ -83,6 +83,9 @@ async function render(payload, cookieHeader) {
         || payload.path.includes('..') || payload.path.includes('//')
         || /[%?#\\]/.test(payload.path)) throw new Error('Invalid protected preview path.');
 
+    if (!Number.isInteger(payload.scrollY) || payload.scrollY < 0 || payload.scrollY > 150000) {
+        throw new Error('Invalid screenshot scroll position.');
+    }
     const viewport = viewportFor(payload);
     const browser = await browserFor(payload.engine);
     const phone = viewport.platform === 'ios' || viewport.platform === 'android';
@@ -142,10 +145,20 @@ async function render(payload, cookieHeader) {
             await page.addStyleTag({ content: 'html, body { scrollbar-width: none; } html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }' }).catch(() => {});
         }
 
-        const overflow = await page.evaluate(() =>
-            Math.max(document.documentElement.scrollWidth, document.body.scrollWidth)
-                > document.documentElement.clientWidth + 1,
-        );
+        // Keep the same logical viewport at every scroll position: a full-page
+        // composite would misrepresent sticky navigation and screen boundaries.
+        const metrics = await page.evaluate((requestedY) => {
+            const root = document.documentElement;
+            const maximum = Math.max(0, root.scrollHeight - root.clientHeight);
+            window.scrollTo(0, Math.min(requestedY, maximum));
+            return {
+                overflow: Math.max(root.scrollWidth, document.body.scrollWidth)
+                    > root.clientWidth + 1,
+                maxY: maximum,
+                currentY: window.scrollY,
+            };
+        }, payload.scrollY);
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
         // A viewport scroll can activate lazy-loaded artwork images.
         await page.waitForFunction(() => [...document.images]
             .filter((img) => {
@@ -157,7 +170,7 @@ async function render(payload, cookieHeader) {
             type: 'png', scale: 'css', animations: 'disabled',
             timeout: 10000,
         });
-        return { png, overflow };
+        return { png, overflow: metrics.overflow, maxY: metrics.maxY, currentY: metrics.currentY };
     } finally {
         await context.close();
     }
@@ -189,6 +202,8 @@ createServer(async (req, res) => {
             'Content-Type': 'image/png',
             'Cache-Control': 'private, no-store',
             'X-Preview-Overflow-X': result.overflow ? '1' : '0',
+            'X-Preview-Scroll-Max': String(result.maxY),
+            'X-Preview-Scroll-Y': String(result.currentY),
             'X-Content-Type-Options': 'nosniff',
         });
         res.end(result.png);

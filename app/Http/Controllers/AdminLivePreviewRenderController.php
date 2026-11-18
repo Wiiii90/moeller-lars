@@ -22,6 +22,7 @@ final class AdminLivePreviewRenderController
             'profile' => ['required', 'string', Rule::in(array_keys(PreviewDeviceProfiles::all()))],
             'orientation' => ['required', Rule::in(['default', 'rotated'])],
             'engine' => ['required', Rule::in(['chromium', 'webkit', 'firefox'])],
+            'scroll_y' => ['sometimes', 'integer', 'min:0', 'max:150000'],
         ]);
 
         // Never allow the browser-facing request to select a host, port or
@@ -69,6 +70,7 @@ final class AdminLivePreviewRenderController
                     'engine' => $input['engine'],
                     'device' => $profile,
                     'orientation' => $input['orientation'],
+                    'scrollY' => (int) ($input['scroll_y'] ?? 0),
                 ]);
         } catch (Throwable $exception) {
             report($exception);
@@ -85,6 +87,8 @@ final class AdminLivePreviewRenderController
             'Cache-Control' => 'private, no-store, max-age=0',
             'X-Robots-Tag' => 'noindex, nofollow, noarchive',
             'X-Preview-Overflow-X' => (string) $render->header('X-Preview-Overflow-X', '0'),
+            'X-Preview-Scroll-Max' => (string) $render->header('X-Preview-Scroll-Max', '0'),
+            'X-Preview-Scroll-Y' => (string) $render->header('X-Preview-Scroll-Y', '0'),
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }
