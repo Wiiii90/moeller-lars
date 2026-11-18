@@ -41,11 +41,17 @@ final class HomeHeroConfigurationService
 
     public const WEIGHT_TOTAL = 10000;
 
-    public const SOURCE_RULES = ArtworkSort::SOURCE_RULES;
+    public const SOURCE_RULES = [
+        ...ArtworkSort::SOURCE_RULES,
+        'gallery_newest_media_added' => 'Gallery Order: Newest Media',
+        'gallery_newest_artwork' => 'Gallery Order: Newest Artwork',
+        'gallery_oldest_media_added' => 'Gallery Order: Oldest Media',
+        'gallery_oldest_artwork' => 'Gallery Order: Oldest Artwork',
+    ];
 
     public const SELECTION_MODES = [
-        'global' => 'Global',
-        'one_per_gallery' => 'One per Gallery',
+        'global' => 'Total',
+        'per_gallery' => 'Per Gallery',
     ];
 
     /** @var array{count:int,unit:string} */
@@ -64,13 +70,11 @@ final class HomeHeroConfigurationService
      *
      * @return array{
      *     group_source:string,
-     *     manual_group_enabled:bool,
+     *     dummy_galleries:list<array<string,mixed>>,
      *     disabled_auto_artwork_ids:list<int>,
      *     sourced_weights:array<string,int>,
-     *     sourced_order:list<string>,
+     *     source_order:list<int>,
      *     display_strategy:string,
-     *     manual_group:list<array{artwork_id?:int,media_asset_id?:int,weight:int,enabled:bool}>,
-     *     manual_group_count:int,
      *     rotation_interval:array{count:int,unit:string},
      *     rotation_started_at:?string,
      *     source_rule:string,
@@ -106,7 +110,7 @@ final class HomeHeroConfigurationService
         return [
             'group_source' => $selectedSource,
             ...$profile,
-            'manual_group_count' => count($profile['manual_group']),
+            'dummy_galleries' => $this->readDummyGalleries($artwork),
             'show_details' => (bool) ($artwork['show_details'] ?? true),
             'show_gallery_link' => (bool) ($artwork['show_gallery_link'] ?? false),
             'show_navigation' => (bool) ($artwork['show_navigation'] ?? false),
@@ -131,9 +135,9 @@ final class HomeHeroConfigurationService
     }
 
     /**
-     * The stored profiles have exactly one owner per Source. Prior root-level
-     * settings are legitimate saved data and seed each profile once; an empty
-     * saved profile (including an empty Manual list) always wins thereafter.
+     * Source profiles own their independent ranking, candidate amount,
+     * display, weights and rotation. Dummy Gallery membership is shared
+     * Home content, independent of the currently active source mode.
      *
      * @param array<string,mixed> $artwork
      * @return array<string,mixed>
@@ -151,35 +155,28 @@ final class HomeHeroConfigurationService
             $strategy = $legacySelection === 'random' ? 'random' : 'ordered';
         }
 
-        $manual = $mode === 'automatic' ? [] : $this->readManualGroup($source['manual_group'] ?? null);
-        $legacyFixed = $this->nullablePositiveInt($artwork['fixed_artwork_id'] ?? null);
-        if ($mode !== 'automatic' && $manual === [] && ! array_key_exists('manual_group', $stored)
-            && $legacyFixed !== null && in_array($legacyMode, ['fixed', 'manual'], true)) {
-            $manual = [['artwork_id' => $legacyFixed, 'weight' => self::WEIGHT_TOTAL, 'enabled' => true]];
-        }
         $legacyRule = ($artwork['newest_by'] ?? null) === 'added' ? 'newest_media_added' : 'newest_artwork';
         return [
             'display_strategy' => $strategy,
             'rotation_interval' => $this->readRotationInterval($source['rotation_interval'] ?? null),
             'rotation_started_at' => $this->readRotationStartedAt($source['rotation_started_at'] ?? null),
             'source_rule' => $this->enum($source['source_rule'] ?? null, array_keys(self::SOURCE_RULES), $legacyRule),
-            'selection_mode' => $mode === 'manual' ? 'global' : $this->enum(
-                $source['selection_mode'] ?? null, array_keys(self::SELECTION_MODES), 'global',
-            ),
-            'group_size' => $this->boundedGroupSize($source['group_size'] ?? null),
-            'manual_group' => $manual,
-            'manual_group_enabled' => $mode === 'semi_automatic' ? (bool) ($source['manual_group_enabled'] ?? true) : $mode === 'manual',
+            'selection_mode' => ($source['selection_mode'] ?? null) === 'one_per_gallery'
+                ? 'per_gallery' : $this->enum(
+                    $source['selection_mode'] ?? null, array_keys(self::SELECTION_MODES), 'global',
+                ),
+            'group_size' => ($source['selection_mode'] ?? null) === 'one_per_gallery'
+                ? 1 : $this->boundedGroupSize($source['group_size'] ?? null),
             'disabled_auto_artwork_ids' => $mode !== 'manual'
                 ? $this->readDisabledAutoArtworkIds($source['disabled_auto_artwork_ids'] ?? []) : [],
-            'sourced_weights' => $mode === 'manual' ? [] : $this->readSourcedWeights($source['sourced_weights'] ?? []),
-            'sourced_order' => $mode === 'semi_automatic' ? $this->readSourcedOrder($source['sourced_order'] ?? []) : [],
+            'sourced_weights' => $this->readSourcedWeights($source['sourced_weights'] ?? []),
+            'source_order' => $this->readSourceOrder($source['source_order'] ?? []),
         ];
     }
 
     /**
-     * Persist only fields that actually belong to the corresponding mode.
-     * This is one canonical profile map with independent stored Manual and
-     * Semi-Automatic candidates, never parallel root-level state.
+     * Persist one source profile per mode, while Dummy Galleries are a
+     * shared Home Artwork collection consumed by Manual and Semi-Automatic.
      *
      * @param array<string,mixed> $artwork
      * @return array<string,array<string,mixed>>
@@ -194,19 +191,13 @@ final class HomeHeroConfigurationService
                 'rotation_interval' => $profile['rotation_interval'],
                 'rotation_started_at' => $profile['rotation_started_at'],
             ];
+            $profiles[$mode]['source_rule'] = $profile['source_rule'];
+            $profiles[$mode]['selection_mode'] = $profile['selection_mode'];
+            $profiles[$mode]['group_size'] = $profile['group_size'];
+            $profiles[$mode]['source_order'] = $profile['source_order'];
+            $profiles[$mode]['sourced_weights'] = $profile['sourced_weights'];
             if ($mode !== 'manual') {
-                $profiles[$mode]['source_rule'] = $profile['source_rule'];
-                $profiles[$mode]['selection_mode'] = $profile['selection_mode'];
-                $profiles[$mode]['group_size'] = $profile['group_size'];
-                $profiles[$mode]['sourced_weights'] = $profile['sourced_weights'];
                 $profiles[$mode]['disabled_auto_artwork_ids'] = $profile['disabled_auto_artwork_ids'];
-            }
-            if ($mode !== 'automatic') {
-                $profiles[$mode]['manual_group'] = $profile['manual_group'];
-            }
-            if ($mode === 'semi_automatic') {
-                $profiles[$mode]['manual_group_enabled'] = $profile['manual_group_enabled'];
-                $profiles[$mode]['sourced_order'] = $profile['sourced_order'];
             }
         }
         return $profiles;
@@ -229,16 +220,12 @@ final class HomeHeroConfigurationService
             $groupSource = $this->requestedGroupSource($input, $current['group_source']);
             $profile = $this->configuration($fresh, $groupSource);
 
-            $manualGroupEnabled = (bool) ($input['manual_group_enabled'] ?? $profile['manual_group_enabled']);
             $disabledAutoIds = array_key_exists('disabled_auto_artwork_ids', $input)
                 ? $this->validatedDisabledAutoArtworkIds($input['disabled_auto_artwork_ids'])
                 : $profile['disabled_auto_artwork_ids'];
             $sourcedWeights = array_key_exists('sourced_weights', $input)
                 ? $this->validatedSourcedWeights($input['sourced_weights'])
                 : $profile['sourced_weights'];
-            $sourcedOrder = array_key_exists('sourced_order', $input)
-                ? $this->validatedSourcedOrder($input['sourced_order'])
-                : $profile['sourced_order'];
             $displayStrategy = $this->requestedDisplayStrategy($input, $profile['display_strategy']);
             $sourceRule = $this->enum(
                 $input['source_rule'] ?? $profile['source_rule'],
@@ -251,9 +238,15 @@ final class HomeHeroConfigurationService
                 $profile['selection_mode'],
             );
             $groupSize = $this->validatedGroupSize($input['group_size'] ?? $profile['group_size']);
-            $manualGroup = array_key_exists('manual_group', $input)
-                ? $this->normalizeManualGroup($input['manual_group'])
-                : $profile['manual_group'];
+            $sourceOrder = array_key_exists('source_order', $input)
+                ? $this->validatedSourceOrder($input['source_order'])
+                : $profile['source_order'];
+            $rootBefore = $fresh->configuration();
+            $artworkBefore = is_array($rootBefore[HomeTemplate::Artwork->value] ?? null)
+                ? $rootBefore[HomeTemplate::Artwork->value] : [];
+            $dummyGalleries = array_key_exists('dummy_galleries', $input)
+                ? $this->validatedDummyGalleries($input['dummy_galleries'])
+                : $this->readDummyGalleries($artworkBefore);
             $rotationInterval = $this->requestedRotationInterval($input, $profile['rotation_interval']);
             $rotationStartedAt = $profile['rotation_started_at'];
 
@@ -278,20 +271,18 @@ final class HomeHeroConfigurationService
                 $current['caption_layout'],
             );
 
-            $manualSequenceChanged = $this->manualGroupKeys($manualGroup) !== $this->manualGroupKeys($profile['manual_group'])
-                || array_map(static fn (array $member): bool => $member['enabled'], $manualGroup)
-                    !== array_map(static fn (array $member): bool => $member['enabled'], $profile['manual_group']);
-            $sourcedOrderChanged = $sourcedOrder !== $profile['sourced_order'];
+            $sourceOrderChanged = $sourceOrder !== $profile['source_order'];
+            $dummyGalleriesChanged = $dummyGalleries !== $current['dummy_galleries'];
             $intervalChanged = $rotationInterval !== $profile['rotation_interval'];
             $strategyChanged = $displayStrategy !== $profile['display_strategy'];
-            $automaticGroupDefinitionChanged = $groupSource !== 'manual'
-                && ($groupSize !== $profile['group_size'] || $sourceRule !== $profile['source_rule']
-                    || $selectionMode !== $profile['selection_mode']
-                    || $disabledAutoIds !== $profile['disabled_auto_artwork_ids']
-                    || $manualGroupEnabled !== $profile['manual_group_enabled']);
+            $automaticGroupDefinitionChanged = $groupSize !== $profile['group_size']
+                || $sourceRule !== $profile['source_rule']
+                || $selectionMode !== $profile['selection_mode']
+                || $disabledAutoIds !== $profile['disabled_auto_artwork_ids']
+                || $dummyGalleriesChanged;
             if ($displayStrategy === 'sequential'
-                && ($rotationStartedAt === null || $manualSequenceChanged || $intervalChanged
-                    || $strategyChanged || $automaticGroupDefinitionChanged || $sourcedOrderChanged)) {
+                && ($rotationStartedAt === null || $intervalChanged
+                    || $strategyChanged || $automaticGroupDefinitionChanged || $sourceOrderChanged)) {
                 $rotationStartedAt = CarbonImmutable::now('UTC')->toIso8601String();
             }
 
@@ -302,19 +293,13 @@ final class HomeHeroConfigurationService
             $profiles[$groupSource]['display_strategy'] = $displayStrategy;
             $profiles[$groupSource]['rotation_interval'] = $rotationInterval;
             $profiles[$groupSource]['rotation_started_at'] = $rotationStartedAt;
+            $profiles[$groupSource]['source_rule'] = $sourceRule;
+            $profiles[$groupSource]['selection_mode'] = $selectionMode;
+            $profiles[$groupSource]['group_size'] = $groupSize;
+            $profiles[$groupSource]['source_order'] = $sourceOrder;
+            $profiles[$groupSource]['sourced_weights'] = $sourcedWeights;
             if ($groupSource !== 'manual') {
-                $profiles[$groupSource]['source_rule'] = $sourceRule;
-                $profiles[$groupSource]['selection_mode'] = $selectionMode;
-                $profiles[$groupSource]['group_size'] = $groupSize;
-                $profiles[$groupSource]['sourced_weights'] = $sourcedWeights;
                 $profiles[$groupSource]['disabled_auto_artwork_ids'] = $disabledAutoIds;
-            }
-            if ($groupSource !== 'automatic') {
-                $profiles[$groupSource]['manual_group'] = $manualGroup;
-            }
-            if ($groupSource === 'semi_automatic') {
-                $profiles[$groupSource]['manual_group_enabled'] = $manualGroupEnabled;
-                $profiles[$groupSource]['sourced_order'] = $sourcedOrder;
             }
 
             $artwork['show_details'] = $showDetails;
@@ -331,6 +316,7 @@ final class HomeHeroConfigurationService
             $artwork['caption_layout'] = $captionLayout;
             $artwork['group_source'] = $groupSource;
             $artwork['source_profiles'] = $profiles;
+            $artwork['dummy_galleries'] = $dummyGalleries;
             unset(
                 $artwork['manual_group'], $artwork['sourced_weights'],
                 $artwork['manual_group_enabled'], $artwork['disabled_auto_artwork_ids'],
@@ -376,214 +362,342 @@ final class HomeHeroConfigurationService
         });
     }
 
-    /** Add one eligible Storage member to the current source profile. */
-    public function addCandidate(HomePresentationSetting $settings, int $mediaAssetId): bool
+    /**
+     * Home-only Dummy Galleries are source groups, not public Gallery models.
+     * Their member identities stay canonical Artwork/Storage references.
+     * The stored JSON belongs to the Home Artwork configuration and follows
+     * its publication, audit and revision semantics.
+     *
+     * @return list<array{id:int,name:string,enabled:bool,members:list<array<string,mixed>>}>
+     */
+    private function readDummyGalleries(array $artwork): array
     {
-        $asset = $mediaAssetId > 0
-            ? MediaAsset::query()->with('variants')->find($mediaAssetId)
-            : null;
-        if (! $asset instanceof MediaAsset || ! HomeHeroCandidate::mediaIsEligible($asset)) {
-            throw ValidationException::withMessages([
-                'pending_media_asset_id' => 'Choose an available image with a public preview and ALT text, or an available video with ALT text.',
-            ]);
+        if (array_key_exists('dummy_galleries', $artwork)) {
+            return $this->normalizeDummyGalleries($artwork['dummy_galleries'], false);
         }
 
-        $current = $this->configuration($settings->fresh());
-        if ($current['group_source'] === 'automatic') {
-            throw ValidationException::withMessages([
-                'pending_media_asset_id' => 'Switch to Semi-Automatic or Manual before editing this group.',
-            ]);
+        // One-time persisted-data bridge: previously saved Manual and
+        // Semi-Automatic members become one Dummy Gallery without duplication.
+        $profiles = is_array($artwork['source_profiles'] ?? null) ? $artwork['source_profiles'] : [];
+        $manual = $this->readManualGroup($profiles['manual']['manual_group'] ?? $artwork['manual_group'] ?? []);
+        if ($manual === [] && is_numeric($artwork['fixed_artwork_id'] ?? null)
+            && (int) $artwork['fixed_artwork_id'] > 0) {
+            $manual[] = ['artwork_id' => (int) $artwork['fixed_artwork_id'], 'weight' => self::WEIGHT_TOTAL, 'enabled' => true];
         }
-
-        $group = $current['manual_group'];
-        if (count($group) >= self::MAX_GROUP_SIZE) {
-            throw ValidationException::withMessages([
-                'pending_media_asset_id' => 'The Hero group cannot exceed '.self::MAX_GROUP_SIZE.' manually selected candidates.',
-            ]);
+        $semi = $this->readManualGroup($profiles['semi_automatic']['manual_group'] ?? []);
+        $members = [];
+        $seen = [];
+        foreach ([...$manual, ...$semi] as $member) {
+            $key = self::memberKey($member);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $members[] = $member;
         }
-        if (in_array('media:'.$mediaAssetId, $this->manualGroupKeys($group), true)) {
-            throw ValidationException::withMessages([
-                'pending_media_asset_id' => 'That Media File is already in the group.',
-            ]);
+        if ($members === []) {
+            return [];
         }
-
-        $enabledIndices = array_keys(array_filter(
-            $group, static fn (array $entry): bool => $entry['enabled'],
-        ));
-        $weight = intdiv(self::WEIGHT_TOTAL, count($enabledIndices) + 1);
-        $scaled = $this->allocateBudget(
-            array_map(static fn (int $index): int => $group[$index]['weight'], $enabledIndices),
-            self::WEIGHT_TOTAL - $weight,
-        );
-        foreach ($enabledIndices as $offset => $index) {
-            $group[$index]['weight'] = $scaled[$offset];
-        }
-        $group[] = ['media_asset_id' => $mediaAssetId, 'weight' => $weight, 'enabled' => true];
-
-        return $this->updateArtworkSettings($settings, ['manual_group' => $group]);
+        return [[
+            'id' => -1,
+            'name' => 'Imported Artworks',
+            'enabled' => true,
+            'members' => $members,
+        ]];
     }
 
-    public function removeCandidate(HomePresentationSetting $settings, string $key): bool
+    /** @return list<array<string,mixed>> */
+    private function normalizeDummyGalleries(mixed $value, bool $strict): array
     {
-        $current = $this->configuration($settings->fresh());
-        $group = $current['manual_group'];
-        $index = array_search($key, $this->manualGroupKeys($group), true);
-        if ($index === false) {
-            throw ValidationException::withMessages(['candidate' => 'This candidate is not in the selected group.']);
+        if (! is_array($value) || ! array_is_list($value) || count($value) > 250) {
+            if ($strict) {
+                throw ValidationException::withMessages(['dummy_galleries' => 'Choose a valid list of Dummy Galleries.']);
+            }
+            return [];
         }
-        array_splice($group, $index, 1);
-        if ($group !== []) {
-            $group = $this->normalizeManualGroup($group);
+        $galleries = [];
+        $seenIds = [];
+        foreach ($value as $group) {
+            if (! is_array($group)) {
+                if ($strict) {
+                    throw ValidationException::withMessages(['dummy_galleries' => 'Invalid Dummy Gallery.']);
+                }
+                continue;
+            }
+            $id = filter_var($group['id'] ?? null, FILTER_VALIDATE_INT);
+            $name = is_string($group['name'] ?? null) ? trim($group['name']) : '';
+            $enabled = $group['enabled'] ?? true;
+            $members = $group['members'] ?? [];
+            if ($id === false || $id >= 0 || isset($seenIds[$id]) || $name === ''
+                || mb_strlen($name) > 100 || ! is_bool($enabled) || ! is_array($members)
+                || ! array_is_list($members) || count($members) > 250) {
+                if ($strict) {
+                    throw ValidationException::withMessages(['dummy_galleries' => 'Invalid Dummy Gallery name, ID or members.']);
+                }
+                continue;
+            }
+            $seenIds[$id] = true;
+            $normalizedMembers = [];
+            $seenMembers = [];
+            foreach ($members as $member) {
+                $identity = is_array($member) ? $this->memberIdentity($member) : null;
+                $memberEnabled = is_array($member) ? ($member['enabled'] ?? true) : null;
+                $key = $identity === null ? null : self::memberKey($identity);
+                $title = is_array($member) && is_string($member['title'] ?? null)
+                    ? trim($member['title']) : null;
+                $year = is_array($member) ? $this->datePart($member['year'] ?? null, 1, 9999) : null;
+                $month = is_array($member) ? $this->datePart($member['month'] ?? null, 1, 12) : null;
+                $day = is_array($member) ? $this->datePart($member['day'] ?? null, 1, 31) : null;
+                $rawYear = is_array($member) ? ($member['year'] ?? null) : null;
+                $rawMonth = is_array($member) ? ($member['month'] ?? null) : null;
+                $rawDay = is_array($member) ? ($member['day'] ?? null) : null;
+                $invalidDate = ($rawYear !== null && $rawYear !== '' && $year === null)
+                    || ($rawMonth !== null && $rawMonth !== '' && $month === null)
+                    || ($rawDay !== null && $rawDay !== '' && $day === null)
+                    || ($month !== null && $year === null)
+                    || ($day !== null && $month === null)
+                    || ($day !== null && ! checkdate($month, $day, $year));
+                if ($key === null || isset($seenMembers[$key]) || ! is_bool($memberEnabled)
+                    || ($title !== null && mb_strlen($title) > 255) || $invalidDate) {
+                    if ($strict) {
+                        throw ValidationException::withMessages(['dummy_galleries' => 'Duplicate or invalid Dummy Gallery candidate.']);
+                    }
+                    continue;
+                }
+                $seenMembers[$key] = true;
+                $normalizedMembers[] = [
+                    ...$identity,
+                    'enabled' => $memberEnabled,
+                    'title' => $title,
+                    'year' => $year,
+                    'month' => $month,
+                    'day' => $day,
+                ];
+            }
+            $galleries[] = ['id' => $id, 'name' => $name, 'enabled' => $enabled, 'members' => $normalizedMembers];
         }
-
-        return $this->updateArtworkSettings($settings, ['manual_group' => $group]);
+        return $galleries;
     }
 
-    /** Enable or disable a stored member without dropping its order, media reference or weight. */
-    public function setManualCandidateEnabled(HomePresentationSetting $settings, string $key, bool $enabled): bool
+    private function datePart(mixed $value, int $min, int $max): ?int
     {
-        return DB::transaction(function () use ($settings, $key, $enabled): bool {
-            /** @var HomePresentationSetting $fresh */
+        if ($value === null || $value === '') {
+            return null;
+        }
+        $part = filter_var($value, FILTER_VALIDATE_INT);
+        return $part === false || $part < $min || $part > $max ? null : $part;
+    }
+
+    /** @return list<array<string,mixed>> */
+    private function validatedDummyGalleries(mixed $value): array
+    {
+        return $this->normalizeDummyGalleries($value, true);
+    }
+
+    /** @param list<array<string,mixed>> $members */
+    public function createDummyGallery(HomePresentationSetting $settings, string $name, array $members = []): int
+    {
+        return DB::transaction(function () use ($settings, $name, $members): int {
             $fresh = HomePresentationSetting::query()->whereKey($settings->getKey())
                 ->lockForUpdate()->firstOrFail();
-            $current = $this->configuration($fresh);
-            if ($current['group_source'] === 'automatic') {
-                throw ValidationException::withMessages(['candidate' => 'Manual candidates belong to Manual or Semi-Automatic.']);
-            }
-            $group = $current['manual_group'];
-            $index = array_search($key, $this->manualGroupKeys($group), true);
-            if ($index === false) {
-                throw ValidationException::withMessages(['candidate' => 'This candidate is no longer in the Manual group.']);
-            }
-            if ($group[$index]['enabled'] === $enabled) {
-                return false;
-            }
-            $group[$index]['enabled'] = $enabled;
-
-            return $this->updateArtworkSettings($fresh, ['manual_group' => $group]);
+            $galleries = $this->configuration($fresh)['dummy_galleries'];
+            $id = min(0, ...array_column($galleries, 'id')) - 1;
+            $galleries[] = ['id' => $id, 'name' => trim($name), 'enabled' => true, 'members' => $members];
+            $this->updateArtworkSettings($fresh, ['dummy_galleries' => $galleries]);
+            return $id;
         });
     }
 
-    /** @param list<string> $keys */
-    public function reorderManualGroup(HomePresentationSetting $settings, array $keys): bool
+    /** @param array<string,mixed> $changes */
+    public function updateDummyGallery(HomePresentationSetting $settings, int $id, array $changes): bool
     {
-        $current = $this->configuration($settings->fresh());
-        $group = $current['manual_group'];
-        $expected = $this->manualGroupKeys($group);
-        if (count($keys) !== count(array_unique($keys))) {
-            throw ValidationException::withMessages(['candidate' => 'Home group order contains duplicates.']);
-        }
-
-        $left = $expected;
-        $right = $keys;
-        sort($left);
-        sort($right);
-        if ($left !== $right) {
-            throw ValidationException::withMessages(['candidate' => 'Home group order has changed. Reload and try again.']);
-        }
-        $byKey = [];
-        foreach ($group as $member) {
-            $byKey[self::memberKey($member)] = $member;
-        }
-
-        return $this->updateArtworkSettings(
-            $settings,
-            ['manual_group' => array_map(static fn (string $key): array => $byKey[$key], $keys)],
-            ['before' => $expected, 'after' => $keys],
-        );
+        return DB::transaction(function () use ($settings, $id, $changes): bool {
+            $fresh = HomePresentationSetting::query()->whereKey($settings->getKey())
+                ->lockForUpdate()->firstOrFail();
+            $galleries = $this->configuration($fresh)['dummy_galleries'];
+            foreach ($galleries as &$gallery) {
+                if ($gallery['id'] !== $id) {
+                    continue;
+                }
+                foreach (['name', 'enabled', 'members'] as $key) {
+                    if (array_key_exists($key, $changes)) {
+                        $gallery[$key] = $changes[$key];
+                    }
+                }
+                unset($gallery);
+                return $this->updateArtworkSettings($fresh, ['dummy_galleries' => $galleries]);
+            }
+            throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+        });
     }
 
-    /**
-     * Semi-Automatic keeps the selected/sourced membership independent from
-     * its user-authored ranking. Disabled Manual members retain their place.
-     * @param list<string> $keys
-     */
-    public function reorderSourcedGroup(HomePresentationSetting $settings, array $keys): bool
+    public function removeDummyGallery(HomePresentationSetting $settings, int $id): bool
     {
-        $fresh = $settings->fresh();
-        $configuration = $this->configuration($fresh);
-        if ($configuration['group_source'] !== 'semi_automatic') {
-            throw ValidationException::withMessages(['candidate' => 'Only Semi-Automatic has a mixed candidate ranking.']);
-        }
-
-        $manualKeys = $configuration['manual_group_enabled']
-            ? array_map(self::memberKey(...), $configuration['manual_group'])
-            : [];
-        $resolved = app(HomeHeroResolver::class)->resolve($fresh);
-        $activeKeys = $resolved['group']->map(
-            static fn (HomeHeroCandidate $candidate): string => $candidate->key(),
-        )->all();
-        $before = $this->rankSourcedKeys(
-            array_values(array_unique([...$manualKeys, ...$activeKeys])),
-            $configuration['sourced_order'],
-        );
-        if ($keys === $before) {
-            return false;
-        }
-        if (! array_is_list($keys) || count($keys) !== count(array_unique($keys))) {
-            throw ValidationException::withMessages(['candidate' => 'The Hero candidate order contains duplicates.']);
-        }
-        $left = $before;
-        $right = $keys;
-        sort($left);
-        sort($right);
-        if ($left !== $right) {
-            throw ValidationException::withMessages(['candidate' => 'The Hero candidates changed. Reload and try again.']);
-        }
-
-        // Replace only the currently visible rank slots. Inactive source
-        // members retain their saved places for when the source is enabled
-        // again; newly sourced members follow the existing saved slots.
-        $visible = array_fill_keys($before, true);
-        $stored = [];
-        $index = 0;
-        foreach ($configuration['sourced_order'] as $key) {
-            $stored[] = isset($visible[$key]) ? $keys[$index++] : $key;
-        }
-        foreach (array_slice($keys, $index) as $key) {
-            $stored[] = $key;
-        }
-
-        return $this->updateArtworkSettings(
-            $fresh,
-            ['sourced_order' => $stored],
-            ['before' => $before, 'after' => $keys],
-        );
+        $galleries = $this->configuration($settings)['dummy_galleries'];
+        $remaining = array_values(array_filter($galleries, static fn (array $gallery): bool => $gallery['id'] !== $id));
+        return count($remaining) === count($galleries) ? false
+            : $this->updateArtworkSettings($settings, ['dummy_galleries' => $remaining]);
     }
 
-    /**
-     * Apply saved rank to the current source membership; newly sourced
-     * candidates follow known ranks, preserving the incoming source order.
-     * @param list<string> $keys
-     * @param list<string> $savedOrder
-     * @return list<string>
-     */
-    public function rankSourcedKeys(array $keys, array $savedOrder): array
+    public function addDummyMedia(HomePresentationSetting $settings, int $galleryId, int $mediaAssetId): bool
     {
-        $available = array_fill_keys($keys, true);
-        $ordered = [];
-        foreach ([...$savedOrder, ...$keys] as $key) {
-            if (! isset($available[$key])) {
+        $asset = MediaAsset::query()->with('variants')->find($mediaAssetId);
+        if (! $asset instanceof MediaAsset || ! HomeHeroCandidate::mediaIsEligible($asset)) {
+            throw ValidationException::withMessages(['pending_media_asset_id' => 'Choose an eligible image or video from Storage.']);
+        }
+        $galleries = $this->configuration($settings)['dummy_galleries'];
+        foreach ($galleries as &$gallery) {
+            if ($gallery['id'] !== $galleryId) {
                 continue;
             }
-            unset($available[$key]);
-            $ordered[] = $key;
+            $gallery['members'][] = [
+                'media_asset_id' => $mediaAssetId, 'enabled' => true,
+                'title' => (string) $asset->getAttribute('original_filename'),
+                'year' => null, 'month' => null, 'day' => null,
+            ];
+            unset($gallery);
+            return $this->updateArtworkSettings($settings, ['dummy_galleries' => $galleries]);
         }
-
-        return $ordered;
+        throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
     }
 
-    /** @param Collection<int,HomeHeroCandidate> $group
-     * @param list<string> $savedOrder
-     * @return Collection<int,HomeHeroCandidate>
-     */
-    public function rankSourcedCandidates(Collection $group, array $savedOrder): Collection
+    public function setDummyMemberEnabled(HomePresentationSetting $settings, int $galleryId, string $key, bool $enabled): bool
     {
-        $byKey = $group->keyBy(static fn (HomeHeroCandidate $candidate): string => $candidate->key());
+        $galleries = $this->configuration($settings)['dummy_galleries'];
+        foreach ($galleries as &$gallery) {
+            if ($gallery['id'] !== $galleryId) {
+                continue;
+            }
+            foreach ($gallery['members'] as &$member) {
+                if (self::memberKey($member) !== $key) {
+                    continue;
+                }
+                if ($member['enabled'] === $enabled) {
+                    return false;
+                }
+                $member['enabled'] = $enabled;
+                unset($member, $gallery);
+                return $this->updateArtworkSettings($settings, ['dummy_galleries' => $galleries]);
+            }
+            unset($gallery);
+            throw ValidationException::withMessages(['candidate' => 'Dummy Gallery member no longer exists.']);
+        }
+        throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+    }
 
-        return collect($this->rankSourcedKeys($byKey->keys()->all(), $savedOrder))
-            ->map(static fn (string $key): HomeHeroCandidate => $byKey->get($key))
-            ->values();
+    public function updateDummyMember(HomePresentationSetting $settings, int $galleryId, string $key, array $changes): bool
+    {
+        $galleries = $this->configuration($settings)['dummy_galleries'];
+        foreach ($galleries as &$gallery) {
+            if ($gallery['id'] !== $galleryId) {
+                continue;
+            }
+            foreach ($gallery['members'] as &$member) {
+                if (self::memberKey($member) !== $key) {
+                    continue;
+                }
+                foreach (['title', 'year', 'month', 'day'] as $field) {
+                    if (array_key_exists($field, $changes)) {
+                        if (! isset($member['media_asset_id'])) {
+                            throw ValidationException::withMessages(['candidate' => 'Existing Artwork metadata is edited in its Artwork editor.']);
+                        }
+                        $member[$field] = $changes[$field];
+                    }
+                }
+                unset($member, $gallery);
+                return $this->updateArtworkSettings($settings, ['dummy_galleries' => $galleries]);
+            }
+            unset($gallery);
+            throw ValidationException::withMessages(['candidate' => 'Dummy Gallery member no longer exists.']);
+        }
+        throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+    }
+
+    public function addDummyArtwork(HomePresentationSetting $settings, int $galleryId, int $artworkId): bool
+    {
+        $artwork = app(\App\Domain\Artwork\PublicArtworkQuery::class)->homeCandidatesByIds([$artworkId])->first();
+        if (! $artwork instanceof \App\Models\Artwork) {
+            throw ValidationException::withMessages(['pending_artwork_id' => 'Choose an eligible Artwork.']);
+        }
+        $galleries = $this->configuration($settings)['dummy_galleries'];
+        foreach ($galleries as &$gallery) {
+            if ($gallery['id'] !== $galleryId) {
+                continue;
+            }
+            $gallery['members'][] = ['artwork_id' => $artworkId, 'enabled' => true];
+            unset($gallery);
+            return $this->updateArtworkSettings($settings, ['dummy_galleries' => $galleries]);
+        }
+        throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+    }
+
+    public function removeDummyMember(HomePresentationSetting $settings, int $galleryId, string $key): bool
+    {
+        $galleries = $this->configuration($settings)['dummy_galleries'];
+        foreach ($galleries as &$gallery) {
+            if ($gallery['id'] !== $galleryId) {
+                continue;
+            }
+            $oldCount = count($gallery['members']);
+            $gallery['members'] = array_values(array_filter(
+                $gallery['members'],
+                static fn (array $member): bool => self::memberKey($member) !== $key,
+            ));
+            $changed = count($gallery['members']) !== $oldCount;
+            unset($gallery);
+            return $changed && $this->updateArtworkSettings($settings, ['dummy_galleries' => $galleries]);
+        }
+        throw ValidationException::withMessages(['dummy_galleries' => 'Dummy Gallery no longer exists.']);
+    }
+
+    /** @return list<int> */
+    private function readSourceOrder(mixed $value): array
+    {
+        if (! is_array($value) || ! array_is_list($value)) {
+            return [];
+        }
+        $ids = [];
+        foreach ($value as $valueId) {
+            $id = filter_var($valueId, FILTER_VALIDATE_INT);
+            if ($id !== false && $id !== 0 && ! in_array($id, $ids, true)) {
+                $ids[] = (int) $id;
+            }
+        }
+        return array_slice($ids, 0, 500);
+    }
+
+    /** @return list<int> */
+    private function validatedSourceOrder(mixed $value): array
+    {
+        $ids = $this->readSourceOrder($value);
+        if (! is_array($value) || ! array_is_list($value) || count($ids) !== count($value)) {
+            throw ValidationException::withMessages(['source_order' => 'Choose distinct, valid source Galleries.']);
+        }
+        return $ids;
+    }
+
+    public function moveSource(HomePresentationSetting $settings, int $sourceId, string $direction, array $visibleIds): bool
+    {
+        if (! in_array($direction, ['up', 'down'], true)) {
+            throw ValidationException::withMessages(['source_order' => 'Invalid Gallery movement.']);
+        }
+        $current = $this->configuration($settings);
+        $order = array_values(array_unique(array_merge(
+            array_values(array_filter($current['source_order'], static fn (int $id): bool => in_array($id, $visibleIds, true))),
+            $visibleIds,
+        )));
+        $position = array_search($sourceId, $order, true);
+        if ($position === false) {
+            throw ValidationException::withMessages(['source_order' => 'Gallery no longer in this Home source.']);
+        }
+        $target = $position + ($direction === 'up' ? -1 : 1);
+        if (! isset($order[$target])) {
+            return false;
+        }
+        [$order[$position], $order[$target]] = [$order[$target], $order[$position]];
+        return $this->updateArtworkSettings(
+            $settings, ['source_order' => $order], ['before' => $current['source_order'], 'after' => $order],
+        );
     }
 
     public function updateCandidateWeight(HomePresentationSetting $settings, string $key, int $basisPoints): bool
@@ -597,51 +711,23 @@ final class HomeHeroConfigurationService
             throw ValidationException::withMessages(['weight' => 'Hero chances can be changed only for Random strategy.']);
         }
 
-        if ($configuration['group_source'] !== 'manual') {
-            $resolution = app(HomeHeroResolver::class)->resolve($fresh);
-            $candidates = $resolution['group']->values();
-            $keys = $candidates->map(static fn (HomeHeroCandidate $candidate): string => $candidate->key())->all();
-            $target = array_search($key, $keys, true);
-            if ($target === false) {
-                throw ValidationException::withMessages(['candidate' => 'The sourced Hero candidate changed. Reload and try again.']);
-            }
-            $weights = $resolution['weights'];
-            $otherKeys = array_values(array_filter($keys, static fn (string $value): bool => $value !== $key));
-            $otherValues = array_map(static fn (string $value): int => $weights[$value] ?? 0, $otherKeys);
-            $newWeights = $configuration['sourced_weights'];
-            $newWeights[$key] = $otherKeys === [] ? self::WEIGHT_TOTAL : $basisPoints;
-            $allocated = $this->allocateBudget($otherValues, self::WEIGHT_TOTAL - $newWeights[$key]);
-            foreach ($otherKeys as $index => $otherKey) {
-                $newWeights[$otherKey] = $allocated[$index];
-            }
-
-            return $this->updateArtworkSettings($fresh, ['sourced_weights' => $newWeights]);
+        $resolution = app(HomeHeroResolver::class)->resolve($fresh);
+        $candidates = $resolution['group']->values();
+        $keys = $candidates->map(static fn (HomeHeroCandidate $candidate): string => $candidate->key())->all();
+        if (! in_array($key, $keys, true)) {
+            throw ValidationException::withMessages(['candidate' => 'The sourced Hero candidate changed. Reload and try again.']);
+        }
+        $weights = $resolution['weights'];
+        $otherKeys = array_values(array_filter($keys, static fn (string $value): bool => $value !== $key));
+        $otherValues = array_map(static fn (string $value): int => $weights[$value] ?? 0, $otherKeys);
+        $newWeights = $configuration['sourced_weights'];
+        $newWeights[$key] = $otherKeys === [] ? self::WEIGHT_TOTAL : $basisPoints;
+        $allocated = $this->allocateBudget($otherValues, self::WEIGHT_TOTAL - $newWeights[$key]);
+        foreach ($otherKeys as $index => $otherKey) {
+            $newWeights[$otherKey] = $allocated[$index];
         }
 
-        $group = $configuration['manual_group'];
-        $target = array_search($key, $this->manualGroupKeys($group), true);
-        if ($target === false) {
-            throw ValidationException::withMessages(['candidate' => 'The selected Hero candidate changed.']);
-        }
-        if (! $group[$target]['enabled']) {
-            throw ValidationException::withMessages(['weight' => 'Enable this candidate before editing its chance.']);
-        }
-        $indices = [];
-        $other = [];
-        foreach ($group as $index => $member) {
-            if ($index === $target || ! $member['enabled']) {
-                continue;
-            }
-            $indices[] = $index;
-            $other[] = $member['weight'];
-        }
-        $scaled = $this->allocateBudget($other, self::WEIGHT_TOTAL - $basisPoints);
-        foreach ($indices as $offset => $index) {
-            $group[$index]['weight'] = $scaled[$offset];
-        }
-        $group[$target]['weight'] = $basisPoints;
-
-        return $this->updateArtworkSettings($settings, ['manual_group' => $group]);
+        return $this->updateArtworkSettings($fresh, ['sourced_weights' => $newWeights]);
     }
 
     /** @return list<array{artwork_id?:int,media_asset_id?:int,weight:int,enabled:bool}> */
@@ -690,14 +776,6 @@ final class HomeHeroConfigurationService
         }
 
         return $members;
-    }
-
-    /** @param list<array<string,int>> $group
-     * @return list<string>
-     */
-    private function manualGroupKeys(array $group): array
-    {
-        return array_map(self::memberKey(...), $group);
     }
 
     /** @param array<string,mixed> $member
@@ -867,12 +945,9 @@ final class HomeHeroConfigurationService
                 $disabled = array_values(array_diff($disabled, [$artworkId]));
             } else {
                 $key = 'artwork:'.$artworkId;
-                $manualKeys = $current['manual_group_enabled']
-                    ? array_map(self::memberKey(...), $current['manual_group'])
-                    : [];
                 $active = app(HomeHeroResolver::class)->resolve($fresh)['group'];
-                if (in_array($key, $manualKeys, true)
-                    || ! $active->contains(static fn (HomeHeroCandidate $candidate): bool => $candidate->key() === $key)) {
+                if (! $active->contains(static fn (HomeHeroCandidate $candidate): bool =>
+                    $candidate->key() === $key && ($candidate->sourceId === null || $candidate->sourceId > 0))) {
                     throw ValidationException::withMessages([
                         'candidate' => 'This automatic candidate is no longer in the current Hero group.',
                     ]);
@@ -882,44 +957,6 @@ final class HomeHeroConfigurationService
 
             return $this->updateArtworkSettings($fresh, ['disabled_auto_artwork_ids' => $disabled]);
         });
-    }
-
-    /**
-     * A sourced group changes as Galleries, rules or exclusions change.
-     * Store explicit per-candidate chances, not a second source list; the
-     * resolver rebalances the active members whenever membership changes.
-     *
-     * @return array<string,int>
-     */
-    /** @return list<string> */
-    private function readSourcedOrder(mixed $value): array
-    {
-        if (! is_array($value) || ! array_is_list($value)) {
-            return [];
-        }
-
-        $keys = [];
-        foreach ($value as $key) {
-            if (is_string($key) && preg_match('/^(artwork|media):[1-9][0-9]*$/D', $key)) {
-                $keys[] = $key;
-            }
-        }
-
-        return array_values(array_unique(array_slice($keys, 0, 1000)));
-    }
-
-    /** @return list<string> */
-    private function validatedSourcedOrder(mixed $value): array
-    {
-        if (! is_array($value) || ! array_is_list($value) || count($value) > 1000) {
-            throw ValidationException::withMessages(['candidate' => 'The mixed Hero ranking is invalid.']);
-        }
-        $keys = $this->readSourcedOrder($value);
-        if (count($keys) !== count($value)) {
-            throw ValidationException::withMessages(['candidate' => 'The mixed Hero ranking contains invalid or duplicate keys.']);
-        }
-
-        return $keys;
     }
 
     private function readSourcedWeights(mixed $value): array

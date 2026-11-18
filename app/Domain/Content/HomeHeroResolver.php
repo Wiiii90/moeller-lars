@@ -35,9 +35,7 @@ final class HomeHeroResolver
         ?int $randomBasisPoint = null,
     ): array {
         $configuration = $this->configuration->configuration($settings);
-        [$group, $weights] = $configuration['group_source'] === 'manual'
-            ? $this->manualGroup($configuration)
-            : $this->automaticGroup($configuration);
+        [$group, $weights] = $this->sourceGroup($configuration);
 
         if ($group->isEmpty()) {
             return [
@@ -69,86 +67,163 @@ final class HomeHeroResolver
     /** @param array<string,mixed> $configuration
      * @return array{0:Collection<int,HomeHeroCandidate>,1:array<string,int>}
      */
-    private function manualGroup(array $configuration): array
+    private function sourceGroup(array $configuration): array
     {
-        $members = array_values(array_filter(
-            $configuration['manual_group'], static fn (array $member): bool => $member['enabled'],
+        $mode = $configuration['group_source'];
+        $perGallery = $configuration['selection_mode'] === 'per_gallery';
+        $galleryFirst = str_starts_with($configuration['source_rule'], 'gallery_');
+        $ranking = $galleryFirst ? substr($configuration['source_rule'], 8) : $configuration['source_rule'];
+        $amount = $configuration['group_size'];
+        $pools = [];
+        $names = [];
+
+        $dummyGalleries = $mode === 'automatic' ? [] : array_values(array_filter(
+            $configuration['dummy_galleries'], static fn (array $gallery): bool => $gallery['enabled'],
         ));
-        $eligible = $this->selectedCandidates($members);
-        $effective = array_values(array_filter(
-            $members,
-            static fn (array $member): bool => $eligible->contains(
-                static fn (HomeHeroCandidate $candidate): bool => $candidate->key() === HomeHeroConfigurationService::memberKey($member),
-            ),
-        ));
-        $weights = [];
-        if ($effective !== []) {
-            foreach ($this->configuration->normalizeManualGroup($effective) as $member) {
-                $weights[HomeHeroConfigurationService::memberKey($member)] = $member['weight'];
-            }
-        }
 
-        return [$eligible, $weights];
-    }
-
-    /** Read the one stored Manual group, independent of the active source mode.
-     * @return Collection<int,HomeHeroCandidate>
-     */
-    public function manualCandidates(HomePresentationSetting $settings): Collection
-    {
-        return $this->selectedCandidates($this->configuration->configuration($settings)['manual_group']);
-    }
-
-    /** @param array<string,mixed> $configuration
-     * @return array{0:Collection<int,HomeHeroCandidate>,1:array<string,int>}
-     */
-    private function automaticGroup(array $configuration): array
-    {
-        $semi = $configuration['group_source'] === 'semi_automatic';
-        $perGallery = $configuration['selection_mode'] === 'one_per_gallery';
-        $capacity = $perGallery ? HomeHeroConfigurationService::MAX_GROUP_SIZE : $configuration['group_size'];
-        $manual = $semi && $configuration['manual_group_enabled']
-            ? $this->selectedCandidates(array_values(array_filter(
-                $configuration['manual_group'], static fn (array $member): bool => $member['enabled'],
-            )))->take($capacity)->values()
-            : new Collection;
-
-        $remaining = max(0, $capacity - $manual->count());
-        $group = $manual;
-        if ($remaining > 0) {
-            $excluded = $configuration['disabled_auto_artwork_ids'];
-            // When the Manual source is active, all its saved Artwork
-            // members reserve their identity, including disabled/unavailable
-            // members. Disabling one must not silently source it again as
-            // an automatic duplicate. A completely disabled Manual source
-            // reserves none, so the automatic source remains independent.
-            if ($semi && $configuration['manual_group_enabled']) {
-                foreach ($configuration['manual_group'] as $member) {
-                    if (isset($member['artwork_id'])) {
-                        $excluded[] = (int) $member['artwork_id'];
-                    }
+        $reservedArtworkIds = $configuration['disabled_auto_artwork_ids'];
+        foreach ($dummyGalleries as $dummy) {
+            foreach ($dummy['members'] as $member) {
+                if (isset($member['artwork_id'])) {
+                    $reservedArtworkIds[] = (int) $member['artwork_id'];
                 }
             }
-            $excluded = array_values(array_unique($excluded));
-            $artworks = $perGallery
-                ? $this->artworks->homeGalleryRepresentatives($configuration['source_rule'], $excluded, $remaining)
-                : $this->artworks->configuredHomeCandidates($remaining, $configuration['source_rule'], $excluded);
-            $automatic = $artworks
-                ->map(static fn (Artwork $artwork): HomeHeroCandidate => HomeHeroCandidate::fromArtwork($artwork))
+        }
+
+        if ($mode !== 'manual') {
+            $regular = ($perGallery || $galleryFirst)
+                ? $this->artworks->homeGalleryRepresentatives(
+                    $ranking, array_values(array_unique($reservedArtworkIds)),
+                    12500, $perGallery ? $amount : HomeHeroConfigurationService::MAX_GROUP_SIZE,
+                )
+                : $this->artworks->configuredHomeCandidates(
+                    HomeHeroConfigurationService::MAX_GROUP_SIZE, $ranking,
+                    array_values(array_unique($reservedArtworkIds)),
+                );
+            foreach ($regular as $artwork) {
+                $sourceId = (int) $artwork->getAttribute('artwork_category_id');
+                $pools[$sourceId] ??= new Collection;
+                $pools[$sourceId]->push(HomeHeroCandidate::fromArtwork($artwork));
+                $names[$sourceId] = (string) ($artwork->getRelationValue('category')?->getAttribute('name') ?? '');
+            }
+        }
+
+        foreach ($dummyGalleries as $dummy) {
+            $sourceId = (int) $dummy['id'];
+            $pools[$sourceId] = $this->rankCandidates(
+                $this->selectedCandidates(
+                    array_values(array_filter(
+                        $dummy['members'], static fn (array $member): bool => $member['enabled'],
+                    )),
+                    $sourceId,
+                    (string) $dummy['name'],
+                ),
+                $ranking,
+            );
+            $names[$sourceId] = (string) $dummy['name'];
+        }
+
+        // A source's own rank always comes from Ranking. The source-order
+        // variant changes only which entire Gallery is read first.
+        foreach ($pools as $sourceId => $candidates) {
+            $pools[$sourceId] = $this->rankCandidates($candidates, $ranking)
+                ->take($perGallery ? $amount : HomeHeroConfigurationService::MAX_GROUP_SIZE)
                 ->values();
-            $group = $manual->concat($automatic)->values();
+        }
+        $ids = array_keys($pools);
+        usort($ids, static fn (int $a, int $b): int => strcmp(
+            mb_strtolower($names[$a] ?? ''), mb_strtolower($names[$b] ?? ''),
+        ) ?: ($a <=> $b));
+        $saved = array_flip($configuration['source_order']);
+        usort($ids, static fn (int $a, int $b): int =>
+            (($saved[$a] ?? PHP_INT_MAX) <=> ($saved[$b] ?? PHP_INT_MAX))
+            ?: strcmp(mb_strtolower($names[$a] ?? ''), mb_strtolower($names[$b] ?? ''))
+            ?: ($a <=> $b));
+
+        $candidates = new Collection;
+        $seen = [];
+        foreach ($ids as $sourceId) {
+            foreach ($pools[$sourceId] as $candidate) {
+                $key = $candidate->key();
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
+                $candidates->push($candidate);
+            }
+        }
+        $group = ($galleryFirst ? $candidates : $this->rankCandidates($candidates, $ranking))
+            ->take($perGallery ? HomeHeroConfigurationService::MAX_GROUP_SIZE : $amount)
+            ->values();
+
+        return [$group, $this->configuration->sourcedGroupWeights(
+            $group, $configuration['sourced_weights'],
+        )];
+    }
+
+    /** Read all stored Dummy members for the Home editor, including inactive ones. */
+    public function dummyCandidates(array $members, int $sourceId, string $sourceName): Collection
+    {
+        return $this->selectedCandidates($members, $sourceId, $sourceName);
+    }
+
+    /**
+     * Sort candidates across all sources by one canonical Ranking rule. Direct
+     * Storage references without an Artwork date sort after dated Artworks
+     * under artwork-date ranking, never under a fabricated date.
+     *
+     * @param Collection<int,HomeHeroCandidate> $candidates
+     * @return Collection<int,HomeHeroCandidate>
+     */
+    private function rankCandidates(Collection $candidates, string $rule): Collection
+    {
+        $oldest = str_starts_with($rule, 'oldest_');
+        return $candidates->sort(function (HomeHeroCandidate $left, HomeHeroCandidate $right) use ($rule, $oldest): int {
+            $a = $this->candidateRankingParts($left, $rule);
+            $b = $this->candidateRankingParts($right, $rule);
+            foreach ($a as $index => $value) {
+                $other = $b[$index];
+                if ($value === null || $other === null) {
+                    $comparison = $value === $other ? 0 : ($value === null ? 1 : -1);
+                } else {
+                    $comparison = $oldest ? ($value <=> $other) : ($other <=> $value);
+                }
+                if ($comparison !== 0) {
+                    return $comparison;
+                }
+            }
+            return strcmp($left->key(), $right->key());
+        })->values();
+    }
+
+    /** @return list<int|null> */
+    private function candidateRankingParts(HomeHeroCandidate $candidate, string $rule): array
+    {
+        $artwork = $candidate->artwork();
+        $record = $artwork ?? $candidate->mediaAsset();
+        $id = (int) $record?->getKey();
+
+        if (in_array($rule, ['newest_media_added', 'oldest_media_added'], true)) {
+            $primary = $artwork?->getRelationValue('artworkMedia')
+                ?->filter(static fn ($link): bool => $link->getAttribute('role') === 'primary')
+                ->sortBy([['position', 'asc'], ['id', 'asc']])
+                ->first();
+            $media = $artwork ? $primary?->getRelationValue('mediaAsset') : $candidate->mediaAsset();
+            return [$this->rankTimestamp($media?->getAttribute('created_at')), $id];
         }
 
-        if ($semi) {
-            $group = $this->configuration->rankSourcedCandidates($group, $configuration['sourced_order']);
-        }
+        return [
+            $artwork?->getAttribute('year') === null ? $candidate->year : (int) $artwork->getAttribute('year'),
+            $artwork?->getAttribute('month') === null ? $candidate->month : (int) $artwork->getAttribute('month'),
+            $artwork?->getAttribute('day') === null ? $candidate->day : (int) $artwork->getAttribute('day'),
+            $this->rankTimestamp($artwork?->getAttribute('created_at')),
+            $id,
+        ];
+    }
 
-        $weights = $this->configuration->sourcedGroupWeights(
-            $group,
-            $configuration['sourced_weights'],
-        );
-
-        return [$group, $weights];
+    private function rankTimestamp(mixed $value): ?int
+    {
+        return $value === null ? null : (int) CarbonImmutable::parse($value)->utc()->format('Uu');
     }
 
     /**
@@ -158,7 +233,7 @@ final class HomeHeroResolver
      * @param list<array<string,int>> $members
      * @return Collection<int,HomeHeroCandidate>
      */
-    private function selectedCandidates(array $members): Collection
+    private function selectedCandidates(array $members, ?int $sourceId = null, ?string $sourceName = null): Collection
     {
         $artworkIds = [];
         $mediaIds = [];
@@ -178,11 +253,17 @@ final class HomeHeroResolver
             if (isset($member['artwork_id'])) {
                 $artwork = $artworks->get($member['artwork_id']);
                 if ($artwork instanceof Artwork) {
-                    $candidates->push(HomeHeroCandidate::fromArtwork($artwork));
+                    $candidates->push(HomeHeroCandidate::fromArtwork($artwork, $sourceId, $sourceName));
                 }
             } else {
                 $asset = $media->get($member['media_asset_id']);
-                if ($asset instanceof MediaAsset && ($candidate = HomeHeroCandidate::fromMedia($asset)) !== null) {
+                if ($asset instanceof MediaAsset && ($candidate = HomeHeroCandidate::fromMedia(
+                    $asset, $sourceId, $sourceName,
+                    is_string($member['title'] ?? null) ? $member['title'] : null,
+                    isset($member['year']) ? (int) $member['year'] : null,
+                    isset($member['month']) ? (int) $member['month'] : null,
+                    isset($member['day']) ? (int) $member['day'] : null,
+                )) !== null) {
                     $candidates->push($candidate);
                 }
             }

@@ -209,11 +209,11 @@ final class MediaReferenceQuery
                 ->unique()->values()->all();
         }
 
-        $configuration = app(\App\Domain\Content\HomeHeroConfigurationService::class);
+        $galleries = app(\App\Domain\Content\HomeHeroConfigurationService::class)
+            ->configuration($settings)['dummy_galleries'];
         $ids = [];
-        foreach (['semi_automatic', 'manual'] as $source) {
-            $profile = $configuration->configuration($settings, $source);
-            foreach ($profile['manual_group'] as $member) {
+        foreach ($galleries as $gallery) {
+            foreach ($gallery['members'] as $member) {
                 if (isset($member['media_asset_id'])) {
                     $ids[] = (int) $member['media_asset_id'];
                 }

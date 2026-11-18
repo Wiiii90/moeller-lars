@@ -293,12 +293,12 @@
 
 }
 
-/* Both group-action axes remain reserved even when a Gallery has no Clear
- * action or the Manual source has no Enable/Disable action. */
+/* Gallery source rows reserve the five canonical Move, Edit, State and
+ * Delete axes even when an ordinary Gallery has no Edit/Delete action. */
 @container admin-table (max-width: 54rem){
     .home-source-table > table {
-        --admin-row-actions-width: calc(2 * 1.78rem + .18rem);
-        --admin-row-actions-columns: repeat(2, 1.78rem);
+        --admin-row-actions-width: calc(5 * 1.78rem + 4 * .18rem);
+        --admin-row-actions-columns: repeat(5, 1.78rem);
         --admin-row-actions-gap: .18rem;
     }
 

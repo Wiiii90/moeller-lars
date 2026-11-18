@@ -12,12 +12,7 @@
  * Construction component templates reuse Custom Page's hierarchy geometry,
  * including a permanent editable Component column and flexible Content. */
 .home-source-table {
-    --admin-row-actions-width: calc(
-        var(--admin-row-action-slot-state-width) + var(--admin-row-action-slot-delete-width) + .25rem
-    );
-    --admin-row-actions-columns:
-        minmax(var(--admin-row-action-slot-state-width), max-content)
-        minmax(var(--admin-row-action-slot-delete-width), max-content);
+    --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
 }
 
 .home-source-table__action-slot {
@@ -132,13 +127,23 @@
  * column allocation, not separate label, input or select styling. */
 .home-hero-stage-settings {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.45fr) minmax(0, .7fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.65fr) minmax(0, 1.6fr) minmax(0, .9fr);
     gap: .4rem;
     min-width: 0;
 }
 
-.home-hero-stage-settings--manual {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.home-hero-stage-candidates {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 3.1rem;
+    gap: .25rem;
+    min-width: 0;
+}
+
+.home-hero-stage-settings .admin-data-field select,
+.home-hero-stage-settings .admin-data-field input {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
 }
 
 .home-hero-rail__simulation {

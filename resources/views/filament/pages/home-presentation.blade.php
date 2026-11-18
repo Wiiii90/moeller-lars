@@ -13,7 +13,6 @@
         @if ($template === 'artwork')
             @php
                 $simulationAt = now('UTC');
-                $manualHeroKeys = array_map(\App\Domain\Content\HomeHeroConfigurationService::memberKey(...), $manualHeroGroup);
                 $simulationCandidates = collect($heroRailRows)
                     ->filter(static fn (array $row): bool => $row['eligible'] ?? true)
                     ->map(static fn (array $row): array => [
@@ -23,6 +22,7 @@
                         'weight' => $row['weight'] ?? null,
                         'is_manual' => $row['is_manual'] ?? false,
                         'is_automatic' => $row['is_automatic'] ?? false,
+                        'dummy_gallery_id' => $row['dummy_gallery_id'] ?? null,
                     ])->values()->all();
                 $simulationKey = md5(json_encode([
                     $heroGroupSource, $heroDisplayStrategy, $rotationIntervalCount,
@@ -47,8 +47,8 @@
                 <div class="home-hero-surface__visual admin-visual-stage__pane">
                     <div class="home-hero-surface__visual-actions" aria-label="Actions for simulated Hero Artwork" x-show="activeId !== null" x-cloak>
                         <button class="admin-icon-action admin-icon-action--surface" type="button"
-                            x-show="active?.is_manual" x-on:click="$wire.setManualHeroCandidateEnabled(activeId, false)"
-                            title="Disable current Manual candidate" aria-label="Disable current Manual candidate">
+                            x-show="active?.is_manual" x-on:click="$wire.toggleDummyMember(active?.dummy_gallery_id, activeId)"
+                            title="Disable current Dummy Gallery member" aria-label="Disable current Dummy Gallery member">
                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" />
                         </button>
                         <button class="admin-icon-action admin-icon-action--surface" type="button"
@@ -57,8 +57,8 @@
                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" />
                         </button>
                         <button class="admin-icon-action admin-icon-action--surface is-danger" type="button"
-                            x-show="active?.is_manual" x-on:click="$wire.removeHeroCandidate(activeId)"
-                            title="Remove current Manual candidate" aria-label="Remove current Manual candidate">
+                            x-show="active?.is_manual" x-on:click="$wire.removeDummyMember(active?.dummy_gallery_id, activeId)"
+                            title="Remove current Dummy Gallery member" aria-label="Remove current Dummy Gallery member">
                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
                         </button>
                     </div>
@@ -104,37 +104,28 @@
                                     <option value="manual" @selected($heroGroupSource === 'manual')>{{ __('Manual') }}</option>
                                 </select>
                             </label>
-                            @if ($heroGroupSource !== 'manual')
-                                <label class="admin-data-field">
-                                    <span>{{ __('Selection') }}</span>
-                                    <select wire:change="updateHeroStageSetting('selection_mode', $event.target.value)" aria-label="Hero selection mode">
+                            <label class="admin-data-field">
+                                <span>{{ __('Ranking') }}</span>
+                                <select wire:change="updateHeroStageSetting('source_rule', $event.target.value)" aria-label="Hero ranking">
+                                    @foreach (\App\Domain\Content\HomeHeroConfigurationService::SOURCE_RULES as $value => $label)
+                                        <option value="{{ $value }}" @selected($heroSourceRule === $value)>{{ __($label) }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            <div class="admin-data-field">
+                                <span>{{ __('Candidates') }}</span>
+                                <div class="home-hero-stage-candidates">
+                                    <select wire:change="updateHeroStageSetting('selection_mode', $event.target.value)" aria-label="Candidate scope">
                                         @foreach (\App\Domain\Content\HomeHeroConfigurationService::SELECTION_MODES as $value => $label)
                                             <option value="{{ $value }}" @selected($heroSelectionMode === $value)>{{ __($label) }}</option>
                                         @endforeach
                                     </select>
-                                </label>
-                                <label class="admin-data-field">
-                                    <span>{{ __('Source Rule') }}</span>
-                                    <select wire:change="updateHeroStageSetting('source_rule', $event.target.value)" aria-label="Hero source rule">
-                                        @foreach (\App\Domain\Content\HomeHeroConfigurationService::SOURCE_RULES as $value => $label)
-                                            <option value="{{ $value }}" @selected($heroSourceRule === $value)>{{ __($label) }}</option>
-                                        @endforeach
-                                    </select>
-                                </label>
-                                <label class="admin-data-field">
-                                    <span>{{ __('Source Size') }}</span>
-                                    @if ($heroSelectionMode === 'one_per_gallery')
-                                        <input type="number" readonly value="{{ $candidatePoolCount }}"
-                                            aria-label="Automatically calculated Hero source size"
-                                            title="{{ __('Automatically determined from eligible Galleries and enabled Manual candidates') }}">
-                                    @else
-                                        <input type="number" min="1" max="{{ \App\Domain\Content\HomeHeroConfigurationService::MAX_GROUP_SIZE }}"
-                                            step="1" value="{{ $heroGroupSize }}" wire:change="updateHeroStageSetting('group_size', $event.target.value)" aria-label="Hero source size">
-                                    @endif
-                                </label>
-                            @endif
+                                    <input type="number" min="1" max="{{ \App\Domain\Content\HomeHeroConfigurationService::MAX_GROUP_SIZE }}"
+                                        step="1" value="{{ $heroGroupSize }}" wire:change="updateHeroStageSetting('group_size', $event.target.value)" aria-label="Candidate amount">
+                                </div>
+                            </div>
                             <label class="admin-data-field">
-                                <span>{{ __('Strategy') }}</span>
+                                <span>{{ __('Display') }}</span>
                                 <select wire:change="updateHeroStageSetting('display_strategy', $event.target.value)" aria-label="Hero display strategy">
                                     <option value="ordered" @selected($heroDisplayStrategy === 'ordered')>{{ __('Top Only') }}</option>
                                     <option value="random" @selected($heroDisplayStrategy === 'random')>{{ __('Random') }}</option>
@@ -150,7 +141,7 @@
                     </header>
 
                     @if ($heroRailRows !== [] || $excludedHeroRows !== [])
-                        <div class="home-hero-rail__rows" @if (in_array($heroGroupSource, ['manual', 'semi_automatic'], true)) wire:sort="sortHeroArtwork" @endif>
+                        <div class="home-hero-rail__rows">
                             @foreach ($heroRailRows as $index => $row)
                                 @php $isManual = $row['is_manual'] ?? false; @endphp
                                 <article
@@ -158,14 +149,10 @@
                                     x-bind:class="{ 'is-current': activeId === $el.dataset.candidateKey }"
                                     data-candidate-key="{{ $row['id'] }}"
                                     wire:key="home-hero-row-{{ $row['id'] }}"
-                                    @if ($isManual || $heroGroupSource === 'semi_automatic') wire:sort:item="{{ $row['id'] }}" @endif
+
                                 >
                                     <span class="home-hero-candidate__position"><span class="admin-position">{{ $index + 1 }}</span></span>
-                                    @if ($isManual || $heroGroupSource === 'semi_automatic')
-                                        <button class="admin-drag-handle" type="button" wire:sort:handle aria-label="Drag {{ $row['title'] }}">⋮⋮</button>
-                                    @else
-                                        <span class="home-hero-candidate__drag-spacer" aria-hidden="true"></span>
-                                    @endif
+                                    <span class="home-hero-candidate__drag-spacer" aria-hidden="true"></span>
 
                                     <div class="home-hero-candidate__visual">
                                         @if ($row['thumbnail_url'])
@@ -195,26 +182,15 @@
 
                                     <div class="home-hero-candidate__actions admin-toolbar">
                                         @if ($isManual)
-                                            <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp" :disabled="! $row['can_move_up']"
-                                                wire:click="moveHeroArtwork('{{ $row['id'] }}', 'up')" />
-                                            <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveDown" :disabled="! $row['can_move_down']"
-                                                wire:click="moveHeroArtwork('{{ $row['id'] }}', 'down')" />
-                                            @if ($row['disabled'])
-                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Publish" label="Enable"
-                                                    wire:click="setManualHeroCandidateEnabled('{{ $row['id'] }}', true)" />
-                                            @else
-                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Unpublish" label="Disable"
-                                                    wire:click="setManualHeroCandidateEnabled('{{ $row['id'] }}', false)" />
-                                            @endif
+
+                                            <x-admin.row-action
+                                                :action="$row['disabled'] ? \App\Filament\Support\AdminRowAction::Publish : \App\Filament\Support\AdminRowAction::Unpublish"
+                                                :label="$row['disabled'] ? 'Enable' : 'Disable'"
+                                                wire:click="toggleDummyMember({{ $row['dummy_gallery_id'] }}, '{{ $row['id'] }}')" />
                                             <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Delete" label="Remove"
-                                                wire:click="removeHeroCandidate('{{ $row['id'] }}')" />
+                                                wire:click="removeDummyMember({{ $row['dummy_gallery_id'] }}, '{{ $row['id'] }}')" />
                                         @elseif ($row['is_automatic'] ?? false)
-                                            @if ($heroGroupSource === 'semi_automatic')
-                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp" :disabled="! $row['can_move_up']"
-                                                    wire:click="moveHeroArtwork('{{ $row['id'] }}', 'up')" />
-                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveDown" :disabled="! $row['can_move_down']"
-                                                    wire:click="moveHeroArtwork('{{ $row['id'] }}', 'down')" />
-                                            @endif
+
                                             <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Unpublish" label="Disable"
                                                 wire:click="setAutomaticHeroCandidateEnabled({{ (int) substr($row['id'], 8) }}, false)" />
                                         @endif
@@ -262,12 +238,10 @@
 
             @php
                 $sourceRows = $this->sourceRows();
-                $visibleSourceIds = collect($sourceRows->items())->pluck('id')->map(fn ($id) => (int) $id)
-                    ->filter(fn (int $id) => $id > 0 || ($id === 0 && $heroGroupSource === 'semi_automatic'))
-                    ->values()->all();
+                $visibleSourceIds = collect($sourceRows->items())->pluck('id')
+                    ->map(fn ($id): int => (int) $id)->values()->all();
                 $sourceFiltersActive = trim($sourceSearch) !== '';
-                $sourceHasRecords = $sourceRows->total() > 0 || ($sourceFiltersActive
-                    && \App\Models\ArtworkCategory::query()->whereHas('siteSection')->exists());
+                $sourceHasRecords = $sourceRows->total() > 0 || $sourceFiltersActive;
             @endphp
 
             <x-admin.controls class="home-artwork-source-controls admin-data-controls--dashboard-responsive" :metric-grid="true" :search-span="3" aria-label="Gallery source controls">
@@ -294,14 +268,10 @@
                                 <span class="admin-action__label">{{ __('Settings') }}</span>
                             </button>
                             @if ($heroGroupSource !== 'automatic')
-                                <button
-                                    class="admin-action admin-action--with-icon"
-                                    type="button"
-                                    wire:click="mountAction('editHeroGroup')"
-                                    title="Edit Manual Sourced Artworks"
-                                >
-                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">{{ __('Edit Group') }}</span>
+                                <button class="admin-action admin-action--with-icon" type="button"
+                                    wire:click="mountAction('addDummyGallery')" title="Add Dummy Gallery">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Gallery->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">{{ __('Add Dummy Gallery') }}</span>
                                 </button>
                             @endif
                             <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener">
@@ -331,7 +301,7 @@
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">{{ __('Disable') }}</span>
                                 </button>
-                                <button class="admin-action admin-action--with-icon admin-action--state is-danger" type="button" role="menuitem" wire:click="mountAction('removeSelectedManualHeroCandidates')" x-on:click="open = false" @disabled(! $sourceCapabilities['remove'])>
+                                <button class="admin-action admin-action--with-icon admin-action--state is-danger" type="button" role="menuitem" wire:click="mountAction('removeSelectedDummyMembers')" x-on:click="open = false" @disabled(! $sourceCapabilities['remove'])>
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">{{ __('Remove') }}</span>
                                 </button>
@@ -383,7 +353,8 @@
                                 $firstCandidate = $gallery['candidates'][0] ?? null;
                                 $expanded = in_array($groupId, $expandedSourceIds, true);
                                 $selected = in_array(
-                                    (string) ($expanded && $firstCandidate ? $firstCandidate['id'] : $groupId),
+                                    (string) ($expanded && $firstCandidate
+                                        ? \App\Filament\Pages\HomePresentation::sourceCandidateSelectionId($groupId, $firstCandidate['id']) : $groupId),
                                     array_map('strval', $selectedSourceIds), true,
                                 );
                             @endphp
@@ -395,7 +366,7 @@
                                     <strong>
                                         @if ($manualSource)
                                             <button class="home-source-table__gallery-link home-source-table__gallery-link--button"
-                                                type="button" wire:click="mountAction('editHeroGroup')">{{ $gallery['name'] }}</button>
+                                                type="button" wire:click="mountAction('editDummyGallery', { gallery: {{ $groupId }} })">{{ $gallery['name'] }}</button>
                                         @elseif ($gallery['workspace_url'])
                                             <a class="home-source-table__gallery-link" href="{{ $gallery['workspace_url'] }}" wire:navigate>{{ $gallery['name'] }}</a>
                                         @else
@@ -443,37 +414,38 @@
                                 </td>
                                 <td class="admin-table__actions">
                                     @if (! $expanded)
-                                        <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-toolbar home-source-table__row-actions">
+                                        <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-state-delete admin-toolbar home-source-table__row-actions">
+                                            <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp"
+                                                label="Move Gallery up" :disabled="! str_starts_with($heroSourceRule, 'gallery_') || $sourceSearch !== ''"
+                                                wire:click="moveHeroSource({{ $groupId }}, 'up')" />
+                                            <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveDown"
+                                                label="Move Gallery down" :disabled="! str_starts_with($heroSourceRule, 'gallery_') || $sourceSearch !== ''"
+                                                wire:click="moveHeroSource({{ $groupId }}, 'down')" />
                                             @if ($manualSource)
-                                                <x-admin.row-action
-                                                    :action="$manualHeroGroupEnabled ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
-                                                    :label="$manualHeroGroupEnabled ? 'Disable' : 'Enable'"
-                                                    wire:click="setManualHeroSourceEnabled({{ $manualHeroGroupEnabled ? 'false' : 'true' }})"
-                                                    :disabled="$heroGroupSource === 'manual'"
-                                                />
-                                                <x-admin.row-action
-                                                    :action="\App\Filament\Support\AdminRowAction::Delete"
-                                                    label="Clear"
-                                                    wire:click="mountAction('clearManualHeroCandidates')"
-                                                    :disabled="$gallery['candidate_count'] === 0"
-                                                />
+                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
+                                                    label="Edit Dummy Gallery" wire:click="mountAction('editDummyGallery', { gallery: {{ $groupId }} })" />
                                             @else
-                                                <x-admin.row-action
-                                                    :action="$gallery['preference_enabled'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
-                                                    :label="$gallery['preference_enabled'] ? 'Disable' : 'Enable'"
-                                                    wire:click="toggleGalleryEligibility({{ $groupId }})"
-                                                    :disabled="! $gallery['preference_enabled'] && ! $gallery['can_enable']"
-                                                />
+                                                <span class="home-source-table__action-slot" aria-hidden="true"></span>
+                                            @endif
+                                            <x-admin.row-action
+                                                :action="$gallery['preference_enabled'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
+                                                :label="$gallery['preference_enabled'] ? 'Disable' : 'Enable'"
+                                                wire:click="{{ $manualSource ? 'toggleDummyGallery' : 'toggleGalleryEligibility' }}({{ $groupId }})"
+                                                :disabled="! $gallery['preference_enabled'] && ! $gallery['can_enable']" />
+                                            @if ($manualSource)
+                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Delete"
+                                                    label="Delete Dummy Gallery" wire:click="mountAction('deleteDummyGallery', { gallery: {{ $groupId }} })" />
+                                            @else
                                                 <span class="home-source-table__action-slot" aria-hidden="true"></span>
                                             @endif
                                         </div>
                                     @else
-                                        @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $firstCandidate, 'manualSource' => $manualSource])
+                                        @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $firstCandidate, 'manualSource' => $manualSource, 'groupId' => $groupId])
                                     @endif
                                 </td>
                                 <td class="admin-table__selection admin-table__selection--trailing">
                                     @if ($expanded && $firstCandidate)
-                                        <input type="checkbox" value="{{ $firstCandidate['id'] }}"
+                                        <input type="checkbox" value="{{ \App\Filament\Pages\HomePresentation::sourceCandidateSelectionId($groupId, $firstCandidate['id']) }}"
                                             wire:model.live="selectedSourceIds"
                                             aria-label="Select candidate {{ $firstCandidate['title'] }}">
                                     @elseif (! $expanded)
@@ -486,7 +458,7 @@
                             @if ($expanded)
                                 @foreach (array_slice($gallery['candidates'], 1) as $candidate)
                                     <tr
-                                        class="home-source-table__candidate-row {{ $loop->last ? 'is-group-end' : '' }} {{ in_array((string) $candidate['id'], array_map('strval', $selectedSourceIds), true) ? 'is-selected' : '' }}"
+                                        class="home-source-table__candidate-row {{ $loop->last ? 'is-group-end' : '' }} {{ in_array(\App\Filament\Pages\HomePresentation::sourceCandidateSelectionId($groupId, $candidate['id']), array_map('strval', $selectedSourceIds), true) ? 'is-selected' : '' }}"
                                         wire:key="home-source-item-{{ $groupId }}-{{ $candidate['id'] }}"
                                     >
                                         <td class="home-source-table__empty-gallery"></td>
@@ -494,10 +466,10 @@
                                             @include('filament.pages.partials.home-source-candidate-cell', ['candidate' => $candidate, 'groupId' => $groupId])
                                         </td>
                                         <td class="admin-table__actions">
-                                            @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $candidate, 'manualSource' => $manualSource])
+                                            @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $candidate, 'manualSource' => $manualSource, 'groupId' => $groupId])
                                         </td>
                                         <td class="admin-table__selection admin-table__selection--trailing">
-                                            <input type="checkbox" value="{{ $candidate['id'] }}"
+                                            <input type="checkbox" value="{{ \App\Filament\Pages\HomePresentation::sourceCandidateSelectionId($groupId, $candidate['id']) }}"
                                                 wire:model.live="selectedSourceIds"
                                                 aria-label="Select candidate {{ $candidate['title'] }}">
                                         </td>
@@ -520,6 +492,10 @@
                     </tbody>
                 </table>
             </x-admin.table>
+
+            @if ($heroGroupSource !== 'automatic')
+                <x-admin.add-row wire:click="mountAction('addDummyGallery')">{{ __('Add Dummy Gallery') }}</x-admin.add-row>
+            @endif
 
             @if ($sourceRows->total() > $sourceRows->perPage() || $sourceRows->currentPage() > 1)
                 <footer class="admin-pager">

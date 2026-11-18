@@ -16,8 +16,9 @@ final class AdminDialog
         string $submitLabel,
         AdminDialogSize $size = AdminDialogSize::Small,
         ?AdminIcon $submitIcon = null,
+        ?Closure $onClear = null,
     ): Action {
-        return self::committedTask($action, AdminDialogType::Create, $submitLabel, $size, $submitIcon);
+        return self::committedTask($action, AdminDialogType::Create, $submitLabel, $size, $submitIcon, $onClear);
     }
 
     /**
@@ -135,14 +136,37 @@ final class AdminDialog
         string|Closure $submitLabel,
         AdminDialogSize $size,
         ?AdminIcon $submitIcon = null,
+        ?Closure $onClear = null,
     ): Action {
-        return self::base($action, $type, $size)
+        $dialog = self::base($action, $type, $size)
             ->modalSubmitAction(fn (Action $action): Action => $action
                 ->label($submitLabel)
                 ->icon(($submitIcon ?? ($type === AdminDialogType::Create ? AdminIcon::Commit : AdminIcon::DialogSubmit))->value)
                 ->iconButton()
                 ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
             ->modalCancelAction(false);
+
+        if ($type === AdminDialogType::Create) {
+            $dialog->extraModalFooterActions([
+                Action::make('clearCreateForm')
+                    ->label('Clear form')
+                    ->icon(AdminIcon::Clear->value)
+                    ->iconButton()
+                    ->color('gray')
+                    ->extraAttributes(['class' => 'admin-dialog__header-action'])
+                    ->action(function (Action $action) use ($onClear): void {
+                        $livewire = $action->getLivewire();
+                        $livewire->getMountedActionSchema()->fill([]);
+                        $onClear?->__invoke($livewire);
+                        $livewire->forceRender();
+                    })
+                    ->after(static function (Action $action): void {
+                        $action->halt();
+                    }),
+            ]);
+        }
+
+        return $dialog;
     }
 
     private static function base(Action $action, AdminDialogType $type, AdminDialogSize $size): Action

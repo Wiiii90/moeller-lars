@@ -86,7 +86,7 @@ class PublicArtworkQuery
     }
 
     /**
-     * One candidate for each eligible Gallery, using precisely the same
+     * Up to the requested number of candidates from each eligible Gallery, using precisely the same
      * ArtworkSort ordering as Global sourcing. The SQL window operates on
      * the canonical eligible set, before the overall group cap, so a Gallery
      * with an excluded newest Artwork can still contribute its next newest.
@@ -97,6 +97,7 @@ class PublicArtworkQuery
         string $sourceRule = 'newest_artwork',
         array $excludeIds = [],
         int $limit = 50,
+        int $perGallery = 1,
     ): Collection {
         $ranked = $this->homeQuery()->select('artworks.id')
             ->selectRaw(
@@ -108,14 +109,14 @@ class PublicArtworkQuery
         }
 
         $representativeIds = DB::query()->fromSub($ranked->toBase(), 'ranked_home_artworks')
-            ->where('gallery_rank', 1)
+            ->where('gallery_rank', '<=', max(1, min($perGallery, 50)))
             ->select('id');
 
         $query = $this->homeQuery()->whereIn('artworks.id', $representativeIds);
         ArtworkSort::apply($query, $sourceRule);
 
         /** @var Collection<int, Artwork> $artworks */
-        $artworks = $query->limit(max(1, min($limit, 50)))->get();
+        $artworks = $query->limit(max(1, min($limit, 12500)))->get();
 
         return $artworks;
     }
@@ -171,7 +172,7 @@ class PublicArtworkQuery
         }
 
         /** @var Collection<int, Artwork> $artworks */
-        $artworks = $this->homeQuery()
+        $artworks = $this->publicQuery()
             ->whereIn('id', $ids)
             ->get();
 

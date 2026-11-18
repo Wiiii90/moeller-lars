@@ -115,7 +115,7 @@ final class HomeSettingsDialog
                         ->label(self::helpLabel(
                             'Source',
                             'Choosing a Hero group',
-                            'Automatic selects only from enabled, published Galleries. Semi-Automatic combines eligible Galleries with its own editable Manual Sourced Artworks. Manual has a separate saved candidate order and Random chances. Switching Source preserves each mode.',
+                            'Automatic uses enabled regular Galleries, Semi-Automatic adds enabled Dummy Galleries, and Manual uses Dummy Galleries only. All modes follow Ranking, Candidates and Display. Switching Source restores its settings.',
                         ))
                         ->options(['automatic' => __('Automatic'), 'semi_automatic' => __('Semi-Automatic'), 'manual' => __('Manual')])
                         ->required()
@@ -133,40 +133,39 @@ final class HomeSettingsDialog
                             $set('rotation_interval_unit', $profile['rotation_interval']['unit']);
                         })
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                    Select::make('source_rule')
+                        ->label(self::helpLabel(
+                            'Ranking',
+                            'Artwork ranking rule',
+                            'Artwork rules use year, month and day. Media Added rules use the primary Media File upload time. Gallery Order variants prioritize the saved Gallery sequence before applying the chosen date or media rule within each Gallery.',
+                        ))
+                        ->options(HomeHeroConfigurationService::SOURCE_RULES)
+                        ->required()
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
                     Select::make('selection_mode')
                         ->label(self::helpLabel(
-                            'Selection',
-                            'How Hero candidates are distributed',
-                            'Global chooses candidates across all enabled Galleries. One per Gallery chooses one eligible Artwork from each Gallery using Source Rule, with an automatically determined group size.',
+                            'Candidates',
+                            'Candidate selection scope',
+                            'Total draws from all sources. Per Gallery takes the specified number from each source.',
                         ))
                         ->options(HomeHeroConfigurationService::SELECTION_MODES)
                         ->required()
                         ->live()
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') !== 'manual'),
-                    Select::make('source_rule')
-                        ->label(self::helpLabel(
-                            'Source Rule',
-                            'Source ordering rule',
-                            'Artwork rules use the artwork date (year, month and day). Media Added rules use the upload date of the primary media file. Newest or Oldest determines which eligible Gallery Artworks are sourced first.',
-                        ))
-                        ->options(HomeHeroConfigurationService::SOURCE_RULES)
-                        ->required()
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') !== 'manual'),
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
                     TextInput::make('group_size')
                         ->label(self::helpLabel(
-                            'Source Size',
-                            'Hero source size',
-                            'Maximum number of active Hero candidates with Global selection. Semi-Automatic counts enabled Manual candidates first. One per Gallery derives its size automatically.',
+                            'Amount',
+                            'Candidate amount',
+                            'Number of candidates overall in Total or per source in Per Gallery, up to 50 active candidates.',
                         ))
                         ->numeric()
                         ->minValue(1)
                         ->maxValue(HomeHeroConfigurationService::MAX_GROUP_SIZE)
                         ->required()
-                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
-                            && $get('group_source') !== 'manual' && $get('selection_mode') === 'global'),
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
                     Select::make('display_strategy')
                         ->label(self::helpLabel(
-                            'Display Strategy',
+                            'Display',
                             'Displaying the Hero group',
                             'Top Only displays the first sourced candidate. Random selects from the group using its weights. Sequential advances through the group after each rotation interval.',
                         ))

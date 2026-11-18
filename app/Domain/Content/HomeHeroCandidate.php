@@ -18,20 +18,34 @@ final readonly class HomeHeroCandidate
     private function __construct(
         public string $kind,
         public Artwork|MediaAsset $record,
+        public ?int $sourceId = null,
+        public ?string $sourceName = null,
+        public ?string $titleOverride = null,
+        public ?int $year = null,
+        public ?int $month = null,
+        public ?int $day = null,
     ) {}
 
-    public static function fromArtwork(Artwork $artwork): self
+    public static function fromArtwork(Artwork $artwork, ?int $sourceId = null, ?string $sourceName = null): self
     {
-        return new self('artwork', $artwork);
+        return new self('artwork', $artwork, $sourceId, $sourceName);
     }
 
-    public static function fromMedia(MediaAsset $asset): ?self
+    public static function fromMedia(
+        MediaAsset $asset,
+        ?int $sourceId = null,
+        ?string $sourceName = null,
+        ?string $title = null,
+        ?int $year = null,
+        ?int $month = null,
+        ?int $day = null,
+    ): ?self
     {
         if (! self::mediaIsEligible($asset)) {
             return null;
         }
 
-        return new self('media', $asset);
+        return new self('media', $asset, $sourceId, $sourceName, $title, $year, $month, $day);
     }
 
     public static function mediaIsEligible(MediaAsset $asset): bool
@@ -70,9 +84,9 @@ final readonly class HomeHeroCandidate
 
     public function title(): string
     {
-        return $this->artwork() instanceof Artwork
+        return $this->titleOverride ?? ($this->artwork() instanceof Artwork
             ? (string) $this->record->getAttribute('title')
-            : (string) $this->record->getAttribute('original_filename');
+            : (string) $this->record->getAttribute('original_filename'));
     }
 
     public function gallery(): ?ArtworkCategory
@@ -85,6 +99,11 @@ final readonly class HomeHeroCandidate
             return $gallery instanceof ArtworkCategory ? $gallery : null;
         }
 
+        // Dummy Gallery members do not inherit an unrelated public Gallery
+        // merely because their Storage asset is reused by an Artwork.
+        if ($this->sourceId !== null && $this->sourceId < 0) {
+            return null;
+        }
         $asset = $this->mediaAsset();
         if (! $asset instanceof MediaAsset) {
             return null;
