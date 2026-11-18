@@ -803,9 +803,7 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 
 .artwork-card,
 .artwork-detail,
-.exhibitions-page,
-.blog-page,
-.blog-post {
+.exhibitions-page {
     width: min(100%, var(--public-art-max));
     min-width: 0;
     margin-right: auto;
@@ -1264,7 +1262,19 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 
 /* BLOG — independent spreads, never a sequence of bordered interface cards.
    The images have contrasting physical presence; text and open margins hold
-   the rest of the composition. */
+   the rest of the composition. The entire Blog uses the General-owned Page
+   content width, not the smaller Artwork reading track. */
+.blog-page,
+.blog-post {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    margin-inline: auto;
+}
+/* Match the optional Blog index heading to the same content edges. */
+.public-content-reveal:has(> .blog-page) > .public-page-heading {
+    width: 100%;
+}
 .blog-page {
     padding: 1.5rem 0 1.3rem;
     container-type: inline-size;
@@ -1391,7 +1401,6 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 
 .blog-entry__excerpt,
 .blog-post__body {
-    max-width: 38rem;
     color: #504943;
     font-size: .86rem;
     line-height: 1.7;
@@ -1508,7 +1517,6 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     object-fit: contain;
 }
 .blog-post__body {
-    max-width: 38rem;
     margin: 1.45rem 0 2.1rem;
     font-size: .9rem;
     line-height: 1.77;

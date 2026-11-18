@@ -4,6 +4,12 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Blog width correction (2026-11-18)
+
+- **User observation:** The previous Exhibition, Custom Page and Artwork description width corrections did not cover Blog. Current source independently constrained both `blog-page` and `blog-post` to the Artwork's `--public-art-max` reading track (650px), and additionally constrained excerpts and the full article body to `38rem`.
+- **Scoped source fix:** In `resources/css/public-presentation.css`, the Blog index and individual article root now fill the General-owned inner Page width; the optional Blog index heading uses the same edges. Removed the two `38rem` limits on index excerpt and article prose. Blog header typography, authored image/cover sizes, deliberate floated alternating covers, gallery presentations (sequence/grid/mosaic/slideshow), responsive rules and publication/media owners stay unchanged. No global artwork-width token changes.
+- **Verification:** Source diff and published blob checks only; actual rendering with narrow/wide General Page width, Content padding, with-cover and without-cover posts, rich text, gallery and phone sizes still needs a browser review. No tests, CI, server actions or deployment executed.
+
 ## Contact Form: remove Under Construction presentation (2026-11-18)
 
 - User-directed removal of the legacy Contact Form presentation selector and its status-text field from the Custom Page component editor. The existing published/unpublished Contact child toggle remains the visibility control, also for Home's shared Contact components.
@@ -54,4 +60,4 @@
 
 ## Next
 
-Have the artist review the Contact Form removal and submission/visibility for previously Under Construction entries, plus earlier Exhibition and width corrections; hand regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
+Have the artist review the Blog index/article full-width fix alongside the Contact Form, Exhibition and earlier width corrections in a fresh local preview; hand browser regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
