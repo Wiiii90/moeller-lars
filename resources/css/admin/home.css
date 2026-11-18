@@ -348,19 +348,18 @@
 /* One thumbnail frame is reused by the folded strip and the table rows.
  * Keep images small and consistently rectangular, without cropping art. */
 .home-source-table,
-.home-hero-group-table {
+.home-dummy-gallery-table {
     --home-source-thumb-width: 2.55rem;
     --home-source-thumb-height: 2rem;
 }
 
-/* The Edit Group list is intentionally one compact row per candidate:
- * image height matches the existing 1.9rem Admin position badge, with
- * one elastic single-line identity instead of the source table's chance track. */
-.home-hero-group-table {
+/* Dummy Gallery membership rows reuse the source thumbnail frame and
+ * single-line identity, without the retired manual-order controls. */
+.home-dummy-gallery-table {
     --home-source-thumb-height: 1.9rem;
 }
 
-.home-hero-group-table .home-source-table__candidate-inline {
+.home-dummy-gallery-table .home-source-table__candidate-inline {
     grid-template-columns: var(--home-source-thumb-width) minmax(0, 1fr);
 }
 

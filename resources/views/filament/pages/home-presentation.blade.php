@@ -95,7 +95,7 @@
                                 @endif
                             </span>
                         </div>
-                        <div class="home-hero-stage-settings {{ $heroGroupSource === 'manual' ? 'home-hero-stage-settings--manual' : '' }}" aria-label="Hero Stage quick settings">
+                        <div class="home-hero-stage-settings" aria-label="Hero Stage quick settings">
                             <label class="admin-data-field">
                                 <span>{{ __('Source') }}</span>
                                 <select wire:change="updateHeroStageSetting('group_source', $event.target.value)" aria-label="Hero source">

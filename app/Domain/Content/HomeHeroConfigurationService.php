@@ -156,6 +156,14 @@ final class HomeHeroConfigurationService
         }
 
         $legacyRule = ($artwork['newest_by'] ?? null) === 'added' ? 'newest_media_added' : 'newest_artwork';
+        $weights = $this->readSourcedWeights($source['sourced_weights'] ?? []);
+        if ($mode === 'manual' && $weights === []) {
+            // The retired Manual source kept Random chances on members,
+            // not in sourced_weights. Preserve those persisted chances.
+            foreach ($this->readManualGroup($source['manual_group'] ?? []) as $member) {
+                $weights[self::memberKey($member)] = $member['weight'];
+            }
+        }
         return [
             'display_strategy' => $strategy,
             'rotation_interval' => $this->readRotationInterval($source['rotation_interval'] ?? null),
@@ -169,7 +177,7 @@ final class HomeHeroConfigurationService
                 ? 1 : $this->boundedGroupSize($source['group_size'] ?? null),
             'disabled_auto_artwork_ids' => $mode !== 'manual'
                 ? $this->readDisabledAutoArtworkIds($source['disabled_auto_artwork_ids'] ?? []) : [],
-            'sourced_weights' => $this->readSourcedWeights($source['sourced_weights'] ?? []),
+            'sourced_weights' => $weights,
             'source_order' => $this->readSourceOrder($source['source_order'] ?? []),
         ];
     }
