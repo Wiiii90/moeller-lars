@@ -1403,6 +1403,11 @@ final class HomePresentation extends Page
         );
     }
 
+    /**
+     * Resolve source identity/order before page hydration. A paginated source
+     * table must not load every member of every Dummy Gallery on each render.
+     * Candidate search uses one bounded label lookup per member kind.
+     */
     public function sourceRows(bool $all = false): LengthAwarePaginator
     {
         $config = app(HomeHeroConfigurationService::class)->configuration($this->settings());
@@ -1410,8 +1415,8 @@ final class HomePresentation extends Page
             ->filter(static fn (array $candidate): bool => $candidate['is_automatic'] ?? false)
             ->unique('id')
             ->groupBy(static fn (array $candidate): int => (int) ($candidate['gallery_id'] ?? 0));
-        $effective = collect($this->heroRailRows)->keyBy('id');
         $rows = [];
+        $dummyById = [];
 
         if ($this->heroGroupSource !== 'manual') {
             $galleries = ArtworkCategory::query()->whereHas('siteSection')
@@ -1419,43 +1424,36 @@ final class HomePresentation extends Page
             foreach ($galleries as $gallery) {
                 $id = (int) $gallery->getKey();
                 $section = $gallery->getRelationValue('siteSection');
-                $candidates = $regularCandidates->get($id, collect())->values()->all();
                 $rows[] = [
                     'id' => $id,
                     'standalone' => false,
                     'name' => (string) $gallery->getAttribute('name'),
                     'preference_enabled' => (bool) $gallery->getAttribute('show_on_home'),
                     'can_enable' => $section?->getAttribute('state') === 'published',
-                    'candidate_count' => count($candidates),
+                    'candidate_count' => $regularCandidates->get($id, collect())->count(),
                     'workspace_url' => GalleryWorkspace::getUrl(['gallery' => $id]),
-                    'candidates' => $candidates,
+                    'candidates' => [],
                 ];
             }
         }
+
         if ($this->heroGroupSource !== 'automatic') {
             foreach ($config['dummy_galleries'] as $dummy) {
                 $id = (int) $dummy['id'];
-                $candidates = $this->dummyEditorMembers($id, false);
-                foreach ($candidates as &$candidate) {
-                    $active = $effective->get($candidate['id']);
-                    $candidate['is_manual'] = true;
-                    $candidate['is_automatic'] = false;
-                    $candidate['dummy_gallery_id'] = $id;
-                    $candidate['eligible'] = $active !== null;
-                    $candidate['weight'] = $active['weight'] ?? 0;
-                    $candidate['percentage'] = $active['percentage'] ?? '0.00';
-                }
-                unset($candidate);
+                $dummyById[$id] = $dummy;
                 $rows[] = [
-                    'id' => $id, 'standalone' => true,
+                    'id' => $id,
+                    'standalone' => true,
                     'name' => (string) $dummy['name'],
                     'preference_enabled' => (bool) $dummy['enabled'],
                     'can_enable' => true,
-                    'candidate_count' => count($candidates),
-                    'workspace_url' => null, 'candidates' => $candidates,
+                    'candidate_count' => count($dummy['members']),
+                    'workspace_url' => null,
+                    'candidates' => [],
                 ];
             }
         }
+
         $savedOrder = array_flip($config['source_order']);
         usort($rows, static fn (array $a, array $b): int =>
             (($savedOrder[$a['id']] ?? PHP_INT_MAX) <=> ($savedOrder[$b['id']] ?? PHP_INT_MAX))
@@ -1465,19 +1463,95 @@ final class HomePresentation extends Page
         $search = trim($this->sourceSearch);
         if ($search !== '') {
             $needle = mb_strtolower($search);
-            $rows = array_values(array_filter($rows, static fn (array $row): bool =>
-                str_contains(mb_strtolower($row['name']), $needle)
-                || collect($row['candidates'])->contains(static fn (array $candidate): bool =>
-                    str_contains(mb_strtolower($candidate['title']), $needle)),
-            ));
+            $artworkIds = [];
+            $mediaIds = [];
+            foreach ($dummyById as $dummy) {
+                foreach ($dummy['members'] as $member) {
+                    if (isset($member['artwork_id'])) {
+                        $artworkIds[] = (int) $member['artwork_id'];
+                    } elseif (isset($member['media_asset_id'])
+                        && trim((string) ($member['title'] ?? '')) === '') {
+                        $mediaIds[] = (int) $member['media_asset_id'];
+                    }
+                }
+            }
+            $matchedArtworks = $artworkIds === [] ? [] : array_fill_keys(
+                Artwork::query()->whereIn('id', array_values(array_unique($artworkIds)))
+                    ->whereRaw('LOWER(title) LIKE ?', ['%'.$needle.'%'])
+                    ->pluck('id')->all(), true,
+            );
+            $matchedMedia = $mediaIds === [] ? [] : array_fill_keys(
+                MediaAsset::query()->whereIn('id', array_values(array_unique($mediaIds)))
+                    ->whereRaw('LOWER(original_filename) LIKE ?', ['%'.$needle.'%'])
+                    ->pluck('id')->all(), true,
+            );
+            $rows = array_values(array_filter($rows, static function (array $row) use (
+                $needle, $dummyById, $regularCandidates, $matchedArtworks, $matchedMedia,
+            ): bool {
+                if (str_contains(mb_strtolower($row['name']), $needle)) {
+                    return true;
+                }
+                $id = (int) $row['id'];
+                if ($id > 0) {
+                    return $regularCandidates->get($id, collect())->contains(
+                        static fn (array $candidate): bool =>
+                            str_contains(mb_strtolower($candidate['title']), $needle),
+                    );
+                }
+                foreach ($dummyById[$id]['members'] as $member) {
+                    if (isset($member['artwork_id']) && isset($matchedArtworks[(int) $member['artwork_id']])) {
+                        return true;
+                    }
+                    if (! isset($member['media_asset_id'])) {
+                        continue;
+                    }
+                    $title = trim((string) ($member['title'] ?? ''));
+                    if ($title !== '' && str_contains(mb_strtolower($title), $needle)) {
+                        return true;
+                    }
+                    if ($title === '' && isset($matchedMedia[(int) $member['media_asset_id']])) {
+                        return true;
+                    }
+                }
+                return false;
+            }));
         }
+
         $total = count($rows);
         $perPage = $all ? max(1, $total)
             : (in_array($this->sourcePerPage, [10, 25], true) ? $this->sourcePerPage : 10);
         $page = $all ? 1 : max(1, min($this->sourcePage, max(1, (int) ceil($total / $perPage))));
+        $visible = array_slice($rows, ($page - 1) * $perPage, $perPage);
+
+        if (! $all) {
+            $activeDummy = collect($this->heroRailRows)
+                ->filter(static fn (array $candidate): bool => $candidate['is_manual'] ?? false)
+                ->keyBy(static fn (array $candidate): string =>
+                    (int) $candidate['dummy_gallery_id'].'|'.$candidate['id']);
+            foreach ($visible as &$row) {
+                $id = (int) $row['id'];
+                if (! $row['standalone']) {
+                    $row['candidates'] = $regularCandidates->get($id, collect())->values()->all();
+                    continue;
+                }
+                $candidates = $this->dummyEditorMembers($id, false);
+                foreach ($candidates as &$candidate) {
+                    $active = $activeDummy->get($id.'|'.$candidate['id']);
+                    $candidate['is_manual'] = true;
+                    $candidate['is_automatic'] = false;
+                    $candidate['dummy_gallery_id'] = $id;
+                    $candidate['eligible'] = $active !== null;
+                    $candidate['weight'] = $active['weight'] ?? 0;
+                    $candidate['percentage'] = $active['percentage'] ?? '0.00';
+                }
+                unset($candidate);
+                $row['candidates'] = $candidates;
+            }
+            unset($row);
+        }
+
         return new LengthAwarePaginator(
-            array_slice($rows, ($page - 1) * $perPage, $perPage),
-            $total, $perPage, $page, ['path' => request()->url(), 'pageName' => 'sourcePage'],
+            $visible, $total, $perPage, $page, ['path' => request()->url(), 'pageName' => 'sourcePage'],
         );
     }
 
