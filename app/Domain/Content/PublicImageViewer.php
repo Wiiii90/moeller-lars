@@ -68,14 +68,20 @@ final class PublicImageViewer
         return new HtmlString($rendered ?? $html);
     }
 
-    public function attributes(string $key, string $source, string $alt): string
+    public function attributes(string $key, string $source, string $alt, string $kind = 'image', bool $trigger = true): string
     {
-        return ' data-artwork-viewer-item data-artwork-viewer-trigger data-viewer-scope="content"'
+        if (! in_array($kind, ['image', 'video'], true)) {
+            throw new \InvalidArgumentException('The media viewer supports only images and videos.');
+        }
+
+        return ' data-artwork-viewer-item'
+            .($trigger ? ' data-artwork-viewer-trigger' : '')
+            .' data-viewer-scope="content"'
             .' data-viewer-key="'.e($key).'"'
-            .' data-viewer-kind="image"'
+            .' data-viewer-kind="'.e($kind).'"'
             .' data-viewer-src="'.e($source).'"'
             .' data-viewer-alt="'.e($alt).'"'
-            .' data-viewer-title="'.e($alt !== '' ? $alt : 'Image').'"'
-            .' role="button" tabindex="0" aria-label="'.e('Enlarge image'.($alt !== '' ? ': '.$alt : '')).'"';
+            .' data-viewer-title="'.e($alt !== '' ? $alt : ($kind === 'video' ? 'Video' : 'Image')).'"'
+            .($trigger ? ' role="button" tabindex="0" aria-label="'.e('Enlarge image'.($alt !== '' ? ': '.$alt : '')).'"' : '');
     }
 }

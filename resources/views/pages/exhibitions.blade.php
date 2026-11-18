@@ -77,59 +77,63 @@
                 @if ($hasDetails)
                         </summary>
                         <div class="exhibition-entry__body">
-                            {{-- Cover, practical information and long-form prose each have a
-                                 stable editorial place. No empty partner column is rendered. --}}
+                            {{-- Cover and content stay in distinct editorial columns when
+                                 a cover exists. Without one, content starts at the body edge. --}}
                             @if ($hasFeature)
                                 <div class="exhibition-entry__feature{{ $hasCover ? ' exhibition-entry__feature--with-cover' : '' }}">
                                     @if ($hasCover)
                                         {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', includeInheritedCopyright: false, showCaption: false, enableViewer: (bool) $exhibition->image_viewer_enabled, manualVideoPlayback: $isVideoCover) !!}
                                     @endif
-                                    @if ($hasFacts || $hasActions)
-                                        <div class="exhibition-entry__info">
-                                            @if ($hasFacts)
-                                                <dl class="exhibition-entry__facts">
-                                                    @if ($physicalVenue !== null)
-                                                        <div class="exhibition-entry__fact">
-                                                            <dt>Venue</dt>
-                                                            <dd>{{ $physicalVenue }}</dd>
+                                    @if ($hasFacts || $hasActions || $hasDescription)
+                                        <div class="exhibition-entry__content">
+                                            @if ($hasFacts || $hasActions)
+                                                <div class="exhibition-entry__info">
+                                                    @if ($hasFacts)
+                                                        <dl class="exhibition-entry__facts">
+                                                            @if ($physicalVenue !== null)
+                                                                <div class="exhibition-entry__fact">
+                                                                    <dt>Venue</dt>
+                                                                    <dd>{{ $physicalVenue }}</dd>
+                                                                </div>
+                                                            @endif
+                                                            @if ($vernissage !== null)
+                                                                <div class="exhibition-entry__fact">
+                                                                    <dt>Vernissage</dt>
+                                                                    <dd>{{ $vernissage }}</dd>
+                                                                </div>
+                                                            @endif
+                                                            @if ($address !== null)
+                                                                <div class="exhibition-entry__fact">
+                                                                    <dt>Address</dt>
+                                                                    <dd>{{ $address }}</dd>
+                                                                </div>
+                                                            @endif
+                                                        </dl>
+                                                    @endif
+                                                    @if ($hasActions)
+                                                        <div class="exhibition-entry__links">
+                                                            @if ($map !== null)
+                                                                <button class="exhibition-entry__map-trigger" type="button"
+                                                                    data-exhibition-map-open
+                                                                    aria-haspopup="dialog"
+                                                                    aria-controls="{{ $mapDialogId }}">
+                                                                    Show map
+                                                                </button>
+                                                            @endif
+                                                            @if ($exhibition->publicFieldVisible('external_url') && $exhibition->external_url !== null)
+                                                                <a href="{{ $exhibition->external_url }}" target="_blank" rel="noopener noreferrer"
+                                                                    data-matomo-event-category="Journal"
+                                                                    data-matomo-event-action="exhibition_external_click"
+                                                                    data-matomo-event-name="{{ $exhibition->title }}">More information <x-public-icon name="external-link" /></a>
+                                                            @endif
                                                         </div>
-                                                    @endif
-                                                    @if ($vernissage !== null)
-                                                        <div class="exhibition-entry__fact">
-                                                            <dt>Vernissage</dt>
-                                                            <dd>{{ $vernissage }}</dd>
-                                                        </div>
-                                                    @endif
-                                                    @if ($address !== null)
-                                                        <div class="exhibition-entry__fact">
-                                                            <dt>Address</dt>
-                                                            <dd>{{ $address }}</dd>
-                                                        </div>
-                                                    @endif
-                                                </dl>
-                                            @endif
-                                            @if ($hasActions)
-                                                <div class="exhibition-entry__links">
-                                                    @if ($map !== null)
-                                                        <button class="exhibition-entry__map-trigger" type="button"
-                                                            data-exhibition-map-open
-                                                            aria-haspopup="dialog"
-                                                            aria-controls="{{ $mapDialogId }}">
-                                                            Show map
-                                                        </button>
-                                                    @endif
-                                                    @if ($exhibition->publicFieldVisible('external_url') && $exhibition->external_url !== null)
-                                                        <a href="{{ $exhibition->external_url }}" target="_blank" rel="noopener noreferrer"
-                                                            data-matomo-event-category="Journal"
-                                                            data-matomo-event-action="exhibition_external_click"
-                                                            data-matomo-event-name="{{ $exhibition->title }}">More information <x-public-icon name="external-link" /></a>
                                                     @endif
                                                 </div>
                                             @endif
+                                            @if ($hasDescription)
+                                                <div class="rich-text journal-entry-content exhibition-entry__description">{!! $exhibition->image_viewer_enabled ? $journalMedia->renderRichText((string) $exhibition->description) : $richText->render((string) $exhibition->description) !!}</div>
+                                            @endif
                                         </div>
-                                    @endif
-                                    @if ($hasDescription)
-                                        <div class="rich-text journal-entry-content exhibition-entry__description">{!! $exhibition->image_viewer_enabled ? $journalMedia->renderRichText((string) $exhibition->description) : $richText->render((string) $exhibition->description) !!}</div>
                                     @endif
                                 </div>
                             @endif

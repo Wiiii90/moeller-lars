@@ -4,6 +4,12 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Current requested corrections (2026-11-18)
+
+- **Exhibition mixed-media modal:** `JournalMediaRenderer` previously excluded videos from the existing Artwork Viewer's ordered item list. Shared `PublicImageViewer::attributes()` now represents both image and video kinds; video metadata participates in the same sequence without an inline click trigger, preserving page-level native playback controls. The modal already supports video playback and image/video navigation, including pause/unload on transition or close. Applies to Exhibition cover/gallery and the direct Blog Journal media consumers when the editor has enabled the viewer.
+- **Exhibition cover and description:** `exhibitions.blade.php` now groups Venue/Address/actions and the description into one content column to the right of an optional cover. The canonical Public Exhibition stylesheet uses a two-column grid at sufficiently wide container sizes, not a float, so the description keeps its left edge with the facts and spans the remaining right-hand space, even below the cover's height. A narrow container stacks the cover above the full-width content. Without a cover, content stays left-aligned and full width. The description's old `38rem` cap was removed.
+- **Verification:** source inspected; browser/playback and responsive rendering **not yet executed or artist accepted**. Check image → video → image in full-size modal, video controls/sound, next/back and close pause, cover and no-cover cases, slideshow and grid/mosaic, the editor's viewer-disabled setting, plus long rich-text tables/images at wide and narrow sizes. No database changes, source-side tests, deployment, or Continuous Integration were run.
+
 ## Accepted behavior and current source
 
 - Dates: `starts_on` and `ends_on` independently preserve year, month or exact-day precision; an exact start with no end is one day. `ExhibitionDate` is the canonical parser/range/temporal owner. Shared Add/Edit uses `AdminPartialDateControl`, with the Starts help icon explaining one-day entry. The active `date_text` field is retired. Immutable historical checkpoints are not rewritten; the existing publication/restore owner must project historical dates when restoring.
@@ -30,4 +36,4 @@
 
 ## Next
 
-Await the user's next explicitly scoped Dev Worker 1 instruction. Before each write, read the fresh `dev` head and confirm this branch-local lease. The replacement itself changes no application code.
+Have the artist review both 2026-11-18 Exhibition corrections in a fresh local preview; hand browser/regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.

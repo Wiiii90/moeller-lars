@@ -1555,8 +1555,8 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     --exhibition-date-track: 6.5rem;
     --exhibition-column-gap: 1.2rem;
     --exhibition-rule: rgba(130, 116, 100, .35);
-    /* With a cover, the float and its right gap occupy the tracks before
-       the title. Without a cover, the detail body uses its full width. */
+    /* With a cover, the detail's media column and gap align with the
+       title axis. Without a cover, the detail body uses its full width. */
     --exhibition-title-offset: calc(var(--exhibition-media-track) + var(--exhibition-date-track) + 2 * var(--exhibition-column-gap));
     color: var(--public-ink);
 }
@@ -1732,22 +1732,27 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     display: flow-root;
     min-width: 0;
 }
-/* A cover floats within the shared content flow: text starts beside it and
-   continues full-width below. With no cover, info and prose start at the
-   existing body's left padding, without a reserved image column. */
+/* Only the media occupies the left column: address and long-form content
+   share the full remaining width, never wrap underneath the cover.
+   Narrow screens stack rather than forcing an unreadably small text column. */
 .exhibition-entry__cover {
     width: min(100%, 14rem);
     min-width: 0;
     margin: 0 0 1rem;
 }
+.exhibition-entry__content {
+    min-width: 0;
+}
 @container (min-width: 27rem) {
+    .exhibition-entry__feature--with-cover {
+        display: grid;
+        grid-template-columns: min(14rem, calc(var(--exhibition-title-offset) - var(--exhibition-column-gap))) minmax(0, 1fr);
+        column-gap: var(--exhibition-column-gap);
+        align-items: start;
+    }
     .exhibition-entry__feature--with-cover .exhibition-entry__cover {
-        float: inline-start;
-        /* Cover and gap occupy the columns before the title, keeping
-           adjacent text on the title axis. Without a cover, the detail
-           content instead begins at the body's left edge. */
-        width: min(14rem, calc(var(--exhibition-title-offset) - var(--exhibition-column-gap)));
-        margin: 0 var(--exhibition-column-gap) .85rem 0;
+        width: 100%;
+        margin: 0;
     }
 }
 .exhibition-entry__cover img {
@@ -1806,7 +1811,6 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 }
 .exhibition-entry__description {
     min-width: 0;
-    max-width: 38rem;
     margin: .8rem 0 0;
     color: #534f49;
     font-size: .85rem;

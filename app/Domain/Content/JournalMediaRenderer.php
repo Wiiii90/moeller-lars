@@ -57,13 +57,21 @@ final class JournalMediaRenderer
         // by their existing canonical media metadata, not this display flag.
         $caption = trim(implode(' · ', array_filter([$credit, $copyright], static fn (string $value): bool => $value !== '')));
 
-        $viewerAttributes = $enableViewer && ! $isVideo
-            ? $this->viewer->attributes('journal-media-'.(int) $usage->getKey(), $this->media->originalUrlForAsset($asset), $alt)
+        // Video participates in viewer navigation without taking over the
+        // native play/pause controls of the inline Journal presentation.
+        $viewerAttributes = $enableViewer
+            ? $this->viewer->attributes(
+                'journal-media-'.(int) $usage->getKey(),
+                $this->media->originalUrlForAsset($asset),
+                $alt,
+                $isVideo ? 'video' : 'image',
+                ! $isVideo,
+            )
             : '';
 
         $dimensions = $width > 0 && $height > 0 ? ' width="'.$width.'" height="'.$height.'"' : '';
         $element = $isVideo
-            ? '<video src="'.e($this->media->originalUrlForAsset($asset)).'" aria-label="'.e($alt).'"'
+            ? '<video src="'.e($this->media->originalUrlForAsset($asset)).'" aria-label="'.e($alt).'"'.$viewerAttributes
                 .($posterUrl !== null ? ' poster="'.e($posterUrl).'"' : '')
                 .($posterVariant !== null ? ' width="'.(int) $posterVariant->getAttribute('width').'" height="'.(int) $posterVariant->getAttribute('height').'"' : '')
                 .($manualVideoPlayback || $usage->videoControlsEnabled() ? ' controls' : '')
