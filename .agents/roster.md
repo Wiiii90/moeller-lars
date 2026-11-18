@@ -10,7 +10,7 @@
 | Dev Worker 4 | 17 | Active — one responsive interactive Live Preview; browser acceptance pending | Gallery/Artwork presentation, Stage, shared General/Gallery Live Preview; no unrelated General appearance or media lifecycle | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 11 | Active — Pages preview findings | Pages settings semantics/consistency; failed page-type switch must restore the persisted selection | [dev-5.md](workers/dev-5.md) |
 
-| Dev Worker 6 | 16 | Active — Dummy Galleries and ranked source selection implemented; browser acceptance pending | Home Hero: Dummy Gallery create/edit, Gallery ranking, Total/Per Gallery, Stage/Settings, Public source; no tests/deployment | [dev-6.md](workers/dev-6.md) |
+| Dev Worker 6 | 16 | Active — targeted source corrections committed; local Preview/browser acceptance outstanding | Home Hero: Dummy Galleries, candidate ranking/selection, Stage/Settings, public resolver, shared Create dialog; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 13 | Active — General Appearance preview corrections | Appearance Global/Title/Menu/Page/Legal, preview geometry/persistence, Regional Formats hints | [dev-7.md](workers/dev-7.md) |
 | Dev Worker 8 | 15 | Active — shared dialog styling and structural audit | Central Dialog frame and grouping contract; Stage/toolbar capability parity rules; identify cross-feature follow-ups without editing other workers' owned dialogs | [dev-8.md](workers/dev-8.md) |
 
