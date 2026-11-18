@@ -30,7 +30,7 @@
 
 ## Popup and Storage media-selection follow-up
 - New shared presentation source: `resources/css/admin/primitives.css` provides `--admin-overlay-corner-radius`; `dialog-contract.css`, `controls.css` and `forms.css` apply it to modal windows, Filament Select/dropdown/date/color/floating panels, shared partial-date and Rich Text tool panels and Help popovers.
-- `resources/css/admin/controls.css` centrally hides the visible scrollbar for popup scrolling surfaces while preserving their `overflow` and keyboard/focus handling. Ordinary modal-internal scrollbars remain visible under their separate accepted contract.
+- `resources/css/admin/controls.css` centrally hides the visible scrollbar for popup scrolling surfaces while preserving their `overflow` and keyboard/focus handling. Modal content now also hides scrollbar chrome under the revised Admin rule; its independent native scroll behavior remains intact.
 - `MediaAssetSelect::searchOptions()` no longer hard-limits 24 initial or 30 search results; `make()` raises Filament's relationship preload cap to its integer maximum. It still constrains `state=available`, preserves supplied media-type and custom query predicates, and keeps the existing preview markup with `loading="lazy"`.
 - The Rich Text `RichTextMediaPicker` child, secure selection payload and image insertion/persistence flows are untouched; no parallel media-picker implementation was added.
 - Server-side option pagination is not implemented in the native Filament Select; full result lists may be costly for large libraries, so benchmark with the real artist Storage dataset before claiming performance acceptance.
@@ -43,7 +43,7 @@
 - Consolidated modal root overflow locking for the native exhibition map and fullscreen Artwork Viewer in `app.css` and removed their now-obsolete gutter reservation. Eliminated the redundant Preview-touch-only scrollbar styling and old viewer lock from `public-presentation.css`. The rest of the Public layout, menu window algorithm, Artwork Viewer and modal lifecycles are untouched.
 - Direct consumers: public routes (Home, Gallery, Artwork, Exhibitions, Blog, Custom Pages), narrow/desktop and embedded Public Preview, native exhibition-map dialog, fullscreen Artwork Viewer. No Admin asset was modified.
 - Browser acceptance to verify with two same-width Public routes of different lengths and an image-heavy route: identical Main/Menu/chevron x coordinates on overflow transition; native keyboard/wheel/touch scrolling and sticky header; no blank scrollbar gutter; opening/closing fullscreen Viewer and exhibition map at original scroll position; Preview desktop vs touch iframe; no sideways overflow and no jumping on Livewire navigation. No such browser run was available in this connector-only source task.
-- A documentation-only follow-up for the Docs owner is needed: `docs/public/site.md` still describes a visible native root scrollbar and reserved Viewer gutter. Dev is not authorized to rewrite general manuals as part of this change; hand off after user browser review.
+- The Public site document was reconciled with the current hidden-root-scrollbar/no-gutter design in the user-requested targeted documentation follow-up. Artist-selectable alternatives remain deferred.
 
 ## Admin scrollbar stability (2026-11-18)
 - The user accepts hidden native scrollbars on Public for now, requests the same for Admin with special attention to dialog stability and removal of obsolete code. Public scrollbar preference controls are deferred, not implemented.
@@ -53,12 +53,14 @@
 - Storage deletion reference scroll areas no longer reserve a stable scrollbar gutter. Shared Visual Stage panes hide their own scrollbar chrome; preexisting Gallery/Home/Storage feature scroll styles, table geometry and transient popover behavior were left unchanged.
 - The Filament Support patch is **retained intentionally**, including nested and long/short document locks, until real browser testing confirms any alteration is safe. It is not a redundant second scroll implementation and was not modified or replaced by event listeners, body padding or fixed layout offsets.
 - Required browser acceptance (not run): long and short pages, scroll at nonzero position, dialog open/change/autosave/close/animation, nested Select/Rich Text, backdrop wheel block, Sidebar and Stage inner scrolling, Storage references, Firefox and Chromium. Check unchanged `documentElement.clientWidth`, modal coordinates and exact restored `scrollY`.
-- The existing role-wide contract and Admin Dialog documentation still describe *visible* scrollbars. Today's newer explicit user instruction overrides this presentation detail. Docs/Testing should reconcile after browser review; Dev does not edit general docs or tests.
+- The user explicitly requested completion of non-browser follow-up, including existing contract/test inconsistencies. Updated the exact affected rule in `AGENTS.md`, targeted Admin Dialog/Responsive and Public Site documentation, and the existing source/browser regression specifications on `dev`; there is no new file family or general documentation restructuring. Browser tests were **not run**.
+- The source tests still exercise long/short/nested Filament locks, and also assert the intended hidden-scrollbar CSS; browser specs now assert no root gutter, hidden native chrome, stable modal geometry and retained background scroll-lock, rather than describing visible scrollbars.
+- The version-locked Filament patch remains fully intact: only a source comment and its printed success text were adjusted so they do not suggest a visible scrollbar. Removing or simplifying its long-page fixed-body/scroll-restoration behavior would require cross-browser runtime evidence that is not available in this task.
 - User-selectable Public scrollbar modes are intentionally unresolved.
 
 ## Verification and next actions
 - Source review: confirmed the central dialog window radius remains `.25rem` in `dialog-contract.css`, and checked current affected dialog source. Existing modal header actions intentionally remain round; no change requested to action buttons.
 - Verify published changed files at the committed HEAD.
-- Local build, screenshot/browser review, large-library performance, popup scrolling/keyboard behavior, Rich Text image insertion and user visual acceptance remain unverified.
+- Local build and browser review, large-library performance, popup scrolling/keyboard behavior, Rich Text image insertion and user visual acceptance remain unverified. The targeted non-browser source specifications are updated, not browser-executed.
 - Review the small-radius dialog in Light/Dark and native account/security dialogs before changing any further shared appearance.
 - Discuss a distinct restrained dialog surface color rather than silently forcing one before user selection.

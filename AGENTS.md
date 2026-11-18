@@ -43,18 +43,22 @@ Literal identifiers in source code, paths, commands, configuration keys and exis
 
 ## Browser-accepted dialog scroll-lock contract — do not regress
 
-The admin dialog behavior accepted in browser review on 2026-10-11 is a
-**protected product invariant**, not disposable styling or a temporary workaround:
+The background-lock and restoration behavior accepted in browser review on
+2026-10-11 remains a **protected product invariant**. The later user decision
+on 2026-11-18 hides Admin scrollbar chrome to avoid width shifts; that visual
+change is source-implemented but **not yet browser-accepted**:
 
-- **Long pages:** Keep the existing native document scrollbar visible and in its
-  exact place during blocking dialogs; prevent background scrolling; preserve
-  document geometry and scroll position on close.
-- **Short pages:** Never manufacture a document scrollbar, right gutter, or
-  horizontal shift. Opening **and closing**, including the leave animation,
-  must not briefly flash a scrollbar. Keep the short-page body in normal flow;
-  the root overflow lock suffices when there was no document scroll range.
+- **Admin root, Sidebar and dialog body:** Preserve native wheel, keyboard,
+  trackpad and touch scrolling, with scrollbar chrome hidden and no permanent
+  reserved gutter. The document/Sidebar/dialog still have distinct scroll owners.
+- **Long pages:** Keep root geometry and the original scroll position stable
+  throughout blocking dialogs; prevent background scrolling and restore the
+  exact scroll position after the complete close lifecycle.
+- **Short pages:** Never manufacture scroll range, scrollbar space or horizontal
+  shifts, including during the leave animation. Keep the short-page body in
+  normal flow; the root overflow lock suffices when no document scroll range exists.
 - **All dialogs:** Conditional field/checkbox changes must not move the window.
-  Preserve the persistent root-owned geometry variables and declarative Filament
+  Preserve persistent root-owned geometry variables and declarative Filament
   modal CSS across Livewire morphs; retain framework focus/Escape/X lifecycle.
 - **Single owner:** Filament's existing modal lock and counter remain authoritative.
   The reviewed, version-locked build-time adjustment lives in
@@ -67,9 +71,11 @@ The admin dialog behavior accepted in browser review on 2026-10-11 is a
   version guard and patch, rather than silently removing this behavior.
 - **Acceptance:** Keep the long/short/nested lifecycle tests in
   `tests/js/filament-scroll-lock-patch.test.mjs` and the real browser checks in
-  `tests/browser/e2e/admin/dialog-scroll-lock.spec.mjs`. A passing source-level test
-  does **not** imply browser acceptance. Retain the last accepted behavior unless
-  the user explicitly changes this contract.
+  `tests/browser/e2e/admin/dialog-scroll-lock.spec.mjs`. Verify the hidden-root,
+  Sidebar and modal chrome, the uninterrupted scroll affordances, stable dialog
+  coordinates and exact scroll-position restoration. A passing source-level test
+  does **not** imply browser acceptance. Retain the previously accepted lock
+  behavior; only scrollbar presentation changed by explicit user decision.
 
 See `docs/admin/dialogs.md` and `docs/admin/ui.md` for shared UI geometry.
 

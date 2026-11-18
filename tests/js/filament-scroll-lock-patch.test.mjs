@@ -11,6 +11,52 @@ const source = patch.split("$replacement = <<<'JS'\n")[1]?.split('\nJS;')[0];
 
 assert.ok(source?.endsWith(',qo='), 'Versioned replacement source must exist');
 
+// The lock preserves scrolling geometry. Presentation belongs to the Admin
+// and Public scroll-container styles, not to the Filament runtime patch.
+const adminLayout = readFileSync(
+    new URL('../../resources/css/admin/layouts.css', import.meta.url),
+    'utf8',
+);
+const adminDialogs = readFileSync(
+    new URL('../../resources/css/admin/dialog-contract.css', import.meta.url),
+    'utf8',
+);
+const adminMedia = readFileSync(
+    new URL('../../resources/css/admin/media.css', import.meta.url),
+    'utf8',
+);
+const publicFoundation = readFileSync(
+    new URL('../../resources/css/app.css', import.meta.url),
+    'utf8',
+);
+
+test('shared root/sidebar/modal scrollbars are visually hidden without permanent gutters', () => {
+    assert.match(
+        adminLayout,
+        /html\.fi,\s*\.fi-sidebar-nav\s*\{[^}]*scrollbar-gutter:\s*auto\s*!important;[^}]*scrollbar-width:\s*none;/,
+    );
+    assert.match(adminLayout, /html\.fi::-webkit-scrollbar,\s*\.fi-sidebar-nav::-webkit-scrollbar/);
+    assert.match(
+        adminDialogs,
+        /\.fi-modal:not\(\.fi-modal-click-through\) \.fi-modal-content\s*\{[^}]*scrollbar-width:\s*none;/,
+    );
+    assert.match(adminDialogs, /\.fi-modal:not\(\.fi-modal-click-through\) \.fi-modal-content::-webkit-scrollbar/);
+    assert.match(
+        adminMedia,
+        /\.media-delete-dialog__references\s*\{[^}]*scrollbar-width:\s*none;/,
+    );
+    assert.doesNotMatch(
+        adminMedia,
+        /\.media-delete-dialog__references\s*\{[^}]*scrollbar-gutter:\s*stable;/,
+    );
+    assert.match(
+        publicFoundation,
+        /html:has\(> body\.public-site\)\s*\{[^}]*scrollbar-width:\s*none;/,
+    );
+    assert.doesNotMatch(publicFoundation, /scrollbar-gutter:\s*stable/);
+});
+
+
 function modalLock({ height, viewportHeight, scrollY = 0 }) {
     const originalRoot = { overflow: '', overflowX: '', overflowY: '', minHeight: '' };
     const originalBody = { position: '', top: '', left: '', width: '' };
@@ -36,7 +82,7 @@ function modalLock({ height, viewportHeight, scrollY = 0 }) {
     return { acquire, release, root, body, window, listeners, originalRoot, originalBody };
 }
 
-test('long pages retain their native scrollbar and frozen scroll position', () => {
+test('long pages retain native scroll geometry and a frozen background position', () => {
     const state = modalLock({ height: 2400, viewportHeight: 800, scrollY: 560 });
     state.acquire();
     assert.equal(state.root.style.overflowY, 'scroll');
@@ -55,7 +101,7 @@ test('long pages retain their native scrollbar and frozen scroll position', () =
     assert.equal(state.window.scrollY, 560);
 });
 
-test('short pages do not gain a native scrollbar or reserved gutter', () => {
+test('short pages do not gain scroll range or a reserved gutter', () => {
     const state = modalLock({ height: 800, viewportHeight: 800 });
     state.acquire();
     // This fixture uses plain style objects, not CSSStyleDeclaration: the

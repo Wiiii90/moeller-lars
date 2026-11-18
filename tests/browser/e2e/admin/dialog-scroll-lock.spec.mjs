@@ -10,16 +10,21 @@ async function geometry(page) {
         viewportHeight: document.documentElement.clientHeight,
         documentHeight: document.documentElement.scrollHeight,
         scrollY: window.scrollY,
+        rootScrollbarChrome: getComputedStyle(document.documentElement).scrollbarWidth,
     }));
 }
 
-test('long admin pages retain their scrollbar and background position through a blocking modal', async ({ page }) => {
+test('long admin pages keep full root width and background position through a blocking modal', async ({ page }) => {
     await signIn(page);
     await page.setViewportSize({ width: 1280, height: 360 });
     await page.goto('/admin/pages');
 
     const before = await geometry(page);
     expect(before.documentHeight, 'Fixture must have actual document overflow').toBeGreaterThan(before.viewportHeight);
+    expect(before.rootScrollbarChrome, 'Root scrollbar chrome must be hidden on a long page').toBe('none');
+    expect(before.rootWidth, 'No classic scrollbar gutter may reduce the document width').toBe(before.viewportWidth);
+    expect(await page.locator('.fi-sidebar-nav').evaluate((element) => getComputedStyle(element).scrollbarWidth))
+        .toBe('none');
 
     const open = page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true });
     const dialogHeading = page.getByRole('heading', { name: 'Add page', exact: true });
@@ -27,8 +32,11 @@ test('long admin pages retain their scrollbar and background position through a 
     await expect(dialogHeading).toBeVisible();
 
     const during = await geometry(page);
-    expect(during.rootWidth, 'Opening the modal must not move the document scrollbar')
+    expect(during.rootWidth, 'Opening the modal must not change document width')
         .toBe(before.rootWidth);
+    expect(during.rootScrollbarChrome).toBe('none');
+    expect(await page.locator('.fi-modal.fi-modal-open .fi-modal-content').last()
+        .evaluate((element) => getComputedStyle(element).scrollbarWidth)).toBe('none');
     expect(during.scrollY, 'Opening the modal must not move background content')
         .toBe(before.scrollY);
 
@@ -57,6 +65,7 @@ test('short admin pages do not invent a scrollbar or horizontal shift while a mo
         .toBeLessThanOrEqual(before.viewportHeight);
     expect(before.rootWidth, 'Short pages must not reserve a fake scrollbar gutter')
         .toBe(before.viewportWidth);
+    expect(before.rootScrollbarChrome).toBe('none');
 
     const open = page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true });
     const dialogHeading = page.getByRole('heading', { name: 'Add page', exact: true });
@@ -127,9 +136,9 @@ test('Dashboard dialog stays positioned and background stays locked after checkb
 });
 
 
-test('short Dashboard stays scrollbar-free during closing transition', async ({ page }) => {
+test('short Dashboard never gains a root gutter or horizontal shift during modal close', async ({ page }) => {
 
-    // Guarantee an initially scrollbar-free Dashboard without modifying CSS.
+    // Guarantee an initially short Dashboard without modifying document CSS.
     await page.setViewportSize({ width: 1440, height: 3000 });
     await signIn(page);
 
@@ -166,7 +175,7 @@ test('short Dashboard stays scrollbar-free during closing transition', async ({ 
     expect(frames.length).toBeGreaterThan(4);
     const left = frames[0].mainLeft;
     for (const frame of frames) {
-        expect(frame.scrollbarWidth, 'Closing briefly showed a native scrollbar').toBe(0);
+        expect(frame.scrollbarWidth, 'Closing briefly reserved document scrollbar space').toBe(0);
         expect(frame.bodyPosition, 'Closing toggled body positioning on a short page').toBe('');
         expect(Math.abs(frame.mainLeft - left), 'Closing shifted the workspace').toBeLessThan(1);
     }

@@ -51,7 +51,7 @@ var nr=0,kr=null,Ns=()=>{
         };
         // On a short page there is no document scroll position to freeze.
         // Keep the body in flow: fixing/unfixing it creates a transient
-        // document-height change (and a one-frame scrollbar on close).
+        // document-height change (and a one-frame width/scroll jump on close).
         if(!hadVerticalScrollbar){
             root.style.overflow="hidden";
             kr=()=>{root.style.overflow=original.rootOverflow;root.style.overflowX=original.rootOverflowX;root.style.overflowY=original.rootOverflowY};
@@ -113,4 +113,4 @@ if ($replacements !== 1 || file_put_contents($bundlePath, $updated) === false) {
     exit(1);
 }
 
-echo "Filament modal scroll-lock patched (single owner, native scrollbar preserved).\n";
+echo "Filament modal scroll-lock patched (single owner, native scroll geometry preserved).\n";
