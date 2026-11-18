@@ -782,6 +782,17 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     margin: .76rem 0 0;
 }
 
+/* Gallery paper follows the widest height-fitted Artwork, up to the real
+   viewport width. General's normal shell remains the minimum, and Menu
+   geometry is unchanged. Without this the 650px reading track silently
+   prevents landscape Artworks from reaching the intended image height. */
+#content.site-content--gallery-index {
+    width: fit-content;
+    min-width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
+    max-width: calc(100% - (2 * var(--public-gutter)));
+    padding-top: 1rem;
+}
+
 .artwork-list {
     /* Gallery-only image presentation. Reserve space for the sticky Menu and
        Artwork information instead of sizing portraits from the paper width.
@@ -790,7 +801,8 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     --gallery-artwork-height: min(94svh, calc(100svh - 6rem));
     --gallery-artwork-gap: clamp(2.5rem, 6.5svh, 4.5rem);
     display: block;
-    width: min(100%, var(--public-art-max));
+    width: max-content;
+    max-width: 100%;
     min-width: 0;
     margin-inline: auto;
 }
@@ -846,6 +858,12 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     min-height: max(0px, calc(100svh - 12rem));
     margin-bottom: var(--gallery-artwork-gap);
 }
+/* The first Artwork starts near the Menu rather than being centered in a
+   mostly empty full-viewport slot. Later cards retain their vertical rhythm. */
+.artwork-list > .artwork-card:first-child {
+    min-height: 0;
+    align-content: start;
+}
 
 /* Deterministic five-stop drift. Track fractions divide only the space left
    after intrinsic media sizing. Wide works stay nearly centered and no
@@ -877,7 +895,8 @@ body.public-site:has(.site-content--fitted-image) .site-header {
    image-width caption alignment target still image Artworks only. */
 .artwork-list .artwork-card__composition--video {
     grid-column: 1 / -1;
-    width: 100%;
+    width: min(100%, var(--public-art-max));
+    justify-self: center;
 }
 .artwork-list .artwork-card__composition--video > .artwork-card__link {
     width: 100%;
@@ -927,6 +946,13 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     max-height: var(--gallery-artwork-height);
     margin-inline: 0;
     object-fit: contain;
+}
+/* When variant dimensions are known, allow upscaling to the Gallery height
+   ceiling without stretching beyond the available horizontal space. The
+   browser derives height from the original aspect ratio on width reduction,
+   keeping the caption aligned with the actually rendered media width. */
+.artwork-list .artwork-card--gallery-ratio .artwork-card__image {
+    width: calc(var(--gallery-artwork-height) * var(--gallery-image-aspect));
 }
 .artwork-list .artwork-card__video {
     max-height: var(--gallery-artwork-height);
