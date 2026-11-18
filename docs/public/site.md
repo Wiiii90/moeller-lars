@@ -136,9 +136,10 @@ decoration) and **Backing** (one complete sheet under each existing Menu/Page
 surface). The same real `site-navigation-surface` owns the Menu paper at all
 viewports, including expanded Artwork where only the navigation inside it is
 narrower. `#content` owns the Page paper. Both surfaces use one shared
-offset and the same absolute full-size `::before` underlay behind their
-respective backgrounds; no box-shadow stack, route-seeded contours, clipped
-edge pieces or separate frame renderer remain. Their backing follows natural
+offset and the same absolute full-size `::before` underlay. A matching
+`::after` repaints each existing front paper color above that underlay and
+below real page content; it is not another backing sheet. No box-shadow stack,
+route-seeded contours, clipped edge pieces or separate renderer remain. Their backing follows natural
 dimensions and scroll behavior without relying on the other surface's width,
 divider setting or connectedness. The Menu's underlay is offset toward the
 top-left, rather than trailing below its sticky edge into the moving Content.

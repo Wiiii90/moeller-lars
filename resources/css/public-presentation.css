@@ -1920,32 +1920,46 @@ html:has(.artwork-viewer[open]) {
     background: var(--public-separator-paint, var(--public-separator-color, rgba(255, 255, 255, .68)));
 }
 
-/* Backing is ONE physical, opaque sheet behind each visible front sheet.
- * This selector is the only Backing renderer in the Public application.
- * The Menu surface is a real box in every layout, including sticky headers,
- * Gallery and wide Artwork. The Page uses its natural #content rectangle.
+/* Backing is ONE full-size paper under each visible Menu/Page surface.
+ * The real Menu wrapper, including sticky and wide Artwork configurations,
+ * is always the same owner. No clipped edge strips or box-shadow layers.
  *
- * Move both backing sheets left and UP rather than down: a sticky Menu must
- * never paint a trailing strip over Content while the document scrolls.
- * A complete 100% by 100% plane replaces all box shadows and edge fragments.
- * Isolation keeps the underlay above the site's background, behind its own
- * front sheet, and out of the foreground/menu hit targets. */
+ * Isolation places both paper planes inside the surface's stacking context.
+ * The rear ::before is shifted up/left, while ::after repaints the existing
+ * front surface (its CSS background variable, not a second backing).
+ * Both sit behind actual navigation and content. Keeping the rear sheet
+ * above the Menu instead of trailing below its sticky lower edge prevents
+ * the backing from painting over Content while the document scrolls. */
 body.public-site--frame-backing .site-navigation-surface,
 body.public-site--frame-backing #content:not(.site-content--transparent) {
     isolation: isolate;
 }
 body.public-site--frame-backing .site-navigation-surface::before,
-body.public-site--frame-backing #content:not(.site-content--transparent)::before {
+body.public-site--frame-backing #content:not(.site-content--transparent)::before,
+body.public-site--frame-backing .site-navigation-surface::after,
+body.public-site--frame-backing #content:not(.site-content--transparent)::after {
     position: absolute;
-    z-index: -1;
-    top: calc(-1 * var(--public-backing-offset));
-    left: calc(-1 * var(--public-backing-offset));
     display: block;
     width: 100%;
     height: 100%;
     content: "";
     pointer-events: none;
+}
+body.public-site--frame-backing .site-navigation-surface::before,
+body.public-site--frame-backing #content:not(.site-content--transparent)::before {
+    z-index: -2;
+    top: calc(-1 * var(--public-backing-offset));
+    left: calc(-1 * var(--public-backing-offset));
     background: var(--public-backing-color);
+}
+body.public-site--frame-backing .site-navigation-surface::after,
+body.public-site--frame-backing #content:not(.site-content--transparent)::after {
+    z-index: -1;
+    inset: 0;
+    background: var(--public-menu-background);
+}
+body.public-site--frame-backing #content:not(.site-content--transparent)::after {
+    background: var(--public-content-background);
 }
 
 .site-header--name-inside,
