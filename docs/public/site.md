@@ -439,13 +439,13 @@ Illustrated entries alternate image side by illustrated-entry order; prose
 flows beside and beneath an uncropped work. Text-only entries create no empty
 cover slots. A content-fit threshold stacks the layout without changing fonts.
 
-Every public page, including Home, Gallery, Blog, Exhibitions, artwork detail
-and Custom Page, shares the intentionally asymmetric *Atelier sheet* on its
-existing neutral-white, artist-configured `#content` shell. The common hard-
-edged external contours belong to the shell owner in `public-presentation.css`,
-not to a Journal content selector or copied page-specific CSS. They consume no
-Content width, disappear on narrow viewports, and never change artist-configured
-background, reading insets or media size. Only the Blog's actual artworks have
+Every Public page, including Home, Gallery, Blog, Exhibitions, Artwork detail
+and Custom Page, shares the same artist-configured `#content` shell. Exterior
+paper stacking is controlled solely by General's Plain/Backing choice at the
+shared owner in `public-presentation.css`, not by Journal selectors or copied
+feature-specific decoration. The Backing follows natural content dimensions,
+including narrow viewports, and never alters artist backgrounds, reading
+insets or media size. Only the Blog's actual artworks have
 small square-edged double-line mounts. The additional Gallery item corners have been rejected and entirely removed:
 artwork images and existing labels are separated by their natural white space.
 Collapsed Exhibition entries remain undecorated. Expanded entries use at most
@@ -456,8 +456,8 @@ repeated corner ornaments or new entry rules.
 No artwork is cropped or covered.
 The existing artist name and navigation retain their independent layout owners.
 
-The layered outer-sheet silhouette and the Blog's small angled corner strokes
-on individual entries are the only accepted new interior accents. These Blog
+When Backing is chosen, its two complete lower sheets and the Blog's small
+angled corner strokes are the only accepted paper accents. These Blog
 strokes may enter the configured content padding but never displace text into
 it; they alternate to the left or right with the cover composition. The
 translucent headline washes, Exhibition date marks, heading backgrounds,

@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 13 (active)  
-**Status:** General Frame Style reduction and full-paper Backing rewrite staged for dev; visual browser acceptance outstanding.
+**Status:** General Frame Style reduced to Plain/Backing on dev; full-paper Backing implemented, visual browser acceptance outstanding.
 
 ## Ownership and accepted decisions
 - General → Appearance (Global, Title, Menu, Page and Legal), Regional Formats, Admin live Preview and their direct Public consumers.
@@ -46,7 +46,7 @@
 ## Rejected one-off browser diagnostic removed (2026-11-17)
 - User rejected the one-off read-only Playwright divider diagnostic, which also failed at admin login due to absent disposable browser credentials. Removed the entire test from the canonical browser suite; do not keep it as a skipped/alias variant or require a test login for General preview diagnosis.
 - A direct browser investigation of the existing Admin iframe is preferred if a real browser session is available; current repo connection alone cannot access the user's local session. Investigate the Admin viewport scaling, framing and source-specific effective styles without patching unknown Public CSS.
-- Existing other General browser tests remain unchanged. Frame Styles continue to be deferred.
+- Existing other General browser tests remain unchanged. The previous Frame Style deferral is superseded by the explicit simplification request; visual acceptance is pending.
 
 ## Embedded Preview investigation — scoped source and screenshot evidence (2026-11-17)
 - Reviewed user screenshots, including the original near-header crop, against the current Public divider and paper-contour owners. The observed thin horizontal seam lies immediately below the navigation at the join of white Menu/Content areas, not in the Admin fake browser chrome. Its appearance only in the reduced embedded view is **consistent with** fractional scaling of independently painted layers revealing the gray Public background, but the screenshot alone cannot distinguish a raster seam from a stale effective Menu divider.
@@ -70,5 +70,5 @@
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.
-- Testing worker should review/execute the authored tests in an isolated environment when explicitly authorized. Frame Style visual behavior is deliberately left to later review.
+- Testing worker should review/execute the authored tests in an isolated environment when explicitly authorized. The two remaining Frame Styles require real-browser visual acceptance.
 - Final Legal text requires real operator, deployment and rights facts plus artist approval. 

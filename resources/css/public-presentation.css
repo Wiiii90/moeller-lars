@@ -696,7 +696,7 @@ body {
     width: min(100%, var(--public-art-max));
     margin-inline: auto;
 }
-/* The structural inner flow owns content width while #content keeps its static paper contours. */
+/* The structural inner flow owns content width; Backing never changes it. */
 .public-content-reveal {
     display: flow-root;
     min-width: 0;
