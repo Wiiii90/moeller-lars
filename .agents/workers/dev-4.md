@@ -2,7 +2,7 @@
 
 **Lease:** 20
 **Branch:** dev
-**State:** Shared decorative Artwork image/video outlines removed to eliminate visible 1px edge seams and apparent footer misalignment. Gallery spacing and Artwork detail General-width corrections retained. Source committed; browser acceptance pending.
+**State:** Fitted individual Artwork images and their information now form one vertically centered group, eliminating the empty gap below shorter landscape images. Existing General widths, Gallery spacing, media outlines and Museum side layout preserved in source; browser acceptance pending.
 
 ## Ownership and current scope
 
@@ -22,6 +22,13 @@
 - On the individual Artwork screenshot, a fine dark contour at both portrait-image edges originated from an inset `1px` decorative CSS outline on the shared `.artwork-image, .artwork-card__image, .artwork-detail__image` rule in `public-presentation.css`. That outline was inside the painted image and made its visible edge appear offset from the aligned information footer despite identical layout widths.
 - Removed the decorative media outline and its inward offset at the canonical source, not via a detail-only override. The same inset outline on shared Gallery/Artwork video media was removed from `app.css`; this avoids the same media-edge issue there. Existing keyboard focus indications on interactive links/controls remain intact. No changes to image dimensions, aspect ratios, Gallery offsets/gaps, General width/padding, text arrangement or Artwork Viewer behavior.
 - Source/CSS review only. A real Laravel Preview visual check of portrait/landscape Artwork details and Gallery cards/videos is still outstanding.
+
+## Fitted Artwork image-to-information height alignment — current correction
+
+- User accepted the current fit/scale and vertical centering for individual landscape Artworks, but reported an artificial large gap between a shorter centered image and Artwork information. Root cause: the `.artwork-detail__image-stage` filled the available viewport height and absolutely centered the image inside it; the information footer followed **after** the entire stage instead of after the visible image.
+- The existing `show.blade.php` renderer now groups fitted media and the *same* existing footer together in one `.artwork-detail__fitted-group` (not a new renderer or duplicate caption). The fitted group fills remaining height and centers its image-plus-information children together. The image itself is laid out in normal flow within the group so the footer's existing `.7rem` margin begins directly beneath the real image edge. Natural artwork ratio, image-width footer alignment, Gallery index, standard/nonfitted details, video and full-width General shell/padding stay unchanged.
+- Responsive Museum retains the same media-plus-information grouping when vertically stacked; at desktop Museum layout the group uses `display: contents` to keep the original side-information grid. Desktop Museum's centered image stage remains unchanged. The existing image-load fit function still owns width; its vertical budget now measures the stable folio bottom rather than the centered stage (avoiding layout-dependent iterative shrinking).
+- Verification so far: source-level replacement and contract checks only, no local Laravel preview or browser acceptance. Pay particular attention to short/wide landscape Artworks with/without information, fitted tall portraits, narratives, responsive Museum transition, image decode on initial/SPA render and narrow screens.
 
 ## Individual Artwork detail — current correction
 

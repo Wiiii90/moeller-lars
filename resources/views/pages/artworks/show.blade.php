@@ -67,6 +67,11 @@
             :next-artwork="$nextArtwork"
             :empty-step-mode="$edgeMode"
         />
+        @if ($fitArtwork)
+            {{-- Keep the fitted image and its information in one height-aware
+                 composition. Museum may expose its children as grid items. --}}
+            <div class="artwork-detail__fitted-group">
+        @endif
         <div class="artwork-detail__media">
             @if ($fitArtwork)
                 <div class="artwork-detail__image-stage">
@@ -145,6 +150,9 @@
         @if ($informationRows !== [])
             <div class="artwork-detail__footer">
                 <x-artwork-caption :artwork="$artwork" :rows="$informationRows" />
+            </div>
+        @endif
+        @if ($fitArtwork)
             </div>
         @endif
 

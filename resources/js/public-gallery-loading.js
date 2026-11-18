@@ -71,7 +71,15 @@ function initializeArtworkDetailImage(root) {
         const pageStyle = getComputedStyle(page);
         const viewport = window.visualViewport;
         const viewportHeight = viewport?.height ?? window.innerHeight;
-        const imageTop = Math.max(0, stage.getBoundingClientRect().top - (viewport?.offsetTop ?? 0));
+        // Read the fixed navigation boundary, not the now centered image
+        // stage. Measuring the stage itself would make subsequent fits
+        // shrink portraits repeatedly as the image group re-centers.
+        const folio = detail.querySelector('.artwork-folio');
+        const stageStart = folio
+            ? folio.getBoundingClientRect().bottom
+                + (Number.parseFloat(getComputedStyle(folio).marginBottom) || 0)
+            : stage.getBoundingClientRect().top;
+        const imageTop = Math.max(0, stageStart - (viewport?.offsetTop ?? 0));
         // Only reserve the caption and paper inset; lengthy editorial text scrolls below.
         const reserveBelow = outerHeight(detail.querySelector('.artwork-detail__footer'))
             + (Number.parseFloat(pageStyle.paddingBottom) || 0)

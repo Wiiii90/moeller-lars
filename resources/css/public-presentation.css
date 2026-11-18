@@ -565,43 +565,46 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     flex: 1 1 auto;
     flex-direction: column;
 }
+/* The image and its Artwork information share a fitted group. Center the
+ * combined composition in the remaining page height; do not give short
+ * landscape images an empty viewport-height stage above their captions. */
 .site-content--fitted-image > .public-content-reveal,
 .site-content--fitted-image .artwork-detail,
-.site-content--fitted-image .artwork-detail__media,
-.site-content--fitted-image .artwork-detail__image-stage {
+.site-content--fitted-image .artwork-detail__fitted-group {
     display: flex;
     min-height: 0;
     flex: 1 1 auto;
     flex-direction: column;
 }
-/* Keep the media from contributing its intrinsic pixel height to the
- * page's min-content size. Otherwise a tall portrait expands the paper
- * past the viewport even though its parent is a flexible image stage. */
+.site-content--fitted-image .artwork-detail__fitted-group {
+    justify-content: center;
+}
+.site-content--fitted-image .artwork-detail__media,
 .site-content--fitted-image .artwork-detail__image-stage {
-    min-height: clamp(8rem, 24svh, 14rem);
+    display: flex;
+    min-height: 0;
+    flex: 0 0 auto;
+    flex-direction: column;
 }
 .site-content--fitted-image .artwork-detail__viewer-trigger {
     position: relative;
     display: block;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-height: 0;
 }
 .site-content--fitted-image .artwork-detail__image {
-    position: absolute;
-    inset: 0;
-    /* The existing viewport fitting owner resolves the maximum visible
-       image width from the real General content track and image ratio. */
+    /* The existing image fitting owner sets width inside General's Content.
+       Normal flow makes the actual image bottom also the stage bottom. */
+    position: static;
     width: min(100%, var(--public-fitted-image-width));
     max-width: 100%;
     height: auto;
-    max-height: 100%;
-    margin: auto;
+    margin: 0 auto;
     object-fit: contain;
 }
 .site-content--fitted-image .artwork-detail__footer {
     flex: 0 0 auto;
-    /* Same computed width as the image, never the historical 650px
-       reading track. Information rows retain their own alignments. */
+    /* Information follows the image directly and shares its width. */
     width: min(100%, var(--public-fitted-image-width, 100%));
 }
 
@@ -609,6 +612,12 @@ body.public-site:has(.site-content--fitted-image) .site-header {
  * second information arrangement system. Below this width it becomes the
  * existing responsive vertical presentation, including browser zoom. */
 @media (min-width: 64.001rem) {
+    /* Museum keeps its independent side-information column on desktop.
+       The fitted wrapper contributes no grid box; its media/footer become
+       the original grid children and the image retains its gallery stage. */
+    .site-content--artwork-museum .artwork-detail__fitted-group {
+        display: contents;
+    }
     .site-content--artwork-museum .artwork-detail {
         display: grid;
         grid-template-columns: minmax(0, 1.75fr) minmax(13rem, .7fr);
@@ -628,6 +637,19 @@ body.public-site:has(.site-content--fitted-image) .site-header {
         align-self: stretch;
         min-height: 0;
         width: 100%;
+    }
+    .site-content--artwork-museum .artwork-detail__image-stage {
+        flex: 1 1 auto;
+        min-height: clamp(8rem, 24svh, 14rem);
+    }
+    .site-content--artwork-museum .artwork-detail__viewer-trigger {
+        flex: 1 1 auto;
+    }
+    .site-content--artwork-museum .artwork-detail__image {
+        position: absolute;
+        inset: 0;
+        max-height: 100%;
+        margin: auto;
     }
     .site-content--artwork-museum .artwork-detail__footer {
         grid-column: 2;
