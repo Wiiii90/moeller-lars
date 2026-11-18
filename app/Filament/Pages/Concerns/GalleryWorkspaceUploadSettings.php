@@ -93,7 +93,7 @@ trait GalleryWorkspaceUploadSettings
     private function gallerySettingsFields(bool $stage): Grid
     {
         $name = AdminControl::text('name', 'Gallery title')
-            ->required(! $stage)->maxLength(160)->columnSpanFull();
+            ->required(! $stage)->maxLength(160);
 
         $order = AdminControl::select('sort_mode')
             ->label(AdminHelp::label(
@@ -143,7 +143,11 @@ trait GalleryWorkspaceUploadSettings
                 }
             });
 
-        return Grid::make($stage ? ['default' => 1] : ['default' => 1, 'md' => 2])
+        if ($stage) {
+            $autoPublish->columnSpanFull();
+        }
+
+        return Grid::make(['default' => 1, 'md' => 2])
             ->schema([
                 $this->gallerySettingControl($name, 'name', $stage),
                 $order,
@@ -173,6 +177,7 @@ trait GalleryWorkspaceUploadSettings
                     AdminControl::select('artwork_page_layout', 'Artwork page layout')
                         ->options(GalleryPresentation::ARTWORK_PAGE_LAYOUTS)
                         ->default(GalleryPresentation::ARTWORK_PAGE_STANDARD)
+                         ->placeholder(null)->selectablePlaceholder(false)
                         ->required(! $stage),
                     'artwork_page_layout', $stage,
                 ),
@@ -199,6 +204,9 @@ trait GalleryWorkspaceUploadSettings
     {
         if (! $stage) {
             return $field;
+        }
+        if ($name !== 'name') {
+            $field->columnSpanFull();
         }
         if ($field instanceof TextInput) {
             $field->live(onBlur: true);

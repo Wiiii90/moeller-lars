@@ -15,10 +15,11 @@
         frameShortcuts: [],
         pointerInside: false,
         previewDevice: 'desktop',
-        // The browser-sized Desktop mode and explicit width presets reflow the
-        // real Public iframe; only the resulting visual is scaled to the pane.
-        desktopWidth: 'window',
-        mobileWidth: '390',
+        // Fixed viewport presets reflow the real Public iframe; the rendered
+        // result alone is scaled to the available Stage pane.
+        desktopSize: '1280x800',
+        mobileSize: '390x844',
+        rotated: false,
         fitScale: 1,
         zoom: 1,
         minZoom: 1,
@@ -57,12 +58,26 @@
             if (! ['desktop', 'mobile'].includes(device) || this.previewDevice === device) return
             this.cancelPanGesture()
             this.previewDevice = device
+            this.rotated = false
+            this.changeViewport()
+        },
+        changeViewport() {
+            this.cancelPanGesture()
             this.zoom = this.minZoom
             this.panX = 0
             this.panY = 0
             this.panMode = false
             this.spacePan = false
             this.$nextTick(() => this.scheduleFit())
+        },
+        rotateViewport() {
+            this.rotated = ! this.rotated
+            this.changeViewport()
+        },
+        viewportSize() {
+            const size = (this.previewDevice === 'mobile' ? this.mobileSize : this.desktopSize)
+                .split('x').map(Number)
+            return this.rotated ? [size[1], size[0]] : size
         },
         zoomPercent() {
             return `${Math.round(this.zoom * 100)}%`
@@ -75,13 +90,7 @@
             if (! viewport || ! surface || ! page || ! frame) return
             if (frame.tagName !== 'IFRAME' && this.frameShortcuts.length) this.unbindFrameShortcuts()
             // A real CSS-pixel layout viewport; only the outer visual is scaled.
-            const mobile = this.previewDevice === 'mobile'
-            const targetWidth = mobile
-                ? Number(this.mobileWidth)
-                : (this.desktopWidth === 'window' ? window.innerWidth : Number(this.desktopWidth))
-            const targetHeight = mobile
-                ? Math.round(targetWidth * 844 / 390)
-                : (this.desktopWidth === 'window' ? window.innerHeight : 900)
+            const [targetWidth, targetHeight] = this.viewportSize()
             const style = getComputedStyle(viewport)
             const width = viewport.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
             const height = viewport.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
@@ -134,24 +143,6 @@
             this.panY = 0
             this.panMode = false
             this.spacePan = false
-            this.applyPreviewTransform()
-        },
-        showActualPixels() {
-            if (this.fitScale <= 0) return
-            this.cancelPanGesture()
-            const page = this.$refs.page
-            if (! page) return
-
-            // The same real iframe is inspected at 1 CSS pixel per pixel.
-            // Keep its center visible and use existing pan/zoom controls.
-            const nextZoom = 1 / this.fitScale
-            const ratio = nextZoom / this.zoom
-            const centerX = page.clientWidth / 2
-            const centerY = page.clientHeight / 2
-            this.panX = centerX - ((centerX - this.panX) * ratio)
-            this.panY = centerY - ((centerY - this.panY) * ratio)
-            this.zoom = nextZoom
-            this.clampPan()
             this.applyPreviewTransform()
         },
         changeZoom(step) {
@@ -330,29 +321,34 @@
         <div class="admin-stage-tool-group admin-live-preview__width-group" role="group" aria-label="Preview viewport width">
             <select class="admin-live-preview__width-select"
                 x-show="previewDevice === 'desktop'"
-                x-model="desktopWidth"
-                x-on:change="scheduleFit()"
+                x-model="desktopSize"
+                x-on:change="changeViewport()"
                 aria-label="Desktop preview width"
-                title="Simulated desktop viewport width">
-                <option value="window">Window width</option>
-                <option value="1024">1024 px</option>
-                <option value="1280">1280 px</option>
-                <option value="1440">1440 px</option>
-                <option value="1920">1920 px</option>
+                title="Desktop layout viewport dimensions">
+                <option value="1024x768">1024 × 768</option>
+                <option value="1280x800">1280 × 800</option>
+                <option value="1440x900">1440 × 900</option>
+                <option value="1920x1080">1920 × 1080</option>
             </select>
             <select class="admin-live-preview__width-select"
                 x-show="previewDevice === 'mobile'"
-                x-model="mobileWidth"
-                x-on:change="scheduleFit()"
+                x-model="mobileSize"
+                x-on:change="changeViewport()"
                 aria-label="Phone preview width"
-                title="Simulated phone viewport width" x-cloak>
-                <option value="320">320 px</option>
-                <option value="360">360 px</option>
-                <option value="390">390 px</option>
-                <option value="430">430 px</option>
+                title="Phone layout viewport dimensions" x-cloak>
+                <option value="320x568">320 × 568</option>
+                <option value="360x800">360 × 800</option>
+                <option value="375x812">375 × 812</option>
+                <option value="390x844">390 × 844</option>
+                <option value="430x932">430 × 932</option>
             </select>
+            <button class="admin-action admin-stage-tool-icon" type="button"
+                x-on:click="rotateViewport()"
+                x-bind:title="rotated ? 'Restore default orientation' : 'Rotate viewport'"
+                x-bind:aria-label="rotated ? 'Restore default viewport orientation' : 'Rotate viewport'">
+                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" />
+            </button>
         </div>
-        <span class="admin-control-separator" aria-hidden="true"></span>
         <div class="admin-stage-tool-group" role="group" aria-label="Preview zoom">
             <button
                 class="admin-action admin-stage-tool-icon"
@@ -370,15 +366,10 @@
                 x-on:click="resetZoom()"
                 x-bind:class="{ 'is-active': zoom > minZoom }"
                 x-bind:disabled="zoom <= minZoom"
-                title="Reset preview zoom to 100%"
-                aria-label="Reset preview zoom to 100%"
+                title="Reset preview zoom to fitted view"
+                aria-label="Reset preview zoom to fitted view"
                 x-text="zoomPercent()"
             ></button>
-            <button class="admin-action admin-live-preview__actual-pixels" type="button"
-                x-on:click="showActualPixels()"
-                x-bind:disabled="fitScale >= 1 || Math.abs(fitScale * zoom - 1) < 0.001"
-                aria-label="Show preview at actual pixel size"
-                title="Inspect without visual scaling (1:1)">1:1</button>
             <button
                 class="admin-action admin-stage-tool-icon"
                 type="button"
@@ -390,7 +381,6 @@
                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Inspect->mini()" />
             </button>
         </div>
-        <span class="admin-control-separator" aria-hidden="true"></span>
         <div class="admin-stage-tool-group" role="group" aria-label="Preview actions">
             <button
                 class="admin-action admin-stage-tool-icon"

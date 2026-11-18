@@ -136,3 +136,10 @@
 - Review local migration output and actual Gallery/Artwork browser behavior; correct only observed owner-level failures.
 - Coordinate General's separate full-width Menu feature request with Worker 7 instead of silently adding a new General option.
 - Keep Worker 2's Storage lifecycle and Worker 6's separate Home Hero configuration outside Gallery's refactor.
+
+## Gallery visual refinement — 2026-11-18
+
+- The screenshot revealed an undersized, wrapped shared Preview toolbar, incorrect `Window width` coupling to the Admin browser, and the confusing `1:1` action. The shared component now has fixed desktop/phone width-and-height presets, an orientation toggle for both devices, a compact single-row tool strip, reduced Preview top inset and no `1:1` control. All presets still use the actual Public iframe; scaling remains visual-only, not true iOS/Android browser emulation. General and Gallery remain direct consumers of one owner.
+- Gallery Stage Gallery title and Artwork order now occupy the same two-column first row at regular widths; all following Stage settings still consume full rows. The central Artwork-order help bulb remains intact. The Settings dialog shares the same definitions and becomes two columns at its existing breakpoint.
+- `Artwork page layout` options now display `Default` (persisted key remains `standard`) and `Expanded`, with no selectable empty placeholder. No new layout mode or migration was introduced by this refinement.
+- This source-only change is **not** browser-verified. Confirm one-row toolbar at Wide/Compact/Minimal, dropdown legibility, both device orientations and zoom/pan/iframe interaction, Stage Settings field columns and the modal. Separate current user feedback still requires a bounded Public Artwork viewport-height/scroll fit correction and investigation of the divider aliasing visible while scaled; do not claim those problems are resolved.

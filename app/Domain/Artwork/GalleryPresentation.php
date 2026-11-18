@@ -99,7 +99,7 @@ final class GalleryPresentation
     public const ARTWORK_PAGE_EXPANDED = 'expanded';
 
     public const ARTWORK_PAGE_LAYOUTS = [
-        self::ARTWORK_PAGE_STANDARD => 'Standard',
+        self::ARTWORK_PAGE_STANDARD => 'Default',
         self::ARTWORK_PAGE_EXPANDED => 'Expanded',
     ];
 
@@ -152,7 +152,7 @@ final class GalleryPresentation
             $layout = $data['artwork_page_layout'];
             if (! is_string($layout) || ! array_key_exists($layout, self::ARTWORK_PAGE_LAYOUTS)) {
                 throw ValidationException::withMessages([
-                    'artwork_page_layout' => 'Choose Standard or Expanded Artwork page layout.',
+                    'artwork_page_layout' => 'Choose Default or Expanded Artwork page layout.',
                 ]);
             }
             $values['artwork_page_layout'] = $layout;

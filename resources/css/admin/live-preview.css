@@ -17,15 +17,29 @@
     grid-template-rows: auto minmax(0, 1fr);
 }
 .admin-live-preview__title { min-width: 0; line-height: 1.2; }
-/* One canonical responsive toolbar, including narrow Gallery panes. */
+/* The shared Preview toolbar is a single compact row in every Stage pane. */
 .admin-live-preview .admin-stage-tool-row {
-    flex-wrap: wrap;
-    row-gap: .2rem;
+    --admin-live-preview-tool-size: clamp(1.5rem, 6cqi, 1.9rem);
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: .125rem;
     padding-block: .2rem;
+}
+.admin-live-preview .admin-stage-tool-group { gap: 0; }
+.admin-live-preview .admin-stage-tool-icon {
+    width: var(--admin-live-preview-tool-size);
+    height: var(--admin-live-preview-tool-size);
+    min-width: var(--admin-live-preview-tool-size);
+    min-height: var(--admin-live-preview-tool-size);
+    flex-basis: var(--admin-live-preview-tool-size);
+}
+.admin-live-preview .admin-stage-tool-icon svg {
+    width: .9rem;
+    height: .9rem;
 }
 .admin-live-preview__width-select {
     box-sizing: border-box;
-    width: 6.8rem;
+    width: 6.35rem;
     min-width: 0;
     max-width: 100%;
     height: var(--admin-header-control-size);
@@ -41,25 +55,19 @@
     outline: 2px solid var(--admin-accent);
     outline-offset: 2px;
 }
-.admin-live-preview__actual-pixels {
-    box-sizing: border-box;
-    min-width: 2.2rem;
-    height: var(--admin-header-control-size);
-    padding: 0 .25rem;
-    font-size: .65rem;
-    font-variant-numeric: tabular-nums;
-}
-.admin-live-preview__actual-pixels:disabled { opacity: .45; }
 @container admin-live-preview (max-width: 24rem) {
-    .admin-live-preview .admin-control-separator { display: none; }
-    .admin-live-preview .admin-stage-tool-row { justify-content: flex-start; }
+    .admin-live-preview__width-select { width: 5.75rem; }
+    .admin-live-preview__zoom-value { width: 2.2rem; }
+}
+@container admin-live-preview (max-width: 20rem) {
+    .admin-live-preview__zoom-value { display: none; }
 }
 .admin-live-preview__viewport {
     box-sizing: border-box;
     display: grid;
     min-width: 0;
     min-height: 0;
-    padding: calc(var(--admin-section-gap) + .5rem) 0 .35rem;
+    padding: .8rem 0 .35rem;
     place-items: start center;
     overflow: hidden;
 }
