@@ -88,7 +88,7 @@
     grid-row: 1;
     display: grid;
     min-width: 0;
-    min-height: min(17rem, 43dvh);
+    min-height: min(20rem, 50dvh);
     place-items: center;
 }
 
@@ -103,7 +103,7 @@
     display: block;
     width: auto;
     max-width: 100%;
-    max-height: min(23rem, 49dvh);
+    max-height: min(29rem, 60dvh);
     height: auto;
     object-fit: contain;
 }

@@ -4,6 +4,10 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Slideshow image height (2026-11-18)
+
+- Source adjustment only in `resources/css/journal-presentation.css`: slideshow image maximum height increased from `min(23rem, 49dvh)` to `min(29rem, 60dvh)`; its minimum stage height increased from `min(17rem, 43dvh)` to `min(20rem, 50dvh)`. Aspect ratio and `object-fit: contain` remain unchanged. Grid, Mosaic, other journal media and video rules remain untouched. Browser validation of portraits/landscapes, slideshow captions and narrow screens is outstanding.
+
 ## Current requested corrections (2026-11-18)
 
 - **Exhibition mixed-media modal:** `JournalMediaRenderer` previously excluded videos from the existing Artwork Viewer's ordered item list. Shared `PublicImageViewer::attributes()` now represents both image and video kinds; video metadata participates in the same sequence without an inline click trigger, preserving page-level native playback controls. The modal already supports video playback and image/video navigation, including pause/unload on transition or close. Applies to Exhibition cover/gallery and the direct Blog Journal media consumers when the editor has enabled the viewer.
@@ -36,4 +40,4 @@
 
 ## Next
 
-Have the artist review both 2026-11-18 Exhibition corrections in a fresh local preview; hand browser/regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
+Have the artist review the 2026-11-18 Exhibition mixed-media, text-column and slideshow-height corrections in a fresh local preview; hand browser/regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
