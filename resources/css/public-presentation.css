@@ -25,10 +25,9 @@
     --public-short-page-min-height: 15rem;
     --public-section-gap: 3.55rem;
     --public-page: #777;
-    /* One full paper underneath each physical front sheet. A fixed offset
-     * means the same geometry on mobile, Gallery and expanded Artwork. */
-    --public-backing-color: #d9d3ca;
-    --public-backing-offset: .45rem;
+    /* Each backing follows its own front paper, with a restrained relief.
+     * All public page types use this same offset and tonal treatment. */
+    --public-backing-offset: .22rem;
     /* Independent global Menu and Page surfaces; both initially white. */
     --public-menu-background: #fff;
     --public-content-background: #fff;
@@ -1973,6 +1972,8 @@ body.public-site:has(.site-content--fitted-image) .site-header {
  * Isolation places both paper planes inside the surface's stacking context.
  * The rear ::before is shifted up/left, while ::after repaints the existing
  * front surface (its CSS background variable, not a second backing).
+ * Each rear sheet uses its own front paint with a subtle brightness reduction,
+ * including gradient backgrounds, instead of an unrelated fixed paper color.
  * Both sit behind actual navigation and content. Keeping the rear sheet
  * above the Menu instead of trailing below its sticky lower edge prevents
  * the backing from painting over Content while the document scrolls. */
@@ -1999,7 +2000,11 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::before
     z-index: -2;
     top: calc(-1 * var(--public-backing-offset));
     left: calc(-1 * var(--public-backing-offset));
-    background: var(--public-backing-color);
+    background: var(--public-menu-background);
+    filter: brightness(.97);
+}
+body.public-site--frame-backing #content:not(.site-content--transparent)::before {
+    background: var(--public-content-background);
 }
 
 /* The sticky Header paints the page background across its entire width.

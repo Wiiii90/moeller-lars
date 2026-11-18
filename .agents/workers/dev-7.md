@@ -78,6 +78,11 @@
 - The shared Backing painter now makes the existing Menu rear sheet reach the Menu's actual bottom (`height: calc(100% + var(--public-backing-offset))` with its negative top offset). It never protrudes below the Menu or creates another sheet. Both Menu and Content still use the same one-owner renderer. No Preview component, page-specific rule, new state or observer was added.
 - Source geometry was inspected but the rendered result still needs user browser acceptance, including scrolling and mismatched-width Artwork pages. No tests/build/deploy/migration were executed.
 
+## Backing visual reduction and surface-owned tint (2026-11-18)
+- Confirmed the shared Backing CSS still used one fixed beige color and a .45rem offset even for independently configured Menu/Page solid or gradient surfaces. The image-mounted Blog component shadows are separate owners and were not changed.
+- Reduced the single offset to .22rem. Each existing rear sheet now paints from its own validated Menu/Page surface background and receives a subtle brightness reduction, retaining the same pseudo-element renderer and sticky Menu lower-edge rule. Transparent Page still has no physical paper or separate backing; the exposed Menu rear edge ends at the real Menu bottom rather than inventing a transparent Page sheet.
+- Source-only change. Browser visuals, especially the short Menu edge, gradients, Gallery/Artwork, and scrolling, remain unverified. No tests, build, Continuous Integration or deployment executed.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.
