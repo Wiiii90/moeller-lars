@@ -2,7 +2,7 @@
 
 **Lease:** 20
 **Branch:** dev
-**State:** Previous Public Gallery width-expansion and artificial image-upscaling rejected and reverted. Replacement source limits only upper whitespace and image height inside General's unchanged width; real browser acceptance pending.
+**State:** Gallery images now maximize their displayed size within General's unchanged Content width and the existing viewport-height ceiling; mobile Artwork separation reduced. Source-only change; real application browser acceptance pending.
 
 ## Ownership and current scope
 
@@ -13,9 +13,9 @@
 ## Public Gallery — current replacement candidate
 
 - The user rejected the wide Content paper, broken Menu/Page alignment, oversized landscape art and stretched-looking proportions shown after `50140ff` and `ab7eacf`. The affected CSS and Blade are restored **exactly** to pre-expansion source `9c0200c`, apart from the next three targeted Gallery CSS adjustments.
-- General remains sole owner of Page/Menu width, Content padding and responsive bounds. No per-Artwork aspect token, forced image-upscaling or expanded sheet. The Gallery keeps stable lateral drift, natural image proportions, and caption/credit/copyright width equal to its actual image.
-- Gallery-only upper Content padding reduces from 2rem to 1rem; the first Artwork loses its artificial viewport minimum and vertical centering; the image ceiling reduces from `min(94svh, calc(100svh - 6rem))` to `min(82svh, calc(100svh - 9rem))`. Subsequent slots and the accepted tighter Artwork gaps stay unchanged. The media's image width is still limited by natural aspect and General Content width, so some landscapes may stay below the height ceiling.
-- Primary owner: `resources/css/public-presentation.css`. Canonical Gallery Blade and Artwork card remain pre-expansion. Shared Home Hero, Artwork detail and General controls are untouched.
+- General remains sole owner of Page/Menu width, Content padding and responsive bounds. The Gallery keeps stable lateral drift, natural proportions, and captions/credits/copyright at the actual rendered image width. A Gallery-only, nonce-authorized numeric image aspect token permits sizing each still to the smaller of the existing Content width and the image-height ceiling; unlike the rejected earlier implementation, the Gallery paper and Menu never expand. Smaller source thumbnails can scale to that bound. No new script, persistence field or alternate rendering path.
+- Gallery-only upper Content padding stays at 1rem; the first Artwork has no artificial viewport minimum or vertical centering. The image height ceiling remains `min(82svh, calc(100svh - 9rem))`, but a wide landscape cannot reach this ceiling when the fixed General Content width limits it first (e.g. 16:9 at 650px width is about 366px high). Other desktop slots/gaps stay unchanged. At 40rem and below, gaps reduce to `clamp(1rem, 3svh, 2rem)` and every card loses the viewport-minimum slot, including Gallery divider layouts.
+- The only affected presentation owner is `resources/css/public-presentation.css`, with a conditional Gallery-only sizing token in the existing `resources/views/components/artwork-card.blade.php`. `resources/views/pages/artworks/index.blade.php` and General layout/width owners are unchanged; Home Hero, individual Artwork detail and gallery videos retain their existing presentation.
 
 ## Gallery Stage/Settings — retained acceptance target
 
@@ -25,6 +25,6 @@
 
 ## Verification and next steps
 
-- Source comparison, Gallery-only selector checks, restored markup checks and stylesheet brace checks executed. Reconciled Dev Worker 1's simultaneous Artwork-detail narrative/full-width edits from `0e2357b` so the Gallery rollback does not revert independent Artwork-detail functionality. No complete application run, CSS visual acceptance or runtime tests performed for this candidate.
-- Next: inspect local Preview with the user's configured Page width/padding and Menu, both portrait and landscape at full desktop/mobile/zoom; verify page/header alignment, first item proximity, unchanged image aspect and footer width. Check galleries with headings/dividers/videos and long rights.
+- Inspected the current Gallery CSS, single shared Artwork component and General width owner. Ran isolated headless Chromium layout fixtures at desktop (1600×900) and mobile (390×844) with landscape, portrait and smaller 500×281 image variants; measured content/image/footer widths and no horizontal overflow. The smaller variant now displays at the full allowed 650px desktop Content width without distortion; a 16:9 landscape necessarily remains below the height ceiling if the width cap is reached first. Additional mobile viewport fixtures (390×844, 420×600 and 375×350) confirmed compact computed gaps, removed minimum slots and preserved image/footer widths. **These are isolated geometry fixtures, not local Laravel application or artist-accepted browser reviews.**
+- Next: inspect local Preview with the user's configured Page width/padding and Menu, both portrait and landscape at full desktop/mobile/zoom; verify unchanged Page/Menu alignment, maximum feasible Gallery image sizes, first item proximity, responsive image/footer width, reduced phone gaps and no phantom viewport slots. Check optional Gallery headings/dividers/videos, long rights and deferred images.
 - Once Public Gallery is accepted, resume Stage and Settings browser qualification, persistence, feedback, manual Draft/Publish and interactive Preview. The published public-site documentation still contains the older height value; hand off the accepted replacement to Docs for later consolidation.

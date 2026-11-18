@@ -795,6 +795,9 @@ body.public-site:has(.site-content--fitted-image) .site-header {
        Artwork card or Home/individual Artwork consumers. */
     --gallery-artwork-height: min(82svh, calc(100svh - 9rem));
     --gallery-artwork-gap: clamp(2.5rem, 6.5svh, 4.5rem);
+    /* Image width is resolved against the real Gallery content width rather
+       than its shrink-to-fit viewer link or the viewport's wider paper. */
+    container-type: inline-size;
     display: block;
     width: min(100%, var(--public-art-max));
     min-width: 0;
@@ -903,6 +906,15 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     min-width: 0;
 }
 @media (max-width: 40rem) {
+    .artwork-list {
+        --gallery-artwork-gap: clamp(1rem, 3svh, 2rem);
+    }
+    /* Phones are a continuous Artwork sequence, not a series of nearly
+       empty viewport-height slots. The shared divided rhythm uses this gap. */
+    .artwork-list > .artwork-card {
+        min-height: 0;
+        align-content: start;
+    }
     .artwork-list > .artwork-card--gallery-index {
         --gallery-drift-left: 1fr;
         --gallery-drift-right: 1fr;
@@ -937,6 +949,16 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     max-height: var(--gallery-artwork-height);
     margin-inline: 0;
     object-fit: contain;
+}
+/* Render Gallery stills as large as both existing constraints allow:
+   the configured height ceiling and the unchanged General content width.
+   Media dimensions supply a numerical aspect ratio in the nonce-protected
+   component style; 100cqw resolves against the Gallery's fixed-size track,
+   not the intrinsic/shrink-to-fit media link. Auto height preserves the
+   true proportions and keeps captions at exactly the visible image width.
+   Images without valid variant dimensions keep the intrinsic sizing above. */
+.artwork-list .artwork-card--gallery-dimensioned .artwork-card__image {
+    width: min(100cqw, calc(var(--gallery-artwork-height) * var(--gallery-image-aspect)));
 }
 .artwork-list .artwork-card__video {
     max-height: var(--gallery-artwork-height);
