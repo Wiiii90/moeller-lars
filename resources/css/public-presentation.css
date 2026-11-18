@@ -575,21 +575,81 @@ body {
     }
 }
 
-/* Expanded Artwork images retain aspect ratio; the surrounding Menu paper
-   follows the same width while its inner navigation retains General's measure. */
+/* Expanded Artwork may give the media more room, but the caption and
+ * editorial text always retain General's normal centered reading track.
+ * This is a detail-page presentation, not a global Menu/Page width override. */
 .site-content--fitted-artwork .artwork-detail__media {
     width: min(100%, var(--public-fitted-image-width, var(--public-art-max)));
     margin-inline: auto;
 }
 .site-content--fitted-artwork .artwork-detail__viewer-trigger,
-.site-content--fitted-artwork .artwork-detail__image,
-.site-content--fitted-artwork .artwork-detail__footer {
+.site-content--fitted-artwork .artwork-detail__image {
     width: 100%;
     max-width: 100%;
     height: auto;
 }
+.site-content--fitted-artwork .artwork-detail__footer,
+.site-content--fitted-artwork .artwork-detail__narrative,
+.site-content--fitted-artwork .artwork-detail__credits {
+    width: min(100%, var(--public-art-max));
+    max-width: 100%;
+    margin-inline: auto;
+}
+
+/* Image fitting must not disappear at narrow widths or browser zoom.
+ * Only actual images have this class. Header, folio, footer and longer
+ * editorial content keep their natural size; the image consumes the rest. */
+body.public-site:has(.site-content--fitted-image) .public-paper-frame {
+    height: calc(100dvh - var(--public-shell-gap));
+    min-height: min-content;
+}
+body.public-site:has(.site-content--fitted-image) .site-header {
+    flex: 0 0 auto;
+}
+#content.site-content--fitted-image {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+}
+.site-content--fitted-image > .public-content-reveal,
+.site-content--fitted-image .artwork-detail,
+.site-content--fitted-image .artwork-detail__media,
+.site-content--fitted-image .artwork-detail__image-stage {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+}
+/* Keep the media from contributing its intrinsic pixel height to the
+ * page's min-content size. Otherwise a tall portrait expands the paper
+ * past the viewport even though its parent is a flexible image stage. */
+.site-content--fitted-image .artwork-detail__image-stage {
+    min-height: clamp(8rem, 24svh, 14rem);
+}
+.site-content--fitted-image .artwork-detail__viewer-trigger {
+    position: relative;
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.site-content--fitted-image .artwork-detail__image {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 100%;
+    margin: auto;
+    object-fit: contain;
+}
+.site-content--fitted-image .artwork-detail__footer {
+    flex: 0 0 auto;
+}
 
 @media (min-width: 64.001rem) {
+    /* A wider outer sheet is exclusive to Expanded Artwork. Its actual
+       Menu links keep General's configured reading width. */
     #content.site-content--fitted-artwork {
         width: min(calc(100% - 2 * var(--public-gutter)),
             var(--public-fitted-paper-width, var(--public-shell-max)));
@@ -600,58 +660,6 @@ body {
         width: 100%;
     }
 
-    /* Expanded Artwork uses the real remaining viewport height. The header,
-       Artwork navigation, captions and optional editorial content keep their
-       own natural heights; only the media stage takes the remaining space.
-       This is scoped to Expanded pages, not the ordinary Public paper flow. */
-    body.public-site:has(.site-content--fitted-artwork) .public-paper-frame {
-        height: calc(100dvh - var(--public-shell-gap));
-        min-height: min-content;
-    }
-
-    body.public-site:has(.site-content--fitted-artwork) .site-header {
-        flex: 0 0 auto;
-    }
-
-    #content.site-content--fitted-artwork {
-        display: flex;
-        min-height: 0;
-        flex: 1 1 auto;
-        flex-direction: column;
-    }
-
-    .site-content--fitted-artwork > .public-content-reveal,
-    .site-content--fitted-artwork .artwork-detail,
-    .site-content--fitted-artwork .artwork-detail__media,
-    .site-content--fitted-artwork .artwork-detail__image-stage {
-        display: flex;
-        flex: 1 1 auto;
-        min-height: 0;
-        flex-direction: column;
-    }
-
-    .site-content--fitted-artwork .artwork-detail__viewer-trigger {
-        display: grid;
-        flex: 1 1 auto;
-        min-height: 0;
-        place-items: center;
-    }
-
-    .site-content--fitted-artwork .artwork-detail__image,
-    .site-content--fitted-artwork .artwork-detail__video {
-        width: auto;
-        max-width: 100%;
-        height: auto;
-        max-height: 100%;
-        object-fit: contain;
-    }
-
-    .site-content--fitted-artwork .artwork-detail__footer {
-        flex: 0 0 auto;
-    }
-
-    /* The outer Menu surface matches the expanded Artwork page while
-       the actual Menu content retains General's configured width. */
     .site-header--artwork-wide-menu .site-navigation-surface {
         position: relative;
         order: 1;
@@ -674,10 +682,7 @@ body {
     .site-header--divider-menu.site-header--artwork-wide-menu .site-navigation-surface {
         border-bottom: 1px solid var(--public-separator-color, var(--public-index-rule));
     }
-
-
 }
-
 
 /* Artwork arrows remain on the original centered General-width track,
    independent of the landscape media's own size. */

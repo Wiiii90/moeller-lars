@@ -2,7 +2,7 @@
 
 **Lease:** 17  
 **Branch:** dev  
-**State:** Active — shared browser-local Live Preview polished on dev; runtime/browser acceptance, Gallery migration and earlier Artwork Divider/Expanded checks remain pending.
+**State:** Active — Expanded Artwork viewport fitting/reading-track fix prepared on dev; runtime/browser acceptance and Gallery migration remain pending.
 
 ## Chat takeover — 2026-11-18
 
@@ -218,3 +218,13 @@
 - Horizontal-overflow diagnostics now refresh on iframe resize, document/body size changes, media loading and font readiness, in a coalesced animation frame. Child document event listeners and the ResizeObserver are removed on reload or component destruction, preventing accumulated observers and stale readings when switching sections. Unsupported observer APIs are handled without breaking the Preview.
 - The device selector's title reveals the current exact logical viewport size; the rotate button is disabled for `Current window`. No extra toolbar controls, device icons, permanent help text or independent Preview subsystem introduced. The product remains single-frame, one-row and fully browser-local, with no additional VPS memory or browser-service startup.
 - Bounded static checks only. JavaScript syntax and central catalogue/Blade structure reviewed; actual visual behavior awaits a fresh local Preview build and Gallery/General browser acceptance. Adjacent Admin/Public code, server startup, tests, database and deployment remain untouched.
+
+## Expanded Artwork viewport fitting and reading track — 2026-11-18
+
+- The artist supplied two visual examples: portrait Expanded Artwork extends beyond the initial visible viewport; at 200% browser zoom the image and caption no longer fit, and metadata sits at the edge of the expanded image surface rather than the configured General reading width.
+- Root cause: viewport-height fitting of the image was incorrectly wrapped in a `min-width:64.001rem` media query. Zoom reduces CSS viewport width, disabling fitting entirely. Additionally, the image's own intrinsic min-content contribution can inflate the flex paper far beyond its intended height, even when the breakpoint matches.
+- The Artwork detail view now sets `site-content--fitted-image` only for actual images that already have an expanded image stage. Width expansion remains `site-content--fitted-artwork` and remains bounded to its existing wide-screen rule, including existing Menu paper behavior. Unfitted Default/Gallery Index pages are unchanged.
+- On every viewport width, the fitted image stage uses the remaining viewport after actual header/folio/footer/editorial space; the image is absolutely contained and centered inside the existing relative viewer trigger, so its intrinsic dimensions cannot inflate the page's min-content height. A small viewport-relative minimum image-stage height preserves a usable image and allows genuine long editorial text to scroll naturally instead of clipping it. No image transform distortion, added renderer, interval or new JavaScript.
+- The Expanded Artwork caption, narrative and file credits now use the centered `--public-art-max` General reading track even when the image itself spreads wider. Ordinary artwork/card caption presentation and configured General shell width stay unchanged.
+- A bounded Chromium **synthetic markup/CSS smoke check** exercised 1690×860, 1280×720, 800×430 (200%-zoom-equivalent CSS viewport), 740×540 and 390×844 and an intentionally long description; it confirmed that footer fits without unintended page scroll for short descriptions and that lengthy descriptions retain document scrolling. This is **not actual application/browser acceptance**, which remains pending.
+- Newly discussed Gallery-specific transparency, artwork-color-generated gradients and Museum mode remain a product-design discussion only. Do not commit new background settings or migration/publication paths without agreed ownership and appearance precedence; page-level surface overrides should reuse the canonical `PublicAppearance`/Site Page model rather than a parallel CSS system.

@@ -39,10 +39,10 @@
         || preg_match('/<(?:img|figure|video|audio|table|hr)\\b/i', $renderedDescription) === 1;
 @endphp
 
-{{-- Default follows General's width. Expanded keeps one fixed outer Page and
-     Menu sheet across images and videos, while only images use the fit stage.
+{{-- Only the detail page may expand the outer paper. Images use viewport-height
+     fitting at every responsive width; videos retain their natural dimensions.
      General alone owns whether the Menu and Page are connected. --}}
-@section('content_class', $expandedArtwork ? 'site-content--fitted-artwork' : '')
+@section('content_class', $expandedArtwork ? 'site-content--fitted-artwork'.($fitArtwork ? ' site-content--fitted-image' : '') : '')
 @section('artwork_menu_surface_wide', $expandedArtwork ? '1' : '')
 
 @section('title', $artwork->title.' — Lars Möller')
