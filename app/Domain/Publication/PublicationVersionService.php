@@ -497,6 +497,13 @@ SQL,
             LIMIT 1
         )
         ELSE NULL
+    END,
+    'template',
+    CASE
+        WHEN version_row.payload->>'type' = 'gallery'
+             AND COALESCE(version_row.payload->>'template', '') = ''
+            THEN 'showcase'
+        ELSE version_row.payload->>'template'
     END
 ))
 SQL,
@@ -540,7 +547,7 @@ SQL,
                             ->whereRaw("NOT jsonb_exists(payload, 'artwork_page_layout')");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'site_sections')
-                            ->whereRaw("NOT jsonb_exists(payload, 'meta_description')");
+                            ->whereRaw("NOT jsonb_exists(payload, 'meta_description') OR (payload->>'type' = 'gallery' AND COALESCE(payload->>'template', '') = '')");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'media_variants')
                             ->whereRaw("jsonb_exists(payload, 'transform_profile')");
