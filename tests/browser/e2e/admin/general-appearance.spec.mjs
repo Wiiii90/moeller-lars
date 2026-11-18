@@ -173,11 +173,21 @@ test('Inside Menu swaps title and navigation sides and stacks above them on phon
       const box = element.getBoundingClientRect();
       return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
     };
+    const content = document.querySelector('#content');
+    const rail = header.querySelector('.site-navigation__rail:not([hidden]), .site-navigation__submenu:not([hidden])');
+    const contentBox = content.getBoundingClientRect();
+    const contentStyle = getComputedStyle(content);
+    const railBox = rail.getBoundingClientRect();
+    const tracks = getComputedStyle(rail).gridTemplateColumns.split(' ').map(Number.parseFloat);
     return {
       heading: rect('.site-navigation > .site-name-heading'),
       title: rect('.site-title'),
       navigation: rect('.site-navigation__rail:not([hidden]), .site-navigation__submenu:not([hidden])'),
       menu: rect('.site-navigation'),
+      readingLeft: contentBox.left + Number.parseFloat(contentStyle.paddingLeft),
+      readingRight: contentBox.right - Number.parseFloat(contentStyle.paddingRight),
+      leftArrowTrackEnd: railBox.left + tracks[0],
+      rightArrowTrackStart: railBox.right - tracks[tracks.length - 1],
       stacked: header.classList.contains('is-title-stacked'),
     };
   });
@@ -204,6 +214,8 @@ test('Inside Menu swaps title and navigation sides and stacks above them on phon
     expect(left.stacked).toBe(false);
     expect(left.heading.right).toBeLessThanOrEqual(left.navigation.left + 1);
     expect(left.heading.left).toBeGreaterThanOrEqual(left.menu.left - 1);
+    expect(Math.abs(left.title.left - left.readingLeft)).toBeLessThan(2);
+    expect(Math.abs(left.rightArrowTrackStart - left.readingRight)).toBeLessThan(2);
 
     await save(alignment, 'right');
     await publicPage.goto('/preview');
@@ -211,6 +223,8 @@ test('Inside Menu swaps title and navigation sides and stacks above them on phon
     expect(right.stacked).toBe(false);
     expect(right.heading.left).toBeGreaterThanOrEqual(right.navigation.right - 1);
     expect(right.heading.right).toBeLessThanOrEqual(right.menu.right + 1);
+    expect(Math.abs(right.title.right - right.readingRight)).toBeLessThan(2);
+    expect(Math.abs(right.leftArrowTrackEnd - right.readingLeft)).toBeLessThan(2);
     expect(right.title.left - left.title.left).toBeGreaterThan(100);
     expect(right.navigation.left).toBeLessThan(left.navigation.left);
 

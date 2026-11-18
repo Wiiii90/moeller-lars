@@ -88,6 +88,11 @@
 - Added a targeted regression to the existing General browser suite for cross-tab autosave, visible native Select state, full browser reload and Public preview mode parity, restoring edited values. This targets the reported failure without adding a speculative parallel state store, event retry or rehydration patch. Browser test was not executed, so the client-side cause remains unresolved until reproducible runtime evidence exists.
 - All native Appearance selectors and editable fields were traced for their state, normalization and autosave entrypoints. Existing invalid/no-op feedback boundaries were preserved. No source changes to the General state lifecycle were made without a proven owner defect.
 
+## Inside Menu reading-edge alignment correction (2026-11-18)
+- User reported a newly over-indented Left title and the cyclic right arrow displaced into the reading content rather than the outer General padding. The cause was concrete CSS: the Left title's flex container used `justify-content: flex-end`, and the entire visible Inside navigation rail was confined to the already inset reading width.
+- Updated the canonical Public presentation owner: Left title aligns at the Page reading start, and its navigation's right arrow track extends into the existing right paper-padding gutter; Right title mirrors this geometry with the previous arrow using the left gutter. Tracks retain the 2.75rem minimum tap width, and the shared `--public-content-inset` remains the sole spacing source. No extra renderer, page-type case, timer or JavaScript width owner was introduced.
+- The existing Inside Left/Right browser regression now asserts title edges and cyclic-arrow track boundaries against the computed Page reading edges. Browser test was not executed, so visible positioning and narrow/expanded Artwork parity remain unverified.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.

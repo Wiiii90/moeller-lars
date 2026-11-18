@@ -2038,14 +2038,38 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
     padding-inline: var(--public-content-inset);
 }
 
-/* Navigation is allowed the remaining reading width, but the cyclic
- * previous/next controls always own their 44px tracks. No second content
- * inset is subtracted once the Menu itself owns the shared padding. */
+/* The inner reading track belongs to General. On an Inside Menu the
+ * navigation's outer cyclic-arrow rail belongs to the actual paper padding,
+ * not inside the reading track. Extend only that rail into the existing
+ * gutter; the title and central navigation keep their measured columns.
+ * At smaller insets, retain the established 44px minimum hit target. */
 .site-header--name-inside:not(.site-header--title-hidden) :is(.site-navigation__rail, .site-navigation__submenu) {
+    --public-navigation-outer-track: max(2.75rem, var(--public-content-inset));
+}
+.site-header--name-inside.site-header--title-align-left:not(.site-header--title-hidden) :is(.site-navigation__rail, .site-navigation__submenu) {
+    width: calc(100% + var(--public-content-inset));
+    margin-inline-end: calc(-1 * var(--public-content-inset));
     grid-template-columns:
         minmax(2.75rem, 1fr)
-        minmax(0, calc(100% - 5.5rem))
+        minmax(0, calc(100% - 2.75rem - var(--public-navigation-outer-track)))
+        var(--public-navigation-outer-track);
+}
+.site-header--name-inside.site-header--title-align-left:not(.site-header--title-hidden) .site-navigation__control[data-direction="next"] {
+    justify-self: start;
+    justify-items: start;
+}
+/* Mirror the real outer arrow gutter when the artist title is on the right. */
+.site-header--name-inside.site-header--title-align-right:not(.site-header--title-hidden) :is(.site-navigation__rail, .site-navigation__submenu) {
+    width: calc(100% + var(--public-content-inset));
+    margin-inline-start: calc(-1 * var(--public-content-inset));
+    grid-template-columns:
+        var(--public-navigation-outer-track)
+        minmax(0, calc(100% - 2.75rem - var(--public-navigation-outer-track)))
         minmax(2.75rem, 1fr);
+}
+.site-header--name-inside.site-header--title-align-right:not(.site-header--title-hidden) .site-navigation__control[data-direction="previous"] {
+    justify-self: end;
+    justify-items: end;
 }
 
 /* Inside Menu has two physical regions. Alignment selects the title's
@@ -2080,8 +2104,8 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
 .site-header--name-inside:not(.is-title-stacked):not(.site-header--title-hidden) .site-navigation > .site-name-heading {
     grid-column: 1;
     grid-row: 1;
-    /* Anchor the title against navigation, not the distant outer column edge. */
-    justify-content: flex-end;
+    /* Align the title with the Page's actual General reading inset. */
+    justify-content: flex-start;
 }
 
 .site-header--name-inside:not(.is-title-stacked):not(.site-header--title-hidden) :is(.site-navigation__rail, .site-navigation__submenu) {
@@ -2096,8 +2120,8 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
 
 .site-header--name-inside.site-header--title-align-right:not(.is-title-stacked):not(.site-header--title-hidden) .site-navigation > .site-name-heading {
     grid-column: 2;
-    /* Mirror the left-side composition: keep the title beside the Menu. */
-    justify-content: flex-start;
+    /* Mirror the left reading edge at the right-hand General inset. */
+    justify-content: flex-end;
 }
 
 .site-header--name-inside.site-header--title-align-right:not(.is-title-stacked):not(.site-header--title-hidden) :is(.site-navigation__rail, .site-navigation__submenu) {
