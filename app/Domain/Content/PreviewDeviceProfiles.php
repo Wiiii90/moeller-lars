@@ -5,14 +5,16 @@ namespace App\Domain\Content;
 final class PreviewDeviceProfiles
 {
     /**
-     * A single catalogue for the admin's live viewport and browser renderer.
+     * A single catalogue for the admin's responsive live viewport.
      * Dimensions are CSS layout pixels, not physical panel pixels.
+     * Null dimensions follow the artist's current browser viewport.
      *
-     * @return array<string, array{label: string, category: string, width: int, height: int, touch: bool}>
+     * @return array<string, array{label: string, category: string, width: int|null, height: int|null, touch: bool}>
      */
     public static function all(): array
     {
         return [
+            'current-window' => ['label' => 'Current window', 'category' => 'desktop', 'width' => null, 'height' => null, 'touch' => false],
             'desktop-compact' => ['label' => 'Small desktop (1024 × 768)', 'category' => 'desktop', 'width' => 1024, 'height' => 768, 'touch' => false],
             'desktop-laptop' => ['label' => 'Desktop (1280 × 800)', 'category' => 'desktop', 'width' => 1280, 'height' => 800, 'touch' => false],
             'desktop-wide' => ['label' => 'Wide desktop (1440 × 900)', 'category' => 'desktop', 'width' => 1440, 'height' => 900, 'touch' => false],
@@ -28,7 +30,7 @@ final class PreviewDeviceProfiles
         ];
     }
 
-    /** @return array{label: string, category: string, width: int, height: int, touch: bool}|null */
+    /** @return array{label: string, category: string, width: int|null, height: int|null, touch: bool}|null */
     public static function find(string $id): ?array
     {
         return self::all()[$id] ?? null;

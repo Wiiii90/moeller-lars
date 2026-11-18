@@ -27,7 +27,7 @@
             <select class="admin-live-preview__width-select" x-model="selectedProfile"
                 x-on:change="selectProfile($event.target.value)"
                 aria-label="Device and viewport resolution"
-                title="Device size in layout pixels. Physical screens may have higher pixel density.">
+                x-bind:title="viewportSize().join(' × ') + ' layout pixels'">
                 @foreach (['desktop' => 'Computers', 'tablet' => 'Tablets', 'mobile' => 'Phones'] as $category => $label)
                     <optgroup label="{{ $label }}">
                         @foreach (\App\Domain\Content\PreviewDeviceProfiles::all() as $id => $profile)
@@ -40,8 +40,9 @@
             </select>
             <button class="admin-action admin-stage-tool-icon" type="button"
                 x-on:click="rotateViewport()"
-                x-bind:aria-label="rotated ? 'Restore device orientation' : 'Rotate device'"
-                x-bind:title="rotated ? 'Restore orientation' : 'Rotate device'">
+                x-bind:disabled="selectedProfile === 'current-window'"
+                x-bind:aria-label="selectedProfile === 'current-window' ? 'Current window orientation' : (rotated ? 'Restore device orientation' : 'Rotate device')"
+                x-bind:title="selectedProfile === 'current-window' ? 'Uses current window orientation' : (rotated ? 'Restore orientation' : 'Rotate device')">
                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" />
             </button>
         </div>

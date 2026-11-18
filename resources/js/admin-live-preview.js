@@ -7,9 +7,10 @@ export function adminLivePreview(element) {
         resizeObserver: null,
         fitFrame: null,
         frameShortcuts: [],
+        diagnosticsFrame: null,
         pointerInside: false,
         previewDevice: 'desktop',
-        selectedProfile: 'desktop-laptop',
+        selectedProfile: 'current-window',
         rotated: false,
         currentUrl: element.dataset.previewUrl || '',
         horizontalOverflow: false,
@@ -35,7 +36,7 @@ export function adminLivePreview(element) {
                 if (saved && Object.hasOwn(profiles, saved.profile)) {
                     this.selectedProfile = saved.profile
                     this.previewDevice = profiles[saved.profile].category
-                    this.rotated = saved.rotated === true
+                    this.rotated = saved.profile !== 'current-window' && saved.rotated === true
                 }
             } catch (_) {
                 // Private browsing may deny storage; the live preview still works.
@@ -59,6 +60,7 @@ export function adminLivePreview(element) {
         destroy() {
             this.resizeObserver?.disconnect()
             if (this.fitFrame !== null) cancelAnimationFrame(this.fitFrame)
+            if (this.diagnosticsFrame !== null) cancelAnimationFrame(this.diagnosticsFrame)
             this.unbindFrameShortcuts()
             this.cancelPanGesture()
         },
@@ -67,6 +69,13 @@ export function adminLivePreview(element) {
             this.fitFrame = requestAnimationFrame(() => {
                 this.fitFrame = null
                 this.fitPreview()
+            })
+        },
+        scheduleDiagnostics() {
+            if (this.diagnosticsFrame !== null) return
+            this.diagnosticsFrame = requestAnimationFrame(() => {
+                this.diagnosticsFrame = null
+                this.updateViewportDiagnostics()
             })
         },
         selectProfile(value) {
@@ -80,7 +89,7 @@ export function adminLivePreview(element) {
         onFrameLoad() {
             this.scheduleFit()
             this.bindFrameShortcuts()
-            this.updateViewportDiagnostics()
+            this.scheduleDiagnostics()
         },
         changeViewport() {
             this.cancelPanGesture()
@@ -92,12 +101,17 @@ export function adminLivePreview(element) {
             this.$nextTick(() => this.scheduleFit())
         },
         rotateViewport() {
+            if (this.selectedProfile === 'current-window') return
             this.rotated = ! this.rotated
             this.saveDevicePreference()
             this.changeViewport()
         },
         viewportSize() {
-            const profile = profiles[this.selectedProfile] ?? profiles['desktop-laptop']
+            const profile = profiles[this.selectedProfile] ?? profiles['current-window']
+            if (profile.width === null || profile.height === null) {
+                // Match the Admin browser viewport, not the tiny Stage area.
+                return [Math.max(1, window.innerWidth || 1280), Math.max(1, window.innerHeight || 800)]
+            }
             return this.rotated
                 ? [profile.height, profile.width]
                 : [profile.width, profile.height]
@@ -133,7 +147,7 @@ export function adminLivePreview(element) {
             frame.style.height = `${targetHeight}px`
             this.clampPan()
             this.applyPreviewTransform()
-            this.updateViewportDiagnostics()
+            this.scheduleDiagnostics()
         },
         applyPreviewTransform() {
             const frame = this.$refs.frame
@@ -250,13 +264,27 @@ export function adminLivePreview(element) {
             const down = (event) => this.handleSpaceDown(event)
             const up = (event) => this.handleSpaceUp(event)
             const blur = () => this.cancelSpacePan()
+            const changed = () => this.scheduleDiagnostics()
             documentRef.addEventListener('keydown', down)
             documentRef.addEventListener('keyup', up)
+            // Recheck after actual iframe reflow, media completion and fonts.
+            documentRef.addEventListener('load', changed, true)
+            windowRef.addEventListener('resize', changed)
             windowRef.addEventListener('blur', blur)
+            const observer = typeof windowRef.ResizeObserver === 'function'
+                ? new windowRef.ResizeObserver(changed) : null
+            observer?.observe(documentRef.documentElement)
+            if (documentRef.body) observer?.observe(documentRef.body)
+            documentRef.fonts?.ready.then(() => {
+                if (this.$refs.frame?.contentDocument === documentRef) this.scheduleDiagnostics()
+            }).catch(() => {})
             this.frameShortcuts.push(
                 () => documentRef.removeEventListener('keydown', down),
                 () => documentRef.removeEventListener('keyup', up),
+                () => documentRef.removeEventListener('load', changed, true),
+                () => windowRef.removeEventListener('resize', changed),
                 () => windowRef.removeEventListener('blur', blur),
+                () => observer?.disconnect(),
             )
         },
         startPan(event) {
@@ -294,7 +322,10 @@ export function adminLivePreview(element) {
         },
         updateViewportDiagnostics() {
             const frame = this.$refs.frame
-            if (! frame || frame.tagName !== 'IFRAME') return
+            if (! frame || frame.tagName !== 'IFRAME') {
+                this.horizontalOverflow = false
+                return
+            }
             try {
                 const doc = frame.contentDocument
                 if (! doc) return
@@ -322,6 +353,8 @@ export function adminLivePreview(element) {
             const url = new URL(source, window.location.origin)
             url.searchParams.set('_appearance', Date.now().toString())
             this.currentUrl = url.toString()
+            this.unbindFrameShortcuts()
+            this.horizontalOverflow = false
             frame.src = this.currentUrl
         },
     };

@@ -2,7 +2,7 @@
 
 **Lease:** 17  
 **Branch:** dev  
-**State:** Active — shared single-frame responsive Live Preview simplified on dev; runtime/browser acceptance, Gallery migration and earlier Artwork Divider/Expanded checks remain pending.
+**State:** Active — shared browser-local Live Preview polished on dev; runtime/browser acceptance, Gallery migration and earlier Artwork Divider/Expanded checks remain pending.
 
 ## Chat takeover — 2026-11-18
 
@@ -209,3 +209,12 @@
 - Removed the standalone browser controller, Playwright screenshot server, renderer Dockerfile, optional renderer PowerShell script, its private HTTP route, services config, Compose service/environment and example-env secrets. The normal `scripts/local-preview.ps1` remains unchanged and has no Playwright dependency. Retain Playwright npm dependencies already used by **tests**; do not delete them.
 - No database schema, publication snapshot, media lifecycle or General Appearance controls were changed. Existing touch-only document-scrollbar styling in Public remains for the iframe. Static pre-commit checks confirmed JavaScript function syntax, balanced CSS and Blade directives, one device dropdown, absence of retired backend refs and intact protected Working preview/media services.
 - Source-only changes prepared; no local Docker/browser, browser acceptance, tests, deployment or migration executed. In local browser review, check device select and rotation in both Gallery and General, live refresh after save, staged previews, user scroll, zero-zoom Fit, overflow icon, realistic viewport scaling and session-tab persistence. Explain to the artist that same-browser rendering is **responsive emulation**, not an operating-system-accurate iPhone screenshot.
+
+## Browser-local Live Preview fidelity and lifecycle refinement — 2026-11-18
+
+- User clarified that the small embedded Preview should use **all practical capability of its existing browser**, without WebKit sidecars, native-device farms, remote streaming, persistent server processes, server capacity changes or extra Preview infrastructure. Real iOS Safari cannot be produced by resizing a Chromium iframe; this is responsive emulation and must not be represented as OS/browser parity.
+- Added `Current window` to the central `PreviewDeviceProfiles` catalogue. Its viewport tracks the **actual Admin browser viewport** at run time (logical layout pixels), rather than treating the narrow Stage pane or a fixed 1280 × 800 desktop preset as the user's desktop. This preset is now the default while existing device sizes remain selectable. The current window follows actual orientation and disables a nonsensical manual rotate action; fixed phone/tablet/desktop profiles still support rotation. Device and orientation preferences remain tab-local in guarded session storage.
+- The one shared Alpine controller fits the real iframe layout viewport to the Stage; changing devices or rotating alters width/height of the existing interactive iframe without a network request or loss of current Public navigation. Local zoom/pan remains available; only successful persisted Gallery/General mutations trigger a Working preview reload.
+- Horizontal-overflow diagnostics now refresh on iframe resize, document/body size changes, media loading and font readiness, in a coalesced animation frame. Child document event listeners and the ResizeObserver are removed on reload or component destruction, preventing accumulated observers and stale readings when switching sections. Unsupported observer APIs are handled without breaking the Preview.
+- The device selector's title reveals the current exact logical viewport size; the rotate button is disabled for `Current window`. No extra toolbar controls, device icons, permanent help text or independent Preview subsystem introduced. The product remains single-frame, one-row and fully browser-local, with no additional VPS memory or browser-service startup.
+- Bounded static checks only. JavaScript syntax and central catalogue/Blade structure reviewed; actual visual behavior awaits a fresh local Preview build and Gallery/General browser acceptance. Adjacent Admin/Public code, server startup, tests, database and deployment remain untouched.
