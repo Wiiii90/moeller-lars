@@ -803,7 +803,13 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     display: block;
     width: max-content;
     max-width: 100%;
-    min-width: 0;
+    /* Keep video-only Galleries on General's ordinary artwork track. A
+       max-content Gallery otherwise collapses to the native 300px video
+       placeholder width when no still image contributes intrinsic width. */
+    min-width: min(
+        var(--public-art-max),
+        calc(100dvw - 2 * var(--public-gutter) - 2 * var(--public-content-inset))
+    );
     margin-inline: auto;
 }
 

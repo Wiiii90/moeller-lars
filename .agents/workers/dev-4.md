@@ -27,7 +27,7 @@
 
 ## Verification and remaining work
 
-- Source owner inspected: the previous Gallery width cap and vertically centered first card are concrete root causes. Isolated headless Chromium layout fixtures cover landscape and portrait (including thumbnails smaller than the displayed size), several wide/compact/mobile viewports, actual image/footer width parity, a small first-item top gap and no horizontal overflow. These are **not** full-app browser acceptance.
+- Source owner inspected: the former Gallery reading-width cap and vertically centered first card are confirmed root causes. Isolated headless Chromium geometry fixtures cover landscape and portrait (including thumbnails smaller than the displayed size), wide/compact/mobile widths, image/footer width parity, a short first-item top gap and no horizontal overflow. A separate video-only fixture identified and corrected an intrinsic-width shrink to 300px; the ordinary General video width (650px at its default desktop size, available width on mobile) is preserved. These fixtures are **not** full-app browser acceptance.
 - Full Laravel Preview still needs user-visible verification for current Gallery, especially configured responsive General dimensions/padding, optional headings/dividers, long rights, videos, zoom, lazy-loading and backing sheets. Test both direct Public Preview and embedded Gallery Preview. Existing Stage/Settings narrow table, persistence, notifications, manual Draft/Publish and migration gates also remain pending.
 - Permanent `docs/public/site.md` still describes the older fixed General-width Gallery; route the updated geometry to Docs at the documentation consolidation gate rather than editing general documentation in Dev.
 
