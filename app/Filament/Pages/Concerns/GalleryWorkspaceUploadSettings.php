@@ -184,13 +184,21 @@ trait GalleryWorkspaceUploadSettings
         $fields = [];
         foreach (ArtworkInformation::FIELDS as $field => $label) {
             $checkbox = AdminControl::checkbox('info_'.$field, $label)->live();
-            $checkbox->afterStateUpdated($update);
+            if ($stage) {
+                $checkbox->afterStateUpdated($update);
+            }
             $fields[] = $checkbox;
         }
 
+        // Ordinary modal Checkboxes follow AdminDialog::edit()'s native
+        // change/autosave path. Only Repeater-specific reorder operations
+        // need an explicit callback in that modal.
         $fields[] = AdminArrangementControl::make('info_arrangement', $update);
 
-        return AdminPanelControl::make('Artwork information', 'info_enabled', $fields, $update);
+        return AdminPanelControl::make(
+            'Artwork information', 'info_enabled', $fields,
+            $stage ? $update : null,
+        );
     }
 
     private function galleryViewerPanel(bool $stage): \Filament\Schemas\Components\Group

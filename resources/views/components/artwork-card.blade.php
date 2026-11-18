@@ -19,6 +19,11 @@
     $detailUrl = $preview->url(route('artworks.show', $artwork->slug));
     $presentation = \App\Domain\Artwork\GalleryPresentation::class;
     $viewerActive = $enableViewer === null ? $presentation::viewerEnabled($category) : (bool) $enableViewer;
+    // Home explicitly owns its viewer activation and previously provided
+    // all of the viewer's native controls. Do not silently inherit a
+    // Gallery-only zoom/navigation restriction on Home hero cards.
+    $viewerZoom = $enableViewer !== null || $presentation::viewerZoomEnabled($category);
+    $viewerNavigation = $enableViewer !== null || $presentation::viewerNavigationEnabled($category);
     $detailPageEnabled = $presentation::artworkPagesEnabled($category);
     $configuration = \App\Domain\Artwork\ArtworkInformation::effective($category, $artwork);
     if ($showDetails !== null || $showMediaCredits !== null || $showMediaCopyright !== null) {
@@ -71,8 +76,8 @@
             data-viewer-alt="{{ $altText }}"
             data-viewer-title="{{ $artwork->title }}"
             data-viewer-page="{{ $detailPageEnabled ? $detailUrl : '' }}"
-            data-viewer-zoom="{{ $presentation::viewerZoomEnabled($category) ? '1' : '0' }}"
-            data-viewer-navigation="{{ $presentation::viewerNavigationEnabled($category) ? '1' : '0' }}"
+            data-viewer-zoom="{{ $viewerZoom ? '1' : '0' }}"
+            data-viewer-navigation="{{ $viewerNavigation ? '1' : '0' }}"
             aria-label="Open {{ $artwork->title }} in media viewer"
         >
     @else

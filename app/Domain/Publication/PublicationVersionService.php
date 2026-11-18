@@ -468,10 +468,13 @@ SQL;
     private function versionPayloadExpression(PublicationCheckpoint $checkpoint, string $table): string
     {
         return match ($table) {
-            'artworks' => $this->hasOldArtworkDates($checkpoint)
-                ? self::HISTORICAL_ARTWORK_DATE_PAYLOAD : 'version_row.payload',
+            // Historical snapshots have no individual Artwork override.
+            // A missing override uses the Gallery's published defaults.
+            'artworks' => '(('.($this->hasOldArtworkDates($checkpoint)
+                ? self::HISTORICAL_ARTWORK_DATE_PAYLOAD : 'version_row.payload')
+                .") || jsonb_build_object('artwork_information_override', COALESCE(version_row.payload->'artwork_information_override', 'null'::jsonb)))",
             'artwork_categories' => <<<'SQL'
-(CASE WHEN jsonb_exists(version_row.payload, 'artwork_page_layout')
+((CASE WHEN jsonb_exists(version_row.payload, 'artwork_page_layout')
     THEN version_row.payload
     ELSE (version_row.payload - 'landscape_detail_enabled' - 'landscape_detail_scale'
         - 'portrait_detail_enabled' - 'artwork_page_surface_mode' - 'artwork_menu_surface_wide'
@@ -479,7 +482,13 @@ SQL;
             CASE WHEN COALESCE((version_row.payload->>'landscape_detail_enabled')::boolean, false)
                    OR COALESCE((version_row.payload->>'portrait_detail_enabled')::boolean, false)
                 THEN 'expanded' ELSE 'standard' END))
-END)
+END) || jsonb_build_object(
+    'artwork_information', COALESCE(version_row.payload->'artwork_information', 'null'::jsonb),
+    'media_viewer_enabled', COALESCE(version_row.payload->'media_viewer_enabled', 'true'::jsonb),
+    'artwork_pages_enabled', COALESCE(version_row.payload->'artwork_pages_enabled', 'true'::jsonb),
+    'viewer_zoom_enabled', COALESCE(version_row.payload->'viewer_zoom_enabled', 'true'::jsonb),
+    'viewer_navigation_enabled', COALESCE(version_row.payload->'viewer_navigation_enabled', 'true'::jsonb)
+))
 SQL,
             'site_sections' => <<<'SQL'
 (version_row.payload || jsonb_build_object(
@@ -545,13 +554,13 @@ SQL,
                 ->where(static function ($query): void {
                     $query->where(static function ($rows): void {
                         $rows->where('table_name', 'artworks')
-                            ->whereRaw("jsonb_exists_all(payload, ARRAY['work_year', 'work_date', 'date_precision'])");
+                            ->whereRaw("jsonb_exists_all(payload, ARRAY['work_year', 'work_date', 'date_precision']) OR NOT jsonb_exists(payload, 'artwork_information_override')");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'exhibitions')
                             ->whereRaw("jsonb_exists(payload, 'date_text')");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'artwork_categories')
-                            ->whereRaw("NOT jsonb_exists(payload, 'artwork_page_layout')");
+                            ->whereRaw("NOT jsonb_exists(payload, 'artwork_page_layout') OR NOT jsonb_exists(payload, 'artwork_information')");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'site_sections')
                             ->whereRaw("NOT jsonb_exists(payload, 'meta_description') OR NOT jsonb_exists(payload, 'is_home') OR (payload->>'type' = 'gallery' AND COALESCE(payload->>'template', '') = '')");

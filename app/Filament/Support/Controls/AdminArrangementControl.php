@@ -37,6 +37,8 @@ final class AdminArrangementControl
             ->reorderable()
             ->reorderableWithButtons()
             ->reorderableWithDragAndDrop()
+            ->collapsible()
+            ->collapsed()
             ->default(ArtworkInformation::defaultArrangement())
             ->columns(2)
             ->live()
