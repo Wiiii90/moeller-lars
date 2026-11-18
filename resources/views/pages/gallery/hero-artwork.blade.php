@@ -3,27 +3,43 @@
         $navigableHero = $showNavigation && $heroGroup->count() > 1;
         $imageViewer = app(\App\Domain\Content\PublicImageViewer::class);
     @endphp
-    <div data-artwork-viewer-sequence @if ($navigableHero) data-home-hero @endif>
+    <div class="home-hero-presentation" data-artwork-viewer-sequence @if ($navigableHero) data-home-hero @endif>
         @foreach ($navigableHero ? $heroGroup : [$heroCandidate] as $candidate)
             @php
                 $artwork = $candidate->artwork();
                 $asset = $candidate->mediaAsset();
                 $isCurrent = $candidate->key() === $heroCandidate->key();
                 $assetPreview = $artwork instanceof \App\Models\Artwork
-                    ? $media->thumbnailVariant($artwork)
+                    ? ($media->kind($artwork) === 'video'
+                        ? \App\Domain\Media\MediaPreviewVariant::videoPoster($media->primaryAsset($artwork))
+                        : $media->thumbnailVariant($artwork))
                     : ($asset instanceof \App\Models\MediaAsset
-                        ? \App\Domain\Media\MediaPreviewVariant::imageThumbnail($asset) : null);
+                        ? (\App\Domain\Media\MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type'))
+                            ? \App\Domain\Media\MediaPreviewVariant::videoPoster($asset)
+                            : \App\Domain\Media\MediaPreviewVariant::imageThumbnail($asset))
+                        : null);
                 $previewWidth = (int) ($assetPreview?->getAttribute('width') ?? 0);
                 $previewHeight = (int) ($assetPreview?->getAttribute('height') ?? 0);
-                $fitHero = $previewWidth > 0 && $previewHeight > 0
-                    && (($expandLandscape && $previewWidth > $previewHeight)
-                        || ($expandPortrait && $previewHeight > $previewWidth));
+                $heroAspect = $previewWidth > 0 && $previewHeight > 0
+                    ? round($previewWidth / $previewHeight, 8)
+                    : null;
             @endphp
-            <div data-home-hero-slide class="{{ $fitHero ? 'home-hero-slide--expanded' : '' }}" @if (! $isCurrent) hidden @endif>
+            @if ($heroAspect !== null)
+                @push('public-component-styles')
+                    <style nonce="{{ request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE) }}">
+                        .home-hero-slide[data-home-hero-index="{{ $loop->index }}"] {
+                            --home-hero-image-aspect: {{ $heroAspect }};
+                        }
+                    </style>
+                @endpush
+            @endif
+            <div class="home-hero-slide" data-home-hero-slide data-home-hero-index="{{ $loop->index }}"
+                @if ($heroAspect !== null) data-home-hero-dimensioned @endif @if (! $isCurrent) hidden @endif>
                 @if ($artwork instanceof \App\Models\Artwork)
                     <x-artwork-card
                         :artwork="$artwork"
                         :media="$media"
+                        :hero-fitted="true"
                         :show-details="$showDetails"
                         :show-media-credits="$showMediaCredits"
                         :show-media-copyright="$showMediaCopyright"
@@ -51,6 +67,7 @@
                     @endphp
                     <article class="artwork-card" aria-label="{{ $alt }}">
                         <x-artwork-navigation :hero-navigation="$navigableHero" />
+                        <div class="artwork-card__composition artwork-card__composition--home-hero">
                         <div class="artwork-card__link artwork-card__link--static">
                             @if ($isVideo)
                                 <video
@@ -100,6 +117,7 @@
                                 @endif
                             </div>
                         @endif
+                        </div>
                     </article>
                 @endif
             </div>

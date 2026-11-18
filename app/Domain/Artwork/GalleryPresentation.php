@@ -159,6 +159,24 @@ final class GalleryPresentation
         return $offsets;
     }
 
+    /**
+     * Deterministic pseudo-random Gallery spacing, independent of lateral
+     * drift and Artwork order. A stable seed prevents changes on reload.
+     *
+     * @param iterable<Artwork> $artworks Canonical Gallery order
+     * @return array<int,int> Artwork ID to spacing step 0..4
+     */
+    public static function indexCardGapSteps(iterable $artworks, ArtworkCategory $gallery): array
+    {
+        $steps = [];
+        foreach ($artworks as $artwork) {
+            $hash = (int) sprintf('%u', crc32($gallery->getKey().':gap:'.$artwork->getKey()));
+            $steps[(int) $artwork->getKey()] = $hash % 5;
+        }
+
+        return $steps;
+    }
+
     public const DIVIDER_NONE = 'none';
 
     public const DIVIDER_OPTIONS = [self::DIVIDER_NONE => 'None', ...DividerVariant::LABELS];

@@ -1,4 +1,4 @@
-@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => null, 'heroNavigation' => false, 'enableViewer' => null, 'eager' => false, 'priority' => null, 'galleryBuffered' => false, 'allowVideoSound' => false, 'showMediaCredits' => null, 'showMediaCopyright' => null, 'captionLayout' => null, 'galleryIndex' => false, 'galleryShift' => 0])
+@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => null, 'heroNavigation' => false, 'enableViewer' => null, 'eager' => false, 'priority' => null, 'galleryBuffered' => false, 'allowVideoSound' => false, 'showMediaCredits' => null, 'showMediaCopyright' => null, 'captionLayout' => null, 'galleryIndex' => false, 'galleryShift' => 0, 'galleryGap' => 0, 'heroFitted' => false])
 
 @php
     $originalUrl = $media->originalUrl($artwork);
@@ -70,7 +70,7 @@
     @endpush
 @endif
 
-<article class="artwork-card{{ $galleryIndex ? ' artwork-card--gallery-index artwork-card--gallery-shift-'.(max(-2, min(2, (int) $galleryShift)) + 2) : '' }}{{ $galleryImageAspect !== null ? ' artwork-card--gallery-dimensioned' : '' }}"
+<article class="artwork-card{{ $galleryIndex ? ' artwork-card--gallery-index artwork-card--gallery-shift-'.(max(-2, min(2, (int) $galleryShift)) + 2).' artwork-card--gallery-gap-'.max(0, min(4, (int) $galleryGap)) : '' }}{{ $galleryImageAspect !== null ? ' artwork-card--gallery-dimensioned' : '' }}"
     @if ($galleryImageAspect !== null) data-gallery-artwork="{{ (int) $artwork->getKey() }}" @endif>
     <x-artwork-navigation
         :category="$category"
@@ -78,10 +78,10 @@
         :hero-navigation="$heroNavigation"
     />
 
-    @if ($galleryIndex)
-        {{-- Gallery-only intrinsic media/caption group. Home and individual
-             Artwork layouts retain their own established presentation. --}}
-        <div class="artwork-card__composition{{ $isVideo ? ' artwork-card__composition--video' : '' }}">
+    @if ($galleryIndex || $heroFitted)
+        {{-- The shared image-and-caption composition keeps artwork information
+             immediately below its actual media, including on the Home Hero. --}}
+        <div class="artwork-card__composition{{ $isVideo ? ' artwork-card__composition--video' : '' }}{{ $heroFitted ? ' artwork-card__composition--home-hero' : '' }}">
     @endif
 
     @if ($viewerActive)
@@ -180,7 +180,7 @@
         </div>
     @endif
 
-    @if ($galleryIndex)
+    @if ($galleryIndex || $heroFitted)
         </div>
     @endif
 </article>

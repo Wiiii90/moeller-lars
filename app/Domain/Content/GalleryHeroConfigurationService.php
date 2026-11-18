@@ -15,27 +15,6 @@ use Illuminate\Validation\ValidationException;
 
 final class GalleryHeroConfigurationService
 {
-    public const ARTWORK_SURFACE_INHERIT = 'inherit';
-
-    public const ARTWORK_SURFACE_JOINED = 'joined';
-
-    public const ARTWORK_SURFACE_SEPARATE = 'separate';
-
-    public const ARTWORK_SURFACE_OPTIONS = [
-        self::ARTWORK_SURFACE_INHERIT => 'Follow General',
-        self::ARTWORK_SURFACE_JOINED => 'No gap',
-        self::ARTWORK_SURFACE_SEPARATE => 'Separate Surface',
-    ];
-
-    public static function artworkPageDividerForMode(string $mode): ?string
-    {
-        return match ($mode) {
-            self::ARTWORK_SURFACE_JOINED => 'fine',
-            self::ARTWORK_SURFACE_SEPARATE => 'separate',
-            default => null,
-        };
-    }
-
     public const DEFAULT_GROUP_SIZE = 12;
 
     public const MAX_GROUP_SIZE = 50;
@@ -86,10 +65,6 @@ final class GalleryHeroConfigurationService
      *     show_navigation:bool,
      *     video_sound_enabled:bool,
      *     enable_viewer:bool,
-     *     landscape_detail_enabled:bool,
-     *     portrait_detail_enabled:bool,
-     *     artwork_page_surface_mode:string,
-     *     artwork_menu_surface_wide:bool,
      *     show_media_credits:bool,
      *     show_media_copyright:bool,
      *     caption_layout:string
@@ -114,14 +89,6 @@ final class GalleryHeroConfigurationService
             'show_navigation' => (bool) ($artwork['show_navigation'] ?? false),
             'video_sound_enabled' => (bool) ($artwork['video_sound_enabled'] ?? false),
             'enable_viewer' => (bool) ($artwork['enable_viewer'] ?? true),
-            'landscape_detail_enabled' => (bool) ($artwork['landscape_detail_enabled'] ?? false),
-            'portrait_detail_enabled' => (bool) ($artwork['portrait_detail_enabled'] ?? false),
-            'artwork_page_surface_mode' => $this->enum(
-                $artwork['artwork_page_surface_mode'] ?? null,
-                array_keys(self::ARTWORK_SURFACE_OPTIONS),
-                self::ARTWORK_SURFACE_INHERIT,
-            ),
-            'artwork_menu_surface_wide' => (bool) ($artwork['artwork_menu_surface_wide'] ?? false),
             'show_media_credits' => (bool) ($artwork['show_media_credits'] ?? false),
             'show_media_copyright' => (bool) ($artwork['show_media_copyright'] ?? false),
             'caption_layout' => $this->enum(
@@ -259,14 +226,6 @@ final class GalleryHeroConfigurationService
             $showNavigation = (bool) ($input['show_navigation'] ?? $current['show_navigation']);
             $videoSoundEnabled = (bool) ($input['video_sound_enabled'] ?? $current['video_sound_enabled']);
             $enableViewer = (bool) ($input['enable_viewer'] ?? $current['enable_viewer']);
-            $expandLandscape = (bool) ($input['landscape_detail_enabled'] ?? $current['landscape_detail_enabled']);
-            $expandPortrait = (bool) ($input['portrait_detail_enabled'] ?? $current['portrait_detail_enabled']);
-            $pageSurfaceMode = $this->enum(
-                $input['artwork_page_surface_mode'] ?? $current['artwork_page_surface_mode'],
-                array_keys(self::ARTWORK_SURFACE_OPTIONS),
-                $current['artwork_page_surface_mode'],
-            );
-            $wideArtworkMenu = (bool) ($input['artwork_menu_surface_wide'] ?? $current['artwork_menu_surface_wide']);
             $showMediaCredits = (bool) ($input['show_media_credits'] ?? $current['show_media_credits']);
             $showMediaCopyright = (bool) ($input['show_media_copyright'] ?? $current['show_media_copyright']);
             $captionLayout = $this->enum(
@@ -325,10 +284,6 @@ final class GalleryHeroConfigurationService
             $artwork['show_navigation'] = $showNavigation;
             $artwork['video_sound_enabled'] = $videoSoundEnabled;
             $artwork['enable_viewer'] = $enableViewer;
-            $artwork['landscape_detail_enabled'] = $expandLandscape;
-            $artwork['portrait_detail_enabled'] = $expandPortrait;
-            $artwork['artwork_page_surface_mode'] = $pageSurfaceMode;
-            $artwork['artwork_menu_surface_wide'] = $wideArtworkMenu;
             $artwork['show_media_credits'] = $showMediaCredits;
             $artwork['show_media_copyright'] = $showMediaCopyright;
             $artwork['caption_layout'] = $captionLayout;
@@ -344,6 +299,9 @@ final class GalleryHeroConfigurationService
                 $artwork['hero_mode'], $artwork['automatic_selection'],
                 $artwork['fixed_artwork_id'], $artwork['pool_rule'],
                 $artwork['pool_year'], $artwork['manual_include_ids'],
+                // Inactive Home layout toggles are retired at the next edit.
+                $artwork['landscape_detail_enabled'], $artwork['portrait_detail_enabled'],
+                $artwork['artwork_page_surface_mode'], $artwork['artwork_menu_surface_wide'],
             );
 
             $fresh->setAttribute('configuration', $artwork);

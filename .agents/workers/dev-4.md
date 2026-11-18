@@ -2,34 +2,35 @@
 
 **Lease:** 20
 **Branch:** dev
-**State:** Expanded is the sole individual Artwork detail composition. Removed Default/Museum presentation branches and Gallery Stage/Settings layout selector; acceptance in real Preview pending.
+**State:** Expanded is the sole Artwork detail layout and now also the only Home Hero image presentation; obsolete Home orientation/paper controls retired. Gallery artwork gaps enlarged with a small stable pseudo-random variation. Source changes prepared; browser acceptance pending.
 
-## Scope and ownership
+## Ownership / scope
 
-- Active Dev Worker 4 on `dev` owns Gallery/Artwork public index/detail and shared Gallery Stage/Settings. Dev Worker 6 owns the separate Home Hero; Dev Worker 7 General, Dev Worker 2 Media/Storage and Dev Worker 8 shared dialogs.
-- Keep the branch-local lease/head write gate. No migration execution, deployment, all-suite tests or protected data operations without authorization.
-- The Home Hero is rendered by `resources/views/pages/gallery/hero-artwork.blade.php` and remains unchanged. An individual Artwork opened from Home uses the same `/artworks/{slug}` detail route and now displays Expanded like Paintings.
+- Active Dev Worker 4 on `dev`, lease 20. The artist explicitly extended this chat's Gallery task to Home Hero presentation and its connected options. Dev Worker 6 still owns all other Home Hero candidate selection, source ranking, Stage behavior and Dummy Gallery workflows. Preserve those source, ranking, rotation and multiple-slide navigation rules unchanged.
+- Gallery Workspace Stage and modal continue sharing `gallerySettingsFields(bool $stage)`. Never create duplicate layout selectors or separate persistence/renderer layers.
+- Before any edit: recheck `dev` head, lease and scopes. No unapproved migration/CI/deployment, broad test editing or live data operations.
 
-## Individual Artwork — accepted sole layout
+## Sole Expanded artwork composition
 
-- The Paintings screenshot shows the artist-approved Expanded composition: Gallery back/previous/next at the General Content edges, image fitted inside General width and available viewport height, Artwork information aligned immediately underneath the actual image, and optional longer description on the full General content track.
-- `show.blade.php` always outputs `site-content--fitted-artwork`; images additionally receive `site-content--fitted-image` for the existing height fit and vertically centered image+footer grouping. Videos keep their natural dimensions. No Standard/Museum conditional path and no second detail renderer.
-- The Museum grid styles and unused Standard/Museum/Expanded option constants and Gallery-specific layout selector were removed from source. `gallerySettingsFields(bool $stage)` continues as the single Stage and modal schema, now with only the Individual Artwork Pages enable toggle and end-navigation setting in that panel. The legacy field is removed from active validation, editable stage whitelist and model mass-assignment.
-- **Publication boundary:** Historical `artwork_page_layout` columns in Working/Committed, earlier migrations and `PublicationVersionService` checkpoint projection remain unchanged; they are no longer consulted by live rendering or editing. Do not drop or rewrite those columns/versions before an approved cutover.
-- No Gallery index, Home Hero, General shell/padding or media viewer behavior was changed by this task.
+- Individual Artwork details always use the accepted Expanded view at `/artworks/{slug}`, regardless of originating Gallery or Home. General owns physical Menu/Page width and inset, the fitted image and information are centered as one group, and information follows the visible media edge with the standard small margin. No Standard/Museum options, grid variants or visual outlines.
+- Home Hero now uses an **independently owned presentation with the same Expanded visual rules** rather than the old per-orientation `landscape_detail_enabled`/`portrait_detail_enabled` flags and alternate `artwork_page_surface_mode`/`artwork_menu_surface_wide` choices. Public Hero always uses `site-content--home-hero-fitted`; General keeps control of paper, menu and divider.
+- All Home Hero slides (Artworks **and** direct Storage media, including video posters where dimensions exist) use the same `artwork-card__composition--home-hero` image/caption grouping. Existing variant dimensions create a nonce-authorized per-slide image ratio; CSS makes each image as large as permitted by **General Content width** and `min(82svh, 100svh - 9rem)` without distortion. Footer/rights align exactly with that media width; Gallery/hero navigation and arrow hit targets span General Content. Small landscapes and their information remain vertically grouped/centered, with no phantom stage below the image.
+- `data-home-hero`, `[data-home-hero-slide]`, current/hidden member state, previous/next buttons, rotation and enabled viewer remain canonical. All source profiles and media eligibility unchanged. The Home settings no longer expose landscape/portrait expand, alternate page surface or wide-menu controls in Stage or Settings. The configuration service no longer reads/saves these fields and drops inactive keys on the next authorized Home edit, but **historic committed versions and checkpoint snapshots remain untouched**. No database migration was required.
+- Do not confuse independent Home Hero media rendering with individual Artwork detail routes; the common visual language is image sizing and footer alignment, not forcing Home into the detail renderer or sharing its navigation controller.
 
-## Existing accepted Gallery composition
+## Gallery index spacing
 
-- Gallery index uses natural-size ratio with max height `min(82svh, calc(100svh - 9rem))`, bounded by General content width and with deterministic five-stop lateral drift. Information matches displayed image width, without decorative 1px image/video outlines.
-- Desktop Gallery vertical gap: `clamp(3.5rem, 8svh, 5rem)`; phone (<=40rem): `clamp(1rem, 3svh, 2rem)`. First Artwork top inset is `max(1rem, var(--public-content-inset))` on larger viewports; phone 1rem. No artificial viewport-height slots.
-- Fitted detail image and footer are vertically centered as one group, with existing .7rem media-to-caption spacing. General owns shared Menu/Page paper and Content padding.
+- Stable lateral variation retains `GalleryPresentation::indexCardOffsets()` and never changes Artwork order. New `indexCardGapSteps()` uses Gallery+Artwork identity and a separate hash salt to yield stable steps 0–4 for **vertical spacing**. This is deliberate small visual pseudo-randomness, not request-time randomness or persisted ordering state.
+- Gallery desktop base gap is `clamp(8rem, 17svh, 10rem)` plus zero to one rem jitter in quarter-rem steps; total roughly two to two-and-a-half times the former `clamp(3.5rem, 8svh, 5rem)` at ordinary desktop heights. With a divider, the same full gap is divided evenly above/below the separator. The last Artwork adds no trailing gap. On phones (<=40rem), the preexisting `clamp(1rem, 3svh, 2rem)` remains **without** jitter.
+- General owns Gallery paper width, media height remains `min(82svh, calc(100svh - 9rem))`, top inset follows the General side inset on larger screens and is 1rem on phones, captions match visible image width. Images preserve aspect ratio, no decorative edges, no artificial viewport-height Gallery card slots.
 
-## Gallery Stage/Settings — remaining ownership
+## Gallery Stage/Settings retained
 
-- Stage and modal share `gallerySettingsFields(bool $stage)`. Keep existing Gallery Title, Artwork order, Between Artworks, Artwork Information, Media Viewer, Individual Artwork Pages enabled/edge navigation, video sound controls. No persistent help prose or excessive rounding; new Artworks remain draft until expressly published.
-- Artwork Information arrangement is one editable Field/Row/Align schema with reorder and move controls, sparse per-Artwork overrides and independent rights/Viewer visibility. Preserve publication and Undo/checkpoint behavior.
+- Artwork Information arrangement is the canonical Field/Row/Align table, with existing row movement and Gallery-specific sparse overrides. Media Viewer, Artwork Page availability/end navigation and looping video sound keep their independent meanings. Stage/modal controls use flat grouping without persistent helper paragraphs, excessive rounding or mandatory stars.
+- Gallery Artworks are drafts until explicitly published. Publication/checkpoint integrity is a real compatibility boundary and must not be rewritten as a layout cleanup.
 
-## Verification outstanding
+## Verification and next acceptance
 
-- Source-level checks only; no real Laravel browser or user acceptance pass in this chat. Check Paintings plus Galleries previously set to Standard or Museum, portrait and landscape media, video, long captions/descriptions, on/off Viewer, responsive widths/zoom and Home-linked detail navigation.
-- Docs on the dedicated docs workstream should update public documentation after visual acceptance. Historical database cleanup is a separate authorized cutover decision.
+- Source-level checks for Home option removal, media grouping, CSS bounds, stable Gallery jitter, mobile override, and unchanged Hero navigation; real local Laravel Preview and complete browser review are **not** performed in this worker chat.
+- User should inspect Home with single landscape, portrait, direct Storage image/video, two or more navigable Hero slides, viewer on/off, hidden/unavailable media and long rights. Check General width and padding, visible image-to-caption alignment, no viewport overflow and no menu/page width changes. Inspect Gallery with and without dividers, landscape/portrait and phone gaps.
+- Remaining runtime qualification and any full test maintenance should be routed through the existing Testing branch/Docs publication gate. Other Home Hero ranking and Stage acceptance remains Dev Worker 6's scope.

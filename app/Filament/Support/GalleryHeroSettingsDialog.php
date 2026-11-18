@@ -30,10 +30,6 @@ final class GalleryHeroSettingsDialog
             'show_navigation' => $hero['show_navigation'],
             'video_sound_enabled' => $hero['video_sound_enabled'],
             'enable_viewer' => $hero['enable_viewer'],
-            'landscape_detail_enabled' => $hero['landscape_detail_enabled'],
-            'portrait_detail_enabled' => $hero['portrait_detail_enabled'],
-            'artwork_page_surface_mode' => $hero['artwork_page_surface_mode'],
-            'artwork_menu_surface_wide' => $hero['artwork_menu_surface_wide'],
             'show_media_credits' => $hero['show_media_credits'],
             'show_media_copyright' => $hero['show_media_copyright'],
             'caption_layout' => $hero['caption_layout'],
@@ -142,13 +138,6 @@ final class GalleryHeroSettingsDialog
                         ->options(GalleryPresentation::CAPTION_LAYOUTS)
                         ->required()
                         ,
-                    $this->heroDisplayToggle('landscape_detail_enabled', 'Expand landscape Hero artworks', $persistHeroToggle),
-                    $this->heroDisplayToggle('portrait_detail_enabled', 'Expand portrait Hero artworks', $persistHeroToggle),
-                    AdminControl::select('artwork_page_surface_mode', 'Artwork page surface')
-                        ->options(GalleryHeroConfigurationService::ARTWORK_SURFACE_OPTIONS)
-                        ->required()
-                        ,
-                    $this->heroDisplayToggle('artwork_menu_surface_wide', 'Match Menu surface to Artwork page width', $persistHeroToggle),
                     $this->heroDisplayToggle('video_sound_enabled', 'Allow visitors to unmute looping Hero videos', $persistHeroToggle),
                     $this->heroDisplayToggle('enable_viewer', PublicImageViewer::TOGGLE_LABEL, $persistHeroToggle),
             ]),
@@ -163,8 +152,7 @@ final class GalleryHeroSettingsDialog
         $input = [];
         foreach ([
             'show_details', 'show_gallery_link', 'show_navigation', 'video_sound_enabled',
-            'enable_viewer', 'landscape_detail_enabled', 'portrait_detail_enabled',
-            'artwork_page_surface_mode', 'artwork_menu_surface_wide',
+            'enable_viewer',
             'show_media_credits', 'show_media_copyright', 'caption_layout',
         ] as $field) {
             if (array_key_exists($field, $data)) {

@@ -199,7 +199,6 @@ final class GalleryHeroWorkspace extends Page
         if (! in_array($field, [
             'show_details', 'show_gallery_link', 'show_navigation', 'enable_viewer',
             'video_sound_enabled', 'show_media_credits', 'show_media_copyright',
-            'landscape_detail_enabled', 'portrait_detail_enabled', 'artwork_menu_surface_wide',
         ], true)) {
             throw new \InvalidArgumentException('Unsupported Hero display setting.');
         }
