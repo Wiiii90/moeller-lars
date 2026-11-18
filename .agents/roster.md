@@ -1,6 +1,6 @@
 # Dev workstream — branch-local coordination
 
-**Next lease token:** 21
+**Next lease token:** 22
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
@@ -13,5 +13,7 @@
 | Dev Worker 6 | 16 | Active — targeted source corrections committed; local Preview/browser acceptance outstanding | Home Hero: Dummy Galleries, candidate ranking/selection, Stage/Settings, public resolver, shared Create dialog; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 18 | Active — replaced chat; General Backing seam source review, browser acceptance pending | Appearance Global/Title/Menu/Page/Legal, preview geometry/persistence, Regional Formats hints | [dev-7.md](workers/dev-7.md) |
 | Dev Worker 8 | 15 | Active — Admin scrollbar stability and dialog legacy cleanup | Shared dialog/popover visuals; native root, Sidebar, modal and Stage scrolling without visible rails; Public behavior retained, artist options deferred | [dev-8.md](workers/dev-8.md) |
+
+| Dev Worker 9 | 21 | Active — awaiting first navigation task | Navigation: public/admin navigation as requested; coordinate shared menu/Page owners before implementation | [dev-9.md](workers/dev-9.md) |
 
 Only activated Dev workers receive a row and their own `.agents/workers/dev-N.md` record. This roster belongs exclusively to `dev` and must never receive Docs, Testing or Refactor worker entries. Follow the [shared worker protocol](README.md) for atomic registration, takeover and lease updates.
