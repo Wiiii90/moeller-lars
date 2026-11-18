@@ -2,24 +2,27 @@
 
 namespace App\Filament\Support;
 
+use App\Domain\Artwork\PublicArtworkQuery;
+use App\Domain\Content\HomeHeroCandidate;
+use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Pages\HomePresentation;
+use App\Filament\Resources\Artworks\ArtworkResource;
+use App\Filament\Support\Controls\AdminControl;
 use App\Models\Artwork;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
+use App\Models\MediaAsset;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 
 final class HomeDummyGalleryDialog
 {
-    /** One form grammar for a staged Create and an autosaving Edit. */
+    /** One Create/Edit form and one existing Artwork/Storage selection control. */
     public function schema(int $galleryId, bool $creating): array
     {
         return [
-            TextInput::make('name')
-                ->label('Name')
-                ->required()
+            AdminControl::text('name', 'Name')
                 ->maxLength(100)
                 ->live(onBlur: true)
                 ->afterStateUpdated(function (?string $state, $livewire) use ($galleryId, $creating): void {
@@ -28,56 +31,39 @@ final class HomeDummyGalleryDialog
                     }
                 })
                 ->columnSpanFull(),
-            Select::make('pending_artwork_id')
-                ->label('Insert existing Artwork')
+            AdminControl::select('pending_candidate', 'Insert existing Artwork')
+                ->placeholder('Choose Artwork or Storage')
                 ->searchable()
-                ->getSearchResultsUsing(static fn (string $search): array =>
-                    app(\App\Domain\Artwork\PublicArtworkQuery::class)
-                        ->searchHomeCandidates($search, 30, false)
-                        ->mapWithKeys(static fn (Artwork $artwork): array =>
-                            [(int) $artwork->getKey() => (string) $artwork->getAttribute('title')])
-                        ->all())
-                ->getOptionLabelUsing(static fn ($value): ?string =>
-                    Artwork::query()->whereKey($value)->value('title'))
+                ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
+                ->allowHtml()
+                ->getSearchResultsUsing(self::candidateOptions(...))
+                ->getOptionLabelUsing(self::selectedCandidateLabel(...))
                 ->live()
                 ->dehydrated(false)
                 ->afterStateUpdated(function (mixed $state, Set $set, $livewire) use ($galleryId, $creating): void {
                     if ($state === null || $state === '') {
                         return;
                     }
-                    $id = filter_var($state, FILTER_VALIDATE_INT);
-                    if ($id === false || $id < 1 || ! $livewire instanceof HomePresentation) {
-                        throw ValidationException::withMessages(['pending_artwork_id' => 'Choose an eligible Artwork.']);
+                    if (! is_string($state)
+                        || preg_match('/^(artwork|media):([1-9][0-9]*)$/D', $state, $matches) !== 1
+                        || ! $livewire instanceof HomePresentation) {
+                        throw ValidationException::withMessages(['pending_candidate' => 'Choose an eligible Artwork or Storage file.']);
                     }
-                    if ($creating) {
-                        $livewire->addDraftDummyArtwork($id);
-                    } else {
-                        $livewire->addDummyArtwork($galleryId, $id);
-                    }
-                    $set('pending_artwork_id', null);
-                })
-                ->columnSpanFull(),
-            MediaAssetSelect::makeId(
-                'pending_media_asset_id',
-                'Insert from Storage',
-                allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
-            )
-                ->live()
-                ->dehydrated(false)
-                ->afterStateUpdated(function (mixed $state, Set $set, $livewire) use ($galleryId, $creating): void {
-                    if ($state === null || $state === '') {
-                        return;
-                    }
-                    $id = filter_var($state, FILTER_VALIDATE_INT);
-                    if ($id === false || $id < 1 || ! $livewire instanceof HomePresentation) {
-                        throw ValidationException::withMessages(['pending_media_asset_id' => 'Choose an eligible Storage file.']);
-                    }
-                    if ($creating) {
+
+                    $id = (int) $matches[2];
+                    if ($matches[1] === 'artwork') {
+                        if ($creating) {
+                            $livewire->addDraftDummyArtwork($id);
+                        } else {
+                            $livewire->addDummyArtwork($galleryId, $id);
+                        }
+                    } elseif ($creating) {
                         $livewire->addDraftDummyMedia($id);
                     } else {
                         $livewire->addDummyMediaFromStorage($galleryId, $id);
                     }
-                    $set('pending_media_asset_id', null);
+
+                    $set('pending_candidate', null);
                 })
                 ->columnSpanFull(),
             View::make('filament.pages.partials.home-dummy-gallery-members')
@@ -89,5 +75,65 @@ final class HomeDummyGalleryDialog
                 ])
                 ->columnSpanFull(),
         ];
+    }
+
+    /**
+     * Both candidate types use their existing eligibility and visual choice
+     * components. Typed keys keep Artwork and Storage IDs collision-free.
+     *
+     * @return array<string,string>
+     */
+    private static function candidateOptions(string $search): array
+    {
+        $options = [];
+        foreach (app(PublicArtworkQuery::class)->searchHomeCandidates($search, 30, false) as $artwork) {
+            $key = 'artwork:'.$artwork->getKey();
+            $image = ArtworkResource::thumbnailUrl($artwork);
+            $preview = $image === null
+                ? '<span class="admin-media-choice__unavailable">—</span>'
+                : '<img src="'.e($image).'" alt="" loading="lazy" decoding="async">';
+            $options[$key] = '<span class="admin-media-choice">'
+                .'<span class="admin-media-choice__preview">'.$preview.'</span>'
+                .'<span class="admin-media-choice__meta"><strong>'.e((string) $artwork->getAttribute('title')).'</strong>'
+                .'<small>Artwork</small></span></span>';
+        }
+
+        $mediaOptions = MediaAssetSelect::searchOptions(
+            $search,
+            allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
+            modifyQueryUsing: static function (Builder $query): void {
+                $query->whereRaw("NULLIF(BTRIM(alt_text), '') IS NOT NULL")
+                    ->whereRaw('CHAR_LENGTH(alt_text) <= 500')
+                    ->where(static fn (Builder $eligible): Builder => $eligible
+                        ->whereIn('mime_type', MediaTypePolicy::VIDEO_MIME_TYPES)
+                        ->orWhere(static fn (Builder $images): Builder => $images
+                            ->whereIn('mime_type', MediaTypePolicy::IMAGE_MIME_TYPES)
+                            ->whereHas('variants', static fn (Builder $variants): Builder => $variants
+                                ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
+                                ->where('mime_type', 'image/webp')
+                                ->where('state', 'available'))));
+            },
+            visual: true,
+        );
+        foreach ($mediaOptions as $id => $label) {
+            $options['media:'.$id] = $label;
+        }
+
+        return $options;
+    }
+
+    private static function selectedCandidateLabel(mixed $value): ?string
+    {
+        if (! is_string($value) || preg_match('/^(artwork|media):([1-9][0-9]*)$/D', $value, $matches) !== 1) {
+            return null;
+        }
+        if ($matches[1] === 'artwork') {
+            $artwork = app(PublicArtworkQuery::class)->homeCandidatesByIds([(int) $matches[2]])->first();
+            return $artwork instanceof Artwork ? e((string) $artwork->getAttribute('title')) : null;
+        }
+
+        $asset = MediaAsset::query()->with('variants')->find((int) $matches[2]);
+        return $asset instanceof MediaAsset && HomeHeroCandidate::mediaIsEligible($asset)
+            ? e((string) $asset->getAttribute('original_filename')) : null;
     }
 }

@@ -308,7 +308,7 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            <x-admin.table class="admin-data-table home-source-table">
+            <x-admin.table class="admin-data-table home-source-table {{ str_starts_with($heroSourceRule, 'gallery_') ? 'home-source-table--gallery-order' : '' }}">
                 <table class="admin-table--six-grid">
                     <colgroup>
                         <col class="admin-table__col-one-unit home-source-table__col-gallery">
@@ -410,16 +410,19 @@
                                 </td>
                                 <td class="admin-table__actions">
                                     @if (! $expanded || $firstCandidate === null)
-                                        <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-state-delete admin-toolbar home-source-table__row-actions">
-                                            <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp"
-                                                label="Move Gallery up" :disabled="! str_starts_with($heroSourceRule, 'gallery_') || $sourceSearch !== ''"
-                                                wire:click="moveHeroSource({{ $groupId }}, 'up')" />
-                                            <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveDown"
-                                                label="Move Gallery down" :disabled="! str_starts_with($heroSourceRule, 'gallery_') || $sourceSearch !== ''"
-                                                wire:click="moveHeroSource({{ $groupId }}, 'down')" />
+                                        <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable {{ str_starts_with($heroSourceRule, 'gallery_') ? 'admin-row-actions--move-state-delete' : 'admin-row-actions--three-static' }} admin-toolbar home-source-table__row-actions">
+                                            @if (str_starts_with($heroSourceRule, 'gallery_'))
+                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp"
+                                                    :disabled="$sourceSearch !== ''" wire:click="moveHeroSource({{ $groupId }}, 'up')" />
+                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveDown"
+                                                    :disabled="$sourceSearch !== ''" wire:click="moveHeroSource({{ $groupId }}, 'down')" />
+                                            @endif
                                             @if ($manualSource)
                                                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
-                                                    label="Edit Dummy Gallery" wire:click="mountAction('editDummyGallery', { gallery: {{ $groupId }} })" />
+                                                    label="Edit" wire:click="mountAction('editDummyGallery', { gallery: {{ $groupId }} })" />
+                                            @elseif ($gallery['workspace_url'])
+                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
+                                                    :href="$gallery['workspace_url']" wire:navigate />
                                             @else
                                                 <span class="home-source-table__action-slot" aria-hidden="true"></span>
                                             @endif
@@ -430,13 +433,13 @@
                                                 :disabled="! $gallery['preference_enabled'] && ! $gallery['can_enable']" />
                                             @if ($manualSource)
                                                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Delete"
-                                                    label="Delete Dummy Gallery" wire:click="mountAction('deleteDummyGallery', { gallery: {{ $groupId }} })" />
+                                                    label="Delete" wire:click="mountAction('deleteDummyGallery', { gallery: {{ $groupId }} })" />
                                             @else
                                                 <span class="home-source-table__action-slot" aria-hidden="true"></span>
                                             @endif
                                         </div>
                                     @else
-                                        @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $firstCandidate, 'manualSource' => $manualSource, 'groupId' => $groupId, 'showSourceActions' => true])
+                                        @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $firstCandidate, 'manualSource' => $manualSource, 'groupId' => $groupId, 'sourceWorkspaceUrl' => $gallery['workspace_url'], 'showSourceActions' => true])
                                     @endif
                                 </td>
                                 <td class="admin-table__selection admin-table__selection--trailing">

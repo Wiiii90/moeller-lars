@@ -362,14 +362,15 @@ final class HomePresentation extends Page
                 ->modalHeading('Add Dummy Gallery')
                 ->fillForm(function (): array {
                     $this->draftDummyMembers = [];
-                    return ['name' => '', 'pending_artwork_id' => null, 'pending_media_asset_id' => null];
+                    return ['name' => '', 'pending_candidate' => null];
                 })
                 ->schema(fn (): array => app(HomeDummyGalleryDialog::class)->schema(0, true))
-                ->action(function (array $data): void {
+                ->action(function (array $data, Action $action): void {
                     $created = app(HomeHeroConfigurationService::class)->createDummyGallery(
                         $this->settings(), (string) ($data['name'] ?? ''), $this->draftDummyMembers,
                     );
                     if ($created === null) {
+                        $action->halt();
                         return;
                     }
                     $this->draftDummyMembers = [];
@@ -396,8 +397,7 @@ final class HomePresentation extends Page
                 ->modalHeading('Edit Dummy Gallery')
                 ->fillForm(fn (array $arguments): array => [
                     'name' => $this->dummyGallery((int) ($arguments['gallery'] ?? 0))['name'],
-                    'pending_artwork_id' => null,
-                    'pending_media_asset_id' => null,
+                    'pending_candidate' => null,
                 ])
                 ->schema(fn (array $arguments): array => app(HomeDummyGalleryDialog::class)
                     ->schema((int) ($arguments['gallery'] ?? 0), false))
@@ -480,13 +480,13 @@ final class HomePresentation extends Page
     {
         $asset = MediaAsset::query()->with('variants')->find($mediaAssetId);
         if (! $asset instanceof MediaAsset || ! HomeHeroCandidate::mediaIsEligible($asset)) {
-            throw ValidationException::withMessages(['pending_media_asset_id' => 'Choose an eligible Storage file.']);
+            throw ValidationException::withMessages(['pending_candidate' => 'Choose an eligible Storage file.']);
         }
         $key = 'media:'.$mediaAssetId;
         if (collect($this->draftDummyMembers)->contains(
             static fn (array $member): bool => HomeHeroConfigurationService::memberKey($member) === $key,
         )) {
-            throw ValidationException::withMessages(['pending_media_asset_id' => 'Already added to this Dummy Gallery.']);
+            throw ValidationException::withMessages(['pending_candidate' => 'Already added to this Dummy Gallery.']);
         }
         $this->draftDummyMembers[] = [
             'media_asset_id' => $mediaAssetId, 'enabled' => true,
@@ -498,13 +498,13 @@ final class HomePresentation extends Page
     public function addDraftDummyArtwork(int $artworkId): void
     {
         if (app(PublicArtworkQuery::class)->homeCandidatesByIds([$artworkId])->isEmpty()) {
-            throw ValidationException::withMessages(['pending_artwork_id' => 'Choose an eligible Artwork.']);
+            throw ValidationException::withMessages(['pending_candidate' => 'Choose an eligible Artwork.']);
         }
         $key = 'artwork:'.$artworkId;
         if (collect($this->draftDummyMembers)->contains(
             static fn (array $member): bool => HomeHeroConfigurationService::memberKey($member) === $key,
         )) {
-            throw ValidationException::withMessages(['pending_artwork_id' => 'Already added to this Dummy Gallery.']);
+            throw ValidationException::withMessages(['pending_candidate' => 'Already added to this Dummy Gallery.']);
         }
         $this->draftDummyMembers[] = ['artwork_id' => $artworkId, 'enabled' => true];
     }

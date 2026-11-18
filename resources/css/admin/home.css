@@ -12,7 +12,11 @@
  * Construction component templates reuse Custom Page's hierarchy geometry,
  * including a permanent editable Component column and flexible Content. */
 .home-source-table {
-    --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
+    --home-source-actions-width: var(--admin-row-actions-three-static-width);
+}
+
+.home-source-table--gallery-order {
+    --home-source-actions-width: var(--admin-row-actions-move-state-delete-width);
 }
 
 .home-source-table__action-slot {
@@ -32,10 +36,9 @@
     border-bottom: 1px solid var(--admin-line) !important;
 }
 
-/* The single state action shares one width with its heading and colgroup.
- * The responsive table owner updates this semantic rail at Minimal. */
+/* The actions header, column and stable row rail share one source-mode width. */
 .home-source-table__col-actions {
-    width: calc(var(--admin-row-actions-width) + .5rem);
+    width: calc(var(--home-source-actions-width) + .5rem);
 }
 
 .home-source-table__gallery-link {
@@ -360,6 +363,11 @@
 
 .home-dummy-gallery-table__col-actions {
     width: calc(var(--admin-row-actions-two-static-width) + .5rem);
+}
+
+.home-dummy-gallery-table__col-artwork,
+.home-dummy-gallery-table__col-storage {
+    width: auto;
 }
 
 @container admin-table (max-width: 38rem) {

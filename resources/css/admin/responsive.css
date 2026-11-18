@@ -293,24 +293,33 @@
 
 }
 
-/* Gallery source rows reserve the five canonical Move, Edit, State and
- * Delete axes even when an ordinary Gallery has no Edit/Delete action. */
-@container admin-table (max-width: 54rem){
+/* The Hero source table has three ordinary actions and adds two movement
+ * actions only when Gallery Order ranking is selected. Compact both rails
+ * through the same canonical action tracks, never by truncating labels. */
+@container admin-table (max-width: 64rem) {
     .home-source-table > table {
-        --admin-row-actions-width: calc(5 * 1.78rem + 4 * .18rem);
-        --admin-row-actions-columns: repeat(5, 1.78rem);
-        --admin-row-actions-gap: .18rem;
+        --home-source-actions-width: calc(3 * 1.35rem + 2 * .45rem);
     }
 
-    .home-source-table .home-source-table__row-actions .admin-action {
-        width: 1.78rem;
-        min-width: 1.78rem;
+    .home-source-table--gallery-order > table {
+        --home-source-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
+    }
+
+    .home-source-table .admin-row-actions--three-static {
+        --admin-row-actions-width: var(--home-source-actions-width);
+        --admin-row-actions-columns: repeat(3, 1.35rem);
+        --admin-row-actions-gap: .45rem;
+    }
+
+    .home-source-table .admin-row-actions--three-static .admin-action {
+        width: 1.35rem;
+        min-width: 1.35rem;
         gap: 0;
         padding-inline: 0;
         justify-content: center;
     }
 
-    .home-source-table .home-source-table__row-actions .admin-action__label {
+    .home-source-table .admin-row-actions--three-static .admin-action__label {
         display: none;
     }
 }

@@ -623,7 +623,7 @@ final class HomeHeroConfigurationService
         $asset = MediaAsset::query()->with('variants')->find($mediaAssetId);
         if (! $asset instanceof MediaAsset || ! HomeHeroCandidate::mediaIsEligible($asset)) {
             throw ValidationException::withMessages([
-                'pending_media_asset_id' => 'Choose an eligible image or video from Storage.',
+                'pending_candidate' => 'Choose an eligible image or video from Storage.',
             ]);
         }
 
@@ -713,7 +713,7 @@ final class HomeHeroConfigurationService
         $artwork = app(\App\Domain\Artwork\PublicArtworkQuery::class)
             ->homeCandidatesByIds([$artworkId])->first();
         if (! $artwork instanceof \App\Models\Artwork) {
-            throw ValidationException::withMessages(['pending_artwork_id' => 'Choose an eligible Artwork.']);
+            throw ValidationException::withMessages(['pending_candidate' => 'Choose an eligible Artwork.']);
         }
         return $this->mutateDummyGalleries($settings, static function (array &$galleries) use ($galleryId, $artworkId): bool {
             foreach ($galleries as &$gallery) {
