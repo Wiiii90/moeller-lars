@@ -713,10 +713,17 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     margin: .76rem 0 0;
 }
 
-/* Gallery alone reduces the top inset; General continues to own the
-   real Menu and Page widths, padding and shared sheet alignment. */
+/* Gallery starts with the existing compact phone inset. Wider viewports
+   match the page's effective General-owned side Content padding instead of
+   leaving the first Artwork cramped beneath the sticky Menu/divider.
+   Neither the Menu/Page paper width nor the gallery media track changes. */
 #content:has(> .public-content-reveal > .artwork-list) {
     padding-top: 1rem;
+}
+@media (min-width: 40.001rem) {
+    #content:has(> .public-content-reveal > .artwork-list) {
+        padding-top: max(1rem, var(--public-content-inset));
+    }
 }
 
 .artwork-list {
@@ -725,7 +732,7 @@ body.public-site:has(.site-content--fitted-image) .site-header {
        A later Gallery setting can own these two values without changing the
        Artwork card or Home/individual Artwork consumers. */
     --gallery-artwork-height: min(82svh, calc(100svh - 9rem));
-    --gallery-artwork-gap: clamp(2.5rem, 6.5svh, 4.5rem);
+    --gallery-artwork-gap: clamp(3.5rem, 8svh, 5rem);
     /* Image width is resolved against the real Gallery content width rather
        than its shrink-to-fit viewer link or the viewport's wider paper. */
     container-type: inline-size;
