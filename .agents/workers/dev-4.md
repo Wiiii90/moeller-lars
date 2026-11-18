@@ -1,12 +1,12 @@
 # Dev Worker 4 — Gallery/Artwork
 
-**Lease:** 17
+**Lease:** 20
 **Branch:** dev
-**State:** Source-updated — user-requested taller Gallery images and tighter Artwork rhythm, retaining stable drift and image-width captions; browser/runtime acceptance pending.
+**State:** Active replacement chat — Public Gallery image height and spacing source candidate committed; full application browser acceptance pending. Gallery Stage/Settings remain in scope for later continuation.
 
 ## Current assignment and owner
 
-- Continue the existing Dev Worker 4 lease 17 on branch `dev`; the prior lease 8 is superseded. Own Gallery/Artwork, its Stage, its shared Settings schema, canonical Artwork information and public Gallery/Artwork consumption. User's latest screenshots of Gallery Stage and Arrangement are the current UI evidence.
+- This chat explicitly replaces the previous Dev Worker 4 holder on branch `dev` with lease 20; lease 17 is stale. Continue Gallery/Artwork, its Stage, its shared Settings schema, canonical Artwork information and public Gallery/Artwork consumption. User's latest screenshots of Gallery Stage and Arrangement are the current UI evidence.
 - Adjacent owners: Home Hero Stage/selection is Dev Worker 6, General Appearance is Dev Worker 7, Media/Storage lifecycle is Dev Worker 2, Exhibitions is Dev Worker 1 and shared dialog/scrollbar lifecycle is Dev Worker 8. Do not change their ownership accidentally. No deployment, CI, test-source changes or protected database operations without explicit permission.
 - Source is the current `dev` HEAD, followed by the exact user screenshots and permanent `AGENTS.md`, `.agents/skills/dev/SKILL.md` and `docs/admin/{controls,tables,dialogs,responsive,ui}.md`. All authored repository prose remains English. Use guarded non-force commits and check the active roster lease before update.
 
@@ -44,9 +44,9 @@ The current screenshots show unacceptable large spaces and rounded nested Repeat
 
 ## Next
 
-1. Verify the current guarded source commits and active dev branch/lease, then inspect the next local Preview build with both Gallery Stage and full Settings modal; in particular confirm the narrow Arrangement control is still a table, never cards.
-2. In browser, verify the two-column visibility controls, real table sorting with both drag and Move buttons, the flat radius-free panel, auto-saving and Live Preview after edits, and focus/scroll behavior at desktop and narrow widths.
-3. In the authorized database/browser acceptance gate, verify migration, published-history restore, one/all Staged Artwork creation as drafts, manual publication, and individual Artwork overrides; correct only the canonical owner when a real problem is reproduced.
+1. Public Gallery is the current visual-review focus. The latest requested taller images and smaller gaps are source-committed in `7c9391f`; verify the actual latest `dev` candidate in the local full-application Preview before claiming the layout is browser-accepted. Await specific new visual feedback before changing Gallery composition further.
+2. When the user returns to Gallery Stage and Settings, resume the existing shared-control schema and arrangement-table acceptance gates. Verify Stage and Settings in real browser contexts, including narrow widths, persistence, notifications, and Live Preview.
+3. Leave Home Hero ownership with Dev Worker 6, General Appearance with Dev Worker 7, and shared dialog/scrollbar behavior with Dev Worker 8. Do not run unapproved deployment, continuous integration, schema/database operations or tests.
 
 ## Direct Home Hero regression repair — 2026-11-18, user-requested cross-owner scope
 
