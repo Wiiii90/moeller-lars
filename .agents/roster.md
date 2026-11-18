@@ -1,13 +1,13 @@
 # Dev workstream — branch-local coordination
 
-**Next lease token:** 17
+**Next lease token:** 18
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
 | Dev Worker 1 | 9 | Active — replaced archived chat; local migration verified, qualification pending | Exhibition date precision/migration, address, map and autosave; Public Exhibitions baseline | [dev-1.md](workers/dev-1.md) |
 | Dev Worker 2 | 6 | Active — current artist-media integrity remediation | Canonical media references/deletion safety, Storage reclaim/preview lifecycle, upload completion and zombie prevention; no Gallery/Artwork UI, tests, deploy | [dev-2.md](workers/dev-2.md) |
 | Dev Worker 3 | 10 | Active — dashboard preview findings | Dashboard checks settings popover consistency, Findings clear-button state, Activity clock positioning | [dev-3.md](workers/dev-3.md) |
-| Dev Worker 4 | 8 | Active — Gallery preview refresh and Standard/Expanded layout consolidated; empty drafts enabled; DB migration/browser qualification pending | Gallery/Artwork public presentation, Stage Settings, publication-projected layout cutover, shared preview; no Media lifecycle | [dev-4.md](workers/dev-4.md) |
+| Dev Worker 4 | 17 | Active — replacement chat; Gallery migration and browser qualification pending | Gallery/Artwork public presentation, Stage Settings, publication-projected layout cutover, shared preview; no Media lifecycle | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 11 | Active — Pages preview findings | Pages settings semantics/consistency; failed page-type switch must restore the persisted selection | [dev-5.md](workers/dev-5.md) |
 
 | Dev Worker 6 | 16 | Active — replacement chat; One per Gallery source review and browser acceptance pending | Pages → Home: Hero Artwork candidate management, Gallery selection, source profiles, Stage/Settings and public resolver; no tests/deployment | [dev-6.md](workers/dev-6.md) |

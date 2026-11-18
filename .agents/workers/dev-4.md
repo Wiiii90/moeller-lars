@@ -1,8 +1,14 @@
 # Dev Worker 4 — Gallery/Artwork
 
-**Lease:** 8  
+**Lease:** 17  
 **Branch:** dev  
-**State:** Active — Gallery preview refresh, Standard/Expanded Artwork page layout, one-way publication schema cutover, and optional Artwork drafts committed. Local migration execution, checkpoint preflight and browser/runtime acceptance remain pending.
+**State:** Active — replacement chat on 2026-11-18. Earlier Gallery preview/layout and empty-draft changes remain committed; local migration, publication-checkpoint preflight and browser/runtime acceptance remain pending.
+
+## Chat takeover — 2026-11-18
+
+- The user explicitly replaced the previous Dev Worker 4 chat after reaching the conversation limit. Lease 8 is superseded by lease 17; prior completed work and boundaries are retained as the handoff.
+- The previous handoff identifies source commits `09741ea`, `1e63fd7`, `251b8d3`, `8b14b26` and `a8654ca` as completed. No additional feature implementation, tests, migration execution or deployment are claimed by this takeover.
+- Remaining acceptance: local Gallery layout migration, Working/Committed schema parity, immutable historical publication checkpoint projection and Gallery/Artwork Stage and shared preview browser checks. Coordinate with the user before local-environment execution, and do not start unrelated work from this identity assignment.
 
 ## Owner and working boundaries
 
