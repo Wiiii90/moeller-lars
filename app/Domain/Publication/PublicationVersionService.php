@@ -504,6 +504,12 @@ SQL,
              AND COALESCE(version_row.payload->>'template', '') = ''
             THEN 'showcase'
         ELSE version_row.payload->>'template'
+    END,
+    'is_home',
+    CASE
+        WHEN jsonb_exists(version_row.payload, 'is_home')
+            THEN COALESCE((version_row.payload->>'is_home')::boolean, false)
+        ELSE version_row.payload->>'type' = 'home'
     END
 ))
 SQL,
@@ -548,7 +554,7 @@ SQL,
                             ->whereRaw("NOT jsonb_exists(payload, 'artwork_page_layout')");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'site_sections')
-                            ->whereRaw("NOT jsonb_exists(payload, 'meta_description') OR (payload->>'type' = 'gallery' AND COALESCE(payload->>'template', '') = '')");
+                            ->whereRaw("NOT jsonb_exists(payload, 'meta_description') OR NOT jsonb_exists(payload, 'is_home') OR (payload->>'type' = 'gallery' AND COALESCE(payload->>'template', '') = '')");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'home_presentation_settings')
                             ->whereRaw("jsonb_exists(payload, 'skip_home') OR jsonb_exists(payload, 'skip_target_section_id') OR payload->>'template' = 'skip_home'");

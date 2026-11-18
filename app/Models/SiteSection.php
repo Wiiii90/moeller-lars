@@ -59,6 +59,7 @@ final class SiteSection extends Model
         return [
             'position' => 'integer',
             'show_in_navigation' => 'boolean',
+            'is_home' => 'boolean',
             'parent_id' => 'integer',
             'artwork_category_id' => 'integer',
             'content_heading_enabled' => 'boolean',
@@ -190,6 +191,12 @@ final class SiteSection extends Model
     public function nodeType(): SiteSectionType
     {
         return SiteSectionType::from((string) $this->getAttribute('type'));
+    }
+
+    /** System page identity independent of the selected content type. */
+    public function isHome(): bool
+    {
+        return (bool) $this->getAttribute('is_home');
     }
 
     public function journalTemplate(): ?JournalTemplate
