@@ -608,67 +608,6 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     width: min(100%, var(--public-fitted-image-width, 100%));
 }
 
-/* Museum is a different Artwork image/information composition, not a
- * second information arrangement system. Below this width it becomes the
- * existing responsive vertical presentation, including browser zoom. */
-@media (min-width: 64.001rem) {
-    /* Museum keeps its independent side-information column on desktop.
-       The fitted wrapper contributes no grid box; its media/footer become
-       the original grid children and the image retains its gallery stage. */
-    .site-content--artwork-museum .artwork-detail__fitted-group {
-        display: contents;
-    }
-    .site-content--artwork-museum .artwork-detail {
-        display: grid;
-        grid-template-columns: minmax(0, 1.75fr) minmax(13rem, .7fr);
-        grid-template-rows: auto minmax(0, 1fr) auto;
-        column-gap: clamp(1rem, 3vw, 3rem);
-        align-items: start;
-    }
-    .site-content--artwork-museum .artwork-detail .artwork-folio {
-        grid-column: 1 / -1;
-        grid-row: 1;
-    }
-    .site-content--artwork-museum .artwork-detail__media {
-        grid-column: 1;
-        grid-row: 2 / span 2;
-        display: flex;
-        flex-direction: column;
-        align-self: stretch;
-        min-height: 0;
-        width: 100%;
-    }
-    .site-content--artwork-museum .artwork-detail__image-stage {
-        flex: 1 1 auto;
-        min-height: clamp(8rem, 24svh, 14rem);
-    }
-    .site-content--artwork-museum .artwork-detail__viewer-trigger {
-        flex: 1 1 auto;
-    }
-    .site-content--artwork-museum .artwork-detail__image {
-        position: absolute;
-        inset: 0;
-        max-height: 100%;
-        margin: auto;
-    }
-    .site-content--artwork-museum .artwork-detail__footer {
-        grid-column: 2;
-        grid-row: 2;
-        align-self: end;
-        width: 100%;
-        margin-inline: 0;
-    }
-    .site-content--artwork-museum .artwork-detail__narrative {
-        /* Museum retains its media/metadata columns, but the long-form
-           description and divider sit beneath both at full Page width. */
-        grid-column: 1 / -1;
-        grid-row: 4;
-        width: 100%;
-        margin-inline: 0;
-        margin-top: .7rem;
-    }
-}
-
 /* Artwork navigation marks the outer limits of the General-owned Content
    track. Its 50px hit targets remain, but glyphs align to the actual left/
    right edges rather than the historic narrow Artwork track. */

@@ -42,7 +42,6 @@ trait GalleryWorkspaceUploadSettings
                 try {
                     $updated = $service->update($gallery, [
                         'name' => $data['name'],
-                        'artwork_page_layout' => $data['artwork_page_layout'] ?? GalleryPresentation::artworkPageLayout($gallery),
                         'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
                         'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
                         // Sort changes are exclusively committed through the
@@ -192,13 +191,6 @@ trait GalleryWorkspaceUploadSettings
     {
         return AdminPanelControl::make('Individual Artwork Pages', 'artwork_pages_enabled', [
             $this->gallerySettingControl(
-                AdminControl::select('artwork_page_layout', 'Artwork page layout')
-                    ->options(GalleryPresentation::ARTWORK_PAGE_LAYOUTS)
-                    ->default(GalleryPresentation::ARTWORK_PAGE_STANDARD)
-                    ->placeholder(null)->selectablePlaceholder(false)->required(! $stage),
-                'artwork_page_layout', $stage,
-            ),
-            $this->gallerySettingControl(
                 AdminControl::select('edge_navigation_mode', 'Artwork navigation at sequence ends')
                     ->options([
                         GalleryPresentation::EDGE_DISABLED => 'Disabled arrows',
@@ -267,7 +259,6 @@ trait GalleryWorkspaceUploadSettings
     {
         return [
             'name' => (string) $gallery->getAttribute('name'),
-            'artwork_page_layout' => GalleryPresentation::artworkPageLayout($gallery),
             'edge_navigation_mode' => GalleryPresentation::edgeMode($gallery),
             'artwork_divider' => GalleryPresentation::divider($gallery),
             'sort_mode' => GalleryPresentation::sortMode($gallery),
@@ -373,7 +364,6 @@ trait GalleryWorkspaceUploadSettings
             'viewer_navigation_enabled',
             'artwork_pages_enabled',
             'video_sound_enabled',
-            'artwork_page_layout',
             'artwork_divider',
             'edge_navigation_mode',
         ];

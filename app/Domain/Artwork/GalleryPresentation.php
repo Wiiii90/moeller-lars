@@ -101,26 +101,6 @@ final class GalleryPresentation
 
     public const EDGE_MODES = [self::EDGE_DISABLED, self::EDGE_HIDDEN, self::EDGE_CYCLIC];
 
-    public const ARTWORK_PAGE_STANDARD = 'standard';
-
-    public const ARTWORK_PAGE_EXPANDED = 'expanded';
-
-    public const ARTWORK_PAGE_MUSEUM = 'museum';
-
-    public const ARTWORK_PAGE_LAYOUTS = [
-        self::ARTWORK_PAGE_STANDARD => 'Default',
-        self::ARTWORK_PAGE_EXPANDED => 'Expanded',
-        self::ARTWORK_PAGE_MUSEUM => 'Museum',
-    ];
-
-    public static function artworkPageLayout(ArtworkCategory $gallery): string
-    {
-        $layout = $gallery->getAttribute('artwork_page_layout');
-
-        return is_string($layout) && array_key_exists($layout, self::ARTWORK_PAGE_LAYOUTS)
-            ? $layout : self::ARTWORK_PAGE_STANDARD;
-    }
-
     public static function viewerEnabled(ArtworkCategory $gallery): bool
     {
         return $gallery->getAttribute('media_viewer_enabled') !== false;
@@ -227,15 +207,6 @@ final class GalleryPresentation
                 throw ValidationException::withMessages(['sort_mode' => 'Choose a supported Gallery order.']);
             }
             $values['sort_mode'] = $data['sort_mode'];
-        }
-        if (array_key_exists('artwork_page_layout', $data)) {
-            $layout = $data['artwork_page_layout'];
-            if (! is_string($layout) || ! array_key_exists($layout, self::ARTWORK_PAGE_LAYOUTS)) {
-                throw ValidationException::withMessages([
-                    'artwork_page_layout' => 'Choose Default, Expanded or Museum Artwork page layout.',
-                ]);
-            }
-            $values['artwork_page_layout'] = $layout;
         }
         if (array_key_exists('artwork_divider', $data)) {
             $variant = $data['artwork_divider'];

@@ -27,10 +27,9 @@
         $nextArtwork ??= $sequence->first();
     }
     $preview = app(\App\Domain\Content\SitePreviewContext::class);
-    $layout = $presentation::artworkPageLayout($category);
-    $expandedArtwork = $layout !== $presentation::ARTWORK_PAGE_STANDARD;
-    $museumArtwork = $layout === $presentation::ARTWORK_PAGE_MUSEUM;
-    $fitArtwork = $expandedArtwork && ! $isVideo;
+    // Individual Artwork pages always use the accepted Expanded composition.
+    // The Home Hero is a separate surface and remains independently owned.
+    $fitArtwork = ! $isVideo;
     $viewerEnabled = $presentation::viewerEnabled($category);
     $informationRows = \App\Domain\Artwork\ArtworkInformation::rows($artwork, $primaryAsset);
 
@@ -41,15 +40,11 @@
     $plainDescription = html_entity_decode(strip_tags($renderedDescription), ENT_QUOTES | ENT_HTML5, 'UTF-8');
     $hasDescription = preg_match('/[^\\p{Z}\\s]/u', $plainDescription) === 1
         || preg_match('/<(?:img|figure|video|audio|table|hr)\\b/i', $renderedDescription) === 1;
-    // Never reserve an empty Museum information column. Without metadata
-    // or narrative, the presentation naturally becomes Expanded.
-    $museumArtwork = $museumArtwork && ($informationRows !== [] || $hasDescription);
 @endphp
 
-{{-- Only the detail page may expand the outer paper. Images use viewport-height
-     fitting at every responsive width; videos retain their natural dimensions.
-     General alone owns whether the Menu and Page are connected. --}}
-@section('content_class', $expandedArtwork ? 'site-content--fitted-artwork'.($fitArtwork ? ' site-content--fitted-image' : '').($museumArtwork ? ' site-content--artwork-museum' : '') : '')
+{{-- Every individual Artwork uses Expanded; still images fit the viewport and
+     videos retain natural proportions. General owns Menu and Page geometry. --}}
+@section('content_class', 'site-content--fitted-artwork'.($fitArtwork ? ' site-content--fitted-image' : ''))
 @section('title', $artwork->title.' — Lars Möller')
 @section('meta_description', trim(strip_tags((string) $artwork->description)) ?: $artwork->title.' — Lars Möller')
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/artworks/'.$artwork->slug))
@@ -69,7 +64,7 @@
         />
         @if ($fitArtwork)
             {{-- Keep the fitted image and its information in one height-aware
-                 composition. Museum may expose its children as grid items. --}}
+                 composition immediately below the shared navigation. --}}
             <div class="artwork-detail__fitted-group">
         @endif
         <div class="artwork-detail__media">
