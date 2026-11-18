@@ -90,8 +90,10 @@ async function render(payload, cookieHeader) {
     const browser = await browserFor(payload.engine);
     const phone = viewport.platform === 'ios' || viewport.platform === 'android';
     const mobile = viewport.touch && payload.engine !== 'firefox';
+    // Category remains stable when a phone rotates into landscape.
+    const tablet = payload.device.category === 'tablet';
     const deviceReference = viewport.platform === 'ios'
-        ? devices['iPhone 13']
+        ? (tablet ? devices['iPad (gen 7)'] ?? devices['iPhone 13'] : devices['iPhone 13'])
         : viewport.platform === 'android' ? devices['Pixel 7'] : null;
     const userAgent = deviceReference && (
         (payload.engine === 'webkit' && viewport.platform === 'ios')

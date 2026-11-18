@@ -57,8 +57,11 @@ final class AdminLivePreviewRenderController
         abort_unless(is_string($cookie) && $cookie !== '', 401);
 
         try {
-            $render = Http::connectTimeout(2)
-                ->timeout(18)
+            // The first isolated browser launch and initial media load can
+            // exceed a short HTTP timeout. The client keeps its interactive
+            // preview visible while the comparison runs.
+            $render = Http::connectTimeout(3)
+                ->timeout(45)
                 ->withToken($token)
                 ->withHeaders([
                     // Forward only the already-encrypted session cookie.

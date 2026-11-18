@@ -10,11 +10,11 @@ export function adminLivePreview(element) {
         previewDevice: 'desktop',
         selectedProfile: 'desktop-laptop',
         rotated: false,
-        engine: 'interactive',
+        engine: 'auto',
+        comparisonUnavailable: false,
         currentUrl: element.dataset.previewUrl || '',
         snapshotUrl: '',
         snapshotLoading: false,
-        snapshotError: '',
         horizontalOverflow: false,
         snapshotAbort: null,
         snapshotRequest: 0,
@@ -58,11 +58,6 @@ export function adminLivePreview(element) {
                 this.fitPreview()
             })
         },
-        setDevice(device) {
-            const defaults = { desktop: 'desktop-laptop', tablet: 'tablet-mini', mobile: 'iphone-13' }
-            if (! Object.hasOwn(defaults, device)) return
-            this.selectProfile(defaults[device])
-        },
         selectProfile(value) {
             if (! Object.hasOwn(profiles, value)) return
             this.selectedProfile = value
@@ -72,17 +67,47 @@ export function adminLivePreview(element) {
             this.snapshotScrollMax = 0
             this.changeViewport()
         },
+        activeEngine() {
+            if (this.engine !== 'auto') return this.engine
+            const platform = profiles[this.selectedProfile]?.platform
+            // Desktop keeps its live, interactive iframe. iOS and Android
+            // presets use their matching browser engine when available.
+            return platform === 'ios' ? 'webkit'
+                : platform === 'android' ? 'chromium' : 'live'
+        },
+        usesBrowserRenderer() {
+            return this.currentUrl !== '' && this.activeEngine() !== 'live'
+                && ! this.comparisonUnavailable
+        },
+        isShowingSnapshot() {
+            return this.snapshotUrl !== '' && this.activeEngine() !== 'live'
+        },
+        rendererStatus() {
+            if (! this.comparisonUnavailable || this.activeEngine() === 'live') return ''
+            const name = this.activeEngine() === 'webkit' ? 'Safari'
+                : this.activeEngine() === 'chromium' ? 'Chrome' : 'Firefox'
+            return `${name} comparison unavailable. Showing the live browser view instead.`
+        },
         setEngine(value) {
-            if (! ['interactive', 'chromium', 'webkit', 'firefox'].includes(value)) return
-            if (value !== 'interactive' && ! this.currentUrl) return
+            if (! ['auto', 'live', 'chromium', 'webkit', 'firefox'].includes(value)) return
             this.engine = value
+            // A deliberate mode change is also an explicit retry after an
+            // unavailable browser renderer has since been started.
+            this.comparisonUnavailable = false
             this.snapshotAbort?.abort()
-            if (value !== 'interactive') this.requestSnapshot()
-            else {
-                this.snapshotLoading = false
-                this.snapshotError = ''
-                this.releaseSnapshot()
-                this.updateViewportDiagnostics()
+            this.releaseSnapshot()
+            this.snapshotLoading = false
+            this.snapshotScrollY = 0
+            this.snapshotScrollMax = 0
+            if (this.usesBrowserRenderer()) this.requestSnapshot()
+            else this.updateViewportDiagnostics()
+        },
+        onFrameLoad() {
+            this.scheduleFit()
+            this.bindFrameShortcuts()
+            this.updateViewportDiagnostics()
+            if (this.usesBrowserRenderer() && ! this.snapshotLoading && ! this.snapshotUrl) {
+                this.requestSnapshot()
             }
         },
         releaseSnapshot() {
@@ -98,7 +123,7 @@ export function adminLivePreview(element) {
             this.spacePan = false
             this.$nextTick(() => {
                 this.scheduleFit()
-                if (this.engine !== 'interactive') this.requestSnapshot()
+                if (this.usesBrowserRenderer()) this.requestSnapshot()
                 else this.updateViewportDiagnostics()
             })
         },
@@ -115,7 +140,7 @@ export function adminLivePreview(element) {
                 : [profile.width, profile.height]
         },
         zoomPercent() {
-            return `${Math.round(this.zoom * 100)}%`
+            return this.zoom <= this.minZoom ? 'Fit' : `${Math.round(this.zoom * 100)}%`
         },
         fitPreview() {
             const viewport = this.$refs.viewport
@@ -317,7 +342,7 @@ export function adminLivePreview(element) {
         },
         updateViewportDiagnostics() {
             const frame = this.$refs.frame
-            if (! frame || frame.tagName !== 'IFRAME' || this.engine !== 'interactive') return
+            if (! frame || frame.tagName !== 'IFRAME') return
             try {
                 const doc = frame.contentDocument
                 if (! doc) return
@@ -331,7 +356,7 @@ export function adminLivePreview(element) {
             }
         },
         scrollSnapshot(amount) {
-            if (this.engine === 'interactive' || this.snapshotLoading || ! this.snapshotUrl) return
+            if (! this.isShowingSnapshot() || this.snapshotLoading) return
             const next = Math.max(0, Math.min(this.snapshotScrollMax,
                 Math.round(this.snapshotScrollY + amount)))
             if (next === this.snapshotScrollY) return
@@ -343,12 +368,12 @@ export function adminLivePreview(element) {
             }, 160)
         },
         handleSnapshotWheel(event) {
-            if (this.engine === 'interactive') return
+            if (! this.isShowingSnapshot()) return
             event.preventDefault()
             this.scrollSnapshot(event.deltaY)
         },
         handleSnapshotKeydown(event) {
-            if (this.engine === 'interactive') return
+            if (! this.isShowingSnapshot()) return
             const height = this.viewportSize()[1]
             const amount = {
                 ArrowDown: 80,
@@ -363,13 +388,13 @@ export function adminLivePreview(element) {
             this.scrollSnapshot(amount)
         },
         async requestSnapshot() {
-            if (this.engine === 'interactive' || ! this.currentUrl) return
+            if (! this.usesBrowserRenderer()) return
+            const selectedEngine = this.activeEngine()
             this.snapshotAbort?.abort()
             const controller = new AbortController()
             this.snapshotAbort = controller
             const revision = ++this.snapshotRequest
             this.snapshotLoading = true
-            this.snapshotError = ''
             this.horizontalOverflow = false
             this.releaseSnapshot()
             try {
@@ -387,7 +412,7 @@ export function adminLivePreview(element) {
                         path: target.pathname,
                         profile: this.selectedProfile,
                         orientation: this.rotated ? 'rotated' : 'default',
-                        engine: this.engine,
+                        engine: selectedEngine,
                         scroll_y: this.snapshotScrollY,
                     }),
                     signal: controller.signal,
@@ -400,18 +425,33 @@ export function adminLivePreview(element) {
                 const maxY = Number(response.headers.get('X-Preview-Scroll-Max') ?? 0)
                 const scrollY = Number(response.headers.get('X-Preview-Scroll-Y') ?? 0)
                 const blob = await response.blob()
+                // Reveal only a decoded screenshot; even an invalid renderer
+                // response must leave the live iframe completely usable.
                 const imageUrl = URL.createObjectURL(blob)
+                try {
+                    const picture = new Image()
+                    picture.src = imageUrl
+                    await picture.decode()
+                } catch (error) {
+                    URL.revokeObjectURL(imageUrl)
+                    throw new Error('The browser comparison could not be displayed.')
+                }
                 if (controller.signal.aborted || revision !== this.snapshotRequest) {
                     URL.revokeObjectURL(imageUrl)
                     return
                 }
                 this.snapshotUrl = imageUrl
+                this.comparisonUnavailable = false
                 this.horizontalOverflow = overflow
                 this.snapshotScrollMax = Number.isFinite(maxY) ? Math.max(0, maxY) : 0
                 this.snapshotScrollY = Number.isFinite(scrollY) ? Math.max(0, scrollY) : 0
             } catch (error) {
                 if (controller.signal.aborted || revision !== this.snapshotRequest) return
-                this.snapshotError = error?.message || 'Unable to render browser comparison.'
+                // Keep the interactive page visible. An unavailable renderer
+                // must never turn the preview into an empty white screenshot.
+                this.comparisonUnavailable = true
+                this.releaseSnapshot()
+                this.updateViewportDiagnostics()
             } finally {
                 if (revision === this.snapshotRequest) {
                     this.snapshotLoading = false
@@ -434,8 +474,15 @@ export function adminLivePreview(element) {
             const url = new URL(source, window.location.origin)
             url.searchParams.set('_appearance', Date.now().toString())
             this.currentUrl = url.toString()
+            this.snapshotAbort?.abort()
+            this.snapshotLoading = false
+            this.releaseSnapshot()
+            this.snapshotScrollY = 0
+            this.snapshotScrollMax = 0
             frame.src = this.currentUrl
-            if (this.engine !== 'interactive') this.requestSnapshot()
+            // The new iframe load is the one refresh boundary for both
+            // interactive and browser-engine views; don't double-request.
+
         },
     };
 }

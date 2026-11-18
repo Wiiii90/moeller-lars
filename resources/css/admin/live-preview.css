@@ -1,6 +1,6 @@
-/* Shared interactive Preview: responsive browser width or selected
- * desktop/phone viewport, fitted visually inside each Admin Stage pane.
- * Consumer pages own outer placement; this component owns its controls. */
+/* One responsive Public preview and one optional browser comparison.
+ * Consumers own Stage placement; the shared Preview owns its controls,
+ * viewport geometry and graceful rendering fallback. */
 .admin-live-preview {
     box-sizing: border-box;
     display: grid;
@@ -19,7 +19,7 @@
 .admin-live-preview__title { min-width: 0; line-height: 1.2; }
 /* The shared Preview toolbar is a single compact row in every Stage pane. */
 .admin-live-preview .admin-stage-tool-row {
-    --admin-live-preview-tool-size: clamp(1.5rem, 6cqi, 1.9rem);
+    --admin-live-preview-tool-size: clamp(1.5rem, 5.5cqi, 1.9rem);
     flex-wrap: nowrap;
     justify-content: flex-start;
     gap: .125rem;
@@ -39,7 +39,7 @@
 }
 .admin-live-preview__width-select {
     box-sizing: border-box;
-    width: 6.35rem;
+    width: clamp(8rem, 35cqi, 11.5rem);
     min-width: 0;
     max-width: 100%;
     height: var(--admin-header-control-size);
@@ -56,13 +56,10 @@
     outline-offset: 2px;
 }
 .admin-live-preview__device-profile { min-width: 0; flex: 0 1 auto; }
-.admin-live-preview__width-select {
-    width: clamp(7rem, 24cqi, 10rem);
-    text-overflow: ellipsis;
-}
+.admin-live-preview__width-select { text-overflow: ellipsis; }
 .admin-live-preview__engine-group { min-width: 0; }
 .admin-live-preview__engine-select {
-    width: clamp(4rem, 14cqi, 5.1rem);
+    width: clamp(4.3rem, 14cqi, 5.5rem);
     min-width: 0;
     height: var(--admin-header-control-size);
     padding: 0 .15rem;
@@ -78,14 +75,16 @@
     outline-offset: 2px;
 }
 @container admin-live-preview (max-width: 28rem) {
-    .admin-live-preview__device-buttons { display: none; }
-    .admin-live-preview__width-select { width: clamp(6.25rem, 33cqi, 8.5rem); }
+    .admin-live-preview__width-select { width: clamp(8rem, 35cqi, 9.6rem); }
     .admin-live-preview__zoom-value { width: 2rem; }
 }
-@container admin-live-preview (max-width: 21rem) {
+@container admin-live-preview (max-width: 23rem) {
     .admin-live-preview__zoom-value { display: none; }
-    .admin-live-preview__engine-select { width: 4.05rem; }
-    .admin-live-preview__width-select { width: 6.4rem; }
+    .admin-live-preview__engine-select { width: 4.3rem; }
+    .admin-live-preview__width-select { width: 8rem; }
+}
+@container admin-live-preview (max-width: 19rem) {
+    .admin-live-preview__actions-group > button { display: none; }
 }
 .admin-live-preview__viewport {
     box-sizing: border-box;
@@ -135,6 +134,8 @@
      * nevertheless an independent CSS responsive container. */
     container: staged-preview / inline-size;
 }
+/* Never conceal the functioning iframe until a valid screenshot exists.
+ * Failure to reach the isolated renderer must keep the page usable. */
 .admin-live-preview__frame.is-snapshot-source {
     visibility: hidden;
     pointer-events: none;
@@ -151,22 +152,34 @@
     border: 0;
     background: #fff;
     object-fit: fill;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: default;
 }
 .admin-live-preview__viewport { position: relative; }
-.admin-live-preview__status {
+/* Compact, opt-in diagnostic indicators. Never overlay raw server
+ * errors or a white error panel on the artist's preview. */
+.admin-live-preview__issue {
+    display: inline-grid;
+    width: 1.15rem;
+    height: 1.5rem;
+    flex: 0 0 1.15rem;
+    place-items: center;
+    color: var(--admin-muted);
+    cursor: help;
+}
+.admin-live-preview__issue svg {
+    width: .9rem;
+    height: .9rem;
+}
+.admin-live-preview__sr-only {
     position: absolute;
-    z-index: 5;
-    right: .2rem;
-    bottom: .5rem;
-    left: .2rem;
-    padding: .35rem .5rem;
-    background: var(--admin-surface);
-    color: var(--admin-text);
-    font-size: .68rem;
-    line-height: 1.25;
-    text-align: center;
-    pointer-events: none;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }
 .admin-live-preview__zoom-value {
     display: grid;

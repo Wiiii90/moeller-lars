@@ -24,35 +24,12 @@
         <h2 class="admin-section__kicker admin-live-preview__title admin-visual-stage__heading">Live preview</h2>
     @endif
     <x-admin.stage-tool-row label="Live preview controls">
-        <div class="admin-stage-tool-group admin-live-preview__device-buttons" role="group" aria-label="Device class">
-            <button type="button" class="admin-action admin-stage-tool-icon"
-                x-on:click="setDevice('desktop')"
-                x-bind:class="{ 'is-primary': previewDevice === 'desktop' }"
-                x-bind:aria-pressed="(previewDevice === 'desktop').toString()"
-                title="Desktop devices" aria-label="Desktop devices">
-                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceDesktop->mini()" />
-            </button>
-            <button type="button" class="admin-action admin-stage-tool-icon"
-                x-on:click="setDevice('tablet')"
-                x-bind:class="{ 'is-primary': previewDevice === 'tablet' }"
-                x-bind:aria-pressed="(previewDevice === 'tablet').toString()"
-                title="Tablet devices" aria-label="Tablet devices">
-                <x-filament::icon icon="heroicon-o-device-tablet" />
-            </button>
-            <button type="button" class="admin-action admin-stage-tool-icon"
-                x-on:click="setDevice('mobile')"
-                x-bind:class="{ 'is-primary': previewDevice === 'mobile' }"
-                x-bind:aria-pressed="(previewDevice === 'mobile').toString()"
-                title="Phone devices" aria-label="Phone devices">
-                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceMobile->mini()" />
-            </button>
-        </div>
-        <div class="admin-stage-tool-group admin-live-preview__device-profile" role="group" aria-label="Responsive device profile">
+        <div class="admin-stage-tool-group admin-live-preview__device-profile" role="group" aria-label="Device preview">
             <select class="admin-live-preview__width-select" x-model="selectedProfile"
                 x-on:change="selectProfile($event.target.value)"
                 aria-label="Device and viewport resolution"
-                title="True CSS viewport width and height">
-                @foreach (['desktop' => 'Desktop', 'tablet' => 'Tablet', 'mobile' => 'Phone'] as $category => $label)
+                title="Device size in layout pixels. Physical screens may have higher pixel density.">
+                @foreach (['desktop' => 'Computers', 'tablet' => 'Tablets', 'mobile' => 'Phones'] as $category => $label)
                     <optgroup label="{{ $label }}">
                         @foreach (\App\Domain\Content\PreviewDeviceProfiles::all() as $id => $profile)
                             @if ($profile['category'] === $category)
@@ -73,15 +50,25 @@
             <div class="admin-stage-tool-group admin-live-preview__engine-group">
                 <select class="admin-live-preview__engine-select"
                     x-model="engine" x-on:change="setEngine($event.target.value)"
-                    title="Live browser or isolated rendering engine"
-                    aria-label="Rendering engine">
-                    <option value="interactive">Live</option>
-                    <option value="chromium">Chromium</option>
-                    <option value="webkit">WebKit</option>
+                    x-bind:title="rendererStatus() || 'Auto uses an appropriate browser for each device. Live keeps the page interactive.'"
+                    aria-label="Browser appearance">
+                    <option value="auto">Auto</option>
+                    <option value="live">Live</option>
+                    <option value="webkit">Safari</option>
+                    <option value="chromium">Chrome</option>
                     <option value="firefox">Firefox</option>
                 </select>
             </div>
         @endif
+        <span class="admin-live-preview__issue" x-show="rendererStatus() !== ''" x-cloak
+            x-bind:title="rendererStatus()" x-bind:aria-label="rendererStatus()"
+            role="status">
+            <x-filament::icon icon="heroicon-o-exclamation-triangle" />
+        </span>
+        <span class="admin-live-preview__issue" x-show="horizontalOverflow" x-cloak
+            title="The page is wider than this device screen" aria-label="Horizontal page overflow" role="status">
+            <x-filament::icon icon="heroicon-o-exclamation-circle" />
+        </span>
         <div class="admin-stage-tool-group admin-live-preview__zoom-group" role="group" aria-label="Preview zoom">
             <button class="admin-action admin-stage-tool-icon" type="button"
                 x-on:click="changeZoom(-0.25)" x-bind:disabled="zoom <= minZoom"
@@ -140,14 +127,17 @@
                     </div>
                 @elseif (filled($url))
                     <iframe x-ref="frame" wire:ignore class="admin-live-preview__frame"
-                        x-bind:class="{ 'is-snapshot-source': engine !== 'interactive' }"
+                        x-bind:class="{ 'is-snapshot-source': isShowingSnapshot() }"
                         src="{{ $url }}" title="{{ $frameTitle }}"
                         loading="eager" tabindex="0" allowfullscreen
-                        x-on:load="$nextTick(() => { scheduleFit(); bindFrameShortcuts(); updateViewportDiagnostics() })"></iframe>
+                        x-on:load="$nextTick(() => onFrameLoad())"></iframe>
                     <img x-ref="snapshotFrame" class="admin-live-preview__snapshot"
-                        x-show="engine !== 'interactive' && snapshotUrl !== ''" x-cloak
+                        x-show="isShowingSnapshot()" x-cloak
                         x-bind:src="snapshotUrl || null"
-                        alt="Rendered public page in the selected browser engine">
+                        x-on:wheel.prevent.stop="handleSnapshotWheel($event)"
+                        x-on:pointerdown="$refs.viewport?.focus({ preventScroll: true })"
+                        title="Browser appearance preview. Select Live to interact with the page."
+                        alt="Rendered public page in the selected browser">
                 @else
                     <div x-ref="frame" wire:ignore.self class="admin-live-preview__frame admin-live-preview__frame--content">
                         <x-admin.empty-state title="Preview unavailable" minimal />
@@ -160,13 +150,7 @@
                     x-on:pointercancel="endPan($event)" x-on:wheel.prevent.stop></div>
             </div>
         </div>
-        <div class="admin-live-preview__status" role="status" aria-live="polite"
-            x-show="snapshotLoading || snapshotError !== '' || horizontalOverflow" x-cloak>
-            <span x-show="snapshotLoading">Rendering browser view…</span>
-            <span x-show="snapshotError !== ''" x-text="snapshotError"></span>
-            <span x-show="!snapshotLoading && !snapshotError && horizontalOverflow">
-                Horizontal page overflow detected
-            </span>
-        </div>
+        <span class="admin-live-preview__sr-only" role="status" aria-live="polite"
+            x-text="rendererStatus() || (horizontalOverflow ? 'Horizontal page overflow detected' : '')"></span>
     </div>
 </aside>
