@@ -275,7 +275,8 @@
     white-space: nowrap;
 }
 
-.admin-drag-handle {
+.admin-drag-handle,
+.admin-arrangement-control [x-sortable-handle] {
     display: grid;
     width: 1.75rem;
     height: 2rem;
@@ -296,13 +297,17 @@
 }
 
 .admin-drag-handle:hover,
-.admin-drag-handle:focus-visible {
+.admin-drag-handle:focus-visible,
+.admin-arrangement-control [x-sortable-handle]:hover,
+.admin-arrangement-control [x-sortable-handle]:focus-visible {
     color: var(--admin-text);
     outline: none;
 }
 
-.admin-drag-handle:active { cursor: grabbing; }
-.admin-drag-handle:disabled { cursor: not-allowed; opacity: .4; }
+.admin-drag-handle:active,
+.admin-arrangement-control [x-sortable-handle]:active { cursor: grabbing; }
+.admin-drag-handle:disabled,
+.admin-arrangement-control [x-sortable-handle]:disabled { cursor: not-allowed; opacity: .4; }
 
 .admin-position {
     display: inline-flex;

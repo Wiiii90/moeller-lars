@@ -215,7 +215,7 @@ trait GalleryWorkspaceDirectUpload
     }
 
     /** The single and batch commands both delegate to the canonical Artwork owners. */
-    private function createStagedArtwork(array $row, array $data, bool $publish): bool
+    private function createStagedArtwork(array $row, array $data): void
     {
         $assetId = (int) $row['media_asset_id'];
         $asset = MediaAsset::query()->whereKey($assetId)->where('state', 'available')->first();
@@ -238,14 +238,6 @@ trait GalleryWorkspaceDirectUpload
         if ($alt !== null) {
             app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($artwork, $alt);
         }
-        $publication = app(\App\Domain\Artwork\ArtworkPublicationService::class);
-        if ($publish && filled($data['title'] ?? null) && $publication->canPublish($artwork)) {
-            $publication->publish($artwork);
-
-            return true;
-        }
-
-        return false;
     }
 
     public function createSelectedStagedArtwork(): void
@@ -263,12 +255,8 @@ trait GalleryWorkspaceDirectUpload
         // Filament validates exactly the same schema as standalone Add Artwork.
         $state = $this->stagedArtworkForm->getState();
         try {
-            $published = DB::transaction(function () use ($selected, $state): bool {
-                return $this->createStagedArtwork(
-                    $selected, $state,
-                    app(\App\Domain\Admin\AdminAutoPublishPreferences::class)
-                        ->enabled(\App\Domain\Admin\AdminAutoPublishPreferences::GALLERY),
-                );
+            DB::transaction(function () use ($selected, $state): void {
+                $this->createStagedArtwork($selected, $state);
             });
         } catch (ValidationException $exception) {
             // Failure rolls back Artwork creation, media links and audit.
@@ -279,7 +267,7 @@ trait GalleryWorkspaceDirectUpload
         }
         $this->forgetCompletedStagedArtworks([$id]);
         app(AdminNotifier::class)->notification(
-            title: $published ? 'Artwork published' : 'Artwork draft created',
+            title: 'Artwork draft created',
             status: 'success',
         );
     }
@@ -322,7 +310,7 @@ trait GalleryWorkspaceDirectUpload
                         ];
                     }
                     try {
-                        $this->createStagedArtwork($row, $data, false);
+                        $this->createStagedArtwork($row, $data);
                     } catch (ValidationException $exception) {
                         $detail = collect($exception->errors())->flatten()->first();
 

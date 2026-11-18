@@ -14,15 +14,13 @@ final class AdminAutoPublishPreferences
     public const CUSTOM_PAGE = 'custom_page';
     public const HOME = 'home';
     public const JOURNAL = 'journal';
-    public const GALLERY = 'gallery';
 
-    /** Preserve existing new-content defaults, with drafts in Journal/Gallery. */
+    /** Preserve existing new-content defaults for the supported scopes. */
     private const DEFAULTS = [
         self::PAGES => false,
         self::CUSTOM_PAGE => true,
         self::HOME => true,
         self::JOURNAL => false,
-        self::GALLERY => false,
     ];
 
     public function enabled(string $scope): bool

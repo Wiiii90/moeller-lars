@@ -22,11 +22,12 @@ final class AdminPanelControl
         }
 
         return Group::make([
-            $toggle,
+            $toggle->columnSpanFull(),
             Group::make($fields)
                 ->visible(fn (callable $get): bool => (bool) $get($enabledField))
                 ->extraAttributes(['class' => 'admin-option-panel__body'])
-                ->columns(1),
+                ->columns(['default' => 2])
+                ->columnSpanFull(),
         ])
             ->columns(1)
             ->extraAttributes(['class' => 'admin-option-panel'])

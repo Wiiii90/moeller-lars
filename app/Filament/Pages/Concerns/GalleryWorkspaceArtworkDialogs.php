@@ -3,10 +3,8 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
-use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkSort;
-use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Filament\Support\AdminRowAction;
@@ -67,8 +65,9 @@ trait GalleryWorkspaceArtworkDialogs
                     unset($payload['position']);
                 }
                 unset($payload['position_explicit']);
-                $autoPublish = app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::GALLERY);
-                $published = DB::transaction(function () use ($payload, $asset, $data, $autoPublish): bool {
+                // Gallery auto-publication has been retired. New Artwork
+                // always starts as a draft; Publish remains an explicit action.
+                DB::transaction(function () use ($payload, $asset, $data): void {
                     $artwork = app(ArtworkDraftService::class)->create($payload);
                     if ($asset instanceof MediaAsset) {
                         app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
@@ -79,20 +78,12 @@ trait GalleryWorkspaceArtworkDialogs
                             );
                         }
                     }
-                    $publication = app(ArtworkPublicationService::class);
-                    if ($autoPublish && filled($data['title'] ?? null) && $publication->canPublish($artwork)) {
-                        $publication->publish($artwork);
-
-                        return true;
-                    }
-
-                    return false;
                 });
 
                 $this->pendingPrimaryMediaAssetId = null;
                 $this->refreshWorkspaceAfterMutation();
                 app(AdminNotifier::class)->notification(
-                    title: $published ? 'Artwork published' : 'Artwork draft created',
+                    title: 'Artwork draft created',
                     status: 'success',
                 );
             });

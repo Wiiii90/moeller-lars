@@ -3,7 +3,6 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
-use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Artwork\ArtworkInformation;
 use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\GalleryEditorialService;
@@ -19,7 +18,6 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
@@ -74,12 +72,7 @@ trait GalleryWorkspaceUploadSettings
                 $this->loadMoveTargets();
                 $this->refreshWorkspaceAfterMutation();
                 $this->refreshGalleryStageSettings();
-                $preferenceChanged = app(AdminAutoPublishPreferences::class)->update(
-                    AdminAutoPublishPreferences::GALLERY,
-                    (bool) ($data['auto_publish_new_artworks']
-                        ?? app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::GALLERY)),
-                );
-                if ($changed || $preferenceChanged) {
+                if ($changed) {
                     app(AdminNotifier::class)->notification(
                         title: 'Gallery settings saved',
                         status: 'success',
@@ -131,45 +124,25 @@ trait GalleryWorkspaceUploadSettings
                 ]);
             });
 
-        $autoPublish = AdminControl::toggle('auto_publish_new_artworks')
-            ->label(AdminHelp::label(
-                'Auto-publish new Artworks',
-                'Automatic Artwork publishing',
-                'Eligible new Artworks are published automatically; unfinished Artworks remain editable drafts.',
-            ))
-            ->live()
-            ->afterStateUpdated(function (mixed $state): void {
-                if (app(AdminAutoPublishPreferences::class)->update(
-                    AdminAutoPublishPreferences::GALLERY, (bool) $state,
-                )) {
-                    app(AdminNotifier::class)->notification(
-                        title: 'Gallery settings saved', status: 'success',
-                    );
-                }
-            });
-
-        if ($stage) {
-            $autoPublish->columnSpanFull();
-        }
-
-        return Grid::make(['default' => 1, 'md' => 2])
+        // The Stage and Settings modal share the exact control schema.
+        // Title is full width, followed by the two ordering controls.
+        return Grid::make(['default' => 2])
             ->schema([
-                $this->gallerySettingControl($name, 'name', $stage),
+                $this->gallerySettingControl($name, 'name', $stage)->columnSpanFull(),
                 $order,
-                $this->galleryInformationPanel($stage),
-                $this->galleryViewerPanel($stage),
-                $this->galleryDetailPagesPanel($stage),
-                $this->gallerySettingControl(
-                    AdminControl::toggle('video_sound_enabled', 'Allow visitors to unmute looping Gallery videos'),
-                    'video_sound_enabled', $stage,
-                ),
-                $autoPublish,
                 $this->gallerySettingControl(
                     AdminControl::select('artwork_divider', 'Between Artworks')
                         ->options(GalleryPresentation::DIVIDER_OPTIONS)
                         ->default(GalleryPresentation::DIVIDER_NONE)->required(! $stage),
                     'artwork_divider', $stage,
                 ),
+                $this->galleryInformationPanel($stage),
+                $this->galleryViewerPanel($stage),
+                $this->galleryDetailPagesPanel($stage),
+                $this->gallerySettingControl(
+                    AdminControl::checkbox('video_sound_enabled', 'Allow sound on looping Gallery videos'),
+                    'video_sound_enabled', $stage,
+                )->columnSpanFull(),
             ]);
     }
 
@@ -273,13 +246,10 @@ trait GalleryWorkspaceUploadSettings
         );
     }
 
-    private function gallerySettingControl(TextInput|Select|Toggle|Checkbox $field, string $name, bool $stage): TextInput|Select|Toggle|Checkbox
+    private function gallerySettingControl(TextInput|Select|Checkbox $field, string $name, bool $stage): TextInput|Select|Checkbox
     {
         if (! $stage) {
             return $field;
-        }
-        if ($name !== 'name') {
-            $field->columnSpanFull();
         }
         if ($field instanceof TextInput) {
             $field->live(onBlur: true);
@@ -307,8 +277,6 @@ trait GalleryWorkspaceUploadSettings
             'viewer_zoom_enabled' => GalleryPresentation::viewerZoomEnabled($gallery),
             'viewer_navigation_enabled' => GalleryPresentation::viewerNavigationEnabled($gallery),
             'artwork_pages_enabled' => GalleryPresentation::artworkPagesEnabled($gallery),
-            'auto_publish_new_artworks' => app(AdminAutoPublishPreferences::class)
-                ->enabled(AdminAutoPublishPreferences::GALLERY),
         ];
     }
 

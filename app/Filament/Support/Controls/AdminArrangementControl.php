@@ -6,10 +6,14 @@ use App\Domain\Artwork\ArtworkInformation;
 use Closure;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Utilities\Get;
 
 /**
- * Constrained responsive information rows. Filament owns both drag sorting
- * and keyboard-accessible Move up/down actions; both change one ordered list.
+ * A compact, real Filament table repeater: the same ordered field list drives
+ * both native drag and Move up/down, without a separate sorting lifecycle.
+ * Row and alignment are visible inline rather than in nested item cards.
  */
 final class AdminArrangementControl
 {
@@ -17,32 +21,46 @@ final class AdminArrangementControl
     {
         $row = AdminControl::select('row', 'Row')
             ->options([1 => '1', 2 => '2', 3 => '3', 4 => '4'])
-            ->required()->native(false)->live();
-        $align = AdminControl::select('align', 'Align')
+            ->native(true)
+            ->placeholder(null)->selectablePlaceholder(false)
+            ->live();
+        $alignment = AdminControl::select('align', 'Alignment')
             ->options(ArtworkInformation::ALIGNMENTS)
-            ->required()->native(false)->live();
+            ->native(true)
+            ->placeholder(null)->selectablePlaceholder(false)
+            ->live();
 
         if ($onUpdated instanceof Closure) {
             $row->afterStateUpdated($onUpdated);
-            $align->afterStateUpdated($onUpdated);
+            $alignment->afterStateUpdated($onUpdated);
         }
 
         $repeater = Repeater::make($field)
             ->label('Arrangement')
-            ->schema([Hidden::make('field'), $row, $align])
-            ->itemLabel(fn (array $state): string => ArtworkInformation::FIELDS[$state['field'] ?? ''] ?? 'Information')
+            ->hiddenLabel()
+            ->table([
+                TableColumn::make('Information'),
+                TableColumn::make('Row')->width('3.5rem'),
+                TableColumn::make('Align')->width('5.5rem'),
+            ])
+            ->compact()
+            ->schema([
+                Hidden::make('field'),
+                TextEntry::make('field_label')
+                    ->hiddenLabel()
+                    ->state(fn (Get $get): string => ArtworkInformation::FIELDS[$get('field') ?? ''] ?? ''),
+                $row,
+                $alignment,
+            ])
             ->addable(false)
             ->deletable(false)
             ->cloneable(false)
             ->reorderable()
             ->reorderableWithButtons()
             ->reorderableWithDragAndDrop()
-            ->collapsible()
-            ->collapsed()
             ->default(ArtworkInformation::defaultArrangement())
-            ->columns(2)
             ->live()
-            ->extraAttributes(['class' => 'admin-arrangement-control'])
+            ->extraAttributes(['class' => 'admin-arrangement-control admin-table'])
             ->columnSpanFull();
 
         if ($onUpdated instanceof Closure) {
