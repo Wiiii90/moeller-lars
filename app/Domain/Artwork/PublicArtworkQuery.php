@@ -17,7 +17,7 @@ class PublicArtworkQuery
     public function __construct(private readonly SitePreviewContext $preview) {}
 
     /** @return Collection<int, Artwork> */
-    public function category(string $slug): Collection
+    public function category(string $slug, ?\App\Models\SiteSection $section = null): Collection
     {
         /** @var ArtworkCategory|null $gallery */
         $gallery = ArtworkCategory::query()->where('slug', $slug)->first();
@@ -27,8 +27,12 @@ class PublicArtworkQuery
 
         /** @var Collection<int, Artwork> $artworks */
         $artworks = GalleryPresentation::orderArtworks($this->publicQuery()
-            ->whereHas('category.siteSection', function (Builder $query) use ($slug): void {
-                $query->where('slug', $slug);
+            ->whereHas('category.siteSection', function (Builder $query) use ($slug, $section): void {
+                if ($section instanceof \App\Models\SiteSection) {
+                    $query->whereKey($section->getKey());
+                } else {
+                    $query->where('slug', $slug);
+                }
                 if (! $this->preview->active()) {
                     $query->where('state', 'published');
                 }

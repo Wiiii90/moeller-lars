@@ -56,7 +56,7 @@ final class SiteNavigation
 
         $item = NavigationItem::make($label)
             ->key('site-section-'.$section->getKey())
-            ->icon($this->presentation->icon($type))
+            ->icon($section->isHome() ? AdminIcon::Home : $this->presentation->icon($type))
             ->url($url)
             ->isActiveWhen(fn (): bool => $this->branchIsActive($section, $childrenByParent))
             ->extraAttributes([

@@ -3,10 +3,10 @@
 namespace App\Filament\Support;
 
 use App\Domain\Artwork\PublicArtworkQuery;
-use App\Domain\Content\HomeHeroCandidate;
+use App\Domain\Content\GalleryHeroCandidate;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
-use App\Filament\Pages\HomePresentation;
+use App\Filament\Pages\GalleryHeroWorkspace;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\Controls\AdminControl;
 use App\Models\Artwork;
@@ -16,7 +16,7 @@ use Filament\Schemas\Components\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 
-final class HomeDummyGalleryDialog
+final class GalleryHeroDummyGalleryDialog
 {
     /** One Create/Edit form and one existing Artwork/Storage selection control. */
     public function schema(int $galleryId, bool $creating): array
@@ -26,7 +26,7 @@ final class HomeDummyGalleryDialog
                 ->maxLength(100)
                 ->live(onBlur: true)
                 ->afterStateUpdated(function (?string $state, $livewire) use ($galleryId, $creating): void {
-                    if (! $creating && $livewire instanceof HomePresentation) {
+                    if (! $creating && $livewire instanceof GalleryHeroWorkspace) {
                         $livewire->renameDummyGallery($galleryId, (string) $state);
                     }
                 })
@@ -46,7 +46,7 @@ final class HomeDummyGalleryDialog
                     }
                     if (! is_string($state)
                         || preg_match('/^(artwork|media):([1-9][0-9]*)$/D', $state, $matches) !== 1
-                        || ! $livewire instanceof HomePresentation) {
+                        || ! $livewire instanceof GalleryHeroWorkspace) {
                         throw ValidationException::withMessages(['pending_candidate' => 'Choose an eligible Artwork or Storage file.']);
                     }
 
@@ -66,9 +66,9 @@ final class HomeDummyGalleryDialog
                     $set('pending_candidate', null);
                 })
                 ->columnSpanFull(),
-            View::make('filament.pages.partials.home-dummy-gallery-members')
+            View::make('filament.pages.partials.gallery-hero-dummy-gallery-members')
                 ->viewData(fn ($livewire): array => [
-                    'members' => $livewire instanceof HomePresentation
+                    'members' => $livewire instanceof GalleryHeroWorkspace
                         ? $livewire->dummyEditorMembers($galleryId, $creating) : [],
                     'galleryId' => $galleryId,
                     'creating' => $creating,
@@ -133,7 +133,7 @@ final class HomeDummyGalleryDialog
         }
 
         $asset = MediaAsset::query()->with('variants')->find((int) $matches[2]);
-        return $asset instanceof MediaAsset && HomeHeroCandidate::mediaIsEligible($asset)
+        return $asset instanceof MediaAsset && GalleryHeroCandidate::mediaIsEligible($asset)
             ? e((string) $asset->getAttribute('original_filename')) : null;
     }
 }

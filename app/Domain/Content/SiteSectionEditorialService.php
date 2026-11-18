@@ -4,6 +4,7 @@ namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Content\GalleryTemplate;
+use App\Models\GalleryHeroSetting;
 use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
@@ -38,7 +39,7 @@ final class SiteSectionEditorialService
         return DB::transaction(function () use ($section, $data, $actor): SiteSection {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
-            if (! $fresh->nodeType()->hasPublicPage() && $fresh->nodeType() !== SiteSectionType::Home) {
+            if (! $fresh->nodeType()->hasPublicPage()) {
                 throw ValidationException::withMessages(['content_heading_enabled' => 'This navigation-only node has no public content heading.']);
             }
             $values = SitePageHeading::validated([
@@ -87,6 +88,35 @@ final class SiteSectionEditorialService
     }
 
     /** Home-only public menu control; routing and publication stay independent. */
+    /** Home's public-site gate is page identity, not a content template. */
+    public function updateHomePublicSiteGate(SiteSection $section, bool $enabled): bool
+    {
+        return DB::transaction(function () use ($section, $enabled): bool {
+            /** @var SiteSection $fresh */
+            $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
+            if (! $fresh->isHome()) {
+                throw ValidationException::withMessages(['public_site_gate' => 'Only the Home page may gate the public site.']);
+            }
+            // A gate needs a publicly renderable Custom Page with the
+            // actual Under Construction content configured by its editor.
+            if ($enabled && $fresh->nodeType() !== SiteSectionType::CustomPage) {
+                throw ValidationException::withMessages([
+                    'public_site_gate' => 'Choose Custom Page before gating the public site.',
+                ]);
+            }
+            $fresh->setAttribute('public_site_gate', $enabled);
+            if (! $fresh->isDirty('public_site_gate')) {
+                return false;
+            }
+            $fresh->save();
+            $this->audit->record(
+                $this->audit->requireActor(), 'site_section.updated', 'site_section', (int) $fresh->getKey(),
+            );
+
+            return true;
+        });
+    }
+
     public function updateHomeNavigationVisibility(SiteSection $section, bool $visible): bool
     {
         return DB::transaction(function () use ($section, $visible): bool {
@@ -163,6 +193,35 @@ final class SiteSectionEditorialService
         });
     }
 
+    /**
+     * Hero Artworks is a Gallery page template without an Artwork collection.
+     * This workflow never creates a synthetic ArtworkCategory.
+     */
+    public function createHeroGallery(string $title, string $slug): SiteSection
+    {
+        $title = $this->validatedTitle($title);
+        $slug = $this->validatedSlug($slug);
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($title, $slug, $actor): SiteSection {
+            $section = SiteSection::query()->create([
+                'type' => SiteSectionType::Gallery->value,
+                'template' => GalleryTemplate::HeroArtworks->value,
+                'title' => $title,
+                'navigation_label' => $title,
+                'slug' => $slug,
+                'state' => 'hidden',
+                'position' => $this->nextSiblingPosition(null, null),
+                'parent_id' => null,
+                'artwork_category_id' => null,
+            ]);
+            $this->ensureGalleryHeroSetting($section);
+            $this->audit->record($actor, 'site_section.created', 'site_section', (int) $section->getKey());
+
+            return $section;
+        });
+    }
+
     public function createJournal(string $title, string $slug, string $template): SiteSection
     {
         $title = $this->validatedTitle($title);
@@ -201,8 +260,14 @@ final class SiteSectionEditorialService
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
             $type = $fresh->nodeType();
 
-            if (! in_array($type, [SiteSectionType::CustomPage, SiteSectionType::Journal, SiteSectionType::NavigationNode], true)) {
+            $isStandaloneHero = $type === SiteSectionType::Gallery
+                && $fresh->galleryTemplate() === GalleryTemplate::HeroArtworks
+                && $fresh->getAttribute('artwork_category_id') === null;
+            if (! $isStandaloneHero && ! in_array($type, [SiteSectionType::CustomPage, SiteSectionType::Journal, SiteSectionType::NavigationNode], true)) {
                 throw ValidationException::withMessages(['section' => 'This page cannot be deleted from the configurable page workflow.']);
+            }
+            if ($fresh->isHome()) {
+                throw ValidationException::withMessages(['section' => 'The protected Home page cannot be deleted.']);
             }
             if (
                 $type !== SiteSectionType::Journal
@@ -352,8 +417,8 @@ final class SiteSectionEditorialService
         if ($target === null) {
             throw ValidationException::withMessages(['type' => 'Choose a supported page type.']);
         }
-        if ($target === SiteSectionType::Home || $section->nodeType() === SiteSectionType::Home) {
-            throw ValidationException::withMessages(['type' => 'Home cannot be converted to or from another page type.']);
+        if ($section->isHome() && $target === SiteSectionType::NavigationNode) {
+            throw ValidationException::withMessages(['type' => 'Home must use Gallery, Journal or Custom Page.']);
         }
 
         $actor = $this->audit->requireActor();
@@ -362,8 +427,8 @@ final class SiteSectionEditorialService
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
             $source = $fresh->nodeType();
-            if ($source === SiteSectionType::Home) {
-                throw ValidationException::withMessages(['type' => 'Home cannot be converted to or from another page type.']);
+            if ($fresh->isHome() && $target === SiteSectionType::NavigationNode) {
+                throw ValidationException::withMessages(['type' => 'Home must use Gallery, Journal or Custom Page.']);
             }
             if ($source === $target) {
                 return $fresh;
@@ -377,10 +442,16 @@ final class SiteSectionEditorialService
                 'template' => $template,
                 'slug' => $slug,
                 'artwork_category_id' => $artworkCategoryId,
+                'public_site_gate' => $fresh->isHome() && $target === SiteSectionType::CustomPage
+                    ? (bool) $fresh->getAttribute('public_site_gate')
+                    : false,
             ]);
             $fresh->save();
 
             $this->discardSourceConfiguration($fresh, $source, $sourceGallery);
+            if ($target === SiteSectionType::Gallery && $fresh->galleryTemplate() === GalleryTemplate::HeroArtworks) {
+                $this->ensureGalleryHeroSetting($fresh);
+            }
             $this->audit->record(
                 $actor,
                 'site_section.type_converted',
@@ -393,6 +464,63 @@ final class SiteSectionEditorialService
 
             return $converted;
         });
+    }
+
+
+    public function updateGalleryTemplate(SiteSection $section, string $template): SiteSection
+    {
+        $target = GalleryTemplate::tryFrom($template);
+        if ($target === null) {
+            throw ValidationException::withMessages(['template' => 'Choose Showcase or Hero Artworks.']);
+        }
+
+        return DB::transaction(function () use ($section, $target): SiteSection {
+            /** @var SiteSection $fresh */
+            $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
+            if ($fresh->nodeType() !== SiteSectionType::Gallery) {
+                throw ValidationException::withMessages(['template' => 'Only Gallery pages may select a Gallery template.']);
+            }
+
+            if ($fresh->galleryTemplate() === $target) {
+                return $fresh;
+            }
+            if ($target === GalleryTemplate::HeroArtworks) {
+                $this->ensureGalleryHeroSetting($fresh);
+            } elseif ($fresh->getAttribute('artwork_category_id') === null) {
+                // Showcase requires a real Artwork collection; Hero does not.
+                $slug = $fresh->isHome()
+                    ? 'system-home-gallery-'.(int) $fresh->getKey()
+                    : (string) $fresh->getAttribute('slug');
+                if (ArtworkCategory::query()->where('slug', $slug)->exists()) {
+                    throw ValidationException::withMessages(['template' => 'The Gallery collection slug is already in use.']);
+                }
+                $category = ArtworkCategory::query()->create([
+                    'slug' => $slug,
+                    'name' => (string) $fresh->getAttribute('title'),
+                    'show_on_home' => false,
+                ]);
+                $fresh->setAttribute('artwork_category_id', $category->getKey());
+            }
+            $fresh->setAttribute('template', $target->value);
+            $fresh->save();
+            $this->audit->record(
+                $this->audit->requireActor(), 'site_section.gallery_template_updated', 'site_section', (int) $fresh->getKey(),
+            );
+
+            return $fresh;
+        });
+    }
+
+    private function ensureGalleryHeroSetting(SiteSection $section): void
+    {
+        if (GalleryHeroSetting::query()->where('site_section_id', $section->getKey())->exists()) {
+            return;
+        }
+
+        $settings = new GalleryHeroSetting;
+        $settings->setAttribute('site_section_id', $section->getKey());
+        $settings->setAttribute('configuration', []);
+        $settings->save();
     }
 
     public function updateJournalTemplate(SiteSection $section, string $template): SiteSection
@@ -588,14 +716,10 @@ final class SiteSectionEditorialService
 
     private function assertSourceConfigurationIsDiscardable(SiteSection $section, SiteSectionType $source): ?ArtworkCategory
     {
-        if ($source === SiteSectionType::Home) {
-            throw ValidationException::withMessages(['type' => 'Home cannot be converted to another page type.']);
-        }
-
         if ($source === SiteSectionType::CustomPage) {
             /** @var CustomPageSetting|null $settings */
             $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->lockForUpdate()->first();
-            if ($settings instanceof CustomPageSetting && $settings->getAttribute('blocks') !== []) {
+            if (! $section->isHome() && $settings instanceof CustomPageSetting && $settings->getAttribute('blocks') !== []) {
                 throw ValidationException::withMessages([
                     'type' => 'This Custom Page contains components. Remove or move that content before changing its page type.',
                 ]);
@@ -633,13 +757,35 @@ final class SiteSectionEditorialService
         }
 
         if ($source === SiteSectionType::Gallery) {
+            // Gallery configuration is artist data even when no Artwork is
+            // attached. Never discard a normal Gallery record as a side effect
+            // of changing a page type. Home alone may reset its old content.
+            if (! $section->isHome() && $section->getAttribute('artwork_category_id') !== null) {
+                throw ValidationException::withMessages([
+                    'type' => 'This Gallery owns a collection. Remove it explicitly in Gallery management before changing the page type.',
+                ]);
+            }
+            /** @var GalleryHeroSetting|null $heroSetting */
+            $heroSetting = GalleryHeroSetting::query()
+                ->where('site_section_id', $section->getKey())->lockForUpdate()->first();
+            if (! $section->isHome() && $heroSetting instanceof GalleryHeroSetting
+                && $heroSetting->configuration() !== []) {
+                throw ValidationException::withMessages([
+                    'type' => 'This Hero Artworks page contains saved settings. Clear them before changing the page type.',
+                ]);
+            }
+
             /** @var ArtworkCategory|null $gallery */
             $gallery = ArtworkCategory::query()
                 ->whereKey($section->getAttribute('artwork_category_id'))
                 ->lockForUpdate()
                 ->first();
             if (! $gallery instanceof ArtworkCategory) {
-                throw ValidationException::withMessages(['type' => 'This Gallery is missing its Gallery configuration.']);
+                if ($section->galleryTemplate() === GalleryTemplate::HeroArtworks) {
+                    return null;
+                }
+
+                throw ValidationException::withMessages(['type' => 'This Showcase is missing its Gallery configuration.']);
             }
 
             $nameMatches = trim((string) $gallery->getAttribute('name')) === trim((string) $section->getAttribute('title'));
@@ -647,8 +793,7 @@ final class SiteSectionEditorialService
             if (
                 $gallery->artworks()->exists()
                 || (bool) $gallery->getAttribute('show_on_home')
-                || ! $nameMatches
-                || ! $slugMatches
+                || (! $section->isHome() && (! $nameMatches || ! $slugMatches))
             ) {
                 throw ValidationException::withMessages([
                     'type' => 'This Gallery contains artwork or Gallery-specific content. Clear it before changing its page type.',
@@ -668,7 +813,7 @@ final class SiteSectionEditorialService
             return [null, null, null];
         }
 
-        $slug = $this->conversionSlug($section, $target === SiteSectionType::Gallery);
+        $slug = $section->isHome() ? null : $this->conversionSlug($section, $target === SiteSectionType::Gallery);
 
         if ($target === SiteSectionType::CustomPage) {
             $this->ensureCustomPageSetting($section);
@@ -683,20 +828,27 @@ final class SiteSectionEditorialService
         }
 
         if ($target === SiteSectionType::Gallery) {
-            if (ArtworkCategory::query()->where('slug', $slug)->exists()) {
+            if ($section->isHome()) {
+                // The protected start page is a Hero presentation, not an
+                // empty Artwork collection. Keep it independent of Galleries.
+                return [null, GalleryTemplate::HeroArtworks->value, null];
+            }
+
+            $gallerySlug = $slug;
+            if (ArtworkCategory::query()->where('slug', $gallerySlug)->exists()) {
                 throw ValidationException::withMessages(['type' => 'A Gallery configuration already uses this page slug.']);
             }
 
             $gallery = ArtworkCategory::query()->create([
-                'slug' => $slug,
+                'slug' => $gallerySlug,
                 'name' => (string) $section->getAttribute('title'),
                 'show_on_home' => false,
             ]);
 
-            return [$slug, GalleryTemplate::Showcase->value, (int) $gallery->getKey()];
+            return [$slug, $section->isHome() ? GalleryTemplate::HeroArtworks->value : GalleryTemplate::Showcase->value, (int) $gallery->getKey()];
         }
 
-        throw ValidationException::withMessages(['type' => 'Home cannot be selected as a conversion target.']);
+        throw ValidationException::withMessages(['type' => 'Choose a supported page type.']);
     }
 
     private function conversionSlug(SiteSection $section, bool $forGallery): string
@@ -740,8 +892,11 @@ final class SiteSectionEditorialService
             JournalSetting::query()->where('site_section_id', $section->getKey())->delete();
         }
 
-        if ($source === SiteSectionType::Gallery && $sourceGallery instanceof ArtworkCategory) {
-            $sourceGallery->delete();
+        if ($source === SiteSectionType::Gallery) {
+            GalleryHeroSetting::query()->where('site_section_id', $section->getKey())->delete();
+            if ($sourceGallery instanceof ArtworkCategory) {
+                $sourceGallery->delete();
+            }
         }
     }
 }

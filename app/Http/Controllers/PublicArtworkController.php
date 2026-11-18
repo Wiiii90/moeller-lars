@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Artwork\GalleryPresentation;
+use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionPathPolicy;
@@ -28,6 +29,7 @@ class PublicArtworkController extends Controller
     {
         $sectionQuery = SiteSection::query()
             ->where('type', SiteSectionType::Gallery->value)
+            ->where('template', GalleryTemplate::Showcase->value)
             ->where('slug', $category)
             ->with('artworkCategory');
         $this->preview->constrainSectionQuery($sectionQuery);
@@ -50,6 +52,19 @@ class PublicArtworkController extends Controller
             return redirect($redirect->getAttribute('target_path'), (int) $redirect->getAttribute('status_code'));
         }
 
+        return $this->categoryForSection($section);
+    }
+
+    /** A Showcase may be the protected Home page at / rather than a slug route. */
+    public function categoryForSection(SiteSection $section): View
+    {
+        abort_unless(
+            $section->nodeType() === SiteSectionType::Gallery
+                && $section->galleryTemplate() === GalleryTemplate::Showcase,
+            404,
+        );
+
+        $section->load('artworkCategory');
         /** @var ArtworkCategory|null $categoryRecord */
         $categoryRecord = $section->getRelation('artworkCategory');
         abort_unless($categoryRecord !== null, 404);
@@ -57,7 +72,7 @@ class PublicArtworkController extends Controller
         return view('pages.artworks.index', [
             'category' => $categoryRecord,
             'section' => $section,
-            'artworks' => $this->artworks->category($category),
+            'artworks' => $this->artworks->category((string) $categoryRecord->getAttribute('slug'), $section),
             'media' => $this->media,
         ]);
     }
@@ -72,7 +87,14 @@ class PublicArtworkController extends Controller
         if (! GalleryPresentation::artworkPagesEnabled($categoryRecord)) {
             // Preserve old bookmarked detail URLs without advertising pages
             // that the artist deliberately disabled for this Gallery.
-            return redirect($this->preview->url(route('site.section', ['section' => $categoryRecord->slug])));
+            /** @var SiteSection|null $page */
+            $page = $categoryRecord->siteSection()->first();
+
+            return redirect($this->preview->url(
+                $page instanceof SiteSection
+                    ? (app(\App\Routing\SiteNodeRoute::class)->url($page) ?? route('home'))
+                    : route('home'),
+            ));
         }
         $sectionQuery = SiteSection::query()
             ->where('type', SiteSectionType::Gallery->value)

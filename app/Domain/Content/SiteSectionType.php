@@ -4,7 +4,6 @@ namespace App\Domain\Content;
 
 enum SiteSectionType: string
 {
-    case Home = 'home';
     case Gallery = 'gallery';
     case Journal = 'journal';
     case CustomPage = 'custom';
@@ -49,7 +48,6 @@ enum SiteSectionType: string
         }
 
         return match ($this) {
-            self::Home => 'Home',
             self::Gallery => 'Gallery',
             self::Journal => 'Journal',
             self::CustomPage => 'Custom Page',
@@ -60,7 +58,6 @@ enum SiteSectionType: string
     public function compactLabel(): string
     {
         return match ($this) {
-            self::Home => 'Home',
             self::CustomPage => 'Custom',
             self::NavigationNode => 'Group',
             default => $this->label(),
@@ -69,7 +66,7 @@ enum SiteSectionType: string
 
     public function isCreatable(): bool
     {
-        return $this !== self::Home;
+        return true;
     }
 
     public function hasPublicPage(): bool
@@ -84,21 +81,21 @@ enum SiteSectionType: string
 
     public function canDelete(): bool
     {
-        return $this !== self::Home;
+        return true;
     }
 
     public function canChangePlacement(): bool
     {
-        return $this !== self::Home;
+        return true;
     }
 
     public function canChangePublication(): bool
     {
-        return $this !== self::Home;
+        return true;
     }
 
     public function canConvert(): bool
     {
-        return $this !== self::Home;
+        return true;
     }
 }

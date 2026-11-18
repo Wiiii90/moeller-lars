@@ -8,14 +8,14 @@ use App\Http\Controllers\PublicHomeController;
 use App\Http\Controllers\PublicMediaController;
 use App\Http\Controllers\PublicSeoController;
 use App\Http\Controllers\PublicSiteSectionController;
-use App\Http\Middleware\EnforceHomePresentationGate;
+use App\Http\Middleware\EnforcePublicSiteGate;
 use App\Http\Middleware\ProtectArtistPreview;
 use Illuminate\Support\Facades\Route;
 use Livewire\Mechanisms\FrontendAssets\FrontendAssets;
 
 Route::get('/', [PublicHomeController::class, 'show'])->name('home');
 Route::post('/contact', [PublicContactController::class, 'submit'])
-    ->middleware([EnforceHomePresentationGate::class, 'throttle:public-contact'])
+    ->middleware([EnforcePublicSiteGate::class, 'throttle:public-contact'])
     ->name('contact.submit');
 Route::get('/sitemap.xml', [PublicSeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('/robots.txt', [PublicSeoController::class, 'robots'])->name('seo.robots');
@@ -47,6 +47,9 @@ Route::middleware(ProtectArtistPreview::class)
         Route::get('/media/variant/{mediaVariant}/{revision?}', [AdminMediaController::class, 'variant'])->where('revision', '[a-f0-9]{64}')
             ->name('media.variant');
         Route::get('/artworks/{slug}', [PublicArtworkController::class, 'show'])->name('artworks.show');
+        Route::get('/journal-entries/{slug}', [PublicSiteSectionController::class, 'homeJournalEntry'])
+            ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+            ->name('home.journal.show');
         Route::get('/{section}/{slug}', [PublicSiteSectionController::class, 'journalEntry'])
             ->where(['section' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'slug' => '[a-z0-9]+(?:-[a-z0-9]+)*'])
             ->name('journal.show');
@@ -85,9 +88,12 @@ Route::get('/media/original/{mediaAsset}/{revision?}', [PublicMediaController::c
 Route::get('/media/variant/{mediaVariant}/{revision?}', [PublicMediaController::class, 'variant'])->where('revision', '[a-f0-9]{64}')
     ->name('media.variant');
 
-Route::middleware(EnforceHomePresentationGate::class)->group(function (): void {
+Route::middleware(EnforcePublicSiteGate::class)->group(function (): void {
     Route::get('/artworks/{slug}', [PublicArtworkController::class, 'show'])->name('artworks.show');
-    Route::get('/{section}/{slug}', [PublicSiteSectionController::class, 'journalEntry'])
+    Route::get('/journal-entries/{slug}', [PublicSiteSectionController::class, 'homeJournalEntry'])
+            ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+            ->name('home.journal.show');
+        Route::get('/{section}/{slug}', [PublicSiteSectionController::class, 'journalEntry'])
         ->where(['section' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'slug' => '[a-z0-9]+(?:-[a-z0-9]+)*'])
         ->name('journal.show');
     Route::get('/{section}', [PublicSiteSectionController::class, 'show'])

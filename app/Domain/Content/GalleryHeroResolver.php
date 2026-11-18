@@ -5,32 +5,32 @@ namespace App\Domain\Content;
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Models\Artwork;
 use App\Models\MediaAsset;
-use App\Models\HomePresentationSetting;
+use App\Models\GalleryHeroSetting;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
-final class HomeHeroResolver
+final class GalleryHeroResolver
 {
     public function __construct(
         private readonly PublicArtworkQuery $artworks,
-        private readonly HomeHeroConfigurationService $configuration,
+        private readonly GalleryHeroConfigurationService $configuration,
     ) {}
 
     /**
      * @return array{
      *     configuration:array<string,mixed>,
-     *     group:Collection<int,HomeHeroCandidate>,
-     *     current:?HomeHeroCandidate,
-     *     sequence:Collection<int,HomeHeroCandidate>,
+     *     group:Collection<int,GalleryHeroCandidate>,
+     *     current:?GalleryHeroCandidate,
+     *     sequence:Collection<int,GalleryHeroCandidate>,
      *     weights:array<int,int>,
      *     rotation_slot:int,
      *     next_rotation_at:?CarbonImmutable
      * }
      */
     public function resolve(
-        HomePresentationSetting $settings,
+        GalleryHeroSetting $settings,
         ?DateTimeInterface $at = null,
         ?int $randomBasisPoint = null,
     ): array {
@@ -65,7 +65,7 @@ final class HomeHeroResolver
     }
 
     /** @param array<string,mixed> $configuration
-     * @return array{0:Collection<int,HomeHeroCandidate>,1:array<string,int>}
+     * @return array{0:Collection<int,GalleryHeroCandidate>,1:array<string,int>}
      */
     private function sourceGroup(array $configuration): array
     {
@@ -94,16 +94,16 @@ final class HomeHeroResolver
             $regular = ($perGallery || $galleryFirst)
                 ? $this->artworks->homeGalleryRepresentatives(
                     $ranking, array_values(array_unique($reservedArtworkIds)),
-                    12500, $perGallery ? $amount : HomeHeroConfigurationService::MAX_GROUP_SIZE,
+                    12500, $perGallery ? $amount : GalleryHeroConfigurationService::MAX_GROUP_SIZE,
                 )
                 : $this->artworks->configuredHomeCandidates(
-                    HomeHeroConfigurationService::MAX_GROUP_SIZE, $ranking,
+                    GalleryHeroConfigurationService::MAX_GROUP_SIZE, $ranking,
                     array_values(array_unique($reservedArtworkIds)),
                 );
             foreach ($regular as $artwork) {
                 $sourceId = (int) $artwork->getAttribute('artwork_category_id');
                 $pools[$sourceId] ??= new Collection;
-                $pools[$sourceId]->push(HomeHeroCandidate::fromArtwork($artwork));
+                $pools[$sourceId]->push(GalleryHeroCandidate::fromArtwork($artwork));
                 $names[$sourceId] = (string) ($artwork->getRelationValue('category')?->getAttribute('name') ?? '');
             }
         }
@@ -127,7 +127,7 @@ final class HomeHeroResolver
         // variant changes only which entire Gallery is read first.
         foreach ($pools as $sourceId => $candidates) {
             $pools[$sourceId] = $this->rankCandidates($candidates, $ranking)
-                ->take($perGallery ? $amount : HomeHeroConfigurationService::MAX_GROUP_SIZE)
+                ->take($perGallery ? $amount : GalleryHeroConfigurationService::MAX_GROUP_SIZE)
                 ->values();
         }
         $ids = array_keys($pools);
@@ -153,7 +153,7 @@ final class HomeHeroResolver
             }
         }
         $group = ($galleryFirst ? $candidates : $this->rankCandidates($candidates, $ranking))
-            ->take($perGallery ? HomeHeroConfigurationService::MAX_GROUP_SIZE : $amount)
+            ->take($perGallery ? GalleryHeroConfigurationService::MAX_GROUP_SIZE : $amount)
             ->values();
 
         return [$group, $this->configuration->sourcedGroupWeights(
@@ -172,13 +172,13 @@ final class HomeHeroResolver
      * Storage references without an Artwork date sort after dated Artworks
      * under artwork-date ranking, never under a fabricated date.
      *
-     * @param Collection<int,HomeHeroCandidate> $candidates
-     * @return Collection<int,HomeHeroCandidate>
+     * @param Collection<int,GalleryHeroCandidate> $candidates
+     * @return Collection<int,GalleryHeroCandidate>
      */
     private function rankCandidates(Collection $candidates, string $rule): Collection
     {
         $oldest = str_starts_with($rule, 'oldest_');
-        return $candidates->sort(function (HomeHeroCandidate $left, HomeHeroCandidate $right) use ($rule, $oldest): int {
+        return $candidates->sort(function (GalleryHeroCandidate $left, GalleryHeroCandidate $right) use ($rule, $oldest): int {
             $a = $this->candidateRankingParts($left, $rule);
             $b = $this->candidateRankingParts($right, $rule);
             foreach ($a as $index => $value) {
@@ -197,7 +197,7 @@ final class HomeHeroResolver
     }
 
     /** @return list<int|null> */
-    private function candidateRankingParts(HomeHeroCandidate $candidate, string $rule): array
+    private function candidateRankingParts(GalleryHeroCandidate $candidate, string $rule): array
     {
         $artwork = $candidate->artwork();
         $record = $artwork ?? $candidate->mediaAsset();
@@ -231,7 +231,7 @@ final class HomeHeroResolver
      * available Storage media with ALT/preview enter the public group.
      *
      * @param list<array<string,int>> $members
-     * @return Collection<int,HomeHeroCandidate>
+     * @return Collection<int,GalleryHeroCandidate>
      */
     private function selectedCandidates(array $members, ?int $sourceId = null, ?string $sourceName = null): Collection
     {
@@ -253,11 +253,11 @@ final class HomeHeroResolver
             if (isset($member['artwork_id'])) {
                 $artwork = $artworks->get($member['artwork_id']);
                 if ($artwork instanceof Artwork) {
-                    $candidates->push(HomeHeroCandidate::fromArtwork($artwork, $sourceId, $sourceName));
+                    $candidates->push(GalleryHeroCandidate::fromArtwork($artwork, $sourceId, $sourceName));
                 }
             } else {
                 $asset = $media->get($member['media_asset_id']);
-                if ($asset instanceof MediaAsset && ($candidate = HomeHeroCandidate::fromMedia(
+                if ($asset instanceof MediaAsset && ($candidate = GalleryHeroCandidate::fromMedia(
                     $asset, $sourceId, $sourceName,
                     is_string($member['title'] ?? null) ? $member['title'] : null,
                     isset($member['year']) ? (int) $member['year'] : null,
@@ -273,7 +273,7 @@ final class HomeHeroResolver
     }
 
     /** @param array<string,mixed> $configuration
-     * @param  Collection<int,HomeHeroCandidate>  $group
+     * @param  Collection<int,GalleryHeroCandidate>  $group
      * @param  array<string,int>  $weights
      * @return array<string,mixed>
      */
@@ -283,8 +283,8 @@ final class HomeHeroResolver
         array $weights,
         ?int $randomBasisPoint,
     ): array {
-        $basisPoint = $randomBasisPoint ?? random_int(0, HomeHeroConfigurationService::WEIGHT_TOTAL - 1);
-        if ($basisPoint < 0 || $basisPoint >= HomeHeroConfigurationService::WEIGHT_TOTAL) {
+        $basisPoint = $randomBasisPoint ?? random_int(0, GalleryHeroConfigurationService::WEIGHT_TOTAL - 1);
+        if ($basisPoint < 0 || $basisPoint >= GalleryHeroConfigurationService::WEIGHT_TOTAL) {
             throw ValidationException::withMessages(['random' => 'Random Home sample must be within the configured weight range.']);
         }
 
@@ -311,12 +311,12 @@ final class HomeHeroResolver
     }
 
     /** @param array<string,mixed> $configuration
-     * @param  Collection<int,HomeHeroCandidate>  $group
+     * @param  Collection<int,GalleryHeroCandidate>  $group
      * @param  array<string,int>  $weights
      * @return array<string,mixed>
      */
     private function sequentialResolution(
-        HomePresentationSetting $settings,
+        GalleryHeroSetting $settings,
         array $configuration,
         Collection $group,
         array $weights,
@@ -364,7 +364,7 @@ final class HomeHeroResolver
 
     /** @param array<string,mixed> $configuration */
     private function rotationAnchor(
-        HomePresentationSetting $settings,
+        GalleryHeroSetting $settings,
         array $configuration,
         CarbonImmutable $fallback,
     ): CarbonImmutable {

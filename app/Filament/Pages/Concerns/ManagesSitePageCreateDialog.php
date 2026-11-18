@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
+use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SitePageHeading;
 use App\Domain\Admin\AdminAutoPublishPreferences;
@@ -42,14 +43,24 @@ trait ManagesSitePageCreateDialog
                             ->default(SiteSectionType::CustomPage->value)
                             ->native()
                             ->required()
-                            ->live(),
+                            ->live()
+                            ->afterStateUpdated(function (?string $state, Set $set): void {
+                                $set('template', match ($state) {
+                                    SiteSectionType::Gallery->value => GalleryTemplate::Showcase->value,
+                                    SiteSectionType::Journal->value => JournalTemplate::Blog->value,
+                                    default => null,
+                                });
+                            }),
                         Select::make('template')
                             ->label('Template')
-                            ->options(array_map('__', JournalTemplate::options()))
-                            ->default(JournalTemplate::Blog->value)
+                            ->options(fn (Get $get): array => match ($get('type')) {
+                                SiteSectionType::Gallery->value => array_map('__', GalleryTemplate::options()),
+                                SiteSectionType::Journal->value => array_map('__', JournalTemplate::options()),
+                                default => [],
+                            })
                             ->native()
-                            ->required(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value)
-                            ->visible(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value),
+                            ->required(fn (Get $get): bool => in_array($get('type'), [SiteSectionType::Gallery->value, SiteSectionType::Journal->value], true))
+                            ->visible(fn (Get $get): bool => in_array($get('type'), [SiteSectionType::Gallery->value, SiteSectionType::Journal->value], true)),
                         TextInput::make('name')
                             ->label('Name')
                             ->required()
@@ -124,7 +135,7 @@ trait ManagesSitePageCreateDialog
                 $slug,
                 (string) ($data['template'] ?? JournalTemplate::Blog->value),
             ),
-            SiteSectionType::Gallery => $this->createGallerySection($name, $slug),
+            SiteSectionType::Gallery => $this->createGallerySection($name, $slug, (string) ($data['template'] ?? '')),
             default => throw ValidationException::withMessages(['type' => 'Choose a supported page type.']),
         };
 
@@ -178,8 +189,16 @@ trait ManagesSitePageCreateDialog
         );
     }
 
-    private function createGallerySection(string $name, string $slug): SiteSection
+    private function createGallerySection(string $name, string $slug, string $template): SiteSection
     {
+        $selectedTemplate = GalleryTemplate::tryFrom($template);
+        if ($selectedTemplate === null) {
+            throw ValidationException::withMessages(['template' => 'Choose a supported Gallery template.']);
+        }
+        if ($selectedTemplate === GalleryTemplate::HeroArtworks) {
+            return app(SiteSectionEditorialService::class)->createHeroGallery($name, $slug);
+        }
+
         $gallery = app(GalleryEditorialService::class)->create([
             'name' => $name,
             'slug' => $slug,

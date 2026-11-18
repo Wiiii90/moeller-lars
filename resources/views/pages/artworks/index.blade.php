@@ -2,7 +2,7 @@
 
 @section('title', $category->name.' — Lars Möller')
 @section('meta_description', $section->metaDescriptionOr($category->name.' — Lars Möller'))
-@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/'.$category->slug))
+@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath(app(\App\Routing\SiteNodeRoute::class)->path($section)))
 
 @section('content')
     @php($divider = \App\Domain\Artwork\GalleryPresentation::divider($category))

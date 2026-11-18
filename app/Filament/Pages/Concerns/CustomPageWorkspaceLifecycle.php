@@ -191,25 +191,29 @@ trait CustomPageWorkspaceLifecycle
                         TextInput::make('title')
                             ->label('Page title')
                             ->required()
-                            ->maxLength(160),
+                            ->maxLength(160)
+                            ->visible(fn (): bool => ! $this->section()->isHome()),
                         TextInput::make('navigation_label')
                             ->label('Navigation label')
-                            ->maxLength(160),
+                            ->maxLength(160)
+                            ->visible(fn (): bool => ! $this->section()->isHome()),
                         TextInput::make('slug')
                             ->label('Public URL slug')
                             ->required()
                             ->maxLength(80)
-                            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
+                            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+                            ->visible(fn (): bool => ! $this->section()->isHome()),
                         Select::make('publication_state')
                             ->label('Page status')
                             ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
-                            ->required(),
+                            ->required()
+                            ->visible(fn (): bool => ! $this->section()->isHome()),
                         Select::make('parent_id')
                             ->label('Navigation parent')
                             ->options(fn (): array => $this->parentOptions())
                             ->nullable()
                             ->placeholder(__('Top level'))
-                            ->visible(fn (): bool => PublicContentSetting::navigationNestingEnabled()),
+                            ->visible(fn (): bool => PublicContentSetting::navigationNestingEnabled() && ! $this->section()->isHome()),
                         AdminControl::toggle('auto_publish_new_components', 'Auto-publish new components')
                             ->live()
                             ->afterStateUpdated(function (mixed $state): void {
@@ -223,6 +227,14 @@ trait CustomPageWorkspaceLifecycle
             ])
             ->modalHeading(__('Page settings'))
             ->action(function (array $data): void {
+                // The system Home page owns identity, template, status and
+                // hierarchy exclusively through the unified Pages editor.
+                // Custom Page Stage Settings only exposes its own component
+                // auto-publish preference on Home.
+                if ($this->section()->isHome()) {
+                    return;
+                }
+
                 $before = $this->section()->only([
                     'title',
                     'navigation_label',

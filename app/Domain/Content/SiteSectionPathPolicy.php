@@ -21,6 +21,7 @@ final class SiteSectionPathPolicy
         'api',
         'artworks',
         'media',
+        'journal-entries',
         'preview',
         'robots',
         'sitemap',

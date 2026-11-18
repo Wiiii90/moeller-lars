@@ -39,7 +39,8 @@ final class SiteSectionIdentityService
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
             $type = $fresh->nodeType();
-            if ($type === SiteSectionType::Gallery) {
+            if ($type === SiteSectionType::Gallery && ! $fresh->isHome()
+                && $fresh->getAttribute('artwork_category_id') !== null) {
                 throw ValidationException::withMessages(['name' => 'Gallery identity must be updated through the Gallery workflow.']);
             }
 
@@ -47,7 +48,7 @@ final class SiteSectionIdentityService
             $oldSlug = trim((string) $fresh->getAttribute('slug'));
             $newSlug = null;
 
-            if ($type->requiresSlug()) {
+            if ($type->requiresSlug() && ! $fresh->isHome()) {
                 $newSlug = $this->validatedSlug($slug, (int) $fresh->getKey(), $oldSlug);
                 if ($newSlug !== $oldSlug) {
                     $this->retainPublicPath($oldSlug, $newSlug);
@@ -60,6 +61,16 @@ final class SiteSectionIdentityService
                 if ($name !== $oldName && $settings instanceof JournalSetting && trim((string) $settings->getAttribute('listing_title')) === $oldName) {
                     $settings->setAttribute('listing_title', $name);
                     $settings->save();
+                }
+            }
+
+            if ($type === SiteSectionType::Gallery && $fresh->isHome() && $fresh->getAttribute('artwork_category_id') !== null) {
+                /** @var \App\Models\ArtworkCategory $gallery */
+                $gallery = \App\Models\ArtworkCategory::query()
+                    ->whereKey($fresh->getAttribute('artwork_category_id'))->lockForUpdate()->firstOrFail();
+                if ((string) $gallery->getAttribute('name') !== $name) {
+                    $gallery->setAttribute('name', $name);
+                    $gallery->save();
                 }
             }
 

@@ -7,8 +7,6 @@ use App\Domain\Admin\AdminUndoContext;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Content\CustomPageEditorialService;
-use App\Domain\Content\HomePresentationEditorialService;
-use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\JournalEntryMediaService;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Publication\PublicationMediaCleanupService;
@@ -17,7 +15,7 @@ use App\Jobs\PrepareMediaRightsImage;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\CustomPageSetting;
-use App\Models\HomePresentationSetting;
+use App\Models\GalleryHeroSetting;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use App\Models\User;
@@ -35,7 +33,6 @@ class MediaAssetEditorialService
         private readonly ArtworkDraftService $artworkDrafts,
         private readonly JournalEntryMediaService $journalMedia,
         private readonly CustomPageEditorialService $customPages,
-        private readonly HomePresentationEditorialService $homePresentation,
         private readonly PublicationMediaCleanupService $publicationMediaCleanup,
     ) {}
 
@@ -321,7 +318,7 @@ class MediaAssetEditorialService
         }
 
         $this->removeCustomPageReferences($assetId);
-        $this->removeHomeReferences($assetId);
+        $this->removeGalleryHeroReferences($assetId);
     }
 
     private function removeCustomPageReferences(int $assetId): void
@@ -350,31 +347,24 @@ class MediaAssetEditorialService
         }
     }
 
-    private function removeHomeReferences(int $assetId): void
+    private function removeGalleryHeroReferences(int $assetId): void
     {
-        /** @var EloquentCollection<int, HomePresentationSetting> $settingsRows */
-        $settingsRows = HomePresentationSetting::query()->orderBy('id')->lockForUpdate()->get();
+        /** @var EloquentCollection<int, GalleryHeroSetting> $settingsRows */
+        $settingsRows = GalleryHeroSetting::query()->orderBy('id')->lockForUpdate()->get();
+        $editor = app(\App\Domain\Content\GalleryHeroConfigurationService::class);
+
         foreach ($settingsRows as $settings) {
-            if (! $this->referenceQuery->homeReferencesAsset($settings, $assetId)) {
+            if (! $this->referenceQuery->galleryHeroReferencesAsset($settings, $assetId)) {
                 continue;
             }
 
-            foreach ([HomeTemplate::UnderConstruction, HomeTemplate::Custom] as $mode) {
-                foreach ($settings->components($mode) as $index => $component) {
-                    if (! is_array($component)) {
+            $configuration = $editor->configuration($settings);
+            foreach ($configuration['dummy_galleries'] as $gallery) {
+                foreach ($gallery['members'] as $member) {
+                    if ((int) ($member['media_asset_id'] ?? 0) !== $assetId) {
                         continue;
                     }
-                    $result = $this->withoutMediaReference($component, $assetId);
-                    if ($result === null) {
-                        // Preserve the Home component identity and all its
-                        // presentation settings while clearing only the asset.
-                        $result = [...$component, 'media_asset_id' => null];
-                    }
-                    if ($result !== $component) {
-                        $this->homePresentation->updateComponent(
-                            $settings, $mode, $index, (string) $component['type'], $result,
-                        );
-                    }
+                    $editor->removeDummyMember($settings, (int) $gallery['id'], $editor::memberKey($member));
                 }
             }
         }

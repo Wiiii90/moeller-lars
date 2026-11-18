@@ -13,7 +13,7 @@ use App\Models\MediaVariant;
  * A single typed Hero member, either an editorial Artwork or a directly
  * selected Storage file. Never synthesize an Artwork/Gallery for a loose file.
  */
-final readonly class HomeHeroCandidate
+final readonly class GalleryHeroCandidate
 {
     private function __construct(
         public string $kind,

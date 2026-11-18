@@ -5,7 +5,7 @@ namespace App\Domain\Content;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Artwork\ArtworkSort;
-use App\Models\HomePresentationSetting;
+use App\Models\GalleryHeroSetting;
 use App\Models\MediaAsset;
 use Carbon\CarbonImmutable;
 use Closure;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
-final class HomeHeroConfigurationService
+final class GalleryHeroConfigurationService
 {
     public const ARTWORK_SURFACE_INHERIT = 'inherit';
 
@@ -95,12 +95,9 @@ final class HomeHeroConfigurationService
      *     caption_layout:string
      * }
      */
-    public function configuration(HomePresentationSetting $settings, ?string $mode = null): array
+    public function configuration(GalleryHeroSetting $settings, ?string $mode = null): array
     {
-        $root = $settings->configuration();
-        $artwork = is_array($root[HomeTemplate::Artwork->value] ?? null)
-            ? $root[HomeTemplate::Artwork->value]
-            : [];
+        $artwork = $settings->configuration();
         $persistedMode = is_string($artwork['hero_mode'] ?? null) ? $artwork['hero_mode'] : 'automatic';
         $storedSource = $this->enumOrNull($artwork['group_source'] ?? null, ['automatic', 'semi_automatic', 'manual'])
             ?? (in_array($persistedMode, ['fixed', 'manual'], true) ? 'manual' : 'automatic');
@@ -138,7 +135,7 @@ final class HomeHeroConfigurationService
     /**
      * Source profiles own their independent ranking, candidate amount,
      * display, weights and rotation. Dummy Gallery membership is shared
-     * Home content, independent of the currently active source mode.
+     * Hero presentation, independent of the currently active source mode.
      *
      * @param array<string,mixed> $artwork
      * @return array<string,mixed>
@@ -185,7 +182,7 @@ final class HomeHeroConfigurationService
 
     /**
      * Persist one source profile per mode, while Dummy Galleries are a
-     * shared Home Artwork collection consumed by Manual and Semi-Automatic.
+     * shared Hero Artwork collection consumed by Manual and Semi-Automatic.
      *
      * @param array<string,mixed> $artwork
      * @return array<string,array<string,mixed>>
@@ -216,11 +213,11 @@ final class HomeHeroConfigurationService
      * @param  array<string, mixed>  $input
      * @param  array{before:list<int|string>,after:list<int|string>}|null  $orderingState
      */
-    public function updateArtworkSettings(HomePresentationSetting $settings, array $input, ?array $orderingState = null): bool
+    public function updateArtworkSettings(GalleryHeroSetting $settings, array $input, ?array $orderingState = null): bool
     {
         return DB::transaction(function () use ($settings, $input, $orderingState): bool {
-            /** @var HomePresentationSetting $fresh */
-            $fresh = HomePresentationSetting::query()
+            /** @var GalleryHeroSetting $fresh */
+            $fresh = GalleryHeroSetting::query()
                 ->whereKey($settings->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -250,9 +247,7 @@ final class HomeHeroConfigurationService
             $sourceOrder = array_key_exists('source_order', $input)
                 ? $this->validatedSourceOrder($input['source_order'])
                 : $profile['source_order'];
-            $rootBefore = $fresh->configuration();
-            $artworkBefore = is_array($rootBefore[HomeTemplate::Artwork->value] ?? null)
-                ? $rootBefore[HomeTemplate::Artwork->value] : [];
+            $artworkBefore = $fresh->configuration();
             $dummyGalleries = array_key_exists('dummy_galleries', $input)
                 ? $this->validatedDummyGalleries($input['dummy_galleries'])
                 : $this->readDummyGalleries($artworkBefore);
@@ -295,9 +290,7 @@ final class HomeHeroConfigurationService
                 $rotationStartedAt = CarbonImmutable::now('UTC')->toIso8601String();
             }
 
-            $root = $fresh->configuration();
-            $artwork = is_array($root[HomeTemplate::Artwork->value] ?? null)
-                ? $root[HomeTemplate::Artwork->value] : [];
+            $artwork = $fresh->configuration();
             $profiles = $this->sourceProfiles($artwork);
             $profiles[$groupSource]['display_strategy'] = $displayStrategy;
             $profiles[$groupSource]['rotation_interval'] = $rotationInterval;
@@ -353,11 +346,9 @@ final class HomeHeroConfigurationService
                 $artwork['pool_year'], $artwork['manual_include_ids'],
             );
 
-            $root[HomeTemplate::Artwork->value] = $artwork;
-            $fresh->setAttribute('template', HomeTemplate::Artwork->value);
-            $fresh->setAttribute('configuration', $root);
+            $fresh->setAttribute('configuration', $artwork);
 
-            if (! $fresh->isDirty(['template', 'configuration'])) {
+            if (! $fresh->isDirty('configuration')) {
                 return false;
             }
 
@@ -367,10 +358,10 @@ final class HomeHeroConfigurationService
             if ($orderingState !== null) {
                 $this->audit->recordOrdering(
                     $actor,
-                    'site_section.home_artworks_reordered',
+                    'site_section.gallery_hero_artworks_reordered',
                     'site_section',
                     $sectionId,
-                    'home-artworks:'.$sectionId,
+                    'gallery-hero-artworks:'.$sectionId,
                     $orderingState['before'],
                     $orderingState['after'],
                 );
@@ -388,9 +379,9 @@ final class HomeHeroConfigurationService
     }
 
     /**
-     * Home-only Dummy Galleries are source groups, not public Gallery models.
+     * Hero-only Dummy Galleries are source groups, not public Gallery models.
      * Their member identities stay canonical Artwork/Storage references.
-     * The stored JSON belongs to the Home Artwork configuration and follows
+     * The stored JSON belongs to the Gallery Hero configuration and follows
      * its publication, audit and revision semantics.
      *
      * @return list<array{id:int,name:string,enabled:bool,members:list<array<string,mixed>>}>
@@ -538,7 +529,7 @@ final class HomeHeroConfigurationService
     }
 
     /** @param list<array<string,mixed>> $members */
-    public function createDummyGallery(HomePresentationSetting $settings, string $name, array $members = []): ?int
+    public function createDummyGallery(GalleryHeroSetting $settings, string $name, array $members = []): ?int
     {
         $name = trim($name);
         if ($name === '' && $members === []) {
@@ -546,7 +537,7 @@ final class HomeHeroConfigurationService
         }
 
         return DB::transaction(function () use ($settings, $name, $members): int {
-            $fresh = HomePresentationSetting::query()->whereKey($settings->getKey())
+            $fresh = GalleryHeroSetting::query()->whereKey($settings->getKey())
                 ->lockForUpdate()->firstOrFail();
             $galleries = $this->configuration($fresh)['dummy_galleries'];
             $id = min([0, ...array_column($galleries, 'id')]) - 1;
@@ -563,16 +554,16 @@ final class HomeHeroConfigurationService
     }
 
     /**
-     * The Home setting is the transactional source of truth for every Dummy
+     * The Hero setting is the transactional source of truth for every Dummy
      * mutation. Never calculate a replacement membership list from a stale
      * Livewire model before acquiring this row lock.
      *
      * @param Closure(array<int,array<string,mixed>>&):bool $mutate
      */
-    private function mutateDummyGalleries(HomePresentationSetting $settings, Closure $mutate): bool
+    private function mutateDummyGalleries(GalleryHeroSetting $settings, Closure $mutate): bool
     {
         return DB::transaction(function () use ($settings, $mutate): bool {
-            $fresh = HomePresentationSetting::query()->whereKey($settings->getKey())
+            $fresh = GalleryHeroSetting::query()->whereKey($settings->getKey())
                 ->lockForUpdate()->firstOrFail();
             $galleries = $this->configuration($fresh)['dummy_galleries'];
             if (! $mutate($galleries)) {
@@ -584,7 +575,7 @@ final class HomeHeroConfigurationService
     }
 
     /** @param array<string,mixed> $changes */
-    public function updateDummyGallery(HomePresentationSetting $settings, int $id, array $changes): bool
+    public function updateDummyGallery(GalleryHeroSetting $settings, int $id, array $changes): bool
     {
         return $this->mutateDummyGalleries($settings, function (array &$galleries) use ($id, $changes): bool {
             foreach ($galleries as &$gallery) {
@@ -607,7 +598,7 @@ final class HomeHeroConfigurationService
         });
     }
 
-    public function removeDummyGallery(HomePresentationSetting $settings, int $id): bool
+    public function removeDummyGallery(GalleryHeroSetting $settings, int $id): bool
     {
         return $this->mutateDummyGalleries($settings, static function (array &$galleries) use ($id): bool {
             $count = count($galleries);
@@ -618,10 +609,10 @@ final class HomeHeroConfigurationService
         });
     }
 
-    public function addDummyMedia(HomePresentationSetting $settings, int $galleryId, int $mediaAssetId): bool
+    public function addDummyMedia(GalleryHeroSetting $settings, int $galleryId, int $mediaAssetId): bool
     {
         $asset = MediaAsset::query()->with('variants')->find($mediaAssetId);
-        if (! $asset instanceof MediaAsset || ! HomeHeroCandidate::mediaIsEligible($asset)) {
+        if (! $asset instanceof MediaAsset || ! GalleryHeroCandidate::mediaIsEligible($asset)) {
             throw ValidationException::withMessages([
                 'pending_candidate' => 'Choose an eligible image or video from Storage.',
             ]);
@@ -647,7 +638,7 @@ final class HomeHeroConfigurationService
         });
     }
 
-    public function setDummyMemberEnabled(HomePresentationSetting $settings, int $galleryId, string $key, bool $enabled): bool
+    public function setDummyMemberEnabled(GalleryHeroSetting $settings, int $galleryId, string $key, bool $enabled): bool
     {
         return $this->mutateDummyGalleries($settings, static function (array &$galleries) use ($galleryId, $key, $enabled): bool {
             foreach ($galleries as &$gallery) {
@@ -671,7 +662,7 @@ final class HomeHeroConfigurationService
     }
 
     /** @param array<string,mixed> $changes */
-    public function updateDummyMember(HomePresentationSetting $settings, int $galleryId, string $key, array $changes): bool
+    public function updateDummyMember(GalleryHeroSetting $settings, int $galleryId, string $key, array $changes): bool
     {
         $fields = ['title', 'year', 'month', 'day'];
         foreach (array_keys($changes) as $field) {
@@ -708,7 +699,7 @@ final class HomeHeroConfigurationService
         });
     }
 
-    public function addDummyArtwork(HomePresentationSetting $settings, int $galleryId, int $artworkId): bool
+    public function addDummyArtwork(GalleryHeroSetting $settings, int $galleryId, int $artworkId): bool
     {
         $artwork = app(\App\Domain\Artwork\PublicArtworkQuery::class)
             ->homeCandidatesByIds([$artworkId])->first();
@@ -728,7 +719,7 @@ final class HomeHeroConfigurationService
         });
     }
 
-    public function removeDummyMember(HomePresentationSetting $settings, int $galleryId, string $key): bool
+    public function removeDummyMember(GalleryHeroSetting $settings, int $galleryId, string $key): bool
     {
         return $this->mutateDummyGalleries($settings, static function (array &$galleries) use ($galleryId, $key): bool {
             foreach ($galleries as &$gallery) {
@@ -774,13 +765,13 @@ final class HomeHeroConfigurationService
         return $ids;
     }
 
-    public function moveSource(HomePresentationSetting $settings, int $sourceId, string $direction, array $visibleIds): bool
+    public function moveSource(GalleryHeroSetting $settings, int $sourceId, string $direction, array $visibleIds): bool
     {
         if (! in_array($direction, ['up', 'down'], true)) {
             throw ValidationException::withMessages(['source_order' => 'Invalid Gallery movement.']);
         }
         return DB::transaction(function () use ($settings, $sourceId, $direction, $visibleIds): bool {
-            $fresh = HomePresentationSetting::query()->whereKey($settings->getKey())
+            $fresh = GalleryHeroSetting::query()->whereKey($settings->getKey())
                 ->lockForUpdate()->firstOrFail();
             $current = $this->configuration($fresh);
             $order = array_values(array_unique(array_merge(
@@ -792,7 +783,7 @@ final class HomeHeroConfigurationService
             )));
             $position = array_search($sourceId, $order, true);
             if ($position === false) {
-                throw ValidationException::withMessages(['source_order' => 'Gallery no longer in this Home source.']);
+                throw ValidationException::withMessages(['source_order' => 'Gallery no longer in this Hero source.']);
             }
             $target = $position + ($direction === 'up' ? -1 : 1);
             if (! isset($order[$target])) {
@@ -806,23 +797,23 @@ final class HomeHeroConfigurationService
         });
     }
 
-    public function updateCandidateWeight(HomePresentationSetting $settings, string $key, int $basisPoints): bool
+    public function updateCandidateWeight(GalleryHeroSetting $settings, string $key, int $basisPoints): bool
     {
         if ($basisPoints < 0 || $basisPoints > self::WEIGHT_TOTAL) {
             throw ValidationException::withMessages(['weight' => 'Hero percentage must be between 0 and 100.']);
         }
 
         return DB::transaction(function () use ($settings, $key, $basisPoints): bool {
-            $fresh = HomePresentationSetting::query()->whereKey($settings->getKey())
+            $fresh = GalleryHeroSetting::query()->whereKey($settings->getKey())
                 ->lockForUpdate()->firstOrFail();
             $configuration = $this->configuration($fresh);
             if ($configuration['display_strategy'] !== 'random') {
                 throw ValidationException::withMessages(['weight' => 'Hero chances can be changed only for Random strategy.']);
             }
 
-            $resolution = app(HomeHeroResolver::class)->resolve($fresh);
+            $resolution = app(GalleryHeroResolver::class)->resolve($fresh);
             $candidates = $resolution['group']->values();
-            $keys = $candidates->map(static fn (HomeHeroCandidate $candidate): string => $candidate->key())->all();
+            $keys = $candidates->map(static fn (GalleryHeroCandidate $candidate): string => $candidate->key())->all();
             if (! in_array($key, $keys, true)) {
                 throw ValidationException::withMessages(['candidate' => 'The sourced Hero candidate changed. Reload and try again.']);
             }
@@ -953,7 +944,7 @@ final class HomeHeroConfigurationService
             return [];
         }
         if ($budget < 0) {
-            throw ValidationException::withMessages(['weight' => 'Manual Home weight budget is invalid.']);
+            throw ValidationException::withMessages(['weight' => 'Manual Hero weight budget is invalid.']);
         }
 
         $sum = array_sum($weights);
@@ -1028,15 +1019,15 @@ final class HomeHeroConfigurationService
         return $this->readDisabledAutoArtworkIds($value);
     }
 
-    public function setAutomaticCandidateEnabled(HomePresentationSetting $settings, int $artworkId, bool $enabled): bool
+    public function setAutomaticCandidateEnabled(GalleryHeroSetting $settings, int $artworkId, bool $enabled): bool
     {
         if ($artworkId < 1) {
             throw ValidationException::withMessages(['candidate' => 'Select a valid Gallery Artwork.']);
         }
 
         return DB::transaction(function () use ($settings, $artworkId, $enabled): bool {
-            /** @var HomePresentationSetting $fresh */
-            $fresh = HomePresentationSetting::query()
+            /** @var GalleryHeroSetting $fresh */
+            $fresh = GalleryHeroSetting::query()
                 ->whereKey($settings->getKey())->lockForUpdate()->firstOrFail();
             $current = $this->configuration($fresh);
             if (! in_array($current['group_source'], ['automatic', 'semi_automatic'], true)) {
@@ -1055,8 +1046,8 @@ final class HomeHeroConfigurationService
                 $disabled = array_values(array_diff($disabled, [$artworkId]));
             } else {
                 $key = 'artwork:'.$artworkId;
-                $active = app(HomeHeroResolver::class)->resolve($fresh)['group'];
-                if (! $active->contains(static fn (HomeHeroCandidate $candidate): bool =>
+                $active = app(GalleryHeroResolver::class)->resolve($fresh)['group'];
+                if (! $active->contains(static fn (GalleryHeroCandidate $candidate): bool =>
                     $candidate->key() === $key && ($candidate->sourceId === null || $candidate->sourceId > 0))) {
                     throw ValidationException::withMessages([
                         'candidate' => 'This automatic candidate is no longer in the current Hero group.',
@@ -1097,13 +1088,13 @@ final class HomeHeroConfigurationService
      * candidates start near the average already configured chance, so adding
      * a Gallery never silently reduces their default chance to almost zero.
      *
-     * @param \Illuminate\Support\Collection<int,HomeHeroCandidate> $group
+     * @param \Illuminate\Support\Collection<int,GalleryHeroCandidate> $group
      * @param array<string,int> $stored
      * @return array<string,int>
      */
     public function sourcedGroupWeights(\Illuminate\Support\Collection $group, array $stored): array
     {
-        $keys = $group->map(static fn (HomeHeroCandidate $candidate): string => $candidate->key())->values()->all();
+        $keys = $group->map(static fn (GalleryHeroCandidate $candidate): string => $candidate->key())->values()->all();
         if ($keys === []) {
             return [];
         }

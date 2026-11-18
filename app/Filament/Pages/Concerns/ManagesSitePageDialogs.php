@@ -6,7 +6,6 @@ use Illuminate\Validation\ValidationException;
 
 trait ManagesSitePageDialogs
 {
-    use ManagesHomePagePresentation;
     use ManagesSitePageCreateDialog;
     use ManagesSitePageEditDialog;
     use ManagesSitePagesSettings;

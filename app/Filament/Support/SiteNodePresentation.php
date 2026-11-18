@@ -5,7 +5,6 @@ namespace App\Filament\Support;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\CustomPageWorkspace;
 use App\Filament\Pages\GalleryWorkspace;
-use App\Filament\Pages\HomePresentation;
 use App\Filament\Pages\JournalWorkspace;
 use App\Models\SiteSection;
 use LogicException;
@@ -15,7 +14,6 @@ final class SiteNodePresentation
     public function icon(SiteSectionType $type): AdminIcon
     {
         return match ($type) {
-            SiteSectionType::Home => AdminIcon::Home,
             SiteSectionType::Gallery => AdminIcon::Gallery,
             SiteSectionType::Journal => AdminIcon::Journal,
             SiteSectionType::CustomPage => AdminIcon::CustomPage,
@@ -26,10 +24,9 @@ final class SiteNodePresentation
     public function workspaceUrl(SiteSection $section): ?string
     {
         return match ($section->nodeType()) {
-            SiteSectionType::Home => HomePresentation::getUrl(),
-            SiteSectionType::Gallery => GalleryWorkspace::getUrl([
-                'gallery' => $this->galleryId($section),
-            ]),
+            SiteSectionType::Gallery => $section->galleryTemplate() === \App\Domain\Content\GalleryTemplate::HeroArtworks
+                ? \App\Filament\Pages\GalleryHeroWorkspace::getUrl(['section' => $section->getKey()])
+                : GalleryWorkspace::getUrl(['gallery' => $this->galleryId($section)]),
             SiteSectionType::Journal => $this->journalWorkspaceUrl($section),
             SiteSectionType::CustomPage => CustomPageWorkspace::getUrl([
                 'section' => $section->getKey(),

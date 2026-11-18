@@ -2,8 +2,6 @@
     $label = $section['navigation_label'] ?: $section['title'];
     $isChild = (int) $section['depth'] === 1;
     $isHome = $section['is_home'];
-    $homeState = $isHome ? app(\App\Filament\Support\HomeSettingsDialog::class)->tableState() : null;
-    $homeTemplateOptions = $isHome ? \App\Domain\Content\HomeTemplate::options() : [];
 @endphp
 
 <div
@@ -44,9 +42,7 @@
     </div>
 
     <div class="admin-pages__type" role="cell" data-cell="page-type">
-        @if ($isHome)
-            <span class="admin-inline-control-value">{{ __('Landing Page') }}</span>
-        @elseif ($section['can_convert'])
+        @if ($section['can_convert'])
             <select
                 class="admin-inline-select"
                 aria-label="Page type for {{ $label }}"
@@ -54,7 +50,9 @@
                 x-on:change="$wire.convertSectionType({{ $section['id'] }}, $event.target.value).then(type => { $el.value = type })"
             >
                 @foreach ($editableTypeOptions as $value => $typeLabel)
-                    <option value="{{ $value }}" @selected($section['type'] === $value)>{{ $typeLabel }}</option>
+                    @unless ($isHome && $value === \App\Domain\Content\SiteSectionType::NavigationNode->value)
+                        <option value="{{ $value }}" @selected($section['type'] === $value)>{{ $typeLabel }}</option>
+                    @endunless
                 @endforeach
             </select>
         @else
@@ -63,19 +61,17 @@
     </div>
 
     <div class="admin-pages__template" role="cell" data-cell="template">
-        @if ($isHome)
+        @if ($section['type'] === \App\Domain\Content\SiteSectionType::Gallery->value)
             <select
                 class="admin-inline-select"
-                aria-label="Home template"
+                aria-label="Gallery template for {{ $label }}"
                 x-data
-                x-on:change="$wire.changeHomeTemplate({{ $section['id'] }}, $event.target.value).then(template => { $el.value = template })"
+                x-on:change="$wire.changeGalleryTemplate({{ $section['id'] }}, $event.target.value).then(template => { $el.value = template })"
             >
-                @foreach ($homeTemplateOptions as $value => $templateLabel)
-                    <option value="{{ $value }}" @selected(($homeState['template'] ?? null) === $value)>{{ $templateLabel }}</option>
+                @foreach (\App\Domain\Content\GalleryTemplate::options() as $value => $templateLabel)
+                    <option value="{{ $value }}" @selected($section['template'] === $value)>{{ __($templateLabel) }}</option>
                 @endforeach
             </select>
-        @elseif ($section['type'] === \App\Domain\Content\SiteSectionType::Gallery->value)
-            <span class="admin-inline-control-value">{{ __($section['template'] === \App\Domain\Content\GalleryTemplate::Showcase->value ? 'Showcase' : 'Hero Artworks') }}</span>
         @elseif ($section['type'] === \App\Domain\Content\SiteSectionType::Journal->value)
             <select
                 class="admin-inline-select"
@@ -98,7 +94,7 @@
 
                 <x-admin.row-action
                     :action="\App\Filament\Support\AdminRowAction::Edit"
-                    wire:click="mountAction('editHome')"
+                    wire:click="mountAction('editPage', { section: {{ $section['id'] }} })"
                 />
 
                 <span class="admin-pages__action-placeholder" aria-hidden="true"></span>

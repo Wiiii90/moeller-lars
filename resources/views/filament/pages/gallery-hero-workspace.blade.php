@@ -1,8 +1,8 @@
 <x-filament-panels::page>
-    <x-admin.workspace title="Home" class="admin-home-workspace">
+    <x-admin.workspace :title="$pageTitle" class="admin-home-workspace">
         @if ($metrics !== [])
-            <div @if ($template === 'artwork') wire:init="loadHomeAnalytics" @endif>
-                <x-admin.metrics :columns="count($metrics)" class="home-status-metrics admin-metrics--six-state" aria-label="Home overview">
+            <div wire:init="loadHomeAnalytics">
+                <x-admin.metrics :columns="count($metrics)" class="home-status-metrics admin-metrics--six-state" aria-label="Hero Artworks overview">
                     @foreach ($metrics as $metric)
                         <x-admin.metric class="home-metric home-metric--{{ $metric['role'] }}" :label="$metric['label']" :value="$metric['value']">{{ $metric['description'] }}</x-admin.metric>
                     @endforeach
@@ -10,7 +10,6 @@
             </div>
         @endif
 
-        @if ($template === 'artwork')
             @php
                 $simulationAt = now('UTC');
                 $simulationCandidates = collect($heroRailRows)
@@ -103,7 +102,7 @@
                             <label class="admin-data-field">
                                 <span>{{ __('Ranking') }}</span>
                                 <select wire:change="updateHeroStageSetting('source_rule', $event.target.value)" aria-label="Hero ranking">
-                                    @foreach (\App\Domain\Content\HomeHeroConfigurationService::SOURCE_RULES as $value => $label)
+                                    @foreach (\App\Domain\Content\GalleryHeroConfigurationService::SOURCE_RULES as $value => $label)
                                         <option value="{{ $value }}" @selected($heroSourceRule === $value)>{{ __($label) }}</option>
                                     @endforeach
                                 </select>
@@ -112,11 +111,11 @@
                                 <span>{{ __('Candidates') }}</span>
                                 <div class="home-hero-stage-candidates">
                                     <select wire:change="updateHeroStageSetting('selection_mode', $event.target.value)" aria-label="Candidate scope">
-                                        @foreach (\App\Domain\Content\HomeHeroConfigurationService::SELECTION_MODES as $value => $label)
+                                        @foreach (\App\Domain\Content\GalleryHeroConfigurationService::SELECTION_MODES as $value => $label)
                                             <option value="{{ $value }}" @selected($heroSelectionMode === $value)>{{ __($label) }}</option>
                                         @endforeach
                                     </select>
-                                    <input type="number" min="1" max="{{ \App\Domain\Content\HomeHeroConfigurationService::MAX_GROUP_SIZE }}"
+                                    <input type="number" min="1" max="{{ \App\Domain\Content\GalleryHeroConfigurationService::MAX_GROUP_SIZE }}"
                                         step="1" value="{{ $heroGroupSize }}" wire:change="updateHeroStageSetting('group_size', $event.target.value)" aria-label="Candidate amount">
                                 </div>
                             </div>
@@ -350,7 +349,7 @@
                                 $expanded = in_array($groupId, $expandedSourceIds, true);
                                 $selected = in_array(
                                     (string) ($expanded && $firstCandidate
-                                        ? \App\Filament\Pages\HomePresentation::sourceCandidateSelectionId($groupId, $firstCandidate['id']) : $groupId),
+                                        ? \App\Filament\Pages\GalleryHeroWorkspace::sourceCandidateSelectionId($groupId, $firstCandidate['id']) : $groupId),
                                     array_map('strval', $selectedSourceIds), true,
                                 );
                             @endphp
@@ -444,7 +443,7 @@
                                 </td>
                                 <td class="admin-table__selection admin-table__selection--trailing">
                                     @if ($expanded && $firstCandidate)
-                                        <input type="checkbox" value="{{ \App\Filament\Pages\HomePresentation::sourceCandidateSelectionId($groupId, $firstCandidate['id']) }}"
+                                        <input type="checkbox" value="{{ \App\Filament\Pages\GalleryHeroWorkspace::sourceCandidateSelectionId($groupId, $firstCandidate['id']) }}"
                                             wire:model.live="selectedSourceIds"
                                             aria-label="Select candidate {{ $firstCandidate['title'] }}">
                                     @elseif (! $expanded)
@@ -457,7 +456,7 @@
                             @if ($expanded)
                                 @foreach (array_slice($gallery['candidates'], 1) as $candidate)
                                     <tr
-                                        class="home-source-table__candidate-row {{ $loop->last ? 'is-group-end' : '' }} {{ in_array(\App\Filament\Pages\HomePresentation::sourceCandidateSelectionId($groupId, $candidate['id']), array_map('strval', $selectedSourceIds), true) ? 'is-selected' : '' }}"
+                                        class="home-source-table__candidate-row {{ $loop->last ? 'is-group-end' : '' }} {{ in_array(\App\Filament\Pages\GalleryHeroWorkspace::sourceCandidateSelectionId($groupId, $candidate['id']), array_map('strval', $selectedSourceIds), true) ? 'is-selected' : '' }}"
                                         wire:key="home-source-item-{{ $groupId }}-{{ $candidate['id'] }}"
                                     >
                                         <td class="home-source-table__empty-gallery"></td>
@@ -468,7 +467,7 @@
                                             @include('filament.pages.partials.home-source-candidate-actions', ['candidate' => $candidate, 'manualSource' => $manualSource, 'groupId' => $groupId, 'showSourceActions' => false])
                                         </td>
                                         <td class="admin-table__selection admin-table__selection--trailing">
-                                            <input type="checkbox" value="{{ \App\Filament\Pages\HomePresentation::sourceCandidateSelectionId($groupId, $candidate['id']) }}"
+                                            <input type="checkbox" value="{{ \App\Filament\Pages\GalleryHeroWorkspace::sourceCandidateSelectionId($groupId, $candidate['id']) }}"
                                                 wire:model.live="selectedSourceIds"
                                                 aria-label="Select candidate {{ $candidate['title'] }}">
                                         </td>
@@ -512,94 +511,6 @@
                 </footer>
             @endif
 
-        @elseif (in_array($template, ['under_construction', 'custom'], true))
-            @php
-                $reorderEnabled = trim($componentSearch) === '' && $componentType === 'any';
-                $visibleComponentTargets = collect($components)->pluck('target')->values()->all();
-                $visibleHomeChildTargets = collect($components)->flatMap(fn (array $component) => collect($component['children'] ?? [])->pluck('target'))->values()->all();
-                $homeSelectionCount = count($selectedComponentTargets) + count($selectedHomeChildTargets);
-                $selectedHomeTargets = array_merge($selectedComponentTargets, $selectedHomeChildTargets);
-                $selectedHomeRows = collect($componentDataset)
-                    ->flatMap(static fn (array $row): array => [$row, ...($row['children'] ?? [])])
-                    ->filter(static fn (array $row): bool => in_array($row['target'] ?? null, $selectedHomeTargets, true));
-                $canPublishHomeSelection = $selectedHomeRows->contains(static fn (array $row): bool => ! ($row['published'] ?? false));
-                $canUnpublishHomeSelection = $selectedHomeRows->contains(static fn (array $row): bool => ($row['published'] ?? false));
-                $canDeleteHomeSelection = $homeSelectionCount > 0
-                    && $selectedHomeRows->count() === $homeSelectionCount
-                    && $selectedHomeRows->every(static fn (array $row): bool => \App\Models\CustomPageSetting::canDeleteComponent($row));
-                $componentFiltersActive = trim($componentSearch) !== '' || $componentType !== 'any';
-            @endphp
-
-            <x-admin.controls class="home-component-controls admin-data-controls--dashboard-responsive" :metric-grid="true" :search-span="3" aria-label="Home component controls">
-                <x-slot:search>
-                    <label class="admin-data-field">
-                        <span>{{ __('Search') }}</span>
-                        <x-admin.search-input model="componentSearch" placeholder="Components" />
-                    </label>
-                </x-slot:search>
-
-                <x-slot:filters>
-                    <label class="admin-data-field">
-                        <span>{{ __('Type') }}</span>
-                        <select wire:model.live="componentType">
-                            <option value="any">{{ __('Any') }}</option>
-                            @foreach ($componentTypeOptions as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
-                        </select>
-                    </label>
-                </x-slot:filters>
-
-                <x-slot:reset>
-                    <div class="admin-data-control-group">
-                        <span class="admin-data-control-label">{{ __('Filter') }}</span>
-                        <x-admin.clear-filters wire:click="resetComponentFilters" :disabled="! $componentFiltersActive" />
-                    </div>
-                </x-slot:reset>
-
-                <x-slot:actions>
-                    <div class="admin-data-control-group">
-                        <span class="admin-data-control-label">{{ strtoupper($templateLabel) }}</span>
-                        <div class="admin-toolbar admin-editorial-actions home-workspace-actions">
-                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('settings')">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">{{ __('Settings') }}</span>
-                            </button>
-                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addComponent')" aria-label="Add component">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::CustomPage->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">{{ __('Add component') }}</span>
-                            </button>
-                            <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">{{ __('Preview') }}</span>
-                            </a>
-                        </div>
-                    </div>
-                </x-slot:actions>
-
-                <x-slot:selection>
-                    <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
-                        <span class="admin-data-control-label">{{ __('Selection') }}</span>
-                        <div class="admin-selection__anchor">
-                            <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($homeSelectionCount === 0)>
-                                <x-admin.selection-trigger-label>{{ __('Selected') }}</x-admin.selection-trigger-label>
-                            </button>
-                            <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('up')" x-on:click="open = false" @disabled(! $reorderEnabled)>{{ __('Move selected up') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('down')" x-on:click="open = false" @disabled(! $reorderEnabled)>{{ __('Move selected down') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(true)" x-on:click="open = false" @disabled(! $canPublishHomeSelection)>{{ __('Publish selected') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedHomeItems(false)" x-on:click="open = false" @disabled(! $canUnpublishHomeSelection)>{{ __('Unpublish selected') }}</button>
-                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedComponents')" x-on:click="open = false" @disabled(! $canDeleteHomeSelection)>{{ __('Delete selected') }}</button>
-                            </div>
-                        </div>
-                        <span class="admin-selection__count" aria-label="{{ $homeSelectionCount }} selected">{{ $homeSelectionCount }}</span>
-                    </div>
-                </x-slot:selection>
-            </x-admin.controls>
-
-            @include('filament.pages.partials.home-component-sequence')
-
-            <x-admin.add-row wire:click="mountAction('addComponent')">{{ __('Add component') }}</x-admin.add-row>
-
-        @endif
     </x-admin.workspace>
 
     <x-filament-actions::modals />

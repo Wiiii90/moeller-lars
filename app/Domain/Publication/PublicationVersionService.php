@@ -519,10 +519,10 @@ SQL,
         WHEN jsonb_exists(version_row.payload, 'is_home')
             THEN COALESCE((version_row.payload->>'is_home')::boolean, false)
         ELSE version_row.payload->>'type' = 'home'
-    END
+    END,
+    'public_site_gate', COALESCE(version_row.payload->'public_site_gate', 'false'::jsonb)
 ))
 SQL,
-            'home_presentation_settings' => "(version_row.payload - 'skip_home' - 'skip_target_section_id' || jsonb_build_object('template', CASE WHEN version_row.payload->>'template' = 'skip_home' THEN 'artwork' ELSE version_row.payload->>'template' END))",
             'media_variants' => "(version_row.payload - 'transform_profile')",
             // Admin confirmation is now a per-user preference, not published
             // site content. Preserve old immutable snapshots without the field.
@@ -545,6 +545,16 @@ SQL,
             return $this->compatibleHistoricalCheckpoints[$id];
         }
 
+        // The old Home presentation table is intentionally retired. A
+        // historical checkpoint remains readable, but cannot be restored
+        // into the new Page Type and Gallery Hero schema without data loss.
+        if (DB::table('publication_version_rows')
+            ->where('publication_checkpoint_id', $id)
+            ->where('table_name', 'home_presentation_settings')
+            ->exists()) {
+            return $this->compatibleHistoricalCheckpoints[$id] = false;
+        }
+
         try {
             // A different schema hash alone is never sufficient: there
             // must be real evidence of at least one specifically supported
@@ -563,10 +573,8 @@ SQL,
                             ->whereRaw("NOT jsonb_exists(payload, 'artwork_page_layout') OR NOT jsonb_exists(payload, 'artwork_information')");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'site_sections')
-                            ->whereRaw("NOT jsonb_exists(payload, 'meta_description') OR NOT jsonb_exists(payload, 'is_home') OR (payload->>'type' = 'gallery' AND COALESCE(payload->>'template', '') = '')");
-                    })->orWhere(static function ($rows): void {
-                        $rows->where('table_name', 'home_presentation_settings')
-                            ->whereRaw("jsonb_exists(payload, 'skip_home') OR jsonb_exists(payload, 'skip_target_section_id') OR payload->>'template' = 'skip_home'");
+                            ->whereRaw("NOT jsonb_exists(payload, 'meta_description') OR NOT jsonb_exists(payload, 'is_home') OR NOT jsonb_exists(payload, 'public_site_gate') OR (payload->>'type' = 'gallery' AND COALESCE(payload->>'template', '') = '')");
+ 
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'media_variants')
                             ->whereRaw("jsonb_exists(payload, 'transform_profile')");

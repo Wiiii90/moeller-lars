@@ -16,7 +16,6 @@ final class SiteNodeRoute
         }
 
         return match ($section->nodeType()) {
-            SiteSectionType::Home => '/',
             SiteSectionType::NavigationNode => null,
             SiteSectionType::Gallery,
             SiteSectionType::Journal,
@@ -31,7 +30,6 @@ final class SiteNodeRoute
         }
 
         return match ($section->nodeType()) {
-            SiteSectionType::Home => route('home'),
             SiteSectionType::NavigationNode => null,
             SiteSectionType::Gallery,
             SiteSectionType::Journal,
@@ -44,11 +42,10 @@ final class SiteNodeRoute
         $request ??= request();
 
         if ($section->isHome()) {
-            return $request->routeIs('home', 'preview.home');
+            return $request->routeIs('home', 'preview.home', 'home.journal.show', 'preview.home.journal.show');
         }
 
         return match ($section->nodeType()) {
-            SiteSectionType::Home => $request->routeIs('home', 'preview.home'),
             SiteSectionType::NavigationNode => false,
             SiteSectionType::Gallery,
             SiteSectionType::CustomPage => $request->routeIs('site.section', 'preview.site.section')

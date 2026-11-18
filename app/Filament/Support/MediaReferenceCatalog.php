@@ -2,7 +2,7 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Content\HomeTemplate;
+use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SiteSectionType;
@@ -13,7 +13,7 @@ use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
 use App\Models\Exhibition;
-use App\Models\HomePresentationSetting;
+use App\Models\GalleryHeroSetting;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
@@ -28,10 +28,6 @@ final class MediaReferenceCatalog
 
     /** @var array<int, list<array{type:string,label:string,url:?string}>>|null */
     private ?array $contentReferenceRowsByMediaId = null;
-
-    private ?HomePresentationSetting $homeSettings = null;
-
-    private bool $homeSettingsLoaded = false;
 
     public function __construct(
         private readonly SiteNodePresentation $presentation,
@@ -295,6 +291,30 @@ final class MediaReferenceCatalog
     }
 
     /** @return EloquentCollection<int, SiteSection> */
+    /** @return EloquentCollection<int, SiteSection> */
+    private function heroNodes(): EloquentCollection
+    {
+        return $this->nodes()->filter(
+            fn (SiteSection $node): bool => $node->nodeType() === SiteSectionType::Gallery
+                && $node->galleryTemplate() === GalleryTemplate::HeroArtworks,
+        );
+    }
+
+    /** @return list<int> */
+    private function heroMediaIds(SiteSection $node): array
+    {
+        if ($node->nodeType() !== SiteSectionType::Gallery
+            || $node->galleryTemplate() !== GalleryTemplate::HeroArtworks) {
+            return [];
+        }
+        /** @var GalleryHeroSetting|null $settings */
+        $settings = GalleryHeroSetting::query()->where('site_section_id', $node->getKey())->first();
+
+        return $settings instanceof GalleryHeroSetting
+            ? $this->referenceQuery->galleryHeroMediaIds($settings)
+            : [];
+    }
+
     private function journalNodes(): EloquentCollection
     {
         return $this->nodes()
@@ -327,16 +347,32 @@ final class MediaReferenceCatalog
     private function applyKindDestination(Builder $query, SiteSectionType $type): void
     {
         if ($type === SiteSectionType::Gallery) {
-            $ids = $this->nodes()
+            $categoryIds = $this->nodes()
                 ->filter(fn (SiteSection $node): bool => $node->nodeType() === SiteSectionType::Gallery)
                 ->pluck('artwork_category_id')
                 ->filter(static fn (mixed $id): bool => is_numeric($id))
                 ->map(static fn (mixed $id): int => (int) $id)
-                ->values()
-                ->all();
-            $ids === []
-                ? $query->whereRaw('1 = 0')
-                : $query->whereHas('artworks', fn (Builder $artwork) => $artwork->whereIn('artwork_category_id', $ids));
+                ->values()->all();
+            $heroIds = [];
+            foreach ($this->heroNodes() as $node) {
+                $heroIds = array_merge($heroIds, $this->heroMediaIds($node));
+            }
+            $heroIds = array_values(array_unique($heroIds));
+
+            if ($categoryIds === [] && $heroIds === []) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->where(function (Builder $assets) use ($categoryIds, $heroIds): void {
+                    if ($categoryIds !== []) {
+                        $assets->whereHas('artworks', fn (Builder $artwork) => $artwork->whereIn('artwork_category_id', $categoryIds));
+                    }
+                    if ($heroIds !== []) {
+                        $categoryIds !== []
+                            ? $assets->orWhereIn('media_assets.id', $heroIds)
+                            : $assets->whereIn('media_assets.id', $heroIds);
+                    }
+                });
+            }
 
             return;
         }
@@ -368,14 +404,26 @@ final class MediaReferenceCatalog
     /** @param Builder<MediaAsset> $query */
     private function applyGalleryDestination(Builder $query, SiteSection $node): void
     {
-        $id = $node->getAttribute('artwork_category_id');
-        if (! is_numeric($id)) {
+        $galleryId = $node->getAttribute('artwork_category_id');
+        $heroIds = $this->heroMediaIds($node);
+
+        if (! is_numeric($galleryId) && $heroIds === []) {
             $query->whereRaw('1 = 0');
 
             return;
         }
 
-        $query->whereHas('artworks', fn (Builder $artwork) => $artwork->where('artwork_category_id', (int) $id));
+        $query->where(function (Builder $assets) use ($galleryId, $heroIds): void {
+            if (is_numeric($galleryId)) {
+                $assets->whereHas('artworks',
+                    fn (Builder $artwork) => $artwork->where('artwork_category_id', (int) $galleryId));
+            }
+            if ($heroIds !== []) {
+                is_numeric($galleryId)
+                    ? $assets->orWhereIn('media_assets.id', $heroIds)
+                    : $assets->whereIn('media_assets.id', $heroIds);
+            }
+        });
     }
 
     /** @param Builder<MediaAsset> $query */
@@ -408,28 +456,19 @@ final class MediaReferenceCatalog
     /** @param Builder<MediaAsset> $query */
     private function applyHomeDestination(Builder $query): void
     {
-        $settings = $this->homeSettings();
-        if (! $settings instanceof HomePresentationSetting) {
+        $home = $this->homeNode();
+        if (! $home instanceof SiteSection) {
             $query->whereRaw('1 = 0');
 
             return;
         }
 
-        $ids = $this->referenceQuery->mediaIdsForHome($settings);
-        $ids === [] ? $query->whereRaw('1 = 0') : $query->whereIn('media_assets.id', $ids);
-    }
-
-    private function homeSettings(): ?HomePresentationSetting
-    {
-        if ($this->homeSettingsLoaded) {
-            return $this->homeSettings;
-        }
-
-        $this->homeSettingsLoaded = true;
-        $settings = HomePresentationSetting::query()->first();
-        $this->homeSettings = $settings instanceof HomePresentationSetting ? $settings : null;
-
-        return $this->homeSettings;
+        match ($home->nodeType()) {
+            SiteSectionType::Gallery => $this->applyGalleryDestination($query, $home),
+            SiteSectionType::Journal => $this->applyJournalDestination($query, $home),
+            SiteSectionType::CustomPage => $this->applyCustomPageDestination($query, $home),
+            default => $query->whereRaw('1 = 0'),
+        };
     }
 
     /** @return array<int, list<array{type:string,label:string,url:?string}>> */
@@ -526,43 +565,18 @@ final class MediaReferenceCatalog
             }
         }
 
-        $homeNode = $this->homeNode();
-        $homeUrl = $homeNode instanceof SiteSection ? $this->presentation->workspaceUrl($homeNode) : null;
-        foreach (HomePresentationSetting::query()->get(['id', 'configuration']) as $settings) {
-            foreach (($settings->modeConfiguration(HomeTemplate::Artwork)['manual_group'] ?? []) as $member) {
-                if (! is_array($member) || ! is_numeric($member['media_asset_id'] ?? null)
-                    || (int) $member['media_asset_id'] <= 0) {
-                    continue;
-                }
-                $this->appendReferenceRow($rows, (int) $member['media_asset_id'], [
-                    'type' => 'Home: Hero Artwork',
-                    'label' => 'Selected Storage Hero candidate',
-                    'url' => $homeUrl,
-                ]);
+        foreach (GalleryHeroSetting::query()->with('siteSection')->get(['id', 'site_section_id', 'configuration']) as $setting) {
+            $node = $setting->getRelationValue('siteSection');
+            if (! $node instanceof SiteSection) {
+                continue;
             }
-            foreach ([HomeTemplate::UnderConstruction, HomeTemplate::Custom] as $template) {
-                foreach ($settings->components($template) as $component) {
-                    if (($component['type'] ?? null) === 'image'
-                        && is_numeric($component['media_asset_id'] ?? null)
-                        && (int) $component['media_asset_id'] > 0) {
-                        $this->appendReferenceRow($rows, (int) $component['media_asset_id'], [
-                            'type' => 'Home: '.$template->label(),
-                            'label' => 'Image component',
-                            'url' => $homeUrl,
-                        ]);
-                    }
 
-                    if (($component['type'] ?? null) === 'text' && is_string($component['body'] ?? null)) {
-                        $title = trim((string) ($component['title'] ?? ''));
-                        foreach (RichTextMediaReference::ids($component['body']) as $mediaId) {
-                            $this->appendReferenceRow($rows, $mediaId, [
-                                'type' => 'Home: '.$template->label(),
-                                'label' => $title === '' ? 'Rich Text component' : 'Rich Text · '.$title,
-                                'url' => $homeUrl,
-                            ]);
-                        }
-                    }
-                }
+            foreach ($this->referenceQuery->galleryHeroMediaIds($setting) as $mediaId) {
+                $this->appendReferenceRow($rows, $mediaId, [
+                    'type' => ($node->isHome() ? 'Home' : 'Gallery').': Hero Artworks',
+                    'label' => 'Selected Storage Hero candidate',
+                    'url' => $this->presentation->workspaceUrl($node),
+                ]);
             }
         }
 

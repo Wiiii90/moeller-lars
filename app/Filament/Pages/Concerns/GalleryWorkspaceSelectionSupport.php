@@ -8,6 +8,7 @@ use App\Domain\Content\SitePreviewContext;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
+use App\Routing\SiteNodeRoute;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Validation\ValidationException;
 
@@ -121,10 +122,10 @@ trait GalleryWorkspaceSelectionSupport
             'caption_layout' => GalleryPresentation::captionLayout($gallery),
             'artwork_page_layout' => GalleryPresentation::artworkPageLayout($gallery),
             'video_sound_enabled' => GalleryPresentation::allowVideoSound($gallery),
-            'path' => '/'.ltrim((string) $gallery->getAttribute('slug'), '/'),
+            'path' => app(SiteNodeRoute::class)->path($section) ?? '/',
             'preview_url' => app(SitePreviewContext::class)->previewUrlFor($section),
             'public_url' => $section->getAttribute('state') === 'published'
-                ? route('site.section', ['section' => $gallery->getAttribute('slug')])
+                ? app(SiteNodeRoute::class)->url($section)
                 : null,
         ];
     }

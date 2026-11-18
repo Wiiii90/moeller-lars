@@ -21,6 +21,7 @@ use Illuminate\Validation\ValidationException;
     'navigation_label',
     'meta_description',
     'show_in_navigation',
+    'public_site_gate',
     'slug',
     'state',
     'position',
@@ -36,10 +37,8 @@ final class SiteSection extends Model
 {
     /**
      * Persistence values retained for migrations and raw database boundaries.
-     * SiteSectionType and JournalTemplate own application behavior.
+     * SiteSectionType, GalleryTemplate and JournalTemplate own application behavior.
      */
-    public const TYPE_HOME = 'home';
-
     public const TYPE_GALLERY = 'gallery';
 
     public const TYPE_NAVIGATION_GROUP = 'navigation_group';
@@ -52,14 +51,13 @@ final class SiteSection extends Model
 
     public const JOURNAL_TEMPLATE_EXHIBITIONS = 'exhibitions';
 
-    public const UNIQUE_TYPES = [self::TYPE_HOME];
-
     protected function casts(): array
     {
         return [
             'position' => 'integer',
             'show_in_navigation' => 'boolean',
             'is_home' => 'boolean',
+            'public_site_gate' => 'boolean',
             'parent_id' => 'integer',
             'artwork_category_id' => 'integer',
             'content_heading_enabled' => 'boolean',
@@ -78,11 +76,8 @@ final class SiteSection extends Model
                 throw ValidationException::withMessages(['is_home' => 'The system Home page identity cannot be changed.']);
             }
 
-            if ($section->exists && $section->isDirty('type')) {
-                $originalType = SiteSectionType::tryFrom((string) $section->getRawOriginal('type'));
-                if ($originalType === SiteSectionType::Home || $nodeType === SiteSectionType::Home) {
-                    throw ValidationException::withMessages(['type' => 'Home cannot be converted to or from another page type.']);
-                }
+            if ($section->isHome() && $nodeType === SiteSectionType::NavigationNode) {
+                throw ValidationException::withMessages(['type' => 'Home must render a public page.']);
             }
 
             $heading = SitePageHeading::validated([
@@ -109,20 +104,24 @@ final class SiteSection extends Model
             }
 
             if ($nodeType === SiteSectionType::Gallery) {
-                if (! is_numeric($section->getAttribute('artwork_category_id'))) {
-                    throw ValidationException::withMessages(['artwork_category_id' => 'A Gallery site node must reference its Gallery record.']);
+                if ($section->galleryTemplate() === GalleryTemplate::Showcase
+                    && ! is_numeric($section->getAttribute('artwork_category_id'))) {
+                    throw ValidationException::withMessages(['artwork_category_id' => 'A Showcase requires its Gallery record.']);
                 }
             } elseif ($section->getAttribute('artwork_category_id') !== null) {
                 throw ValidationException::withMessages(['artwork_category_id' => 'Only Gallery site nodes may reference their Gallery record.']);
             }
 
             $slug = $section->getAttribute('slug');
-            if ($nodeType->requiresSlug()) {
+            if ($section->isHome() && $slug !== null) {
+                throw ValidationException::withMessages(['slug' => 'The Home page uses / and has no slug.']);
+            }
+            if ($nodeType->requiresSlug() && ! $section->isHome()) {
                 if (! is_string($slug) || trim($slug) === '') {
                     throw ValidationException::withMessages(['slug' => $nodeType->label().' requires a public URL slug.']);
                 }
             } elseif ($slug !== null) {
-                throw ValidationException::withMessages(['slug' => $nodeType->label().' does not own a public URL slug.']);
+                throw ValidationException::withMessages(['slug' => 'Home and navigation-only pages do not own a public URL slug.']);
             }
 
             if ($section->isHome()) {

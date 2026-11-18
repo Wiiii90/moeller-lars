@@ -13,7 +13,11 @@
     <section class="blog-page" aria-label="Blog posts">
         @forelse ($posts as $post)
             @php
-                $postUrl = $preview->url(route('journal.show', ['section' => $section->slug, 'slug' => $post->slug]));
+                $postUrl = $preview->url(
+                    $section->isHome()
+                        ? route('home.journal.show', ['slug' => $post->slug])
+                        : route('journal.show', ['section' => $section->slug, 'slug' => $post->slug])
+                );
                 $cover = $post->mediaUsages->firstWhere('role', \App\Models\JournalEntryMedia::ROLE_COVER);
                 $hasCover = $cover instanceof \App\Models\JournalEntryMedia;
                 if ($hasCover) {

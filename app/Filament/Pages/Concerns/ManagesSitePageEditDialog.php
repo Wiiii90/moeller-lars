@@ -4,16 +4,17 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
+use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SitePageHeading;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionIdentityService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\AdminRowAction;
+use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\HierarchyParentField;
-use App\Filament\Support\HomeSettingsDialog;
 use App\Filament\Support\PageHeadingFields;
 use App\Filament\Support\PageMetaDescriptionField;
 use App\Models\ArtworkCategory;
@@ -22,6 +23,8 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -42,16 +45,20 @@ trait ManagesSitePageEditDialog
             ->modalHeading(__('Edit page'))
             ->fillForm(function (array $arguments): array {
                 $section = $this->dialogSection($arguments);
-                $template = $section->journalTemplate();
+                $template = $section->nodeType() === SiteSectionType::Gallery
+                    ? $section->galleryTemplate()
+                    : $section->journalTemplate();
                 $this->pageDialogOriginals[(int) $section->getKey()] = $this->pageDialogPersistedState($section);
 
                 return [
                     'type' => $section->nodeType()->value,
-                    'template' => $template === null ? JournalTemplate::Blog->value : $template->value,
-                    'name' => $this->sectionLabel($section),
-                    'slug' => $section->getAttribute('slug'),
+                    'template' => $template?->value,
+                    'show_in_navigation' => (bool) $section->getAttribute('show_in_navigation'),
+                    'public_site_gate' => (bool) $section->getAttribute('public_site_gate'),
+                    'name' => (string) $section->getAttribute('title'),
+                    'slug' => $section->isHome() ? '/' : $section->getAttribute('slug'),
                     'parent_id' => $section->getAttribute('parent_id'),
-                    'position' => $this->dialogDisplayPosition($section),
+                    'position' => $section->isHome() ? 1 : $this->dialogDisplayPosition($section),
                     'meta_description' => $section->getAttribute('meta_description'),
                     ...SitePageHeading::formState($section),
                 ];
@@ -62,16 +69,32 @@ trait ManagesSitePageEditDialog
                     ->schema([
                         Select::make('type')
                             ->label('Page type')
-                            ->options(array_map('__', SiteSectionType::compactOptions()))
+                            ->options(fn (): array => array_diff_key(
+                                array_map('__', SiteSectionType::compactOptions()),
+                                $this->dialogSection($arguments)->isHome()
+                                    ? [SiteSectionType::NavigationNode->value => true] : [],
+                            ))
                             ->native()
                             ->required()
-                            ->live(),
+                            ->live()
+                            ->afterStateUpdated(function (?string $state, Set $set) use ($arguments): void {
+                                $set('template', match ($state) {
+                                    SiteSectionType::Gallery->value => $this->dialogSection($arguments)->isHome()
+                                        ? GalleryTemplate::HeroArtworks->value : GalleryTemplate::Showcase->value,
+                                    SiteSectionType::Journal->value => JournalTemplate::Blog->value,
+                                    default => null,
+                                });
+                            }),
                         Select::make('template')
                             ->label('Template')
-                            ->options(array_map('__', JournalTemplate::options()))
+                            ->options(fn (Get $get): array => match ($get('type')) {
+                                SiteSectionType::Gallery->value => array_map('__', GalleryTemplate::options()),
+                                SiteSectionType::Journal->value => array_map('__', JournalTemplate::options()),
+                                default => [],
+                            })
                             ->native()
-                            ->required(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value)
-                            ->visible(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value),
+                            ->required(fn (Get $get): bool => in_array($get('type'), [SiteSectionType::Gallery->value, SiteSectionType::Journal->value], true))
+                            ->visible(fn (Get $get): bool => in_array($get('type'), [SiteSectionType::Gallery->value, SiteSectionType::Journal->value], true)),
                         TextInput::make('name')
                             ->label('Name')
                             ->required()
@@ -80,19 +103,52 @@ trait ManagesSitePageEditDialog
                             ->label('Public slug')
                             ->maxLength(80)
                             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                            ->required(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
-                            ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false),
+                            ->required(fn (Get $get): bool => ! $this->dialogSection($arguments)->isHome()
+                                && (SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false))
+                            ->visible(fn (Get $get): bool => $this->dialogSection($arguments)->isHome()
+                                || (SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false))
+                            ->disabled(fn (): bool => $this->dialogSection($arguments)->isHome())
+                            ->dehydrated(fn (): bool => ! $this->dialogSection($arguments)->isHome()),
                         HierarchyParentField::make(
                             'parent_id', fn (): array => $this->parentOptions, 'Parent page',
-                        )->visible(fn (): bool => $this->nestedNavigationEnabled),
+                        )->visible(fn (): bool => $this->nestedNavigationEnabled && ! $this->dialogSection($arguments)->isHome()),
+                        TextInput::make('home_parent_page')
+                            ->label('Parent page')
+                            ->default('Top level')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->visible(fn (): bool => $this->dialogSection($arguments)->isHome()),
                         TextInput::make('position')
                             ->label('Position')
                             ->numeric()
                             ->integer()
                             ->minValue(1)
-                            ->required(),
+                            ->required()
+                            ->disabled(fn (): bool => $this->dialogSection($arguments)->isHome())
+                            ->dehydrated(fn (): bool => ! $this->dialogSection($arguments)->isHome()),
                         PageMetaDescriptionField::make()
                             ->visible(fn (callable $get): bool => $get('type') !== SiteSectionType::NavigationNode->value),
+                    ]),
+                Grid::make()->columns(['default' => 1, 'lg' => 2])
+                    ->visible(fn (): bool => $this->dialogSection($arguments)->isHome())
+                    ->schema([
+                        AdminControl::toggle('show_in_navigation', 'Show in public navigation')
+                            ->live()
+                            ->afterStateUpdated(function (mixed $state) use ($arguments): void {
+                                $section = $this->dialogSection($arguments);
+                                app(SiteSectionEditorialService::class)->updateHomeNavigationVisibility($section, (bool) $state);
+                                $this->pageDialogOriginals[(int) $section->getKey()]['show_in_navigation'] = (bool) $state;
+                                $this->loadSections(navigationChanged: true);
+                            }),
+                        AdminControl::toggle('public_site_gate', 'Temporarily gate the public site')
+                            ->visible(fn (): bool => $this->dialogSection($arguments)->nodeType() === SiteSectionType::CustomPage)
+                            ->live()
+                            ->afterStateUpdated(function (mixed $state) use ($arguments): void {
+                                $section = $this->dialogSection($arguments);
+                                app(SiteSectionEditorialService::class)->updateHomePublicSiteGate($section, (bool) $state);
+                                $this->pageDialogOriginals[(int) $section->getKey()]['public_site_gate'] = (bool) $state;
+                                $this->loadSections();
+                            }),
                     ]),
                 PageHeadingFields::schema(function (string $field, mixed $value) use ($arguments): bool {
                     $section = $this->dialogSection($arguments);
@@ -130,82 +186,6 @@ trait ManagesSitePageEditDialog
         return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
-    public function editHomeAction(): Action
-    {
-        $dialog = app(HomeSettingsDialog::class);
-        $action = Action::make('editHome')
-            ->label('Edit')
-            ->modalHeading(__('Edit page'))
-            ->fillForm(function () use ($dialog): array {
-                $home = SiteSection::query()->where('is_home', true)->firstOrFail();
-                $this->pageDialogOriginals[(int) $home->getKey()] = $this->pageDialogPersistedState($home);
-
-                return [
-                    ...$dialog->fill(),
-                    'name' => (string) $home->getAttribute('title'),
-                    'meta_description' => $home->getAttribute('meta_description'),
-                    'public_path' => '/',
-                    'parent_page' => 'Top level',
-                    'position' => 1,
-                ];
-            })
-            ->schema([
-                Grid::make()
-                    ->columns(['md' => 2])
-                    ->schema([
-                        $dialog->pageTemplateField(),
-                        TextInput::make('name')->label('Name')->required()->maxLength(160),
-                        TextInput::make('public_path')->label('Public slug')->disabled()->dehydrated(false),
-                        TextInput::make('parent_page')->label('Parent page')->disabled()->dehydrated(false),
-                        TextInput::make('position')->label('Position')->disabled()->dehydrated(false),
-                        PageMetaDescriptionField::make(),
-                    ]),
-                ...$dialog->pageSettingsSchema(),
-            ])
-            ->action(function (array $data) use ($dialog): void {
-                try {
-                    $changed = DB::transaction(function () use ($dialog, $data): bool {
-                        $home = SiteSection::query()->where('is_home', true)->lockForUpdate()->firstOrFail();
-                        $before = $this->pageDialogPersistedState($home);
-                        $original = $this->pageDialogOriginals[(int) $home->getKey()] ?? [];
-                        // Heading and routing controls own their own autosaves.
-                        // Only the identity authored by this form is optimistic here.
-                        foreach (['title', 'navigation_label'] as $field) {
-                            if (($original[$field] ?? null) !== $before[$field]) {
-                                throw ValidationException::withMessages(['name' => 'This page changed since the editor was opened. Reopen the editor.']);
-                            }
-                        }
-                        $updated = app(SiteSectionIdentityService::class)->update(
-                            $home,
-                            trim((string) ($data['name'] ?? $home->getAttribute('title'))),
-                            null,
-                        );
-                        $updated = app(SiteSectionEditorialService::class)->updateMetaDescription(
-                            $updated,
-                            $data['meta_description'] ?? null,
-                        );
-                        $settingsChanged = $dialog->save($data);
-                        $after = $this->pageDialogPersistedState($updated->fresh());
-                        $this->pageDialogOriginals[(int) $home->getKey()] = $after;
-
-                        return $settingsChanged || $before !== $after;
-                    });
-                } catch (ValidationException $exception) {
-                    $this->throwPageDialogValidation($exception);
-                }
-                $this->loadSections(navigationChanged: $changed);
-                if ($changed) {
-                    $this->forceRender();
-                    app(AdminNotifier::class)->notification(
-                        title: 'Page updated',
-                        status: 'success',
-                    );
-                }
-            });
-
-        return AdminDialog::edit($action, AdminDialogSize::Large);
-    }
-
     /** @param array<string, mixed> $data */
     private function savePageFromDialog(SiteSection $section, array $data): bool
     {
@@ -219,8 +199,8 @@ trait ManagesSitePageEditDialog
         }
 
         $targetType = SiteSectionType::tryFrom((string) ($data['type'] ?? ''));
-        if ($targetType === null || $targetType === SiteSectionType::Home) {
-            throw ValidationException::withMessages(['type' => 'Choose a supported editable page type.']);
+        if ($targetType === null || ($section->isHome() && $targetType === SiteSectionType::NavigationNode)) {
+            throw ValidationException::withMessages(['type' => 'Choose a supported page type. Home must display content.']);
         }
 
         $editorial = app(SiteSectionEditorialService::class);
@@ -234,6 +214,13 @@ trait ManagesSitePageEditDialog
         $slug = isset($data['slug']) ? trim((string) $data['slug']) : null;
         $section = $this->updateDialogIdentity($section, $name, $slug);
 
+        if ($section->nodeType() === SiteSectionType::Gallery) {
+            $section = $editorial->updateGalleryTemplate(
+                $section,
+                (string) ($data['template'] ?? GalleryTemplate::Showcase->value),
+            );
+        }
+
         if ($section->nodeType() === SiteSectionType::Journal) {
             $section = $editorial->updateJournalTemplate(
                 $section,
@@ -241,19 +228,21 @@ trait ManagesSitePageEditDialog
             );
         }
 
-        $parentId = $this->dialogParentId($data['parent_id'] ?? null);
-        $section = $editorial->updatePlacement(
-            $section,
-            (string) $section->getAttribute('state'),
-            $parentId,
-        );
+        if (! $section->isHome()) {
+            $parentId = $this->dialogParentId($data['parent_id'] ?? null);
+            $section = $editorial->updatePlacement(
+                $section,
+                (string) $section->getAttribute('state'),
+                $parentId,
+            );
 
-        $position = $this->dialogPosition($data['position'] ?? null);
-        if ($position !== null) {
-            if ($parentId === null) {
-                $position = max(2, $position);
+            $position = $this->dialogPosition($data['position'] ?? null);
+            if ($position !== null) {
+                if ($parentId === null) {
+                    $position = max(2, $position);
+                }
+                $this->orderService()->moveTo($section, $parentId, $position - 1);
             }
-            $this->orderService()->moveTo($section, $parentId, $position - 1);
         }
 
         // Group Nodes have no public document or Meta Description. The field is
@@ -289,14 +278,25 @@ trait ManagesSitePageEditDialog
             'parent_id' => $parentId === null ? null : (int) $parentId,
             'position' => (int) $section->getAttribute('position'),
             'meta_description' => $section->getAttribute('meta_description'),
+            'show_in_navigation' => $section->isHome() ? (bool) $section->getAttribute('show_in_navigation') : null,
+            'public_site_gate' => $section->isHome() ? (bool) $section->getAttribute('public_site_gate') : null,
             ...SitePageHeading::formState($section),
         ];
     }
 
     private function updateDialogIdentity(SiteSection $section, string $name, ?string $slug): SiteSection
     {
-        if ($section->nodeType() !== SiteSectionType::Gallery) {
-            return app(SiteSectionIdentityService::class)->update($section, $name, $slug);
+        if ($section->nodeType() !== SiteSectionType::Gallery
+            || $section->isHome()
+            || $section->getAttribute('artwork_category_id') === null) {
+            // Keep independently authored navigation labels intact. Labels
+            // following the old title continue following a renamed page.
+            $oldTitle = (string) $section->getAttribute('title');
+            $label = $section->getAttribute('navigation_label');
+            $customLabel = is_string($label) && trim($label) !== ''
+                && trim($label) !== trim($oldTitle) ? $label : null;
+
+            return app(SiteSectionIdentityService::class)->update($section, $name, $slug, $customLabel);
         }
 
         /** @var ArtworkCategory $gallery */
@@ -337,7 +337,7 @@ trait ManagesSitePageEditDialog
             }
         }
 
-        if ($section->nodeType()->canChangePublication()) {
+        if (! $section->isHome() && $section->nodeType()->canChangePublication()) {
             $published = (string) $section->getAttribute('state') === 'published';
             $actions[] = AdminDialog::headerAction(
                 'toggleDialogPublication',

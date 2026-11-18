@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Domain\Content\BlogEditorialService;
 use App\Domain\Content\CanonicalUrl;
-use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionType;
 use App\Models\Artwork;
@@ -20,12 +19,11 @@ final class PublicSeoController extends Controller
     public function __construct(
         private readonly CanonicalUrl $canonical,
         private readonly SiteNodeRoute $siteNodeRoute,
-        private readonly HomePresentationResolver $home,
     ) {}
 
     public function sitemap(): Response
     {
-        if ($this->home->publicGateActive()) {
+        if (SiteSection::query()->where('is_home', true)->where('public_site_gate', true)->exists()) {
             return $this->sitemapResponse([$this->canonical->forPath('/')]);
         }
 
@@ -67,7 +65,9 @@ final class PublicSeoController extends Controller
                 ->orderBy('id')
                 ->get(['slug']);
             foreach ($posts as $post) {
-                $urls[] = $this->canonical->forPath('/'.$journal->getAttribute('slug').'/'.$post->getAttribute('slug'));
+                $urls[] = $this->canonical->forPath(
+                    $journal->isHome() ? '/journal-entries/'.$post->getAttribute('slug') : '/'.$journal->getAttribute('slug').'/'.$post->getAttribute('slug'),
+                );
             }
         }
 

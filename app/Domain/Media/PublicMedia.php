@@ -2,7 +2,6 @@
 
 namespace App\Domain\Media;
 
-use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SitePreviewContext;
@@ -13,7 +12,7 @@ use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
 use App\Models\Exhibition;
-use App\Models\HomePresentationSetting;
+use App\Models\GalleryHeroSetting;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -56,7 +55,7 @@ class PublicMedia
             return true;
         }
 
-        if ($this->activeHomeReferencesAsset((int) $asset->getKey())) {
+        if ($this->activeGalleryHeroReferencesAsset((int) $asset->getKey())) {
             return true;
         }
 
@@ -273,42 +272,26 @@ class PublicMedia
         return false;
     }
 
-    private function activeHomeReferencesAsset(int $mediaAssetId): bool
+    private function activeGalleryHeroReferencesAsset(int $mediaAssetId): bool
     {
-        /** @var HomePresentationSetting|null $settings */
-        $settings = HomePresentationSetting::query()
-            ->whereHas('siteSection', fn ($query) => $query->where('is_home', true))
-            ->first(['id', 'template', 'configuration']);
-        if (! $settings instanceof HomePresentationSetting) {
-            return false;
-        }
+        $settings = GalleryHeroSetting::query()
+            ->whereHas('siteSection', fn (Builder $section) => $section
+                ->where('type', SiteSectionType::Gallery->value)
+                ->where('template', \App\Domain\Content\GalleryTemplate::HeroArtworks->value)
+                ->where('state', 'published'))
+            ->get(['id', 'site_section_id', 'configuration']);
 
-        // All Home templates share the same publication boundary. An
-        // unpublished Home never authorizes a public media URL; authenticated
-        // Preview delivery uses its separately authorized routes instead.
-        if (! $settings->siteSection()->where('state', 'published')->exists()) {
-            return false;
-        }
-
-        $template = $settings->template();
-        if ($template === HomeTemplate::Artwork) {
-            if (! in_array($mediaAssetId, $this->referenceQuery->homeHeroMediaIds($settings, activeOnly: true), true)) {
-                return false;
+        foreach ($settings as $setting) {
+            if (! in_array($mediaAssetId, $this->referenceQuery->galleryHeroMediaIds($setting, activeOnly: true), true)) {
+                continue;
             }
             $asset = MediaAsset::query()->with('variants')->find($mediaAssetId);
 
             return $asset instanceof MediaAsset
-                && \App\Domain\Content\HomeHeroCandidate::mediaIsEligible($asset);
-        }
-        if (! in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)) {
-            return false;
+                && \App\Domain\Content\GalleryHeroCandidate::mediaIsEligible($asset);
         }
 
-        return in_array(
-            $mediaAssetId,
-            $this->referenceQuery->componentMediaIds($settings->components($template), true),
-            true,
-        );
+        return false;
     }
 
     private function publishedJournalRichTextReferencesAsset(int $mediaAssetId): bool

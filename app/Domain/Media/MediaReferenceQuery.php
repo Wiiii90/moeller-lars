@@ -2,13 +2,12 @@
 
 namespace App\Domain\Media;
 
-use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SiteSectionType;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
 use App\Models\Exhibition;
-use App\Models\HomePresentationSetting;
+use App\Models\GalleryHeroSetting;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
@@ -177,17 +176,6 @@ final class MediaReferenceQuery
         return array_values(array_unique($ids));
     }
 
-    /** @return list<int> */
-    public function mediaIdsForHome(HomePresentationSetting $settings): array
-    {
-        $ids = $this->homeHeroMediaIds($settings);
-        foreach ([HomeTemplate::UnderConstruction, HomeTemplate::Custom] as $template) {
-            $ids = array_merge($ids, $this->componentMediaIds($settings->components($template)));
-        }
-
-        return array_values(array_unique($ids));
-    }
-
     /**
      * Stored source profiles own media retention even while inactive. Public
      * delivery must instead use only the active profile and enabled Manual
@@ -195,21 +183,21 @@ final class MediaReferenceQuery
      *
      * @return list<int>
      */
-    public function homeHeroMediaIds(HomePresentationSetting $settings, bool $activeOnly = false): array
+    public function galleryHeroMediaIds(GalleryHeroSetting $settings, bool $activeOnly = false): array
     {
         if ($activeOnly) {
             // Only the resolver knows the current eligible, size-limited Hero
             // group. Do not authorize disabled Manual candidates or items
             // beyond Semi-Automatic's configured source size.
-            $group = app(\App\Domain\Content\HomeHeroResolver::class)->resolve($settings)['group'];
+            $group = app(\App\Domain\Content\GalleryHeroResolver::class)->resolve($settings)['group'];
 
             return $group
-                ->filter(static fn (\App\Domain\Content\HomeHeroCandidate $candidate): bool => $candidate->kind === 'media')
-                ->map(static fn (\App\Domain\Content\HomeHeroCandidate $candidate): int => (int) $candidate->record->getKey())
+                ->filter(static fn (\App\Domain\Content\GalleryHeroCandidate $candidate): bool => $candidate->kind === 'media')
+                ->map(static fn (\App\Domain\Content\GalleryHeroCandidate $candidate): int => (int) $candidate->record->getKey())
                 ->unique()->values()->all();
         }
 
-        $galleries = app(\App\Domain\Content\HomeHeroConfigurationService::class)
+        $galleries = app(\App\Domain\Content\GalleryHeroConfigurationService::class)
             ->configuration($settings)['dummy_galleries'];
         $ids = [];
         foreach ($galleries as $gallery) {
@@ -223,9 +211,9 @@ final class MediaReferenceQuery
         return array_values(array_unique($ids));
     }
 
-    public function homeReferencesAsset(HomePresentationSetting $settings, int $mediaAssetId): bool
+    public function galleryHeroReferencesAsset(GalleryHeroSetting $settings, int $mediaAssetId): bool
     {
-        return in_array($mediaAssetId, $this->mediaIdsForHome($settings), true);
+        return in_array($mediaAssetId, $this->galleryHeroMediaIds($settings), true);
     }
 
     /** @return list<int> */
@@ -243,8 +231,8 @@ final class MediaReferenceQuery
         $ids = array_merge($ids, $this->richTextIds(BlogPost::query()->whereNotNull('body')->pluck('body')));
         $ids = array_merge($ids, $this->richTextIds(Exhibition::query()->whereNotNull('description')->pluck('description')));
 
-        foreach (HomePresentationSetting::query()->get(['id', 'configuration']) as $settings) {
-            $ids = array_merge($ids, $this->mediaIdsForHome($settings));
+        foreach (GalleryHeroSetting::query()->get(['id', 'configuration']) as $settings) {
+            $ids = array_merge($ids, $this->galleryHeroMediaIds($settings));
         }
 
         return $this->directContentMediaIds = array_values(array_unique($ids));

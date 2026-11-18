@@ -57,15 +57,39 @@ final class PublicSiteSectionController extends Controller
             return $this->artworks->category($section);
         }
 
-        if ($siteSection->nodeType() === SiteSectionType::Gallery) {
-            return $this->artworks->category($section);
-        }
+        return $this->renderSection($siteSection);
+    }
 
-        return match ($siteSection->nodeType()) {
-            SiteSectionType::CustomPage => $this->customPage($siteSection),
-            SiteSectionType::Journal => $this->journal($siteSection),
+    public function renderSection(SiteSection $section): View|RedirectResponse
+    {
+        return match ($section->nodeType()) {
+            SiteSectionType::Gallery => $section->galleryTemplate() === \App\Domain\Content\GalleryTemplate::HeroArtworks
+                ? view('pages.gallery.hero', app(\App\Domain\Content\GalleryHeroPresentationResolver::class)->presentation($section))
+                : $this->artworks->categoryForSection($section),
+            SiteSectionType::CustomPage => $this->customPage($section),
+            SiteSectionType::Journal => $this->journal($section),
             default => abort(404),
         };
+    }
+
+    public function homeJournalEntry(string $slug): View
+    {
+        $query = SiteSection::query()
+            ->where('is_home', true)
+            ->where('type', SiteSectionType::Journal->value)
+            ->where('template', JournalTemplate::Blog->value);
+        $this->preview->constrainSectionQuery($query);
+        $journal = $query->first();
+        abort_unless($journal instanceof SiteSection, 404);
+        $post = $this->blogPostsQuery($journal)->where('slug', $slug)
+            ->with('mediaUsages.mediaAsset.variants')->first();
+        abort_unless($post instanceof BlogPost, 404);
+
+        return view('pages.blog.show', [
+            'section' => $journal, 'post' => $post,
+            'richText' => $this->richText, 'media' => $this->media,
+            'journalMedia' => $this->journalMedia, 'siteNodeRoute' => $this->siteNodeRoute,
+        ]);
     }
 
     public function journalEntry(string $section, string $slug): View

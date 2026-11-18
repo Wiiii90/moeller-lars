@@ -216,6 +216,15 @@ final class GalleryEditorialService
             $fresh = ArtworkCategory::query()->whereKey($gallery->getKey())->lockForUpdate()->firstOrFail();
             $oldSlug = (string) $fresh->getAttribute('slug');
 
+            // A Showcase at / is an artist-owned collection behind the
+            // protected Home identity. Its public path is not the category slug.
+            if (SiteSection::query()->where('artwork_category_id', $fresh->getKey())
+                ->where('is_home', true)->exists()) {
+                throw ValidationException::withMessages([
+                    'slug' => 'The Home Showcase has a fixed public path (/).',
+                ]);
+            }
+
             $newSlug = $this->validateSlug($slug, $fresh->getKey());
             if ($newSlug === $oldSlug) {
                 return $fresh;

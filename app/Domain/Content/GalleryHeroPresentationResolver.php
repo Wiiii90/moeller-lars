@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Domain\Content;
+
+use App\Domain\Media\PublicMedia;
+use App\Models\GalleryHeroSetting;
+use App\Models\SiteSection;
+
+final class GalleryHeroPresentationResolver
+{
+    public function __construct(
+        private readonly PublicMedia $media,
+        private readonly GalleryHeroConfigurationService $configuration,
+        private readonly GalleryHeroResolver $resolver,
+    ) {}
+
+    /** @return array<string, mixed> */
+    public function presentation(SiteSection $section): array
+    {
+        $settings = GalleryHeroSetting::forSection($section);
+        $configuration = $this->configuration->configuration($settings);
+        $resolved = $this->resolver->resolve($settings);
+
+        return [
+            'section' => $section,
+            'pageSection' => $section,
+            'heroCandidate' => $resolved['current'],
+            'media' => $this->media,
+            'showDetails' => $configuration['show_details'],
+            'showGalleryLink' => $configuration['show_gallery_link'],
+            'showNavigation' => $configuration['show_navigation'],
+            'allowVideoSound' => $configuration['video_sound_enabled'],
+            'enableViewer' => $configuration['enable_viewer'],
+            'expandLandscape' => $configuration['landscape_detail_enabled'],
+            'expandPortrait' => $configuration['portrait_detail_enabled'],
+            'artworkPageSurfaceMode' => $configuration['artwork_page_surface_mode'],
+            'artworkMenuSurfaceWide' => $configuration['artwork_menu_surface_wide'],
+            'showMediaCredits' => $configuration['show_media_credits'],
+            'showMediaCopyright' => $configuration['show_media_copyright'],
+            'captionLayout' => $configuration['caption_layout'],
+            'heroGroup' => $resolved['group'],
+        ];
+    }
+}

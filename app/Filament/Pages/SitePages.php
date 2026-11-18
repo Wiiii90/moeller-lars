@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
+use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
@@ -475,6 +476,26 @@ final class SitePages extends Page
         return SiteSection::query()->findOrFail($sectionId)->nodeType()->value;
     }
 
+    public function changeGalleryTemplate(int $sectionId, string $template): string
+    {
+        $navigationChanged = false;
+        try {
+            /** @var SiteSection $section */
+            $section = SiteSection::query()->findOrFail($sectionId);
+            if ($section->galleryTemplate()?->value !== $template) {
+                app(SiteSectionEditorialService::class)->updateGalleryTemplate($section, $template);
+                $navigationChanged = true;
+                app(AdminNotifier::class)->notification(title: 'Gallery template updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->validationNotification('Gallery template unchanged', $exception);
+        }
+
+        $this->loadSections(navigationChanged: $navigationChanged);
+
+        return SiteSection::query()->findOrFail($sectionId)->galleryTemplate()?->value ?? '';
+    }
+
     public function changeJournalTemplate(int $sectionId, string $template): string
     {
         $navigationChanged = false;
@@ -790,7 +811,7 @@ final class SitePages extends Page
         $deleteHelp = match (true) {
             $section->isHome() || ! $type->canDelete() => null,
             $type !== SiteSectionType::Journal && (string) $section->getAttribute('state') !== 'hidden' => 'Unpublish the page before deleting',
-            $type === SiteSectionType::Gallery && Artwork::query()
+            $type === SiteSectionType::Gallery && $section->getAttribute('artwork_category_id') !== null && Artwork::query()
                 ->where('artwork_category_id', (int) $section->getAttribute('artwork_category_id'))->exists() => 'Remove the Gallery artworks before deleting',
             $type === SiteSectionType::Journal && (
                 BlogPost::query()->where('site_section_id', $sectionId)->exists()
@@ -845,7 +866,8 @@ final class SitePages extends Page
             return true;
         }
 
-        $templateLabel = JournalTemplate::tryFrom((string) ($row['template'] ?? ''))?->label() ?? '';
+        $templateLabel = JournalTemplate::tryFrom((string) ($row['template'] ?? ''))?->label()
+            ?? GalleryTemplate::tryFrom((string) ($row['template'] ?? ''))?->label() ?? '';
         $haystack = mb_strtolower(implode(' ', array_filter([
             $row['title'],
             $row['navigation_label'],
@@ -1007,7 +1029,8 @@ final class SitePages extends Page
 
     private function deleteSectionRecord(SiteSection $section): void
     {
-        if ($section->nodeType() === SiteSectionType::Gallery) {
+        if ($section->nodeType() === SiteSectionType::Gallery
+            && $section->getAttribute('artwork_category_id') !== null) {
             /** @var ArtworkCategory $gallery */
             $gallery = ArtworkCategory::query()->findOrFail((int) $section->getAttribute('artwork_category_id'));
             app(GalleryEditorialService::class)->delete($gallery);
