@@ -81,6 +81,67 @@ test('General Preview stays mounted through Title saves and reloads with persist
   }
 });
 
+test('General Appearance selects retain persisted choices across autosaves and full reload', async ({ page, context }) => {
+  await signIn(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/admin/general');
+
+  const stage = page.locator('.general-appearance-stage');
+  const field = (pane, label) => stage.locator(`[data-appearance-panel="${pane}"]`)
+    .getByRole('combobox', { name: label, exact: true });
+  const originalFrame = await field('global', 'Frame style').inputValue();
+
+  await stage.getByRole('button', { name: 'Page', exact: true }).click();
+  const originalPage = await field('page', 'Page background').inputValue();
+
+  await stage.getByRole('button', { name: 'Menu', exact: true }).click();
+  const originalDivider = await field('menu', 'Menu to page').inputValue();
+
+  const choose = async (pane, label, value) => {
+    await stage.getByRole('button', { name: pane, exact: true }).click();
+    const control = field(pane.toLowerCase(), label);
+    if (await control.inputValue() === value) return;
+    const response = page.waitForResponse(r => new URL(r.url()).pathname.endsWith('/livewire/update'));
+    await control.selectOption(value);
+    expect((await response).ok(), `${label} autosave must succeed`).toBe(true);
+    await expect(control).toHaveValue(value);
+  };
+
+  const changedFrame = originalFrame === 'backing' ? 'plain' : 'backing';
+  const changedPage = originalPage === 'transparent' ? 'solid' : 'transparent';
+  const changedDivider = originalDivider === 'fine' ? 'menu' : 'fine';
+
+  try {
+    // A separate autosave in another Appearance tab must not reset previous
+    // controls to their defaults, either immediately or after a full reload.
+    await choose('Global', 'Frame style', changedFrame);
+    await choose('Page', 'Page background', changedPage);
+    await choose('Menu', 'Menu to page', changedDivider);
+
+    await page.reload();
+    await choose('Global', 'Frame style', changedFrame);
+    await choose('Page', 'Page background', changedPage);
+    await choose('Menu', 'Menu to page', changedDivider);
+
+    const publicPage = await context.newPage();
+    try {
+      await publicPage.goto('/preview');
+      const layout = publicPage.locator('meta[data-public-layout]');
+      await expect(layout).toHaveAttribute('data-public-layout-frame-style', changedFrame);
+      await expect(layout).toHaveAttribute('data-public-layout-divider-mode', changedDivider);
+      await expect(publicPage.locator('#content')).toHaveClass(
+        changedPage === 'transparent' ? /site-content--transparent/ : /^(?!.*site-content--transparent)/,
+      );
+    } finally {
+      await publicPage.close();
+    }
+  } finally {
+    await choose('Menu', 'Menu to page', originalDivider);
+    await choose('Page', 'Page background', originalPage);
+    await choose('Global', 'Frame style', originalFrame);
+  }
+});
+
 test('Inside Menu swaps title and navigation sides and stacks above them on phones', async ({ page, context }) => {
   await signIn(page);
   await page.setViewportSize({ width: 1900, height: 1000 });

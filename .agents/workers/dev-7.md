@@ -83,6 +83,11 @@
 - Reduced the single offset to .22rem. Each existing rear sheet now paints from its own validated Menu/Page surface background and receives a subtle brightness reduction, retaining the same pseudo-element renderer and sticky Menu lower-edge rule. Transparent Page still has no physical paper or separate backing; the exposed Menu rear edge ends at the real Menu bottom rather than inventing a transparent Page sheet.
 - Source-only change. Browser visuals, especially the short Menu edge, gradients, Gallery/Artwork, and scrolling, remain unverified. No tests, build, Continuous Integration or deployment executed.
 
+## Appearance editor state-source investigation (2026-11-18)
+- Inspected all General Appearance schema owners in `General::form()`, `appearanceSurfaceControls()`, `persistChangedFields()`, the domain normalization in `AdminSettingsService` and `PublicContentSetting::validateGeneral()`, and the Public preview projection in `PublicSiteContext`. `frame_style` and `page_background_mode` are written and reloaded through the same persisted model, with explicit valid Backing/Transparent values. No source-level remapping to Plain/Solid was found for those persisted values.
+- Added a targeted regression to the existing General browser suite for cross-tab autosave, visible native Select state, full browser reload and Public preview mode parity, restoring edited values. This targets the reported failure without adding a speculative parallel state store, event retry or rehydration patch. Browser test was not executed, so the client-side cause remains unresolved until reproducible runtime evidence exists.
+- All native Appearance selectors and editable fields were traced for their state, normalization and autosave entrypoints. Existing invalid/no-op feedback boundaries were preserved. No source changes to the General state lifecycle were made without a proven owner defect.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.
