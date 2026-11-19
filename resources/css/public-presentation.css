@@ -572,15 +572,12 @@ body {
     height: auto;
 }
 
-/* Image fitting must not disappear at narrow widths or browser zoom.
- * Only actual images have this class. Header, folio, footer and longer
- * editorial content keep their natural size; the image consumes the rest. */
-/* A fitted public Artwork—detail or Home Hero—fills the same Page/frame.
-   Visible headings and navigation occupy their natural height; when they
-   disappear, their space is immediately available to the media instead. */
+/* Both fitted public Artwork surfaces use the existing Content bottom
+   margin as their ONE external shell gap. Do not also shorten the frame.
+   The paper grows naturally when text exceeds the viewport. */
 body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitted) .public-paper-frame {
-    height: calc(100dvh - var(--public-shell-gap));
-    min-height: min-content;
+    height: auto;
+    min-height: 100dvh;
 }
 body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitted) .site-header {
     flex: 0 0 auto;
@@ -591,9 +588,8 @@ body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitte
     flex: 1 1 auto;
     flex-direction: column;
 }
-/* The fitted image and its Artwork information share one height-aware group.
-   The shared bottom-edge rule below anchors the group at the Page inset;
-   short landscapes keep their unused height above the media and caption. */
+/* The fitted image and information remain a group, centered within the
+   Page. This internal white space is independent of the external gap. */
 .site-content--fitted-image > .public-content-reveal,
 .site-content--fitted-image .artwork-detail,
 .site-content--fitted-image .artwork-detail__fitted-group {
@@ -602,13 +598,11 @@ body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitte
     flex: 1 1 auto;
     flex-direction: column;
 }
-/* Home Hero and individual Artwork details share one bottom-edge contract.
-   Fit the image and its information as a single group. On shorter landscapes
-   the remaining space belongs ABOVE that group, not below the caption.
-   General's Page bottom padding is the same for every image orientation. */
+/* Restore the accepted centered image-and-caption composition. The earlier
+   flex-end change pushed landscapes down without correcting the Page edge. */
 .site-content--fitted-image .artwork-detail__fitted-group,
 .site-content--home-hero-fitted .artwork-card__composition--home-hero {
-    justify-content: flex-end;
+    justify-content: center;
 }
 .site-content--fitted-image .artwork-detail__media,
 .site-content--fitted-image .artwork-detail__image-stage {

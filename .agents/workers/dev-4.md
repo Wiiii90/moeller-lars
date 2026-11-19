@@ -2,7 +2,7 @@
 
 **Lease:** 20
 **Branch:** dev
-**State:** Fitted individual Artwork Viewer triggers now match the visible image and caption width, eliminating hover/click activation on blank sides. Home/Gallery paths and the shared size fitter are retained; browser acceptance pending.
+**State:** Portrait and landscape media+captions are centered again in both Home and individual Artwork. The outer white-Page-to-browser-background gap is now a single General shell gap, regardless of image orientation. Viewer link fix preserved; runtime acceptance pending.
 
 ## Ownership / scope
 
@@ -17,6 +17,13 @@
 - All Home Hero slides (Artworks **and** direct Storage media, including video posters where dimensions exist) use the same `artwork-card__composition--home-hero` image/caption grouping. Existing variant dimensions create a nonce-authorized per-slide image ratio; CSS makes each image as large as permitted by **General Content width** and `min(82svh, 100svh - 9rem)` without distortion. Footer/rights align exactly with that media width; Gallery/hero navigation and arrow hit targets span General Content. Small landscapes and their information remain vertically grouped/centered, with no phantom stage below the image.
 - `data-home-hero`, `[data-home-hero-slide]`, current/hidden member state, previous/next buttons, rotation and enabled viewer remain canonical. All source profiles and media eligibility unchanged. The Home settings no longer expose landscape/portrait expand, alternate page surface or wide-menu controls in Stage or Settings. The configuration service no longer reads/saves these fields and drops inactive keys on the next authorized Home edit, but **historic committed versions and checkpoint snapshots remain untouched**. No database migration was required.
 - Do not confuse independent Home Hero media rendering with individual Artwork detail routes; the common visual language is image sizing and footer alignment, not forcing Home into the detail renderer or sharing its navigation controller.
+
+## External paper-to-browser bottom gap — correction
+
+- The user clarified that the inconsistent distance is the narrow *background-colored strip below the white Content Page*, not the white space within the Page. The former `flex-end` change incorrectly pushed landscape media down; the image+caption group is now `justify-content:center` again for detail and Home.
+- The shared `#content` already owns the single background gap via `margin-bottom:var(--public-shell-gap)`. Fitted `.public-paper-frame` previously shortened itself by the same gap and used `min-height:min-content`, sometimes expanding instead depending on image/content. The shared fitter also subtracted `paperGap`, double-counting the same external distance. The fitted frame now uses `height:auto;min-height:100dvh`, and the shared JS budget reserves only the real Content bottom margin and internal padding/footer.
+- A local isolated Chromium geometry fixture at 1440×900 with landscape/portrait and title/folio hidden/visible showed a consistent 12px external Page-to-viewport background strip. Long informational text grows the white paper with a 12px trailing strip at document end. The image itself retains the accepted centered orientation and information alignment.
+- This is source/isolated-geometry verification, not a full Laravel Preview test. Check real Gallery detail and Home portraits/landscapes, changing Home slides, titles/navigation off/on, narrow viewports, long descriptions, General settings and Backing mode. No changes to Gallery index, video, publication or Viewer interactions.
 
 ## Viewer hit area follows actual image width — current correction
 
