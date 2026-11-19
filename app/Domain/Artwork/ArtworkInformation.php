@@ -8,9 +8,9 @@ use App\Models\MediaAsset;
 use Illuminate\Validation\ValidationException;
 
 /**
- * The single source of truth for Artwork metadata visibility and arrangement.
- * Fields are sourced from Artwork/MediaAsset; configuration only controls
- * whether and where the field is presented.
+ * Canonical Artwork metadata visibility and display. Gallery and individual
+ * Artwork have one fixed layout; Home Hero has its own explicit layout option.
+ * Values are always sourced from Artwork and MediaAsset.
  */
 final class ArtworkInformation
 {
@@ -24,10 +24,10 @@ final class ArtworkInformation
     ];
 
     /** @return list<array{field:string,row:int,align:string}> */
-    public static function defaultArrangement(): array
+    public static function defaultArrangement(bool $rightsRight = false): array
     {
-        $infoSide = 'right';
-        $rightsSide = 'left';
+        $infoSide = $rightsRight ? 'left' : 'right';
+        $rightsSide = $rightsRight ? 'right' : 'left';
 
         return [
             ['field' => 'credits', 'row' => 1, 'align' => $rightsSide],
@@ -210,9 +210,9 @@ final class ArtworkInformation
         ];
 
         $rows = [];
-        // Historical configuration may contain arrangement data. The public
-        // layout now follows one fixed composition instead.
-        foreach (self::defaultArrangement() as $slot) {
+        // Gallery/Artwork visibility settings cannot change layout. Only
+        // Home Hero may explicitly supply its independent arrangement.
+        foreach (($configuration['arrangement'] ?? self::defaultArrangement()) as $slot) {
             $field = $slot['field'];
             if (! $configuration['visible'][$field] || $values[$field] === '') {
                 continue;
