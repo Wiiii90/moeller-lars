@@ -4,6 +4,12 @@
 **Branch:** dev
 **State:** Active — Gallery stage merge and modal viewer settings implemented in source on 2026-11-19; migration/runtime/browser acceptance pending.
 
+## Local Gallery startup error — 2026-11-19
+
+- User reproduced HTTP 500 on `/admin/pages/gallery/4`: `GalleryWorkspaceSelectionSupport::loadGallery()` called retired `GalleryPresentation::allowVideoSound()` at line 123.
+- Removed the obsolete `video_sound_enabled` projection from `galleryContext`; Gallery sound policy and retired method stay removed, Home Hero remains independent.
+- Reviewed Gallery settings, Gallery actions, Gallery projection and public Gallery templates for other runtime calls to the retired Gallery sound/zoom methods; none found in the inspected paths. Source-only GitHub hotfix; rerun local preview and browser checks to verify runtime.
+
 ## Current 2026-11-19 task — Gallery editor / viewer / staged Public preview
 
 - Gallery/Artwork credits and copyright follow the same image-width-bounded shared caption container as title/date/dimensions/material. Source verified; populated responsive browser layout remains unverified.

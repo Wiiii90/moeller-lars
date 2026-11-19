@@ -120,7 +120,6 @@ trait GalleryWorkspaceSelectionSupport
             'sort_mode' => GalleryPresentation::sortMode($gallery),
             'show_artwork_information' => GalleryPresentation::showArtworkInformation($gallery),
             'caption_layout' => GalleryPresentation::captionLayout($gallery),
-            'video_sound_enabled' => GalleryPresentation::allowVideoSound($gallery),
             'path' => app(SiteNodeRoute::class)->path($section) ?? '/',
             'preview_url' => app(SitePreviewContext::class)->previewUrlFor($section),
             'public_url' => $section->getAttribute('state') === 'published'
