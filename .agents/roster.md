@@ -10,7 +10,7 @@
 
 | Dev Worker 6 | 16 | Active — targeted source corrections committed; local Preview/browser acceptance outstanding | Home Hero: Dummy Galleries, candidate ranking/selection, Stage/Settings, public resolver, shared Create dialog; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 18 | Active — replaced chat; General Backing seam source review, browser acceptance pending | Appearance Global/Title/Menu/Page/Legal, preview geometry/persistence, Regional Formats hints | [dev-7.md](workers/dev-7.md) |
-| Dev Worker 8 | 15 | Active — shared Admin dialog latency source correction; runtime timing pending | Shared Admin dialog presentation and scroll geometry; publication-state existence fast path used by navigation; no deployment or browser acceptance | [dev-8.md](workers/dev-8.md) |
+| Dev Worker 8 | 15 | Active — shared Media Select option-label performance corrected; runtime validation pending | Shared Admin dialog/popover visuals and lifecycle; native scroll; media select once-per-option cache rendering; no deployment | [dev-8.md](workers/dev-8.md) |
 
 | Dev Worker 9 | 21 | Active — shared keyboard and subtle interaction feedback committed; browser review pending | Public cyclic inline navigation; shared General/Pages scopes remain with current owners | [dev-9.md](workers/dev-9.md) |
 

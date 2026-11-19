@@ -152,13 +152,26 @@ final class MediaAssetSelect
             $query->limit(max(1, min($maxResults, 100)));
         }
         $assets = $query->with('variants')->get();
-        foreach ($assets as $asset) {
-            self::primeOptionLabel($asset, $includeDimensions, $visual);
+
+        // The complete selectable list stays available, but building it must
+        // not copy a growing request cache and render every option twice.
+        // Batch the labels into the existing request-local cache once.
+        $cache = request()->attributes->get(self::OPTION_LABEL_CACHE, []);
+        if (! is_array($cache)) {
+            $cache = [];
         }
 
-        return $assets
-            ->mapWithKeys(fn (MediaAsset $asset): array => [(int) $asset->getKey() => self::optionLabel($asset, $includeDimensions, $visual)])
-            ->all();
+        $options = [];
+        foreach ($assets as $asset) {
+            $id = (int) $asset->getKey();
+            $label = self::optionLabel($asset, $includeDimensions, $visual);
+            $options[$id] = $label;
+            $cache[self::cacheKey($id, $includeDimensions, $visual)] = $label;
+        }
+
+        request()->attributes->set(self::OPTION_LABEL_CACHE, $cache);
+
+        return $options;
     }
 
     public static function primeOptionLabel(MediaAsset $asset, bool $includeDimensions = true, bool $visual = false): void

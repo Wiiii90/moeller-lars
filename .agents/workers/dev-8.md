@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 15 (active)  
-**Status:** Admin dialog open latency still approximately seven seconds per user measurement; root cause unresolved. Existing publication fast path retained; request timing needed before further source changes.
+**Status:** Shared Media Select eager label/cache duplication removed after Livewire request timing; performance impact and complete dialog latency remain unverified.
 
 ## Ownership and user decisions
 - Own shared Admin dialog window presentation, semantic grouping rules and the Stage-to-Toolbar completeness contract.
@@ -87,6 +87,13 @@
 - Current `JournalWorkspace::addExhibitionAction()` uses `JournalEntryEditorSchema::exhibition()`, which has an always-present visual Cover image/video `MediaAssetSelect::makeId()`. That canonical `makeId` attaches `->options(fn () => self::searchOptions('', ...))` whenever visual is true, and `searchOptions` eagerly queries **all** available matching media + variants and generates thumbnail HTML option labels. The Gallery media repeater adds more of the same when enabled. This is a concrete eager-all-options cost consistent with a large response, **not yet proven** to account for the precise 4.20 seconds or total transfer size.
 - Preserve user-established all-eligible-media availability and browsing without being forced to type a search. Do not merely delete `->options()`, cap candidates or alter Filament select defaults to hide the work; the existing shared picker would then become search-dependent or silently omit eligible files. The correct next step is a bounded profile of the two `/livewire/update` `components[].calls[].method` values and response sizes, then a canonical lazy-on-open/incremental option-loading design with native selected-value label support, or a justified simpler improvement. A change that transfers the same multi-second query from dialog opening to dropdown click is not an accepted performance resolution.
 - Shared Admin navigation still has publication-state and SiteNavigation queries; separate those via request-scoped query timings if the issue is reproduced in lightweight dialogs. Do not guess that the Add Exhibition picker alone explains every Admin dialog's delay. No source changes or browser tests were made for this screenshot analysis.
+
+## Add Exhibition request method identification and Media Select improvement (2026-11-19)
+- User inspected two Livewire network payloads: `unmountAction(false)` and `mountAction('addExhibition')`. The latter mounts the Add Exhibition action, while the former is a separate unmount and may be involved in visible open/close races; their chronological cause (including repeated clicks) has not been proven from payloads alone.
+- In the canonical `MediaAssetSelect::searchOptions()`, the eager complete file result previously called `primeOptionLabel()` for each asset, mutating a progressively larger array in request attributes on every iteration, and then called `optionLabel()` **again** for every asset in the final `mapWithKeys()`. The request-cache write may repeatedly copy that growing PHP array (copy-on-write); the duplicate HTML generation is definite redundant work. This compounds with large, full visual option lists in Add Exhibition.
+- Refactored **the existing owner only** to collect option labels and the request-scoped lookup cache in a single iteration, then update request attributes once. Query order, all-eligible-file completeness, HTML labels and variants, search terms, custom predicates, selected IDs, and the Filament Select/Livewire lifecycle remain unchanged. Did not cap options, force users to type search, introduce new CSS/JS/listeners, or hide click events.
+- This is a justified shared CPU/memory optimization, **not** proof of eliminating the measured 4.20-second server wait. Full option enumeration remains eager on opening; measure again on the current local Preview after the user updates it. If persistent in empty-media-pickers too, profile shared panel query and reporting paths separately.
+- Source diff verification only. No PHP suite, browser, deployment or CI was run.
 
 ## Verification and next actions
 - Source review: confirmed the central dialog window radius remains `.25rem` in `dialog-contract.css`, and checked current affected dialog source. Existing modal header actions intentionally remain round; no change requested to action buttons.
