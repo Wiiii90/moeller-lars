@@ -112,6 +112,12 @@
 - Authored targeted Pest Feature and isolated browser-component tests for persistence, automatic/explicit combinations, live preview CSS class, all Title Left/Right x Menu Left/Center/Right cases, page order, back-arrow edge/flip and exit. Existing navigation-level fixture was amended to emit the resolved class. Added German locale label. Not executed under this worker's no-test/no-deployment constraint.
 - Acceptance still needed with a migrated disposable environment: all three alignments for Inside Left/Right, Above/Below, Title hidden, child return/button geometry and cyclic overflow across narrow/wide widths; confirm public preview parity and no current artist-data mutation. Standard Docs worker can reconcile the Public navigation behavior contract later; no general docs were edited from this Dev role.
 
+## Automatic Menu alignment retired (2026-11-19)
+- User explicitly rejected Automatic. General -> Menu now offers exactly Left, Center and Right; Right is the default. Menu placement remains independent of Title position/alignment, with no automatic change following Title edits.
+- Removed the automatic option and title-derived Public projection. The original Menu-alignment add-column migration now defaults to Right, and a forward-only corrective migration handles environments that may already have applied its older Auto default: it materializes each Auto row's former effective Left/Right appearance using its existing Title settings in both Working and Committed, then sets the database default to Right. Explicit stored choices remain unchanged; immutable publication checkpoints are untouched.
+- Updated the focused General Feature regression to assert exact choices, default, rejection of the retired value, persistence and Title independence. Removed the German translation key for the retired option. No CSS or navigation engine changes are required.
+- This is source-only: migration execution, tests, browser acceptance, build, CI and deployment were not performed.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.

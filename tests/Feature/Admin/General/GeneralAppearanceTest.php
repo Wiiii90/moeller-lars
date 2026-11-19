@@ -89,29 +89,28 @@ it('validates and persists the configured Menu type', function (): void {
     ))->toThrow(ValidationException::class);
 });
 
-it('resolves independent Menu alignment without changing the Title or authored order', function (): void {
-    expect(PublicAppearance::MENU_ALIGNMENTS)->toHaveKeys(['auto', 'left', 'center', 'right'])
-        ->and(PublicAppearance::presentedMenuAlignment(null, 'inside', 'left'))->toBe('right')
-        ->and(PublicAppearance::presentedMenuAlignment('auto', 'inside', 'right'))->toBe('left')
-        ->and(PublicAppearance::presentedMenuAlignment('auto', 'above', 'center'))->toBe('left')
-        ->and(PublicAppearance::presentedMenuAlignment('auto', 'below', 'right'))->toBe('left')
-        ->and(PublicAppearance::presentedMenuAlignment('auto', 'inside', 'left', false))->toBe('left');
+it('persists three explicit Menu alignments without coupling them to Title settings', function (): void {
+    expect(PublicAppearance::MENU_ALIGNMENTS)->toBe([
+        'left' => 'Left',
+        'center' => 'Center',
+        'right' => 'Right',
+    ])->and(PublicAppearance::menuAlignment(null))->toBe('right');
 
-    foreach (['inside', 'above', 'below'] as $position) {
-        foreach (['left', 'center', 'right'] as $alignment) {
-            expect(PublicAppearance::presentedMenuAlignment($alignment, $position, 'left'))
-                ->toBe($alignment);
-        }
+    foreach (['left', 'center', 'right'] as $alignment) {
+        expect(PublicAppearance::menuAlignment($alignment))->toBe($alignment);
     }
 
-    expect(fn () => PublicAppearance::menuAlignment('justified'))->toThrow(ValidationException::class);
-    expect(fn () => app(AdminSettingsService::class)->updatePublicContent(
-        PublicContentSetting::general(),
-        ['menu_alignment' => 'justified'],
-    ))->toThrow(ValidationException::class);
+    foreach (['auto', 'justified'] as $retired) {
+        expect(fn () => PublicAppearance::menuAlignment($retired))
+            ->toThrow(ValidationException::class);
+        expect(fn () => app(AdminSettingsService::class)->updatePublicContent(
+            PublicContentSetting::general(),
+            ['menu_alignment' => $retired],
+        ))->toThrow(ValidationException::class);
+    }
 
     Livewire::test(General::class)
-        ->assertSet('data.menu_alignment', 'auto')
+        ->assertSet('data.menu_alignment', 'right')
         ->set('data.menu_alignment', 'center')
         ->assertHasNoErrors()
         ->assertSet('data.menu_alignment', 'center');
