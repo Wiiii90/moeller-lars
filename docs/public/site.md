@@ -538,8 +538,11 @@ own Slideshow/Carousel navigation. Slideshow and Carousel reuse a fixed,
 responsive, uncropped media stage instead of allowing differently shaped
 images to resize controls or following prose. Slideshow arrows use plain,
 unboxed controls on reserved side rails outside the media; its unboxed media
-counter lives below the stage. On tight content widths the arrows join the
-counter below, preserving usable image/video width and native video controls.
+counter lives above the stage. On tight content widths the arrows flank the
+counter above, preserving usable image/video width and native video controls.
+Slideshow media and credits form one centered vertical group; caption text
+sits directly below its own image or video without the former fixed-stage
+grid-row gap. The outer stage remains fixed across media switches.
 Carousel retains its independent peek geometry and unboxed controls.
 Carousel displays the active media at Slideshow-like scale, plus the previous
 and next *real* media as partial, dimmed side previews. Side previews are

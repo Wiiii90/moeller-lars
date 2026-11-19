@@ -86,12 +86,14 @@
    almost-full-width video cannot put the buttons on top of its content. */
 .journal-entry-gallery--slideshow {
     --journal-slideshow-rail: clamp(2.5rem, 6vw, 3rem);
+    --journal-slideshow-header-height: 2.25rem;
     width: min(100%, 42rem);
-    height: calc(var(--journal-gallery-stage-height) + 2.25rem);
+    height: calc(var(--journal-gallery-stage-height) + var(--journal-slideshow-header-height));
 }
 
+/* A single-slide presentation has no counter or reserved header. */
 .journal-entry-gallery--slideshow:not(:has(> .journal-entry-gallery__controls)) {
-    height: var(--journal-gallery-stage-height);
+    --journal-slideshow-header-height: 0rem;
 }
 
 /* The Carousel's center frame is almost identical in width to Slideshow,
@@ -114,9 +116,10 @@
     place-items: center;
 }
 
-/* All visible Slideshow media stay on the same centered stage track.
-   The arrows occupy the reserved paper rails, never the actual media. */
+/* Keep the fixed Slideshow stage below the pagination row; the arrows
+   still occupy reserved paper rails, never the artwork. */
 .journal-entry-gallery--slideshow .journal-entry-gallery__item {
+    top: var(--journal-slideshow-header-height);
     right: var(--journal-slideshow-rail);
     bottom: auto;
     left: var(--journal-slideshow-rail);
@@ -166,6 +169,27 @@
     text-align: center;
 }
 
+/* Slideshow media and credits must be one vertical group. Previously the
+   image was centered in a flexible grid row while credits were anchored to
+   the bottom, leaving large empty gaps under smaller landscape images.
+   Shrink the image when needed to accommodate long captions; never crop or
+   resize the outer stage on navigation. Carousel keeps its original grid. */
+.journal-entry-gallery--slideshow .journal-entry-media {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.journal-entry-gallery--slideshow .journal-entry-media :is(img, video) {
+    flex: 0 1 auto;
+}
+
+.journal-entry-gallery--slideshow .journal-entry-media figcaption {
+    flex: 0 0 auto;
+    margin-top: .45rem;
+}
+
 .journal-entry-gallery--carousel .journal-entry-gallery__item {
     right: auto;
     left: 16%;
@@ -187,7 +211,7 @@
 }
 
 /* Navigation uses a transparent control layer. Slideshow puts arrows in
-   outside side rails and the counter below; Carousel retains its own stage
+   outside side rails and the counter above; Carousel retains its own stage
    geometry. Only buttons intercept pointers, preserving image and video UI. */
 .journal-entry-gallery--slideshow .journal-entry-gallery__controls,
 .journal-entry-gallery--carousel .journal-entry-gallery__controls {
@@ -210,20 +234,20 @@
     line-height: 1.35;
 }
 
-/* Slideshow controls align exactly with the real image-stage centerline;
-   the index lives in its own row below all artwork/caption content. */
+/* Side arrows remain centered on the image; pagination occupies the top row
+   without overlapping artwork or credits. */
 .journal-entry-gallery--slideshow .journal-entry-gallery__controls {
     grid-template-columns: var(--journal-slideshow-rail) minmax(0, 1fr) var(--journal-slideshow-rail);
-    grid-template-rows: var(--journal-gallery-stage-height) 2.25rem;
+    grid-template-rows: var(--journal-slideshow-header-height) var(--journal-gallery-stage-height);
 }
 
 .journal-entry-gallery--slideshow .journal-entry-gallery__controls button:first-child,
 .journal-entry-gallery--slideshow .journal-entry-gallery__controls button:last-child {
-    grid-row: 1;
+    grid-row: 2;
 }
 
 .journal-entry-gallery--slideshow .journal-entry-gallery__controls [data-journal-slide-status] {
-    grid-row: 2;
+    grid-row: 1;
     align-self: center;
     margin: 0;
     padding: 0;
@@ -291,9 +315,8 @@
     outline-offset: 2px;
 }
 
-/* At tight content widths, prioritize the entire original artwork.
-   Navigation moves underneath rather than squeezing a video between rails or
-   overlapping its native playback controls. */
+/* On tight content widths, arrows join the counter above the stage so the
+   media keeps its full width and the native video controls remain clear. */
 @container (max-width: 30rem) {
     .journal-entry-gallery--slideshow .journal-entry-gallery__item {
         right: 0;
@@ -303,7 +326,7 @@
 
     .journal-entry-gallery--slideshow .journal-entry-gallery__controls button:first-child,
     .journal-entry-gallery--slideshow .journal-entry-gallery__controls button:last-child {
-        grid-row: 2;
+        grid-row: 1;
     }
 }
 

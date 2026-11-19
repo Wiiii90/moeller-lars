@@ -4,6 +4,12 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Slideshow pagination placement and credits (2026-11-19)
+
+- Artist requests unboxed pagination above the Slideshow image again, with credits directly below the depicted work, without undoing smooth transitions or external arrow alignment. The screenshot's substantial image-to-credit whitespace came from the figure's grid allocating the image a flexible row but pinning its caption to the fixed stage's bottom; it was not intentional authored spacing.
+- CSS-only correction in `journal-presentation.css`: shift Slideshow pagination into a constant-height top header and its media track down by exactly that amount; retain both arrows in centered side rails. On narrow gallery containers arrows share the counter's header row so media/video remains fully usable. For Slideshow only, align media and its figcaption as one vertically centered flex group with an explicit small gap; image flex shrink respects caption height and preserves full uncropped assets. The stage still has the same constant responsive height for stable gallery page flow; standalone one-slide galleries reserve no counter header.
+- **Verification:** source geometry only. Browser acceptance still needed for tall and short media, wrapped credits, single-item, video controls, narrow containers and content following the gallery; no browser run, CI, test suite or deploy initiated.
+
 ## Shared fullscreen Viewer video controls (2026-11-18)
 
 - The user requests first-class playback controls in the existing fullscreen Viewer bottom toolbar, where video had no image zoom group: Play/Pause, Mute/Unmute and adjustable volume. A second media player or a detached overlay would conflict with the shared Viewer contract.
@@ -80,4 +86,4 @@
 
 ## Next
 
-Have the artist review modal Viewer video controls (Play/Pause, Mute, volume, native seek, keyboard and mixed-media transitions), with Slideshow and Carousel, in a fresh local preview; hand regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
+Have the artist review Slideshow pagination-above, close image credits, preserved outer stage and narrow-arrow placement, together with modal video controls and Carousel, in a fresh local preview; hand regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
