@@ -17,20 +17,23 @@ export function galleryImageDistance(image, viewportHeight) {
 function fittedMediaWidth(page, owner, availableWidth, sourceWidth, sourceHeight, footer, controls = null) {
     const viewport = window.visualViewport;
     const viewportHeight = viewport?.height ?? window.innerHeight;
-    const folio = owner.querySelector('.artwork-folio');
-    const stageStart = folio
-        ? folio.getBoundingClientRect().bottom
-            + (Number.parseFloat(getComputedStyle(folio).marginBottom) || 0)
-        : owner.getBoundingClientRect().top;
-    const imageTop = Math.max(0, stageStart - (viewport?.offsetTop ?? 0));
     const pageStyle = getComputedStyle(page);
     const outerHeight = (element) => {
         if (!element) return 0;
         const style = getComputedStyle(element);
+        if (style.display === 'none') return 0;
         return element.getBoundingClientRect().height
             + (Number.parseFloat(style.marginTop) || 0)
             + (Number.parseFloat(style.marginBottom) || 0);
     };
+    // The media group may overflow during its initial fit and move its own
+    // rectangle. The Page top plus visible heading/folio heights is stable.
+    const heading = page.querySelector(':scope > .public-content-reveal > .public-page-heading');
+    const folio = owner.querySelector('.artwork-folio');
+    const stageStart = page.getBoundingClientRect().top
+        + (Number.parseFloat(pageStyle.paddingTop) || 0)
+        + outerHeight(heading) + outerHeight(folio);
+    const imageTop = Math.max(0, stageStart - (viewport?.offsetTop ?? 0));
     const reserveBelow = outerHeight(footer) + outerHeight(controls)
         + (Number.parseFloat(pageStyle.paddingBottom) || 0)
         + (Number.parseFloat(pageStyle.marginBottom) || 0);
