@@ -89,6 +89,50 @@ it('validates and persists the configured Menu type', function (): void {
     ))->toThrow(ValidationException::class);
 });
 
+it('resolves independent Menu alignment without changing the Title or authored order', function (): void {
+    expect(PublicAppearance::MENU_ALIGNMENTS)->toHaveKeys(['auto', 'left', 'center', 'right'])
+        ->and(PublicAppearance::presentedMenuAlignment(null, 'inside', 'left'))->toBe('right')
+        ->and(PublicAppearance::presentedMenuAlignment('auto', 'inside', 'right'))->toBe('left')
+        ->and(PublicAppearance::presentedMenuAlignment('auto', 'above', 'center'))->toBe('left')
+        ->and(PublicAppearance::presentedMenuAlignment('auto', 'below', 'right'))->toBe('left')
+        ->and(PublicAppearance::presentedMenuAlignment('auto', 'inside', 'left', false))->toBe('left');
+
+    foreach (['inside', 'above', 'below'] as $position) {
+        foreach (['left', 'center', 'right'] as $alignment) {
+            expect(PublicAppearance::presentedMenuAlignment($alignment, $position, 'left'))
+                ->toBe($alignment);
+        }
+    }
+
+    expect(fn () => PublicAppearance::menuAlignment('justified'))->toThrow(ValidationException::class);
+    expect(fn () => app(AdminSettingsService::class)->updatePublicContent(
+        PublicContentSetting::general(),
+        ['menu_alignment' => 'justified'],
+    ))->toThrow(ValidationException::class);
+
+    Livewire::test(General::class)
+        ->assertSet('data.menu_alignment', 'auto')
+        ->set('data.menu_alignment', 'center')
+        ->assertHasNoErrors()
+        ->assertSet('data.menu_alignment', 'center');
+
+    expect(PublicContentSetting::general()->getAttribute('menu_alignment'))->toBe('center');
+    Livewire::test(General::class)->assertSet('data.menu_alignment', 'center');
+
+    $preview = $this->get(route('preview.home'))->assertOk()->getContent();
+    expect($preview)->toContain('site-header--menu-align-center')
+        ->toContain('data-public-layout-menu-alignment="center"');
+
+    Livewire::test(General::class)
+        ->set('data.header_name_position', 'above')
+        ->assertHasNoErrors()
+        ->set('data.header_name_alignment', 'right')
+        ->assertHasNoErrors();
+
+    $preview = $this->get(route('preview.home'))->assertOk()->getContent();
+    expect($preview)->toContain('site-header--menu-align-center');
+});
+
 it('saves a first solid color as one complete action and repeats silently', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), ['background_mode' => null, 'background_color' => '#123456']);
     app(AdminActivityNotificationContext::class)->discard();
