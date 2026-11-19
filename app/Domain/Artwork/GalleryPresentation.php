@@ -66,6 +66,33 @@ final class GalleryPresentation
         self::SORT_OLDEST_MEDIA => 'Oldest by Media Added',
     ];
 
+    public const ADD_FOLLOW = 'follow';
+
+    public const ADD_FIRST = 'first';
+
+    public const ADD_LAST = 'last';
+
+    /** Placement is evaluated only when a new Artwork is created. */
+    public const ADD_OPTIONS = [
+        self::ADD_FOLLOW => 'Follow Artwork order',
+        self::ADD_FIRST => 'Always first',
+        self::ADD_LAST => 'Always last',
+        self::SORT_NEWEST => 'Newest by Artwork Date',
+        ArtworkSort::OLDEST_ARTWORK => 'Oldest by Artwork Date',
+        self::SORT_NEWEST_MEDIA => 'Newest by Media Added',
+        self::SORT_OLDEST_MEDIA => 'Oldest by Media Added',
+        ArtworkSort::NEWEST_CREATED => 'Newest by Artwork Added',
+        ArtworkSort::OLDEST_CREATED => 'Oldest by Artwork Added',
+    ];
+
+    public static function addPlacement(ArtworkCategory $gallery): string
+    {
+        $value = $gallery->getAttribute('add_placement');
+
+        return is_string($value) && array_key_exists($value, self::ADD_OPTIONS)
+            ? $value : self::ADD_FOLLOW;
+    }
+
     public static function sortMode(ArtworkCategory $gallery): string
     {
         $value = $gallery->getAttribute('sort_mode');
@@ -208,6 +235,12 @@ final class GalleryPresentation
                 throw ValidationException::withMessages([$field => 'Choose an enabled or disabled state.']);
             }
             $values[$field] = (bool) $data[$field];
+        }
+        if (array_key_exists('add_placement', $data)) {
+            if (! is_string($data['add_placement']) || ! array_key_exists($data['add_placement'], self::ADD_OPTIONS)) {
+                throw ValidationException::withMessages(['add_placement' => 'Choose a supported new Artwork placement.']);
+            }
+            $values['add_placement'] = $data['add_placement'];
         }
         if (array_key_exists('sort_mode', $data)) {
             if (! is_string($data['sort_mode']) || ! array_key_exists($data['sort_mode'], self::SORT_OPTIONS)) {

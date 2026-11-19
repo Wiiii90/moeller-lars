@@ -2,7 +2,17 @@
 
 **Lease:** 22
 **Branch:** dev
-**State:** Active — Gallery stage merge and modal viewer settings implemented in source on 2026-11-19; migration/runtime/browser acceptance pending.
+**State:** Active — 2026-11-20 two-column Gallery Settings and persistent Add Artwork placement prepared on dev; runtime/browser/migration acceptance pending.
+
+## Current Gallery Settings and creation policy — 2026-11-20
+
+- User accepted the merged Upload/Staged/Settings Stage as usable. Requested Settings layout: first row Artwork order (left), Add Artwork placement (right); below Artwork information (left, its existing 2-per-row checkboxes), and Individual Artwork Pages followed by Media modal viewer (right). The Gallery Stage and advanced dialog share the same panel field owners; the modal retains Gallery title and Between Artworks.
+- New persisted `artwork_categories.add_placement` with Working/Committed migration `2026_11_20_000001_add_gallery_artwork_placement.php` (PostgreSQL publication lock, default follow) and validated `GalleryPresentation::ADD_OPTIONS`. Choices: follow existing Gallery order, always first/last, newest/oldest Artwork Date, newest/oldest Media Added, newest/oldest Artwork Added (`artworks.created_at`). Date and Media sorting delegate to the existing `ArtworkSort` SQL rules; no new stored ordering pipeline.
+- `ArtworkDraftService::create` is the single creation-policy owner. Existing explicitly submitted Position overrides placement. Follow preserves Manual-first or ongoing auto order. Other choices create one deterministic manual sequence (with audited `GalleryEditorialService::reorderArtworks`) and switch auto Galleries to Manual so a subsequent live sort cannot undo the artist's choice. Media Added compares selected actual primary MediaAsset timestamp supplied by both Add and Staged consumers; all operations use their existing transactions and attachment owners.
+- `ArtworkSort::suggestedAdditionPosition` feeds the existing Add and Staged Position suggestions. Batch reverse order now occurs only for new-first and follow-manual, preserving queue order; other modes process in natural order.
+- Upload cleanup only: removed redundant 'Upload Media' heading and Storage-first long guidance text from dropzone, retired unused guidance CSS; Staged already had no duplicate content heading. Progress bar, centering, persistent Ready/0 staged status and multi-drop UX intentionally deferred to artist discussion; do not modify without instruction.
+- Evidence: inspected source and created Git blobs; **no** PHP runtime, migrations, browser or existing testing suite executed from the connected repository. Required independent acceptance: migration/parity, first/last, all four date/media order modes, both Artwork Added modes, manual vs automatic Gallery transition, explicit Position override, staged queue order and dual-column widths at desktop/phone. Build/deploy/CI not authorized.
+- Parent public captions, modal Zoom/Navigation, Home Hero and central shared dialog rendering are unchanged by this task.
 
 ## Local Gallery startup error — 2026-11-19
 
@@ -10,7 +20,7 @@
 - Removed the obsolete `video_sound_enabled` projection from `galleryContext`; Gallery sound policy and retired method stay removed, Home Hero remains independent.
 - Reviewed Gallery settings, Gallery actions, Gallery projection and public Gallery templates for other runtime calls to the retired Gallery sound/zoom methods; none found in the inspected paths. Source-only GitHub hotfix; rerun local preview and browser checks to verify runtime.
 
-## Current 2026-11-19 task — Gallery editor / viewer / staged Public preview
+## Prior delivered Gallery editor / viewer / staged Public preview — 2026-11-19
 
 - Gallery/Artwork credits and copyright follow the same image-width-bounded shared caption container as title/date/dimensions/material. Source verified; populated responsive browser layout remains unverified.
 - Media modal viewer: zoom is always available for images; the Gallery Zoom setting and stored column are retired. Navigation enables/disables the modal's bottom arrows; Cyclic wraps the selected modal sequence, independent of the top-right close and individual Artwork page link. The individual page link is shown only when Individual Artwork Pages is enabled, not tied to modal navigation. The existing individual page Navigation/Cyclic settings remain distinct.
@@ -20,15 +30,6 @@
 - Migration `2026_11_19_210000_simplify_gallery_media_viewer.php` adds `viewer_navigation_cyclic` and drops retired Gallery sound/zoom columns on both Working and Committed. Protected publication history/restore compatibility is not verified.
 - Source-only through connected GitHub; no local runtime, browser, database migration, test execution, deployment, or Continuous Integration was run. Browser acceptance and migration tests are required, notably credits/copyright positioning, modal viewer page-link independence, cyclic sequence, new Stage tabs, simultaneous files/upload, updated staged form metadata, original media protection and Working/Committed parity.
 - Out of scope: Home Hero presentation/selection, General appearance controls, shared dialog redesign, unrelated rights and historical checkpoint logic.
-
-## Gallery Stage reduction — 2026-11-19
-
-- Scope: Stage keeps Artwork order first, Artwork information visibility, Media viewer and Individual Artwork Pages; Title, Between Artworks and video sound remain available only in Gallery Settings.
-- Viewer checkboxes: Zoom and Navigation. Individual Artwork Pages: Navigation and dependent Cyclic checkboxes on the same line, backed by existing edge mode. Public detail hides arrows entirely when disabled, retains disabled end arrows when enabled without cycling, and wraps when Cyclic is on.
-- Retire the editable Artwork information arrangement from Gallery Stage, Settings, and individual Artwork editor. Remove its code owner, edit callback, and stylesheet. Fix Gallery and individual Artwork information placement to the former default (rights left, title/date/dimensions/material right); Home Hero retains its independent explicit alignment option. Historical saved arrangement data remains in persisted records, but does not drive the new UI; no database rewrite.
-- Preserve the current public Gallery and Artwork visual composition otherwise. Keep full video-sound feature until user decides whether to retire or replace it. Defer Stage Upload/Editor merge and adaptive desktop/phone preview columns.
-- Evidence: production-source changes only; no local application runtime, browser preview, test execution, Content Security Policy changes, Continuous Integration, deployment or migration. Browser acceptance and actual persisted Artist data inspection remain outstanding.
-- Out of scope: Home Hero, General, shared media picker/dialog redesign, production/validation deploy and test modifications.
 
 ## Current scope and inherited handoff
 

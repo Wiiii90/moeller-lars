@@ -20,7 +20,7 @@ final class ArtworkDraftService
     ) {}
 
     /** @param array<string, mixed> $data */
-    public function create(array $data): Artwork
+    public function create(array $data, ?int $primaryMediaAssetId = null): Artwork
     {
         if (! array_key_exists('artwork_category_id', $data)) {
             throw ValidationException::withMessages(['artwork' => 'Required artwork form data is missing.']);
@@ -64,7 +64,7 @@ final class ArtworkDraftService
 
         $actor = $this->audit->requireActor();
 
-        return DB::transaction(function () use ($galleryId, $data, $actor, $requestedPosition): Artwork {
+        return DB::transaction(function () use ($galleryId, $data, $actor, $requestedPosition, $primaryMediaAssetId): Artwork {
             /** @var ArtworkCategory|null $gallery */
             $gallery = ArtworkCategory::query()->whereKey($galleryId)->lockForUpdate()->first();
             if (! $gallery instanceof ArtworkCategory) {
@@ -77,6 +77,25 @@ final class ArtworkDraftService
 
             $artwork = new Artwork;
             $artwork->fill($payload);
+
+            // Compute a non-explicit insertion policy against the pre-create
+            // Gallery, before the new Artwork could enter its own sort query.
+            $placement = GalleryPresentation::addPlacement($gallery);
+            $priorIds = [];
+            $insertionAt = null;
+            if ($requestedPosition === null && $placement !== GalleryPresentation::ADD_FOLLOW) {
+                $query = $gallery->artworks()->getQuery();
+                $query = in_array($placement, [GalleryPresentation::ADD_FIRST, GalleryPresentation::ADD_LAST], true)
+                    ? GalleryPresentation::orderArtworks($query, $gallery)
+                    : ArtworkSort::apply($query, $placement);
+                $priorIds = $query->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
+                if (! in_array($placement, [GalleryPresentation::ADD_FIRST, GalleryPresentation::ADD_LAST], true)) {
+                    $insertionAt = ArtworkSort::suggestedPosition(
+                        $gallery, ArtworkDate::fromArtwork($artwork), $primaryMediaAssetId, $placement,
+                    );
+                }
+            }
+
             $artwork->save();
 
             $this->audit->record($actor, 'artwork.created', 'artwork', $artwork->getKey());
@@ -93,8 +112,21 @@ final class ArtworkDraftService
                 // An intentional Position override is the Manual handoff;
                 // GalleryEditorialService owns both ranking and its audit.
                 app(GalleryEditorialService::class)->reorderArtworks($gallery, $ids);
+            } elseif ($placement !== GalleryPresentation::ADD_FOLLOW) {
+                if ($placement === GalleryPresentation::ADD_FIRST) {
+                    $ids = [(int) $artwork->getKey(), ...$priorIds];
+                } elseif ($placement === GalleryPresentation::ADD_LAST) {
+                    $ids = [...$priorIds, (int) $artwork->getKey()];
+                } else {
+                    $ids = $priorIds;
+                    array_splice($ids, $insertionAt - 1, 0, [(int) $artwork->getKey()]);
+                }
+
+                // A fixed placement is a deliberate Manual handoff. Otherwise
+                // an active automatic sort would immediately undo the choice.
+                app(GalleryEditorialService::class)->reorderArtworks($gallery, $ids);
             } elseif (GalleryPresentation::sortMode($gallery) === GalleryPresentation::SORT_MANUAL && $maxPosition !== null) {
-                // Manual Create inserts first. Do not duplicate ranking logic.
+                // Follow Manual preserves the existing default: newest first.
                 $ids = $gallery->artworks()
                     ->whereKeyNot($artwork->getKey())
                     ->orderBy('position')

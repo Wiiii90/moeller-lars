@@ -46,6 +46,7 @@ trait GalleryWorkspaceUploadSettings
                         // Sort changes are exclusively committed through the
                         // confirmed Action, never the Edit modal's autosave.
                         'sort_mode' => GalleryPresentation::sortMode($gallery),
+                        'add_placement' => $data['add_placement'] ?? GalleryPresentation::addPlacement($gallery),
                         'artwork_information' => $this->galleryInformationFromForm($data, $gallery),
                         'media_viewer_enabled' => $data['media_viewer_enabled'] ?? GalleryPresentation::viewerEnabled($gallery),
                         'viewer_navigation_enabled' => $data['viewer_navigation_enabled'] ?? GalleryPresentation::viewerNavigationEnabled($gallery),
@@ -125,7 +126,28 @@ trait GalleryWorkspaceUploadSettings
         if (! $stage) {
             $fields[] = $name->columnSpanFull();
         }
-        $fields[] = $order->columnSpanFull();
+        $fields[] = $order;
+        $fields[] = $this->gallerySettingControl(
+            AdminControl::select('add_placement')
+                ->label(AdminHelp::label(
+                    'Add Artwork placement',
+                    'Placement when creating an Artwork',
+                    'Follow Artwork order retains the active Gallery sort. Other placement choices switch an automatically sorted Gallery to Manual on creation. An explicit Artwork Position always wins.',
+                ))
+                ->options(GalleryPresentation::ADD_OPTIONS)
+                ->default(GalleryPresentation::ADD_FOLLOW)
+                ->required(),
+            'add_placement', $stage,
+        );
+
+        // Two Stage columns; each panel keeps two checkboxes per inner row.
+        $fields[] = Grid::make(['default' => 1])
+            ->schema([$this->galleryInformationPanel($stage)]);
+        $fields[] = Grid::make(['default' => 1])
+            ->schema([
+                $this->galleryDetailPagesPanel($stage),
+                $this->galleryViewerPanel($stage),
+            ]);
         if (! $stage) {
             $fields[] = AdminControl::select('artwork_divider', 'Between Artworks')
                 ->options(GalleryPresentation::DIVIDER_OPTIONS)
@@ -133,9 +155,6 @@ trait GalleryWorkspaceUploadSettings
                 ->required()
                 ->columnSpanFull();
         }
-        $fields[] = $this->galleryInformationPanel($stage);
-        $fields[] = $this->galleryViewerPanel($stage);
-        $fields[] = $this->galleryDetailPagesPanel($stage);
 
         return Grid::make(['default' => 2])->schema($fields);
     }
@@ -292,6 +311,7 @@ trait GalleryWorkspaceUploadSettings
             'edge_navigation_cyclic' => GalleryPresentation::edgeMode($gallery) === GalleryPresentation::EDGE_CYCLIC,
             'artwork_divider' => GalleryPresentation::divider($gallery),
             'sort_mode' => GalleryPresentation::sortMode($gallery),
+            'add_placement' => GalleryPresentation::addPlacement($gallery),
             ...ArtworkInformation::formValues(ArtworkInformation::gallery($gallery)),
             'media_viewer_enabled' => GalleryPresentation::viewerEnabled($gallery),
             'viewer_navigation_enabled' => GalleryPresentation::viewerNavigationEnabled($gallery),
@@ -393,6 +413,7 @@ trait GalleryWorkspaceUploadSettings
     private function updateGalleryStageSettings(array $changes): void
     {
         $editable = [
+            'add_placement',
             'media_viewer_enabled',
             'viewer_navigation_enabled',
             'viewer_navigation_cyclic',

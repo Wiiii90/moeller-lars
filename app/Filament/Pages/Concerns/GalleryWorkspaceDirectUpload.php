@@ -118,7 +118,7 @@ trait GalleryWorkspaceDirectUpload
                 'artwork_date' => null,
                 'medium' => null,
                 'description' => null,
-                'position' => ArtworkSort::suggestedPosition($gallery, null, $assetId),
+                'position' => ArtworkSort::suggestedAdditionPosition($gallery, null, $assetId),
                 'position_explicit' => false,
             ];
         }
@@ -174,7 +174,7 @@ trait GalleryWorkspaceDirectUpload
         unset($payload['position_explicit']);
         $alt = filled($data['primary_alt_text'] ?? null) ? (string) $data['primary_alt_text'] : null;
 
-        $artwork = app(ArtworkDraftService::class)->create($payload);
+        $artwork = app(ArtworkDraftService::class)->create($payload, $assetId);
         app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
         if ($alt !== null) {
             app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($artwork, $alt);
@@ -230,11 +230,13 @@ trait GalleryWorkspaceDirectUpload
         }
         unset($row);
 
-        // Manual Create inserts at the start. Process in reverse so the
-        // resulting manual sequence preserves the uploaded queue order.
+        // New-first insertion reverses a batch; process in reverse so the
+        // final Manual sequence preserves the artist's staged queue order.
         $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
-        if (\App\Domain\Artwork\GalleryPresentation::sortMode($gallery)
-            === \App\Domain\Artwork\GalleryPresentation::SORT_MANUAL) {
+        $placement = \App\Domain\Artwork\GalleryPresentation::addPlacement($gallery);
+        if ($placement === \App\Domain\Artwork\GalleryPresentation::ADD_FIRST
+            || ($placement === \App\Domain\Artwork\GalleryPresentation::ADD_FOLLOW
+                && \App\Domain\Artwork\GalleryPresentation::sortMode($gallery) === \App\Domain\Artwork\GalleryPresentation::SORT_MANUAL)) {
             $items = array_reverse($items);
         }
 

@@ -78,7 +78,6 @@
                     },
                 }"
                 x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()">
-                <h2 class="admin-section__kicker admin-visual-stage__heading">Upload Media</h2>
                 <div class="gallery-stage__upload-status" role="status" aria-live="polite" aria-atomic="true">
                     <span x-text="
                         phase === 'uploading' ? 'Uploading to Storage'
@@ -125,10 +124,6 @@
                                 JPEG, PNG, WebP (max {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} megapixels); MP4 and WebM. Interrupted transfers can be resumed by selecting the same file.
                             </span>
                             <span x-show="phase === 'result'" x-text="result" x-cloak></span>
-                            <span class="gallery-stage__upload-guidance" x-show="phase === 'idle' || phase === 'result'">
-                                Files are saved in Storage first. Review and create their Artworks under Staged.
-                                You can add more files at any time.
-                            </span>
                         </div>
                     </div>
                 </div>

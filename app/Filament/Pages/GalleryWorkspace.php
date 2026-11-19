@@ -136,7 +136,7 @@ final class GalleryWorkspace extends Page
                         return;
                     }
                     $gallery = \App\Models\ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
-                    $set('position', \App\Domain\Artwork\ArtworkSort::suggestedPosition(
+                    $set('position', \App\Domain\Artwork\ArtworkSort::suggestedAdditionPosition(
                         $gallery, $get('artwork_date'), $this->selectedStagedMediaAssetId,
                     ));
                 },

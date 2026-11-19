@@ -28,7 +28,7 @@ trait GalleryWorkspaceArtworkDialogs
             ->fillForm(fn (): array => [
                 'primary_media_asset_id' => $this->pendingPrimaryMediaAssetId,
                 'artwork_date' => null,
-                'position' => ArtworkSort::suggestedPosition(
+                'position' => ArtworkSort::suggestedAdditionPosition(
                     ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']),
                     null,
                     $this->pendingPrimaryMediaAssetId,
@@ -68,7 +68,7 @@ trait GalleryWorkspaceArtworkDialogs
                 // Gallery auto-publication has been retired. New Artwork
                 // always starts as a draft; Publish remains an explicit action.
                 DB::transaction(function () use ($payload, $asset, $data): void {
-                    $artwork = app(ArtworkDraftService::class)->create($payload);
+                    $artwork = app(ArtworkDraftService::class)->create($payload, $asset instanceof MediaAsset ? (int) $asset->getKey() : null);
                     if ($asset instanceof MediaAsset) {
                         app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
                         if (filled($data['primary_alt_text'] ?? null)) {

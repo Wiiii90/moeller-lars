@@ -15,6 +15,8 @@ final class ArtworkSort
     public const OLDEST_ARTWORK = 'oldest_artwork';
     public const NEWEST_MEDIA_ADDED = 'newest_media_added';
     public const OLDEST_MEDIA_ADDED = 'oldest_media_added';
+    public const NEWEST_CREATED = 'newest_created';
+    public const OLDEST_CREATED = 'oldest_created';
 
     public const SOURCE_RULES = [
         self::NEWEST_MEDIA_ADDED => 'Newest by Media Added',
@@ -32,19 +34,18 @@ final class ArtworkSort
      * The new id and created_at are unknown until insertion; ties and
      * concurrent edits can shift this non-authoritative form suggestion.
      */
-    public static function suggestedPosition(ArtworkCategory $gallery, ?string $date, ?int $mediaAssetId): int
+    public static function suggestedPosition(ArtworkCategory $gallery, ?string $date, ?int $mediaAssetId, ?string $ruleOverride = null): int
     {
-        $mode = GalleryPresentation::sortMode($gallery);
+        $mode = $ruleOverride ?? GalleryPresentation::sortMode($gallery);
         if ($mode === GalleryPresentation::SORT_MANUAL) {
             return 1;
         }
 
         $rule = self::canonicalRule($mode);
-        $oldest = in_array($rule, [self::OLDEST_ARTWORK, self::OLDEST_MEDIA_ADDED], true);
+        $oldest = in_array($rule, [self::OLDEST_ARTWORK, self::OLDEST_MEDIA_ADDED, self::OLDEST_CREATED], true);
         $mediaOrder = in_array($rule, [self::NEWEST_MEDIA_ADDED, self::OLDEST_MEDIA_ADDED], true);
-        $existing = GalleryPresentation::orderArtworks(
-            $gallery->artworks()->getQuery(), $gallery,
-        )->get(['artworks.id', 'artworks.year', 'artworks.month', 'artworks.day', 'artworks.created_at']);
+        $existing = self::apply($gallery->artworks()->getQuery(), $rule)
+            ->get(['artworks.id', 'artworks.year', 'artworks.month', 'artworks.day', 'artworks.created_at']);
 
         $createdAt = self::timestamp(CarbonImmutable::now('UTC'));
         $candidateDate = ArtworkDate::normalize($date);
@@ -77,10 +78,12 @@ final class ArtworkSort
                 }
             } else {
                 $comparison = 0;
-                foreach (['year', 'month', 'day'] as $part) {
-                    $comparison = self::compare($candidateDate[$part], $artwork->getAttribute($part), $oldest);
-                    if ($comparison !== 0) {
-                        break;
+                if (! in_array($rule, [self::NEWEST_CREATED, self::OLDEST_CREATED], true)) {
+                    foreach (['year', 'month', 'day'] as $part) {
+                        $comparison = self::compare($candidateDate[$part], $artwork->getAttribute($part), $oldest);
+                        if ($comparison !== 0) {
+                            break;
+                        }
                     }
                 }
                 if ($comparison === 0) {
@@ -97,6 +100,19 @@ final class ArtworkSort
         }
 
         return $existing->count() + 1;
+    }
+
+    /** A non-authoritative Position suggestion matching Gallery creation policy. */
+    public static function suggestedAdditionPosition(ArtworkCategory $gallery, ?string $date, ?int $mediaAssetId): int
+    {
+        $placement = GalleryPresentation::addPlacement($gallery);
+
+        return match ($placement) {
+            GalleryPresentation::ADD_FIRST => 1,
+            GalleryPresentation::ADD_LAST => $gallery->artworks()->count() + 1,
+            GalleryPresentation::ADD_FOLLOW => self::suggestedPosition($gallery, $date, $mediaAssetId),
+            default => self::suggestedPosition($gallery, $date, $mediaAssetId, $placement),
+        };
     }
 
     /** NULL always sorts last, including Oldest-first ordering. */
@@ -144,6 +160,12 @@ final class ArtworkSort
         $rule = self::canonicalRule($rule);
         if ($rule === self::NEWEST_ARTWORK || $rule === self::OLDEST_ARTWORK) {
             return $rule === self::OLDEST_ARTWORK ? self::DATE_ASC_SQL : self::DATE_DESC_SQL;
+        }
+
+        if ($rule === self::NEWEST_CREATED || $rule === self::OLDEST_CREATED) {
+            return $rule === self::OLDEST_CREATED
+                ? 'artworks.created_at ASC, artworks.id ASC'
+                : 'artworks.created_at DESC, artworks.id DESC';
         }
 
         if ($rule === self::NEWEST_MEDIA_ADDED || $rule === self::OLDEST_MEDIA_ADDED) {

@@ -65,13 +65,6 @@
     white-space: nowrap;
 }
 
-.admin-gallery-upload__copy .gallery-stage__upload-guidance {
-    margin-top: .45rem;
-    color: var(--admin-muted);
-    font-size: .68rem;
-    line-height: 1.4;
-}
-
 .gallery-stage__workspace-header,
 .gallery-stage__preview-header {
     display: grid;
