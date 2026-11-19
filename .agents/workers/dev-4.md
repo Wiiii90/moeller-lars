@@ -25,6 +25,8 @@
 - The visible Home image and caption are vertically centered as one flex composition, with no art-card viewport minimum. If Title or navigation is absent, that vertical space becomes available to the image automatically. The existing Home slide-switch handler emits `home-hero-change` so the central fitter measures the next portrait/landscape/video with its own footer; fit responds to resize and fonts. Original Gallery index and Home source selection/navigation/video/viewer remain unchanged.
 - Source-only; needs real Laravel Preview acceptance at desktop/mobile, with Home title/nav toggled on/off, different portrait/landscape media, long captions, multiple-slide switching, no bottom overflow and image-edge/footer alignment.
 
+- The shared fit reserves a minimum practical image height (30% of the viewport, capped at 240px) when exceptionally long rights would otherwise create a self-amplifying caption-wrap feedback loop. Longer descriptions scroll instead of collapsing the image to zero width. A single `ResizeObserver` on the Home metadata/controls remeasures after wrapping and is disconnected on SPA dispose.
+
 ## Gallery index spacing
 
 - Stable lateral variation retains `GalleryPresentation::indexCardOffsets()` and never changes Artwork order. New `indexCardGapSteps()` uses Gallery+Artwork identity and a separate hash salt to yield stable steps 0–4 for **vertical spacing**. This is deliberate small visual pseudo-randomness, not request-time randomness or persisted ordering state.

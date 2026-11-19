@@ -35,7 +35,13 @@ function fittedMediaWidth(page, owner, availableWidth, sourceWidth, sourceHeight
         + (Number.parseFloat(pageStyle.paddingBottom) || 0)
         + (Number.parseFloat(pageStyle.marginBottom) || 0);
     const remaining = viewportHeight - imageTop - reserveBelow;
-    const heightForImage = Math.max(1, remaining > 0 ? remaining : viewportHeight - reserveBelow);
+    // Exceptionally long Artwork information may scroll below the Page.
+    // Never shrink the image toward zero through a feedback loop where its
+    // narrower caption track creates still more wrapped metadata lines.
+    const minimumMediaHeight = Math.min(240, viewportHeight * .3);
+    const heightForImage = Math.max(
+        minimumMediaHeight, remaining > 0 ? remaining : viewportHeight - reserveBelow,
+    );
     return Math.max(1, Math.floor(Math.min(availableWidth, heightForImage * sourceWidth / sourceHeight)));
 }
 
@@ -179,11 +185,19 @@ function initializeHomeHeroFitting(root) {
     group.addEventListener('home-hero-change', schedule, { signal: lifetime.signal });
     group.addEventListener('load', schedule, { capture: true, signal: lifetime.signal });
     group.addEventListener('loadedmetadata', schedule, { capture: true, signal: lifetime.signal });
+    // A media-width change can wrap long captions into additional lines.
+    // Re-measure their real height without adding a separate fitting owner.
+    const footerObserver = typeof ResizeObserver === 'function'
+        ? new ResizeObserver(schedule) : null;
+    group.querySelectorAll('.artwork-card__footer, .public-video__controls').forEach((element) => {
+        footerObserver?.observe(element);
+    });
     document.fonts?.ready?.then(() => {
         if (!lifetime.signal.aborted) schedule();
     });
     return () => {
         lifetime.abort();
+        footerObserver?.disconnect();
         if (frameRequest) cancelAnimationFrame(frameRequest);
         fitStyle.removeProperty('--public-fitted-image-width');
     };
