@@ -4,6 +4,13 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Carousel fixed tracks and outside navigation (2026-11-19)
+
+- The artist reports broken, arbitrarily clipped neighboring artwork previews and near-invisible dark-on-dark arrows in the newly added Carousel, especially visible in Exhibition screenshots with mixed portrait and landscape photos.
+- The old code positioned *full center-width slides* using an outside translation and clipped the overflow; content-dependent image proportions made the peeks inconsistent. The control overlay covered center-media pixels, while Exhibition's generic gallery padding offset the fixed Carousel stage.
+- `journal-presentation.css` now uses fixed center and symmetric, smaller, uncropped neighbor preview tracks, with dedicated empty paper rails for visible left/right arrows. Pagination remains above the central artwork, and media/caption form a close vertical group. Responsive Blog/Exhibition container widths under 38rem show a full-width image and move arrows to the pagination row. The one-item state has no empty header. Only Carousel-specific CSS and its Exhibition container-padding reset were changed; Slideshow/Grid/Mosaic, JS, model, data and publication contracts remain unchanged.
+- **Verification:** source checks and an *isolated* Chromium CSS/DOM smoke using cropped reference screenshots for 909px landscape, 942px portrait and 420px narrow layouts. Verified complete symmetric previews, outside-paper arrow rails and correct narrow fallback; this was synthetic markup, **not the real Laravel/Blade site**. Browser acceptance still required for both Journal templates, mixed video, publication count edge cases, real native controls and long credits. No repo test suite, CI, actual preview, migration or deployment executed.
+
 ## Slideshow pagination placement and credits (2026-11-19)
 
 - Artist requests unboxed pagination above the Slideshow image again, with credits directly below the depicted work, without undoing smooth transitions or external arrow alignment. The screenshot's substantial image-to-credit whitespace came from the figure's grid allocating the image a flexible row but pinning its caption to the fixed stage's bottom; it was not intentional authored spacing.
@@ -86,4 +93,4 @@
 
 ## Next
 
-Have the artist review Slideshow pagination-above, close image credits, preserved outer stage and narrow-arrow placement, together with modal video controls and Carousel, in a fresh local preview; hand regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
+Have the artist review the corrected Carousel's neighboring image tracks, arrow rails, captions, responsive fallback and mixed video in Exhibitions and Blog; include Slideshow and modal Viewer checks in a fresh local preview and hand browser regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.

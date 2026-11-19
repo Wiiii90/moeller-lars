@@ -96,11 +96,26 @@
     --journal-slideshow-header-height: 0rem;
 }
 
-/* The Carousel's center frame is almost identical in width to Slideshow,
-   while the 16% gutters preview the previous and next real media items. */
+/* Equal side previews and separate arrow rails, rather than shifted,
+   almost-full-size slides clipped to arbitrary artwork fragments. */
 .journal-entry-gallery--carousel {
-    width: min(100%, 50rem);
+    --journal-carousel-preview-width: 12%;
+    --journal-carousel-arrow-rail: 2.75rem;
+    --journal-carousel-header-height: 2.25rem;
+    width: min(100%, 54rem);
+    height: calc(var(--journal-gallery-stage-height) + var(--journal-carousel-header-height));
     overflow: hidden;
+}
+
+/* A single-image gallery does not reserve an empty pagination header. */
+.journal-entry-gallery--carousel:not(:has(> .journal-entry-gallery__controls)) {
+    --journal-carousel-header-height: 0rem;
+}
+
+/* Exhibition Journal adds vertical padding generically, which would shift
+   the Carousel's explicitly sized media stage and bottom content. */
+.exhibitions-page .journal-entry-gallery--carousel {
+    padding-block: 0;
 }
 
 .journal-entry-gallery--slideshow .journal-entry-gallery__item,
@@ -190,24 +205,65 @@
     margin-top: .45rem;
 }
 
+/* All slots have fixed boundaries independent of each artwork's aspect
+   ratio. Center keeps the large complete media; neighbors show smaller
+   complete works, not unpredictable clipped segments. */
 .journal-entry-gallery--carousel .journal-entry-gallery__item {
+    top: var(--journal-carousel-header-height);
     right: auto;
-    left: 16%;
-    width: 68%;
+    bottom: auto;
+    left: calc(var(--journal-carousel-preview-width) + var(--journal-carousel-arrow-rail));
+    width: calc(100% - 2 * (var(--journal-carousel-preview-width) + var(--journal-carousel-arrow-rail)));
+    height: var(--journal-gallery-stage-height);
+    transform: none;
+    opacity: 1;
+}
+
+.journal-entry-gallery--carousel .journal-entry-gallery__item[data-journal-slide-position="previous"],
+.journal-entry-gallery--carousel .journal-entry-gallery__item[data-journal-slide-position="next"] {
+    width: var(--journal-carousel-preview-width);
+    opacity: .72;
 }
 
 .journal-entry-gallery--carousel .journal-entry-gallery__item[data-journal-slide-position="previous"] {
-    transform: translateX(calc(-100% - .75rem));
-    opacity: .62;
+    left: 0;
 }
 
 .journal-entry-gallery--carousel .journal-entry-gallery__item[data-journal-slide-position="next"] {
-    transform: translateX(calc(100% + .75rem));
-    opacity: .62;
+    right: 0;
+    left: auto;
+}
+
+.journal-entry-gallery--carousel .journal-entry-gallery__item:not([data-journal-slide-position="active"]) .journal-entry-media {
+    padding-inline: .25rem;
 }
 
 .journal-entry-gallery--carousel .journal-entry-gallery__item:not([data-journal-slide-position="active"]) figcaption {
-    visibility: hidden;
+    display: none;
+}
+
+/* Art and credits form one centered, shrinkable vertical group. Unlike the
+   former grid this keeps the credit close to a smaller landscape image. */
+.journal-entry-gallery--carousel .journal-entry-media {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.journal-entry-gallery--carousel .journal-entry-media :is(img, video) {
+    flex: 0 1 auto;
+}
+
+.journal-entry-gallery--carousel .journal-entry-media figcaption {
+    flex: 0 0 auto;
+    margin-top: .45rem;
+}
+
+.journal-entry-gallery--carousel:not(:has(> .journal-entry-gallery__controls)) .journal-entry-gallery__item {
+    left: 50%;
+    width: min(100%, 34rem);
+    transform: translateX(-50%);
 }
 
 /* Navigation uses a transparent control layer. Slideshow puts arrows in
@@ -253,12 +309,35 @@
     padding: 0;
 }
 
-/* Carousel arrows belong to the active central media edge. Keeping the
-   controls inside its 68% track leaves both side previews unobscured. */
+/* Plain, high-contrast arrows live on white rails BETWEEN the previews
+   and the active artwork, never on either artwork. The counter sits above. */
 .journal-entry-gallery--carousel .journal-entry-gallery__controls {
-    right: auto;
-    left: 16%;
-    width: 68%;
+    grid-template-columns:
+        var(--journal-carousel-preview-width)
+        var(--journal-carousel-arrow-rail)
+        minmax(0, 1fr)
+        var(--journal-carousel-arrow-rail)
+        var(--journal-carousel-preview-width);
+    grid-template-rows: var(--journal-carousel-header-height) var(--journal-gallery-stage-height);
+}
+
+.journal-entry-gallery--carousel .journal-entry-gallery__controls button:first-child {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: center;
+}
+
+.journal-entry-gallery--carousel .journal-entry-gallery__controls button:last-child {
+    grid-column: 4;
+    grid-row: 2;
+    justify-self: center;
+}
+
+.journal-entry-gallery--carousel .journal-entry-gallery__controls [data-journal-slide-status] {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+    margin: 0;
 }
 
 .journal-entry-gallery__controls button {
@@ -327,6 +406,45 @@
     .journal-entry-gallery--slideshow .journal-entry-gallery__controls button:first-child,
     .journal-entry-gallery--slideshow .journal-entry-gallery__controls button:last-child {
         grid-row: 1;
+    }
+}
+
+/* Both Exhibition and Blog provide a content-size container. On tight
+   widths keep the Carousel setting, but show a single full-width frame and
+   move its accessible arrows beside pagination above the artwork. */
+@container (max-width: 38rem) {
+    .journal-entry-gallery--carousel .journal-entry-gallery__item {
+        right: 0;
+        left: 0;
+        width: 100%;
+    }
+
+    .journal-entry-gallery--carousel .journal-entry-gallery__item[data-journal-slide-position="previous"],
+    .journal-entry-gallery--carousel .journal-entry-gallery__item[data-journal-slide-position="next"] {
+        display: none;
+    }
+
+    .journal-entry-gallery--carousel .journal-entry-gallery__controls {
+        grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+    }
+
+    .journal-entry-gallery--carousel .journal-entry-gallery__controls button:first-child {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .journal-entry-gallery--carousel .journal-entry-gallery__controls button:last-child {
+        grid-column: 3;
+        grid-row: 1;
+    }
+
+    .journal-entry-gallery--carousel .journal-entry-gallery__controls [data-journal-slide-status] {
+        grid-column: 2;
+    }
+
+    .journal-entry-gallery--carousel:not(:has(> .journal-entry-gallery__controls)) .journal-entry-gallery__item {
+        left: 50%;
+        width: 100%;
     }
 }
 

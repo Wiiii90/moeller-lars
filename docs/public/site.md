@@ -544,10 +544,17 @@ Slideshow media and credits form one centered vertical group; caption text
 sits directly below its own image or video without the former fixed-stage
 grid-row gap. The outer stage remains fixed across media switches.
 Carousel retains its independent peek geometry and unboxed controls.
-Carousel displays the active media at Slideshow-like scale, plus the previous
-and next *real* media as partial, dimmed side previews. Side previews are
-`inert` and aria-hidden; they are never duplicated or played in the
-background. An authored Gallery only uses Carousel when explicitly selected.
+Carousel displays the active media at Slideshow-like scale, plus the
+previous and next *real* media as smaller, complete side previews in equal
+tracks. The arrow rails separate these previews from the large active image
+instead of overlaying either artwork; pagination sits above the frame and
+credits follow the active media directly. This replaces the former translated
+full-size neighbors, whose varying aspect ratios generated uneven clipped
+fragments. On narrow Blog or Exhibition content widths the previews are
+suppressed, and arrows flank pagination above a full-width center image.
+Exhibition's generic Journal padding is reset for this explicitly sized stage.
+Side previews remain `inert`, aria-hidden and excluded from background
+playback; they are never duplicated. Carousel remains opt-in.
 `JournalMosaicColumns` continues to own Mosaic. The existing Gallery image
 viewer, mixed image/video assets and optional Exhibition credits keep their
 separate owners. No new model, route or persistence field is added. Browser
