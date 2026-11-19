@@ -2,36 +2,29 @@
 
 This is the compact live organizational state for the single `org` chat on `dev`. It is not a transcript. Replace superseded facts instead of appending history.
 
-## Current milestone — v0.4.0
+## Completed historical milestone — v0.4.0
 
-**Development state:** artist-feedback work is still active. The user has **not** declared a Dev freeze and no final v0.4 source SHA exists yet.
+**Accepted on 2026-11-19 with a retrospective technical handoff boundary of 2026-11-09.** The project owner accepted the sufficiently stable v0.4 core and the previously reviewed Testing qualification without a repeated full-suite run on the later, rapidly evolving `dev` head. The exact tested snapshot was `f0d168b22437668a29485ae308880e09831c4447` on Testing; the reviewed application/test transfer to `dev` was commit `f54041ee4b75140380b543bf1a37185cc5dbd2aa` on 2026-11-09.
 
-Open v0.4 closing gates:
-- **#198 — functional/failure-state validation:** bounded closeout only. v0.4 does not require a permanently bug-free application; at freeze the core feature set must work without a known high-severity ordinary-use blocker.
-- **#199 — verification suite/release checks:** final Testing reconciliation and executed isolated qualification happen only after the user declares the exact Dev freeze.
-- **#214 — release notes and milestone closeout:** pre-freeze themes are prepared; final date, Git range, evidence, Dashboard entries and milestone closure wait for the exact freeze.
+All 17 v0.4 issues now have zero open issues. #198 functional signoff, #199 historical qualification (Unit/Integration/Feature/Migration/JS/Browser/PHPStan/Pint evidence) and #214 milestone notes were closed **completed on 2026-11-19** with explicit evidence-limit comments. The technical milestone summary is in #214; these closures do not claim a historical Production release or an exact `main` verification. No Dashboard deployed-release announcement, Git tag, `main` promotion, history rewrite, workflow dispatch or Validation mutation was performed for this closeout.
 
-Accepted foundational v0.4 Issues already closed by user decision:
-- #177 Activity / Undo / Notification foundation;
-- #197 public frontend foundation;
-- #207 Admin controls/tables consistency foundation;
-- #208 shared responsive foundation.
+**Milestone container state:** the available connected GitHub actions can close Issues but not update the Milestone state itself. After all issues were closed, the remaining single operation is the explicitly user-approved GitHub Milestone #13 state change to closed; ask the operator to run `gh api -X PATCH repos/Wiiii90/moeller-lars/milestones/13 -f state=closed` if not independently confirmed. Do not claim the container itself is closed before confirmation.
 
-Do not reopen those merely because later artist-driven changes expose a concrete regression. Track/fix the concrete owner instead.
+## Active development milestone — v0.5.0
 
-## Next milestone — v0.5.0
+Artist-feedback and development continued beyond the historical v0.4 boundary. All post-handoff changes, including new Home/Pages/Gallery type/template architecture and performance/dialog improvements, are v0.5 work. No v0.5 Dev freeze or exact application candidate has been chosen.
 
-Current open v0.5 gates:
+Eight currently open v0.5 completion gates:
 - #31 protected Biography/Exhibitions/profile reconciliation;
 - #34 exact-candidate public/editorial regression comparison;
-- #38 authoritative database + original-media backup/restore proof;
-- #39 exact v0.5 Production-candidate GO/NO-GO;
+- #38 authoritative matching DB/original-media backup and isolated restore proof;
+- #39 exact v0.5 Production-candidate GO/NO-GO, including prior v0.4 main promotion;
 - #57 Analytics against real aggregate data;
-- #59 Storage capacity/quota in target runtime;
+- #59 Storage capacity/quota in the target runtime;
 - #122 real Contact mail-delivery acceptance;
-- #209 artist-approved Validation cutover dataset.
+- #209 artist-approved Validation-source clean Production target, with source accounting/content freeze and sanitization.
 
-v0.5 is already partially exercised in practice because protected Validation is used for real artist editorial work, but v0.4 should still receive a clean historical close before the v0.5 release-candidate gates are treated as the active milestone.
+**Cutover boundary:** v0.5 ends with reproducible Production target and exact candidate GO/NO-GO under #209/#39. Artist editorial approval #40, application-side Production traffic-switch validation #41 and post-cutover stabilization #42 are assigned to a **different later cutover milestone**. Platform owns the actual traffic switch and rollback separately (platform #11 and related gates). Do not conflate a Validation refresh, v0.5 candidate approval, editorial approval and Production cutover.
 
 ## Validation
 
@@ -41,7 +34,7 @@ For a requested new Dev preview, resolve the exact fresh `dev` SHA and use the e
 1. `scripts/validation-preview.ps1 <exact-sha>` builds/publishes the exact preview image;
 2. the platform Validation update consumes that same exact SHA.
 
-Do not record private host/access details here. No current deployed Validation SHA is independently confirmed in Org state; verify before claiming one.
+Do not record private host/access details here. Last operator-confirmed running Validation Git source on 2026-11-18: `3f203cfc384bfd2e95679cf05b0abcfc54f711fe`, healthy on platform digest `sha256:776f87dce3ea20b6b135c69557a5f66b995293e1dfbe02f55e4cf75478fec2f9`. This is not a guarantee of today's runtime state; re-read `status`/`/app-release.json` before an update.
 
 ## Local artist-state mirror from Validation
 
@@ -89,13 +82,8 @@ This is now a **Docs normalization gate**: translate in place to English, preser
 
 ## Immediate organizational objective
 
-**Server read-only preflight confirmed by operator, 2026-11-18 around 19:00 CET:** `server-platform-moeller-lars-validation status` reports app and PostgreSQL healthy, Pulse enabled/running, authenticated ingress enabled; Matomo browser tracking disabled, read-only reporting enabled (website ID 1, token present). App and Pulse running on immutable image digest `sha256:776f87dce3ea20b6b135c69557a5f66b995293e1dfbe02f55e4cf75478fec2f9`; this alone does not identify the Git SHA. Server root filesystem `45G` total / `26G` used / `20G` available, Validation media `2.0G`. `TEMP_EXPORT_ABSENT` confirms prior server export directory removed. Next read-only operator command reads `/app-release.json` and `php artisan migrate:status` inside the live Validation app. Do not start a new export or deploy until candidate and backup/recovery plan are selected. 
+Finish the already authorized **historical v0.4 GitHub milestone container close** when the operator confirms the single Milestone #13 state change. Move the organizational focus to the eight v0.5 candidate/data/runtime gates, while active Dev feedback work continues.
 
-**Validation preparation, 2026-11-18:** The user wants to prepare another protected Validation preview but explicitly does **not** select or approve the current `dev` commit for deployment. No preview-image publication, Validation mutation, Continuous Integration run or release promotion is authorized by preparation alone.
+The user intends a **near-term update of protected Validation** to a freshly selected exact `dev` commit, but has **not yet selected that commit**. Do not build/publish an image, execute a Validation update, or treat current `dev` as frozen until the user explicitly identifies it. The previously recorded Validation→local transfer was successful on an older `dev` revision; the newer irreversible Home/Gallery Hero migration and changed source have not been accepted against that mirror. `scripts/local-preview.ps1` still injects local Analytics demo data after startup; use a safe non-seeding local launch for the artist-data mirror. Right before an approved update, capture and independently verify a matching recoverable Validation database/original-media snapshot because the ordinary platform Production backup does not automatically cover protected Validation. Preserve the artist's live editorial state; never reimport older data into Validation.
 
-- **Source position:** `dev` is moving with parallel workers (observed `afed72943b564fb4ea7cc70b8bdcdeebf6d7d37c`); the next candidate must be selected by its exact fresh commit, not assumed to be current HEAD.
-- **Migration repair:** Dev Worker 5 corrected the first Gallery `site_sections_template_check` ordering defect on `dev` for both Working and Committed schemas. The larger forward-only Home-to-Gallery Hero activation migration `2026_11_18_050000_activate_page_templates_and_gallery_hero.php` is source-integrated but **not yet verified** against the imported artist-data mirror. Its downgrade explicitly throws. The last evidenced successful local migration/media run was on older `5889f6bd56f5e47984f70e74e31053866b767397`; a subsequent preview start failed before the repair. A successful current Admin/public runtime or historical restore is not yet proved.
-- **Preparation gates:** (1) read-only Validation lifecycle/status and capacity, plus temporary-export hygiene; (2) finish a current local migration/media/browser rehearsal on the imported artist data without the Analytics demo injector in `scripts/local-preview.ps1`; (3) immediately before any approved Validation update, create/check an independent, matched Validation PostgreSQL and original-media recovery point, transfer and checksum-verify it off-host, then remove only temporary server exports; (4) select the exact accepted Git source and use the existing explicit image-preview then platform `update <SHA>` path, followed by post-update checks. Never treat the platform's normal Production backup as coverage of ephemeral Validation state.
-- **Pending operator evidence:** whether the old local transfer/backup/media directories were actually removed, the current deployed Validation identity and read-only status, and the current local migration/health/media/browser outcomes. Do not mark these complete from commands merely proposed.
-
-In parallel, artist-feedback development remains active; no Dev freeze has been declared. At a later explicit v0.4 freeze use #198 → #199 → #214 for milestone closure; pre-main Git-history cleanup remains a separate authorized gate.
+Before the next `main` promotion, the explicitly agreed repository history sanitization of prior public ADR infrastructure content remains a mandatory separate coordinated gate. A historical milestone close does **not** waive that prerequisite or authorize `main` changes.
