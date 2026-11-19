@@ -96,13 +96,14 @@
     --journal-slideshow-header-height: 0rem;
 }
 
-/* Equal side previews and separate arrow rails, rather than shifted,
-   almost-full-size slides clipped to arbitrary artwork fragments. */
+/* Carousel uses the General-owned content width, just like Mosaic. Enlarged
+   equal side previews are capped on very wide sheets so the central artwork
+   remains dominant; the arrow rails stay outside all artwork pixels. */
 .journal-entry-gallery--carousel {
-    --journal-carousel-preview-width: 12%;
+    --journal-carousel-preview-width: clamp(9rem, 20%, 18rem);
     --journal-carousel-arrow-rail: 2.75rem;
     --journal-carousel-header-height: 2.25rem;
-    width: min(100%, 54rem);
+    width: 100%;
     height: calc(var(--journal-gallery-stage-height) + var(--journal-carousel-header-height));
     overflow: hidden;
 }
@@ -409,10 +410,11 @@
     }
 }
 
-/* Both Exhibition and Blog provide a content-size container. On tight
-   widths keep the Carousel setting, but show a single full-width frame and
-   move its accessible arrows beside pagination above the artwork. */
-@container (max-width: 38rem) {
+/* Both Exhibition and Blog provide a content-size container. At narrower
+   widths enlarged previews would squeeze the central artwork, so retain
+   the Carousel setting but show one full-width frame with arrow buttons
+   beside pagination above the artwork. */
+@container (max-width: 48rem) {
     .journal-entry-gallery--carousel .journal-entry-gallery__item {
         right: 0;
         left: 0;

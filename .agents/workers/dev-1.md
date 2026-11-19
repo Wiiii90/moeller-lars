@@ -4,6 +4,13 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Carousel full Content width and larger side previews (2026-11-19)
+
+- User noticed both a persistent right/left outside margin compared with Mosaic and unnecessarily small neighbor art after the symmetric Carousel-track repair.
+- Confirmed source constraints: Carousel still used `width: min(100%, 54rem)` (864px), despite the General-owned Blog and Exhibition content containers providing more room, and the adjacent preview slots occupied only `12%` each.
+- Updated only Carousel CSS in `resources/css/journal-presentation.css`: use `width: 100%` of the existing General-owned content track (without overriding General Page/Content padding); enlarge equal adjacent image tracks to `clamp(9rem, 20%, 18rem)`, with original media/credits still uncropped and fixed-height, and move the narrow-container single-stage fallback to 48rem to retain adequate center media width. Arrow rails, unobstructed navigation, active/inert status, slideshow and all other gallery presentations remain unchanged. No new setting is introduced.
+- **Verification:** source inspection and repository readback pending; no browser rendering, tests, CI, deployment, migrations or changes to shared General settings initiated.
+
 ## Carousel fixed tracks and outside navigation (2026-11-19)
 
 - The artist reports broken, arbitrarily clipped neighboring artwork previews and near-invisible dark-on-dark arrows in the newly added Carousel, especially visible in Exhibition screenshots with mixed portrait and landscape photos.
@@ -93,4 +100,4 @@
 
 ## Next
 
-Have the artist review the corrected Carousel's neighboring image tracks, arrow rails, captions, responsive fallback and mixed video in Exhibitions and Blog; include Slideshow and modal Viewer checks in a fresh local preview and hand browser regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
+Have the artist review full-Content-width Carousel with enlarged neighbors and the 48rem responsive fallback in both Exhibition and Blog, alongside media caption/video and Slideshow regressions in local preview; hand browser scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
