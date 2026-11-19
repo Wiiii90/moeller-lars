@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
 
 final class MediaAssetSelect
 {
+    public const PAGE_SIZE = 30;
+
     private const OPTION_LABEL_CACHE = 'admin.media_asset_select.option_labels';
 
     public static function make(
@@ -22,7 +24,7 @@ final class MediaAssetSelect
         bool $imagesOnly = false,
         bool $includeDimensions = true,
     ): Select {
-        return self::configure(Select::make($name), $label, $imagesOnly, $includeDimensions, visual: true)
+        return self::configure(MediaAssetPicker::make($name), $label, $imagesOnly, $includeDimensions, visual: true)
             ->relationship(
                 name: $relationship,
                 titleAttribute: 'original_filename',
@@ -37,20 +39,11 @@ final class MediaAssetSelect
                     return '';
                 }
 
-                self::primeOptionLabel($record, $includeDimensions, true);
+                $label = self::optionLabel($record, $includeDimensions, true);
+                self::cacheOptionLabel((int) $record->getKey(), $includeDimensions, true, $label);
 
-                return self::optionLabel($record, $includeDimensions, true);
-            })
-            ->preload()
-            // Filament limits relationship preloads by default. Expose every
-            // eligible Storage file instead of silently hiding older assets.
-            ->optionsLimit(PHP_INT_MAX)
-            ->getSearchResultsUsing(fn (string $search): array => self::searchOptions(
-                $search,
-                $imagesOnly,
-                $includeDimensions,
-                visual: true,
-            ));
+                return $label;
+            });
     }
 
     /**
@@ -65,7 +58,7 @@ final class MediaAssetSelect
         bool $visual = true,
     ): Select {
         $select = self::configure(
-            Select::make($name),
+            MediaAssetPicker::make($name),
             $label,
             $imagesOnly,
             true,
@@ -94,21 +87,11 @@ final class MediaAssetSelect
                     return null;
                 }
 
-                self::primeOptionLabel($asset, true, $visual);
+                $label = self::optionLabel($asset, true, $visual);
+                self::cacheOptionLabel((int) $asset->getKey(), true, $visual, $label);
 
-                return self::optionLabel($asset, true, $visual);
+                return $label;
             });
-
-        if ($visual) {
-            $select->options(fn (): array => self::searchOptions(
-                '',
-                $imagesOnly,
-                true,
-                $allowedMimeTypes,
-                $modifyQueryUsing,
-                visual: true,
-            ));
-        }
 
         return $select;
     }
@@ -126,36 +109,16 @@ final class MediaAssetSelect
         bool $visual = false,
         ?int $maxResults = null,
     ): array {
-        /** @var Builder<MediaAsset> $query */
-        $query = MediaAsset::query();
-        self::constrainAvailable($query, $imagesOnly, $allowedMimeTypes, $modifyQueryUsing);
+        $query = self::optionQuery($search, $imagesOnly, $allowedMimeTypes, $modifyQueryUsing);
 
-        $term = trim($search);
-        if ($term !== '') {
-            $query->where(static fn (Builder $query): Builder => $query
-                ->where('original_filename', 'ilike', '%'.$term.'%')
-                ->orWhere('alt_text', 'ilike', '%'.$term.'%'));
-        }
-
-        if ($term === '') {
-            $query->orderByDesc('created_at')->orderByDesc('id');
-        } else {
-            $query->orderBy('original_filename')->orderBy('id');
-        }
-
-        // Select's native option list has no incremental scroll pagination.
-        // Return the complete eligible set so older assets remain discoverable;
-        // preview <img> elements below still defer image downloads until shown.
         if ($maxResults !== null) {
-            // Keep the default Storage picker complete. Composite controls
-            // explicitly choose a bounded initial/search sample.
             $query->limit(max(1, min($maxResults, 100)));
         }
+
         $assets = $query->with('variants')->get();
 
-        // The complete selectable list stays available, but building it must
-        // not copy a growing request cache and render every option twice.
-        // Batch the labels into the existing request-local cache once.
+        // This explicit synchronous search API is retained for existing
+        // consumers and tests; dialogs use pageOptions() instead.
         $cache = request()->attributes->get(self::OPTION_LABEL_CACHE, []);
         if (! is_array($cache)) {
             $cache = [];
@@ -174,16 +137,98 @@ final class MediaAssetSelect
         return $options;
     }
 
-    public static function primeOptionLabel(MediaAsset $asset, bool $includeDimensions = true, bool $visual = false): void
-    {
-        $asset->loadMissing('variants');
+    /**
+     * Fetch one bounded page for the shared Storage picker. This is invoked
+     * only when the user opens its list, searches, or scrolls near the end.
+     *
+     * @param list<string>|null $allowedMimeTypes
+     * @return array{options:list<array{value:string,label:string}>,hasMore:bool}
+     */
+    public static function pageOptions(
+        int $offset,
+        string $search = '',
+        bool $imagesOnly = false,
+        bool $includeDimensions = true,
+        ?array $allowedMimeTypes = null,
+        ?Closure $modifyQueryUsing = null,
+        bool $visual = true,
+    ): array {
+        $query = self::optionQuery($search, $imagesOnly, $allowedMimeTypes, $modifyQueryUsing);
+        $assets = $query
+            ->offset(max(0, $offset))
+            ->limit(self::PAGE_SIZE + 1)
+            ->with('variants')
+            ->get();
+
+        $hasMore = $assets->count() > self::PAGE_SIZE;
         $cache = request()->attributes->get(self::OPTION_LABEL_CACHE, []);
         if (! is_array($cache)) {
             $cache = [];
         }
 
-        $cache[self::cacheKey((int) $asset->getKey(), $includeDimensions, $visual)] = self::optionLabel($asset, $includeDimensions, $visual);
+        $options = [];
+        foreach ($assets->take(self::PAGE_SIZE) as $asset) {
+            $id = (int) $asset->getKey();
+            $label = self::optionLabel($asset, $includeDimensions, $visual);
+            $options[] = ['value' => (string) $id, 'label' => $label];
+            $cache[self::cacheKey($id, $includeDimensions, $visual)] = $label;
+        }
+
         request()->attributes->set(self::OPTION_LABEL_CACHE, $cache);
+
+        return ['options' => $options, 'hasMore' => $hasMore];
+    }
+
+    /**
+     * @param list<string>|null $allowedMimeTypes
+     * @return Builder<MediaAsset>
+     */
+    private static function optionQuery(
+        string $search,
+        bool $imagesOnly,
+        ?array $allowedMimeTypes,
+        ?Closure $modifyQueryUsing,
+    ): Builder {
+        /** @var Builder<MediaAsset> $query */
+        $query = MediaAsset::query();
+        self::constrainAvailable($query, $imagesOnly, $allowedMimeTypes, $modifyQueryUsing);
+
+        $term = trim($search);
+        if ($term !== '') {
+            $query->where(static fn (Builder $query): Builder => $query
+                ->where('original_filename', 'ilike', '%'.$term.'%')
+                ->orWhere('alt_text', 'ilike', '%'.$term.'%'));
+        }
+
+        if ($term === '') {
+            $query->orderByDesc('created_at')->orderByDesc('id');
+        } else {
+            $query->orderBy('original_filename')->orderBy('id');
+        }
+
+        return $query;
+    }
+
+    private static function cacheOptionLabel(int $id, bool $includeDimensions, bool $visual, string $label): void
+    {
+        $cache = request()->attributes->get(self::OPTION_LABEL_CACHE, []);
+        if (! is_array($cache)) {
+            $cache = [];
+        }
+
+        $cache[self::cacheKey($id, $includeDimensions, $visual)] = $label;
+        request()->attributes->set(self::OPTION_LABEL_CACHE, $cache);
+    }
+
+    public static function primeOptionLabel(MediaAsset $asset, bool $includeDimensions = true, bool $visual = false): void
+    {
+        $asset->loadMissing('variants');
+        self::cacheOptionLabel(
+            (int) $asset->getKey(),
+            $includeDimensions,
+            $visual,
+            self::optionLabel($asset, $includeDimensions, $visual),
+        );
     }
 
     private static function cachedOptionLabel(int $id, bool $includeDimensions, bool $visual = false): ?string
@@ -200,14 +245,14 @@ final class MediaAssetSelect
      * @param  list<string>|null  $allowedMimeTypes
      */
     private static function configure(
-        Select $select,
+        MediaAssetPicker $select,
         string|Closure $label,
         bool $imagesOnly,
         bool $includeDimensions,
         ?array $allowedMimeTypes = null,
         ?Closure $modifyQueryUsing = null,
         bool $visual = false,
-    ): Select {
+    ): MediaAssetPicker {
         if ($visual) {
             $select->extraAlpineAttributes(['class' => 'admin-media-picker--visual'], merge: true);
         }
@@ -216,8 +261,10 @@ final class MediaAssetSelect
             ->label($label)
             ->placeholder(__('Choose from Storage'))
             ->searchable()
-            ->getSearchResultsUsing(fn (string $search): array => self::searchOptions(
-                $search,
+            ->native(false)
+            ->mediaPages(fn (int $offset, ?string $search): array => self::pageOptions(
+                $offset,
+                $search ?? '',
                 $imagesOnly,
                 $includeDimensions,
                 $allowedMimeTypes,

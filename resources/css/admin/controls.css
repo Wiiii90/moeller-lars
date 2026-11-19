@@ -69,7 +69,9 @@
  * value instead shows the X in that terminal control slot, not an X floating
  * inward to leave room for a redundant caret. These rules apply to all native
  * Filament searchable Selects through the existing AdminControl wrapper. */
-.admin-control-field .fi-select-input-btn {
+/* The shared Media picker renders its caret inside the trigger; only native
+ * Filament Select triggers reserve a separate terminal caret slot. */
+.admin-control-field .fi-select-input-btn:not(.admin-media-picker__trigger) {
     padding-inline-start: var(--admin-control-text-inset) !important;
     padding-inline-end: 2rem !important;
 }
