@@ -235,6 +235,22 @@ body {
     opacity: 0;
 }
 
+/* A parent item's existing underline doubles as a hover-to-open countdown.
+   Shrink symmetrically until it disappears; animationend opens the same child
+   menu used by click and keyboard. No secondary progress indicator or timer.
+   Touch, coarse pointers and reduced-motion visitors retain click opening. */
+@keyframes site-navigation-submenu-hover-countdown {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .site-navigation__rail [data-navigation-parent-link]:hover > .site-navigation__label::after {
+        opacity: 1;
+        animation: site-navigation-submenu-hover-countdown 1.9s linear forwards;
+    }
+}
+
 /* The cyclic window and level change remain immediate; only feedback inside
    stable controls is eased, without animating menu width or position. */
 @media (prefers-reduced-motion: no-preference) {

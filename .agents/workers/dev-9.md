@@ -2,17 +2,18 @@
 
 **Branch:** `dev`
 **Lease:** 21
-**State:** Active — scoped Public navigation refinements committed; browser acceptance pending
-**Claimed work:** Public cyclic inline navigation and child return controls. Shared General/Menu and Pages ownership stays with assigned workers.
+**State:** Active — public submenu hover countdown implemented; browser acceptance pending
+**Claimed work:** Public cyclic inline navigation and child return controls. General/Menu and Pages remain under their current owners.
 
 ## Current state
-- The shared child-level Back control is icon-only, retaining the parent name in its accessible label and the established separator.
-- Current refinement source baseline: `b95c22899e854c4f64bfc5cb66ca7ab5d32ed01c`.
-- Keyboard arrows navigate visible items on both main and child levels through the existing shared cyclic window owner; the former child-only duplicate handler was removed. Parent ArrowDown opens the child level without also moving focus in the main rail. Listeners are released on navigation disposal.
-- Hover and keyboard-focus feedback ease the existing underline and icon movement without changing the one-row geometry, menu timing or cyclic-window algorithm. Motion is absent for visitors preferring reduced motion.
-- Changed production owners: `resources/js/public-navigation.js` and `resources/css/public-presentation.css`. No tests or general documentation edited.
-- Verified: exact source changes, existing component ownership, branch lease and publication. Not verified: running browser interaction, pointer/keyboard visual geometry, actual smoothness or user acceptance.
+- Source baseline for the current change: `50491001c6c159a1566cafc7aeff6a271ff749a9`.
+- All root items with a child menu keep immediate click and keyboard opening. On fine-pointer hover, their existing underline visibly shrinks from both ends into its center for 1.9 seconds, then opens the existing submenu via the existing `showChildren` operation.
+- A mouse exit cancels the countdown without opening. Root items without children retain ordinary hover underlines. Coarse pointers, touch and reduced-motion settings keep the existing click behavior.
+- The countdown derives from the CSS animation completion event; there is no independent JavaScript timer, duplicate child renderer or change to the cyclic window algorithm. Hover does not steal focus except when the parent is already the active keyboard-focused element.
+- The previous icon-only child Back control and unified keyboard navigation remain.
+- Production scope: `resources/js/public-navigation.js` and `resources/css/public-presentation.css`; Dev has not edited tests or general docs.
+- Verified: current branch lease, source-level event/style integration and checked Git commit. Browser rendering, hover duration, pointer exit, focus and responsiveness remain unverified.
 
 ## Next
-- Browser review at desktop/mobile widths with and without cyclic overflow. Check main/child arrow-key behavior, ArrowDown entering child levels, Back/Escape focus restoration, controls during page swaps and reduced-motion behavior.
-- Testing worker should reconcile any affected existing navigation tests on `testing`; no test source changes on `dev`.
+- Browser-review a parent item with children: full line on hover, two-sided linear shrink for 1.9 seconds, then immediate child-level switch. Confirm pointer exit aborts and the next entry starts anew.
+- Check ordinary page items, immediate parent clicks, keyboard opening/Back/Escape, root/child cyclic overflow, touch/mobile, reduced-motion settings, active-item styling and navigation after document swaps. Testing owner can reconcile automated tests on `testing`.

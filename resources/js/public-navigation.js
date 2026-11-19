@@ -315,6 +315,20 @@ function initializeNavigationLevels(container, mainSurface, main, restoredWindow
             submenu.querySelector('.site-navigation__item:not([hidden]) a')?.focus({ preventScroll: true });
         });
 
+        // The existing underline's CSS animation is the single countdown
+        // clock. Its completion opens the same child level as an immediate
+        // click; leaving the parent cancels the animation automatically.
+        parentLink.addEventListener('animationend', (event) => {
+            if (event.animationName !== 'site-navigation-submenu-hover-countdown'
+                || event.pseudoElement !== '::after'
+                || !parentLink.matches(':hover')
+                || mainSurface.hidden) return;
+
+            // A pointer-only hover must not steal focus. If the parent is
+            // keyboard-focused, move focus into the newly exposed level.
+            showChildren(entry, document.activeElement === parentLink);
+        });
+
         submenu.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 event.preventDefault();

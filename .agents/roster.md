@@ -12,6 +12,6 @@
 | Dev Worker 7 | 18 | Source-complete — configurable Menu alignment and mirrored nested return; migration/browser acceptance pending | Appearance Global/Title/Menu/Page/Legal, preview geometry/persistence, Regional Formats hints | [dev-7.md](workers/dev-7.md) |
 | Dev Worker 8 | 15 | Active — central Storage picker incremental loading source integrated; browser acceptance pending | Shared Admin dialogs and media picker; first 30 entries on open, next pages on scroll, paginated search, retained Filament save lifecycle | [dev-8.md](workers/dev-8.md) |
 
-| Dev Worker 9 | 21 | Active — shared keyboard and subtle interaction feedback committed; browser review pending | Public cyclic inline navigation; shared General/Pages scopes remain with current owners | [dev-9.md](workers/dev-9.md) |
+| Dev Worker 9 | 21 | Active — submenu hover countdown committed; browser acceptance pending | Public cyclic inline navigation including timed underline and child Back; shared General/Pages remain with current owners | [dev-9.md](workers/dev-9.md) |
 
 Only activated Dev workers receive a row and their own `.agents/workers/dev-N.md` record. This roster belongs exclusively to `dev` and must never receive Docs, Testing or Refactor worker entries. Follow the [shared worker protocol](README.md) for atomic registration, takeover and lease updates.
