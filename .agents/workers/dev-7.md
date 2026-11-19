@@ -99,6 +99,11 @@
 - The fixed CSS column gap is defined on the shared visible Inside Menu (including its stacked variant), so the JavaScript measurement does not change when the class toggles and cause stack/unstack oscillation.
 - Updated targeted JavaScript and existing browser regression assertions for exact title/navigation gap, reading-edge alignment and the breakpoint threshold. No tests, build, CI, local browser or deployment performed; rendered alignment remains unverified.
 
+## Inside Menu edge alignment and mirrored child navigation (2026-11-19)
+- The user chose edge alignment while preserving public page order: when Inside Title is Left, main navigation's last visible item ends at the right General reading inset; when Title is Right, first item remains at the left inset. The same direction applies to child nav, and the existing return arrow/separator appear at the far-right edge in the Left-title variant, after the final gallery, without reversing authored item order.
+- The shared public menu CSS now selects alignment through inherited contextual variables at the existing Inside-left header owner. Both main and nested nav consume one alignment variable. The existing child content flex row is mirrored with `row-reverse` only at that context, leaving its actual `nav` children, cyclic window ordering, focus/return and DOM structure untouched. Removed the redundant overflow-only left justification rather than adding another overriding rule. Other Title placements and title-hidden layout retain their previous alignment. Cyclic navigation arrows remain separate from the nested return arrow.
+- Expanded the existing isolated public navigation browser fixture to check both Inside sides, reading insets, authored order, child return position and divider ordering. Tests, builds, CI and deployment not executed; visual browser acceptance remains outstanding.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.

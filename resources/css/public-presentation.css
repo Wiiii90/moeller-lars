@@ -143,13 +143,9 @@ body {
     grid-column: 2;
     grid-row: 1;
     align-items: stretch;
-    justify-content: flex-start;
+    justify-content: var(--public-navigation-items-alignment, flex-start);
     flex-wrap: nowrap;
     overflow: hidden;
-}
-.site-navigation__rail.is-overflowing > nav,
-.site-navigation__submenu.is-overflowing .site-navigation__content > nav {
-    justify-content: flex-start;
 }
 .site-navigation__item[hidden] { display: none; }
 .site-navigation__item.is-overwide {
@@ -172,9 +168,8 @@ body {
     align-items: stretch;
 }
 
-/* With all pages visible, preserve their natural widths and align them left.
- * When navigation is cyclic, distribute the remaining row width across the
- * whole visible window, as before the no-overflow alignment change. */
+/* Keep authored page order at either edge. Without overflow, entries retain
+ * natural widths; a cyclic window distributes the available rail width. */
 .site-navigation__rail.is-overflowing .site-navigation__item,
 .site-navigation__submenu.is-overflowing .site-navigation__item {
     flex: 1 0 max-content;
@@ -341,6 +336,7 @@ body {
 
 .site-navigation__content {
     display: flex;
+    flex-direction: var(--public-navigation-child-direction, row);
     grid-column: 2;
     grid-row: 1;
     min-width: 0;
@@ -2202,6 +2198,16 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
     /* Keep this value on the stacked variant too: the fit calculation
      * measures the same gap on either side of the state transition. */
     column-gap: 1.5rem;
+}
+
+/* With the title on the left, align the last link against the right reading
+ * edge. The nested return action sits to the right of the separator, with
+ * children still ordered from first to last in the unchanged nav element.
+ * When the title is on the right, the existing left-edge composition remains.
+ * Both levels inherit this choice; cyclic arrows keep their separate tracks. */
+.site-header--name-inside.site-header--title-align-left:not(.site-header--title-hidden) {
+    --public-navigation-items-alignment: flex-end;
+    --public-navigation-child-direction: row-reverse;
 }
 
 /* The inner reading track belongs to General. On an Inside Menu the
