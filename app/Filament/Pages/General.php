@@ -45,6 +45,7 @@ final class General extends Page
         'favicon_media_asset_id',
         'frame_style',
         'menu_type',
+        'menu_alignment',
         'background_mode',
         'background_color',
         'background_gradient_start',
@@ -176,6 +177,7 @@ final class General extends Page
 
         $data['frame_style'] = PublicAppearance::frameStyle($data['frame_style'] ?? null, fromStorage: true);
         $data['menu_type'] = PublicAppearance::menuType($data['menu_type'] ?? null);
+        $data['menu_alignment'] = PublicAppearance::menuAlignment($data['menu_alignment'] ?? null);
         $data['header_name_visible'] = $data['header_name_visible'] === null ? true : (bool) $data['header_name_visible'];
         $data['header_name_text'] = PublicAppearance::headerText($data['header_name_text'] ?? null);
         $data['header_name_alignment'] = PublicAppearance::presentedHeaderAlignment($data['header_name_alignment'] ?? null, $data['header_name_position'] ?? null);
@@ -428,6 +430,13 @@ final class General extends Page
                                             ->required()
                                             ->live()
                                             ->afterStateUpdated(self::persist('menu_type')),
+                                        Select::make('menu_alignment')
+                                            ->label('Alignment')
+                                            ->options(array_map('__', PublicAppearance::MENU_ALIGNMENTS))
+                                            ->native()
+                                            ->required()
+                                            ->live()
+                                            ->afterStateUpdated(self::persist('menu_alignment')),
                                         Select::make('header_divider_mode')
                                             ->label('Menu to page')
                                             ->options(array_map('__', PublicAppearance::HEADER_DIVIDERS))
@@ -1230,6 +1239,7 @@ final class General extends Page
                 'favicon_media_asset_id',
                 'frame_style',
                 'menu_type',
+                'menu_alignment',
                 'background_mode',
                 'background_color',
                 'background_gradient_start',
@@ -1456,6 +1466,7 @@ final class General extends Page
             'favicon_media_asset_id' => 'Site icon',
             'frame_style' => 'Frame style',
             'menu_type' => 'Menu type',
+            'menu_alignment' => 'Menu alignment',
             'contact_recipient_email' => 'Contact form recipient',
             'public_email' => 'Public email',
             'show_public_email' => 'Public email visibility',
