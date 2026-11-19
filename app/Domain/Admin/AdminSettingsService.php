@@ -99,6 +99,9 @@ final class AdminSettingsService
         if (array_key_exists('menu_type', $data)) {
             $data['menu_type'] = PublicAppearance::menuType($data['menu_type']);
         }
+        if (array_key_exists('menu_alignment', $data)) {
+            $data['menu_alignment'] = PublicAppearance::menuAlignment($data['menu_alignment']);
+        }
         if (array_key_exists('header_divider_mode', $data)) {
             $data['header_divider_mode'] = PublicAppearance::headerDivider($data['header_divider_mode']);
         }

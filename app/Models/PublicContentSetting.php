@@ -17,6 +17,7 @@ use LogicException;
 /**
  * @property string|null $frame_style
  * @property string|null $menu_type
+ * @property string|null $menu_alignment
  * @property bool|null $header_name_visible
  * @property string|null $header_name_text
  * @property string|null $header_name_alignment
@@ -49,6 +50,7 @@ use LogicException;
     'default_media_copyright_notice',
     'frame_style',
     'menu_type',
+    'menu_alignment',
     'background_mode',
     'background_color',
     'background_gradient_start',
@@ -290,6 +292,7 @@ class PublicContentSetting extends Model
         $setting->setAttribute('header_name_min_size', PublicAppearance::normalizeTitleMinSize($setting->getAttribute('header_name_min_size')));
         $setting->setAttribute('frame_style', PublicAppearance::frameStyle($setting->getAttribute('frame_style'), fromStorage: true));
         $setting->setAttribute('menu_type', PublicAppearance::menuType($setting->getAttribute('menu_type')));
+        $setting->setAttribute('menu_alignment', PublicAppearance::menuAlignment($setting->getAttribute('menu_alignment')));
         $setting->setAttribute('header_divider_mode', PublicAppearance::headerDivider($setting->getAttribute('header_divider_mode')));
         $setting->setAttribute('header_name_auto_scale', $setting->getAttribute('header_name_auto_scale') === null ? true : (bool) $setting->getAttribute('header_name_auto_scale'));
         $setting->setAttribute('public_page_width', PublicAppearance::normalizePageWidth($setting->getAttribute('public_page_width')));

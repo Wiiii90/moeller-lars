@@ -15,7 +15,7 @@ final class PublicSiteContext
         private readonly SitePreviewContext $preview,
     ) {}
 
-    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicFrameStyle:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string},publicHeaderVisible:bool,publicHeaderText:string,publicHeaderAlignment:string,publicHeaderMobileAlignment:string,publicHeaderPosition:string,publicHeaderCaps:string,publicHeaderColor:?string,publicHeaderGradientCss:?string,publicHeaderSize:string,publicHeaderMinSize:string,publicHeaderDivider:string,publicHeaderDividerColor:?string,publicHeaderDividerGradientCss:?string,publicHeaderAutoScale:bool,publicPageTransparent:bool} */
+    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string,publicFrameStyle:string,publicBackgroundCss:?string,publicMenuBackgroundCss:?string,publicContentBackgroundCss:?string,publicLayoutCss:array{shell:string,art:string,padding:string},publicHeaderVisible:bool,publicHeaderText:string,publicMenuAlignment:string,publicHeaderAlignment:string,publicHeaderMobileAlignment:string,publicHeaderPosition:string,publicHeaderCaps:string,publicHeaderColor:?string,publicHeaderGradientCss:?string,publicHeaderSize:string,publicHeaderMinSize:string,publicHeaderDivider:string,publicHeaderDividerColor:?string,publicHeaderDividerGradientCss:?string,publicHeaderAutoScale:bool,publicPageTransparent:bool} */
     public function layoutData(): array
     {
         $settings = PublicContentSetting::general();
@@ -38,6 +38,12 @@ final class PublicSiteContext
             'publicLayoutCss' => PublicAppearance::layoutCss($settings),
             'publicHeaderVisible' => $settings->getAttribute('header_name_visible') === null ? true : (bool) $settings->getAttribute('header_name_visible'),
             'publicHeaderText' => PublicAppearance::headerText($settings->getAttribute('header_name_text')),
+            'publicMenuAlignment' => PublicAppearance::presentedMenuAlignment(
+                $settings->getAttribute('menu_alignment'),
+                $settings->getAttribute('header_name_position'),
+                $settings->getAttribute('header_name_alignment'),
+                $settings->getAttribute('header_name_visible') === null || (bool) $settings->getAttribute('header_name_visible'),
+            ),
             'publicHeaderAlignment' => PublicAppearance::presentedHeaderAlignment($settings->getAttribute('header_name_alignment'), $settings->getAttribute('header_name_position')),
             'publicHeaderMobileAlignment' => PublicAppearance::headerAlignment($settings->getAttribute('header_name_mobile_alignment'), 'header_name_mobile_alignment'),
             'publicHeaderPosition' => PublicAppearance::headerPosition($settings->getAttribute('header_name_position')),
