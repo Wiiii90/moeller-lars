@@ -256,32 +256,7 @@ body {
     }
 
     .site-navigation__back:is(:hover, :focus-visible) > .public-icon {
-        transform: translate(-1px, -1px);
-    }
-}
-
-/* The cyclic window and level change remain immediate; only feedback inside
-   stable controls is eased, without animating menu width or position. */
-@media (prefers-reduced-motion: no-preference) {
-    .site-navigation__label::after {
-        transition: opacity 140ms ease;
-    }
-
-    .site-navigation__control > .public-icon,
-    .site-navigation__back > .public-icon {
-        transition: transform 140ms ease;
-    }
-
-    .site-navigation__control[data-direction="previous"]:is(:hover, :focus-visible) > .public-icon {
-        transform: translateX(-2px);
-    }
-
-    .site-navigation__control[data-direction="next"]:is(:hover, :focus-visible) > .public-icon {
-        transform: translateX(2px);
-    }
-
-    .site-navigation__back:is(:hover, :focus-visible) > .public-icon {
-        transform: translate(-1px, -1px);
+        transform: translateY(-1px) scaleX(var(--public-return-icon-direction, 1));
     }
 }
 
@@ -337,6 +312,7 @@ body {
 .site-navigation__content {
     display: flex;
     flex-direction: var(--public-navigation-child-direction, row);
+    justify-content: var(--public-navigation-group-alignment, flex-start);
     grid-column: 2;
     grid-row: 1;
     min-width: 0;
@@ -376,6 +352,7 @@ body {
     height: 1.05rem;
     flex: 0 0 auto;
     stroke-width: 1.45;
+    transform: scaleX(var(--public-return-icon-direction, 1));
 }
 
 .site-navigation__back:hover,
@@ -2204,14 +2181,21 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
     column-gap: 1.5rem;
 }
 
-/* With the title on the left, align the last link against the right reading
- * edge. The nested return action sits to the right of the separator, with
- * children still ordered from first to last in the unchanged nav element.
- * When the title is on the right, the existing left-edge composition remains.
- * Both levels inherit this choice; cyclic arrows keep their separate tracks. */
-.site-header--name-inside.site-header--title-align-left:not(.site-header--title-hidden) {
+/* Menu alignment belongs to General -> Menu independently of Title.
+ * Both levels share the reading axis and keep the authored page order.
+ * The child return arrow follows the chosen edge; no duplicate renderer. */
+.site-header--menu-align-right {
     --public-navigation-items-alignment: flex-end;
     --public-navigation-child-direction: row-reverse;
+    --public-return-icon-direction: -1;
+}
+.site-header--menu-align-center {
+    --public-navigation-items-alignment: center;
+    --public-navigation-group-alignment: center;
+}
+.site-header--menu-align-center .site-navigation__content > nav {
+    /* Center the entire natural-width child group; allow cyclic shrinkage. */
+    flex: 0 1 auto;
 }
 
 /* The inner reading track belongs to General. On an Inside Menu the
