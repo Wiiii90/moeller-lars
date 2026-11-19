@@ -8,7 +8,7 @@
 ## Current state
 - Source baseline for the current change: `50491001c6c159a1566cafc7aeff6a271ff749a9`.
 - All root items with a child menu keep immediate click and keyboard opening. On fine-pointer hover, their existing underline visibly shrinks from both ends into its center for 1.9 seconds, then opens the existing submenu via the existing `showChildren` operation.
-- A mouse exit cancels the countdown without opening. Root items without children retain ordinary hover underlines. Coarse pointers, touch and reduced-motion settings keep the existing click behavior.
+- A mouse exit cancels the countdown without opening. Countdown styling requires the initialized Public navigation, so scripts-disabled pages do not show a misleading countdown. Root items without children retain ordinary hover underlines. Coarse pointers, touch and reduced-motion settings keep the existing click behavior.
 - The countdown derives from the CSS animation completion event; there is no independent JavaScript timer, duplicate child renderer or change to the cyclic window algorithm. Hover does not steal focus except when the parent is already the active keyboard-focused element.
 - The previous icon-only child Back control and unified keyboard navigation remain.
 - Production scope: `resources/js/public-navigation.js` and `resources/css/public-presentation.css`; Dev has not edited tests or general docs.
