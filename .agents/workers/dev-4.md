@@ -1,13 +1,13 @@
 # Dev Worker 4 — Gallery/Artwork
 
-**Lease:** 20
+**Lease:** 22
 **Branch:** dev
-**State:** Paused for immediate user-directed replacement chat. Do not continue work from this chat after the new Worker 4 acquires a fresh lease.
+**State:** Active — replacement chat initialized 2026-11-19; source orientation only. No Gallery redesign implementation authorized until the user supplies its concrete new requirements.
 
-## User-directed handoff
+## Current scope and inherited handoff
 
-- The artist considers the current public Gallery, individual Artwork and Home Hero presentation satisfactory for now ("I think everything is good now"). **Next task:** substantial redesign of the Gallery Admin Stage and its checkbox/settings controls. The user will provide the concrete new requirements in the replacement Dev Worker 4 chat. Do not preempt its design or keep working on public images without new instruction.
-- The new chat's direct numbered assignment is an **explicit takeover**. Follow `dev/AGENTS.md`, `.agents/skills/dev/SKILL.md`, `.agents/README.md`: read the newest `dev` branch head/roster, allocate the next monotonic lease (do not reuse lease 20), and atomically replace the roster row **and this state file** before implementing anything.
+- The user explicitly assigned this new chat as Dev Worker 4 and asked it to read into the project, not yet to implement a specific change. The previously accepted public Gallery, Artwork and Home Hero presentation remains satisfactory for now. **Next anticipated task:** substantial redesign of Gallery Admin Stage and checkbox/settings controls, pending concrete user instructions; do not preempt that design.
+- Worker takeover uses the next lease token on `dev`. Project contract, same-branch Dev skill and shared protocol were read before this checked registration. No application source, test, deployment or issue has been changed as part of onboarding.
 - Dev Worker 4 owns Public Gallery/Artwork and Gallery Stage/Settings. Dev Worker 6 owns broader Home Hero selection/ranking/rotation/Stage; Dev Worker 7 owns General; Dev Worker 8 owns shared dialog/picker styling. Coordinate rather than introducing parallel components.
 
 ## Current Public presentation — preserve
