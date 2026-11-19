@@ -34,9 +34,15 @@ function fittedMediaWidth(page, owner, availableWidth, sourceWidth, sourceHeight
         + (Number.parseFloat(pageStyle.paddingTop) || 0)
         + outerHeight(heading) + outerHeight(folio);
     const imageTop = Math.max(0, stageStart - (viewport?.offsetTop ?? 0));
+    /* The fitted paper ends one shell gap before the viewport and Content
+       itself has its own lower margin. Account for BOTH real offsets: tall
+       portrait Artworks otherwise overflow the paper by one shell gap,
+       while width-limited landscapes keep the normal lower inset. */
+    const paperGap = Number.parseFloat(pageStyle.getPropertyValue('--public-shell-gap')) || 0;
     const reserveBelow = outerHeight(footer) + outerHeight(controls)
         + (Number.parseFloat(pageStyle.paddingBottom) || 0)
-        + (Number.parseFloat(pageStyle.marginBottom) || 0);
+        + (Number.parseFloat(pageStyle.marginBottom) || 0)
+        + paperGap;
     const remaining = viewportHeight - imageTop - reserveBelow;
     // Exceptionally long Artwork information may scroll below the Page.
     // Never shrink the image toward zero through a feedback loop where its

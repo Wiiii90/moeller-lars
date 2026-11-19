@@ -614,9 +614,9 @@ body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitte
     flex: 1 1 auto;
     flex-direction: column;
 }
-/* The image and its Artwork information share a fitted group. Center the
- * combined composition in the remaining page height; do not give short
- * landscape images an empty viewport-height stage above their captions. */
+/* The fitted image and its Artwork information share one height-aware group.
+   The shared bottom-edge rule below anchors the group at the Page inset;
+   short landscapes keep their unused height above the media and caption. */
 .site-content--fitted-image > .public-content-reveal,
 .site-content--fitted-image .artwork-detail,
 .site-content--fitted-image .artwork-detail__fitted-group {
