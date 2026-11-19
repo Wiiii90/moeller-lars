@@ -24,6 +24,12 @@
 - Gallery desktop base gap is `clamp(8rem, 17svh, 10rem)` plus zero to one rem jitter in quarter-rem steps; total roughly two to two-and-a-half times the former `clamp(3.5rem, 8svh, 5rem)` at ordinary desktop heights. With a divider, the same full gap is divided evenly above/below the separator. The last Artwork adds no trailing gap. On phones (<=40rem), the preexisting `clamp(1rem, 3svh, 2rem)` remains **without** jitter.
 - General owns Gallery paper width, media height remains `min(82svh, calc(100svh - 9rem))`, top inset follows the General side inset on larger screens and is 1rem on phones, captions match visible image width. Images preserve aspect ratio, no decorative edges, no artificial viewport-height Gallery card slots.
 
+## Gallery Workspace — 500 on load repaired
+
+- Removed the stale `galleryContext['artwork_page_layout']` projection in `GalleryWorkspaceSelectionSupport::loadGallery()`. The stored layout selector and `GalleryPresentation::artworkPageLayout()` were retired with the sole-Expanded change, but this admin context still invoked the deleted reader, causing a GET /admin/pages/gallery/{id} HTTP 500 before Stage and Settings rendered.
+- The Gallery admin view and inspected GalleryWorkspace traits consume no `galleryContext['artwork_page_layout']`; the obsolete context entry can be removed rather than reinstating a compatibility method or misleading choice. Gallery settings, navigation and publication are unchanged.
+- Source review confirms the deleted call is absent. No full local Laravel request was executed; artist should reload the failing Gallery admin route.
+
 ## Gallery Stage/Settings retained
 
 - Artwork Information arrangement is the canonical Field/Row/Align table, with existing row movement and Gallery-specific sparse overrides. Media Viewer, Artwork Page availability/end navigation and looping video sound keep their independent meanings. Stage/modal controls use flat grouping without persistent helper paragraphs, excessive rounding or mandatory stars.
