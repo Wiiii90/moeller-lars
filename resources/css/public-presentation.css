@@ -2205,6 +2205,9 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
  * The hidden-title path retains the established full-width Menu rail. */
 .site-header--name-inside:not(.site-header--title-hidden) .site-navigation {
     padding-inline: var(--public-content-inset);
+    /* Keep this value on the stacked variant too: the fit calculation
+     * measures the same gap on either side of the state transition. */
+    column-gap: 1.5rem;
 }
 
 /* The inner reading track belongs to General. On an Inside Menu the
@@ -2269,7 +2272,6 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
 .site-header--name-inside:not(.is-title-stacked):not(.site-header--title-hidden) .site-navigation {
     display: grid;
     grid-template-columns: max-content minmax(0, 1fr);
-    column-gap: 1.5rem;
     align-items: stretch;
 }
 

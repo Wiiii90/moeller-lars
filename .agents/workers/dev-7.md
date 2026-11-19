@@ -96,6 +96,7 @@
 ## Intrinsic Inside Menu title-to-navigation separation (2026-11-19)
 - User rejected the unexplained percentage-based empty region between artist title and menu links. Verified on current dev that both CSS `minmax(15rem, 32%)` and JS `TITLE_RAIL_SHARE = 0.32` independently reserved the same percentage; combined with the left cyclic-arrow grid slot this made the visible gap grow with shell width. The outer Menu/Page paper, reading inset and arrow alignment were already separately owned.
 - Replaced the responsive percentage title track with `max-content` and a fixed `1.5rem` CSS column gap in the existing Inside Menu grid, mirrored for Right alignment. Navigation receives the remaining width. The existing header fit check now compares measured intrinsic title width + computed CSS gap + the retained minimum viable navigation width (`15rem`) against the actual padded Menu reading width. Mobile (<=40rem) continues to stack independent of fit; no parallel state, timers, new renderer or persisted settings.
+- The fixed CSS column gap is defined on the shared visible Inside Menu (including its stacked variant), so the JavaScript measurement does not change when the class toggles and cause stack/unstack oscillation.
 - Updated targeted JavaScript and existing browser regression assertions for exact title/navigation gap, reading-edge alignment and the breakpoint threshold. No tests, build, CI, local browser or deployment performed; rendered alignment remains unverified.
 
 ## Verification and open gates
