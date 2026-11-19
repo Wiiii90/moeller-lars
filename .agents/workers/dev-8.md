@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 15 (active)  
-**Status:** Public Inside Menu title-to-navigation spacing corrected at the existing column owner; Admin/Public scrollbar contract cleanup remains intact. Browser acceptance pending.
+**Status:** Admin dialog open latency still approximately seven seconds per user measurement; root cause unresolved. Existing publication fast path retained; request timing needed before further source changes.
 
 ## Ownership and user decisions
 - Own shared Admin dialog window presentation, semantic grouping rules and the Stage-to-Toolbar completeness contract.
@@ -72,6 +72,15 @@
 - Performance improvement is theoretically strongest with a difference in an early tracked table; no pending changes still requires checking every table. This does **not** prove the reported 20–30 second delay is resolved, nor does it measure the query time. Database plans, Livewire network request duration, and browser main-thread responsiveness must be measured in the actual preview if delay persists.
 - A separate bounded follow-up candidate is `MediaAssetSelect::make()`'s unbounded `preload()->optionsLimit(PHP_INT_MAX)` and large visual `searchOptions()`, but this cannot explain dialogs that never mount media pickers and must not be changed merely on suspicion. Preserve the user's requirement that all eligible Storage files remain selectable.
 - Do not apply click-debounce or loading overlays to disguise this latency. No browser tests, CI, server deploy, or cross-branch changes authorized.
+
+## Follow-up: persistent 7-second Admin dialog latency (2026-11-19)
+- The user timed a remaining approximately seven-second wait when opening dialogs after the previous Boolean-existence optimization. **No confirmed latency fix exists**; the earlier query optimization was valid but did not resolve the experience.
+- Reviewed the current AdminPanelProvider navigation, PublicationService existence check, SiteNavigation tree, shared AdminDialog and geometry listeners, blocking modal styles, AttachPublicationState, RecordOperationalMetrics, DeferMatomoReporting, the Matomo reporting client and job, and representative Dashboard/Pages action schemas.
+- One potential synchronous path is `DashboardOverview::snapshot()` calling `MatomoReportingClient::report('30d')` during Dashboard rerenders. On a cold cache this client can perform external reporting I/O with default timeout of five seconds; the middleware normally stages a loading sentinel before the request but a concurrent background refresh removes the fresh sentinel during its fetch. This is a **risk**, not a measured root cause, and cannot explain a confirmed delay on non-Dashboard pages without further evidence.
+- The Commit navigation may still evaluate up to fifteen row-comparison existence queries when no differences are found. No query timings exist to attribute the seven seconds to those comparisons.
+- The native modal adapter and shared geometry JavaScript introduce no explicit multi-second opening timer; the notification display has an independent eight-second lifetime and must not be confused with dialog opening.
+- **Mandatory discriminating evidence** before another production code change: in browser developer tools, capture a single `/livewire/update` request's start, wait-for-response and total duration while opening one Add or Edit dialog. If the request takes about seven seconds, profile the server request (queries and any Matomo HTTP). If it finishes promptly but the dialog still takes seven seconds, profile client Livewire morphing, rendering and event handling. Never add a click guard, delayed spinner, second modal path or speculative cache that hides the problem.
+- No browser runtime or user computer access available in this connector session. Do not claim the issue is fixed.
 
 ## Verification and next actions
 - Source review: confirmed the central dialog window radius remains `.25rem` in `dialog-contract.css`, and checked current affected dialog source. Existing modal header actions intentionally remain round; no change requested to action buttons.
