@@ -50,11 +50,6 @@ final class GalleryPresentation
 
     public const SORT_MANUAL = 'manual';
 
-    public static function allowVideoSound(ArtworkCategory $gallery): bool
-    {
-        return (bool) $gallery->getAttribute('video_sound_enabled');
-    }
-
     public const SORT_NEWEST = 'newest';
 
     // Gallery sort_mode is varchar(16); Home's source-rule keys live in JSON.
@@ -111,14 +106,15 @@ final class GalleryPresentation
         return $gallery->getAttribute('artwork_pages_enabled') !== false;
     }
 
-    public static function viewerZoomEnabled(ArtworkCategory $gallery): bool
-    {
-        return $gallery->getAttribute('viewer_zoom_enabled') !== false;
-    }
-
     public static function viewerNavigationEnabled(ArtworkCategory $gallery): bool
     {
         return $gallery->getAttribute('viewer_navigation_enabled') !== false;
+    }
+
+    public static function viewerNavigationCyclic(ArtworkCategory $gallery): bool
+    {
+        return self::viewerNavigationEnabled($gallery)
+            && $gallery->getAttribute('viewer_navigation_cyclic') === true;
     }
 
     /**
@@ -204,7 +200,7 @@ final class GalleryPresentation
         if (array_key_exists('artwork_information', $data)) {
             $values['artwork_information'] = ArtworkInformation::normalize($data['artwork_information']);
         }
-        foreach (['media_viewer_enabled', 'artwork_pages_enabled', 'viewer_zoom_enabled', 'viewer_navigation_enabled'] as $field) {
+        foreach (['media_viewer_enabled', 'artwork_pages_enabled', 'viewer_navigation_enabled', 'viewer_navigation_cyclic'] as $field) {
             if (! array_key_exists($field, $data)) {
                 continue;
             }
@@ -212,13 +208,6 @@ final class GalleryPresentation
                 throw ValidationException::withMessages([$field => 'Choose an enabled or disabled state.']);
             }
             $values[$field] = (bool) $data[$field];
-        }
-        if (array_key_exists('video_sound_enabled', $data)) {
-            $value = $data['video_sound_enabled'];
-            if (! is_bool($value) && ! in_array($value, [0, 1, '0', '1'], true)) {
-                throw ValidationException::withMessages(['video_sound_enabled' => 'Choose whether visitors may enable video sound.']);
-            }
-            $values['video_sound_enabled'] = (bool) $value;
         }
         if (array_key_exists('sort_mode', $data)) {
             if (! is_string($data['sort_mode']) || ! array_key_exists($data['sort_mode'], self::SORT_OPTIONS)) {

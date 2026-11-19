@@ -85,7 +85,7 @@ final class GalleryWorkspace extends Page
 
     public ?int $selectedStagedMediaAssetId = null;
 
-    public string $galleryStagePanel = 'settings';
+    public string $galleryStagePanel = 'upload';
 
     public string $galleryStagePreview = 'gallery';
 
@@ -146,11 +146,57 @@ final class GalleryWorkspace extends Page
 
     public function selectGalleryStagePanel(string $panel): void
     {
-        if (! in_array($panel, ['settings', 'queue'], true)) {
+        if (! in_array($panel, ['upload', 'queue', 'settings'], true)
+            || ($panel === 'queue' && $this->pendingBatchArtworkMedia === [])) {
             return;
         }
         $this->rememberStagedArtworkChanges();
         $this->galleryStagePanel = $panel;
+        if ($panel === 'queue') {
+            if ($this->selectedStagedMediaAssetId === null) {
+                $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[0]['media_asset_id']);
+            } else {
+                $this->galleryStagePreview = 'staged';
+                $this->publishStagedArtworkPreview();
+            }
+        } elseif ($this->galleryStagePreview === 'staged') {
+            $this->previewGalleryStage();
+        }
+    }
+
+    /** Stage form changes refresh only a private session-backed Public preview. */
+    public function syncStagedArtworkPreview(): void
+    {
+        if ($this->selectedStagedMediaAssetId === null) {
+            return;
+        }
+        $raw = $this->stagedArtworkForm->getRawState();
+        if (is_array($raw)) {
+            $this->stagedArtworkData = $raw;
+        }
+        $this->rememberStagedArtworkChanges();
+        $this->publishStagedArtworkPreview();
+    }
+
+    private function publishStagedArtworkPreview(): void
+    {
+        if ($this->selectedStagedMediaAssetId === null) {
+            return;
+        }
+        session()->put('gallery.stage.preview.'.$this->getId(), [
+            'gallery_id' => (int) $this->galleryContext['id'],
+            'media_asset_id' => $this->selectedStagedMediaAssetId,
+            'form' => is_array($this->stagedArtworkData) ? $this->stagedArtworkData : [],
+        ]);
+        $this->dispatch('gallery-preview-updated',
+            url: $this->galleryStagePreviewUrl(),
+            title: $this->galleryStagePreviewTitle(),
+        );
+    }
+
+    private function forgetStagedArtworkPreview(): void
+    {
+        session()->forget('gallery.stage.preview.'.$this->getId());
     }
 
     public function previewGalleryStage(): void
@@ -204,13 +250,21 @@ final class GalleryWorkspace extends Page
 
     public function galleryStagePreviewTitle(): string
     {
-        return $this->galleryStagePreview === 'artwork'
-            ? 'Interactive Artwork preview'
-            : 'Interactive Gallery preview';
+        return match ($this->galleryStagePreview) {
+            'staged' => 'Interactive staged Artwork preview',
+            'artwork' => 'Interactive Artwork preview',
+            default => 'Interactive Gallery preview',
+        };
     }
 
     public function galleryStagePreviewUrl(): ?string
     {
+        if ($this->galleryStagePreview === 'staged' && $this->selectedStagedMediaAssetId !== null) {
+            return route('preview.gallery.staged-artwork', [
+                'gallery' => (int) $this->galleryContext['id'],
+                'token' => $this->getId(),
+            ]);
+        }
         if ($this->galleryStagePreview !== 'artwork' || $this->galleryStagePreviewArtworkId === null) {
             return $this->galleryContext['preview_url'] ?? null;
         }

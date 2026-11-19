@@ -46,11 +46,11 @@ trait GalleryWorkspaceUploadSettings
                         // Sort changes are exclusively committed through the
                         // confirmed Action, never the Edit modal's autosave.
                         'sort_mode' => GalleryPresentation::sortMode($gallery),
-                        'video_sound_enabled' => $data['video_sound_enabled'] ?? false,
                         'artwork_information' => $this->galleryInformationFromForm($data, $gallery),
                         'media_viewer_enabled' => $data['media_viewer_enabled'] ?? GalleryPresentation::viewerEnabled($gallery),
-                        'viewer_zoom_enabled' => $data['viewer_zoom_enabled'] ?? GalleryPresentation::viewerZoomEnabled($gallery),
                         'viewer_navigation_enabled' => $data['viewer_navigation_enabled'] ?? GalleryPresentation::viewerNavigationEnabled($gallery),
+                        'viewer_navigation_cyclic' => (bool) ($data['viewer_navigation_enabled'] ?? GalleryPresentation::viewerNavigationEnabled($gallery))
+                            && (bool) ($data['viewer_navigation_cyclic'] ?? GalleryPresentation::viewerNavigationCyclic($gallery)),
                         'artwork_pages_enabled' => $data['artwork_pages_enabled'] ?? GalleryPresentation::artworkPagesEnabled($gallery),
                     ]);
                     $changed = $updated->wasChanged();
@@ -136,10 +136,6 @@ trait GalleryWorkspaceUploadSettings
         $fields[] = $this->galleryInformationPanel($stage);
         $fields[] = $this->galleryViewerPanel($stage);
         $fields[] = $this->galleryDetailPagesPanel($stage);
-        if (! $stage) {
-            $fields[] = AdminControl::checkbox('video_sound_enabled', 'Allow sound on looping Gallery videos')
-                ->columnSpanFull();
-        }
 
         return Grid::make(['default' => 2])->schema($fields);
     }
@@ -165,15 +161,31 @@ trait GalleryWorkspaceUploadSettings
 
     private function galleryViewerPanel(bool $stage): \Filament\Schemas\Components\Group
     {
-        return AdminPanelControl::make('Media viewer', 'media_viewer_enabled', [
-            $this->gallerySettingControl(
-                AdminControl::checkbox('viewer_zoom_enabled', 'Zoom'),
-                'viewer_zoom_enabled', $stage,
-            ),
-            $this->gallerySettingControl(
-                AdminControl::checkbox('viewer_navigation_enabled', 'Navigation'),
-                'viewer_navigation_enabled', $stage,
-            ),
+        $navigation = AdminControl::checkbox('viewer_navigation_enabled', 'Navigation')
+            ->live()
+            ->afterStateUpdated(function (mixed $state, callable $set, callable $get) use ($stage): void {
+                if (! (bool) $state) {
+                    $set('viewer_navigation_cyclic', false);
+                }
+                if ($stage) {
+                    $this->updateGalleryStageSettings([
+                        'viewer_navigation_enabled' => (bool) $state,
+                        'viewer_navigation_cyclic' => (bool) $state && (bool) $get('viewer_navigation_cyclic'),
+                    ]);
+                }
+            });
+        $cyclic = AdminControl::checkbox('viewer_navigation_cyclic', 'Cyclic')
+            ->live()
+            ->disabled(fn (callable $get): bool => ! (bool) $get('viewer_navigation_enabled'));
+        if ($stage) {
+            $cyclic->afterStateUpdated(fn (mixed $state) => $this->updateGalleryStageSetting(
+                'viewer_navigation_cyclic', (bool) $state,
+            ));
+        }
+
+        return AdminPanelControl::make('Media modal viewer', 'media_viewer_enabled', [
+            $navigation,
+            $cyclic,
         ], $stage ? fn (mixed $state) => $this->updateGalleryStageSetting('media_viewer_enabled', $state) : null);
     }
 
@@ -280,11 +292,10 @@ trait GalleryWorkspaceUploadSettings
             'edge_navigation_cyclic' => GalleryPresentation::edgeMode($gallery) === GalleryPresentation::EDGE_CYCLIC,
             'artwork_divider' => GalleryPresentation::divider($gallery),
             'sort_mode' => GalleryPresentation::sortMode($gallery),
-            'video_sound_enabled' => GalleryPresentation::allowVideoSound($gallery),
             ...ArtworkInformation::formValues(ArtworkInformation::gallery($gallery)),
             'media_viewer_enabled' => GalleryPresentation::viewerEnabled($gallery),
-            'viewer_zoom_enabled' => GalleryPresentation::viewerZoomEnabled($gallery),
             'viewer_navigation_enabled' => GalleryPresentation::viewerNavigationEnabled($gallery),
+            'viewer_navigation_cyclic' => GalleryPresentation::viewerNavigationCyclic($gallery),
             'artwork_pages_enabled' => GalleryPresentation::artworkPagesEnabled($gallery),
         ];
     }
@@ -372,24 +383,31 @@ trait GalleryWorkspaceUploadSettings
         );
     }
 
-    /** Stage controls save through the same single Gallery editorial owner. */
+    /** Stage and its dependent checkboxes share one audited mutation boundary. */
     public function updateGalleryStageSetting(string $field, mixed $value): void
+    {
+        $this->updateGalleryStageSettings([$field => $value]);
+    }
+
+    /** @param array<string,mixed> $changes */
+    private function updateGalleryStageSettings(array $changes): void
     {
         $editable = [
             'media_viewer_enabled',
-            'viewer_zoom_enabled',
             'viewer_navigation_enabled',
+            'viewer_navigation_cyclic',
             'artwork_pages_enabled',
             'edge_navigation_mode',
+            'artwork_information',
         ];
-        if (! in_array($field, $editable, true)) {
+        if ($changes === [] || array_diff(array_keys($changes), $editable) !== []) {
             return;
         }
 
         /** @var ArtworkCategory $gallery */
         $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
         try {
-            $updated = app(GalleryEditorialService::class)->update($gallery, [$field => $value]);
+            $updated = app(GalleryEditorialService::class)->update($gallery, $changes);
         } catch (ValidationException $exception) {
             $this->notifyValidationFailure('Gallery setting was not saved', $exception);
             $this->refreshGalleryStageSettings();

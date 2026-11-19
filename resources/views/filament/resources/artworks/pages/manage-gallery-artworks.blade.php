@@ -41,24 +41,36 @@
         </x-admin.metrics>
 
         @php
-            $stagedPreview = $galleryStagePreview === 'staged' ? $this->stagedArtworkPreview() : null;
             $stagePublicUrl = $this->galleryStagePreviewUrl();
             $stagePreviewableCount = count(array_filter(
                 $artworkDataset,
                 static fn (array $artwork): bool => ($artwork['state'] ?? null) === 'published',
             ));
         @endphp
-        <section class="gallery-workspace__stage admin-visual-stage admin-visual-stage--triptych admin-focus-stage"
-            aria-label="Gallery upload, settings, artwork editor and preview">
+        <section class="gallery-workspace__stage admin-visual-stage admin-visual-stage--split admin-focus-stage"
+            aria-label="Gallery editor and interactive preview">
             <x-admin.stage-switcher
-                storage-key="admin-stage.gallery"
-                default-pane="settings"
-                :panes="['upload' => 'Upload', 'settings' => 'Editor', 'preview' => 'Preview']"
-                aria-label="Gallery Stage"
+                storage-key="admin-stage.gallery-merged"
+                default-pane="editor"
+                :panes="['editor' => 'Editor', 'preview' => 'Preview']"
+                aria-label="Gallery Stage view"
             />
+            <div class="gallery-stage__workspace admin-visual-stage__pane" data-admin-stage-pane="editor" data-admin-stage-slot="1">
+                <header class="gallery-stage__workspace-header">
+                    <h2 class="admin-section__kicker admin-visual-stage__heading">Gallery editor</h2>
+                    <div class="admin-stage-tabs gallery-stage__workspace-tabs" role="group" aria-label="Gallery editor mode">
+                        <button class="admin-action {{ $galleryStagePanel === 'upload' ? 'is-primary' : '' }}" type="button"
+                            wire:click="selectGalleryStagePanel('upload')" aria-pressed="{{ $galleryStagePanel === 'upload' ? 'true' : 'false' }}">Upload</button>
+                        <button class="admin-action {{ $galleryStagePanel === 'queue' ? 'is-primary' : '' }}" type="button"
+                            wire:click="selectGalleryStagePanel('queue')" aria-pressed="{{ $galleryStagePanel === 'queue' ? 'true' : 'false' }}"
+                            @disabled($pendingBatchArtworkMedia === [])>Staged ({{ count($pendingBatchArtworkMedia) }})</button>
+                        <button class="admin-action {{ $galleryStagePanel === 'settings' ? 'is-primary' : '' }}" type="button"
+                            wire:click="selectGalleryStagePanel('settings')" aria-pressed="{{ $galleryStagePanel === 'settings' ? 'true' : 'false' }}">Settings</button>
+                    </div>
+                </header>
 
-            <div class="gallery-stage__upload admin-visual-stage__pane" data-admin-stage-pane="upload"
-                data-admin-stage-slot="1"
+                @if ($galleryStagePanel === 'upload')
+            <div class="gallery-stage__upload"
                 x-data="{
                     phase: 'idle', progress: 0, fileCount: 0, completed: 0, result: '',
                     async uploadFiles(input) {
@@ -121,20 +133,7 @@
                     </div>
                 </div>
             </div>
-
-            <div class="gallery-stage__workspace admin-visual-stage__pane" data-admin-stage-pane="settings" data-admin-stage-slot="2">
-                <header class="gallery-stage__workspace-header">
-                    <h2 class="admin-section__kicker admin-visual-stage__heading">Gallery editor</h2>
-                    <div class="admin-stage-tabs gallery-stage__workspace-tabs" role="group" aria-label="Gallery Stage editor mode">
-                        <button class="admin-action {{ $galleryStagePanel === 'settings' ? 'is-primary' : '' }}" type="button"
-                            wire:click="selectGalleryStagePanel('settings')" aria-pressed="{{ $galleryStagePanel === 'settings' ? 'true' : 'false' }}">Settings</button>
-                        <button class="admin-action {{ $galleryStagePanel === 'queue' ? 'is-primary' : '' }}" type="button"
-                            wire:click="selectGalleryStagePanel('queue')" aria-pressed="{{ $galleryStagePanel === 'queue' ? 'true' : 'false' }}"
-                            @disabled($pendingBatchArtworkMedia === [])>Staged ({{ count($pendingBatchArtworkMedia) }})</button>
-                    </div>
-                </header>
-
-                @if ($galleryStagePanel === 'queue' && $pendingBatchArtworkMedia !== [])
+                @elseif ($galleryStagePanel === 'queue' && $pendingBatchArtworkMedia !== [])
                     <div class="gallery-stage__queue" aria-label="Media awaiting Artwork creation">
                         @foreach ($pendingBatchArtworkMedia as $index => $item)
                             <button type="button" class="admin-action gallery-stage__queue-item {{ $selectedStagedMediaAssetId === (int) $item['media_asset_id'] ? 'is-primary' : '' }}"
@@ -147,7 +146,7 @@
                         @endforeach
                     </div>
                     @if ($selectedStagedMediaAssetId !== null)
-                        <div class="gallery-stage__form-scroll" wire:key="gallery-staged-editor-{{ $selectedStagedMediaAssetId }}">
+                        <div class="gallery-stage__form-scroll" wire:change="syncStagedArtworkPreview" wire:key="gallery-staged-editor-{{ $selectedStagedMediaAssetId }}">
                             {{ $this->stagedArtworkForm }}
                         </div>
                         <div class="gallery-stage__editor-actions admin-toolbar" aria-label="Staged Artwork actions">
@@ -168,9 +167,10 @@
                 @endif
             </div>
 
-            <div class="gallery-stage__preview admin-visual-stage__pane" data-admin-stage-pane="preview" data-admin-stage-slot="3">
+            <div class="gallery-stage__preview admin-visual-stage__pane" data-admin-stage-pane="preview" data-admin-stage-slot="2">
                 <header class="gallery-stage__preview-header">
-                    <h2 class="admin-section__kicker admin-visual-stage__heading">{{ $galleryStagePreview === 'staged' ? 'Staged media preview' : 'Live preview' }}</h2>
+                    <h2 class="admin-section__kicker admin-visual-stage__heading">{{ $galleryStagePreview === 'staged' ? 'Staged Artwork preview' : 'Live preview' }}</h2>
+                    @unless ($galleryStagePreview === 'staged')
                     <div class="admin-stage-tool-group" role="group" aria-label="Gallery preview navigation">
                         <button class="admin-action" type="button" wire:click="previewGalleryStage"
                             aria-pressed="{{ $galleryStagePreview === 'gallery' ? 'true' : 'false' }}">Gallery</button>
@@ -183,39 +183,16 @@
                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Next->mini()" class="admin-action__icon" />
                         </button>
                     </div>
+                    @endunless
                 </header>
 
                 <x-admin.live-preview
                     class="gallery-stage__live-preview"
                     :heading="false"
-                    :url="$galleryStagePreview === 'staged' ? null : $stagePublicUrl"
+                    :url="$stagePublicUrl"
                     :frame-title="$this->galleryStagePreviewTitle()"
                     wire:key="gallery-live-preview"
                 >
-                    @if ($galleryStagePreview === 'staged' && $stagedPreview !== null)
-                        <x-slot:content>
-                            <div class="gallery-stage__draft-preview">
-                                @if ($stagedPreview['kind'] === 'image')
-                                    <img src="{{ $stagedPreview['url'] }}" alt="{{ $stagedPreview['alt'] }}" loading="eager" decoding="async">
-                                @else
-                                    <video src="{{ $stagedPreview['url'] }}"
-                                        @if ($stagedPreview['poster']) poster="{{ $stagedPreview['poster'] }}" @endif
-                                        controls muted playsinline preload="metadata" aria-label="Staged Artwork video"></video>
-                                @endif
-                                <div class="gallery-stage__draft-caption">
-                                    <strong>{{ $stagedPreview['title'] }}</strong>
-                                    @php
-                                        $previewDetails = array_values(array_filter([
-                                            $stagedPreview['date'], $stagedPreview['dimensions'], $stagedPreview['medium'],
-                                        ], static fn (?string $value): bool => filled($value)));
-                                    @endphp
-                                    @if ($previewDetails !== [])
-                                        <span>{{ implode(' · ', $previewDetails) }}</span>
-                                    @endif
-                                </div>
-                            </div>
-                        </x-slot:content>
-                    @endif
                 </x-admin.live-preview>
             </div>
         </section>

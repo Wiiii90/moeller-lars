@@ -52,7 +52,7 @@
 @section('content_class', 'site-content--fitted-artwork'.($fitArtwork ? ' site-content--fitted-image' : ''))
 @section('title', $artwork->title.' — Lars Möller')
 @section('meta_description', trim(strip_tags((string) $artwork->description)) ?: $artwork->title.' — Lars Möller')
-@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/artworks/'.$artwork->slug))
+@section('canonical', ($stagedPreview ?? false) ? route('preview.home') : app(\App\Domain\Content\CanonicalUrl::class)->forPath('/artworks/'.$artwork->slug))
 
 @section('content')
     <article class="artwork-detail" data-artwork-viewer-sequence
@@ -88,9 +88,9 @@
                 data-viewer-src="{{ $originalUrl }}"
                 data-viewer-alt="{{ $media->altText($artwork) }}"
                 data-viewer-title="{{ $artwork->title }}"
-                data-viewer-page="{{ $preview->url(route('artworks.show', $artwork->slug)) }}"
-                data-viewer-zoom="{{ $presentation::viewerZoomEnabled($category) ? '1' : '0' }}"
+                data-viewer-page="{{ $presentation::artworkPagesEnabled($category) && ! ($stagedPreview ?? false) ? $preview->url(route('artworks.show', $artwork->slug)) : '' }}"
                 data-viewer-navigation="{{ $presentation::viewerNavigationEnabled($category) ? '1' : '0' }}"
+                data-viewer-cyclic="{{ $presentation::viewerNavigationCyclic($category) ? '1' : '0' }}"
                 aria-label="Open {{ $artwork->title }} in media viewer"
             >
             @else
@@ -136,15 +136,6 @@
                 </div>
             @endif
 
-            @if ($isVideo && $presentation::allowVideoSound($category))
-                <div class="public-video__controls">
-            <button type="button" class="public-video__sound" data-public-video-sound-toggle aria-label="Enable video sound" aria-pressed="false" title="Enable video sound">
-                <span data-public-video-icon-muted><x-public-icon name="volume-muted" /></span>
-                <span data-public-video-icon-playing hidden><x-public-icon name="volume-on" /></span>
-            </button>
-        </div>
-            @endif
-
         </div>
 
         @if ($informationRows !== [])
@@ -177,7 +168,9 @@
                     data-viewer-src="{{ $viewerMediaUrl }}"
                     data-viewer-alt="{{ $media->altText($viewerArtwork) }}"
                     data-viewer-title="{{ $viewerArtwork->title }}"
-                    data-viewer-page="{{ $preview->url(route('artworks.show', $viewerArtwork->slug)) }}"
+                    data-viewer-page="{{ $presentation::artworkPagesEnabled($category) && ! (($stagedPreview ?? false) && $viewerArtwork === $artwork) ? $preview->url(route('artworks.show', $viewerArtwork->slug)) : '' }}"
+                    data-viewer-navigation="{{ $presentation::viewerNavigationEnabled($category) ? '1' : '0' }}"
+                    data-viewer-cyclic="{{ $presentation::viewerNavigationCyclic($category) ? '1' : '0' }}"
                 ></span>
             @endforeach
         </div>

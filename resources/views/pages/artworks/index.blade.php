@@ -13,7 +13,7 @@
     <x-public.page-heading :section="$section" />
     <div class="artwork-list{{ $divider !== 'none' ? ' artwork-list--divided' : '' }}" data-artwork-viewer-sequence data-gallery-image-buffer>
         @foreach ($artworks as $artwork)
-            <x-artwork-card :artwork="$artwork" :media="$media" :eager="$loop->index < 2" :priority="$loop->first" :gallery-buffered="$loop->index >= 2" :allow-video-sound="\App\Domain\Artwork\GalleryPresentation::allowVideoSound($category)"
+            <x-artwork-card :artwork="$artwork" :media="$media" :eager="$loop->index < 2" :priority="$loop->first" :gallery-buffered="$loop->index >= 2"
                 :gallery-index="true" :gallery-shift="$galleryOffsets[(int) $artwork->getKey()] ?? 0"
                 :gallery-gap="$galleryGaps[(int) $artwork->getKey()] ?? 0" />
             @if ($divider !== 'none' && ! $loop->last)

@@ -1,13 +1,18 @@
 
-/* Gallery uses the same 2/6 + 4/6 metric-aligned triptych as Storage.
- * This feature stylesheet owns pane internals only, not Stage height/dividers. */
+/* Gallery mirrors General's responsive preview split while reusing the
+ * shared Live Preview and Stage divider. Left: Upload / Staged / Settings;
+ * right: real Public preview. The Stage height stays centrally owned. */
 .gallery-workspace__stage {
+    --admin-stage-divider-axis: 50%;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0;
 }
+.gallery-workspace__stage:has(.admin-live-preview[data-preview-device="mobile"]) {
+    --admin-stage-divider-axis: 66.666667%;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
 
-.gallery-stage__upload,
 .gallery-stage__workspace,
 .gallery-stage__preview {
     display: flex;
@@ -17,20 +22,25 @@
     min-height: 0;
     padding-block: var(--admin-stage-divider-inset);
 }
-
-.gallery-stage__upload {
+.gallery-stage__workspace {
+    grid-column: 1;
     padding-right: var(--admin-stage-pane-space);
 }
-
-.gallery-stage__workspace {
-    padding-inline: var(--admin-stage-pane-space);
-}
-
 .gallery-stage__preview {
+    grid-column: 2;
     padding-left: var(--admin-stage-pane-space);
 }
+.gallery-stage__upload {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
+
 
 .gallery-stage__upload .admin-gallery-upload {
+    flex: 1 1 auto;
     min-height: 0;
     margin-top: var(--admin-stage-header-gap);
 }
@@ -70,7 +80,7 @@
 }
 
 .gallery-stage__workspace-tabs {
-    --admin-stage-tabs-columns: 2;
+    --admin-stage-tabs-columns: 3;
     display: grid;
 }
 
@@ -150,89 +160,16 @@
     margin-top: var(--admin-stage-header-gap);
 }
 
-.gallery-stage__draft-preview {
-    display: grid;
-    box-sizing: border-box;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    grid-template-rows: minmax(0, 1fr) auto;
-    align-items: center;
-    justify-items: center;
-    gap: .85rem;
-    padding: 2rem;
-    overflow: hidden;
-}
-
-.gallery-stage__draft-preview > :is(img, video) {
-    display: block;
-    width: auto;
-    max-width: 100%;
-    max-height: 100%;
-    min-height: 0;
-    object-fit: contain;
-}
-
-.gallery-stage__draft-caption {
-    display: grid;
-    width: 100%;
-    min-width: 0;
-    align-content: start;
-    gap: .2rem;
-    text-align: center;
-}
-
-.gallery-stage__draft-caption > :is(strong, span) {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-@container staged-preview (max-width: 40rem) {
-    .gallery-stage__draft-preview {
-        justify-items: stretch;
-        gap: .65rem;
-        padding: 1rem;
-    }
-    .gallery-stage__draft-preview > :is(img, video) {
-        justify-self: center;
-    }
-    .gallery-stage__draft-caption {
-        width: 100%;
-        padding-bottom: .5rem;
-    }
-    .gallery-stage__draft-caption > :is(strong, span) {
-        overflow: visible;
-        white-space: normal;
-        overflow-wrap: anywhere;
-    }
-}
-
-.gallery-stage__draft-caption strong {
-    font-weight: 600;
-    color: var(--admin-text);
-    font-size: .82rem;
-}
-
-.gallery-stage__draft-caption span {
-    font-size: .75rem;
-    color: var(--admin-muted);
-}
-
 @media (max-width: 63.99rem) {
     @container admin-workspace (max-width: 38rem) {
-        .gallery-workspace__stage > :is(.gallery-stage__upload, .gallery-stage__workspace, .gallery-stage__preview) {
+        .gallery-workspace__stage > :is(.gallery-stage__workspace, .gallery-stage__preview) {
             padding-inline: 0;
         }
-
-        /* The shared minimal selector activates grid panes, but Gallery
-         * needs a vertical flex layout for its scrollable editor/preview. */
+        /* The shared focused Stage selects one complete editor/preview pane. */
         .gallery-workspace__stage.admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="1"][aria-pressed="true"])
-            .gallery-stage__upload[data-admin-stage-pane][data-admin-stage-slot="1"],
+            .gallery-stage__workspace[data-admin-stage-pane][data-admin-stage-slot="1"],
         .gallery-workspace__stage.admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="2"][aria-pressed="true"])
-            .gallery-stage__workspace[data-admin-stage-pane][data-admin-stage-slot="2"],
-        .gallery-workspace__stage.admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="3"][aria-pressed="true"])
-            .gallery-stage__preview[data-admin-stage-pane][data-admin-stage-slot="3"] {
+            .gallery-stage__preview[data-admin-stage-pane][data-admin-stage-slot="2"] {
             display: flex !important;
         }
     }

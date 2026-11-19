@@ -2,7 +2,18 @@
 
 **Lease:** 22
 **Branch:** dev
-**State:** Active — Gallery Stage reduction source-prepared on 2026-11-19; browser acceptance pending. Next proposed: combine Upload/Editor and adapt Gallery preview width.
+**State:** Active — Gallery stage merge and modal viewer settings implemented in source on 2026-11-19; migration/runtime/browser acceptance pending.
+
+## Current 2026-11-19 task — Gallery editor / viewer / staged Public preview
+
+- Gallery/Artwork credits and copyright follow the same image-width-bounded shared caption container as title/date/dimensions/material. Source verified; populated responsive browser layout remains unverified.
+- Media modal viewer: zoom is always available for images; the Gallery Zoom setting and stored column are retired. Navigation enables/disables the modal's bottom arrows; Cyclic wraps the selected modal sequence, independent of the top-right close and individual Artwork page link. The individual page link is shown only when Individual Artwork Pages is enabled, not tied to modal navigation. The existing individual page Navigation/Cyclic settings remain distinct.
+- The Gallery-specific looping-video sound setting, public gallery sound buttons and Working/Committed persisted column were removed. The separate Home Hero opt-in is preserved.
+- Gallery Stage: a single left pane with Upload (initial), Staged and Settings tabs, plus the existing shared Live Preview on the right; 50/50 for desktop, 2/3–1/3 for phone, with accessible focused Editor/Preview on Minimal. Successful uploads select Staged; completing/removing the last queued item selects Settings.
+- Staged preview now resolves through the existing protected Public preview middleware to the canonical Artwork detail page, using a transient in-memory Artwork and existing canonical PublicMedia/ArtworkMedia relationships from browser-session form state. No new Artwork persists until the existing Create action runs; temporary session state is forgotten when the queue empties. A native Stage form change refreshes the preview.
+- Migration `2026_11_19_210000_simplify_gallery_media_viewer.php` adds `viewer_navigation_cyclic` and drops retired Gallery sound/zoom columns on both Working and Committed. Protected publication history/restore compatibility is not verified.
+- Source-only through connected GitHub; no local runtime, browser, database migration, test execution, deployment, or Continuous Integration was run. Browser acceptance and migration tests are required, notably credits/copyright positioning, modal viewer page-link independence, cyclic sequence, new Stage tabs, simultaneous files/upload, updated staged form metadata, original media protection and Working/Committed parity.
+- Out of scope: Home Hero presentation/selection, General appearance controls, shared dialog redesign, unrelated rights and historical checkpoint logic.
 
 ## Gallery Stage reduction — 2026-11-19
 
