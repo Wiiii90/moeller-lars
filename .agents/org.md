@@ -8,7 +8,7 @@ This is the compact live organizational state for the single `org` chat on `dev`
 
 All 17 v0.4 issues now have zero open issues. #198 functional signoff, #199 historical qualification (Unit/Integration/Feature/Migration/JS/Browser/PHPStan/Pint evidence) and #214 milestone notes were closed **completed on 2026-11-19** with explicit evidence-limit comments. The technical milestone summary is in #214; these closures do not claim a historical Production release or an exact `main` verification. No Dashboard deployed-release announcement, Git tag, `main` promotion, history rewrite, workflow dispatch or Validation mutation was performed for this closeout.
 
-**Milestone container state:** the available connected GitHub actions can close Issues but not update the Milestone state itself. After all issues were closed, the remaining single operation is the explicitly user-approved GitHub Milestone #13 state change to closed; ask the operator to run `gh api -X PATCH repos/Wiiii90/moeller-lars/milestones/13 -f state=closed` if not independently confirmed. Do not claim the container itself is closed before confirmation.
+**Milestone container closed:** on 2026-11-19 the operator ran `gh api -X PATCH repos/Wiiii90/moeller-lars/milestones/13 -f state=closed` and shared the response `{"closed_issues":17,"number":13,"open_issues":0,"state":"closed","title":"v0.4.0"}`. This confirms the GitHub milestone is closed, though a versioned `main` release is still pending.
 
 ## Active development milestone — v0.5.0
 
@@ -82,7 +82,7 @@ This is now a **Docs normalization gate**: translate in place to English, preser
 
 ## Immediate organizational objective
 
-Finish the already authorized **historical v0.4 GitHub milestone container close** when the operator confirms the single Milestone #13 state change. Move the organizational focus to the eight v0.5 candidate/data/runtime gates, while active Dev feedback work continues.
+The historical v0.4 GitHub milestone is now fully closed. The user wants a few more Dev commits before choosing a fresh exact SHA for the imminent protected Validation preview; keep deployment on hold meanwhile. Separately, the v0.4 technical handoff commit `f54041ee4b75140380b543bf1a37185cc5dbd2aa` was never promoted to `main`: on 2026-11-19 `main` was verified at `766a59cc74a5b58d318c6b02a8087a667c09dc61` (2026-09-18), and that handoff is a descendant (2,724 commits ahead). Formal v0.4 main promotion remains pending the user-agreed Git-history sanitization and a separately authorized exact-source promotion. Do not let either action block a separately approved Validation preview.
 
 The user intends a **near-term update of protected Validation** to a freshly selected exact `dev` commit, but has **not yet selected that commit**. Do not build/publish an image, execute a Validation update, or treat current `dev` as frozen until the user explicitly identifies it. The previously recorded Validation→local transfer was successful on an older `dev` revision; the newer irreversible Home/Gallery Hero migration and changed source have not been accepted against that mirror. `scripts/local-preview.ps1` still injects local Analytics demo data after startup; use a safe non-seeding local launch for the artist-data mirror. Right before an approved update, capture and independently verify a matching recoverable Validation database/original-media snapshot because the ordinary platform Production backup does not automatically cover protected Validation. Preserve the artist's live editorial state; never reimport older data into Validation.
 
