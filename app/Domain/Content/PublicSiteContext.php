@@ -38,12 +38,7 @@ final class PublicSiteContext
             'publicLayoutCss' => PublicAppearance::layoutCss($settings),
             'publicHeaderVisible' => $settings->getAttribute('header_name_visible') === null ? true : (bool) $settings->getAttribute('header_name_visible'),
             'publicHeaderText' => PublicAppearance::headerText($settings->getAttribute('header_name_text')),
-            'publicMenuAlignment' => PublicAppearance::presentedMenuAlignment(
-                $settings->getAttribute('menu_alignment'),
-                $settings->getAttribute('header_name_position'),
-                $settings->getAttribute('header_name_alignment'),
-                $settings->getAttribute('header_name_visible') === null || (bool) $settings->getAttribute('header_name_visible'),
-            ),
+            'publicMenuAlignment' => PublicAppearance::menuAlignment($settings->getAttribute('menu_alignment')),
             'publicHeaderAlignment' => PublicAppearance::presentedHeaderAlignment($settings->getAttribute('header_name_alignment'), $settings->getAttribute('header_name_position')),
             'publicHeaderMobileAlignment' => PublicAppearance::headerAlignment($settings->getAttribute('header_name_mobile_alignment'), 'header_name_mobile_alignment'),
             'publicHeaderPosition' => PublicAppearance::headerPosition($settings->getAttribute('header_name_position')),

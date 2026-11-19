@@ -42,9 +42,8 @@ final class PublicAppearance
 
     public const HEADER_ALIGNMENT = ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'];
 
-    /** Automatic preserves the pre-setting layout; explicit choices ignore title placement. */
+    /** Menu placement is independent of title position and alignment. */
     public const MENU_ALIGNMENTS = [
-        'auto' => 'Automatic (opposite when inside)',
         'left' => 'Left',
         'center' => 'Center',
         'right' => 'Right',
@@ -52,30 +51,12 @@ final class PublicAppearance
 
     public static function menuAlignment(mixed $value): string
     {
-        $value ??= 'auto';
+        $value ??= 'right';
         if (! is_string($value) || ! array_key_exists($value, self::MENU_ALIGNMENTS)) {
-            throw ValidationException::withMessages(['menu_alignment' => 'Choose Automatic, Left, Center or Right.']);
+            throw ValidationException::withMessages(['menu_alignment' => 'Choose Left, Center or Right.']);
         }
 
         return $value;
-    }
-
-    public static function presentedMenuAlignment(
-        mixed $value,
-        mixed $titlePosition,
-        mixed $titleAlignment,
-        bool $titleVisible = true,
-    ): string {
-        $alignment = self::menuAlignment($value);
-        if ($alignment !== 'auto') {
-            return $alignment;
-        }
-
-        return $titleVisible
-            && self::headerPosition($titlePosition) === 'inside'
-            && self::presentedHeaderAlignment($titleAlignment, $titlePosition) === 'left'
-                ? 'right'
-                : 'left';
     }
 
     public static function headerAlignmentOptions(string $position): array

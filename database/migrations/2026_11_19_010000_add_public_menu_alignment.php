@@ -10,7 +10,7 @@ return new class extends Migration
     {
         foreach (['public', 'committed'] as $schema) {
             Schema::table($schema.'.public_content_settings', static function (Blueprint $table): void {
-                $table->string('menu_alignment', 12)->default('auto');
+                $table->string('menu_alignment', 12)->default('right');
             });
         }
     }
