@@ -5,7 +5,6 @@
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
 | Dev Worker 1 | 9 | Active — replaced archived chat; local migration verified, qualification pending | Exhibition date precision/migration, address, map and autosave; Public Exhibitions baseline | [dev-1.md](workers/dev-1.md) |
-| Dev Worker 2 | 6 | Active — current artist-media integrity remediation | Canonical media references/deletion safety, Storage reclaim/preview lifecycle, upload completion and zombie prevention; no Gallery/Artwork UI, tests, deploy | [dev-2.md](workers/dev-2.md) |
 | Dev Worker 4 | 20 | Source-updated — height/width-bounded Gallery stills and compact mobile Artwork rhythm; browser acceptance pending | Gallery/Artwork public presentation now; Gallery Stage and shared Settings to resume; narrow Home Hero correction remains with Dev Worker 6 overall | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 19 | Source-integrated cutover; artist-data migration and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom types and Hero Artworks template; preserve Gallery/Exhibitions, retire Home-only editors | [dev-5.md](workers/dev-5.md) |
 
