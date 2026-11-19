@@ -2,7 +2,7 @@
 
 **Lease:** 20
 **Branch:** dev
-**State:** Fitted Home Hero and individual Artwork images now share the same image-information bottom-edge alignment at General's Page bottom padding. Shared viewport-fit sizing, responsive shell, media/rights alignment and existing Gallery index are retained; browser acceptance pending.
+**State:** Fitted individual Artwork Viewer triggers now match the visible image and caption width, eliminating hover/click activation on blank sides. Home/Gallery paths and the shared size fitter are retained; browser acceptance pending.
 
 ## Ownership / scope
 
@@ -17,6 +17,13 @@
 - All Home Hero slides (Artworks **and** direct Storage media, including video posters where dimensions exist) use the same `artwork-card__composition--home-hero` image/caption grouping. Existing variant dimensions create a nonce-authorized per-slide image ratio; CSS makes each image as large as permitted by **General Content width** and `min(82svh, 100svh - 9rem)` without distortion. Footer/rights align exactly with that media width; Gallery/hero navigation and arrow hit targets span General Content. Small landscapes and their information remain vertically grouped/centered, with no phantom stage below the image.
 - `data-home-hero`, `[data-home-hero-slide]`, current/hidden member state, previous/next buttons, rotation and enabled viewer remain canonical. All source profiles and media eligibility unchanged. The Home settings no longer expose landscape/portrait expand, alternate page surface or wide-menu controls in Stage or Settings. The configuration service no longer reads/saves these fields and drops inactive keys on the next authorized Home edit, but **historic committed versions and checkpoint snapshots remain untouched**. No database migration was required.
 - Do not confuse independent Home Hero media rendering with individual Artwork detail routes; the common visual language is image sizing and footer alignment, not forcing Home into the detail renderer or sharing its navigation controller.
+
+## Viewer hit area follows actual image width — current correction
+
+- Individual fitted Artwork detail images use the shared `--public-fitted-image-width` and are sometimes narrower than General Content (especially portraits). Their existing `.artwork-detail__viewer-trigger` anchor remained `width: 100%` across the full paper track, so hovering and clicking white space at either side opened the modal.
+- Use one `min(100%, var(--public-fitted-image-width, 100%))` width for the real Viewer link (or static wrapper) and the information footer; its child image fills that link exactly. This removes blank hit areas and keeps the caption at the actual media edges. No pointer-events hack, no duplicate JS owner and no changes to the browser-native keyboard-activatable anchor.
+- Gallery index already has fitted-content media links; Home Hero uses an image-and-caption composition of exactly the same shared fitted width, with its media link filling it. Those routes are untouched. Existing video and Viewer navigation controls are unchanged.
+- Source-level checks only; real Laravel browser acceptance pending. Inspect portrait and landscape details at different General widths, hover/click immediately outside each image, Tab/Enter, Viewer off, Gallery index and multi-slide Home.
 
 ## Consistent bottom inset across portrait/landscape Artwork — current correction
 

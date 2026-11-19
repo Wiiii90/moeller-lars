@@ -617,6 +617,15 @@ body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitte
     flex: 0 0 auto;
     flex-direction: column;
 }
+/* A fitted image, its Viewer trigger and its information share the same
+   visible width. The old 100%-wide trigger also activated on white space
+   beside narrow portraits. Preserve the native anchor/keyboard behavior. */
+.site-content--fitted-image .artwork-detail__viewer-trigger,
+.site-content--fitted-image .artwork-detail__footer {
+    width: min(100%, var(--public-fitted-image-width, 100%));
+    max-width: 100%;
+    margin-inline: auto;
+}
 .site-content--fitted-image .artwork-detail__viewer-trigger {
     position: relative;
     display: block;
@@ -624,19 +633,16 @@ body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitte
     min-height: 0;
 }
 .site-content--fitted-image .artwork-detail__image {
-    /* The existing image fitting owner sets width inside General's Content.
-       Normal flow makes the actual image bottom also the stage bottom. */
+    /* The image fills its actual clickable box, not a wider frame. */
     position: static;
-    width: min(100%, var(--public-fitted-image-width));
+    width: 100%;
     max-width: 100%;
     height: auto;
-    margin: 0 auto;
+    margin: 0;
     object-fit: contain;
 }
 .site-content--fitted-image .artwork-detail__footer {
     flex: 0 0 auto;
-    /* Information follows the image directly and shares its width. */
-    width: min(100%, var(--public-fitted-image-width, 100%));
 }
 
 /* Artwork navigation marks the outer limits of the General-owned Content
