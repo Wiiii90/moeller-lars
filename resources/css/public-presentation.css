@@ -2241,8 +2241,10 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
     justify-items: end;
 }
 
-/* Inside Menu has two physical regions. Alignment selects the title's
- * SIDE, not just text alignment within a permanent left-hand column. */
+/* Inside Menu has two physical regions. The title occupies its intrinsic
+ * width plus one fixed breathing gap; navigation takes the rest of the
+ * reading track. No viewport percentage or phantom title reserve is needed.
+ * Alignment changes the physical side, not just the title text alignment. */
 .site-header--name-inside .site-navigation > .site-name-heading {
     position: relative;
     z-index: 1;
@@ -2266,7 +2268,8 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
 
 .site-header--name-inside:not(.is-title-stacked):not(.site-header--title-hidden) .site-navigation {
     display: grid;
-    grid-template-columns: minmax(15rem, 32%) minmax(0, 1fr);
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 1.5rem;
     align-items: stretch;
 }
 
@@ -2284,7 +2287,7 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
 
 /* Right reverses the order: navigation left, title right. */
 .site-header--name-inside.site-header--title-align-right:not(.is-title-stacked):not(.site-header--title-hidden) .site-navigation {
-    grid-template-columns: minmax(0, 1fr) minmax(15rem, 32%);
+    grid-template-columns: minmax(0, 1fr) max-content;
 }
 
 .site-header--name-inside.site-header--title-align-right:not(.is-title-stacked):not(.site-header--title-hidden) .site-navigation > .site-name-heading {

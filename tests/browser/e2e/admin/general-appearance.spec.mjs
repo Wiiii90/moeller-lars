@@ -188,6 +188,7 @@ test('Inside Menu swaps title and navigation sides and stacks above them on phon
       readingRight: contentBox.right - Number.parseFloat(contentStyle.paddingRight),
       leftArrowTrackEnd: railBox.left + tracks[0],
       rightArrowTrackStart: railBox.right - tracks[tracks.length - 1],
+      columnGap: Number.parseFloat(getComputedStyle(header.querySelector('.site-navigation')).columnGap),
       stacked: header.classList.contains('is-title-stacked'),
     };
   });
@@ -215,6 +216,7 @@ test('Inside Menu swaps title and navigation sides and stacks above them on phon
     expect(left.heading.right).toBeLessThanOrEqual(left.navigation.left + 1);
     expect(left.heading.left).toBeGreaterThanOrEqual(left.menu.left - 1);
     expect(Math.abs(left.title.left - left.readingLeft)).toBeLessThan(2);
+    expect(Math.abs(left.navigation.left - left.heading.right - left.columnGap)).toBeLessThan(2);
     expect(Math.abs(left.rightArrowTrackStart - left.readingRight)).toBeLessThan(2);
 
     await save(alignment, 'right');
@@ -224,6 +226,7 @@ test('Inside Menu swaps title and navigation sides and stacks above them on phon
     expect(right.heading.left).toBeGreaterThanOrEqual(right.navigation.right - 1);
     expect(right.heading.right).toBeLessThanOrEqual(right.menu.right + 1);
     expect(Math.abs(right.title.right - right.readingRight)).toBeLessThan(2);
+    expect(Math.abs(right.heading.left - right.navigation.right - right.columnGap)).toBeLessThan(2);
     expect(Math.abs(right.leftArrowTrackEnd - right.readingLeft)).toBeLessThan(2);
     expect(right.title.left - left.title.left).toBeGreaterThan(100);
     expect(right.navigation.left).toBeLessThan(left.navigation.left);

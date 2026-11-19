@@ -1,16 +1,13 @@
 /* The Inside Menu title and navigation share the Page reading width.
- * The visible Menu owns that padding in every layout state, so measuring
- * its content width cannot feed back through is-title-stacked. */
-const MIN_TITLE_RAIL_REM = 15;
+ * CSS owns the title's intrinsic grid track and fixed column gap; the
+ * responsive fit check uses those SAME values instead of a competing
+ * percentage-based width allocation. */
 const MIN_NAV_RAIL_REM = 15;
-const TITLE_RAIL_SHARE = 0.32;
 
-export function headerNeedsStack(menuWidth, titleWidth, narrowViewport = false, rem = 16) {
+export function headerNeedsStack(readingWidth, titleWidth, gap, narrowViewport = false, rem = 16) {
     if (narrowViewport) return true;
 
-    const titleRailWidth = Math.max(MIN_TITLE_RAIL_REM * rem, menuWidth * TITLE_RAIL_SHARE);
-    return titleWidth > titleRailWidth
-        || menuWidth - titleRailWidth < MIN_NAV_RAIL_REM * rem;
+    return titleWidth + gap + MIN_NAV_RAIL_REM * rem > readingWidth;
 }
 
 function intrinsicTitleWidth(title, context) {
@@ -45,6 +42,7 @@ export function initializePublicHeader() {
         const stacked = headerNeedsStack(
             Math.max(0, readingWidth),
             intrinsicTitleWidth(title, measurementContext),
+            Number.parseFloat(menuStyle.columnGap) || 0,
             window.matchMedia('(max-width: 40rem)').matches,
             rem,
         );
