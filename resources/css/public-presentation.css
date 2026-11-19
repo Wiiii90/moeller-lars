@@ -625,8 +625,13 @@ body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitte
     flex: 1 1 auto;
     flex-direction: column;
 }
-.site-content--fitted-image .artwork-detail__fitted-group {
-    justify-content: center;
+/* Home Hero and individual Artwork details share one bottom-edge contract.
+   Fit the image and its information as a single group. On shorter landscapes
+   the remaining space belongs ABOVE that group, not below the caption.
+   General's Page bottom padding is the same for every image orientation. */
+.site-content--fitted-image .artwork-detail__fitted-group,
+.site-content--home-hero-fitted .artwork-card__composition--home-hero {
+    justify-content: flex-end;
 }
 .site-content--fitted-image .artwork-detail__media,
 .site-content--fitted-image .artwork-detail__image-stage {
@@ -984,7 +989,6 @@ body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitte
     margin-inline: auto;
     flex: 1 1 auto;
     flex-direction: column;
-    justify-content: center;
 }
 .site-content--home-hero-fitted .artwork-card__composition--home-hero > :is(
     .artwork-card__link, .artwork-card__footer, .public-video__controls

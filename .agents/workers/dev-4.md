@@ -2,7 +2,7 @@
 
 **Lease:** 20
 **Branch:** dev
-**State:** Corrected Home/detail mismatch by sharing actual viewport-fit sizing, the fitted Page geometry and image/metadata track, including hidden title/navigation. Browser acceptance pending.
+**State:** Fitted Home Hero and individual Artwork images now share the same image-information bottom-edge alignment at General's Page bottom padding. Shared viewport-fit sizing, responsive shell, media/rights alignment and existing Gallery index are retained; browser acceptance pending.
 
 ## Ownership / scope
 
@@ -17,6 +17,14 @@
 - All Home Hero slides (Artworks **and** direct Storage media, including video posters where dimensions exist) use the same `artwork-card__composition--home-hero` image/caption grouping. Existing variant dimensions create a nonce-authorized per-slide image ratio; CSS makes each image as large as permitted by **General Content width** and `min(82svh, 100svh - 9rem)` without distortion. Footer/rights align exactly with that media width; Gallery/hero navigation and arrow hit targets span General Content. Small landscapes and their information remain vertically grouped/centered, with no phantom stage below the image.
 - `data-home-hero`, `[data-home-hero-slide]`, current/hidden member state, previous/next buttons, rotation and enabled viewer remain canonical. All source profiles and media eligibility unchanged. The Home settings no longer expose landscape/portrait expand, alternate page surface or wide-menu controls in Stage or Settings. The configuration service no longer reads/saves these fields and drops inactive keys on the next authorized Home edit, but **historic committed versions and checkpoint snapshots remain untouched**. No database migration was required.
 - Do not confuse independent Home Hero media rendering with individual Artwork detail routes; the common visual language is image sizing and footer alignment, not forcing Home into the detail renderer or sharing its navigation controller.
+
+## Consistent bottom inset across portrait/landscape Artwork — current correction
+
+- User observed different distances from the last Artwork information row to the lower Page edge for portraits and landscapes, on both individual Artwork detail routes and Home Hero slides.
+- Root cause: both fitted containers independently specified `justify-content: center`. A landscape media-plus-caption group occupies less of the available Page height, so flex centering created a larger **bottom** empty space than for portraits, despite shared height-fit calculations.
+- **One common CSS alignment owner** now selects both `.site-content--fitted-image .artwork-detail__fitted-group` and `.site-content--home-hero-fitted .artwork-card__composition--home-hero`, setting `justify-content: flex-end`. Removed the redundant Home centering declaration. Media and information stay together; surplus height is above the group and the visible final information row sits at General's existing Page bottom padding independent of image orientation. This intentionally shifts shorter landscape images downward relative to the former viewport centering while leaving their size/aspect ratio unchanged.
+- The shared JS width/height fit and responsive General geometry remain unchanged; Gallery index/card jitter, Home slide rotation, navigation and viewer are unaffected. When long captions or Rich Text exceed a viewport, the Page naturally scrolls, rather than cropping a footer or forcing a fixed height.
+- Verification: checked the affected CSS owners, selector precedence and unaffected image-fit source. Real local Laravel Preview acceptance remains pending. Compare tall portrait, short landscape, Home title/navigation on/off, several slide transitions, mobile, long information and optional descriptions.
 
 ## Home/Artwork fitted presentation parity — correction
 
