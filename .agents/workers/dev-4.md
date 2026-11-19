@@ -24,6 +24,12 @@
 - Gallery desktop base gap is `clamp(8rem, 17svh, 10rem)` plus zero to one rem jitter in quarter-rem steps; total roughly two to two-and-a-half times the former `clamp(3.5rem, 8svh, 5rem)` at ordinary desktop heights. With a divider, the same full gap is divided evenly above/below the separator. The last Artwork adds no trailing gap. On phones (<=40rem), the preexisting `clamp(1rem, 3svh, 2rem)` remains **without** jitter.
 - General owns Gallery paper width, media height remains `min(82svh, calc(100svh - 9rem))`, top inset follows the General side inset on larger screens and is 1rem on phones, captions match visible image width. Images preserve aspect ratio, no decorative edges, no artificial viewport-height Gallery card slots.
 
+## Artwork caption punctuation — current correction
+
+- User spotted commas separated from the preceding title/dimensions and isolated at the start of wrapped lines. The old CSS generated a `, ` pseudo-element **before** each next Artwork information field, leaving Blade-rendered inter-span whitespace before punctuation and allowing an orphan comma at line start.
+- Moved comma generation onto the **preceding field's** `::after`, for all field groups including titles and dimensions; the normal whitespace between inline field spans supplies a single following separation. Last field emits no punctuation. No change to layout geometry, wrapping rights, information arrangement, source data or UI controls.
+- The correction is source-reviewed, not yet accepted in the running Preview. Verify narrow captions with `Title, Date` and `Dimensions, Material`, with/without media credits and phone wrap.
+
 ## Gallery Workspace — 500 on load repaired
 
 - Removed the stale `galleryContext['artwork_page_layout']` projection in `GalleryWorkspaceSelectionSupport::loadGallery()`. The stored layout selector and `GalleryPresentation::artworkPageLayout()` were retired with the sole-Expanded change, but this admin context still invoked the deleted reader, causing a GET /admin/pages/gallery/{id} HTTP 500 before Stage and Settings rendered.

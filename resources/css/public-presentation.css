@@ -1074,7 +1074,10 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 .artwork-caption__group--left { grid-column: 1; text-align: left; }
 .artwork-caption__group--center { grid-column: 2; text-align: center; }
 .artwork-caption__group--right { grid-column: 3; text-align: right; }
-.artwork-caption__field + .artwork-caption__field::before { content: ", "; }
+/* Keep punctuation with the preceding Artwork information field.
+   The whitespace between inline field elements supplies the following space;
+   a leading ::before comma could wrap alone onto the next line. */
+.artwork-caption__field:not(:last-child)::after { content: ","; }
 .artwork-caption__field--title { font-style: italic; }
 .artwork-caption__field--date { font-style: normal; }
 .artwork-caption__field--dimensions,
