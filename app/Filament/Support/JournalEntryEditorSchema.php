@@ -163,10 +163,28 @@ final class JournalEntryEditorSchema
                     'slideshow' => __('Slideshow'),
                     'carousel' => __('Carousel'),
                 ])
+                ->disableOptionWhen(static fn (string $value, Get $get): bool => self::carouselOptionDisabled($value, $get))
                 ->default('sequence')
                 ->required(),
             self::galleryImages(),
         ]);
+    }
+
+    /** Disable selecting Carousel until three actual media rows exist.
+     * A previously saved Carousel is still editable when media are removed;
+     * the Public renderer then safely falls back to Slideshow. */
+    private static function carouselOptionDisabled(string $value, Get $get): bool
+    {
+        if ($value !== 'carousel' || $get('gallery_presentation') === 'carousel') {
+            return false;
+        }
+
+        $rows = $get('gallery_images');
+        if (! is_array($rows)) {
+            return true;
+        }
+
+        return count(array_filter($rows, static fn (mixed $row): bool => is_array($row) && filled($row['media_asset_id'] ?? null))) < 3;
     }
 
     private static function exhibitionGalleryFields(): array
@@ -189,6 +207,7 @@ final class JournalEntryEditorSchema
                     'slideshow' => __('Slideshow'),
                     'carousel' => __('Carousel'),
                 ])
+                ->disableOptionWhen(static fn (string $value, Get $get): bool => self::carouselOptionDisabled($value, $get))
                 ->default('grid')
                 ->required()
                 ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
@@ -267,7 +286,7 @@ final class JournalEntryEditorSchema
                         'media_asset_id',
                         __('Image or video'),
                         allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
-                    )->required(),
+                    )->required()->live(),
                     self::videoControlsToggle('video_controls_enabled'),
                 ])
                 ->addActionLabel(__('Add media'))

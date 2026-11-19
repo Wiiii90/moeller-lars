@@ -8,17 +8,43 @@ function initializeSteppedGallery(root) {
     const next = root.querySelector('[data-journal-slide-next]');
     const status = root.querySelector('[data-journal-slide-status]');
     let index = 0;
-    let lastDirection = 'next';
+    const fiveEligible = isCarousel && slides.length >= 5;
+    let resizeObserver;
 
-    // Prepare only adjacent image assets. Hidden lazy images otherwise wait
-    // until navigation, briefly presenting an empty frame on fast switches.
+    // Width is based on the widest naturally displayed media in the whole
+    // Slideshow, never on the currently selected image. Canonical image and
+    // poster dimensions are already present in HTML (no network measurement).
+    const fitSlideshowWidth = () => {
+        if (isCarousel || slides.length === 0) return;
+        const ratios = slides.map((slide) => {
+            const media = slide.querySelector('.journal-entry-media > img, .journal-entry-media > video');
+            const width = Number(media?.getAttribute('width') || media?.naturalWidth || media?.videoWidth);
+            const height = Number(media?.getAttribute('height') || media?.naturalHeight || media?.videoHeight);
+            return width > 0 && height > 0 ? width / height : null;
+        });
+        // For legacy media without usable dimensions, retain the old cap.
+        if (ratios.some((ratio) => ratio === null)) {
+            root.style.removeProperty('--journal-slideshow-fit-width');
+            return;
+        }
+        const stageHeight = slides[0].getBoundingClientRect().height;
+        const rail = parseFloat(getComputedStyle(slides[0]).left) || 0;
+        const style = getComputedStyle(root);
+        const maxWidth = parseFloat(style.maxWidth);
+        const fontSize = parseFloat(style.fontSize);
+        if (!(stageHeight > 0 && maxWidth > 0 && fontSize > 0)) return;
+        const creditSpace = slides.some((slide) => slide.querySelector('figcaption')) ? 2.5 * fontSize : 0;
+        const contentWidth = Math.max(...ratios) * Math.max(1, stageHeight - creditSpace);
+        const width = Math.min(maxWidth, Math.max(20 * fontSize, contentWidth + 2 * rail));
+        root.style.setProperty('--journal-slideshow-fit-width', `${Math.round(width)}px`);
+    };
+
+    // Preload only current and nearby images. The outer pair is needed only
+    // when a gallery is eligible for the wide five-item arrangement.
     const prepareNeighbors = () => {
         if (slides.length === 0) return;
-        const nearby = new Set([
-            index,
-            (index + 1) % slides.length,
-            (index - 1 + slides.length) % slides.length,
-        ]);
+        const offsets = fiveEligible ? [-2, -1, 0, 1, 2] : [-1, 0, 1];
+        const nearby = new Set(offsets.map((offset) => (index + offset + slides.length) % slides.length));
         nearby.forEach((position) => {
             slides[position].querySelectorAll('img[loading="lazy"]').forEach((image) => {
                 image.loading = 'eager';
@@ -33,16 +59,11 @@ function initializeSteppedGallery(root) {
             const forward = (position - index + slides.length) % slides.length;
             const backward = (index - position + slides.length) % slides.length;
             let slot = active ? 'active' : null;
-            if (isCarousel && slides.length > 1 && !active) {
-                // With only two real slides the same item is both adjacent
-                // neighbors. Show it once, on the last navigated side.
-                if (slides.length === 2) {
-                    slot = lastDirection;
-                } else if (forward === 1) {
-                    slot = 'next';
-                } else if (backward === 1) {
-                    slot = 'previous';
-                }
+            if (isCarousel && !active) {
+                if (forward === 1) slot = 'next';
+                else if (backward === 1) slot = 'previous';
+                else if (fiveEligible && forward === 2) slot = 'next-far';
+                else if (fiveEligible && backward === 2) slot = 'previous-far';
             }
 
             slide.hidden = slot === null;
@@ -59,23 +80,32 @@ function initializeSteppedGallery(root) {
     };
 
     const goPrevious = () => {
-        lastDirection = 'previous';
         index = (index - 1 + slides.length) % slides.length;
         render();
     };
     const goNext = () => {
-        lastDirection = 'next';
         index = (index + 1) % slides.length;
         render();
     };
 
     previous?.addEventListener('click', goPrevious);
     next?.addEventListener('click', goNext);
+    fitSlideshowWidth();
+    if (!isCarousel) {
+        window.addEventListener('resize', fitSlideshowWidth);
+        if (typeof ResizeObserver === 'function' && root.parentElement) {
+            resizeObserver = new ResizeObserver(fitSlideshowWidth);
+            resizeObserver.observe(root.parentElement);
+        }
+    }
     render();
 
     return () => {
         previous?.removeEventListener('click', goPrevious);
         next?.removeEventListener('click', goNext);
+        window.removeEventListener('resize', fitSlideshowWidth);
+        resizeObserver?.disconnect();
+        root.style.removeProperty('--journal-slideshow-fit-width');
         slides.forEach((slide) => slide.querySelectorAll('video').forEach((video) => video.pause()));
     };
 }

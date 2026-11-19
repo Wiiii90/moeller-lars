@@ -87,7 +87,10 @@
 .journal-entry-gallery--slideshow {
     --journal-slideshow-rail: clamp(2.5rem, 6vw, 3rem);
     --journal-slideshow-header-height: 2.25rem;
-    width: min(100%, 42rem);
+    /* JS determines this stable width from the widest media in the set;
+       without JS the former safe 42rem stage remains available. */
+    width: min(100%, var(--journal-slideshow-fit-width, 42rem));
+    max-width: 42rem;
     height: calc(var(--journal-gallery-stage-height) + var(--journal-slideshow-header-height));
 }
 
@@ -233,6 +236,13 @@
 .journal-entry-gallery--carousel .journal-entry-gallery__item[data-journal-slide-position="next"] {
     right: 0;
     left: auto;
+}
+
+/* Far neighbors are real slides but do not take width until Content is wide
+   enough for five images. Keep three visible slots at intermediate widths. */
+.journal-entry-gallery--carousel .journal-entry-gallery__item[data-journal-slide-position="previous-far"],
+.journal-entry-gallery--carousel .journal-entry-gallery__item[data-journal-slide-position="next-far"] {
+    display: none;
 }
 
 .journal-entry-gallery--carousel .journal-entry-gallery__item:not([data-journal-slide-position="active"]) .journal-entry-media {
@@ -393,6 +403,69 @@
 .journal-entry-gallery__controls button:focus-visible {
     outline: 1px dotted currentColor;
     outline-offset: 2px;
+}
+
+/* Wide five-item Carousel: far | near | arrow | center | arrow | near | far.
+   Keep the original 44px arrow rails exactly beside the central work,
+   with media wholly inside each allocated preview track. */
+@container (min-width: 72rem) {
+    .journal-entry-gallery--carousel[data-journal-carousel-five] {
+        --journal-carousel-far-preview-width: clamp(5.5rem, 8%, 9rem);
+        --journal-carousel-preview-width: clamp(8rem, 15%, 14rem);
+    }
+
+    .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__item {
+        left: calc(var(--journal-carousel-far-preview-width) + var(--journal-carousel-preview-width) + var(--journal-carousel-arrow-rail));
+        width: calc(100% - 2 * (var(--journal-carousel-far-preview-width) + var(--journal-carousel-preview-width) + var(--journal-carousel-arrow-rail)));
+    }
+
+    .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__item[data-journal-slide-position="previous"] {
+        left: var(--journal-carousel-far-preview-width);
+    }
+
+    .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__item[data-journal-slide-position="next"] {
+        right: var(--journal-carousel-far-preview-width);
+        left: auto;
+    }
+
+    .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__item[data-journal-slide-position="previous-far"],
+    .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__item[data-journal-slide-position="next-far"] {
+        display: grid;
+        width: var(--journal-carousel-far-preview-width);
+        opacity: .5;
+    }
+
+    .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__item[data-journal-slide-position="previous-far"] {
+        left: 0;
+    }
+
+    .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__item[data-journal-slide-position="next-far"] {
+        right: 0;
+        left: auto;
+    }
+
+    .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__controls {
+        grid-template-columns:
+            var(--journal-carousel-far-preview-width)
+            var(--journal-carousel-preview-width)
+            var(--journal-carousel-arrow-rail)
+            minmax(0, 1fr)
+            var(--journal-carousel-arrow-rail)
+            var(--journal-carousel-preview-width)
+            var(--journal-carousel-far-preview-width);
+    }
+
+    .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__controls button:first-child {
+        grid-column: 3;
+    }
+
+    .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__controls button:last-child {
+        grid-column: 5;
+    }
+
+    .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__controls [data-journal-slide-status] {
+        grid-column: 4;
+    }
 }
 
 /* On tight content widths, arrows join the counter above the stage so the

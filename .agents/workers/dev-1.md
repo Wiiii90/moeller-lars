@@ -4,6 +4,15 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Stable Slideshow arrow fit and three/five-slot Carousel (2026-11-19)
+
+- The artist approved the prior proposal: in portrait-only Slideshow sets, center the fixed side arrows closer by sizing the shared gallery stage from the widest media in that set; never jump on navigation. Carousel needs at least three real media, shows center plus one on either side for 3/4, and can show two neighbors per side with five or more media if the Page content is wide enough. Preserve the existing plain navigation arrow positions and hit rails.
+- `resources/views/components/journal-gallery.blade.php`: keep authored Carousel selection but render Slideshow if fewer than three media; for eligible sets with five or more media mark the same canonical Carousel as five-slot-capable.
+- `resources/js/journal-presentation.js`: derive a single Slideshow width from HTML image/video-poster dimensions, fixed stage height and outside arrow rails. Unknown dimensions retain the previous 42rem cap. Refit only when the enclosing Content or viewport size changes (ResizeObserver/window resize), not on slide navigation; cleanup removes listeners and inline fit variable. Carousel controller now assigns distinct near and far neighbors with no duplicate slides, retains video pause, inert/ARIA hidden non-active media and bounded neighbor image eagerness.
+- `resources/css/journal-presentation.css`: preserve original Slideshow fixed-height, credits and nav design, allowing a max 42rem stage to shrink based on calculated media width; show five real symmetric Carousel slots only at >=72rem container width, three at intermediate widths and existing single-center responsive behavior under 48rem. In the five-slot arrangement the 44px arrow rails still sit between the center and its immediate neighbors.
+- `app/Filament/Support/JournalEntryEditorSchema.php`: in both existing Blog/Exhibition Gallery presentation Select controls, disable choosing Carousel until three actual media rows are selected, while allowing existing Carousel state to remain editable if the count falls. Blog media selection is live to refresh availability.
+- **Verification:** source-only and JavaScript syntax review; no browser acceptance, runtime Laravel/Filament test suite, CI, deployment or migration. Test in browser with 1/2/3/4/5/6 items, mixed video and portrait/landscape dimensions, 48rem/72rem boundaries, navigation accessibility, General widths and long credits.
+
 ## Carousel full Content width and larger side previews (2026-11-19)
 
 - User noticed both a persistent right/left outside margin compared with Mosaic and unnecessarily small neighbor art after the symmetric Carousel-track repair.
@@ -100,4 +109,4 @@
 
 ## Next
 
-Have the artist review full-Content-width Carousel with enlarged neighbors and the 48rem responsive fallback in both Exhibition and Blog, alongside media caption/video and Slideshow regressions in local preview; hand browser scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
+Have the artist review stable aspect-fitted Slideshow arrows and three/five-item Carousel, including disabled Carousel selection below three media, video and 48rem/72rem responsive thresholds, in local preview; hand browser regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
