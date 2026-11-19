@@ -18,10 +18,15 @@
     $category = $artwork->getRelationValue('category');
     $presentation = \App\Domain\Artwork\GalleryPresentation::class;
     $edgeMode = $presentation::edgeMode($category);
+    $navigationEnabled = $edgeMode !== $presentation::EDGE_DISABLED;
     $sequence = $viewerArtworks->values();
     $currentIndex = $sequence->search(fn ($candidate) => $candidate->getKey() === $artwork->getKey());
     $previousArtwork = is_int($currentIndex) && $currentIndex > 0 ? $sequence->get($currentIndex - 1) : null;
     $nextArtwork = is_int($currentIndex) && $currentIndex < $sequence->count() - 1 ? $sequence->get($currentIndex + 1) : null;
+    if (! $navigationEnabled) {
+        $previousArtwork = null;
+        $nextArtwork = null;
+    }
     if ($edgeMode === $presentation::EDGE_CYCLIC && $sequence->count() > 1 && is_int($currentIndex)) {
         $previousArtwork ??= $sequence->last();
         $nextArtwork ??= $sequence->first();
@@ -60,7 +65,7 @@
             :show-gallery-link="true"
             :previous-artwork="$previousArtwork"
             :next-artwork="$nextArtwork"
-            :empty-step-mode="$edgeMode"
+            :empty-step-mode="$navigationEnabled ? $presentation::EDGE_DISABLED : $presentation::EDGE_HIDDEN"
         />
         @if ($fitArtwork)
             {{-- Keep the fitted image and its information in one height-aware

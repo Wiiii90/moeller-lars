@@ -2,7 +2,16 @@
 
 **Lease:** 22
 **Branch:** dev
-**State:** Active — replacement chat initialized 2026-11-19; source orientation only. No Gallery redesign implementation authorized until the user supplies its concrete new requirements.
+**State:** Active — Gallery Stage reduction source-prepared on 2026-11-19; browser acceptance pending. Next proposed: combine Upload/Editor and adapt Gallery preview width.
+
+## Gallery Stage reduction — 2026-11-19
+
+- Scope: Stage keeps Artwork order first, Artwork information visibility, Media viewer and Individual Artwork Pages; Title, Between Artworks and video sound remain available only in Gallery Settings.
+- Viewer checkboxes: Zoom and Navigation. Individual Artwork Pages: Navigation and dependent Cyclic checkboxes on the same line, backed by existing edge mode. Public detail hides arrows entirely when disabled, retains disabled end arrows when enabled without cycling, and wraps when Cyclic is on.
+- Retire the editable Artwork information arrangement from Gallery Stage, Settings, and individual Artwork editor. Remove its code owner, edit callback, and stylesheet. Fix public information placement to the former default (rights left, title/date/dimensions/material right) in all displays. Historical saved arrangement data remains in persisted records, but does not drive the new UI; no database rewrite.
+- Preserve the current public Gallery and Artwork visual composition otherwise. Keep full video-sound feature until user decides whether to retire or replace it. Defer Stage Upload/Editor merge and adaptive desktop/phone preview columns.
+- Evidence: production-source changes only; no local application runtime, browser preview, test execution, Content Security Policy changes, Continuous Integration, deployment or migration. Browser acceptance and actual persisted Artist data inspection remain outstanding.
+- Out of scope: Home Hero, General, shared media picker/dialog redesign, production/validation deploy and test modifications.
 
 ## Current scope and inherited handoff
 

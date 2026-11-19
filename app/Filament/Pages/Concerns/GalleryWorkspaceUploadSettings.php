@@ -9,7 +9,6 @@ use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\GalleryPresentation;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Controls\AdminPanelControl;
-use App\Filament\Support\Controls\AdminArrangementControl;
 use App\Filament\Support\AdminHelp;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -42,7 +41,7 @@ trait GalleryWorkspaceUploadSettings
                 try {
                     $updated = $service->update($gallery, [
                         'name' => $data['name'],
-                        'edge_navigation_mode' => $data['edge_navigation_mode'] ?? GalleryPresentation::EDGE_DISABLED,
+                        'edge_navigation_mode' => $this->galleryEdgeNavigationMode($data, GalleryPresentation::edgeMode($gallery)),
                         'artwork_divider' => $data['artwork_divider'] ?? GalleryPresentation::DIVIDER_NONE,
                         // Sort changes are exclusively committed through the
                         // confirmed Action, never the Edit modal's autosave.
@@ -83,9 +82,8 @@ trait GalleryWorkspaceUploadSettings
     }
 
     /**
-     * The Gallery Stage and the existing full modal render exactly the same
-     * control definitions. Only column count and save timing differ.
-     * Homepage selection is deliberately absent: Home owns that setting.
+     * Stage shows frequent controls; the Edit dialog keeps the full settings.
+     * Both reuse the same fields and audited editorial service.
      */
     private function gallerySettingsFields(bool $stage): Grid
     {
@@ -123,33 +121,30 @@ trait GalleryWorkspaceUploadSettings
                 ]);
             });
 
-        // The Stage and Settings modal share the exact control schema.
-        // Title is full width, followed by the two ordering controls.
-        return Grid::make(['default' => 2])
-            ->schema([
-                $this->gallerySettingControl($name, 'name', $stage)->columnSpanFull(),
-                $order,
-                $this->gallerySettingControl(
-                    AdminControl::select('artwork_divider', 'Between Artworks')
-                        ->options(GalleryPresentation::DIVIDER_OPTIONS)
-                        ->default(GalleryPresentation::DIVIDER_NONE)->required(! $stage),
-                    'artwork_divider', $stage,
-                ),
-                $this->galleryInformationPanel($stage),
-                $this->galleryViewerPanel($stage),
-                $this->galleryDetailPagesPanel($stage),
-                $this->gallerySettingControl(
-                    AdminControl::checkbox('video_sound_enabled', 'Allow sound on looping Gallery videos'),
-                    'video_sound_enabled', $stage,
-                )->columnSpanFull(),
-            ]);
+        $fields = [];
+        if (! $stage) {
+            $fields[] = $name->columnSpanFull();
+        }
+        $fields[] = $order->columnSpanFull();
+        if (! $stage) {
+            $fields[] = AdminControl::select('artwork_divider', 'Between Artworks')
+                ->options(GalleryPresentation::DIVIDER_OPTIONS)
+                ->default(GalleryPresentation::DIVIDER_NONE)
+                ->required()
+                ->columnSpanFull();
+        }
+        $fields[] = $this->galleryInformationPanel($stage);
+        $fields[] = $this->galleryViewerPanel($stage);
+        $fields[] = $this->galleryDetailPagesPanel($stage);
+        if (! $stage) {
+            $fields[] = AdminControl::checkbox('video_sound_enabled', 'Allow sound on looping Gallery videos')
+                ->columnSpanFull();
+        }
+
+        return Grid::make(['default' => 2])->schema($fields);
     }
 
-    /**
-     * All Artwork information fields use one Settings/Stage schema. The Stage
-     * persists through the Gallery editorial owner; modal changes use the
-     * existing Edit action and never introduce a second save controller.
-     */
+    /** Gallery information checkboxes share the Stage and Edit domain owner. */
     private function galleryInformationPanel(bool $stage): \Filament\Schemas\Components\Group
     {
         $update = fn () => $this->updateGalleryInformationFromActiveForm($stage);
@@ -162,11 +157,6 @@ trait GalleryWorkspaceUploadSettings
             $fields[] = $checkbox;
         }
 
-        // Ordinary modal Checkboxes follow AdminDialog::edit()'s native
-        // change/autosave path. Only Repeater-specific reorder operations
-        // need an explicit callback in that modal.
-        $fields[] = AdminArrangementControl::make('info_arrangement', $update);
-
         return AdminPanelControl::make(
             'Artwork information', 'info_enabled', $fields,
             $stage ? $update : null,
@@ -177,11 +167,11 @@ trait GalleryWorkspaceUploadSettings
     {
         return AdminPanelControl::make('Media viewer', 'media_viewer_enabled', [
             $this->gallerySettingControl(
-                AdminControl::checkbox('viewer_zoom_enabled', 'Allow image zoom'),
+                AdminControl::checkbox('viewer_zoom_enabled', 'Zoom'),
                 'viewer_zoom_enabled', $stage,
             ),
             $this->gallerySettingControl(
-                AdminControl::checkbox('viewer_navigation_enabled', 'Allow previous / next navigation'),
+                AdminControl::checkbox('viewer_navigation_enabled', 'Navigation'),
                 'viewer_navigation_enabled', $stage,
             ),
         ], $stage ? fn (mixed $state) => $this->updateGalleryStageSetting('media_viewer_enabled', $state) : null);
@@ -189,17 +179,48 @@ trait GalleryWorkspaceUploadSettings
 
     private function galleryDetailPagesPanel(bool $stage): \Filament\Schemas\Components\Group
     {
+        $navigation = AdminControl::checkbox('edge_navigation_enabled', 'Navigation')->live();
+        $cyclic = AdminControl::checkbox('edge_navigation_cyclic', 'Cyclic')
+            ->live()
+            ->disabled(fn (callable $get): bool => ! (bool) $get('edge_navigation_enabled'));
+
+        if ($stage) {
+            $navigation->afterStateUpdated(function (mixed $state, callable $set): void {
+                $data = $this->galleryStageSettingsData;
+                $data['edge_navigation_enabled'] = (bool) $state;
+                if (! (bool) $state) {
+                    $set('edge_navigation_cyclic', false);
+                    $data['edge_navigation_cyclic'] = false;
+                }
+                $this->updateGalleryStageSetting('edge_navigation_mode', $this->galleryEdgeNavigationMode($data));
+            });
+            $cyclic->afterStateUpdated(function (mixed $state): void {
+                $data = $this->galleryStageSettingsData;
+                $data['edge_navigation_cyclic'] = (bool) $state;
+                $this->updateGalleryStageSetting('edge_navigation_mode', $this->galleryEdgeNavigationMode($data));
+            });
+        }
+
         return AdminPanelControl::make('Individual Artwork Pages', 'artwork_pages_enabled', [
-            $this->gallerySettingControl(
-                AdminControl::select('edge_navigation_mode', 'Artwork navigation at sequence ends')
-                    ->options([
-                        GalleryPresentation::EDGE_DISABLED => 'Disabled arrows',
-                        GalleryPresentation::EDGE_HIDDEN => 'Hide unavailable arrows',
-                        GalleryPresentation::EDGE_CYCLIC => 'Cyclic (last / first)',
-                    ])->default(GalleryPresentation::EDGE_DISABLED)->required(! $stage),
-                'edge_navigation_mode', $stage,
-            ),
+            $navigation,
+            $cyclic,
         ], $stage ? fn (mixed $state) => $this->updateGalleryStageSetting('artwork_pages_enabled', $state) : null);
+    }
+
+    /** @param array<string,mixed> $data */
+    private function galleryEdgeNavigationMode(array $data, string $fallback = GalleryPresentation::EDGE_DISABLED): string
+    {
+        if (! array_key_exists('edge_navigation_enabled', $data)) {
+            // A hidden parent panel must not erase the previous navigation.
+            return $fallback;
+        }
+        if (! (bool) $data['edge_navigation_enabled']) {
+            return GalleryPresentation::EDGE_DISABLED;
+        }
+
+        return (bool) ($data['edge_navigation_cyclic'] ?? false)
+            ? GalleryPresentation::EDGE_CYCLIC
+            : GalleryPresentation::EDGE_HIDDEN;
     }
 
     /** @param array<string,mixed> $data */
@@ -215,17 +236,13 @@ trait GalleryWorkspaceUploadSettings
         return ArtworkInformation::fromForm($data);
     }
 
-    /** Both Stage and modal reorder actions persist immediately through one owner. */
+    /** Stage persists changes via the same audited Gallery editorial owner. */
     private function updateGalleryInformationFromActiveForm(bool $stage): void
     {
-        if ($stage) {
-            $state = $this->galleryStageSettingsData;
-        } else {
-            // Filament's Repeater reorder actions do not emit the native
-            // change event used by AdminDialog::edit(). Read the mounted
-            // schema directly and use the same audited mutation as Stage.
-            $state = $this->getMountedActionSchema()->getRawState();
+        if (! $stage) {
+            return;
         }
+        $state = $this->galleryStageSettingsData;
         if (! is_array($state) || ! array_key_exists('info_enabled', $state)) {
             return;
         }
@@ -259,7 +276,8 @@ trait GalleryWorkspaceUploadSettings
     {
         return [
             'name' => (string) $gallery->getAttribute('name'),
-            'edge_navigation_mode' => GalleryPresentation::edgeMode($gallery),
+            'edge_navigation_enabled' => GalleryPresentation::edgeMode($gallery) !== GalleryPresentation::EDGE_DISABLED,
+            'edge_navigation_cyclic' => GalleryPresentation::edgeMode($gallery) === GalleryPresentation::EDGE_CYCLIC,
             'artwork_divider' => GalleryPresentation::divider($gallery),
             'sort_mode' => GalleryPresentation::sortMode($gallery),
             'video_sound_enabled' => GalleryPresentation::allowVideoSound($gallery),
@@ -358,13 +376,10 @@ trait GalleryWorkspaceUploadSettings
     public function updateGalleryStageSetting(string $field, mixed $value): void
     {
         $editable = [
-            'name',
             'media_viewer_enabled',
             'viewer_zoom_enabled',
             'viewer_navigation_enabled',
             'artwork_pages_enabled',
-            'video_sound_enabled',
-            'artwork_divider',
             'edge_navigation_mode',
         ];
         if (! in_array($field, $editable, true)) {

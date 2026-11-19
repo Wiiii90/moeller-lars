@@ -23,17 +23,11 @@ final class ArtworkInformation
         'copyright' => 'Copyright',
     ];
 
-    public const ALIGNMENTS = [
-        'left' => 'Left',
-        'center' => 'Center',
-        'right' => 'Right',
-    ];
-
     /** @return list<array{field:string,row:int,align:string}> */
-    public static function defaultArrangement(bool $rightsRight = false): array
+    public static function defaultArrangement(): array
     {
-        $infoSide = $rightsRight ? 'left' : 'right';
-        $rightsSide = $rightsRight ? 'right' : 'left';
+        $infoSide = 'right';
+        $rightsSide = 'left';
 
         return [
             ['field' => 'credits', 'row' => 1, 'align' => $rightsSide],
@@ -45,7 +39,7 @@ final class ArtworkInformation
         ];
     }
 
-    /** @return array{enabled:bool,visible:array<string,bool>,arrangement:list<array{field:string,row:int,align:string}>} */
+    /** @return array{enabled:bool,visible:array<string,bool>} */
     public static function defaults(): array
     {
         return [
@@ -58,11 +52,10 @@ final class ArtworkInformation
                 'credits' => false,
                 'copyright' => false,
             ],
-            'arrangement' => self::defaultArrangement(),
         ];
     }
 
-    /** @return array{enabled:bool,visible:array<string,bool>,arrangement:list<array{field:string,row:int,align:string}>} */
+    /** @return array{enabled:bool,visible:array<string,bool>} */
     public static function gallery(ArtworkCategory $gallery): array
     {
         $stored = $gallery->getAttribute('artwork_information');
@@ -81,12 +74,11 @@ final class ArtworkInformation
         }
         $legacy['visible']['credits'] = (bool) $gallery->getAttribute('show_media_credits');
         $legacy['visible']['copyright'] = (bool) $gallery->getAttribute('show_media_copyright');
-        $legacy['arrangement'] = self::defaultArrangement($gallery->getAttribute('caption_layout') === 'rights_right');
 
         return $legacy;
     }
 
-    /** @return array{enabled:bool,visible:array<string,bool>,arrangement:list<array{field:string,row:int,align:string}>} */
+    /** @return array{enabled:bool,visible:array<string,bool>} */
     public static function effective(ArtworkCategory $gallery, ?Artwork $artwork = null): array
     {
         $result = self::gallery($gallery);
@@ -109,14 +101,11 @@ final class ArtworkInformation
                 $result['visible'][$field] = self::boolean($visible, $field);
             }
         }
-        if (array_key_exists('arrangement', $override)) {
-            $result['arrangement'] = self::arrangement($override['arrangement']);
-        }
 
         return $result;
     }
 
-    /** @return array{enabled:bool,visible:array<string,bool>,arrangement:list<array{field:string,row:int,align:string}>} */
+    /** @return array{enabled:bool,visible:array<string,bool>} */
     public static function normalize(mixed $value): array
     {
         if (! is_array($value)) {
@@ -141,42 +130,11 @@ final class ArtworkInformation
                 ? self::boolean($value['enabled'], 'artwork_information.enabled')
                 : $defaults['enabled'],
             'visible' => $visible,
-            'arrangement' => array_key_exists('arrangement', $value)
-                ? self::arrangement($value['arrangement'])
-                : $defaults['arrangement'],
         ];
     }
 
-    /** @return list<array{field:string,row:int,align:string}> */
-    public static function arrangement(mixed $value): array
-    {
-        if (! is_array($value) || count($value) !== count(self::FIELDS)) {
-            throw ValidationException::withMessages(['artwork_information.arrangement' => 'Arrange every available information field exactly once.']);
-        }
-
-        $items = [];
-        $seen = [];
-        foreach (array_values($value) as $entry) {
-            if (! is_array($entry) || ! is_string($entry['field'] ?? null)
-                || ! array_key_exists($entry['field'], self::FIELDS)
-                || isset($seen[$entry['field']])
-                || ! in_array($entry['align'] ?? null, array_keys(self::ALIGNMENTS), true)
-                || filter_var($entry['row'] ?? null, FILTER_VALIDATE_INT) === false
-                || (int) $entry['row'] < 1 || (int) $entry['row'] > 4) {
-                throw ValidationException::withMessages(['artwork_information.arrangement' => 'Each field needs a unique name, row (1–4) and alignment.']);
-            }
-            $seen[$entry['field']] = true;
-            $items[] = [
-                'field' => $entry['field'],
-                'row' => (int) $entry['row'],
-                'align' => $entry['align'],
-            ];
-        }
-        return $items;
-    }
-
     /** @param array<string,mixed> $data
-     *  @return array{enabled:bool,visible:array<string,bool>,arrangement:list<array{field:string,row:int,align:string}>}
+     *  @return array{enabled:bool,visible:array<string,bool>}
      */
     public static function fromForm(array $data): array
     {
@@ -188,7 +146,6 @@ final class ArtworkInformation
         return self::normalize([
             'enabled' => $data['info_enabled'] ?? false,
             'visible' => $visible,
-            'arrangement' => $data['info_arrangement'] ?? self::defaultArrangement(),
         ]);
     }
 
@@ -210,10 +167,6 @@ final class ArtworkInformation
                 $override['visible'][$field] = $individual['visible'][$field];
             }
         }
-        if (self::boolean($data['info_individual_arrangement'] ?? false, 'info_individual_arrangement')) {
-            $override['arrangement'] = $individual['arrangement'];
-        }
-
         return $override;
     }
 
@@ -222,7 +175,6 @@ final class ArtworkInformation
     {
         $result = [
             'info_enabled' => $configuration['enabled'],
-            'info_arrangement' => $configuration['arrangement'],
         ];
         foreach (self::FIELDS as $field => $label) {
             $result['info_'.$field] = $configuration['visible'][$field];
@@ -258,7 +210,9 @@ final class ArtworkInformation
         ];
 
         $rows = [];
-        foreach ($configuration['arrangement'] as $slot) {
+        // Historical configuration may contain arrangement data. The public
+        // layout now follows one fixed composition instead.
+        foreach (self::defaultArrangement() as $slot) {
             $field = $slot['field'];
             if (! $configuration['visible'][$field] || $values[$field] === '') {
                 continue;

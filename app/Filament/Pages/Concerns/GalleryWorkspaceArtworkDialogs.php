@@ -127,24 +127,6 @@ trait GalleryWorkspaceArtworkDialogs
                         status: 'success',
                     );
                 },
-                onInformationChanged: function () use ($arguments, $dialog): void {
-                    // Native Edit change saves ordinary fields. Filament
-                    // Repeater reorder actions do not emit that event, so use
-                    // the same audited Artwork Edit path immediately.
-                    $state = $this->getMountedActionSchema()->getRawState();
-                    if (! is_array($state)) {
-                        return;
-                    }
-                    $changed = $dialog->save(
-                        $this->actionArtwork($arguments), $state, savePrimaryMedia: false,
-                    );
-                    if ($changed) {
-                        $this->refreshWorkspaceAfterMutation();
-                        app(AdminNotifier::class)->notification(
-                            title: 'Artwork information saved', status: 'success',
-                        );
-                    }
-                },
                 onPositionChanged: function (mixed $state) use ($arguments): void {
                     try {
                         if (! $this->moveArtworkToPosition(
