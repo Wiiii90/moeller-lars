@@ -37,6 +37,7 @@
         @livewireStyles(['nonce' => $publicStyleNonce])
         <meta data-public-layout
             data-public-layout-frame-style="{{ $publicFrameStyle }}"
+            data-public-layout-menu-alignment="{{ $publicMenuAlignment }}"
             data-public-layout-background="{{ $publicBackgroundCss ?? '' }}"
             data-public-layout-menu-background="{{ $publicMenuBackgroundCss ?? '' }}"
             data-public-layout-content-background="{{ $publicContentBackgroundCss ?? '' }}"
@@ -69,7 +70,7 @@
         {{-- The Menu and Page each own one real backing surface in Backing
              mode; Plain leaves both surfaces unadorned. --}}
         <div class="public-paper-frame">
-        <header class="site-header @if ($artworkWideMenu) site-header--artwork-wide-menu @endif site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--divider-{{ $effectiveHeaderDivider }} site-header--title-align-{{ $publicHeaderAlignment }} site-header--mobile-title-align-{{ $publicHeaderMobileAlignment }} @if ($publicHeaderGradientCss !== null) site-header--gradient-title @endif @unless ($publicHeaderVisible) site-header--title-hidden @endunless @if ($publicHeaderAutoScale) site-header--title-fluid @endif">
+        <header class="site-header @if ($artworkWideMenu) site-header--artwork-wide-menu @endif site-header--name-{{ $publicHeaderPosition }} site-header--caps-{{ $publicHeaderCaps }} site-header--menu-align-{{ $publicMenuAlignment }} site-header--divider-{{ $effectiveHeaderDivider }} site-header--title-align-{{ $publicHeaderAlignment }} site-header--mobile-title-align-{{ $publicHeaderMobileAlignment }} @if ($publicHeaderGradientCss !== null) site-header--gradient-title @endif @unless ($publicHeaderVisible) site-header--title-hidden @endunless @if ($publicHeaderAutoScale) site-header--title-fluid @endif">
             @if ($publicHeaderVisible && ($publicHeaderPosition === 'below' || $__env->hasSection('hide_navigation')))
                 <x-public.artist-name :home-url="$homeUrl" :title="$publicHeaderText" />
             @endif
