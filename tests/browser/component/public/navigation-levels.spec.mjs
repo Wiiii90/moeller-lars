@@ -7,7 +7,9 @@ const navigationScript = readFileSync(new URL('../../../../resources/js/public-n
 
 function fixture(path) {
     const withinAbout = path === '/about' || path === '/biography';
-    const alignedSide = path === '/aligned-left' ? 'left' : path === '/aligned-right' ? 'right' : null;
+    const alignmentFixture = path.match(/^\/aligned-(left|right)(?:-menu-(left|center|right))?$/);
+    const alignedSide = alignmentFixture?.[1] ?? null;
+    const menuAlignment = alignmentFixture?.[2] ?? (alignedSide === 'left' ? 'right' : 'left');
     const parentLink = `<a href="/about" data-navigation-parent-link aria-controls="child-about" aria-expanded="${withinAbout}"><span class="site-navigation__label">ABOUT</span></a>`;
     const link = (label, url, selected = false) =>
         `<div class="site-navigation__item ${selected ? 'is-active' : ''}" data-navigation-item data-navigation-key="${url}"><div class="site-navigation__primary"><a href="${url}" ${selected ? 'aria-current="page"' : ''}><span class="site-navigation__label">${label}</span></a></div></div>`;
@@ -23,7 +25,7 @@ function fixture(path) {
             link('CHRONOLOGY', '/chronology'), link('EXHIBITIONS', '/about-exhibitions'), link('CONTACT', '/contact')].join('');
     return `<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>${style}${alignedSide ? ':root { --public-shell-max: 1000px; }' : ''}</style></head>
         <body class="public-site">
-        <header class="site-header ${alignedSide ? `site-header--name-inside site-header--title-align-${alignedSide}` : ''}">
+        <header class="site-header ${alignedSide ? `site-header--name-inside site-header--title-align-${alignedSide} site-header--menu-align-${menuAlignment}` : ''}">
           ${alignedSide ? '<div class="site-navigation-surface">' : ''}
           <div class="site-navigation" data-site-navigation>
             ${alignedSide ? '<h1 class="site-name-heading"><a href="/" class="site-title">Lars Möller</a></h1>' : ''}
@@ -163,5 +165,81 @@ test('Inside title side anchors ordered navigation and mirrors the nested return
         }
         await submenu.locator('[data-navigation-back]').click();
         await expect(main).toBeVisible();
+    }
+});
+
+test('explicit Menu alignment keeps page order and the return arrow on the matching edge', async ({ page }) => {
+    await page.setViewportSize({ width: 1400, height: 800 });
+
+    for (const titleSide of ['left', 'right']) {
+        for (const alignment of ['left', 'center', 'right']) {
+            await page.goto(`https://navigation.test/aligned-${titleSide}-menu-${alignment}`);
+            const surface = page.locator('[data-navigation-main]');
+            await expect(surface).not.toHaveClass(/is-overflowing/);
+            const main = await page.evaluate(() => {
+                const nav = document.querySelector('[data-navigation-main] > nav');
+                const bounds = nav.getBoundingClientRect();
+                const pages = [...nav.querySelectorAll('[data-navigation-item]:not([hidden])')];
+                const first = pages[0].getBoundingClientRect();
+                const last = pages.at(-1).getBoundingClientRect();
+                return {
+                    order: pages.map(el => el.textContent.trim()),
+                    alignment: getComputedStyle(nav).justifyContent,
+                    firstLeft: first.left, lastRight: last.right,
+                    left: bounds.left, right: bounds.right,
+                };
+            });
+            expect(main.order).toEqual(['PAINTINGS', 'DRAWINGS', 'ABOUT']);
+            expect(main.alignment).toBe({ left: 'flex-start', center: 'center', right: 'flex-end' }[alignment]);
+            if (alignment === 'left') expect(Math.abs(main.firstLeft - main.left)).toBeLessThan(2);
+            if (alignment === 'right') expect(Math.abs(main.lastRight - main.right)).toBeLessThan(2);
+            if (alignment === 'center') expect(Math.abs(
+                (main.firstLeft + main.lastRight) / 2 - (main.left + main.right) / 2,
+            )).toBeLessThan(2);
+
+            await page.locator('[data-navigation-parent-link]').click();
+            const submenu = page.locator('#child-about');
+            await expect(submenu).toBeVisible();
+            await expect(submenu).not.toHaveClass(/is-overflowing/);
+            const child = await page.evaluate(() => {
+                const submenu = document.querySelector('#child-about');
+                const content = submenu.querySelector('[data-navigation-content]');
+                const nav = content.querySelector('nav');
+                const back = content.querySelector('[data-navigation-back]').getBoundingClientRect();
+                const separator = content.querySelector('.site-navigation__breadcrumb-separator').getBoundingClientRect();
+                const items = [...nav.querySelectorAll('[data-navigation-item]:not([hidden])')];
+                const boundary = content.getBoundingClientRect();
+                const navBounds = nav.getBoundingClientRect();
+                return {
+                    order: items.map(el => el.textContent.trim()),
+                    direction: getComputedStyle(content).flexDirection,
+                    left: boundary.left, right: boundary.right,
+                    backLeft: back.left, backRight: back.right,
+                    dividerLeft: separator.left, dividerRight: separator.right,
+                    navLeft: navBounds.left, navRight: navBounds.right,
+                    iconTransform: getComputedStyle(content.querySelector('[data-navigation-back] .public-icon')).transform,
+                };
+            });
+            expect(child.order).toEqual(['ABOUT', 'GALLERY ONE', 'GALLERY TWO']);
+            if (alignment === 'right') {
+                expect(child.direction).toBe('row-reverse');
+                expect(Math.abs(child.backRight - child.right)).toBeLessThan(2);
+                expect(child.navRight).toBeLessThanOrEqual(child.dividerLeft);
+                expect(child.dividerRight).toBeLessThanOrEqual(child.backLeft);
+                expect(child.iconTransform).toMatch(/^matrix\\(-1,/);
+            } else if (alignment === 'left') {
+                expect(child.direction).toBe('row');
+                expect(Math.abs(child.backLeft - child.left)).toBeLessThan(2);
+                expect(child.backRight).toBeLessThanOrEqual(child.dividerLeft);
+                expect(child.dividerRight).toBeLessThanOrEqual(child.navLeft);
+            } else {
+                const groupLeft = Math.min(child.backLeft, child.dividerLeft, child.navLeft);
+                const groupRight = Math.max(child.backRight, child.dividerRight, child.navRight);
+                expect(Math.abs((groupLeft + groupRight) / 2 - (child.left + child.right) / 2)).toBeLessThan(2);
+            }
+
+            await submenu.locator('[data-navigation-back]').click();
+            await expect(surface).toBeVisible();
+        }
     }
 });
