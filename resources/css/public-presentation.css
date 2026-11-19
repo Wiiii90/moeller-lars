@@ -238,16 +238,17 @@ body {
 /* A parent item's existing underline doubles as a hover-to-open countdown.
    Shrink symmetrically until it disappears; animationend opens the same child
    menu used by click and keyboard. No secondary progress indicator or timer.
-   Touch, coarse pointers and reduced-motion visitors retain click opening. */
+   Touch and reduced-motion visitors retain click opening; the real mouse
+   pointer event decides eligibility, not a device's primary-pointer media query. */
 @keyframes site-navigation-submenu-hover-countdown {
     from { transform: scaleX(1); }
     to { transform: scaleX(0); }
 }
 
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-    .site-navigation[data-navigation-ready] .site-navigation__rail [data-navigation-parent-link]:hover > .site-navigation__label::after {
+@media (prefers-reduced-motion: no-preference) {
+    .site-navigation[data-navigation-ready] .site-navigation__rail [data-navigation-parent-link].is-hover-counting > .site-navigation__label::after {
         opacity: 1;
-        animation: site-navigation-submenu-hover-countdown 1.9s linear forwards;
+        animation: site-navigation-submenu-hover-countdown 2s linear forwards;
     }
 }
 

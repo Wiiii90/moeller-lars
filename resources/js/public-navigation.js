@@ -318,12 +318,22 @@ function initializeNavigationLevels(container, mainSurface, main, restoredWindow
         // The existing underline's CSS animation is the single countdown
         // clock. Its completion opens the same child level as an immediate
         // click; leaving the parent cancels the animation automatically.
+        parentLink.addEventListener('pointerenter', (event) => {
+            // Query the actual pointing device, not the system's preferred
+            // input device (which may be touch even while a mouse is used).
+            if (event.pointerType !== 'mouse' || event.buttons !== 0 || mainSurface.hidden) return;
+            parentLink.classList.add('is-hover-counting');
+        });
+        parentLink.addEventListener('pointerleave', () => {
+            parentLink.classList.remove('is-hover-counting');
+        });
         parentLink.addEventListener('animationend', (event) => {
             if (event.animationName !== 'site-navigation-submenu-hover-countdown'
                 || event.pseudoElement !== '::after'
-                || !parentLink.matches(':hover')
+                || !parentLink.classList.contains('is-hover-counting')
                 || mainSurface.hidden) return;
 
+            parentLink.classList.remove('is-hover-counting');
             // A pointer-only hover must not steal focus. If the parent is
             // keyboard-focused, move focus into the newly exposed level.
             showChildren(entry, document.activeElement === parentLink);
