@@ -20,7 +20,21 @@ final class PublicationService
 
     public function hasPendingChanges(): bool
     {
-        return $this->pendingSummary()['total'] > 0;
+        // Navigation and response headers need a yes/no answer, never the
+        // per-table counts. Stop on the first semantic row difference rather
+        // than materializing the full publication summary on each Admin render.
+        foreach (PublicationSnapshot::TABLES as $table) {
+            $difference = DB::selectOne(sprintf(
+                'SELECT 1 AS pending FROM public.%1$s AS working FULL OUTER JOIN committed.%1$s AS committed USING (id) WHERE '.PublicationSnapshot::ROW_DIFFERENCE_SQL.' LIMIT 1',
+                $table,
+            ));
+
+            if ($difference !== null) {
+                return true;
+            }
+        }
+
+        return $this->rightsSelections->pendingCount($this->versions->currentLiveCheckpoint()) > 0;
     }
 
     /**
