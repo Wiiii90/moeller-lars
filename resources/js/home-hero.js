@@ -29,6 +29,9 @@ export function initializeHomeHero(root = document, transition = (change) => cha
             transition(() => {
                 slides[index].hidden = true;
                 slides[nextIndex].hidden = false;
+                // The shared fitted-media owner measures the newly active
+                // Hero's native dimensions and caption, not the old slide.
+                group.dispatchEvent(new Event('home-hero-change'));
             });
             slides[nextIndex].querySelector('[data-home-hero-direction="' +
                 button.dataset.homeHeroDirection + '"]')?.focus({ preventScroll: true });

@@ -9,32 +9,8 @@
                 $artwork = $candidate->artwork();
                 $asset = $candidate->mediaAsset();
                 $isCurrent = $candidate->key() === $heroCandidate->key();
-                $assetPreview = $artwork instanceof \App\Models\Artwork
-                    ? ($media->kind($artwork) === 'video'
-                        ? \App\Domain\Media\MediaPreviewVariant::videoPoster($media->primaryAsset($artwork))
-                        : $media->thumbnailVariant($artwork))
-                    : ($asset instanceof \App\Models\MediaAsset
-                        ? (\App\Domain\Media\MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type'))
-                            ? \App\Domain\Media\MediaPreviewVariant::videoPoster($asset)
-                            : \App\Domain\Media\MediaPreviewVariant::imageThumbnail($asset))
-                        : null);
-                $previewWidth = (int) ($assetPreview?->getAttribute('width') ?? 0);
-                $previewHeight = (int) ($assetPreview?->getAttribute('height') ?? 0);
-                $heroAspect = $previewWidth > 0 && $previewHeight > 0
-                    ? round($previewWidth / $previewHeight, 8)
-                    : null;
             @endphp
-            @if ($heroAspect !== null)
-                @push('public-component-styles')
-                    <style nonce="{{ request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE) }}">
-                        .home-hero-slide[data-home-hero-index="{{ $loop->index }}"] {
-                            --home-hero-image-aspect: {{ $heroAspect }};
-                        }
-                    </style>
-                @endpush
-            @endif
-            <div class="home-hero-slide" data-home-hero-slide data-home-hero-index="{{ $loop->index }}"
-                @if ($heroAspect !== null) data-home-hero-dimensioned @endif @if (! $isCurrent) hidden @endif>
+            <div class="home-hero-slide" data-home-hero-slide @if (! $isCurrent) hidden @endif>
                 @if ($artwork instanceof \App\Models\Artwork)
                     <x-artwork-card
                         :artwork="$artwork"

@@ -2,7 +2,7 @@
 
 **Lease:** 20
 **Branch:** dev
-**State:** Expanded is the sole Artwork detail layout and now also the only Home Hero image presentation; obsolete Home orientation/paper controls retired. Gallery artwork gaps enlarged with a small stable pseudo-random variation. Source changes prepared; browser acceptance pending.
+**State:** Corrected Home/detail mismatch by sharing actual viewport-fit sizing, the fitted Page geometry and image/metadata track, including hidden title/navigation. Browser acceptance pending.
 
 ## Ownership / scope
 
@@ -17,6 +17,13 @@
 - All Home Hero slides (Artworks **and** direct Storage media, including video posters where dimensions exist) use the same `artwork-card__composition--home-hero` image/caption grouping. Existing variant dimensions create a nonce-authorized per-slide image ratio; CSS makes each image as large as permitted by **General Content width** and `min(82svh, 100svh - 9rem)` without distortion. Footer/rights align exactly with that media width; Gallery/hero navigation and arrow hit targets span General Content. Small landscapes and their information remain vertically grouped/centered, with no phantom stage below the image.
 - `data-home-hero`, `[data-home-hero-slide]`, current/hidden member state, previous/next buttons, rotation and enabled viewer remain canonical. All source profiles and media eligibility unchanged. The Home settings no longer expose landscape/portrait expand, alternate page surface or wide-menu controls in Stage or Settings. The configuration service no longer reads/saves these fields and drops inactive keys on the next authorized Home edit, but **historic committed versions and checkpoint snapshots remain untouched**. No database migration was required.
 - Do not confuse independent Home Hero media rendering with individual Artwork detail routes; the common visual language is image sizing and footer alignment, not forcing Home into the detail renderer or sharing its navigation controller.
+
+## Home/Artwork fitted presentation parity — correction
+
+- Artist reported Home was not actually identical to individual Expanded Artwork pages: extra bottom whitespace and captions not always matching the media. Prior change incorrectly added Home-only `min-height: calc(100svh - 9rem)`, `--home-hero-media-height`, separate ratio-token CSS and a dedicated page-flow path that did not account for the actual title/navigation/footer budget. The page was longer than the viewport despite an image height cap.
+- Removed those parallel Home-only height/ratio formulas. Home now shares the **same fitted public paper-frame and General shell geometry** as individual Artwork pages, and both call one `fittedMediaWidth()` calculation in `public-gallery-loading.js`: real available Content width, actual folio presence, visible Page heading, viewport bottom, caption size, Page bottom padding and native media dimensions. A single `--public-fitted-image-width` in the existing nonce-authorized layout stylesheet controls the visible Home slide's image *and* metadata container; Home is not a second CSS sizing algorithm.
+- The visible Home image and caption are vertically centered as one flex composition, with no art-card viewport minimum. If Title or navigation is absent, that vertical space becomes available to the image automatically. The existing Home slide-switch handler emits `home-hero-change` so the central fitter measures the next portrait/landscape/video with its own footer; fit responds to resize and fonts. Original Gallery index and Home source selection/navigation/video/viewer remain unchanged.
+- Source-only; needs real Laravel Preview acceptance at desktop/mobile, with Home title/nav toggled on/off, different portrait/landscape media, long captions, multiple-slide switching, no bottom overflow and image-edge/footer alignment.
 
 ## Gallery index spacing
 

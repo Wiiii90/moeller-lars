@@ -602,14 +602,17 @@ body {
 /* Image fitting must not disappear at narrow widths or browser zoom.
  * Only actual images have this class. Header, folio, footer and longer
  * editorial content keep their natural size; the image consumes the rest. */
-body.public-site:has(.site-content--fitted-image) .public-paper-frame {
+/* A fitted public Artwork—detail or Home Hero—fills the same Page/frame.
+   Visible headings and navigation occupy their natural height; when they
+   disappear, their space is immediately available to the media instead. */
+body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitted) .public-paper-frame {
     height: calc(100dvh - var(--public-shell-gap));
     min-height: min-content;
 }
-body.public-site:has(.site-content--fitted-image) .site-header {
+body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitted) .site-header {
     flex: 0 0 auto;
 }
-#content.site-content--fitted-image {
+#content:is(.site-content--fitted-image, .site-content--home-hero-fitted) {
     display: flex;
     min-height: 0;
     flex: 1 1 auto;
@@ -943,31 +946,32 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 }
 
 
-/* Home Hero shares the accepted Expanded Artwork composition, independently
-   of the Gallery detail route. General still owns the paper and side inset.
-   The Hero group owns the common media/metadata track for every slide,
-   including additional manually selected Storage images and videos. */
-.home-hero-presentation {
-    --home-hero-media-height: min(82svh, calc(100svh - 9rem));
-    width: 100%;
-    min-width: 0;
-    container-type: inline-size;
-}
-.home-hero-presentation > .home-hero-slide {
-    width: 100%;
-    min-width: 0;
-}
+/* Home Hero uses the same fitted image calculation and General-owned Page
+   as individual Artwork pages. A single CSS variable is supplied by the
+   existing shared JS fitter for the active slide (not a parallel ratio/
+   viewport-height rule). The image and footer belong to one centered track. */
+.site-content--home-hero-fitted > .public-content-reveal,
+.site-content--home-hero-fitted .home-hero-presentation,
+.site-content--home-hero-fitted .home-hero-slide:not([hidden]),
 .site-content--home-hero-fitted .home-hero-slide > .artwork-card {
     display: flex;
-    width: 100%;
     min-width: 0;
-    min-height: max(0px, calc(100svh - 9rem));
-    margin-inline: auto;
+    min-height: 0;
+    flex: 1 1 auto;
     flex-direction: column;
+}
+.site-content--home-hero-fitted > .public-content-reveal > .public-page-heading {
+    flex: 0 0 auto;
+}
+.site-content--home-hero-fitted .home-hero-presentation,
+.site-content--home-hero-fitted .home-hero-slide:not([hidden]),
+.site-content--home-hero-fitted .home-hero-slide > .artwork-card {
+    width: 100%;
 }
 .site-content--home-hero-fitted .artwork-folio {
     width: 100%;
     padding-inline: 0;
+    flex: 0 0 auto;
 }
 .site-content--home-hero-fitted .artwork-folio__leading > .artwork-folio__step {
     justify-content: flex-start;
@@ -977,19 +981,14 @@ body.public-site:has(.site-content--fitted-image) .site-header {
 }
 .site-content--home-hero-fitted .artwork-card__composition--home-hero {
     display: flex;
-    width: 100%;
+    width: min(100%, var(--public-fitted-image-width, 100%));
     max-width: 100%;
     min-width: 0;
+    min-height: 0;
     margin-inline: auto;
-    flex: 1 0 auto;
+    flex: 1 1 auto;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
-}
-/* Ratio comes from each slide's existing media variant and a nonce-protected
-   stylesheet; no inline style attribute or viewport-widening paper rules. */
-.site-content--home-hero-fitted .home-hero-slide[data-home-hero-dimensioned] .artwork-card__composition--home-hero {
-    width: min(100cqw, calc(var(--home-hero-media-height) * var(--home-hero-image-aspect)));
 }
 .site-content--home-hero-fitted .artwork-card__composition--home-hero > :is(
     .artwork-card__link, .artwork-card__footer, .public-video__controls
@@ -997,22 +996,17 @@ body.public-site:has(.site-content--fitted-image) .site-header {
     width: 100%;
     max-width: 100%;
     min-width: 0;
+    flex: 0 0 auto;
 }
 .site-content--home-hero-fitted .artwork-card__composition--home-hero :is(
     .artwork-card__image, .artwork-card__video
 ) {
+    display: block;
     width: 100%;
     max-width: 100%;
     height: auto;
-    max-height: var(--home-hero-media-height);
     object-fit: contain;
 }
-@media (max-width: 40rem) {
-    .site-content--home-hero-fitted .home-hero-slide > .artwork-card {
-        min-height: 0;
-    }
-}
-
 /* Hidden Hero members are rendered once and remain out of layout and the
  * accessibility tree until the active member changes. */
 [data-home-hero-slide][hidden] {

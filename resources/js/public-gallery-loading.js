@@ -11,6 +11,39 @@ export function galleryImageDistance(image, viewportHeight) {
     return 0;
 }
 
+/* The shared fitted-media owner. Both a Gallery's individual Artwork and
+   Home's currently visible Hero slide use the same measured width/height
+   budget, so captions and bottom padding cannot diverge between templates. */
+function fittedMediaWidth(page, owner, availableWidth, sourceWidth, sourceHeight, footer, controls = null) {
+    const viewport = window.visualViewport;
+    const viewportHeight = viewport?.height ?? window.innerHeight;
+    const folio = owner.querySelector('.artwork-folio');
+    const stageStart = folio
+        ? folio.getBoundingClientRect().bottom
+            + (Number.parseFloat(getComputedStyle(folio).marginBottom) || 0)
+        : owner.getBoundingClientRect().top;
+    const imageTop = Math.max(0, stageStart - (viewport?.offsetTop ?? 0));
+    const pageStyle = getComputedStyle(page);
+    const outerHeight = (element) => {
+        if (!element) return 0;
+        const style = getComputedStyle(element);
+        return element.getBoundingClientRect().height
+            + (Number.parseFloat(style.marginTop) || 0)
+            + (Number.parseFloat(style.marginBottom) || 0);
+    };
+    const reserveBelow = outerHeight(footer) + outerHeight(controls)
+        + (Number.parseFloat(pageStyle.paddingBottom) || 0)
+        + (Number.parseFloat(pageStyle.marginBottom) || 0);
+    const remaining = viewportHeight - imageTop - reserveBelow;
+    const heightForImage = Math.max(1, remaining > 0 ? remaining : viewportHeight - reserveBelow);
+    return Math.max(1, Math.floor(Math.min(availableWidth, heightForImage * sourceWidth / sourceHeight)));
+}
+
+function fittedStyleRule() {
+    const stylesheet = [...document.querySelectorAll('style[data-public-layout-style]')].at(-1)?.sheet;
+    return [...(stylesheet?.cssRules ?? [])].find((rule) => rule.selectorText === ':root')?.style ?? null;
+}
+
 // The same Artwork image lifecycle also resolves the short-lived native ALT
 // placeholder on detail routes. The server owns the pending state so the
 // placeholder is hidden before JavaScript starts, including during SPA swaps.
@@ -41,9 +74,7 @@ function initializeArtworkDetailImage(root) {
     const stage = detail?.querySelector('.artwork-detail__image-stage');
     const sourceWidth = Number(image.getAttribute('width'));
     const sourceHeight = Number(image.getAttribute('height'));
-    const stylesheet = [...document.querySelectorAll('style[data-public-layout-style]')].at(-1)?.sheet;
-    const rootRule = [...(stylesheet?.cssRules ?? [])].find((rule) => rule.selectorText === ':root');
-    const fitStyle = rootRule?.style;
+    const fitStyle = fittedStyleRule();
     let frameRequest = 0;
 
     const clearFit = () => {
@@ -52,45 +83,14 @@ function initializeArtworkDetailImage(root) {
         fitStyle?.removeProperty('--public-fitted-paper-width');
     };
 
-    const outerHeight = (element) => {
-        if (!element) return 0;
-        const style = getComputedStyle(element);
-        return element.getBoundingClientRect().height
-            + (Number.parseFloat(style.marginTop) || 0)
-            + (Number.parseFloat(style.marginBottom) || 0);
-    };
-
     const fit = () => {
         if (lifetime.signal.aborted || !fitStyle || !page || !detail || !stage
             || sourceWidth <= 0 || sourceHeight <= 0) return;
 
-        // The General Page and its padding already resolve the actual usable
-        // track. Do not approximate it from viewport gutters or create a
-        // second, wider paper for landscape images.
-        const availableWidth = Math.max(1, stage.getBoundingClientRect().width);
-        const pageStyle = getComputedStyle(page);
-        const viewport = window.visualViewport;
-        const viewportHeight = viewport?.height ?? window.innerHeight;
-        // Read the fixed navigation boundary, not the now centered image
-        // stage. Measuring the stage itself would make subsequent fits
-        // shrink portraits repeatedly as the image group re-centers.
-        const folio = detail.querySelector('.artwork-folio');
-        const stageStart = folio
-            ? folio.getBoundingClientRect().bottom
-                + (Number.parseFloat(getComputedStyle(folio).marginBottom) || 0)
-            : stage.getBoundingClientRect().top;
-        const imageTop = Math.max(0, stageStart - (viewport?.offsetTop ?? 0));
-        // Only reserve the caption and paper inset; lengthy editorial text scrolls below.
-        const reserveBelow = outerHeight(detail.querySelector('.artwork-detail__footer'))
-            + (Number.parseFloat(pageStyle.paddingBottom) || 0)
-            + (Number.parseFloat(pageStyle.marginBottom) || 0);
-        const remaining = viewportHeight - imageTop - reserveBelow;
-        // If the stage starts below the fold, visitors scroll to a viewport-fitted image.
-        const heightForImage = Math.max(1, remaining > 0 ? remaining : viewportHeight - reserveBelow);
-        // The configured normal Artwork width is NOT a minimum: forcing it
-        // after height fitting made portrait images taller than the viewport.
-        const fittedWidth = Math.min(availableWidth, heightForImage * sourceWidth / sourceHeight);
-
+        const fittedWidth = fittedMediaWidth(
+            page, detail, Math.max(1, stage.getBoundingClientRect().width),
+            sourceWidth, sourceHeight, detail.querySelector('.artwork-detail__footer'),
+        );
         fitStyle.setProperty('--public-fitted-image-width', Math.max(1, Math.floor(fittedWidth)) + 'px');
         fitStyle.removeProperty('--public-fitted-paper-width');
     };
@@ -129,10 +129,75 @@ function initializeArtworkDetailImage(root) {
     };
 }
 
+/* Home switches among already-present slides. Fit only the active member
+   using exactly the same General content/viewport/metadata calculation as
+   an individual Artwork. No inline style attributes or extra style owners. */
+function initializeHomeHeroFitting(root) {
+    const page = root.querySelector?.('#content.site-content--home-hero-fitted');
+    const group = page?.querySelector('.home-hero-presentation');
+    const fitStyle = fittedStyleRule();
+    if (!page || !group || !fitStyle) return () => {};
+
+    const lifetime = new AbortController();
+    let frameRequest = 0;
+    const fit = () => {
+        if (lifetime.signal.aborted) return;
+        const active = [...group.querySelectorAll(':scope > [data-home-hero-slide]')]
+            .find((slide) => !slide.hidden);
+        const owner = active?.querySelector('.artwork-card');
+        const media = owner?.querySelector('.artwork-card__composition--home-hero :is(.artwork-card__image, .artwork-card__video)');
+        if (!owner || !media) {
+            fitStyle.removeProperty('--public-fitted-image-width');
+            return;
+        }
+
+        const width = Number(media.getAttribute('width')) || Number(media.naturalWidth)
+            || Number(media.videoWidth) || 0;
+        const height = Number(media.getAttribute('height')) || Number(media.naturalHeight)
+            || Number(media.videoHeight) || 0;
+        if (width <= 0 || height <= 0) {
+            fitStyle.removeProperty('--public-fitted-image-width');
+            return;
+        }
+        const fittedWidth = fittedMediaWidth(
+            page, owner, Math.max(1, owner.getBoundingClientRect().width),
+            width, height, owner.querySelector('.artwork-card__footer'),
+            owner.querySelector('.public-video__controls'),
+        );
+        fitStyle.setProperty('--public-fitted-image-width', fittedWidth + 'px');
+    };
+    const schedule = () => {
+        if (frameRequest) cancelAnimationFrame(frameRequest);
+        frameRequest = requestAnimationFrame(() => {
+            frameRequest = 0;
+            fit();
+        });
+    };
+
+    fit();
+    window.addEventListener('resize', schedule, { passive: true, signal: lifetime.signal });
+    group.addEventListener('home-hero-change', schedule, { signal: lifetime.signal });
+    group.addEventListener('load', schedule, { capture: true, signal: lifetime.signal });
+    group.addEventListener('loadedmetadata', schedule, { capture: true, signal: lifetime.signal });
+    document.fonts?.ready?.then(() => {
+        if (!lifetime.signal.aborted) schedule();
+    });
+    return () => {
+        lifetime.abort();
+        if (frameRequest) cancelAnimationFrame(frameRequest);
+        fitStyle.removeProperty('--public-fitted-image-width');
+    };
+}
+
 export function initializeGalleryImageLoading(root = document) {
     const disposeDetail = initializeArtworkDetailImage(root);
+    const disposeHome = initializeHomeHeroFitting(root);
+    const disposeFitted = () => {
+        disposeDetail();
+        disposeHome();
+    };
     const images = Array.from(root.querySelectorAll('.artwork-card__image'));
-    if (images.length === 0) return disposeDetail;
+    if (images.length === 0) return disposeFitted;
 
     const lifetime = new AbortController();
     const allImages = new Set(images);
@@ -155,7 +220,7 @@ export function initializeGalleryImageLoading(root = document) {
 
     const cleanup = () => {
         lifetime.abort();
-        disposeDetail();
+        disposeFitted();
     };
     const deferred = images.filter(image => image.dataset.gallerySrc);
     if (deferred.length === 0) return cleanup;
