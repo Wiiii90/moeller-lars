@@ -9,7 +9,7 @@
 | Dev Worker 5 | 19 | Source-integrated cutover; artist-data migration and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom types and Hero Artworks template; preserve Gallery/Exhibitions, retire Home-only editors | [dev-5.md](workers/dev-5.md) |
 
 | Dev Worker 6 | 16 | Active — targeted source corrections committed; local Preview/browser acceptance outstanding | Home Hero: Dummy Galleries, candidate ranking/selection, Stage/Settings, public resolver, shared Create dialog; no tests/deployment | [dev-6.md](workers/dev-6.md) |
-| Dev Worker 7 | 18 | Active — replaced chat; General Backing seam source review, browser acceptance pending | Appearance Global/Title/Menu/Page/Legal, preview geometry/persistence, Regional Formats hints | [dev-7.md](workers/dev-7.md) |
+| Dev Worker 7 | 18 | Source-complete — configurable Menu alignment and mirrored nested return; migration/browser acceptance pending | Appearance Global/Title/Menu/Page/Legal, preview geometry/persistence, Regional Formats hints | [dev-7.md](workers/dev-7.md) |
 | Dev Worker 8 | 15 | Active — shared Media Select option-label performance corrected; runtime validation pending | Shared Admin dialog/popover visuals and lifecycle; native scroll; media select once-per-option cache rendering; no deployment | [dev-8.md](workers/dev-8.md) |
 
 | Dev Worker 9 | 21 | Active — shared keyboard and subtle interaction feedback committed; browser review pending | Public cyclic inline navigation; shared General/Pages scopes remain with current owners | [dev-9.md](workers/dev-9.md) |
