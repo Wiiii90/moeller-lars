@@ -8,7 +8,7 @@ use InvalidArgumentException;
 
 /**
  * Immutable public-file identity. Any change in source, effective file rights,
- * ExifTool writing policy, or thumbnail transform creates a new revision.
+ * ExifTool writing policy, or canonical thumbnail bytes creates a new revision.
  */
 final class MediaRightsArtifactRevision
 {
@@ -40,14 +40,13 @@ final class MediaRightsArtifactRevision
             (int) $source->getAttribute('media_asset_id') !== (int) $assetId
             || ! MediaPreviewVariant::isImageThumbnail($source)
         )) {
-            throw new InvalidArgumentException('The rights-bearing thumbnail must match its image and canonical transform.');
+            throw new InvalidArgumentException('The rights-bearing thumbnail must match its image and canonical preview.');
         }
 
         return hash('sha256', json_encode([
             'contract' => self::CONTRACT,
             'asset_id' => (int) $assetId,
             'role' => $isVariant ? 'thumbnail' : 'original',
-            'transform' => $isVariant ? (string) $source->getAttribute('transform_profile') : null,
             'source_sha256' => $sha,
             'source_mime' => $mime,
             'tags' => $this->writer->tagsForAsset($asset, $mayReserveDataMining),
