@@ -549,7 +549,7 @@ export function initializeArtworkViewer(root = document) {
     });
 
     stage.addEventListener('pointerdown', (event) => {
-        if (!currentIsImage() || !currentIsImage()) return;
+        if (!currentIsImage()) return;
         pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
         stage.setPointerCapture?.(event.pointerId);
         if (pointers.size === 1) dragStart = { x: event.clientX, y: event.clientY, panX: state.x, panY: state.y };
@@ -610,7 +610,7 @@ export function initializeArtworkViewer(root = document) {
         const volumeKeyboard = event.target === volumeRange;
         if (!nativeVideoKeyboard && !volumeKeyboard && event.key === 'ArrowLeft' && !previous.disabled) { event.preventDefault(); previous.click(); }
         if (!nativeVideoKeyboard && !volumeKeyboard && event.key === 'ArrowRight' && !next.disabled) { event.preventDefault(); next.click(); }
-        if (!currentIsImage() || !currentIsImage()) return;
+        if (!currentIsImage()) return;
         if (event.key === '+' || event.key === '=') { event.preventDefault(); changeZoom(state.scale * 1.25); }
         if (event.key === '-' || event.key === '_') { event.preventDefault(); changeZoom(state.scale / 1.25); }
         if (event.key === '0') { event.preventDefault(); resetState(); }
