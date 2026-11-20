@@ -97,7 +97,7 @@ trait SiteSectionConversionWorkflows
             if ($target === GalleryTemplate::HeroArtworks) {
                 $this->ensureGalleryHeroSetting($fresh);
             } elseif ($fresh->getAttribute('artwork_category_id') === null) {
-                // Standard requires a real Artwork collection; Hero does not.
+                // Standard requires an Artwork collection; Hero Artworks does not.
                 $slug = $fresh->isHome()
                     ? 'system-home-gallery-'.(int) $fresh->getKey()
                     : (string) $fresh->getAttribute('slug');
@@ -241,7 +241,7 @@ trait SiteSectionConversionWorkflows
                     return null;
                 }
 
-                throw ValidationException::withMessages(['type' => 'This Standard is missing its Gallery configuration.']);
+                throw ValidationException::withMessages(['type' => 'This Standard Gallery is missing its Artwork collection.']);
             }
 
             $nameMatches = trim((string) $gallery->getAttribute('name')) === trim((string) $section->getAttribute('title'));
@@ -299,7 +299,7 @@ trait SiteSectionConversionWorkflows
                 'name' => (string) $section->getAttribute('title'),
             ]);
 
-            return [$slug, $section->isHome() ? GalleryTemplate::HeroArtworks->value : GalleryTemplate::Standard->value, (int) $gallery->getKey()];
+            return [$slug, GalleryTemplate::Standard->value, (int) $gallery->getKey()];
         }
 
         throw ValidationException::withMessages(['type' => 'Choose a supported page type.']);
