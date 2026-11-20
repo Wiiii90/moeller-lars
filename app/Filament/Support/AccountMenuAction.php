@@ -162,20 +162,20 @@ final class AccountMenuAction
                         Select::make('admin_region')
                             ->label(__('Dates'))
                             ->options(RegionalFormats::OPTIONS)
-                                ->in(array_keys(RegionalFormats::OPTIONS)),
+                            ->in(array_keys(RegionalFormats::OPTIONS)),
                         Select::make('admin_number_format')
                             ->label(__('Numbers'))
                             ->options(RegionalFormats::NUMBER_OPTIONS)
-                                ->in(array_keys(RegionalFormats::NUMBER_OPTIONS)),
+                            ->in(array_keys(RegionalFormats::NUMBER_OPTIONS)),
                         Select::make('admin_time_format')
                             ->label(__('Time'))
                             ->options(fn (): array => array_map(static fn (string $value): string => __($value), RegionalFormats::TIME_OPTIONS))
-                                ->in(array_keys(RegionalFormats::TIME_OPTIONS)),
+                            ->in(array_keys(RegionalFormats::TIME_OPTIONS)),
                         Select::make('admin_time_zone')
                             ->label(__('Time zone'))
                             ->options(RegionalFormats::timeZoneOptions())
                             ->searchable()
-                                ->in(array_keys(RegionalFormats::timeZoneOptions())),
+                            ->in(array_keys(RegionalFormats::timeZoneOptions())),
                     ])
                         ->columns(2)
                         ->columnSpanFull(),
