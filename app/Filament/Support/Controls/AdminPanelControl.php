@@ -14,10 +14,11 @@ final class AdminPanelControl
 {
     /** @param list<mixed> $fields
      *  @param array<string, int> $bodyColumns
-     *  The unlined body is reserved for compact framed groups where
-     *  the parent panel already supplies a clear interaction boundary.
+     *  The optional unlined surface and compact field-row layout are panel
+     *  presentation variants. The original Filament fields keep their own
+     *  state, labels, validation, and event handling.
      */
-    public static function make(string $title, string $enabledField, array $fields, ?Closure $onUpdated = null, bool $collapsible = false, array $bodyColumns = ['default' => 2], bool $unlinedFields = false): Group
+    public static function make(string $title, string $enabledField, array $fields, ?Closure $onUpdated = null, bool $collapsible = false, array $bodyColumns = ['default' => 2], bool $unlinedFields = false, bool $compactRows = false): Group
     {
         $toggle = AdminControl::checkbox($enabledField, $title)
             ->live()
@@ -45,7 +46,8 @@ final class AdminPanelControl
 
         $classes = 'admin-option-panel'
             .($collapsible ? ' admin-option-panel--collapsible' : '')
-            .($unlinedFields ? ' admin-option-panel--unlined-fields' : '');
+            .($unlinedFields ? ' admin-option-panel--unlined-fields' : '')
+            .($compactRows ? ' admin-option-panel--compact-rows' : '');
 
         return Group::make([$header, $body])
             ->columns(1)

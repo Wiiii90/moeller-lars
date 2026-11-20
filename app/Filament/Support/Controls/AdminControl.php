@@ -77,30 +77,6 @@ final class AdminControl
         return self::label(self::decorate(Select::make($name)), $label);
     }
 
-    /** Compact one-row label and value, using Filament's native inline state.
-     * The shared Admin control stylesheet owns the two-column geometry.
-     */
-    public static function inlineText(string $name, ?string $label = null): TextInput
-    {
-        return self::inlineField(self::text($name, $label));
-    }
-
-    public static function inlineSelect(string $name, ?string $label = null): Select
-    {
-        return self::inlineField(self::select($name, $label));
-    }
-
-    /** @template T of \Filament\Forms\Components\Field
-     * @param T $field
-     * @return T
-     */
-    private static function inlineField($field)
-    {
-        return $field->inlineLabel()->extraFieldWrapperAttributes([
-            'class' => 'admin-control-field--inline',
-        ], merge: true);
-    }
-
     public static function checkbox(string $name, ?string $label = null): Checkbox
     {
         return self::label(self::decorate(Checkbox::make($name)), $label);

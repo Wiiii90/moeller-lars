@@ -32,6 +32,7 @@ final class PageHeadingFields
             collapsible: true,
             bodyColumns: ['default' => 1, 'md' => 2],
             unlinedFields: true,
+            compactRows: true,
         );
     }
 
@@ -39,20 +40,20 @@ final class PageHeadingFields
     public static function detailFields(?Closure $persist = null, string $successTitle = 'Page updated'): array
     {
         return [
-            AdminControl::inlineText('content_heading_override')
+            AdminControl::text('content_heading_override')
                 ->label('Heading text')
                 ->placeholder('Use page name')
                 ->maxLength(160)
                 ->live(onBlur: true)
                 ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_override', $state, $successTitle)),
-            AdminControl::inlineSelect('content_heading_alignment')
+            AdminControl::select('content_heading_alignment')
                 ->label('Alignment')
                 ->options(SitePageHeading::ALIGNMENTS)
                 ->default('left')
                 ->native()
                 ->live()
                 ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_alignment', $state, $successTitle)),
-            AdminControl::inlineSelect('content_heading_divider')
+            AdminControl::select('content_heading_divider')
                 ->label('Divider')
                 ->options(SitePageHeading::DIVIDERS)
                 ->default('none')

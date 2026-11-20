@@ -43,36 +43,6 @@
     text-transform: uppercase;
 }
 
-/* Shared compact inline fields. Filament 5's field wrapper is .fi-fo-field
- * with immediate label/content columns (not the legacy .fi-fo-field-wrp).
- * Override both its sm:grid-cols-3 and its content sm:col-span-2 together:
- * otherwise the label and value collide in a narrow dialog grid cell.
- * This opt-in layout works for TextInput and Select independent of Pages. */
-@media (min-width: 640px) {
-    .admin-control-field--inline.fi-fo-field.fi-fo-field-has-inline-label {
-        grid-template-columns: max-content minmax(0, 1fr) !important;
-        column-gap: .8rem !important;
-        row-gap: .3rem;
-        align-items: center !important;
-    }
-
-    .admin-control-field--inline.fi-fo-field.fi-fo-field-has-inline-label > .fi-fo-field-label-col {
-        min-width: 0;
-        padding-top: 0 !important;
-        align-self: center;
-    }
-
-    .admin-control-field--inline.fi-fo-field.fi-fo-field-has-inline-label > .fi-fo-field-content-col {
-        grid-column: auto !important;
-        min-width: 0;
-        align-self: center;
-    }
-
-    .admin-control-field--inline.fi-fo-field.fi-fo-field-has-inline-label > .fi-fo-field-label-col .fi-fo-field-label-content {
-        white-space: nowrap;
-    }
-}
-
 /* Sole owner of ordinary Filament input chrome. RichEditor also has the
  * framework's fi-input-wrp class but owns a complete frame instead. */
 .admin-control-field .fi-input-wrp:not(.fi-fo-rich-editor) {
@@ -914,6 +884,37 @@
 .admin-option-panel__chevron.is-collapsed {
     transform: rotate(-90deg);
 }
+/* Compact panel body: semantic Filament labels and native text/select controls
+ * share one flex row. No inlineLabel() or framework three-column grid is used.
+ * The panel class is the only opt-in; PageHeadingFields has no private CSS. */
+.admin-option-panel--compact-rows .admin-option-panel__body .fi-fo-field {
+    display: flex;
+    min-width: 0;
+    min-height: var(--admin-control-height);
+    gap: .6rem;
+    align-items: center;
+}
+.admin-option-panel--compact-rows .admin-option-panel__body .fi-fo-field > .fi-fo-field-label-col {
+    flex: 0 0 auto;
+    min-width: 0;
+    align-self: center;
+}
+.admin-option-panel--compact-rows .admin-option-panel__body .fi-fo-field > .fi-fo-field-content-col {
+    flex: 1 1 0;
+    min-width: 0;
+    align-self: center;
+}
+.admin-option-panel--compact-rows .admin-option-panel__body .fi-fo-field .fi-fo-field-label-content {
+    font-size: .73rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+    text-transform: none;
+    white-space: nowrap;
+}
+.admin-option-panel--compact-rows .admin-option-panel__body .fi-fo-field .fi-input-wrp {
+    min-width: 0;
+}
+
 /* Opt-in style for an already framed panel: the parent contour supplies the
  * field boundary, while keyboard focus remains visible without underlines.
  * Ordinary Admin form inputs retain their canonical underline by default. */
