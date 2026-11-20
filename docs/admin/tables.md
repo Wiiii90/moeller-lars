@@ -69,6 +69,32 @@ When content does not fit, solve geometry first: redistribute grid tracks, remov
 
 If a genuinely new semantic text size is needed across the admin, add or change the shared theme/token intentionally and apply it by role. Do not introduce an unexplained literal in one table or toolbar.
 
+## Admin table typography and separators
+
+Admin table and card metadata **must not use middot / interpunct separators**
+(`·`). Use semantic separate columns while width permits, or ordinary commas
+for inline fallback text. Do not build visual columns by concatenating metadata
+with decorative punctuation. The same rule applies to Analytics summaries.
+
+Ordinary List rows display at most two meaningful content lines per cell.
+Status is one short state label (for example Published or Draft); readiness
+explanations belong in accessible help or an editor, not a stacked third line.
+Dense is an actual table with a compact one-line default; supportive metadata
+folds under the primary Artwork name only after the table container loses
+enough width to hide its dedicated columns. A one-line dense row must not
+prioritize optional Analytics over Year, Dimensions or Material.
+
+Ranked Artwork tables use the accepted Exhibitions order: Position and Drag
+share one Position header while remaining separate columns, followed by Media
+thumbnail (List only), Artwork, available supporting columns, Actions and
+terminal Selection. Position and drag handles use `admin-position` and
+`admin-drag-handle` rather than a custom number/handle cell. Selection uses
+the shared `admin-table__selection admin-table__selection--trailing` role in
+header and row, with the standard explicit row toggle and select-all projection.
+Additional public links belong in Actions, never appended arbitrarily to
+identity or Status. Inline rename behavior should be shared with the domain's
+Grid view rather than cloned.
+
 ## Row presentation and status-marker alignment
 
 Ordinary tables use **one canonical header row**, with identical column axes through every body row. Child rows in a single editorial hierarchy share those axes; a nested child table must not introduce a redundant independent header or floating columns. Action cells have one consistent right edge and share their slots with the table heading. If a row has fewer applicable actions, do not remove its leading action slot and shift all following icons.

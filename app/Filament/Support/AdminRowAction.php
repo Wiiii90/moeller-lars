@@ -8,6 +8,7 @@ enum AdminRowAction: string
     case MoveDown = 'move-down';
     case MoveToGallery = 'move-to-gallery';
     case Open = 'open';
+    case OpenPublic = 'open-public';
     case Details = 'details';
     case Edit = 'edit';
     case Publish = 'publish';
@@ -30,6 +31,7 @@ enum AdminRowAction: string
             self::MoveDown => AdminIcon::MoveDown,
             self::MoveToGallery => AdminIcon::MoveBetween,
             self::Open => AdminIcon::OpenEntry,
+            self::OpenPublic => AdminIcon::OpenPublic,
             self::Details => AdminIcon::Details,
             self::Edit => AdminIcon::Edit,
             self::Publish => AdminIcon::Publish,
@@ -53,6 +55,7 @@ enum AdminRowAction: string
             self::MoveDown => 'Move down',
             self::MoveToGallery => 'Move',
             self::Open => 'Open',
+            self::OpenPublic => 'Public',
             self::Details => 'Details',
             self::Edit => 'Edit',
             self::Publish => 'Publish',

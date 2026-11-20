@@ -50,6 +50,20 @@
         + .9375rem
     );
     --admin-row-actions-six-static-compact-width: calc(6 * 1.35rem + 5 * .3rem);
+    /* Gallery's real Public + six editorial actions use the same horizontal
+     * rail contract as Storage and Journals, never an ad hoc cell layout. */
+    --admin-row-action-slot-open-public-width: 5.25rem;
+    --admin-row-actions-seven-artwork-width: calc(
+        var(--admin-row-action-slot-open-public-width)
+        + var(--admin-row-action-slot-edit-width)
+        + var(--admin-row-action-slot-move-up-width)
+        + var(--admin-row-action-slot-move-down-width)
+        + var(--admin-row-action-slot-state-width)
+        + var(--admin-row-action-slot-move-gallery-width)
+        + var(--admin-row-action-slot-delete-width)
+        + 1.125rem
+    );
+    --admin-row-actions-seven-artwork-compact-width: calc(7 * 1.35rem + 6 * .3rem);
     --admin-row-actions-two-static-width: 9.5rem;
     --admin-row-actions-three-static-width: 15.5rem;
     --admin-row-actions-edit-state-delete-width: calc(
@@ -374,6 +388,38 @@
 /* Six stable action roles use the same canonical table action rail as Storage:
  * always a single horizontal row, with text labels in Wide and icons together
  * in Compact. No page-local flex wrapping or DOM-specific fallback. */
+/* Ranked Artwork tables have one dedicated seven-semantic-slot recipe.
+ * First is the public link, then Edit, order, publication, move and delete. */
+.admin-row-actions--seven-artwork {
+    --admin-row-actions-width: var(--admin-row-actions-seven-artwork-width);
+    --admin-row-actions-columns:
+        minmax(var(--admin-row-action-slot-open-public-width), max-content)
+        minmax(var(--admin-row-action-slot-edit-width), max-content)
+        minmax(var(--admin-row-action-slot-move-up-width), max-content)
+        minmax(var(--admin-row-action-slot-move-down-width), max-content)
+        minmax(var(--admin-row-action-slot-state-width), max-content)
+        minmax(var(--admin-row-action-slot-move-gallery-width), max-content)
+        minmax(var(--admin-row-action-slot-delete-width), max-content);
+    --admin-row-actions-gap: .1875rem;
+}
+@container admin-table (max-width: 86rem) {
+    .admin-row-actions--seven-artwork {
+        --admin-row-actions-width: var(--admin-row-actions-seven-artwork-compact-width);
+        --admin-row-actions-columns: repeat(7, 1.35rem);
+        --admin-row-actions-gap: .3rem;
+    }
+    .admin-row-actions--seven-artwork .admin-action {
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        gap: 0 !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+    .admin-row-actions--seven-artwork .admin-action__label {
+        display: none !important;
+    }
+}
+
 .admin-row-actions--six-static {
     --admin-row-actions-width: var(--admin-row-actions-six-static-width);
     --admin-row-actions-columns:

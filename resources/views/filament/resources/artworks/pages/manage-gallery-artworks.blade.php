@@ -115,8 +115,8 @@
                         <div class="admin-gallery-upload__copy">
                             <strong
                                 x-text="
-                                    phase === 'uploading' ? 'Uploading file ' + (completed + 1) + ' of ' + fileCount + ' · ' + progress + '%'
-                                    : phase === 'processing' ? 'Transfer complete · Processing media…'
+                                    phase === 'uploading' ? 'Uploading file ' + (completed + 1) + ' of ' + fileCount + ', ' + progress + '%'
+                                    : phase === 'processing' ? 'Transfer complete: Processing media…'
                                     : 'Drop images or videos here, or choose files'
                                 "
                             >Drop images or videos here, or choose files</strong>
@@ -373,85 +373,22 @@
 
                             <div class="admin-gallery-grid__caption">
                                 <div class="admin-gallery-grid__identity">
-                                    <div
-                                        class="gallery-workspace__title-editor"
-                                        x-data="{
-                                            editing: false,
-                                            saving: false,
-                                            original: '',
-                                            value: '',
-                                            normalize(value) { return value.trim().replace(/\s+/g, ' ') },
-                                            start() {
-                                                this.value = this.original
-                                                this.editing = true
-                                                this.$nextTick(() => this.$refs.input.select())
-                                            },
-                                            cancel() {
-                                                this.value = this.original
-                                                this.editing = false
-                                                this.saving = false
-                                            },
-                                            commit() {
-                                                if (! this.editing || this.saving) return
-                                                const next = this.normalize(this.value)
-                                                if (next === this.normalize(this.original)) {
-                                                    this.value = this.original
-                                                    this.editing = false
-                                                    return
-                                                }
-
-                                                this.saving = true
-                                                $wire.renameArtwork({{ $artwork['id'] }}, next)
-                                                    .then((saved) => {
-                                                        if (saved) {
-                                                            this.original = saved
-                                                            this.value = saved
-                                                        } else {
-                                                            this.value = this.original
-                                                        }
-                                                        this.editing = false
-                                                        this.saving = false
-                                                    })
-                                                    .catch(() => {
-                                                        this.value = this.original
-                                                        this.editing = false
-                                                        this.saving = false
-                                                    })
-                                            },
-                                        }"
-                                        x-init="original = $refs.initialTitle.textContent; value = original"
-                                    >
-                                        <span x-ref="initialTitle" hidden>{{ $artwork['title'] }}</span>
-                                        <button class="gallery-workspace__title-button" type="button" x-show="!editing" x-on:click="start" title="Rename artwork">
-                                            <strong x-text="original">{{ $artwork['title'] }}</strong>
-                                        </button>
-                                        <input
-                                            class="gallery-workspace__title-input"
-                                            x-ref="input"
-                                            x-show="editing"
-                                            x-cloak
-                                            x-model="value"
-                                            x-on:keydown.enter.prevent="commit"
-                                            x-on:keydown.escape.stop.prevent="cancel"
-                                            x-on:blur="commit"
-                                            maxlength="240"
-                                            aria-label="Rename {{ $artwork['title'] }}"
-                                        >
-                                    </div>
-                                    <span>
-                                        @if ($artwork['year']){{ $artwork['year'] }}@endif
-                                        @if ($artwork['dimensions']){{ $artwork['year'] ? ' · ' : '' }}{{ $artwork['dimensions'] }}@endif
-                                        @if ($artwork['medium']){{ ($artwork['year'] || $artwork['dimensions']) ? ' · ' : '' }}{{ $artwork['medium'] }}@endif
-                                    </span>
+                                    <x-admin.artwork-title-editor :artwork="$artwork" />
+                                    @php($artworkMeta = implode(', ', array_filter([
+                                        $artwork['year'] ? (string) $artwork['year'] : null,
+                                        $artwork['dimensions'] ?: null,
+                                        $artwork['medium'] ?: null,
+                                    ])))
+                                    <span title="{{ $artworkMeta }}">{{ $artworkMeta }}</span>
                                     @php($analyticsSummary = $artwork['analytics']['available']
-                                        ? '30d · '.number_format($artwork['analytics']['views']).' views · '.number_format($artwork['analytics']['opens']).' opens · '.number_format($artwork['analytics']['zooms']).' zooms · '.$artwork['analytics']['attention'].' attention'
-                                        : '30d analytics unavailable')
+                                        ? '30d: '.number_format($artwork['analytics']['views']).' views, '.number_format($artwork['analytics']['opens']).' opens, '.number_format($artwork['analytics']['zooms']).' zooms, '.$artwork['analytics']['attention'].' attention'
+                                        : '30d: analytics unavailable')
                                     <small class="admin-gallery-grid__analytics" title="{{ $analyticsSummary }}">{{ $analyticsSummary }}</small>
                                 </div>
                                 <span class="admin-gallery-grid__state {{ $artwork['state'] === 'published' ? 'is-published' : '' }}">
                                     {{ $artwork['state_label'] }}
                                     @if ($artwork['state'] !== 'published')
-                                        <span>· {{ $artwork['readiness_label'] }}</span>
+                                        <span>, {{ $artwork['readiness_label'] }}</span>
                                     @endif
                                 </span>
                             </div>

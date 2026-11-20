@@ -2,7 +2,17 @@
 
 **Lease:** 22
 **Branch:** dev
-**State:** Active — 2026-11-20 Gallery List/Dense table and View controls consistency correction committed in source; browser/local preview acceptance pending.
+**State:** Active — 2026-11-20 Gallery List/Dense table structure corrected against Exhibitions and Storage; source review complete, browser acceptance pending.
+
+## Gallery table acceptance correction — 2026-11-20
+
+- User rejected the prior Gallery List/Dense table as nonconforming: unexpected raw-looking Selection checkboxes, Position+Drag inside Artwork, unnecessary public link next to the title, metadata punctuation with middots, unsupported 2nd/3rd Status line, analytics duplication, and Dense prioritizing Analytics instead of Year/Dimensions/Material.
+- Current implementation uses the exact ranked Exhibitions table roles: leading `admin-position` + `admin-drag-handle` in separate Position/Drag columns with one shared Position header; next Media thumbnail in List only; then Artwork identity, Year, Dimensions, Material, lower-priority 30d Analytics, single-state Status, Actions and terminal Selection.
+- Row/header selection now use `admin-table__selection admin-table__selection--trailing` and an explicit `GalleryWorkspace::toggleArtworkSelection()` scoped to visible ids; the existing selection-all header uses the same `x-effect` semantics as Exhibitions/Storage and existing Gallery bulk owner. Removed the divergent row `wire:model.live` selection markup from List/Dense; Grid selection remains unchanged.
+- The canonical Gallery inline Artwork title Alpine editor has been extracted into `x-admin.artwork-title-editor`, used by Grid, List and Dense, preserving the existing audited `renameArtwork` Livewire call; title click enters rename mode. Public link moved to first Actions slot, using new `AdminRowAction::OpenPublic` and existing `AdminIcon::OpenPublic`; when no committed public URL exists it is disabled. Together with the existing six actions this uses the central `admin-row-actions--seven-artwork` table contract, single horizontal rail and collective compact icons.
+- Artwork Year, Dimensions and Material are dedicated table columns until corresponding table-container pressure thresholds; only then do comma-separated hidden values fold under Artwork. Dense normally stays single-line with no preview thumbnail; Analytics is lower priority (yields first). List Analytics has two lines: Views/Opens then Zooms/Attention, with no second `30d` in data. Status contains only Published/Draft, no readiness duplicates or standalone Public-page text.
+- Gallery Grid metadata/analytics and Gallery metric descriptions now use commas / a `30d:` introduction rather than middot separators; upload status copy also uses no middot. New durable contract in `docs/admin/tables.md` bans middots for Admin metadata, limits rows to two meaningful lines, preserves the Exhibitions/Storage role grammar, and requires selected columns to fold only when space is lost.
+- No public Gallery/Artwork HTML, Home, General, upload transactions or persisted business models were changed. Local PHP/Blade/Vite/browser and integration test run not available from this GitHub-only worker; requires browser acceptance for table breakpoints, Grid inline editor preservation, rank/drag behavior, selection count axis, disabled public/action slots and responsive dense row height.
 
 ## Gallery List/Dense and View controls correction — 2026-11-20
 

@@ -296,6 +296,19 @@ final class GalleryWorkspace extends Page
         }
     }
 
+    /** Toggle one visible Artwork using the same explicit row-selection action as Journals. */
+    public function toggleArtworkSelection(int $artworkId): void
+    {
+        if (! in_array($artworkId, array_column($this->artworks, 'id'), true)) {
+            return;
+        }
+
+        $selected = array_map('intval', $this->selectedArtworkIds);
+        $this->selectedArtworkIds = in_array($artworkId, $selected, true)
+            ? array_values(array_diff($selected, [$artworkId]))
+            : array_values(array_unique([...$selected, $artworkId]));
+    }
+
     public function toggleVisibleArtworkSelection(): void
     {
         $visibleIds = array_map(static fn (array $row): int => (int) $row['id'], $this->artworks);

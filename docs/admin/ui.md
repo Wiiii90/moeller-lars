@@ -229,6 +229,12 @@ The **[Journal split/fold table contract](tables.md#journals-splitfold-compositi
 
 The **[Admin Dialog contract](dialogs.md#journal-blogexhibitions-edit-aktionen)** owns Journal Create/Edit modal lifecycle and header actions. Blog uses Basics/Text/Gallery sections; the Exhibition editor uses the flat shared responsive schema and the [Exhibition editorial contract](../content/exhibitions.md) governs its specific fields and Gallery media table. Neither a tabular Journal row nor this UI overview defines a separate persistence owner.
 
+**Admin copy rule:** Never use middots/interpuncts (`·`) as separators
+in Admin labels, captions, metadata, metrics, status summaries, or tooltips.
+Use proper separate columns, commas, or a colon where warranted. This is
+a persistent design constraint, not a style choice to reintroduce in another
+feature. The table-specific detail belongs to [Table contract](tables.md).
+
 ## Multi-view data surfaces — List, Grid and Dense
 
 Where an Admin collection offers multiple representations, the canonical
