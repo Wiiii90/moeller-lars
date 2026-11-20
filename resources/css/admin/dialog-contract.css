@@ -386,10 +386,10 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     margin: 0 !important;
     padding: 0 !important;
     place-items: center;
-    border: 1px solid var(--admin-line-strong) !important;
+    border: 1px solid var(--admin-dialog-action-border, var(--admin-line-strong)) !important;
     border-radius: 999px !important;
-    background: var(--admin-surface) !important;
-    color: var(--admin-muted) !important;
+    background: var(--admin-dialog-action-background, var(--admin-surface)) !important;
+    color: var(--admin-dialog-action-color, var(--admin-muted)) !important;
     box-shadow: none !important;
 }
 
@@ -440,9 +440,9 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
 .admin-dialog--header-actions .fi-modal-footer-actions .fi-icon-btn:focus-visible,
 .admin-dialog--header-actions .fi-modal-close-btn:hover,
 .admin-dialog--header-actions .fi-modal-close-btn:focus-visible {
-    border-color: var(--admin-text) !important;
-    background: var(--admin-subtle) !important;
-    color: var(--admin-text) !important;
+    border-color: var(--admin-dialog-action-hover-border, var(--admin-text)) !important;
+    background: var(--admin-dialog-action-hover-background, var(--admin-subtle)) !important;
+    color: var(--admin-dialog-action-hover-color, var(--admin-text)) !important;
     outline: none;
 }
 
@@ -453,26 +453,20 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     height: .92rem !important;
 }
 
+/* Semantic colors belong to the button itself. Shared hover/frame rules
+ * consume these variables instead of defeating them through specificity. */
 .admin-dialog__header-action.is-danger {
-    border-color: color-mix(in srgb, var(--admin-danger) 36%, var(--admin-line-strong)) !important;
-    color: color-mix(in srgb, var(--admin-danger) 78%, var(--admin-text)) !important;
-}
-
-.admin-dialog__header-action.is-danger:hover,
-.admin-dialog__header-action.is-danger:focus-visible {
-    border-color: color-mix(in srgb, var(--admin-danger) 58%, var(--admin-line-strong)) !important;
-    background: color-mix(in srgb, var(--admin-danger) 7%, var(--admin-surface)) !important;
-    color: var(--admin-danger) !important;
+    --admin-dialog-action-border: color-mix(in srgb, var(--admin-danger) 36%, var(--admin-line-strong));
+    --admin-dialog-action-color: color-mix(in srgb, var(--admin-danger) 78%, var(--admin-text));
+    --admin-dialog-action-hover-border: color-mix(in srgb, var(--admin-danger) 58%, var(--admin-line-strong));
+    --admin-dialog-action-hover-background: color-mix(in srgb, var(--admin-danger) 7%, var(--admin-surface));
+    --admin-dialog-action-hover-color: var(--admin-danger);
 }
 
 .admin-dialog__header-action.is-primary {
-    border-color: color-mix(in srgb, var(--admin-accent) 58%, var(--admin-line-strong)) !important;
-    color: var(--admin-accent-strong) !important;
-}
-
-.admin-dialog__header-action.is-primary:hover,
-.admin-dialog__header-action.is-primary:focus-visible {
-    background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface)) !important;
+    --admin-dialog-action-border: color-mix(in srgb, var(--admin-accent) 58%, var(--admin-line-strong));
+    --admin-dialog-action-color: var(--admin-accent-strong);
+    --admin-dialog-action-hover-background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface));
 }
 
 /* Shared read-only detail content used by Viewer dialogs. */
