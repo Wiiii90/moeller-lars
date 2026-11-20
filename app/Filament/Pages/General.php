@@ -672,7 +672,7 @@ final class General extends Page
                         ->extraAttributes(['class' => 'general-two-column-settings general-regional-settings'])
                         ->columnSpanFull(),
                 ])
-                    ->columns(2)
+                    ->columns(1)
                     ->extraAttributes(['class' => 'general-settings-section'])
                     ->columnSpanFull(),
             ])

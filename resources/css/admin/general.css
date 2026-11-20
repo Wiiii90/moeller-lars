@@ -309,7 +309,9 @@
     min-width: 0;
 }
 
-/* Contact and Legal share the metric-aligned half-width split. */
+/* General's Contact, Legal and Regional groups share the same metric-aligned
+ * column anchors. Contact has one row; multi-row groups use the equivalent
+ * gap with no first/last-only padding. */
 .general-two-column-settings > .fi-sc {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -320,27 +322,31 @@
     min-width: 0;
 }
 
-.general-two-column-settings > .fi-sc > :first-child {
+.general-contact-settings > .fi-sc > :first-child {
     padding-right: var(--admin-stage-pane-space);
 }
 
-.general-two-column-settings > .fi-sc > :last-child {
+.general-contact-settings > .fi-sc > :last-child {
     padding-left: var(--admin-stage-pane-space);
 }
 
-/* Legal: one compact default notice followed by a balanced 2 × 2 grid.
- * The existing Filament form controls remain the only field owners. */
-.general-legal-settings > .fi-sc {
-    gap: var(--admin-section-gap) var(--admin-stage-pane-space) !important;
+/* The second row of Regional Formats follows the same alignment and spacing
+ * as the first. The searchable Time zone control retains native Filament
+ * behavior and the shared AdminControl chrome. */
+.general-legal-settings > .fi-sc,
+.general-regional-settings > .fi-sc {
+    gap: var(--admin-section-gap) calc(2 * var(--admin-stage-pane-space)) !important;
     align-items: start;
 }
 
-.general-legal-settings > .fi-sc > * {
+.general-legal-settings > .fi-sc > *,
+.general-regional-settings > .fi-sc > * {
     grid-column: span 1 !important;
     min-width: 0;
     padding: 0 !important;
 }
 
+/* Legal: one full-width notice followed by a balanced 2 × 2 grid. */
 .general-legal-settings > .fi-sc > :first-child {
     grid-column: 1 / -1 !important;
 }
@@ -380,7 +386,8 @@
 }
 
 @media (max-width: 48rem) {
-    .general-legal-settings > .fi-sc {
+    .general-legal-settings > .fi-sc,
+    .general-regional-settings > .fi-sc {
         grid-template-columns: minmax(0, 1fr) !important;
     }
 

@@ -2,7 +2,7 @@
 
 **Branch:** `dev`
 **Lease:** 24
-**State:** Settings autosave source correction implemented; migration and browser acceptance pending
+**State:** General Regional Formats spacing corrected in source; runtime/browser acceptance pending
 **Claimed work:** Top-right Account/Settings, per-user Admin formats, Public General regional formats, and directly affected formatter consumers. The shared dialog system and unrelated feature editors retain their owners.
 
 ## Current source state
@@ -12,6 +12,8 @@
 - The original Account & security dialog remains a committed form for name/email, password and multi-factor security; no automatic credential saves. No new JavaScript hooks, modal overrides or parallel persistence path.
 - The prior migration preserved historic per-user number display, added independent User/Public time/zone preferences, and left machine timestamps and future measurement-unit conversion unchanged.
 - Human-facing metric counts and Activity timestamps in major Admin surfaces already use the personal formatter. Technical numeric payloads remain invariant.
+
+- General Regional Formats' two-row grid now uses the same metric-aligned half-width gutter as Contact/Legal, with vertical row gaps and responsive single-column stacking. Its section wrapper is back to the shared one-column heading/content structure. This scoped layout change does not modify global controls or autosave behavior.
 
 ## Evidence and next
 - Source-only commit on `dev`; no local runtime, isolated database migration, browser review or user acceptance was executed in this worker session. The shared Edit Action lifecycle was verified from current source and canonical dialog contract.
