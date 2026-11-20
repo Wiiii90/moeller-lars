@@ -243,9 +243,9 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
  * -------------
  * Filament owns modal state, focus, Escape and the native close button. We only
  * normalize the visual rail. Context actions stay native Filament Actions in
- * the modal footer, but are lifted into one top-right rail immediately before
- * the native X. This keeps semantics intact without introducing a second close
- * implementation.
+ * the modal footer and are lifted into the header. Only Create places its
+ * Submit after the native X; other dialog types keep their established order.
+ * Filament still owns actual submission and dismissal.
  */
 .admin-dialog--header-actions {
     position: relative;
@@ -393,6 +393,41 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     top: var(--admin-dialog-header-action-inset) !important;
     right: var(--admin-dialog-header-action-inset) !important;
     inset-inline-end: var(--admin-dialog-header-action-inset) !important;
+}
+
+/* A Create form commits explicitly, unlike autosaving Edit forms.
+ * Filament emits Submit first, then Clear/other extra footer actions.
+ * Reverse that visual list so Submit occupies the far-right slot. Reserve
+ * precisely one native X slot between Submit and the other controls.
+ * The empty footer gap is non-interactive (see dialog-interactions.css);
+ * the native X remains the only cancel/close control. */
+.admin-dialog--header-actions.admin-dialog--create .fi-modal-footer {
+    right: var(--admin-dialog-header-action-inset) !important;
+    inset-inline-end: var(--admin-dialog-header-action-inset) !important;
+}
+
+.admin-dialog--header-actions.admin-dialog--create .fi-modal-footer-actions {
+    flex-direction: row-reverse;
+}
+
+.admin-dialog--header-actions.admin-dialog--create .fi-modal-footer-actions > :first-child {
+    margin-inline-start: calc(
+        var(--admin-dialog-header-action-size)
+        + var(--admin-dialog-header-action-gap)
+    ) !important;
+}
+
+.admin-dialog--header-actions.admin-dialog--create .fi-modal-close-btn {
+    right: calc(
+        var(--admin-dialog-header-action-inset)
+        + var(--admin-dialog-header-action-size)
+        + var(--admin-dialog-header-action-gap)
+    ) !important;
+    inset-inline-end: calc(
+        var(--admin-dialog-header-action-inset)
+        + var(--admin-dialog-header-action-size)
+        + var(--admin-dialog-header-action-gap)
+    ) !important;
 }
 
 .admin-dialog__header-action:hover,

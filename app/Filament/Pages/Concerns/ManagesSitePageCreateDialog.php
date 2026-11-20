@@ -103,7 +103,7 @@ trait ManagesSitePageCreateDialog
                 );
             });
 
-        return AdminDialog::create($action, 'Create page', AdminDialogSize::Large, AdminIcon::Pages);
+        return AdminDialog::create($action, 'Create page', AdminDialogSize::Large);
     }
 
     /** @param array<string, mixed> $data */

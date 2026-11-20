@@ -7,6 +7,7 @@ use App\Filament\Support\AdminRowAction;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Support\Enums\Alignment;
+use Filament\Support\Enums\IconPosition;
 use Filament\Support\Enums\Width;
 
 final class AdminDialog
@@ -15,10 +16,19 @@ final class AdminDialog
         Action $action,
         string $submitLabel,
         AdminDialogSize $size = AdminDialogSize::Small,
-        ?AdminIcon $submitIcon = null,
         ?Closure $onClear = null,
     ): Action {
-        return self::committedTask($action, AdminDialogType::Create, $submitLabel, $size, $submitIcon, $onClear);
+        // Every new-object editor uses one visual contract: a Plus opener
+        // and an outlined circled Check for the explicit commit action.
+        // No field is persisted when Filament's native X closes this modal.
+        return self::committedTask(
+            $action->icon(AdminIcon::Add->value)->iconPosition(IconPosition::Before),
+            AdminDialogType::Create,
+            $submitLabel,
+            $size,
+            AdminIcon::Commit,
+            $onClear,
+        );
     }
 
     /**
