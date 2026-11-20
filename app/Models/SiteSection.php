@@ -104,9 +104,9 @@ final class SiteSection extends Model
             }
 
             if ($nodeType === SiteSectionType::Gallery) {
-                if ($section->galleryTemplate() === GalleryTemplate::Showcase
+                if ($section->galleryTemplate() === GalleryTemplate::Standard
                     && ! is_numeric($section->getAttribute('artwork_category_id'))) {
-                    throw ValidationException::withMessages(['artwork_category_id' => 'A Showcase requires its Gallery record.']);
+                    throw ValidationException::withMessages(['artwork_category_id' => 'A Standard requires its Gallery record.']);
                 }
             } elseif ($section->getAttribute('artwork_category_id') !== null) {
                 throw ValidationException::withMessages(['artwork_category_id' => 'Only Gallery site nodes may reference their Gallery record.']);

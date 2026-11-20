@@ -4,14 +4,14 @@ namespace App\Domain\Content;
 
 enum GalleryTemplate: string
 {
-    case Showcase = 'showcase';
+    case Standard = 'standard';
     case HeroArtworks = 'hero_artworks';
 
     /** @return array<string, string> */
     public static function options(): array
     {
         return [
-            self::Showcase->value => self::Showcase->label(),
+            self::Standard->value => self::Standard->label(),
             self::HeroArtworks->value => self::HeroArtworks->label(),
         ];
     }
@@ -19,7 +19,7 @@ enum GalleryTemplate: string
     public function label(): string
     {
         return match ($this) {
-            self::Showcase => 'Showcase',
+            self::Standard => 'Standard',
             self::HeroArtworks => 'Hero Artworks',
         };
     }

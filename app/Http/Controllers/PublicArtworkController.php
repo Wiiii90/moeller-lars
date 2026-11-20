@@ -29,7 +29,7 @@ class PublicArtworkController extends Controller
     {
         $sectionQuery = SiteSection::query()
             ->where('type', SiteSectionType::Gallery->value)
-            ->where('template', GalleryTemplate::Showcase->value)
+            ->where('template', GalleryTemplate::Standard->value)
             ->where('slug', $category)
             ->with('artworkCategory');
         $this->preview->constrainSectionQuery($sectionQuery);
@@ -55,12 +55,12 @@ class PublicArtworkController extends Controller
         return $this->categoryForSection($section);
     }
 
-    /** A Showcase may be the protected Home page at / rather than a slug route. */
+    /** A Standard may be the protected Home page at / rather than a slug route. */
     public function categoryForSection(SiteSection $section): View
     {
         abort_unless(
             $section->nodeType() === SiteSectionType::Gallery
-                && $section->galleryTemplate() === GalleryTemplate::Showcase,
+                && $section->galleryTemplate() === GalleryTemplate::Standard,
             404,
         );
 

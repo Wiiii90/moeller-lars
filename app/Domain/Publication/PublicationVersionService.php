@@ -510,8 +510,8 @@ SQL,
     'template',
     CASE
         WHEN version_row.payload->>'type' = 'gallery'
-             AND COALESCE(version_row.payload->>'template', '') = ''
-            THEN 'showcase'
+             AND COALESCE(version_row.payload->>'template', '') IN ('', 'showcase')
+            THEN 'standard'
         ELSE version_row.payload->>'template'
     END,
     'is_home',

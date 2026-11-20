@@ -80,7 +80,7 @@ trait ManagesSitePageEditDialog
                             ->afterStateUpdated(function (?string $state, Set $set) use ($arguments): void {
                                 $set('template', match ($state) {
                                     SiteSectionType::Gallery->value => $this->dialogSection($arguments)->isHome()
-                                        ? GalleryTemplate::HeroArtworks->value : GalleryTemplate::Showcase->value,
+                                        ? GalleryTemplate::HeroArtworks->value : GalleryTemplate::Standard->value,
                                     SiteSectionType::Journal->value => JournalTemplate::Blog->value,
                                     default => null,
                                 });
@@ -217,7 +217,7 @@ trait ManagesSitePageEditDialog
         if ($section->nodeType() === SiteSectionType::Gallery) {
             $section = $editorial->updateGalleryTemplate(
                 $section,
-                (string) ($data['template'] ?? GalleryTemplate::Showcase->value),
+                (string) ($data['template'] ?? GalleryTemplate::Standard->value),
             );
         }
 

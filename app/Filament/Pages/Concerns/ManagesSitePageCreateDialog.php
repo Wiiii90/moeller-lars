@@ -46,7 +46,7 @@ trait ManagesSitePageCreateDialog
                             ->live()
                             ->afterStateUpdated(function (?string $state, Set $set): void {
                                 $set('template', match ($state) {
-                                    SiteSectionType::Gallery->value => GalleryTemplate::Showcase->value,
+                                    SiteSectionType::Gallery->value => GalleryTemplate::Standard->value,
                                     SiteSectionType::Journal->value => JournalTemplate::Blog->value,
                                     default => null,
                                 });

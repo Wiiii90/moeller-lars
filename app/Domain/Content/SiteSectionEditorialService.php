@@ -471,7 +471,7 @@ final class SiteSectionEditorialService
     {
         $target = GalleryTemplate::tryFrom($template);
         if ($target === null) {
-            throw ValidationException::withMessages(['template' => 'Choose Showcase or Hero Artworks.']);
+            throw ValidationException::withMessages(['template' => 'Choose Standard or Hero Artworks.']);
         }
 
         return DB::transaction(function () use ($section, $target): SiteSection {
@@ -487,7 +487,7 @@ final class SiteSectionEditorialService
             if ($target === GalleryTemplate::HeroArtworks) {
                 $this->ensureGalleryHeroSetting($fresh);
             } elseif ($fresh->getAttribute('artwork_category_id') === null) {
-                // Showcase requires a real Artwork collection; Hero does not.
+                // Standard requires a real Artwork collection; Hero does not.
                 $slug = $fresh->isHome()
                     ? 'system-home-gallery-'.(int) $fresh->getKey()
                     : (string) $fresh->getAttribute('slug');
@@ -785,7 +785,7 @@ final class SiteSectionEditorialService
                     return null;
                 }
 
-                throw ValidationException::withMessages(['type' => 'This Showcase is missing its Gallery configuration.']);
+                throw ValidationException::withMessages(['type' => 'This Standard is missing its Gallery configuration.']);
             }
 
             $nameMatches = trim((string) $gallery->getAttribute('name')) === trim((string) $section->getAttribute('title'));
@@ -845,7 +845,7 @@ final class SiteSectionEditorialService
                 'show_on_home' => false,
             ]);
 
-            return [$slug, $section->isHome() ? GalleryTemplate::HeroArtworks->value : GalleryTemplate::Showcase->value, (int) $gallery->getKey()];
+            return [$slug, $section->isHome() ? GalleryTemplate::HeroArtworks->value : GalleryTemplate::Standard->value, (int) $gallery->getKey()];
         }
 
         throw ValidationException::withMessages(['type' => 'Choose a supported page type.']);
