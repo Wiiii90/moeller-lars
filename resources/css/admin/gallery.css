@@ -294,10 +294,8 @@
     width: 100%;
     height: 100%;
     min-height: 0;
-    padding: .8rem 1.1rem;
-    gap: 1rem;
-    align-items: center;
-    justify-content: space-between;
+    padding: 1.25rem;
+    place-items: center;
     overflow: hidden;
     border: 1px dashed var(--admin-line-strong);
     background: color-mix(in srgb, var(--admin-subtle) 55%, transparent);
@@ -319,10 +317,23 @@
 }
 
 .admin-gallery-upload__copy {
-    display: grid;
+    display: flex;
+    flex-direction: column;
+    width: min(100%, 34rem);
     min-width: 0;
-    gap: .14rem;
+    gap: .4rem;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     pointer-events: none;
+}
+
+.admin-gallery-upload__icon {
+    width: 3.25rem;
+    height: 3.25rem;
+    margin-bottom: .35rem;
+    color: var(--admin-muted);
+    flex: 0 0 auto;
 }
 
 .admin-gallery-upload__copy strong {

@@ -123,6 +123,8 @@
                             aria-label="Upload primary images or videos for new artworks"
                             multiple>
                         <div class="admin-gallery-upload__copy">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::UploadDropzone->value"
+                                class="admin-gallery-upload__icon" aria-hidden="true" />
                             <strong
                                 x-text="
                                     phase === 'uploading' ? 'Uploading file ' + (completed + 1) + ' of ' + fileCount + ', ' + progress + '%'

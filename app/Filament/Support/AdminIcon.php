@@ -54,6 +54,7 @@ enum AdminIcon: string
     case Detach = 'heroicon-o-link-slash';
     case Inspect = 'heroicon-o-magnifying-glass-plus';
     case Upload = 'heroicon-o-arrow-up-tray';
+    case UploadDropzone = 'admin-upload-dropzone';
     case Refresh = 'heroicon-o-arrow-path';
     case ReclaimStorage = 'heroicon-o-archive-box-x-mark';
     case Undo = 'heroicon-o-arrow-uturn-left';

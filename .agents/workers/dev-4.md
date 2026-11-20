@@ -2,7 +2,14 @@
 
 **Lease:** 23
 **Branch:** dev
-**State:** Active — Staged Artwork navigation consolidated into tabs, queue selection continuity preserved; runtime/browser acceptance pending.
+**State:** Active — Gallery Stage dropzone content centered with centrally registered custom upload icon; browser acceptance pending.
+
+## Gallery Stage upload dropzone presentation — 2026-11-20
+
+- Centered the existing Gallery upload dropzone content group horizontally and vertically, including the upload heading and secondary supported-format/result text, without moving the Stage upload status/progress row or changing the ingest/file input flow.
+- Added the `admin-upload-dropzone` custom line icon under the established `resources/svg/admin` icon set, registered through the canonical `AdminIcon::UploadDropzone` enum used by the Gallery Blade view. The existing `AdminPanelProvider` automatically registers this icon directory. No per-page SVG markup or new icon system.
+- The icon is decorative (`aria-hidden`); the full-size input retains the accessible upload label. Gallery-owned CSS sets centering and icon size from existing Admin colors; no other upload components or shared Stage geometry changed.
+- Source-level contract verified on the published branch; no PHP, compiled CSS, browser runtime, or test suite executed. Verify Gallery wide/compact and focused narrow Stage modes, idle/upload/processing/result states, long status messages, click/drop behavior, keyboard file selection, and focus outline.
 
 ## Gallery Staged Artwork navigation — 2026-11-20
 
