@@ -1,8 +1,12 @@
 # Dev Worker 4 — Gallery/Artwork
 
-**Lease:** 22
+**Lease:** 23
 **Branch:** dev
-**State:** Active — 2026-11-20 Gallery List/Dense table structure corrected against Exhibitions and Storage; source review complete, browser acceptance pending.
+**State:** Active — replacement chat 2026-11-20; continuing last Gallery table acceptance and reported error from archived Gallery chat. Existing table changes are source-only and await browser acceptance.
+
+## Current continuation (2026-11-20)
+
+- Assigned by the artist to replace archived Dev Worker 4 and continue the in-flight Gallery discussion. Next: inspect current `dev` Gallery table against Exhibitions/Storage and review any remaining error or fresh browser feedback; coordinate shared controls with Dev Workers 7 and 8. No new source or runtime claims from this takeover.
 
 ## Targeted Home Hero class resolution fix — 2026-11-20
 
