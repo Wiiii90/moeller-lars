@@ -2,7 +2,7 @@
 
 **Branch:** `dev`
 **Lease:** 15 (active)
-**State:** Central draggable/resizable Admin dialogs source-prepared; runtime/browser acceptance required.
+**State:** Central draggable/resizable Admin dialogs source-committed at `facd4aac2e23c0607f2eb5490abec904bec51a06`; browser acceptance required.
 
 ## Canonical ownership and protected behavior
 - Shared Admin dialogs are native Filament Actions via `app/Filament/Support/Dialogs/AdminDialog.php`. The shared presentation owners are `resources/css/admin/dialog-contract.css`, `resources/css/admin/dialog-interactions.css` and `resources/js/admin-dialog-geometry.js`. Never create per-page dialog controllers, extra scroll locks, a second close/focus mechanism or another persistence owner.
@@ -25,6 +25,7 @@
 
 ## Verification and handoff
 - **Executed in isolation:** JavaScript source syntax was parsed; simulated desktop pointer drag shifted a dialog by 100px/50px, right-limited bottom-corner resize grew it within the measured frame, and closing cleared the session. This is not a real DOM, Filament or browser run.
+- **Viewport-change correction:** Abort a live pointer gesture if the browser is resized, then re-measure and clamp the visible modal. No stale previous-frame drag bounds survive a resize.
 - **Source-reviewed:** Existing modal/scroll-lock ownership, frame CSS, native dialog width classes, responsive cutoff, exclusion of interactive header controls, no extra body locks, per-modal state and cleanup.
 - **Not executed:** composer/build, browser automation, responsive browser review, user acceptance, database suites, or Continuous Integration.
 - **Essential browser acceptance:** Open all five dialog types and a framework-owned account dialog; drag to each viewport limit, resize narrow/short and scroll a long form, perform Edit autosave and Create submit, use keyboard grip/header, confirm X/Escape/focus/backdrop and exact body scrollY restore, trigger repeated Livewire updates, nested popup/gallery Rich Text/media selections, resize the browser while dragged, open nested dialogs, and verify initial placement/close/reopen. Check that source reproduces and prevents the user's intermittently offscreen dialog symptom; do not claim it resolved without reproduction.

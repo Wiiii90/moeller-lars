@@ -334,7 +334,12 @@ function registerMorphSync() {
 
 registerMorphSync();
 document.addEventListener('livewire:init', registerMorphSync, { once: true });
-window.addEventListener('resize', scheduleFrameRefresh, { passive: true });
+window.addEventListener('resize', () => {
+    // The drag bounds were captured at pointerdown; discard them when the
+    // viewport changes and clamp the window against the new visible frame.
+    finishGesture();
+    scheduleFrameRefresh();
+}, { passive: true });
 document.addEventListener('livewire:navigated', () => {
     finishGesture();
     modalSessions.clear();
