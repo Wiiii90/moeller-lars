@@ -96,7 +96,7 @@ final class GalleryHeroDummyGalleryDialog
             $image = ArtworkResource::thumbnailUrl($artwork);
             $preview = $image === null
                 ? '<span class="admin-media-choice__unavailable">—</span>'
-                : '<img src="'.e($image).'" alt="" loading="lazy" decoding="async">';
+                : '<img src="'.e($image).'" alt="" width="160" height="120" loading="lazy" decoding="async">';
             $options[$key] = '<span class="admin-media-choice">'
                 .'<span class="admin-media-choice__preview">'.$preview.'</span>'
                 .'<span class="admin-media-choice__meta"><strong>'.e((string) $artwork->getAttribute('title')).'</strong>'

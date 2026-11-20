@@ -1,5 +1,12 @@
 # Dev Worker 6 — Gallery Hero / former Home Hero
 
+## Dummy Gallery visual choice layout — 2026-11-21
+
+- After browser feedback on Add Dummy Gallery, confirmed the visual option HTML uses shared `admin-media-choice` cards in a **native Filament searchable Select**, whereas the shared grid layout in `media.css` applied only to `MediaAssetPicker`. A native full-width option therefore displayed huge images and clipped the list.
+- Generalized the *existing* shared media tile grid to `.fi-select-input-options-ctn:has(.admin-media-choice)` in its canonical media stylesheet. Reused its 8.25rem tile tracks, kept normal nonvisual Filament selects untouched and preserved the native dialog scrollport. The Gallery Hero candidate option now declares the same 160×120 thumbnail dimensions used by Storage media choices. No new picker, form field, page stylesheet or overlay has been added.
+- Browser layout acceptance on the user's local Preview is still outstanding; no feature test source, deployment or Continuous Integration was changed.
+
+
 ## Dummy Gallery visual picker unclipping — 2026-11-20
 
 - The Add/Edit Dummy Gallery combined Artwork/Storage Select already uses visual thumbnail option labels but lacked the shared `admin-media-picker--visual` marker. The existing canonical dialog expansion rule in `resources/css/admin/dialog-contract.css` therefore never applied. The field wrapper now carries that semantic marker and reuses the same expanded native Filament modal scrollport as the existing visual Storage picker. No page-local CSS, overlay replacement, custom scroll lock or duplicate picker was added.

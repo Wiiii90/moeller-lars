@@ -992,17 +992,40 @@
     text-align: left;
 }
 
-.admin-media-picker--visual .admin-media-picker__list {
+/* Filament's native searchable Select and the paginated Storage picker
+ * both render admin-media-choice cards. Keep one visual tile size regardless
+ * of which Select owns the options and where Filament anchors its dropdown. */
+.admin-media-picker--visual .admin-media-picker__list,
+.fi-select-input-options-ctn:has(.admin-media-choice) {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.25rem), 1fr));
     gap: 1px;
-    padding: 1px;
     background: var(--admin-line);
 }
 
-.admin-media-picker--visual .admin-media-picker__option {
+.admin-media-picker--visual .admin-media-picker__list {
+    padding: 1px;
+}
+
+.admin-media-picker--visual .admin-media-picker__option,
+.fi-select-input-options-ctn:has(.admin-media-choice) .fi-select-input-option {
     min-width: 0;
+}
+
+.admin-media-picker--visual .admin-media-picker__option {
     padding: 0;
+}
+
+.fi-select-input-options-ctn:has(.admin-media-choice) .fi-select-input-option {
+    width: calc(100% - var(--admin-select-option-inset) * 2);
+    min-width: 0;
+    align-items: stretch;
+}
+
+.fi-select-input-options-ctn:has(.admin-media-choice) .fi-select-input-option-label {
+    display: block;
+    min-width: 0;
+    width: 100%;
 }
 
 .admin-media-picker__option:is(:hover, :focus-visible, .fi-selected) {
