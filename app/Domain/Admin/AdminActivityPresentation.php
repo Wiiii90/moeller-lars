@@ -94,6 +94,47 @@ final class AdminActivityPresentation
         return $target === '' ? $this->change($actionKey) : 'Edited '.$subject;
     }
 
+    /**
+     * Group only editorial edits of the same object and actor. This identity
+     * is shared by Activity and the Notification mailbox projections.
+     */
+    public static function editGroupKey(string $action, string $entityType, int $entityId, int $actorId): ?string
+    {
+        if ($entityId < 1 || $actorId < 1
+            || ! (str_ends_with($action, '.updated') || str_ends_with($action, '.slug_changed'))
+            || ! AdminActionCatalog::has($action)) {
+            return null;
+        }
+
+        return implode(':', [$actorId, $entityType, $entityId]);
+    }
+
+    /**
+     * Adjacent editing operations are one reading group, irrespective of their
+     * fields or duration. A different item always breaks the sequence.
+     *
+     * @param  list<array<string,mixed>>  $items
+     * @return list<array{key:string,items:list<array<string,mixed>>}>
+     */
+    public static function adjacentEditGroups(array $items): array
+    {
+        $groups = [];
+        foreach ($items as $item) {
+            $identity = $item['edit_group_key'] ?? null;
+            $last = count($groups) - 1;
+            if (is_string($identity) && $identity !== '' && $last >= 0
+                && ($groups[$last]['items'][count($groups[$last]['items']) - 1]['edit_group_key'] ?? null) === $identity) {
+                $groups[$last]['items'][] = $item;
+
+                continue;
+            }
+
+            $groups[] = ['key' => (string) ($item['key'] ?? $item['id']), 'items' => [$item]];
+        }
+
+        return $groups;
+    }
+
     public function change(string $actionKey): string
     {
         $definition = AdminActionCatalog::definition($actionKey);

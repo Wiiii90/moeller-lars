@@ -526,6 +526,9 @@ final class AdminActivityFeed
             $rows[] = [
                 'id' => (int) $event->getKey(),
                 'action_key' => $actionKey,
+                'edit_group_key' => AdminActivityPresentation::editGroupKey(
+                    $actionKey, $entityType, $entityId, (int) $event->getAttribute('admin_user_id'),
+                ),
                 'change' => $change,
                 'details' => $details,
                 'area' => $definition['area'],

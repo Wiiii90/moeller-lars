@@ -605,32 +605,12 @@ final class DashboardFeed
     }
 
     /**
-     * Read-only adjacent grouping; no Notification or Activity row is changed.
-     *
      * @param  list<array<string,mixed>>  $items
      * @return list<array{key:string,items:list<array<string,mixed>>}>
      */
     public function groupConsecutiveNotifications(array $items): array
     {
-        $groups = [];
-        foreach ($items as $item) {
-            $groupKey = $item['notification_group_key'] ?? null;
-            $last = count($groups) - 1;
-            $previous = $last >= 0 ? end($groups[$last]['items']) : null;
-            $gap = is_array($previous)
-                ? (int) ($previous['sort_timestamp'] ?? 0) - (int) ($item['sort_timestamp'] ?? 0)
-                : -1;
-            if (is_string($groupKey) && $groupKey !== ''
-                && is_array($previous) && ($previous['notification_group_key'] ?? null) === $groupKey
-                && $gap >= 0 && $gap <= 15 * 60) {
-                $groups[$last]['items'][] = $item;
-
-                continue;
-            }
-            $groups[] = ['key' => (string) $item['key'], 'items' => [$item]];
-        }
-
-        return $groups;
+        return AdminActivityPresentation::adjacentEditGroups($items);
     }
 
     /** @return array<string, mixed> */
@@ -659,17 +639,17 @@ final class DashboardFeed
         }
         $title = __($storedTitle);
         $body = $body !== '' ? __($body) : '';
-        $groupKey = null;
-        if ($status === 'success' && is_string($action) && str_ends_with($action, '.updated')
-            && is_array($summary) && ($summary['count'] ?? null) === 1
-            && is_string($summary['items'][0]['field'] ?? null)
-            && ($summary['items'][0]['field'] ?? '') !== '') {
-            $entityType = $audit?->getAttribute('entity_type');
-            $entityId = (int) ($audit?->getAttribute('entity_id') ?? 0);
-            if (is_string($entityType) && $entityId > 0) {
-                $groupKey = implode(':', [$action, $entityType, $entityId, $summary['items'][0]['field']]);
-            }
-        }
+        $groupKey = $status === 'success' && is_string($action)
+            ? AdminActivityPresentation::editGroupKey(
+                $action,
+                (string) ($audit?->getAttribute('entity_type') ?? ''),
+                (int) ($audit?->getAttribute('entity_id') ?? 0),
+                (int) ($audit?->getAttribute('admin_user_id') ?? 0),
+            )
+            : null;
+        $groupTitle = $groupKey !== null
+            ? app(AdminActivityPresentation::class)->notificationHeadline($action, $target)
+            : null;
         $actionUrl = trim((string) ($notification->getAttribute('action_url') ?? ''));
         $actionLabel = trim((string) ($notification->getAttribute('action_label') ?? ''));
         if ($actionLabel !== '') {
@@ -683,7 +663,8 @@ final class DashboardFeed
             'notification_id' => (int) $notification->getKey(),
             'notification_status' => $status,
             'notification_type' => (string) $notification->getAttribute('type'),
-            'notification_group_key' => $groupKey,
+            'edit_group_key' => $groupKey,
+            'edit_group_title' => $groupTitle,
             'entity_type' => $notification->getAttribute('entity_type'),
             'entity_id' => $notification->getAttribute('entity_id'),
             'audit_event_id' => $notification->getAttribute('audit_event_id'),
