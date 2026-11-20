@@ -79,12 +79,6 @@
             </button>
         </div>
         <div class="admin-stage-tool-group admin-live-preview__actions-group" role="group" aria-label="Preview actions">
-            <button class="admin-action admin-stage-tool-icon" type="button"
-                x-on:click="togglePanMode()" x-bind:disabled="zoom <= minZoom"
-                x-bind:class="{ 'is-primary': panMode }" x-bind:aria-pressed="panMode.toString()"
-                title="Pan (or hold Space and drag)" aria-label="Toggle preview pan mode">
-                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::PreviewPan->mini()" />
-            </button>
             @isset($focusAction)
                 {{ $focusAction }}
             @endisset
@@ -107,7 +101,13 @@
 
     <div x-ref="viewport" class="admin-live-preview__viewport" tabindex="0"
         x-on:pointerenter="pointerInside = true"
-        x-on:pointerleave="pointerInside = false; cancelSpacePan()">
+        x-on:pointerleave="pointerInside = false; if (!dragging) cancelSpacePan()"
+        x-on:pointerdown.capture="startPan($event)"
+        x-on:auxclick="if (zoom > minZoom && $event.button === 1) $event.preventDefault()"
+        x-on:touchstart="startTouchPan($event)"
+        x-on:touchmove="moveTouchPan($event)"
+        x-on:touchend="endTouchPan($event)"
+        x-on:touchcancel="endTouchPan($event)">
         <span class="admin-live-preview__issue" x-show="horizontalOverflow" x-cloak
             title="The page is wider than the selected device width" aria-label="Horizontal page overflow" role="status">
             <x-filament::icon icon="heroicon-o-exclamation-circle" />
@@ -116,7 +116,6 @@
             <div x-ref="page" wire:ignore.self class="admin-live-preview__page"
                 x-bind:class="{
                     'is-zoomed': zoom > minZoom,
-                    'is-pan-enabled': zoom > minZoom && (panMode || spacePan),
                     'is-dragging': dragging,
                 }">
                 @if (isset($content))
@@ -134,10 +133,8 @@
                     </div>
                 @endif
                 <div x-ref="panLayer" class="admin-live-preview__pan-layer"
-                    x-show="zoom > minZoom && (panMode || spacePan)" x-cloak
-                    aria-hidden="true" x-on:pointerdown="startPan($event)"
-                    x-on:pointermove="movePan($event)" x-on:pointerup="endPan($event)"
-                    x-on:pointercancel="endPan($event)" x-on:wheel.prevent.stop></div>
+                    x-show="zoom > minZoom && (dragging || spacePan)" x-cloak
+                    aria-hidden="true"></div>
             </div>
         </div>
         <span class="admin-live-preview__sr-only" role="status" aria-live="polite"

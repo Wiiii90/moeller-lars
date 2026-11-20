@@ -18,16 +18,15 @@ export function adminLivePreview(element) {
         zoom: 1,
         minZoom: 1,
         maxZoom: 3,
-        panX: 0,
-        panY: 0,
-        panMode: false,
         spacePan: false,
         dragging: false,
         pointerId: null,
+        panGestureCleanup: null,
         dragStartX: 0,
         dragStartY: 0,
-        dragStartPanX: 0,
-        dragStartPanY: 0,
+        dragStartScrollX: 0,
+        dragStartScrollY: 0,
+        touchPanStart: null,
         init() {
             // A device preference belongs to the artist's browser tab, not to
             // a Gallery or a published site configuration.
@@ -63,6 +62,7 @@ export function adminLivePreview(element) {
             if (this.diagnosticsFrame !== null) cancelAnimationFrame(this.diagnosticsFrame)
             this.unbindFrameShortcuts()
             this.cancelPanGesture()
+            this.touchPanStart = null
         },
         scheduleFit() {
             if (this.fitFrame !== null) return
@@ -94,10 +94,8 @@ export function adminLivePreview(element) {
         changeViewport() {
             this.cancelPanGesture()
             this.zoom = this.minZoom
-            this.panX = 0
-            this.panY = 0
-            this.panMode = false
             this.spacePan = false
+            this.touchPanStart = null
             this.$nextTick(() => this.scheduleFit())
         },
         rotateViewport() {
@@ -129,92 +127,58 @@ export function adminLivePreview(element) {
             const frame = this.$refs.frame
             if (! viewport || ! surface || ! page || ! frame) return
             if (frame.tagName !== 'IFRAME' && this.frameShortcuts.length) this.unbindFrameShortcuts()
-            // A real CSS-pixel layout viewport; only the outer visual is scaled.
+
             const [targetWidth, targetHeight] = this.viewportSize()
             const style = getComputedStyle(viewport)
             const width = viewport.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
             const height = viewport.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
             if (width <= 0 || height <= 0) return
-            // No artificial browser chrome, device border or integer rounding.
-            // Never upscale a smaller document: 1:1 is the sharp native
-            // rendering reference, and Fit can only reduce its pixels.
+
+            // Preserve the same logical point while zooming or resizing.
+            // Native overflow scrolling owns the bounds: a centered, oversized
+            // transform inside a clipped Stage left unreachable negative space.
+            const oldWidth = surface.offsetWidth
+            const oldHeight = surface.offsetHeight
+            const centerX = oldWidth > width ? (viewport.scrollLeft + width / 2) / oldWidth : 0.5
+            const centerY = oldHeight > height ? (viewport.scrollTop + height / 2) / oldHeight : 0.5
+
             const scale = Math.min(1, width / targetWidth, height / targetHeight)
             if (! Number.isFinite(scale) || scale <= 0) return
             this.fitScale = scale
             this.maxZoom = Math.max(3, Math.ceil(1 / scale))
-            surface.style.width = `${targetWidth * scale}px`
-            surface.style.height = `${targetHeight * scale}px`
-            page.style.width = `${targetWidth * scale}px`
-            page.style.height = `${targetHeight * scale}px`
+            const renderedWidth = targetWidth * scale * this.zoom
+            const renderedHeight = targetHeight * scale * this.zoom
+            surface.style.width = `${renderedWidth}px`
+            surface.style.height = `${renderedHeight}px`
+            page.style.width = `${renderedWidth}px`
+            page.style.height = `${renderedHeight}px`
             frame.style.width = `${targetWidth}px`
             frame.style.height = `${targetHeight}px`
-            this.clampPan()
-            this.applyPreviewTransform()
-            this.scheduleDiagnostics()
-        },
-        applyPreviewTransform() {
-            const frame = this.$refs.frame
-            if (! frame) return
-
+            frame.style.left = '0'
+            frame.style.top = '0'
             frame.style.transformOrigin = 'top left'
-            frame.style.left = `${this.panX}px`
-            frame.style.top = `${this.panY}px`
-            frame.style.transform = `scale(${this.fitScale * this.zoom})`
-        },
-        clampPan() {
-            const page = this.$refs.page
-            if (! page) return
+            frame.style.transform = `scale(${scale * this.zoom})`
 
-            if (this.zoom <= this.minZoom) {
-                this.zoom = this.minZoom
-                this.panX = 0
-                this.panY = 0
-                return
-            }
-
-            const minX = Math.min(0, page.clientWidth * (1 - this.zoom))
-            const minY = Math.min(0, page.clientHeight * (1 - this.zoom))
-            this.panX = Math.max(minX, Math.min(0, this.panX))
-            this.panY = Math.max(minY, Math.min(0, this.panY))
+            viewport.scrollLeft = renderedWidth > width ? centerX * renderedWidth - width / 2 : 0
+            viewport.scrollTop = renderedHeight > height ? centerY * renderedHeight - height / 2 : 0
+            this.scheduleDiagnostics()
         },
         resetZoom() {
             this.cancelPanGesture()
+            this.touchPanStart = null
             this.zoom = this.minZoom
-            this.panX = 0
-            this.panY = 0
-            this.panMode = false
             this.spacePan = false
-            this.applyPreviewTransform()
+            this.fitPreview()
         },
         changeZoom(step) {
-            const page = this.$refs.page
-            if (! page) return
-
-            const previousZoom = this.zoom
-            const nextZoom = Math.max(this.minZoom, Math.min(this.maxZoom, Math.round((previousZoom + step) * 100) / 100))
-            if (nextZoom === previousZoom) return
-
+            const nextZoom = Math.max(this.minZoom, Math.min(this.maxZoom, Math.round((this.zoom + step) * 100) / 100))
+            if (nextZoom === this.zoom) return
             if (nextZoom === this.minZoom) {
                 this.resetZoom()
                 return
             }
-
-            const ratio = nextZoom / previousZoom
-            const centerX = page.clientWidth / 2
-            const centerY = page.clientHeight / 2
-            this.panX = centerX - ((centerX - this.panX) * ratio)
-            this.panY = centerY - ((centerY - this.panY) * ratio)
             this.zoom = nextZoom
-            this.clampPan()
-            this.applyPreviewTransform()
-        },
-        togglePanMode() {
-            if (this.zoom <= this.minZoom) return
-
-            this.panMode = ! this.panMode
-            if (! this.panMode && ! this.spacePan) {
-                this.cancelPanGesture()
-            }
+            this.fitPreview()
         },
         shortcutTargetIsInteractive(target) {
             return target && typeof target.closest === 'function'
@@ -233,17 +197,13 @@ export function adminLivePreview(element) {
 
             event.preventDefault()
             this.spacePan = false
-            if (! this.panMode) {
-                this.cancelPanGesture()
-            }
+            this.cancelPanGesture()
         },
         cancelSpacePan() {
             if (! this.spacePan) return
 
             this.spacePan = false
-            if (! this.panMode) {
-                this.cancelPanGesture()
-            }
+            this.cancelPanGesture()
         },
         unbindFrameShortcuts() {
             for (const remove of this.frameShortcuts) remove()
@@ -268,6 +228,20 @@ export function adminLivePreview(element) {
             const up = (event) => this.handleSpaceUp(event)
             const blur = () => this.cancelSpacePan()
             const changed = () => this.scheduleDiagnostics()
+            const frameDown = (event) => this.startPan(event, true)
+            const frameTouchStart = (event) => this.startTouchPan(event, true)
+            const frameTouchMove = (event) => this.moveTouchPan(event, true)
+            const frameTouchEnd = (event) => this.endTouchPan(event)
+            const preventMiddleAutoscroll = (event) => {
+                if (event.button === 1 && this.zoom > this.minZoom) event.preventDefault()
+            }
+            documentRef.addEventListener('pointerdown', frameDown, true)
+            documentRef.addEventListener('mousedown', preventMiddleAutoscroll, true)
+            documentRef.addEventListener('auxclick', preventMiddleAutoscroll, true)
+            documentRef.addEventListener('touchstart', frameTouchStart, { passive: true })
+            documentRef.addEventListener('touchmove', frameTouchMove, { passive: false })
+            documentRef.addEventListener('touchend', frameTouchEnd)
+            documentRef.addEventListener('touchcancel', frameTouchEnd)
             documentRef.addEventListener('keydown', down)
             documentRef.addEventListener('keyup', up)
             // Recheck after actual iframe reflow, media completion and fonts.
@@ -282,6 +256,13 @@ export function adminLivePreview(element) {
                 if (this.$refs.frame?.contentDocument === documentRef) this.scheduleDiagnostics()
             }).catch(() => {})
             this.frameShortcuts.push(
+                () => documentRef.removeEventListener('pointerdown', frameDown, true),
+                () => documentRef.removeEventListener('mousedown', preventMiddleAutoscroll, true),
+                () => documentRef.removeEventListener('auxclick', preventMiddleAutoscroll, true),
+                () => documentRef.removeEventListener('touchstart', frameTouchStart),
+                () => documentRef.removeEventListener('touchmove', frameTouchMove),
+                () => documentRef.removeEventListener('touchend', frameTouchEnd),
+                () => documentRef.removeEventListener('touchcancel', frameTouchEnd),
                 () => documentRef.removeEventListener('keydown', down),
                 () => documentRef.removeEventListener('keyup', up),
                 () => documentRef.removeEventListener('load', changed, true),
@@ -290,38 +271,112 @@ export function adminLivePreview(element) {
                 () => observer?.disconnect(),
             )
         },
-        startPan(event) {
-            if (this.zoom <= this.minZoom || (! this.panMode && ! this.spacePan) || (event.button !== undefined && event.button !== 0)) return
+        previewPoint(event, inFrame) {
+            if (! inFrame) return { x: event.clientX, y: event.clientY }
+            const rect = this.$refs.frame?.getBoundingClientRect()
+            const scale = this.fitScale * this.zoom
+            return {
+                x: (rect?.left ?? 0) + event.clientX * scale,
+                y: (rect?.top ?? 0) + event.clientY * scale,
+            }
+        },
+        startPan(event, inFrame = false) {
+            if (this.zoom <= this.minZoom || this.dragging
+                || (event.button !== 1 && (! this.spacePan || event.button !== 0))) return
 
+            const viewport = this.$refs.viewport
+            if (! viewport) return
             event.preventDefault()
+            const point = this.previewPoint(event, inFrame)
             this.dragging = true
             this.pointerId = event.pointerId
-            this.dragStartX = event.clientX
-            this.dragStartY = event.clientY
-            this.dragStartPanX = this.panX
-            this.dragStartPanY = this.panY
-            this.$refs.panLayer?.setPointerCapture?.(event.pointerId)
-        },
-        movePan(event) {
-            if (! this.dragging || event.pointerId !== this.pointerId) return
+            this.dragStartX = point.x
+            this.dragStartY = point.y
+            this.dragStartScrollX = viewport.scrollLeft
+            this.dragStartScrollY = viewport.scrollTop
 
-            this.panX = this.dragStartPanX + (event.clientX - this.dragStartX)
-            this.panY = this.dragStartPanY + (event.clientY - this.dragStartY)
-            this.clampPan()
-            this.applyPreviewTransform()
+            // An embedded iframe owns another document. Capture both event
+            // paths only during the gesture; ordinary clicks stay untouched.
+            const frameDocument = this.$refs.frame?.tagName === 'IFRAME'
+                ? this.$refs.frame.contentDocument : null
+            const moveParent = (movement) => this.movePan(movement)
+            const moveFrame = (movement) => this.movePan(movement, true)
+            const finish = (release) => this.endPan(release)
+            window.addEventListener('pointermove', moveParent)
+            window.addEventListener('pointerup', finish)
+            window.addEventListener('pointercancel', finish)
+            window.addEventListener('blur', finish)
+            frameDocument?.addEventListener('pointermove', moveFrame)
+            frameDocument?.addEventListener('pointerup', finish)
+            frameDocument?.addEventListener('pointercancel', finish)
+            const capture = inFrame ? frameDocument?.documentElement : viewport
+            try { capture?.setPointerCapture?.(event.pointerId) } catch (_) {}
+            this.panGestureCleanup = () => {
+                window.removeEventListener('pointermove', moveParent)
+                window.removeEventListener('pointerup', finish)
+                window.removeEventListener('pointercancel', finish)
+                window.removeEventListener('blur', finish)
+                frameDocument?.removeEventListener('pointermove', moveFrame)
+                frameDocument?.removeEventListener('pointerup', finish)
+                frameDocument?.removeEventListener('pointercancel', finish)
+                try {
+                    if (capture?.hasPointerCapture?.(event.pointerId)) capture.releasePointerCapture(event.pointerId)
+                } catch (_) {}
+            }
+        },
+        movePan(event, inFrame = false) {
+            if (! this.dragging || event.pointerId !== this.pointerId) return
+            const viewport = this.$refs.viewport
+            if (! viewport) return
+            event.preventDefault()
+            const point = this.previewPoint(event, inFrame)
+            viewport.scrollLeft = this.dragStartScrollX - (point.x - this.dragStartX)
+            viewport.scrollTop = this.dragStartScrollY - (point.y - this.dragStartY)
         },
         endPan(event) {
-            if (! this.dragging || (event && event.pointerId !== this.pointerId)) return
-
-            const pointerId = this.pointerId
-            if (pointerId !== null && this.$refs.panLayer?.hasPointerCapture?.(pointerId)) {
-                this.$refs.panLayer.releasePointerCapture(pointerId)
-            }
+            if (! this.dragging || (event?.pointerId !== undefined && event.pointerId !== this.pointerId)) return
             this.dragging = false
             this.pointerId = null
+            this.panGestureCleanup?.()
+            this.panGestureCleanup = null
         },
         cancelPanGesture() {
             this.endPan(null)
+        },
+        touchPoint(event, inFrame) {
+            const first = event.touches[0]
+            const second = event.touches[1]
+            if (! first || ! second) return null
+            return this.previewPoint({
+                clientX: (first.clientX + second.clientX) / 2,
+                clientY: (first.clientY + second.clientY) / 2,
+            }, inFrame)
+        },
+        startTouchPan(event, inFrame = false) {
+            if (this.zoom <= this.minZoom || event.touches.length !== 2) return
+            const point = this.touchPoint(event, inFrame)
+            const viewport = this.$refs.viewport
+            if (! point || ! viewport) return
+            this.touchPanStart = {
+                x: point.x,
+                y: point.y,
+                scrollX: viewport.scrollLeft,
+                scrollY: viewport.scrollTop,
+            }
+        },
+        moveTouchPan(event, inFrame = false) {
+            if (this.zoom <= this.minZoom || event.touches.length !== 2) return
+            if (! this.touchPanStart) this.startTouchPan(event, inFrame)
+            if (! this.touchPanStart) return
+            event.preventDefault()
+            const point = this.touchPoint(event, inFrame)
+            const viewport = this.$refs.viewport
+            if (! point || ! viewport) return
+            viewport.scrollLeft = this.touchPanStart.scrollX - (point.x - this.touchPanStart.x)
+            viewport.scrollTop = this.touchPanStart.scrollY - (point.y - this.touchPanStart.y)
+        },
+        endTouchPan(event) {
+            if (event.touches.length !== 2) this.touchPanStart = null
         },
         updateViewportDiagnostics() {
             const frame = this.$refs.frame
@@ -356,6 +411,8 @@ export function adminLivePreview(element) {
             const url = new URL(source, window.location.origin)
             url.searchParams.set('_appearance', Date.now().toString())
             this.currentUrl = url.toString()
+            this.cancelPanGesture()
+            this.touchPanStart = null
             this.unbindFrameShortcuts()
             this.horizontalOverflow = false
             frame.src = this.currentUrl

@@ -158,25 +158,27 @@ html.fi .admin-workspace .admin-live-preview__device-picker > select.admin-live-
 }
 .admin-live-preview__viewport {
     box-sizing: border-box;
-    display: grid;
+    display: flex;
     position: relative;
     min-width: 0;
     min-height: 0;
     margin-block: var(--admin-stage-header-gap) 0;
     padding: 0;
-    place-items: center;
-    overflow: hidden;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
     border: 0;
     background: transparent;
 }
+.admin-live-preview__viewport::-webkit-scrollbar { display: none; }
 .admin-live-preview__surface {
     box-sizing: border-box;
     display: block;
     position: relative;
+    flex: 0 0 auto;
+    margin: auto;
     width: 1px;
     height: 1px;
-    max-width: 100%;
-    max-height: 100%;
     overflow: hidden;
     background: #fff;
 }
@@ -266,6 +268,8 @@ html.fi .admin-workspace .admin-live-preview__device-picker > select.admin-live-
 .admin-live-preview__zoom-value:disabled { opacity: 1; cursor: default; }
 .admin-live-preview__page.is-zoomed { cursor: default; touch-action: auto; user-select: auto; }
 .admin-live-preview__page.is-zoomed iframe { pointer-events: auto; user-select: auto; }
+/* Only a held-Space or middle-button gesture covers the Public frame.
+ * Idle zoom leaves all Public controls and links interactive. */
 .admin-live-preview__pan-layer {
     position: absolute;
     z-index: 3;
