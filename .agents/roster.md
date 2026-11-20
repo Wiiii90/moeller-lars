@@ -12,7 +12,7 @@
 
 | Dev Worker 6 | 16 | Active — targeted source corrections committed; local Preview/browser acceptance outstanding | Home Hero: Dummy Galleries, candidate ranking/selection, Stage/Settings, public resolver, shared Create dialog; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 18 | Source-corrected — shared device selector restored to native Admin Select; browser acceptance pending | General Appearance and shared Gallery/General Preview; Gallery Preview focus consumer | [dev-7.md](workers/dev-7.md) |
-| Dev Worker 8 | 15 | Active — central Admin dialog drag/resize source implemented; browser acceptance pending | Shared modal geometry, draggable header, resize grip, viewport constraints, native Filament lifecycle; Media Select remains paginated | [dev-8.md](workers/dev-8.md) |
+| Dev Worker 8 | 15 | Active — native dialog centering restored, header-only drag and separated title bar source-integrated; browser review pending | Shared Admin dialog geometry/chrome, bounded drag without resize, paginated Media picker; no deployment | [dev-8.md](workers/dev-8.md) |
 
 | Dev Worker 9 | 21 | Active — submenu hover countdown committed; browser acceptance pending | Public cyclic inline navigation including timed underline and child Back; shared General/Pages remain with current owners | [dev-9.md](workers/dev-9.md) |
 

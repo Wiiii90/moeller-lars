@@ -55,13 +55,15 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     padding-inline: calc(var(--admin-dialog-layer-inline-start) + var(--admin-dialog-layer-padding-inline)) calc(var(--admin-dialog-layer-inline-end) + var(--admin-dialog-layer-padding-inline)) !important;
 }
 
-/* Moving the window never moves its fixed full-viewport backdrop. Left/top
- * offsets do not conflict with Filament's transform-based enter/exit motion. */
+/* Leave Filament's original centered window geometry entirely intact at
+ * open. The independent CSS translate property is enabled only after an
+ * intentional drag, so it never conflicts with native enter/leave transforms. */
+.fi-modal[data-admin-dialog-moved="true"]:not(.fi-modal-click-through)
+> .fi-modal-window-ctn > .fi-modal-window {
+    translate: var(--admin-dialog-drag-x, 0px) var(--admin-dialog-drag-y, 0px);
+}
+
 .fi-modal:not(.fi-modal-click-through) > .fi-modal-window-ctn > .fi-modal-window {
-    position: relative;
-    box-sizing: border-box;
-    left: var(--admin-dialog-drag-x, 0px);
-    top: var(--admin-dialog-drag-y, 0px);
     max-height: calc(100dvh - var(--admin-dialog-layer-block-start) - 2rem);
     /* One restrained window contour for native Actions and framework-owned
      * security/account dialogs; child controls retain their own geometry. */
@@ -214,24 +216,15 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     max-width: min(var(--admin-dialog-width), 100%) !important;
 }
 
-/* Native Filament retains each dialog's canonical initial size. An explicit
- * manual resize changes only its own window, not the Modal/Grid/Backdrop. */
-.fi-modal.admin-dialog--manually-sized:not(.fi-modal-click-through) > .fi-modal-window-ctn > .fi-modal-window {
-    width: min(var(--admin-dialog-manual-width), 100%) !important;
-    max-width: min(var(--admin-dialog-manual-width), 100%) !important;
-    height: var(--admin-dialog-manual-height) !important;
-}
-
-/* One unobtrusive, keyboard-focusable resize grip for every blocking
- * Admin dialog. The existing header is the only move handle. */
+/* The native header is the sole move handle. Header actions and inputs
+ * remain independently interactive; no resize handles or alternate overlays. */
 @media (min-width: 46.01rem) and (pointer: fine) {
     .fi-modal:not(.fi-modal-click-through) .fi-modal-window > .fi-modal-header {
         cursor: grab;
         touch-action: none;
     }
 
-    .fi-modal:not(.fi-modal-click-through) .fi-modal-window > .fi-modal-header:active,
-    html.admin-dialog--manipulating .fi-modal .fi-modal-window > .fi-modal-header {
+    html.admin-dialog--dragging .fi-modal .fi-modal-window > .fi-modal-header {
         cursor: grabbing;
     }
 
@@ -240,57 +233,10 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
         outline-offset: -2px;
     }
 
-    html.admin-dialog--manipulating {
+    html.admin-dialog--dragging {
         user-select: none;
     }
 }
-
-.admin-dialog-resize-grip {
-    position: absolute;
-    z-index: 16;
-    right: 0;
-    bottom: 0;
-    display: grid;
-    width: 1.3rem;
-    height: 1.3rem;
-    padding: 0;
-    place-items: end;
-    border: 0;
-    border-radius: 0 0 var(--admin-overlay-corner-radius) 0;
-    background: transparent;
-    color: var(--admin-muted);
-    cursor: nwse-resize;
-    touch-action: none;
-}
-
-.admin-dialog-resize-grip::after {
-    display: block;
-    width: .78rem;
-    height: .78rem;
-    margin: .18rem;
-    content: "";
-    background: repeating-linear-gradient(135deg, transparent 0 3px, currentColor 3px 4px, transparent 4px 6px);
-    clip-path: polygon(100% 0, 100% 100%, 0 100%);
-    opacity: .65;
-}
-
-.admin-dialog-resize-grip:is(:hover, :focus-visible) {
-    color: var(--admin-text);
-}
-
-.admin-dialog-resize-grip:focus-visible {
-    outline: 2px solid var(--admin-text);
-    outline-offset: -2px;
-}
-
-@media (max-width: 46rem), (pointer: coarse) {
-    .admin-dialog-resize-grip { display: none; }
-    .fi-modal:not(.fi-modal-click-through) > .fi-modal-window-ctn > .fi-modal-window {
-        left: 0;
-        top: 0;
-    }
-}
-
 
 /*
  * Header chrome
@@ -340,15 +286,20 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     );
 }
 
+/* A restrained title-bar surface groups the native heading, contextual
+ * actions and close control. The border belongs to the full-width header,
+ * not to the text, so it spans both edges of every shared dialog. */
 .admin-dialog--header-actions .fi-modal-header {
     box-sizing: border-box;
     min-height: calc(var(--admin-dialog-header-action-size) + (2 * var(--admin-dialog-header-action-inset)));
     padding:
         var(--admin-dialog-header-action-inset)
         var(--admin-dialog-header-reserve)
-        0
+        .7rem
         var(--admin-dialog-content-inset) !important;
     align-items: flex-start !important;
+    background: color-mix(in srgb, var(--admin-subtle) 55%, var(--admin-surface));
+    border-bottom: 1px solid var(--admin-line);
 }
 
 .admin-dialog--header-actions .fi-modal-header > div:last-child {
