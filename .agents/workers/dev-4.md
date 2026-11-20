@@ -2,7 +2,16 @@
 
 **Lease:** 22
 **Branch:** dev
-**State:** Active — 2026-11-20 Gallery List/Grid/Dense and Select/Filter consistency source revision; browser/runtime verification pending.
+**State:** Active — 2026-11-20 Gallery List/Dense table and View controls consistency correction committed in source; browser/local preview acceptance pending.
+
+## Gallery List/Dense and View controls correction — 2026-11-20
+
+- User reported inconsistent View icon/label positioning and noncanonical List/Dense action stacking; explicitly requires the same table/action/UI primitives as Storage, with horizontal row actions, not a faux card table. Their local application preview also failed on Hero migration `2026_11_20_110000_scope_hero_gallery_sources_to_page.php`.
+- Gallery and Storage now share one `x-admin.view-options` Blade component, using canonical `AdminIcon::ViewList`, `ViewGrid`, `ViewDense`, shared responsive toolbar and the same `setViewMode` method contract. Its icon + text is always one horizontal flex row on Wide; Compact uses the existing centralized icon-only action label rule. List remains default.
+- Gallery List/Dense remain genuine `x-admin.table`/Storage-style table rows. All six Gallery actions are rendered through the canonical `x-admin.row-action`, including a centrally registered `AdminRowAction::MoveToGallery`. The new central `admin-row-actions--six-static` variant in `table-contract.css` provides stable, **horizontal** six-slot axes, text labels in Wide and icon-only at table Compact. Removed the Gallery-specific action-grid sizing and breakpoint patch, retaining only consumer column width referencing the central six-action token and Storage's narrow thumbnail width.
+- PostgreSQL startup migration: `DB::statement` treated the `?` jsonb operator as a PDO positional binding, producing SQLSTATE[42601]. Changed to equivalent `jsonb_exists(configuration, 'enabled_gallery_ids')` in the same migration. This fix was first published separately (commit `1bf54bdc`) to unblock startup; no schema or content policy change.
+- Reconciled concurrent work on `dev`; no other worker files were overwritten. Source-only verification: no local app build, browser, database migration execution or testing suite. Required acceptance: local preview migration, Gallery/Storage Wide + Compact view controls, List/Dense table actions in one row and overflow/fold, reordering/selection, all six actions (including disabled state), Gallery Grid and Storage regression, cross-worker integration.
+- Do not make more Gallery-specific table/action styles when a canonical shared token or control variant already owns them.
 
 ## Gallery multi-view table and Select/Filter policy — 2026-11-20
 

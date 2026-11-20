@@ -6,6 +6,7 @@ enum AdminRowAction: string
 {
     case MoveUp = 'move-up';
     case MoveDown = 'move-down';
+    case MoveToGallery = 'move-to-gallery';
     case Open = 'open';
     case Details = 'details';
     case Edit = 'edit';
@@ -27,6 +28,7 @@ enum AdminRowAction: string
         return match ($this) {
             self::MoveUp => AdminIcon::MoveUp,
             self::MoveDown => AdminIcon::MoveDown,
+            self::MoveToGallery => AdminIcon::MoveBetween,
             self::Open => AdminIcon::OpenEntry,
             self::Details => AdminIcon::Details,
             self::Edit => AdminIcon::Edit,
@@ -49,6 +51,7 @@ enum AdminRowAction: string
         return match ($this) {
             self::MoveUp => 'Move up',
             self::MoveDown => 'Move down',
+            self::MoveToGallery => 'Move',
             self::Open => 'Open',
             self::Details => 'Details',
             self::Edit => 'Edit',

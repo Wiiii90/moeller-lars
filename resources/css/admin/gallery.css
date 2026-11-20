@@ -632,7 +632,7 @@
 .gallery-workspace__col-actions { width: calc(var(--admin-row-actions-width) + .7rem); }
 .gallery-workspace__col-selection { width: var(--admin-table-selection-width); }
 .gallery-workspace__table {
-    --admin-row-actions-width: 29.5rem;
+    --admin-row-actions-width: var(--admin-row-actions-six-static-width);
 }
 .gallery-workspace__table-name {
     display: flex;
@@ -702,8 +702,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.gallery-workspace__table-status > small,
-.gallery-workspace__table-public {
+.gallery-workspace__table-status > small {
     display: block;
     max-width: 100%;
     overflow: hidden;
@@ -711,16 +710,6 @@
     font-size: var(--admin-font-size-table-meta);
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-.gallery-workspace__table-public {
-    color: var(--admin-muted);
-    text-decoration: underline;
-    text-underline-offset: .12rem;
-}
-.gallery-workspace__row-actions {
-    --admin-row-actions-width: 29.5rem;
-    --admin-row-actions-columns: 3.65rem 4.75rem 5.5rem 6.8rem 4.15rem 3.65rem;
-    --admin-row-actions-gap: .2rem;
 }
 .gallery-workspace__table-actions .admin-action {
     min-height: 1.65rem;
@@ -738,31 +727,19 @@
     padding: .38rem .5rem;
 }
 .gallery-workspace__table-wrap.is-dense .gallery-workspace__table-identity > small,
-.gallery-workspace__table-wrap.is-dense .gallery-workspace__table-status > small,
-.gallery-workspace__table-wrap.is-dense .gallery-workspace__table-public {
+.gallery-workspace__table-wrap.is-dense .gallery-workspace__table-status > small {
     display: none;
 }
 
-/* The existing table-content pressure owner hides supportive columns.
- * Action axes contract together before they would consume Artwork width. */
+/* The shared table action owner compacts all six canonical slots together. */
 @container admin-table (max-width: 76rem) {
     .gallery-workspace__table {
-        --admin-row-actions-width: 10.9rem;
+        --admin-row-actions-width: var(--admin-row-actions-six-static-compact-width);
     }
-    .gallery-workspace__row-actions {
-        --admin-row-actions-width: 10.9rem;
-        --admin-row-actions-columns: repeat(6, 1.6rem);
-        --admin-row-actions-gap: .2rem;
-    }
-    .gallery-workspace__row-actions .admin-action {
-        width: 1.6rem !important;
-        min-width: 1.6rem !important;
-        min-height: 1.75rem;
-        padding: 0 !important;
-        justify-content: center !important;
-    }
-    .gallery-workspace__row-actions .admin-action__label {
-        display: none !important;
+}
+@container admin-table (max-width: 38rem) {
+    .gallery-workspace__col-preview {
+        width: 4rem;
     }
 }
 @container admin-table (max-width: 64rem) {

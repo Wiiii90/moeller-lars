@@ -103,13 +103,9 @@
                         @if ($artwork['state'] !== 'published')
                             <small title="{{ $artwork['readiness_label'] }}">{{ $artwork['readiness_label'] }}</small>
                         @endif
-                        @if ($artwork['public_url'])
-                            <a href="{{ $artwork['public_url'] }}" target="_blank" rel="noopener"
-                                title="View public artwork" class="gallery-workspace__table-public">{{ __('Public page') }}</a>
-                        @endif
                     </td>
                     <td class="media-workspace__actions gallery-workspace__table-actions admin-table__actions">
-                        <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-toolbar gallery-workspace__row-actions">
+                        <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--six-static admin-toolbar gallery-workspace__row-actions">
                             <x-admin.row-action action="edit" wire:click="mountAction('editArtwork', { artwork: {{ $artwork['id'] }} })" />
                             <x-admin.row-action action="move-up" wire:click="moveArtwork({{ $artwork['id'] }}, 'up')"
                                 :disabled="! $reorderEnabled || ! $artwork['can_move_up']"
@@ -122,13 +118,10 @@
                             @else
                                 <x-admin.row-action action="publish" wire:click="mountAction('publishArtwork', { artwork: {{ $artwork['id'] }} })" />
                             @endif
-                            <button class="admin-action admin-action--with-icon" type="button"
+                            <x-admin.row-action action="move-to-gallery"
                                 wire:click="mountAction('moveArtworkToGallery', { artwork: {{ $artwork['id'] }} })"
-                                @disabled($moveTargets === [] || ($artwork['state'] === 'published' && ! $hasPublishedMoveTarget))
-                                aria-label="Move {{ $artwork['title'] }} to another Gallery" title="Move to Gallery">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveBetween->mini()" class="admin-action__icon" />
-                                <span class="admin-action__label">{{ __('Move') }}</span>
-                            </button>
+                                :disabled="$moveTargets === [] || ($artwork['state'] === 'published' && ! $hasPublishedMoveTarget)"
+                                label="Move" title="Move to Gallery" />
                             <x-admin.row-action action="delete" wire:click="mountAction('deleteArtwork', { artwork: {{ $artwork['id'] }} })"
                                 :disabled="$artwork['state'] !== 'draft'"
                                 label="Delete" title="{{ $artwork['state'] === 'draft' ? 'Delete' : 'Unpublish before deleting' }}" />

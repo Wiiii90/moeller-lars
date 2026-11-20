@@ -42,6 +42,14 @@
         + var(--admin-row-action-slot-download-width) + var(--admin-row-action-slot-static-delete-width)
         + .75rem
     );
+    --admin-row-action-slot-move-gallery-width: 4.25rem;
+    --admin-row-actions-six-static-width: calc(
+        var(--admin-row-action-slot-edit-width) + var(--admin-row-action-slot-move-up-width)
+        + var(--admin-row-action-slot-move-down-width) + var(--admin-row-action-slot-state-width)
+        + var(--admin-row-action-slot-move-gallery-width) + var(--admin-row-action-slot-delete-width)
+        + .9375rem
+    );
+    --admin-row-actions-six-static-compact-width: calc(6 * 1.35rem + 5 * .3rem);
     --admin-row-actions-two-static-width: 9.5rem;
     --admin-row-actions-three-static-width: 15.5rem;
     --admin-row-actions-edit-state-delete-width: calc(
@@ -361,6 +369,39 @@
         minmax(var(--admin-row-action-slot-static-edit-width), max-content)
         minmax(var(--admin-row-action-slot-download-width), max-content)
         minmax(var(--admin-row-action-slot-static-delete-width), max-content);
+}
+
+/* Six stable action roles use the same canonical table action rail as Storage:
+ * always a single horizontal row, with text labels in Wide and icons together
+ * in Compact. No page-local flex wrapping or DOM-specific fallback. */
+.admin-row-actions--six-static {
+    --admin-row-actions-width: var(--admin-row-actions-six-static-width);
+    --admin-row-actions-columns:
+        minmax(var(--admin-row-action-slot-edit-width), max-content)
+        minmax(var(--admin-row-action-slot-move-up-width), max-content)
+        minmax(var(--admin-row-action-slot-move-down-width), max-content)
+        minmax(var(--admin-row-action-slot-state-width), max-content)
+        minmax(var(--admin-row-action-slot-move-gallery-width), max-content)
+        minmax(var(--admin-row-action-slot-delete-width), max-content);
+    --admin-row-actions-gap: .1875rem;
+}
+
+@container admin-table (max-width: 76rem) {
+    .admin-row-actions--six-static {
+        --admin-row-actions-width: var(--admin-row-actions-six-static-compact-width);
+        --admin-row-actions-columns: repeat(6, 1.35rem);
+        --admin-row-actions-gap: .3rem;
+    }
+    .admin-row-actions--six-static .admin-action {
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        gap: 0 !important;
+        padding-inline: 0 !important;
+        justify-content: center !important;
+    }
+    .admin-row-actions--six-static .admin-action__label {
+        display: none !important;
+    }
 }
 
 /* Stable action buttons share the base style; semantic slots set axes. */

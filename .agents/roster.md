@@ -5,7 +5,7 @@
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
 | Dev Worker 1 | 9 | Active — replaced archived chat; local migration verified, qualification pending | Exhibition date precision/migration, address, map and autosave; Public Exhibitions baseline | [dev-1.md](workers/dev-1.md) |
-| Dev Worker 4 | 22 | Active — Gallery List/Grid/Dense and central Select/filter contracts updated; source-integrated, browser acceptance pending | Canonical List/Dense Artwork table, responsive Filters popup, no implicit Select placeholders, Grid preserved | [dev-4.md](workers/dev-4.md) |
+| Dev Worker 4 | 22 | Active — Gallery/Storage View controls unified and Gallery List/Dense horizontal actions corrected; browser verification pending | Shared View component + six-action table contract; migration PDO fix, no public Gallery changes | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 19 | Source cleanup committed; isolated migration and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom types and Hero Artworks template; preserve Gallery/Exhibitions, retire Home-only editors | [dev-5.md](workers/dev-5.md) |
 
 | Dev Worker 6 | 16 | Active — targeted source corrections committed; local Preview/browser acceptance outstanding | Home Hero: Dummy Galleries, candidate ranking/selection, Stage/Settings, public resolver, shared Create dialog; no tests/deployment | [dev-6.md](workers/dev-6.md) |
