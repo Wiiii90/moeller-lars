@@ -162,6 +162,12 @@
 - The bounded Admin-wide picker inventory also identified the deliberate `x-admin.page-size-picker` mini-listbox. Kept its user interaction and current-page update path, but harmonized its popup background, border radius, shadow-free contour, option insets and selected/hover accent in the canonical `resources/css/admin/data-workspace.css` owner. This is a specialized value picker, not a reason to duplicate the native Select implementation.
 - Not browser-accepted; no tests, builds, CI or deployment executed.
 
+## Consolidated select popup design tokens (2026-11-20)
+- User requested a small refactor to remove redundant CSS after the Admin-wide dropdown visual unification. Inspected the canonical native single-select (`resources/css/admin/layouts.css`), searchable Filament Select (`resources/css/admin/controls.css`) and specialized table page-size menu (`resources/css/admin/data-workspace.css`) owners. Each remains a separate interaction renderer by design.
+- Centralized the values all three already shared in the existing Admin control token owner: choice inset, vertical/horizontal row padding, minimum row height and selected/hover background. The two group-aware renderers additionally reuse one group background and group-label padding. Theme colors remain dynamic through existing Admin accent and popup surface variables; no hard-coded new colors or extra component were introduced.
+- Deduplicated the three equivalent Filament option hover/focus/selected CSS blocks into one `:is()` state rule while retaining the original selector specificity and visual treatment. Kept the page-size picker trailing checkmark padding specific to that component; unchanged functionality, structure, field bindings and layout breakpoints.
+- Performed static source checks: seven shared tokens defined once, referenced by their intended consumers, three CSS blocks brace-balanced, and a single Filament option state rule. Browser screenshots, tests, builds, CI and deployments were not run; runtime/visual acceptance remains open.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.

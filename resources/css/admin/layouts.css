@@ -171,7 +171,7 @@ html.fi select option:disabled {
         margin: 0;
         /* One small rhythm below the last option, also at the popup bottom.
          * Never insert blank space between the divider and next heading. */
-        padding: 0 0 .1875rem;
+        padding: 0 0 var(--admin-select-option-inset);
         background: var(--admin-control-popup-surface);
         color: var(--admin-muted);
         font-size: var(--admin-control-label-size);
@@ -188,9 +188,9 @@ html.fi select option:disabled {
         box-sizing: border-box;
         display: block;
         inline-size: 100%;
-        margin: 0 0 .1875rem;
-        padding: .35rem .85rem .3rem;
-        background: color-mix(in srgb, var(--admin-subtle) 75%, var(--admin-control-popup-surface));
+        margin: 0 0 var(--admin-select-option-inset);
+        padding: var(--admin-select-group-label-padding);
+        background: var(--admin-select-group-background);
         color: var(--admin-muted);
         font-size: var(--admin-control-label-size);
         font-weight: 700;
@@ -202,7 +202,7 @@ html.fi select option:disabled {
     html.fi select:not([multiple]):is(:not([size]), [size="1"]) optgroup > option {
         /* Exact symmetric hover/selected inset; group heading/divider instead
          * fill the popup from one side to the other. */
-        margin: 0 .1875rem;
+        margin: 0 var(--admin-select-option-inset);
         padding-inline-start: 1rem;
         font-size: var(--admin-control-value-size);
         font-weight: 400;
@@ -212,8 +212,8 @@ html.fi select option:disabled {
 
     html.fi select:not([multiple]):is(:not([size]), [size="1"]) option {
         display: flex;
-        min-height: 2rem;
-        padding: .45rem .7rem;
+        min-height: var(--admin-select-option-min-height);
+        padding: var(--admin-select-option-padding-y) var(--admin-select-option-padding-x);
         align-items: center;
         gap: .55rem;
         background: var(--admin-control-popup-surface);
@@ -229,7 +229,7 @@ html.fi select option:disabled {
 
     html.fi select:not([multiple]):is(:not([size]), [size="1"]) option:hover,
     html.fi select:not([multiple]):is(:not([size]), [size="1"]) option:checked {
-        background: color-mix(in srgb, var(--admin-accent) 16%, var(--admin-control-popup-surface));
+        background: var(--admin-select-selected-background);
         color: var(--admin-control-popup-ink);
     }
 

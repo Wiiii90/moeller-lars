@@ -12,6 +12,15 @@
     --admin-control-label-size: .68rem;
     --admin-control-value-size: .78rem;
     --admin-control-text-inset: .25rem;
+    /* Shared popup geometry/paint for native, Filament and pager Selects.
+     * Each renderer keeps its own DOM and interaction behavior. */
+    --admin-select-option-inset: .1875rem;
+    --admin-select-option-padding-y: .45rem;
+    --admin-select-option-padding-x: .7rem;
+    --admin-select-option-min-height: 2rem;
+    --admin-select-selected-background: color-mix(in srgb, var(--admin-accent) 16%, var(--admin-control-popup-surface));
+    --admin-select-group-background: color-mix(in srgb, var(--admin-subtle) 75%, var(--admin-control-popup-surface));
+    --admin-select-group-label-padding: .35rem .85rem .3rem;
     --admin-control-popover-surface: #fff;
 }
 
@@ -249,7 +258,7 @@
 }
 
 .fi-select-input-options-ctn {
-    padding: .1875rem 0 !important;
+    padding: var(--admin-select-option-inset) 0 !important;
 }
 
 .fi-select-input-option,
@@ -259,28 +268,17 @@
 
 .fi-select-input-option {
     box-sizing: border-box;
-    min-height: 2rem;
-    margin-inline: .1875rem;
-    padding: .45rem .7rem !important;
+    min-height: var(--admin-select-option-min-height);
+    margin-inline: var(--admin-select-option-inset);
+    padding: var(--admin-select-option-padding-y) var(--admin-select-option-padding-x) !important;
     color: var(--admin-control-popup-ink) !important;
     font-size: var(--admin-control-value-size) !important;
     line-height: 1.2;
 }
 
-.fi-select-input-option:hover,
-.fi-select-input-option:focus-visible {
-    background: color-mix(in srgb, var(--admin-accent) 16%, var(--admin-control-popup-surface)) !important;
+.fi-select-input-option:is(:hover, :focus-visible, .fi-selected, [aria-selected="true"]) {
+    background: var(--admin-select-selected-background) !important;
     outline: 0;
-}
-
-.fi-select-input-option.fi-selected,
-.fi-select-input-option[aria-selected="true"] {
-    background: color-mix(in srgb, var(--admin-accent) 16%, var(--admin-control-popup-surface)) !important;
-}
-
-.fi-select-input-option.fi-selected:hover,
-.fi-select-input-option[aria-selected="true"]:hover {
-    background: color-mix(in srgb, var(--admin-accent) 16%, var(--admin-control-popup-surface)) !important;
 }
 
 .fi-select-input-option-label {
@@ -289,9 +287,9 @@
 }
 
 .fi-select-input-option-group-header {
-    margin-block: 0 .1875rem;
-    padding: .35rem .85rem .3rem !important;
-    background: color-mix(in srgb, var(--admin-subtle) 75%, var(--admin-control-popup-surface));
+    margin-block: 0 var(--admin-select-option-inset);
+    padding: var(--admin-select-group-label-padding) !important;
+    background: var(--admin-select-group-background);
     color: var(--admin-muted) !important;
     font-size: var(--admin-control-label-size) !important;
     font-weight: 700 !important;
