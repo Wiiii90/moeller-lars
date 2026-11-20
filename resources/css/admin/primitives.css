@@ -230,7 +230,7 @@
 }
 
 .admin-action:hover,
-.admin-action:focus-visible {
+.admin-action:focus-visible:not([data-admin-pointer-focus]) {
     border-color: var(--admin-line-strong);
     background: var(--admin-subtle);
     color: var(--admin-text);

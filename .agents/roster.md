@@ -12,7 +12,7 @@
 | Dev Worker 8 | 30 | Central Clear icon now uses shared custom eraser glyph; browser review pending | Shared Admin Create/Edit dialogs, central dialog geometry, date controls and picker; coordinate shared primitives; no deployment | [dev-8.md](workers/dev-8.md) |
 
 
-| Dev Worker 9 | 28 | Embedded Preview root background backing source-corrected for initial-load/scroll paint gap; browser validation pending | General/Gallery shared Live Preview rendering and Help; preserve Public design and Dev Worker 7 shared controls | [dev-9.md](workers/dev-9.md) |
+| Dev Worker 9 | 28 | Shared pointer-origin focus state integrated for Admin actions; Shift-only no false focus ring, keyboard navigation preserved; browser review pending | General/Gallery Live Preview focus and interactions, central Admin action focus grammar; coordinate Dev Worker 7 and Gallery ownership | [dev-9.md](workers/dev-9.md) |
 | Dev Worker 10 | 26 | Active — rights-processing Validation readiness and completion | Media rights preparation/delivery pipeline, queue-worker integration requirements, current Validation activation evidence and safe rollout handoff; no deployments or artist-data changes without explicit approval | [dev-10.md](workers/dev-10.md) |
 
 | Dev Worker 11 | 27 | Active — single-image native-lazy Gallery source repair prepared; browser acceptance pending | Progressive Public Gallery server batches, native image decode and viewer sequence; coordinate with Dev Worker 4 | [dev-11.md](workers/dev-11.md) |

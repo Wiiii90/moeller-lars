@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 28 (active)  
-**State:** Embedded Preview initial background repaint mitigation source-integrated; actual browser acceptance pending.
+**State:** Shift-only focus-outline issue unified under central Admin action pointer-origin tracking; browser review pending.
 
 ## Ownership and current decisions
 
@@ -74,3 +74,12 @@
 - `resources/js/admin-live-preview.js`: for a loaded same-origin iframe whose body is a Public site, mark its root as embedded; register the corresponding remove on the existing iframe listener/observer disposal. Standalone Public and standalone Preview never receive this class. No additional iframe, polling, scroll listeners, page height overrides, viewport geometry changes, or Public background-setting mutations.
 - Verified by in-memory JavaScript parsing and lifecycle simulation that the embedded marker is set for the Public iframe and removed when shortcuts unbind. This does not prove paint correctness in Chromium/WebKit; app build, browser test, CI, server deployment and production changes were not run.
 - **Browser acceptance pending:** General and Gallery initial load at fitted 100%, scroll across the former horizontal boundary, fixed gradient consistency and sticky header; zoom and phone/desktop device selection; standalone Preview rendering unchanged.
+
+
+## 2026-11-21: Shared Admin pointer-origin focus state
+
+- User verified that the previous Lightbulb focus workaround stopped its outline, but pressing Shift now visibly outlines the Gallery Settings button instead. Both actions belong to the canonical `.admin-action` visual grammar; simply blurring the Help trigger was too local.
+- `resources/js/admin-viz.js`: a single document-delegated pointerdown listener marks the most recently **mouse-activated** Admin action. Modifier-only keydown (Shift, Control, Alt, Meta) intentionally preserves this pointer origin, while a real key action (especially Tab / Shift + Tab) clears it *before* keyboard focus navigation. This retains native focus and click/modal handling rather than forcibly blurring Settings or other actions. Touch does not create the mouse marker. No per-button event handlers.
+- `resources/css/admin/primitives.css`, `stage.css`, `live-preview.css`, `forms.css`: the existing common action, Stage tab, Live Preview button and shared Help focus styles show keyboard focus only when the current focused control is not marked as mouse-activated. Hover and active/pressed styles remain unchanged.
+- `resources/views/components/admin/help.blade.php`: remove the superseded mouse-blur special case. The Help popover retains its existing central show/hide behavior; the shared Admin action policy handles its trigger without a local exception.
+- Isolated event-handling simulation checked mouse click on Settings/Help, Shift without navigation, Shift + Tab, touch and Enter keyboard action. Source-level focus selector checks completed; real browser rendering in General/Gallery, Filament Settings dialog focus restoration and accessibility remain pending. No application build, full suite, Continuous Integration, server deployment or production changes performed.

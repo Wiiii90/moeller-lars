@@ -430,12 +430,12 @@
 }
 
 .admin-help__trigger:hover,
-.admin-help__trigger:focus-visible,
+.admin-help__trigger:focus-visible:not([data-admin-pointer-focus]),
 .admin-help:focus-within .admin-help__trigger {
     color: var(--admin-text);
 }
 
-.admin-help__trigger:focus-visible {
+.admin-help__trigger:focus-visible:not([data-admin-pointer-focus]) {
     outline: 1px solid var(--admin-text);
     outline-offset: 2px;
 }
