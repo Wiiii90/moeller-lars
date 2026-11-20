@@ -88,6 +88,35 @@ trait GalleryWorkspaceDirectUpload
         unset($row);
     }
 
+    /** One-based position is a projection of the queue and selected media identity. */
+    public function stagedArtworkPosition(): int
+    {
+        if ($this->selectedStagedMediaAssetId === null) {
+            return 0;
+        }
+
+        $ids = array_map('intval', array_column($this->pendingBatchArtworkMedia, 'media_asset_id'));
+        $index = array_search($this->selectedStagedMediaAssetId, $ids, true);
+
+        return $index === false ? 0 : $index + 1;
+    }
+
+    /** Keep queue navigation on the same selection, form and Preview lifecycle. */
+    public function navigateStagedArtwork(int $direction): void
+    {
+        if (! in_array($direction, [-1, 1], true)) {
+            return;
+        }
+
+        $current = $this->stagedArtworkPosition();
+        $target = $current + $direction;
+        if ($current === 0 || $target < 1 || $target > count($this->pendingBatchArtworkMedia)) {
+            return;
+        }
+
+        $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[$target - 1]['media_asset_id']);
+    }
+
     public function selectStagedArtwork(int $assetId): void
     {
         $selected = null;
@@ -132,6 +161,7 @@ trait GalleryWorkspaceDirectUpload
 
     public function removeStagedArtwork(int $assetId): void
     {
+        $selectedIndex = max(0, $this->stagedArtworkPosition() - 1);
         $this->rememberStagedArtworkChanges();
         $this->pendingBatchArtworkMedia = array_values(array_filter(
             $this->pendingBatchArtworkMedia,
@@ -141,7 +171,8 @@ trait GalleryWorkspaceDirectUpload
             $this->selectedStagedMediaAssetId = null;
             $this->stagedArtworkData = [];
             if ($this->pendingBatchArtworkMedia !== []) {
-                $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[0]['media_asset_id']);
+                $nextIndex = min($selectedIndex, count($this->pendingBatchArtworkMedia) - 1);
+                $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[$nextIndex]['media_asset_id']);
             } else {
                 $this->galleryStagePanel = 'settings';
                 $this->forgetStagedArtworkPreview();
@@ -278,6 +309,7 @@ trait GalleryWorkspaceDirectUpload
     /** Uploaded originals always remain in Storage when staging ends. */
     private function forgetCompletedStagedArtworks(array $assetIds): void
     {
+        $selectedIndex = max(0, $this->stagedArtworkPosition() - 1);
         $this->pendingBatchArtworkMedia = array_values(array_filter(
             $this->pendingBatchArtworkMedia,
             static fn (array $row): bool => ! in_array((int) $row['media_asset_id'], $assetIds, true),
@@ -290,7 +322,8 @@ trait GalleryWorkspaceDirectUpload
             $this->forgetStagedArtworkPreview();
             $this->syncGalleryPreviewFocus();
         } else {
-            $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[0]['media_asset_id']);
+            $nextIndex = min($selectedIndex, count($this->pendingBatchArtworkMedia) - 1);
+            $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[$nextIndex]['media_asset_id']);
         }
     }
 

@@ -54,12 +54,26 @@
             <div class="gallery-stage__workspace admin-visual-stage__pane" data-admin-stage-pane="editor" data-admin-stage-slot="1">
                 <header class="gallery-stage__workspace-header">
                     <h2 class="admin-section__kicker admin-visual-stage__heading">Gallery editor</h2>
-                    <div class="admin-stage-tabs gallery-stage__workspace-tabs" role="group" aria-label="Gallery editor mode">
+                    @php($stagedPosition = $this->stagedArtworkPosition())
+                    @php($stagedTotal = count($pendingBatchArtworkMedia))
+                    <div class="admin-stage-tabs gallery-stage__workspace-tabs" role="group" aria-label="Gallery editor mode and staged artwork navigation">
                         <button class="admin-action {{ $galleryStagePanel === 'upload' ? 'is-primary' : '' }}" type="button"
                             wire:click="selectGalleryStagePanel('upload')" aria-pressed="{{ $galleryStagePanel === 'upload' ? 'true' : 'false' }}">Upload</button>
-                        <button class="admin-action {{ $galleryStagePanel === 'queue' ? 'is-primary' : '' }}" type="button"
+                        <button class="admin-action gallery-stage__queue-arrow" type="button"
+                            wire:click="navigateStagedArtwork(-1)"
+                            @disabled($stagedPosition <= 1)
+                            aria-label="Previous staged artwork" title="Previous staged artwork">
+                            <x-filament::icon icon="heroicon-m-chevron-left" />
+                        </button>
+                        <button class="admin-action gallery-stage__queue-tab {{ $galleryStagePanel === 'queue' ? 'is-primary' : '' }}" type="button"
                             wire:click="selectGalleryStagePanel('queue')" aria-pressed="{{ $galleryStagePanel === 'queue' ? 'true' : 'false' }}"
-                            @disabled($pendingBatchArtworkMedia === [])>Staged ({{ count($pendingBatchArtworkMedia) }})</button>
+                            @disabled($stagedTotal === 0)>Staged (<span aria-live="polite" aria-atomic="true">{{ $stagedPosition }}/{{ $stagedTotal }}</span>)</button>
+                        <button class="admin-action gallery-stage__queue-arrow" type="button"
+                            wire:click="navigateStagedArtwork(1)"
+                            @disabled($stagedPosition === 0 || $stagedPosition >= $stagedTotal)
+                            aria-label="Next staged artwork" title="Next staged artwork">
+                            <x-filament::icon icon="heroicon-m-chevron-right" />
+                        </button>
                         <button class="admin-action {{ $galleryStagePanel === 'settings' ? 'is-primary' : '' }}" type="button"
                             wire:click="selectGalleryStagePanel('settings')" aria-pressed="{{ $galleryStagePanel === 'settings' ? 'true' : 'false' }}">Settings</button>
                     </div>
@@ -125,17 +139,6 @@
                 </div>
             </div>
                 @elseif ($galleryStagePanel === 'queue' && $pendingBatchArtworkMedia !== [])
-                    <div class="gallery-stage__queue" aria-label="Media awaiting Artwork creation">
-                        @foreach ($pendingBatchArtworkMedia as $index => $item)
-                            <button type="button" class="admin-action gallery-stage__queue-item {{ $selectedStagedMediaAssetId === (int) $item['media_asset_id'] ? 'is-primary' : '' }}"
-                                wire:key="gallery-staged-media-{{ $item['media_asset_id'] }}"
-                                wire:click="selectStagedArtwork({{ (int) $item['media_asset_id'] }})"
-                                aria-pressed="{{ $selectedStagedMediaAssetId === (int) $item['media_asset_id'] ? 'true' : 'false' }}">
-                                <span class="admin-position">{{ $index + 1 }}</span>
-                                <span>{{ (string) ($item['form']['title'] ?? $item['title']) }}</span>
-                            </button>
-                        @endforeach
-                    </div>
                     @if ($selectedStagedMediaAssetId !== null)
                         <div class="gallery-stage__form-scroll" wire:change="syncStagedArtworkPreview" wire:key="gallery-staged-editor-{{ $selectedStagedMediaAssetId }}">
                             {{ $this->stagedArtworkForm }}

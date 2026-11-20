@@ -2,7 +2,15 @@
 
 **Lease:** 23
 **Branch:** dev
-**State:** Active — compact Staged Artwork form and private preview description contract corrected in source; runtime/browser acceptance pending.
+**State:** Active — Staged Artwork navigation consolidated into tabs, queue selection continuity preserved; runtime/browser acceptance pending.
+
+## Gallery Staged Artwork navigation — 2026-11-20
+
+- Replaced the separate horizontally scrolling Staged Artwork queue header with previous and next arrow controls flanking the existing Staged tab. Its fraction is derived from the selected queue Media Asset ID (e.g., `Staged (1/2)`, `Staged (2/2)`; `Staged (0/0)` without queued media), not stored in a second counter.
+- Reused the canonical `selectStagedArtwork()` action and the existing staged form fill, queued unsaved changes and private Preview refresh. The arrows are disabled at the first/last item and during empty or one-item queues. Upload completion still selects the latest item.
+- After a selected item is removed or created, the adjacent item at the former index remains selected if available, otherwise the previous last item. When the queue is emptied, existing fallback to Gallery Settings and Preview remains unchanged. Existing Create-All transaction behavior is unaffected.
+- Removed the old Stage queue Blade markup and obsolete queue CSS. The shared Stage button design and three main tab actions remain; only Gallery-specific five-column placement and arrow icon sizing were added.
+- Source only; no PHP, browser tests, deployment or migration. Verify 0/1/2/3 queue counts, wrap-disabled boundaries, upload additions, selected and nonselected removals, single and all creation, field edits across navigation, preview auto-focus on/off, and narrow Stage width.
 
 ## Gallery Staged Artwork form and private Preview — 2026-11-20
 

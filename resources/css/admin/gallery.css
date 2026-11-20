@@ -75,6 +75,22 @@
 .gallery-stage__workspace-tabs {
     --admin-stage-tabs-columns: 3;
     display: grid;
+    /* Three main tabs remain, with bounded previous/next actions beside Staged. */
+    grid-template-columns: minmax(0, 1fr) 1.75rem minmax(5.5rem, 1.2fr) 1.75rem minmax(0, 1fr);
+}
+
+.gallery-stage__workspace-tabs > .gallery-stage__queue-tab {
+    padding-inline: .2rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.gallery-stage__workspace-tabs > .gallery-stage__queue-arrow {
+    padding: 0;
+}
+
+.gallery-stage__queue-arrow svg {
+    width: 1rem;
+    height: 1rem;
 }
 
 .gallery-stage__settings {
@@ -89,37 +105,10 @@
 }
 
 .gallery-stage__settings::-webkit-scrollbar,
-.gallery-stage__form-scroll::-webkit-scrollbar,
-.gallery-stage__queue::-webkit-scrollbar {
+.gallery-stage__form-scroll::-webkit-scrollbar {
     display: none;
     width: 0;
     height: 0;
-}
-
-.gallery-stage__queue {
-    display: flex;
-    flex: 0 0 auto;
-    min-width: 0;
-    scrollbar-width: none;
-    gap: .3rem;
-    padding-block: .5rem;
-    overflow-x: auto;
-}
-
-.gallery-stage__queue-item {
-    display: inline-flex;
-    min-width: 6rem;
-    max-width: 13rem;
-    flex: 0 0 auto;
-    gap: .4rem;
-    align-items: center;
-}
-
-.gallery-stage__queue-item > span:last-child {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .gallery-stage__form-scroll {
