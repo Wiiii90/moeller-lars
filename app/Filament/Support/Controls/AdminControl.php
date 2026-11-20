@@ -34,7 +34,12 @@ final class AdminControl
             ->displayFormat(fn (): string => RegionalFormats::pickerDateFormat()));
         DateTimePicker::configureUsing(fn (DateTimePicker $field) => self::decorate($field)
             ->displayFormat(fn (): string => RegionalFormats::pickerDateTimeFormat())
-            ->timezone(fn (): string => RegionalFormats::adminTimeZone()));
+            ->timezone(fn (): string => RegionalFormats::adminTimeZone())
+            // One canonical calendar affordance for native and custom date/time
+            // controls; the picker remains Filament-owned, including click-away.
+            ->suffixIcon(static fn (DateTimePicker $component): ?string => $component->hasDate()
+                ? 'heroicon-o-calendar-days'
+                : null, isInline: true));
         FileUpload::configureUsing(fn (FileUpload $field) => self::decorate($field));
         MarkdownEditor::configureUsing(fn (MarkdownEditor $field) => self::decorate($field));
         RichEditor::configureUsing(fn (RichEditor $field) => self::decorate($field));

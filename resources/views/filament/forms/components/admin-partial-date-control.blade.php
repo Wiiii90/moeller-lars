@@ -24,7 +24,7 @@
                 x-bind:style="position"
                 role="dialog"
                 aria-label="{{ $accessibleLabel }} date picker"
-                x-on:click.outside="if (!$event.target.closest('.admin-partial-date__trigger')) close()"
+                x-on:click.outside="if (!$refs.trigger.contains($event.target)) close()"
             >
                 <div class="admin-partial-date__modes" aria-label="Date precision">
                     <button type="button" x-on:click="chooseMode('year')" x-bind:aria-pressed="mode === 'year'">Year</button>
