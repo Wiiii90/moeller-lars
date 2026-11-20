@@ -159,9 +159,9 @@
                                 <button class="admin-dashboard__group-toggle" type="button"
                                     x-on:click="expanded = ! expanded"
                                     x-bind:aria-expanded="expanded.toString()"
-                                    aria-label="{{ count($members) }} changes. Expand or collapse {{ $first['title'] }}">
+                                    aria-label="{{ count($members) }} changes. Expand or collapse {{ $first['edit_group_title'] }}">
                                     <x-filament::icon icon="heroicon-m-chevron-right" class="admin-dashboard__group-chevron" />
-                                    <span class="admin-dashboard__feed-title">{{ $first['title'] }}</span>
+                                    <span class="admin-dashboard__feed-title">{{ $first['edit_group_title'] }}</span>
                                     <span class="admin-dashboard__group-count">{{ count($members) }} {{ __('changes') }}</span>
                                 </button>
                                 <small class="admin-dashboard__feed-meta">
@@ -171,7 +171,43 @@
                                 </small>
                             </td>
                             <td class="admin-data-sender admin-dashboard__col-sender"><strong>{{ __('System') }}</strong></td>
-                            <td class="admin-table__actions"></td>
+                            <td class="admin-table__actions">
+                                <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-dashboard__feed-actions">
+                                    <x-admin.row-action
+                                        :action="\App\Filament\Support\AdminRowAction::Open"
+                                        wire:click='openNotificationGroup(@json($memberKeys))'
+                                        aria-label="Open all {{ count($members) }} grouped notifications"
+                                        title="Open group"
+                                    />
+                                    <x-admin.row-action
+                                        :action="\App\Filament\Support\AdminRowAction::Pin"
+                                        wire:click='pinNotificationGroup(@json($memberKeys))'
+                                        aria-label="Pin all {{ count($members) }} grouped notifications"
+                                        title="Pin all"
+                                    />
+                                    <x-admin.row-action
+                                        :action="$groupUnread ? \App\Filament\Support\AdminRowAction::MarkRead : \App\Filament\Support\AdminRowAction::MarkUnread"
+                                        wire:click='toggleNotificationGroupRead(@json($memberKeys))'
+                                        aria-label="{{ $groupUnread ? 'Mark all grouped notifications read' : 'Mark all grouped notifications unread' }}"
+                                        title="{{ $groupUnread ? 'Mark all read' : 'Mark all unread' }}"
+                                    />
+                                    @if ($deleteWithoutConfirmation)
+                                        <x-admin.row-action
+                                            :action="\App\Filament\Support\AdminRowAction::Delete"
+                                            wire:click='deleteNotificationGroup(@json($memberKeys))'
+                                            aria-label="Delete all {{ count($members) }} grouped notifications"
+                                            title="Delete group"
+                                        />
+                                    @else
+                                        <x-admin.row-action
+                                            :action="\App\Filament\Support\AdminRowAction::Delete"
+                                            wire:click='mountAction("deleteNotificationGroup", { keys: @json($memberKeys) })'
+                                            aria-label="Delete all {{ count($members) }} grouped notifications"
+                                            title="Delete group"
+                                        />
+                                    @endif
+                                </x-admin.toolbar>
+                            </td>
                             <td class="admin-table__selection admin-table__selection--trailing">
                                 <input type="checkbox"
                                     aria-label="Select all {{ count($members) }} grouped notifications"

@@ -1,3 +1,32 @@
+@if (isset($groupEntries))
+    <div class="admin-detail-dialog admin-detail-dialog--feed admin-dashboard__group-details">
+        @foreach ($groupEntries as $groupEntry)
+            @php
+                $memberBody = trim((string) ($groupEntry['body'] ?? ''));
+                $memberTitle = trim((string) ($groupEntry['title'] ?? ''));
+                $memberMessage = $memberBody === $memberTitle ? '' : $memberBody;
+                $memberLink = $groupEntry['link'] ?? null;
+                $memberLinkLabel = $groupEntry['link_label'] ?? null;
+                $memberPath = is_string($memberLink) ? parse_url($memberLink, PHP_URL_PATH) : null;
+                $memberAdminLink = is_string($memberPath)
+                    && ($memberPath === '/admin' || str_starts_with($memberPath, '/admin/'));
+            @endphp
+            <section class="admin-dashboard__group-detail">
+                <div class="admin-dashboard__group-detail-meta">
+                    <time datetime="{{ $groupEntry['date'] }}">{{ $groupEntry['date_display'] }} {{ $groupEntry['time_display'] }}</time>
+                    <span>{{ $groupEntry['status'] }}</span>
+                </div>
+                <strong>{{ $memberTitle }}</strong>
+                @if ($memberMessage !== '')
+                    <p>{{ $memberMessage }}</p>
+                @endif
+                @if (is_string($memberLink) && $memberLink !== '' && is_string($memberLinkLabel) && $memberLinkLabel !== '')
+                    <a class="admin-detail-dialog__link" href="{{ $memberLink }}" @if ($memberAdminLink) wire:navigate @endif>{{ $memberLinkLabel }}</a>
+                @endif
+            </section>
+        @endforeach
+    </div>
+@else
 @php
     $body = trim((string) ($entry['body'] ?? ''));
     $title = trim((string) ($entry['title'] ?? ''));
@@ -88,3 +117,5 @@
         <a class="admin-detail-dialog__link" href="{{ $entry['link'] }}" @if ($linkNavigatesInAdmin) wire:navigate @endif>{{ $entry['link_label'] }}</a>
     @endif
 </div>
+
+@endif

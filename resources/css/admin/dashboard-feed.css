@@ -350,3 +350,37 @@
     outline: 2px solid var(--admin-accent);
     outline-offset: .22rem;
 }
+
+/* The combined viewer uses the existing dialog typography and separator,
+ * without creating a second table inside a dialog. */
+.admin-dashboard__group-details { display: grid; }
+.admin-dashboard__group-detail {
+    min-width: 0;
+    padding-block: .8rem;
+    border-block-end: 1px solid var(--admin-line);
+}
+.admin-dashboard__group-detail:first-child { padding-block-start: 0; }
+.admin-dashboard__group-detail:last-child {
+    border-block-end: 0;
+    padding-block-end: 0;
+}
+.admin-dashboard__group-detail-meta {
+    display: flex;
+    gap: .6rem 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: .3rem;
+    color: var(--admin-muted);
+    font-size: var(--admin-font-size-table-meta);
+}
+.admin-dashboard__group-detail strong {
+    display: block;
+    color: var(--admin-text);
+    font-weight: 600;
+}
+.admin-dashboard__group-detail p {
+    margin: .25rem 0 0;
+    overflow-wrap: anywhere;
+    color: var(--admin-text);
+    white-space: pre-wrap;
+}
+.admin-dashboard__group-detail .admin-detail-dialog__link { display: inline-block; margin-top: .45rem; }
