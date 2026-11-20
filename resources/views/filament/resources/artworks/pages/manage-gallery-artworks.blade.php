@@ -329,7 +329,6 @@
 
                 <x-slot:selection>
                     <div class="admin-data-control-group admin-selection"
-                        x-bind:class="{ 'admin-selection--free-count': viewMode === 'grid' }"
                         x-data="{ open: false }" x-on:keydown.escape.window="open = false">
                         <span class="admin-data-control-label">{{ __('Selection') }}</span>
                         <div class="admin-selection__anchor">

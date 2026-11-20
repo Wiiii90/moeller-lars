@@ -2,13 +2,21 @@
 
 **Lease:** 29
 **Branch:** dev
-**State:** Active — Gallery List labels restored at the original 70rem compact breakpoint; browser acceptance pending.
+**State:** Active — Gallery search/action toolbar geometry unified across List/Grid/Dense by removing Grid-only selection sizing; browser acceptance pending.
 
 ## Takeover — 2026-11-20
 
 - New chat explicitly replaces the previous Dev Worker 4 under lease 29 on `dev`.
 - User assigned continued Gallery ownership but did not yet specify a new feature or defect for implementation. Await the next concrete task; do not automatically restart historical tasks.
 - Preserve previous Gallery Stage/media/publication and table contracts. All prior browser/runtime checks listed below remain pending; no application code, tests, deployment or Continuous Integration were changed during takeover.
+
+## Gallery View toolbar stability — 2026-11-21
+
+- User screenshot report: Search and action bar shifted horizontally when switching Gallery Grid vs List/Dense, while otherwise rapid view switching worked.
+- Found the cause in Gallery's selection rail: only Grid used `admin-selection--free-count`, replacing the stable terminal count track `var(--admin-table-selection-width)` with a narrow intrinsic track. Because the canonical toolbar uses an elastic Search column, that changed the action positions on every mode change.
+- Removed the Grid-only selection modifier from the single Gallery control owner. Now all modes preserve the same fixed terminal selection width and shared six-cell toolbar geometry; list/grid/dense renderers, controls and CSS remain unchanged.
+- Performance investigation (question only): Gallery renders a Grid card plus List/Dense table for each artwork; thus there can be two image elements per file, but identical URLs and native lazy loading do not imply two network transfers. Initial render/Livewire hydration and iframe preview still add work. Measuring image requests, main-thread decode and server response timing is needed before claiming bottleneck.
+- Source-level verification only, no browser/CI/deploy; requires visual check of toolbar axes across modes and initial page load profile.
 
 ## Gallery List action labels regression — 2026-11-21
 
