@@ -403,7 +403,7 @@
         minmax(var(--admin-row-action-slot-delete-width), max-content);
     --admin-row-actions-gap: .1875rem;
 }
-@container admin-table (max-width: 76rem) {
+@container admin-table (max-width: 70rem) {
     .admin-row-actions--seven-artwork {
         --admin-row-actions-width: var(--admin-row-actions-seven-artwork-compact-width);
         --admin-row-actions-columns: repeat(7, 1.35rem);

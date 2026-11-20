@@ -723,7 +723,7 @@
         display: none;
     }
 }
-@container admin-table (max-width: 76rem) {
+@container admin-table (max-width: 70rem) {
     .gallery-workspace__table {
         --admin-row-actions-width: var(--admin-row-actions-seven-artwork-compact-width);
     }
