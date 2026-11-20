@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminActionCatalog;
+use App\Domain\Admin\AdminActivityPresentation;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminUndoService;
@@ -728,6 +729,7 @@ final class Activity extends Page
         return [
             'viewMode' => $viewMode,
             'activity' => $activity,
+            'activityGroups' => AdminActivityPresentation::adjacentEditGroups($activity),
             'paginator' => $paginator,
             'commits' => $commits,
             'commitPaginator' => $commitPaginator,

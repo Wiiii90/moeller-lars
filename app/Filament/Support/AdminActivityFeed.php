@@ -529,6 +529,7 @@ final class AdminActivityFeed
                 'edit_group_key' => AdminActivityPresentation::editGroupKey(
                     $actionKey, $entityType, $entityId, (int) $event->getAttribute('admin_user_id'),
                 ),
+                'edit_group_title' => $this->presentation->notificationHeadline($actionKey, $target),
                 'change' => $change,
                 'details' => $details,
                 'area' => $definition['area'],
