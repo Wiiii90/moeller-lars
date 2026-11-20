@@ -1,12 +1,18 @@
 # Dev Worker 4 — Gallery/Artwork
 
-**Lease:** 23
+**Lease:** 29
 **Branch:** dev
-**State:** Active — Stage fixed-media display, accurate transfer details, video-preview readiness and Artwork deletion with optional Storage files source-integrated; runtime/browser acceptance pending.
+**State:** Active — successor Gallery chat registered; awaiting a specific next assignment. Prior Stage/media features are source-integrated with runtime/browser acceptance still pending.
+
+## Takeover — 2026-11-20
+
+- New chat explicitly replaces the previous Dev Worker 4 under lease 29 on `dev`.
+- User assigned continued Gallery ownership but did not yet specify a new feature or defect for implementation. Await the next concrete task; do not automatically restart historical tasks.
+- Preserve previous Gallery Stage/media/publication and table contracts. All prior browser/runtime checks listed below remain pending; no application code, tests, deployment or Continuous Integration were changed during takeover.
 
 ## Gallery completion and next-chat handoff — 2026-11-20
 
-- **Lease/ownership:** Retain Dev Worker 4, lease 23, on `dev`. Do **not** unregister or change the lease. Next chat can explicitly take over this slot following `AGENTS.md`, branch-local Dev skill and roster.
+- **Historical lease/ownership:** The previous chat retained lease 23 on `dev`. This handoff was superseded by the explicit successor registration above.
 - **Upload progress:** Source inspection confirmed actual chunk transport already uses browser upload-progress byte events. For fast local uploads these can reach the allocated 80% almost immediately; no honest client animation can spread that over time. The canonical server processing manifest supplies real checkpoints up to 99%; a Livewire Stage acknowledgement finishes the remaining part. Added exact transferred/total byte status to the existing shared `admin-media-upload.js` producer, Gallery and Storage consumers, without timers or invented percentages.
 - **Stage picker:** The shared `ArtworkEditDialog` no longer constructs `MediaAssetSelect` for its compact Stage mode. It renders a central AdminControl read-only filename field at the established final position. The Stage queue supplies the authoritative original filename and the selected MediaAsset ID remains server-owned, including fallback for older queued records. Normal Add/Edit Artwork retains the actual picker. This avoids an unnecessary picker initialization; browser benchmarking is still needed to determine the actual Stage transition time.
 - **Video:** Gallery accepts image and video MIME types via the canonical MediaIngestService; MP4/WebM are validated and a video-poster preview is generated before Storage makes the asset available. Fixed central `ArtworkPublicationService::mediaReady` to require the actual usable video poster, matching image thumbnail integrity. The Gallery Readiness label now distinguishes missing video poster.
