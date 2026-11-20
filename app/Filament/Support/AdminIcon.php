@@ -36,7 +36,7 @@ enum AdminIcon: string
     case Language = 'heroicon-o-language';
     case GeneratePassword = 'heroicon-o-sparkles';
     case Copy = 'heroicon-o-clipboard-document';
-    case Clear = 'heroicon-o-backspace';
+    case Clear = 'admin-eraser';
     case Filter = 'heroicon-o-funnel';
     case Add = 'heroicon-o-plus';
     case Selection = 'heroicon-o-queue-list';
