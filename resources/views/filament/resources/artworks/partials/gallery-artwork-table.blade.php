@@ -1,6 +1,5 @@
-{{-- Canonical ranked Admin table: Position, Drag, Media (List only), Artwork,
-     data columns, Actions, terminal Selection. Dense omits the image and folds
-     secondary data only under genuine table-container pressure. --}}
+{{-- Canonical ranked Admin table: Position, Drag, optional Media, Artwork,
+     List details or Dense date/data, Actions and terminal Selection. --}}
 <x-admin.table class="admin-table--data admin-table--ranked media-workspace__table-wrap gallery-workspace__table-wrap {{ $viewMode === 'dense' ? 'is-dense' : '' }}">
     <table class="admin-table--six-grid media-workspace__table gallery-workspace__table">
         <colgroup>
@@ -10,11 +9,14 @@
                 <col class="admin-table__col-half-unit gallery-workspace__col-media">
             @endif
             <col class="gallery-workspace__col-artwork">
-            <col class="gallery-workspace__col-year admin-table__yield--minimal">
-            <col class="gallery-workspace__col-dimensions admin-table__yield--narrow">
-            <col class="gallery-workspace__col-material admin-table__yield--compact">
+            @if ($viewMode === 'list')
+                <col class="gallery-workspace__col-details admin-table__yield--compact">
+            @else
+                <col class="gallery-workspace__col-date admin-table__yield--minimal">
+                <col class="gallery-workspace__col-dimensions admin-table__yield--narrow">
+                <col class="gallery-workspace__col-material admin-table__yield--compact">
+            @endif
             <col class="gallery-workspace__col-analytics gallery-workspace__analytics-column">
-            <col class="gallery-workspace__col-status">
             <col class="gallery-workspace__col-actions">
             <col class="admin-table__selection-col">
         </colgroup>
@@ -25,11 +27,14 @@
                     <th scope="col" class="gallery-workspace__media-head">{{ __('Media') }}</th>
                 @endif
                 <th scope="col">{{ __('Artwork') }}</th>
-                <th scope="col" class="admin-table__yield--minimal">{{ __('Year') }}</th>
-                <th scope="col" class="admin-table__yield--narrow">{{ __('Dimensions') }}</th>
-                <th scope="col" class="admin-table__yield--compact">{{ __('Material') }}</th>
+                @if ($viewMode === 'list')
+                    <th scope="col" class="admin-table__yield--compact">{{ __('Details') }}</th>
+                @else
+                    <th scope="col" class="admin-table__yield--minimal">{{ __('Date') }}</th>
+                    <th scope="col" class="admin-table__yield--narrow">{{ __('Dimensions') }}</th>
+                    <th scope="col" class="admin-table__yield--compact">{{ __('Material') }}</th>
+                @endif
                 <th scope="col" class="gallery-workspace__analytics-column">{{ __('30d analytics') }}</th>
-                <th scope="col" class="gallery-workspace__status-head">{{ __('Status') }}</th>
                 <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">{{ __('Actions') }}</span></th>
                 <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                     <input type="checkbox" x-data="{}" wire:click.prevent="toggleVisibleArtworkSelection"
@@ -82,16 +87,29 @@
                     @endif
                     <td class="admin-table__identity admin-table__identity--ellipsis-meta gallery-workspace__table-identity">
                         <x-admin.artwork-title-editor :artwork="$artwork" />
+                        @if ($viewMode === 'list' && $artwork['date'])
+                            <small class="gallery-workspace__table-date">{{ $artwork['date'] }}</small>
+                        @endif
                         <small class="gallery-workspace__folded-meta">
-                            <span class="gallery-workspace__folded-state">{{ $artwork['state_label'] }}</span>
-                            @if ($artwork['year'])<span class="gallery-workspace__folded-year">{{ $artwork['year'] }}</span>@endif
-                            @if ($artwork['dimensions'])<span class="gallery-workspace__folded-dimensions">{{ $artwork['dimensions'] }}</span>@endif
-                            @if ($artwork['medium'])<span class="gallery-workspace__folded-material">{{ $artwork['medium'] }}</span>@endif
+                            @if ($viewMode === 'list' && ($artwork['dimensions'] || $artwork['medium']))
+                                <span class="gallery-workspace__folded-details">{{ implode(', ', array_filter([$artwork['dimensions'], $artwork['medium']])) }}</span>
+                            @elseif ($viewMode === 'dense')
+                                @if ($artwork['date'])<span class="gallery-workspace__folded-date">{{ $artwork['date'] }}</span>@endif
+                                @if ($artwork['dimensions'])<span class="gallery-workspace__folded-dimensions">{{ $artwork['dimensions'] }}</span>@endif
+                                @if ($artwork['medium'])<span class="gallery-workspace__folded-material">{{ $artwork['medium'] }}</span>@endif
+                            @endif
                         </small>
                     </td>
-                    <td class="gallery-workspace__table-year admin-table__yield--minimal">{{ $artwork['year'] ?: '—' }}</td>
-                    <td class="gallery-workspace__table-dimensions admin-table__yield--narrow" title="{{ $artwork['dimensions'] }}">{{ $artwork['dimensions'] ?: '—' }}</td>
-                    <td class="gallery-workspace__table-material admin-table__yield--compact" title="{{ $artwork['medium'] }}">{{ $artwork['medium'] ?: '—' }}</td>
+                    @if ($viewMode === 'list')
+                        <td class="gallery-workspace__table-details admin-table__yield--compact" title="{{ implode(', ', array_filter([$artwork['dimensions'], $artwork['medium']])) }}">
+                            <span>{{ $artwork['dimensions'] ?: '—' }}</span>
+                            <small>{{ $artwork['medium'] ?: '—' }}</small>
+                        </td>
+                    @else
+                        <td class="gallery-workspace__table-date-cell admin-table__yield--minimal">{{ $artwork['date'] ?: '—' }}</td>
+                        <td class="gallery-workspace__table-dimensions admin-table__yield--narrow" title="{{ $artwork['dimensions'] }}">{{ $artwork['dimensions'] ?: '—' }}</td>
+                        <td class="gallery-workspace__table-material admin-table__yield--compact" title="{{ $artwork['medium'] }}">{{ $artwork['medium'] ?: '—' }}</td>
+                    @endif
                     <td class="gallery-workspace__table-analytics gallery-workspace__analytics-column" title="{{ $analyticsFull }}">
                         <span>{{ $analyticsTop }}</span>
                         @if ($viewMode === 'list' && $analyticsAvailable)
@@ -100,11 +118,8 @@
                             <span class="gallery-workspace__analytics-dense-suffix">, {{ $analyticsBottom }}</span>
                         @endif
                     </td>
-                    <td class="gallery-workspace__table-status">
-                        <span class="media-workspace__state {{ $artwork['state'] === 'published' ? 'is-available' : '' }}">{{ $artwork['state_label'] }}</span>
-                    </td>
                     <td class="media-workspace__actions admin-table__actions">
-                        <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--seven-artwork">
+                        <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--seven-artwork {{ $viewMode === 'dense' ? 'admin-row-actions--seven-artwork--dense' : '' }}">
                             @if ($artwork['public_url'])
                                 <x-admin.row-action action="open-public" label="Public" :href="$artwork['public_url']"
                                     target="_blank" rel="noopener" title="View public artwork" />

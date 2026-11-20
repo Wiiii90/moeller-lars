@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Analytics\ArtistReportingService;
+use App\Domain\Artwork\ArtworkDate;
 use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\MediaPreviewVariant;
@@ -75,6 +76,7 @@ trait GalleryWorkspaceDataProjection
                 'readiness_label' => $this->readinessLabel($artwork, $galleryPublished, $primaries->count(), $primaryAsset, $primary),
                 'is_ready' => $this->isReadyToPublish($artwork, $galleryPublished, $primaries->count(), $primaryAsset, $primary),
                 'year' => $artwork->getAttribute('year'),
+                'date' => ArtworkDate::display($artwork),
                 'medium' => $artwork->getAttribute('medium'),
                 'dimensions' => $artwork->getAttribute('dimensions'),
                 'primary_kind' => $kind,
@@ -154,6 +156,7 @@ trait GalleryWorkspaceDataProjection
                     $artwork['title'] ?? null,
                     $artwork['medium'] ?? null,
                     $artwork['year'] ?? null,
+                    $artwork['date'] ?? null,
                     $artwork['dimensions'] ?? null,
                 ], static fn (mixed $value): bool => $value !== null && $value !== '')));
 

@@ -403,7 +403,7 @@
         minmax(var(--admin-row-action-slot-delete-width), max-content);
     --admin-row-actions-gap: .1875rem;
 }
-@container admin-table (max-width: 86rem) {
+@container admin-table (max-width: 76rem) {
     .admin-row-actions--seven-artwork {
         --admin-row-actions-width: var(--admin-row-actions-seven-artwork-compact-width);
         --admin-row-actions-columns: repeat(7, 1.35rem);
@@ -419,6 +419,24 @@
     .admin-row-actions--seven-artwork .admin-action__label {
         display: none !important;
     }
+}
+
+/* Dense is a named compact variant of the same seven semantic actions.
+ * List retains the normal labeled rail until its actual width pressure. */
+.admin-row-actions--seven-artwork--dense {
+    --admin-row-actions-width: var(--admin-row-actions-seven-artwork-compact-width);
+    --admin-row-actions-columns: repeat(7, 1.35rem);
+    --admin-row-actions-gap: .3rem;
+}
+.admin-row-actions--seven-artwork--dense .admin-action {
+    width: 1.35rem !important;
+    min-width: 1.35rem !important;
+    gap: 0 !important;
+    padding-inline: 0 !important;
+    justify-content: center !important;
+}
+.admin-row-actions--seven-artwork--dense .admin-action__label {
+    display: none !important;
 }
 
 @container admin-table (max-width: 32rem) {

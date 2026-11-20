@@ -611,9 +611,8 @@
     mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 1rem), transparent);
 }
 
-/* Gallery List and Dense use the same ranked Admin table contract as
- * Exhibitions, and the same media/row primitives as Storage. Only the sizes of
- * real Artwork data columns belong here; nothing owns a second table engine. */
+/* Gallery List and Dense consume the ranked Admin table and shared action rail.
+ * The two views differ only in data density and the genuine columns they need. */
 .gallery-workspace__table-wrap {
     --admin-data-header-padding: .65rem .5rem;
     --admin-data-cell-padding: .58rem .5rem;
@@ -626,13 +625,16 @@
     table-layout: fixed;
     --admin-row-actions-width: var(--admin-row-actions-seven-artwork-width);
 }
+.gallery-workspace__table-wrap.is-dense .gallery-workspace__table {
+    --admin-row-actions-width: var(--admin-row-actions-seven-artwork-compact-width);
+}
 .gallery-workspace__table col.gallery-workspace__col-media { width: 4.75rem; }
 .gallery-workspace__table col.gallery-workspace__col-artwork { width: auto; }
-.gallery-workspace__table col.gallery-workspace__col-year { width: 4.25rem; }
+.gallery-workspace__table col.gallery-workspace__col-details { width: 11.5rem; }
+.gallery-workspace__table col.gallery-workspace__col-date { width: 7.5rem; }
 .gallery-workspace__table col.gallery-workspace__col-dimensions { width: 8rem; }
 .gallery-workspace__table col.gallery-workspace__col-material { width: 9.5rem; }
 .gallery-workspace__table col.gallery-workspace__col-analytics { width: 13rem; }
-.gallery-workspace__table col.gallery-workspace__col-status { width: 6.75rem; }
 .gallery-workspace__table col.gallery-workspace__col-actions { width: var(--admin-row-actions-width); }
 .gallery-workspace__table col.admin-table__selection-col { width: var(--admin-table-selection-width); }
 
@@ -660,39 +662,46 @@
 .gallery-workspace__table .gallery-workspace__title-input {
     min-height: 1.25rem;
 }
-.gallery-workspace__table :is(.gallery-workspace__table-dimensions, .gallery-workspace__table-material) {
+.gallery-workspace__table .gallery-workspace__table-date {
+    display: block;
+    margin-top: .18rem;
+    overflow: hidden;
+    font-size: var(--admin-font-size-table-meta);
+    color: var(--admin-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.gallery-workspace__table :is(
+    .gallery-workspace__table-date-cell,
+    .gallery-workspace__table-dimensions,
+    .gallery-workspace__table-material
+) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.gallery-workspace__table .gallery-workspace__table-status {
-    overflow: hidden;
-    white-space: nowrap;
-}
+.gallery-workspace__table .gallery-workspace__table-details,
 .gallery-workspace__table .gallery-workspace__table-analytics {
     overflow: hidden;
     font-size: var(--admin-font-size-table-meta);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.gallery-workspace__table .gallery-workspace__table-analytics > span,
-.gallery-workspace__table .gallery-workspace__table-analytics > small {
+.gallery-workspace__table :is(.gallery-workspace__table-details, .gallery-workspace__table-analytics) > :is(span, small) {
     display: block;
     overflow: hidden;
     max-width: 100%;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.gallery-workspace__table .gallery-workspace__table-analytics > small {
+.gallery-workspace__table :is(.gallery-workspace__table-details, .gallery-workspace__table-analytics) > small {
     margin-top: .18rem;
     font-size: inherit;
 }
 .gallery-workspace__table-wrap.is-dense .gallery-workspace__table td {
     padding-block: .38rem;
 }
-.gallery-workspace__table-wrap.is-dense .gallery-workspace__table .gallery-workspace__table-analytics > span {
-    display: inline;
-}
+.gallery-workspace__table-wrap.is-dense .gallery-workspace__table .gallery-workspace__table-analytics > span,
 .gallery-workspace__table-wrap.is-dense .gallery-workspace__table .gallery-workspace__table-analytics .gallery-workspace__analytics-dense-suffix {
     display: inline;
 }
@@ -707,24 +716,23 @@
     display: none;
 }
 
-/* The central seven-action variant shrinks at the same table pressure. */
+/* Labels stay visible in List until the table genuinely needs compact actions.
+ * Yield optional analytics first to keep the Artwork identity column readable. */
 @container admin-table (max-width: 86rem) {
-    .gallery-workspace__table {
-        --admin-row-actions-width: var(--admin-row-actions-seven-artwork-compact-width);
-    }
-}
-/* Analytics is the first yield in Dense and the last-priority supporting
- * column in List. Date, dimensions and material retain their own columns. */
-@container admin-table (max-width: 80rem) {
     .gallery-workspace__table .gallery-workspace__analytics-column {
         display: none;
     }
 }
+@container admin-table (max-width: 76rem) {
+    .gallery-workspace__table {
+        --admin-row-actions-width: var(--admin-row-actions-seven-artwork-compact-width);
+    }
+}
 @container admin-table (max-width: 64rem) {
-    .gallery-workspace__table .gallery-workspace__folded-meta:has(.gallery-workspace__folded-material) {
+    .gallery-workspace__table .gallery-workspace__folded-meta:has(:is(.gallery-workspace__folded-details, .gallery-workspace__folded-material)) {
         display: block;
     }
-    .gallery-workspace__folded-meta > .gallery-workspace__folded-material {
+    .gallery-workspace__folded-meta > :is(.gallery-workspace__folded-details, .gallery-workspace__folded-material) {
         display: inline;
     }
 }
@@ -739,25 +747,23 @@
         content: ", ";
     }
 }
+@container admin-table (max-width: 38rem) {
+    .gallery-workspace__table .gallery-workspace__folded-meta:has(.gallery-workspace__folded-date) {
+        display: block;
+    }
+    .gallery-workspace__folded-meta > .gallery-workspace__folded-date {
+        display: inline;
+    }
+    .gallery-workspace__folded-date:has(~ span)::after {
+        content: ", ";
+    }
+    .gallery-workspace__table col.gallery-workspace__col-media {
+        width: 4rem;
+    }
+}
 @container admin-table (max-width: 32rem) {
     .gallery-workspace__table {
         --admin-row-actions-width: var(--admin-row-actions-seven-artwork-minimal-width);
-    }
-    .gallery-workspace__table :is(
-        .gallery-workspace__col-status,
-        .gallery-workspace__status-head,
-        .gallery-workspace__table-status
-    ) {
-        display: none;
-    }
-    .gallery-workspace__table .gallery-workspace__folded-meta:has(.gallery-workspace__folded-state) {
-        display: block;
-    }
-    .gallery-workspace__folded-meta > .gallery-workspace__folded-state {
-        display: inline;
-    }
-    .gallery-workspace__folded-state:has(~ span)::after {
-        content: ", ";
     }
 }
 @container admin-table (max-width: 26rem) {
@@ -767,19 +773,5 @@
         .gallery-workspace__media-cell
     ) {
         display: none;
-    }
-}
-@container admin-table (max-width: 38rem) {
-    .gallery-workspace__table .gallery-workspace__folded-meta:has(.gallery-workspace__folded-year) {
-        display: block;
-    }
-    .gallery-workspace__folded-meta > .gallery-workspace__folded-year {
-        display: inline;
-    }
-    .gallery-workspace__folded-year:has(~ span)::after {
-        content: ", ";
-    }
-    .gallery-workspace__table col.gallery-workspace__col-media {
-        width: 4rem;
     }
 }
