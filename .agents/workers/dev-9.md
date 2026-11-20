@@ -2,17 +2,17 @@
 
 **Branch:** `dev`
 **Lease:** 21
-**State:** Active — hover underline visibility repaired; application-browser acceptance pending
-**Claimed work:** Public cyclic inline navigation including timed hover, child return, and direct presentation. General/Menu and Pages remain with their owners.
+**State:** Active — accepted Public hover navigation consolidated in canonical owner
+**Claimed work:** Public cyclic inline navigation and child Back controls. General/Menu and Pages ownership remains with assigned workers.
 
 ## Current state
-- User confirmed that hovering `Prints` opens its submenu after about two seconds but the countdown line does not visibly shrink.
-- Root cause: a `prefers-reduced-motion: reduce` CSS override imposed `steps(1,end)` on the functional underline animation. At one second in real Chromium, the CSS transform stayed at `scaleX(1)` under reduced motion, whereas ordinary mode reached about `scaleX(.5)`. The completion event was unaffected, explaining why the submenu opened without visible shrink.
-- Removed the defective override from canonical `resources/css/public-presentation.css` at baseline `8af2a7b10a4f909da9b261162b54a11b9ffd4ddd`. Both motion settings now use the same two-second linear, symmetric underline collapse and its existing completion event. No timers, alternate renderers or navigation lifecycle changes were introduced.
-- Controlled Chromium reproduction verified the computed midway transform with and without the override for both motion settings. This is component-level evidence; the full application has not been browser-tested in this worker session.
-- Previous icon-only child Back control, immediate click/keyboard access, pointer exit cancellation and cyclic whole-item navigation are unchanged.
-- No test source or general docs edited.
+- The artist-site navigation's two-second hover-to-open behavior and symmetric underline shrink were accepted by the user after the reduced-motion timing override was removed.
+- Cleanup baseline: `3f1fd6aa3b33b6039fb7695c15724fddbf96f39a`. The Public navigation already has only one countdown: a CSS animation attached to the existing underline, started by an actual mouse `pointerenter`, canceled on `pointerleave`, and completed through its bubbled `animationend` event. There is no JavaScript timer, duplicate renderer or alternate menu opener.
+- Consolidated open/close visibility, `aria-expanded` and `data-submenu-open` state in one `setEntryExpanded` transition. Entering or leaving any submenu now consistently clears a pending hover class in that same owner, instead of separately clearing it inside the animation listener. Removed unused `wasCycling` and outdated explanatory comments.
+- The accepted timing, CSS animation, link/button activation, cyclic whole-item logic, no-animation level switch, child return, Escape and native arrow-key scroll behavior remain unchanged.
+- Only `resources/js/public-navigation.js` was refactored; no CSS, public markup, automated tests or general docs were edited.
+- Source-level verification: checked against current branch, reviewed that the three visibility/ARIA/data assignments have one owner each and all pointer/animation handlers remain. Runtime browser acceptance after the refactor is not yet verified.
 
 ## Next
-- Review the current built public preview in a browser using `Prints`, with normal/reduced Windows motion settings, verifying smooth shrinking over exactly two seconds, early leave cancellation, link/click behavior and expected submenu opening.
-- If an application build still behaves differently, inspect its actually loaded stylesheet revision and the computed pseudo-element `animation-timing-function` and `transform` instead of applying further speculative patches.
+- Browser-review on the actual current-code local preview: mouse hover 2 s, shrink animation, abort/re-hover, click, mouse versus touch, main/child switch and Back/Escape, plus page-swap navigation.
+- Testing owner can cover the accepted behavior on `testing` without editing tests from this Dev worker.

@@ -145,7 +145,6 @@ function initializeNavigationWindow(surface, restoredWindows) {
         // change. Mark the measured width now, or that callback would re-fit
         // and shift an exactly restored cyclic window immediately after load.
         observedWidth = rail.getBoundingClientRect().width;
-        const wasCycling = cycling;
         cycling = needsNavigationOverflow(widths, availableWidth);
 
         surface.classList.toggle('is-overflowing', cycling);
@@ -238,13 +237,21 @@ function initializeNavigationLevels(container, mainSurface, main, restoredWindow
     windows.push(...entries.map((entry) => entry.window));
 
     let activeEntry = entries.find(({ controls }) => !controls.submenu.hidden) ?? null;
+
+    // Keep visibility, accessibility and hover state in one transition owner.
+    const setEntryExpanded = (entry, expanded) => {
+        const { parentLink, submenu } = entry.controls;
+        parentLink.classList.remove('is-hover-counting');
+        submenu.hidden = !expanded;
+        parentLink.setAttribute('aria-expanded', String(expanded));
+        entry.item.dataset.submenuOpen = String(expanded);
+    };
+
     const showMain = (restoreFocus = false) => {
         if (activeEntry === null) return;
         const previous = activeEntry;
         activeEntry = null;
-        previous.controls.submenu.hidden = true;
-        previous.controls.parentLink.setAttribute('aria-expanded', 'false');
-        previous.item.dataset.submenuOpen = 'false';
+        setEntryExpanded(previous, false);
         mainSurface.hidden = false;
         main.refresh();
 
@@ -260,15 +267,11 @@ function initializeNavigationLevels(container, mainSurface, main, restoredWindow
 
     const showChildren = (entry, focusBack = false) => {
         if (activeEntry !== null && activeEntry !== entry) {
-            activeEntry.controls.submenu.hidden = true;
-            activeEntry.controls.parentLink.setAttribute('aria-expanded', 'false');
-            activeEntry.item.dataset.submenuOpen = 'false';
+            setEntryExpanded(activeEntry, false);
         }
         activeEntry = entry;
         mainSurface.hidden = true;
-        entry.controls.submenu.hidden = false;
-        entry.controls.parentLink.setAttribute('aria-expanded', 'true');
-        entry.item.dataset.submenuOpen = 'true';
+        setEntryExpanded(entry, true);
         entry.window.refresh();
         if (focusBack) entry.controls.back.focus({ preventScroll: true });
     };
@@ -282,12 +285,11 @@ function initializeNavigationLevels(container, mainSurface, main, restoredWindow
             event.preventDefault();
             showChildren(entry, true);
         });
-        // Enter opens a parent link; Enter/Space activate a parent button.
-        // ArrowDown remains native page scrolling, not a submenu shortcut.
+        // Native link/button activation also covers the keyboard; ArrowDown
+        // keeps its default page-scroll behavior.
 
-        // The existing underline's CSS animation is the single countdown
-        // clock. Its completion opens the same child level as an immediate
-        // click; leaving the parent cancels the animation automatically.
+        // The underline's two-second CSS animation owns hover completion.
+        // Pointer exit cancels it; clicks use the same child-level transition.
         parentLink.addEventListener('pointerenter', (event) => {
             // Query the actual pointing device, not the system's preferred
             // input device (which may be touch even while a mouse is used).
@@ -303,9 +305,8 @@ function initializeNavigationLevels(container, mainSurface, main, restoredWindow
                 || !parentLink.classList.contains('is-hover-counting')
                 || mainSurface.hidden) return;
 
-            parentLink.classList.remove('is-hover-counting');
-            // A pointer-only hover must not steal focus. If the parent is
-            // keyboard-focused, move focus into the newly exposed level.
+            // Pointer hover preserves focus; only a keyboard-focused parent
+            // transfers it into the newly opened child level.
             showChildren(entry, document.activeElement === parentLink);
         });
 
