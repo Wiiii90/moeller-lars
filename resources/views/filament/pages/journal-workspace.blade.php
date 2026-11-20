@@ -103,7 +103,7 @@
                                 <span class="admin-action__label">{{ __('Settings') }}</span>
                             </button>
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('{{ $isBlog ? 'addPost' : 'addExhibition' }}')" aria-label="Add {{ $entryLabelSingular }}">
-                                <x-filament::icon :icon="$isBlog ? \App\Filament\Support\AdminIcon::BlogPost->mini() : \App\Filament\Support\AdminIcon::Exhibition->mini()" class="admin-action__icon" />
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">Add {{ $entryLabelSingular }}</span>
                             </button>
                             @if ($journalPreviewUrl)

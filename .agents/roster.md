@@ -11,7 +11,7 @@
 
 | Dev Worker 6 | 16 | Active — targeted source corrections committed; local Preview/browser acceptance outstanding | Home Hero: Dummy Galleries, candidate ranking/selection, Stage/Settings, public resolver, shared Create dialog; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 18 | Shared dropdown CSS tokens consolidated across native/Filament/pager; browser acceptance pending | General Appearance, shared Admin Selects and Gallery/General Preview | [dev-7.md](workers/dev-7.md) |
-| Dev Worker 8 | 15 | Active — shared Create dialog Plus entry, plain Check Submit and rightmost commit action source-integrated; browser acceptance pending | Central Admin create/edit dialog semantics, native Filament action rail, date controls and media picker; no deployment | [dev-8.md](workers/dev-8.md) |
+| Dev Worker 8 | 15 | Active — Add actions across search/toolbars and shared Add-row now use canonical plain Plus; browser review pending | Central Admin Create dialog controls, shared icon grammar and media picker; no deployment | [dev-8.md](workers/dev-8.md) |
 
 
 | Dev Worker 9 | 28 | Native scroll-owned zoom and transient middle-button/Space/touch panning source-integrated; browser acceptance pending | Shared Admin Live Preview controls and navigation for General/Gallery; preserve Dev Worker 7's device picker and responsive styling | [dev-9.md](workers/dev-9.md) |

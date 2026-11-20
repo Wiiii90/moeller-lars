@@ -34,7 +34,7 @@
                             <span class="admin-action__label">{{ __('Settings') }}</span>
                         </button>
                         <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addComponent')" aria-label="Add component">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::CustomPage->mini()" class="admin-action__icon" />
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
                             <span class="admin-action__label">{{ __('Add component') }}</span>
                         </button>
                         @if ($previewUrl)

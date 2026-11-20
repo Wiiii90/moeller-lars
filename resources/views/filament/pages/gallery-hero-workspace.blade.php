@@ -260,7 +260,7 @@
                             @if ($heroGroupSource !== 'automatic')
                                 <button class="admin-action admin-action--with-icon" type="button"
                                     wire:click="mountAction('addDummyGallery')" title="Add Dummy Gallery">
-                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Gallery->mini()" class="admin-action__icon" />
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">{{ __('Add Dummy Gallery') }}</span>
                                 </button>
                             @endif

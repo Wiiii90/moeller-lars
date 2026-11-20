@@ -258,7 +258,7 @@
                                 <span class="admin-action__label">{{ __('Settings') }}</span>
                             </button>
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addArtwork')" aria-label="Add artwork">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Artwork->mini()" class="admin-action__icon" />
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">{{ __('Add artwork') }}</span>
                             </button>
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('materialPresets')" aria-label="Materials">
