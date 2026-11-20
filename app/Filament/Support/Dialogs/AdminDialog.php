@@ -120,9 +120,7 @@ final class AdminDialog
         string $submitLabel = 'Confirm',
         bool $danger = false,
         bool|Closure $condition = true,
-        ?AdminIcon $icon = null,
     ): Action {
-        $submitIcon = $icon ?? AdminIcon::DialogSubmit;
         $submitClass = 'admin-dialog__header-action '.($danger ? 'is-danger' : 'is-primary');
 
         return self::base($action, AdminDialogType::Confirm, AdminDialogSize::Small)
@@ -133,7 +131,7 @@ final class AdminDialog
             ->modalDescription($description)
             ->modalSubmitAction(fn (Action $action): Action => $action
                 ->label($submitLabel)
-                ->icon($submitIcon->value)
+                ->icon(AdminIcon::DialogSubmit->value)
                 ->iconButton()
                 ->color($danger ? 'danger' : 'gray')
                 ->extraAttributes(['class' => $submitClass]))

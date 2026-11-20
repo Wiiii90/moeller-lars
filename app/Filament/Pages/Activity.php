@@ -511,7 +511,6 @@ final class Activity extends Page
             heading: 'Reset changes?',
             description: 'The working state will be restored exactly to the current LIVE version. Activity history is preserved.',
             submitLabel: 'Reset',
-            icon: AdminIcon::Undo,
         );
     }
 
@@ -526,7 +525,6 @@ final class Activity extends Page
             heading: 'Undo changes?',
             description: 'Newer selected changes are undone first. Changes without a safe Undo receipt are skipped. Activity history remains available.',
             submitLabel: 'Undo',
-            icon: AdminIcon::Undo,
         );
     }
 
@@ -541,7 +539,6 @@ final class Activity extends Page
             heading: 'Restore version?',
             description: 'The selected version will replace all current staged work. The LIVE site will not change until you commit.',
             submitLabel: 'Restore',
-            icon: AdminIcon::Undo,
         );
     }
 
@@ -556,7 +553,6 @@ final class Activity extends Page
             heading: 'Revert commit?',
             description: 'Its parent version will replace all current staged work for review. Nothing is published until you commit.',
             submitLabel: 'Revert',
-            icon: AdminIcon::Undo,
         );
     }
 
@@ -588,7 +584,6 @@ final class Activity extends Page
                     : 'Undo this change? Activity history remains available.';
             },
             submitLabel: 'Undo',
-            icon: AdminIcon::Undo,
         );
     }
 
@@ -610,7 +605,6 @@ final class Activity extends Page
             heading: 'Restore version?',
             description: 'This replaces all current staged work with the selected version. The LIVE site will not change until you commit.',
             submitLabel: 'Restore',
-            icon: AdminIcon::Undo,
         );
     }
 
@@ -632,7 +626,6 @@ final class Activity extends Page
             heading: 'Revert commit?',
             description: 'Its parent version will replace all current staged work for review. Nothing is published until you commit.',
             submitLabel: 'Revert',
-            icon: AdminIcon::Undo,
         );
     }
 
@@ -1118,7 +1111,6 @@ final class Activity extends Page
                 description: (string) $event['undo']['confirmation'],
                 submitLabel: 'Undo',
                 danger: false,
-                icon: AdminIcon::Undo,
             );
         }
 
