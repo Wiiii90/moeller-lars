@@ -616,12 +616,21 @@ final class DashboardFeed
     /** @return array<string, mixed> */
     private function projectNotification(AdminNotification $notification): array
     {
-        $audit = $notification->getRelationValue('auditEvent');
+        // The individual viewer resolves entries without pagination eager loads.
+        // Reuse the same Audit relationship in both paths.
+        $audit = $notification->auditEvent;
         $action = $audit?->getAttribute('action');
         $auditMetadata = $audit?->getAttribute('metadata');
         $auditMetadata = is_array($auditMetadata) ? $auditMetadata : [];
         $summary = is_array($auditMetadata['change_summary'] ?? null) ? $auditMetadata['change_summary'] : null;
         $target = is_string($auditMetadata['target_label'] ?? null) ? $auditMetadata['target_label'] : '';
+        $changes = is_array($summary['items'] ?? null)
+            ? array_values(array_filter($summary['items'], static fn (mixed $item): bool =>
+                is_array($item) && is_string($item['label'] ?? null)
+                && is_string($item['before'] ?? null) && is_string($item['after'] ?? null),
+            ))
+            : [];
+        $changeTotal = max(count($changes), (int) ($summary['count'] ?? 0));
         $createdAt = $notification->getAttribute('created_at');
         $receivedAt = $createdAt instanceof CarbonInterface ? $createdAt : now();
         $body = trim((string) ($notification->getAttribute('body') ?? ''));
@@ -638,7 +647,12 @@ final class DashboardFeed
             }
         }
         $title = __($storedTitle);
+        $activityDetails = $changes !== [] && is_string($action) && AdminActionCatalog::has($action)
+            ? app(AdminActivityPresentation::class)->present($action, $target, $summary)['details']
+            : null;
+        $message = $activityDetails !== null && trim($body) === trim($activityDetails) ? '' : $body;
         $body = $body !== '' ? __($body) : '';
+        $message = $message !== '' ? __($message) : '';
         $groupKey = $status === 'success' && is_string($action)
             ? AdminActivityPresentation::editGroupKey(
                 $action,
@@ -665,6 +679,10 @@ final class DashboardFeed
             'notification_type' => (string) $notification->getAttribute('type'),
             'edit_group_key' => $groupKey,
             'edit_group_title' => $groupTitle,
+            'change_target' => $target,
+            'change_items' => $changes,
+            'change_count' => $changeTotal,
+            'message' => $message,
             'entity_type' => $notification->getAttribute('entity_type'),
             'entity_id' => $notification->getAttribute('entity_id'),
             'audit_event_id' => $notification->getAttribute('audit_event_id'),

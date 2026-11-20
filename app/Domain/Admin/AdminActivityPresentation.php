@@ -78,12 +78,7 @@ final class AdminActivityPresentation
         $count = is_array($summary) ? max(0, (int) ($summary['count'] ?? 0)) : 0;
         if ($count === 1 && isset($items[0])) {
             $field = trim((string) ($items[0]['label'] ?? 'Setting'));
-            $after = trim((string) ($items[0]['after'] ?? ''));
-            if ($after !== '' && mb_strlen($after) <= 28 && ! str_contains($after, "\n")) {
-                return $subject.': '.$field.' → '.$after;
-            }
-
-            return $subject.': '.$field.' changed';
+            return $subject.': '.$field.' updated';
         }
 
         if ($count > 1 && isset($items[0])) {
