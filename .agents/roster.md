@@ -18,6 +18,6 @@
 
 | Dev Worker 10 | 26 | Active — rights-processing Validation readiness and completion | Media rights preparation/delivery pipeline, queue-worker integration requirements, current Validation activation evidence and safe rollout handoff; no deployments or artist-data changes without explicit approval | [dev-10.md](workers/dev-10.md) |
 
-| Dev Worker 11 | 27 | Active — public-site polish registered; awaiting first concrete issue | Bounded public-page layout, rendering and interactions consistent with CMS settings/publication; coordinate with existing feature owners | [dev-11.md](workers/dev-11.md) |
+| Dev Worker 11 | 27 | Active — initial Public keyboard issue user-accepted; ready for further issues | Bounded public-page layout, rendering and interactions consistent with CMS settings/publication; coordinate with existing feature owners | [dev-11.md](workers/dev-11.md) |
 
 Only activated Dev workers receive a row and their own `.agents/workers/dev-N.md` record. This roster belongs exclusively to `dev` and must never receive Docs, Testing or Refactor worker entries. Follow the [shared worker protocol](README.md) for atomic registration, takeover and lease updates.

@@ -1,6 +1,6 @@
 # Dev Worker 11 — public-site presentation and CMS-consistent small fixes
 
-**Working branch:** `dev` | **Lease:** 27 | **State:** Active — Public keyboard correction source-implemented; browser acceptance pending.
+**Working branch:** `dev` | **Lease:** 27 | **State:** Active — initial Public keyboard issue user-accepted; broader accessibility review outstanding.
 **User assignment:** Handle a continuing sequence of small, user-reported issues on the public-facing pages of the artist homepage. Resolve each coherently through the existing content management system (CMS) architecture rather than making isolated presentation patches. No specific defect was assigned in the activation request.
 
 ## Scope and owner boundaries
@@ -15,13 +15,13 @@
 
 ## Public keyboard issue (2026-11-20)
 - User reports text-caret insertion when clicking ordinary public copy and an apparently endless arrow-key navigation loop; also requests a broad later accessibility review, including Admin.
-- The public layout contains normal display content, not an editing root. A system/browser caret-browsing mode toggled by F7 is a strong possible explanation; user confirmation is needed before treating the caret as application code. No global caret suppression or user-select hacks added.
+- The public layout contains normal display content, not an editing root. User confirmed the blinking text cursor was browser caret browsing (F7), not an application defect. No global caret suppression or user-select hacks added.
 - `resources/js/public-navigation.js` intercepted all four arrow keys on navigation links, shifted its cyclic window at the edge and moved focus repeatedly. It also intercepted ArrowDown on submenu parents. This conflicts with ordinary document scrolling and native landmark navigation.
 - Removed only these keydown overrides. Native Tab/Shift+Tab traverse the visible links and previous/next buttons; Enter/Space invoke their native click behavior; Escape and the dedicated Back control still exit subnavigation. Cyclic window layout/controls and Dev Worker 9's hover countdown remain unchanged.
 - Bounded source review: artwork viewer handles arrows only inside its open dialog; Admin dialog geometry uses Alt+arrow on its focused header or focused resize grip, not a global navigation override. Broad end-to-end Admin keyboard acceptance remains unverified and should not be treated as completed.
-- No source tests edited, no CI, no deploy, no local browser run. Need actual browser verification for main and submenu, long-page arrow scrolling, Tab exits and focus stability following cyclic button activation.
+- User subsequently reported no remaining problem with these issues in their browser and accepted the focused correction. This is user-observed product feedback, not a dedicated end-to-end keyboard accessibility test. No source tests edited, no CI, no deploy, no independent local browser run. Comprehensive keyboard, assistive-technology, and Admin accessibility checks remain open.
 
 ## Next actions
-1. Obtain real user/browser confirmation of the F7 caret-browsing setting and the navigation key behavior on current built Preview.
+1. Initial caret-browsing issue and Public navigation loop are user-accepted; resume with the next reported Public-page defect.
 2. If the keyboard correction is rejected or new issues arise, isolate the exact public interaction and repair its canonical owner without changing another worker's current feature.
 3. Coordinate with Admin owners on a separately scoped keyboard accessibility pass; do not modify their editor/dialog shortcuts through this Public change.
