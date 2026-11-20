@@ -172,7 +172,7 @@ final class AccountMenuAction
                             ->in(array_keys(RegionalFormats::NUMBER_OPTIONS)),
                         Select::make('admin_time_format')
                             ->label(__('Time'))
-                            ->options(RegionalFormats::TIME_OPTIONS)
+                            ->options(fn (): array => array_map(static fn (string $value): string => __($value), RegionalFormats::TIME_OPTIONS))
                             ->required()
                             ->in(array_keys(RegionalFormats::TIME_OPTIONS)),
                         Select::make('admin_time_zone')

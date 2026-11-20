@@ -549,5 +549,9 @@
     "24-hour (23:45)": "24 Stunden (23:45)",
     "12-hour (11:45 PM)": "12 Stunden (11:45 PM)",
     "Public time format": "Öffentliches Uhrzeitformat",
-    "Public time zone": "Öffentliche Zeitzone"
+    "Public time zone": "Öffentliche Zeitzone",
+    "About public time formats": "Über öffentliche Uhrzeitformate",
+    "About public time zones": "Über öffentliche Zeitzonen",
+    "Controls 12-hour or 24-hour time display on the public website. It does not change event timestamps or administrator preferences.": "Bestimmt die 12- oder 24-Stunden-Anzeige auf der öffentlichen Website. Zeitstempel und Administratorpräferenzen werden nicht verändert.",
+    "Displays public timestamps in the selected named time zone, including automatic daylight-saving changes. Date-only artwork and exhibition values are not shifted.": "Zeigt öffentliche Zeitstempel in der ausgewählten Zeitzone, einschließlich automatischer Sommerzeitumstellung. Reine Datumswerte von Kunstwerken und Ausstellungen werden nicht verschoben."
 }

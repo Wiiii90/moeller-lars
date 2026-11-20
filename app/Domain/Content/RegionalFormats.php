@@ -192,10 +192,19 @@ final class RegionalFormats
     public static function timeZoneOptions(): array
     {
         $options = [self::DEFAULT_TIME_ZONE => 'UTC'];
+        $winter = new DateTimeImmutable('first day of January 12:00 UTC');
+        $summer = new DateTimeImmutable('first day of July 12:00 UTC');
         foreach (DateTimeZone::listIdentifiers(DateTimeZone::ALL) as $zone) {
-            if ($zone !== self::DEFAULT_TIME_ZONE) {
-                $options[$zone] = str_replace('_', ' ', $zone);
+            if ($zone === self::DEFAULT_TIME_ZONE) {
+                continue;
             }
+
+            $zoneInfo = new DateTimeZone($zone);
+            $abbreviations = array_unique([
+                $winter->setTimezone($zoneInfo)->format('T'),
+                $summer->setTimezone($zoneInfo)->format('T'),
+            ]);
+            $options[$zone] = str_replace('_', ' ', $zone).' ('.implode(' / ', $abbreviations).')';
         }
 
         return $options;

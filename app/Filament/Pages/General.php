@@ -658,14 +658,14 @@ final class General extends Page
                             ->live()
                             ->afterStateUpdated(self::persist('number_format')),
                         Select::make('time_format')
-                            ->label(__('Time'))
-                            ->options(RegionalFormats::TIME_OPTIONS)
+                            ->label(self::regionalTimeLabel())
+                            ->options(fn (): array => array_map(static fn (string $value): string => __($value), RegionalFormats::TIME_OPTIONS))
                             ->native()
                             ->required()
                             ->live()
                             ->afterStateUpdated(self::persist('time_format')),
                         Select::make('time_zone')
-                            ->label(__('Time zone'))
+                            ->label(self::regionalTimeZoneLabel())
                             ->options(RegionalFormats::timeZoneOptions())
                             ->searchable()
                             ->required()
@@ -1454,6 +1454,24 @@ final class General extends Page
             'Numbers',
             'About public number formats',
             'Controls decimal and thousands separators for numerical values formatted on the public website. Stored values and administrator number preferences are unchanged.',
+        );
+    }
+
+    private static function regionalTimeLabel(): HtmlString
+    {
+        return self::helpLabel(
+            'Time',
+            'About public time formats',
+            'Controls 12-hour or 24-hour time display on the public website. It does not change event timestamps or administrator preferences.',
+        );
+    }
+
+    private static function regionalTimeZoneLabel(): HtmlString
+    {
+        return self::helpLabel(
+            'Time zone',
+            'About public time zones',
+            'Displays public timestamps in the selected named time zone, including automatic daylight-saving changes. Date-only artwork and exhibition values are not shifted.',
         );
     }
 

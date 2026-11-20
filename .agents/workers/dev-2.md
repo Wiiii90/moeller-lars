@@ -2,18 +2,16 @@
 
 **Branch:** `dev`
 **Lease:** 24
-**State:** Account/Settings menu and public/Admin regional preferences source-implemented; runtime, migration and browser acceptance pending.
-**Claimed work:** Account security, per-user Admin Settings (language, date, number, time and time zone), matching independent Public formats in General. Shared General Stage, Admin header/dialog infrastructure and feature editors remain owned elsewhere.
+**State:** Source-implemented: independent General/Public and per-user Settings/Admin regional formats; runtime migration and browser acceptance pending.
+**Claimed work:** Top-right Account and Settings actions, their persisted user preferences, shared presentation formatters and Public General regional controls. Shared general Stage, navigation/header/dialog infrastructure and feature-editor ownership stay with their active workers.
 
-## Implemented source scope
-- Top-right menu's standalone Language action replaced by Settings; Account retains name, email, password and app multi-factor authentication management.
-- Settings has separate Language, Dates, Numbers, Time (12/24-hour) and Time zone (named IANA zones). User preferences are stored separately from public General; changing a preference reloads the Admin presentation.
-- Public General now has Date, Number, Time and Time zone controls stored on both editorial/public and committed/public settings. Public date-time conversion is separated from authenticated user preferences, and daylight saving is derived from the named zone.
-- A forward migration adds preferences with defaults matching historical time output (UTC/24-hour) and backfills per-user number formats from the former combined admin region. Existing date preferences remain unchanged.
-- Central Admin date/date-time picker presentation uses the current user preference; downstream number/date consumers are to be reviewed without changing machine-readable values.
-- No unit-system conversion or new tests were implemented.
+## Current scope and decisions
+- The menu's old Language action was replaced by Settings. Language is inside Settings with separate Dates, Numbers, 12/24-hour Time and named Time zone selectors; Account retains name, email, password and the existing multi-factor-authentication management.
+- General's existing public dates and numbers are now joined by public time and named time zone. Public settings remain in separate editorial/committed records; user settings remain on `users`. Named IANA zones and their seasonal abbreviations disambiguate CST/CEST and apply daylight saving automatically to timestamp presentation. Date-only values do not shift.
+- Existing per-user region preserves its date preference. The forward migration copies historical numeric separators into a dedicated user number field; time defaults retain UTC/24-hour legacy output. Publication and data timestamps stay canonical. Future unit/measurement preferences are **out of scope**.
+- Shared Admin date-time picker display and its timezone follow the user; human-facing Dashboard, Analytics, Activity, Gallery, Custom Page and Storage metric counters and Activity timestamp labels now use the user display preferences. Technical numeric values (e.g. SVG opacity and machine storage values) retain invariant formatting.
 
-## Verification and next
-- Source-only changes committed on `dev`; no isolated migration execution, browser review, full suite or deployment has been performed.
-- Review downstream date/time and human-facing number consumers, fix any remaining direct formatting paths in scope, and verify the exact final diff after concurrent `dev` commits.
-- Testing owns migration/behavior tests; browser acceptance must confirm the menu position, settings persistence, time-zone transitions and independent Public/Admin rendering.
+## Evidence and next
+- Source changes committed on `dev`; no local application checkout/runtime, isolated schema migration execution, full testing run, browser screenshot/acceptance, staging deployment, or production change has been performed here. A standalone PHP check confirmed that named time zones supply both CET and CEST, **not** that project tests pass.
+- Review focused final diff and latest `dev` head. Testing owns isolated migration, format, user-isolation, 12/24-hour, daylight-saving and account-security regression coverage. User browser review should verify top-right menu, Account vs Settings, general public vs admin display and persistence/reload.
+- Remaining direct formats in unrelated specialized UI consumers are unverified; coordinate with owning workers rather than rewriting their controllers without review.
