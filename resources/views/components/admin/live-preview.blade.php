@@ -24,7 +24,7 @@
     @endif
     <x-admin.stage-tool-row label="Live preview controls">
         <div class="admin-stage-tool-group admin-live-preview__device-profile" role="group" aria-label="Device preview">
-            <x-filament::dropdown placement="bottom-start">
+            <x-filament::dropdown placement="bottom-start" width="xs" max-height="20rem">
                 <x-slot name="trigger">
                     <button class="admin-action admin-stage-tool-icon" type="button"
                         x-bind:title="'Device: ' + selectedProfileLabel()"
