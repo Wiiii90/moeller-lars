@@ -113,7 +113,7 @@ The persisted `menu_type` is validated by `PublicAppearance::menuType()`. Its so
 
 Navigation is generated from the canonical Site Node tree and persisted order/publication status, not hard-coded page arrays, legacy category assumptions or a separate menu-visibility toggle. Published nodes appear automatically; unpublished nodes remain publicly unavailable. Published children of an unpublished parent are promoted to public root navigation entries. The configured Skip Home routing option remains an explicit exception.
 
-Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. A contextual parent-name return control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level. Its full parent name is retained for accessibility and truncated visually at limited widths. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
+Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. An icon-only Back control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level; the parent name remains in its accessible label but is not printed beside the arrow. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
 
 ### Navigation-only groups and hover
 
@@ -123,11 +123,25 @@ children `Etchings & Lithography` and `Cyanotypes`. Ordinary Gallery parents
 retain their own content routes: no implicit redirect to the first child.
 The unnecessary per-Gallery child landing setting is retired.
 
-Pages → Settings still contains the optional desktop-pointer hover presentation
-(currently off by default, pending design approval). It uses the existing
-child-menu DOM. The shared click/keyboard/touch child navigation remains the
-canonical interaction; no second routing or child selection implementation is
-introduced.
+A real mouse pointer entering a root navigation item with children starts the
+existing underline's **2-second linear countdown**. Its visible line shrinks
+symmetrically from both ends toward the center; the existing child level opens
+when that animation completes. Leaving the item early cancels the countdown,
+and re-entering starts it again. Items without children keep the ordinary
+hover underline. Clicking a parent or activating its native link/button with
+the keyboard opens the same child level immediately; touch interaction does
+not start a hover countdown. The CSS underline animation and its completion
+event form one clock, without a JavaScript timer or alternate submenu
+renderer. The countdown remains visible under reduced-motion settings;
+only the unrelated decorative icon/underline transitions are reduced.
+
+Opening or returning from a child level is immediate, without a level-change
+transition. The shared navigation-level owner updates surface visibility,
+`aria-expanded` and submenu-open state together, cancels pending hover state
+and retains the whole-item cyclic window. Escape and the Back button return to
+the parent rail. Keyboard arrow keys keep their native page-scrolling
+behavior; the navigation uses regular links and buttons rather than an ARIA
+menubar.
 
 ## Public paper, title and surface composition
 
