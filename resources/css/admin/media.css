@@ -799,9 +799,9 @@
     transition: width .4s ease-out;
 }
 
-/* Processing begins after all bytes are transferred. Keep the bar at
- * a truthful 100% transferred while Storage validates and prepares media;
- * never animate fictitious server-side progress. */
+/* The width is always the last confirmed transfer or ingest milestone.
+ * A short transition only interpolates the visual step; it cannot advance
+ * the reported value or simulate server-side processing. */
 
 /* Media-specific delete-dialog content; shared modal geometry/chrome lives in dialog-contract.css. */
 .media-delete-dialog {

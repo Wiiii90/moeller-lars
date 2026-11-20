@@ -97,7 +97,7 @@ final class GalleryWorkspace extends Page
     /** Successfully staged new assets in the active upload batch. */
     public int $directPrimaryBatchAddedCount = 0;
 
-    /** @var list<array{media_asset_id:int,title:string}> */
+    /** @var list<array{media_asset_id:int,title:string,filename:string,form:array<string,mixed>}> */
     public array $pendingBatchArtworkMedia = [];
 
     public string $search = '';

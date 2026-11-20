@@ -144,7 +144,6 @@ trait GalleryWorkspaceDirectUpload
             $this->galleryStagePreview = 'staged';
             $this->galleryStagePreviewArtworkId = null;
         }
-        $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
         $form = is_array($selected['form'] ?? null) ? $selected['form'] : [];
         if ($form === []) {
             $form = [
@@ -420,7 +419,7 @@ trait GalleryWorkspaceDirectUpload
         return MediaTypePolicy::isImage($mime) || MediaTypePolicy::isVideo($mime);
     }
 
-    /** @return array{media_asset_id:int,title:string} */
+    /** @return array{media_asset_id:int,title:string,filename:string,form:array<string,mixed>} */
     private function pendingBatchArtworkRow(MediaAsset $asset): array
     {
         return [

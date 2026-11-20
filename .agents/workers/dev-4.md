@@ -16,6 +16,12 @@
 - **Verification:** Focused source-contract review and JavaScript syntax check only; no Laravel, browser or video upload execution in this connector-only runtime; no test source edits, Continuous Integration or deployment. **Browser acceptance needed:** fast and large uploads in Gallery/Storage, transfer byte detail and truthful milestones, Stage navigation latency before/after picker removal, MP4 and WebM poster preview/public readiness, submitted published deletion with/without Storage checkbox from table/grid/preview, single/multiple batch deletion including shared media and history, Readiness filters and Site Commit public visibility. Actual visual/runtime behavior is not asserted.
 - **Cleanup:** No temporary files, new services, migrations, duplicate media owners or deployment artifacts created. The worker remains registered. The previous historical worker notes remain retained as audit context; this top block is the current handoff.
 
+## Stage and upload cleanup after handoff — 2026-11-20
+
+- Removed an obsolete Gallery database lookup from staged-file selection, which already has its current Gallery context. Preserved the selected canonical asset link and dynamic filename fallback for older queued files.
+- Corrected the Stage queue PHPDoc shape to include the filename and editorial form row actually emitted by the media owner. Removed a stale Media CSS comment that incorrectly described server processing as 100% transferred; rendering remains tied to actual byte and server phase checkpoints.
+- Kept Dev Worker 4 active on lease 23. All browser, video and delete-flow runtime acceptance from the preceding handoff remains pending. No tests, deployment, CI or branch promotion.
+
 ## Restore Automatic new Artwork placement — 2026-11-20
 
 - Restored the historical persisted `add_placement = follow` policy as the first selectable `Automatic` option in New Artwork placement. The default and invalid/missing-value fallback use Automatic again. Existing persisted `follow` selections retain their original behavior without a migration or a replacement value.
