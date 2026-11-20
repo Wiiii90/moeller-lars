@@ -5,6 +5,7 @@ namespace App\Domain\Content;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Artwork\ArtworkSort;
+use App\Models\ArtworkCategory;
 use App\Models\GalleryHeroSetting;
 use App\Models\MediaAsset;
 use Carbon\CarbonImmutable;
@@ -50,6 +51,7 @@ final class GalleryHeroConfigurationService
      *
      * @return array{
      *     group_source:string,
+     *     enabled_gallery_ids:list<int>,
      *     dummy_galleries:list<array<string,mixed>>,
      *     disabled_auto_artwork_ids:list<int>,
      *     sourced_weights:array<string,int>,
@@ -82,6 +84,7 @@ final class GalleryHeroConfigurationService
 
         return [
             'group_source' => $selectedSource,
+            'enabled_gallery_ids' => $this->readEnabledGalleryIds($artwork['enabled_gallery_ids'] ?? []),
             ...$profile,
             'dummy_galleries' => $this->readDummyGalleries($artwork),
             'show_details' => (bool) ($artwork['show_details'] ?? true),
@@ -97,6 +100,81 @@ final class GalleryHeroConfigurationService
                 GalleryPresentation::CAPTION_RIGHTS_LEFT,
             ),
         ];
+    }
+
+    /** @return list<int> */
+    private function readEnabledGalleryIds(mixed $value): array
+    {
+        if (! is_array($value) || ! array_is_list($value)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($value as $id) {
+            if (is_int($id) && $id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+        sort($ids, SORT_NUMERIC);
+
+        return array_values($ids);
+    }
+
+    /**
+     * Hero source choices belong to one page, not ArtworkCategory. No other
+     * Hero page is modified by the editor that invokes this operation.
+     *
+     * @param list<int> $galleryIds
+     */
+    public function setRegularGalleriesEnabled(GalleryHeroSetting $settings, array $galleryIds, bool $enabled): int
+    {
+        $ids = $this->readEnabledGalleryIds($galleryIds);
+        if (count($ids) !== count(array_unique($galleryIds))) {
+            throw ValidationException::withMessages(['source' => 'Choose valid Gallery sources.']);
+        }
+        if ($ids === []) {
+            return 0;
+        }
+
+        return DB::transaction(function () use ($settings, $ids, $enabled): int {
+            /** @var GalleryHeroSetting $fresh */
+            $fresh = GalleryHeroSetting::query()->whereKey($settings->getKey())
+                ->lockForUpdate()->firstOrFail();
+            if ($enabled && ArtworkCategory::query()->whereKey($ids)
+                ->whereHas('siteSection', static fn ($section) => $section->where('state', 'published'))
+                ->count() !== count($ids)) {
+                throw ValidationException::withMessages([
+                    'source' => 'Publish each selected Gallery before enabling it as a Hero source.',
+                ]);
+            }
+
+            $configuration = $fresh->configuration();
+            $before = $this->readEnabledGalleryIds($configuration['enabled_gallery_ids'] ?? []);
+            $after = $enabled
+                ? $this->readEnabledGalleryIds([...$before, ...$ids])
+                : array_values(array_diff($before, $ids));
+            if ($before === $after) {
+                return 0;
+            }
+
+            $configuration['enabled_gallery_ids'] = $after;
+            $fresh->setAttribute('configuration', $configuration);
+            $fresh->save();
+            $this->audit->record(
+                $this->audit->requireActor(), 'site_section.updated', 'site_section',
+                (int) $fresh->getAttribute('site_section_id'),
+            );
+
+            return count(array_diff($before, $after)) + count(array_diff($after, $before));
+        });
+    }
+
+    /** Hidden Galleries require an explicit new selection before being reused. */
+    public function disableGalleryAcrossHeroes(int $galleryId): void
+    {
+        foreach (GalleryHeroSetting::query()->orderBy('id')->get(['id']) as $settings) {
+            $this->setRegularGalleriesEnabled($settings, [$galleryId], false);
+        }
     }
 
     /**
@@ -299,7 +377,7 @@ final class GalleryHeroConfigurationService
                 $artwork['hero_mode'], $artwork['automatic_selection'],
                 $artwork['fixed_artwork_id'], $artwork['pool_rule'],
                 $artwork['pool_year'], $artwork['manual_include_ids'],
-                // Inactive Home layout toggles are retired at the next edit.
+                // Obsolete pre-cutover layout toggles are retired at the next edit.
                 $artwork['landscape_detail_enabled'], $artwork['portrait_detail_enabled'],
                 $artwork['artwork_page_surface_mode'], $artwork['artwork_menu_surface_wide'],
             );
@@ -660,7 +738,7 @@ final class GalleryHeroConfigurationService
     public function addDummyArtwork(GalleryHeroSetting $settings, int $galleryId, int $artworkId): bool
     {
         $artwork = app(\App\Domain\Artwork\PublicArtworkQuery::class)
-            ->editorialHomeCandidatesByIds([$artworkId])->first();
+            ->editorialHeroCandidatesByIds([$artworkId])->first();
         if (! $artwork instanceof \App\Models\Artwork) {
             throw ValidationException::withMessages(['pending_candidate' => 'Choose an eligible Artwork.']);
         }

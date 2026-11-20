@@ -392,19 +392,13 @@ final class SiteSectionEditorialService
                 $this->audit->record($actor, 'site_section.updated', 'site_section', (int) $fresh->getKey());
             }
 
-            // A hidden Gallery must not remain an enabled automatic Home source.
-            // Make the preference persistent, so republishing requires an explicit Home opt-in.
-            if ($fresh->nodeType() === SiteSectionType::Gallery && $state !== 'published') {
-                $gallery = ArtworkCategory::query()
-                    ->whereKey((int) $fresh->getAttribute('artwork_category_id'))
-                    ->where('show_on_home', true)
-                    ->lockForUpdate()
-                    ->first();
-                if ($gallery instanceof ArtworkCategory) {
-                    $gallery->setAttribute('show_on_home', false);
-                    $gallery->save();
-                    $this->audit->record($actor, 'artwork_category.updated', 'artwork_category', (int) $gallery->getKey());
-                }
+            // Hiding a Gallery revokes its source membership from every Hero
+            // page. Republishing does not silently restore a prior selection.
+            if ($fresh->nodeType() === SiteSectionType::Gallery && $state !== 'published'
+                && is_numeric($fresh->getAttribute('artwork_category_id'))) {
+                app(GalleryHeroConfigurationService::class)->disableGalleryAcrossHeroes(
+                    (int) $fresh->getAttribute('artwork_category_id'),
+                );
             }
 
             return $fresh;
@@ -497,8 +491,7 @@ final class SiteSectionEditorialService
                 $category = ArtworkCategory::query()->create([
                     'slug' => $slug,
                     'name' => (string) $fresh->getAttribute('title'),
-                    'show_on_home' => false,
-                ]);
+                    ]);
                 $fresh->setAttribute('artwork_category_id', $category->getKey());
             }
             $fresh->setAttribute('template', $target->value);
@@ -792,7 +785,6 @@ final class SiteSectionEditorialService
             $slugMatches = trim((string) $gallery->getAttribute('slug')) === trim((string) $section->getAttribute('slug'));
             if (
                 $gallery->artworks()->exists()
-                || (bool) $gallery->getAttribute('show_on_home')
                 || (! $section->isHome() && (! $nameMatches || ! $slugMatches))
             ) {
                 throw ValidationException::withMessages([
@@ -842,7 +834,6 @@ final class SiteSectionEditorialService
             $gallery = ArtworkCategory::query()->create([
                 'slug' => $gallerySlug,
                 'name' => (string) $section->getAttribute('title'),
-                'show_on_home' => false,
             ]);
 
             return [$slug, $section->isHome() ? GalleryTemplate::HeroArtworks->value : GalleryTemplate::Standard->value, (int) $gallery->getKey()];

@@ -5,7 +5,6 @@ namespace App\Filament\Pages;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Artwork\ArtworkDate;
-use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Content\GalleryHeroCandidate;
 use App\Domain\Content\GalleryHeroConfigurationService;
@@ -30,6 +29,7 @@ use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Session;
@@ -64,6 +64,8 @@ final class GalleryHeroWorkspace extends Page
     public string $heroGroupSource = 'automatic';
     /** @var list<int> */
     public array $disabledAutoHeroIds = [];
+    /** @var list<int> */
+    public array $enabledGalleryIds = [];
     /** @var list<array<string,mixed>> */
     public array $excludedHeroRows = [];
     public string $heroDisplayStrategy = 'ordered';
@@ -95,8 +97,8 @@ final class GalleryHeroWorkspace extends Page
     public array $selectedSourceIds = [];
     /** @var list<int> */
     public array $expandedSourceIds = [];
-    public bool $homeAnalyticsLoaded = false;
-    public string $homeAnalyticsStatus = 'loading';
+    public bool $heroAnalyticsLoaded = false;
+    public string $heroAnalyticsStatus = 'loading';
     public ?float $homeVisits = null;
     public ?float $homeViews = null;
 
@@ -117,17 +119,17 @@ final class GalleryHeroWorkspace extends Page
         $this->reloadWorkspace();
     }
 
-    public function loadHomeAnalytics(): void
+    public function loadHeroAnalytics(): void
     {
-        if ($this->homeAnalyticsLoaded) {
+        if ($this->heroAnalyticsLoaded) {
             return;
         }
-        $this->homeAnalyticsLoaded = true;
+        $this->heroAnalyticsLoaded = true;
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($this->sectionId);
         $path = app(\App\Routing\SiteNodeRoute::class)->path($section) ?? '/';
         $report = app(ArtistReportingService::class)->customPage($path, '30d');
-        $this->homeAnalyticsStatus = (string) ($report['status'] ?? 'unavailable');
+        $this->heroAnalyticsStatus = (string) ($report['status'] ?? 'unavailable');
         $this->homeVisits = $this->analyticsMetricValue($report['page']['visits'] ?? null);
         $this->homeViews = $this->analyticsMetricValue($report['page']['views'] ?? null);
         $this->refreshMetrics();
@@ -423,7 +425,7 @@ final class GalleryHeroWorkspace extends Page
 
     public function addDraftDummyArtwork(int $artworkId): void
     {
-        if (app(PublicArtworkQuery::class)->homeCandidatesByIds([$artworkId])->isEmpty()) {
+        if (app(PublicArtworkQuery::class)->heroCandidatesByIds([$artworkId])->isEmpty()) {
             throw ValidationException::withMessages(['pending_candidate' => 'Choose an eligible Artwork.']);
         }
         $key = 'artwork:'.$artworkId;
@@ -635,26 +637,17 @@ final class GalleryHeroWorkspace extends Page
 
     public function toggleGalleryEligibility(int $galleryId): void
     {
-        /** @var ArtworkCategory $gallery */
-        $gallery = ArtworkCategory::query()->findOrFail($galleryId);
-        $enable = ! (bool) $gallery->getAttribute('show_on_home');
-        if ($enable && ! $gallery->siteSection()->where('state', 'published')->exists()) {
-            throw ValidationException::withMessages(['source' => 'Publish this Gallery before enabling it for Home.']);
-        }
-        $updated = app(GalleryEditorialService::class)->update($gallery, [
-            'name' => (string) $gallery->getAttribute('name'),
-            'description' => $gallery->getAttribute('description'),
-            'show_on_home' => $enable,
-        ]);
-        if (! $updated->wasChanged('show_on_home')) {
+        ArtworkCategory::query()->findOrFail($galleryId);
+        $enabled = ! in_array($galleryId, $this->enabledGalleryIds, true);
+        $changed = app(GalleryHeroConfigurationService::class)->setRegularGalleriesEnabled(
+            $this->settings(), [$galleryId], $enabled,
+        );
+        if ($changed === 0) {
             return;
         }
         $this->clearSourceSelection();
         $this->reloadWorkspace();
-        app(AdminNotifier::class)->notification(
-            title: 'Gallery source preference updated',
-            status: 'success',
-        );
+        app(AdminNotifier::class)->notification(title: 'Gallery source preference updated', status: 'success');
     }
 
     /** One selection key per source membership, even for reused Artwork IDs. */
@@ -763,11 +756,11 @@ final class GalleryHeroWorkspace extends Page
         $regular = ArtworkCategory::query()->whereKey($regularIds)->with('siteSection')->get();
         $dummy = collect($this->dummyGalleries)->keyBy('id');
 
-        $enable = $regular->contains(static fn (ArtworkCategory $gallery): bool =>
-            ! (bool) $gallery->getAttribute('show_on_home')
+        $enable = $regular->contains(fn (ArtworkCategory $gallery): bool =>
+            ! in_array((int) $gallery->getKey(), $this->enabledGalleryIds, true)
             && $gallery->getRelationValue('siteSection')?->getAttribute('state') === 'published');
-        $disable = $regular->contains(static fn (ArtworkCategory $gallery): bool =>
-            (bool) $gallery->getAttribute('show_on_home'));
+        $disable = $regular->contains(fn (ArtworkCategory $gallery): bool =>
+            in_array((int) $gallery->getKey(), $this->enabledGalleryIds, true));
         $remove = false;
         foreach ($groups as $id) {
             if ($id >= 0 || ! $dummy->has($id)) {
@@ -848,19 +841,8 @@ final class GalleryHeroWorkspace extends Page
             }
 
             $regularIds = array_values(array_filter($groups, static fn (int $id): bool => $id > 0));
-            $galleries = ArtworkCategory::query()->whereKey($regularIds)
-                ->with('siteSection')->orderBy('id')->lockForUpdate()->get();
-            foreach ($galleries as $gallery) {
-                if ((bool) $gallery->getAttribute('show_on_home') === $enabled
-                    || ($enabled && $gallery->getRelationValue('siteSection')?->getAttribute('state') !== 'published')) {
-                    continue;
-                }
-                $updated = app(GalleryEditorialService::class)->update($gallery, [
-                    'name' => (string) $gallery->getAttribute('name'),
-                    'description' => $gallery->getAttribute('description'),
-                    'show_on_home' => $enabled,
-                ]);
-                $count += (int) $updated->wasChanged('show_on_home');
+            if ($regularIds !== []) {
+                $count += $service->setRegularGalleriesEnabled($this->settings(), $regularIds, $enabled);
             }
 
             return $count;
@@ -943,7 +925,7 @@ final class GalleryHeroWorkspace extends Page
                     'id' => $id,
                     'standalone' => false,
                     'name' => (string) $gallery->getAttribute('name'),
-                    'preference_enabled' => (bool) $gallery->getAttribute('show_on_home'),
+                    'preference_enabled' => in_array((int) $gallery->getKey(), $this->enabledGalleryIds, true),
                     'can_enable' => $section?->getAttribute('state') === 'published',
                     'candidate_count' => $regularCandidates->get($id, collect())->count(),
                     'workspace_url' => GalleryWorkspace::getUrl(['gallery' => $id]),
@@ -1081,6 +1063,7 @@ final class GalleryHeroWorkspace extends Page
         $this->artworkEnableViewer = $hero['enable_viewer'];
         $this->heroGroupSource = $hero['group_source'];
         $this->disabledAutoHeroIds = $hero['disabled_auto_artwork_ids'];
+        $this->enabledGalleryIds = $hero['enabled_gallery_ids'];
         $this->excludedHeroRows = [];
         $this->heroDisplayStrategy = $hero['display_strategy'];
         $this->heroSourceRule = $hero['source_rule'];
@@ -1105,14 +1088,14 @@ final class GalleryHeroWorkspace extends Page
     private function loadArtworkWorkspace(GalleryHeroSetting $settings): void
     {
         $publicArtworks = app(PublicArtworkQuery::class);
-        $statistics = $publicArtworks->homeCandidateStatistics();
+        $statistics = $publicArtworks->heroCandidateStatistics($this->enabledGalleryIds);
         $this->eligibleArtworkCount = $statistics['eligible'];
         $this->newestEligibleYear = $statistics['newest_year'];
         $activeDummy = $this->heroGroupSource === 'automatic' ? [] : array_values(array_filter(
             $this->dummyGalleries, static fn (array $gallery): bool => $gallery['enabled'],
         ));
         $regularCount = $this->heroGroupSource === 'manual' ? 0
-            : ArtworkCategory::query()->where('show_on_home', true)
+            : ArtworkCategory::query()->whereKey($this->enabledGalleryIds)
                 ->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', 'published'))->count();
         $this->sourceGalleryCount = $regularCount + count($activeDummy);
 
@@ -1128,9 +1111,10 @@ final class GalleryHeroWorkspace extends Page
                 }
             }
             $regularEligible = $this->heroGroupSource === 'manual' ? 0
-                : $publicArtworks->eligibleHomeGalleryCount(array_values(array_unique($reserved)));
+                : $publicArtworks->eligibleHeroGalleryCount($this->enabledGalleryIds, array_values(array_unique($reserved)));
             $regularSlots = $this->heroGroupSource === 'manual' ? 0
-                : $publicArtworks->eligibleHomeCandidateSlotsPerGallery(
+                : $publicArtworks->eligibleHeroCandidateSlotsPerGallery(
+                    $this->enabledGalleryIds, 
                     $this->heroGroupSize, array_values(array_unique($reserved)),
                 );
             $dummyPotential = 0;
@@ -1161,7 +1145,7 @@ final class GalleryHeroWorkspace extends Page
         }
 
         if ($this->disabledAutoHeroIds !== []) {
-            $disabled = $publicArtworks->homeCandidatesByIds($this->disabledAutoHeroIds);
+            $disabled = $publicArtworks->heroCandidatesByIds($this->disabledAutoHeroIds);
             $this->excludedHeroRows = $disabled
                 ->map(function (Artwork $artwork): array {
                     $row = $this->candidateRow(GalleryHeroCandidate::fromArtwork($artwork));
@@ -1283,11 +1267,11 @@ final class GalleryHeroWorkspace extends Page
 
     private function analyticsDescription(): string
     {
-        if (! $this->homeAnalyticsLoaded) {
+        if (! $this->heroAnalyticsLoaded) {
             return 'Loading | 30d';
         }
 
-        return match ($this->homeAnalyticsStatus) {
+        return match ($this->heroAnalyticsStatus) {
             'stale' => 'Cached | 30d',
             'available' => 'Hero page | 30d',
             default => 'Unavailable | 30d',

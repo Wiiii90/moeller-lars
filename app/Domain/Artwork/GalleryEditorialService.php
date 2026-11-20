@@ -4,6 +4,7 @@ namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Content\GalleryTemplate;
+use App\Domain\Content\GalleryHeroConfigurationService;
 use App\Domain\Content\SiteSectionPathPolicy;
 use App\Domain\Content\SiteSectionType;
 use App\Models\Artwork;
@@ -306,6 +307,7 @@ final class GalleryEditorialService
                 ->where('reason', SiteSectionPathPolicy::GALLERY_SLUG_REDIRECT_REASON)
                 ->where(fn (Builder $query) => $query->where('source_path', $path)->orWhere('target_path', $path))
                 ->delete();
+            app(GalleryHeroConfigurationService::class)->disableGalleryAcrossHeroes((int) $fresh->getKey());
             $section->delete();
             $fresh->delete();
         });
@@ -409,15 +411,6 @@ final class GalleryEditorialService
                 throw ValidationException::withMessages(['name' => 'The Gallery name is invalid.']);
             }
             $validated['name'] = $name;
-        }
-
-        if (array_key_exists('show_on_home', $data)) {
-            if (! is_bool($data['show_on_home']) && ! in_array($data['show_on_home'], [0, 1, '0', '1'], true)) {
-                throw ValidationException::withMessages(['show_on_home' => 'The homepage eligibility setting is invalid.']);
-            }
-            $validated['show_on_home'] = (bool) $data['show_on_home'];
-        } elseif (! $update) {
-            $validated['show_on_home'] = false;
         }
 
         if (! $update) {

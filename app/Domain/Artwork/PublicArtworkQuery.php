@@ -51,10 +51,10 @@ class PublicArtworkQuery
     }
 
     /** @return Collection<int, Artwork> */
-    public function homeCandidates(int $limit = 12): Collection
+    public function heroCandidates(array $enabledGalleryIds, int $limit = 12): Collection
     {
         /** @var Collection<int, Artwork> $artworks */
-        $artworks = $this->homeQuery()
+        $artworks = $this->heroQuery($enabledGalleryIds)
             ->orderByRaw(ArtworkSort::DATE_DESC_SQL)
             ->limit(max(1, min($limit, 50)))
             ->get();
@@ -63,19 +63,20 @@ class PublicArtworkQuery
     }
 
     /**
-     * Return the bounded automatic Home candidate group from the canonical Home eligibility query.
+     * Return the bounded automatic Hero candidate group from the canonical Hero eligibility query.
      * Artwork rules sort by the Artwork's year, month and optional day.
      * Media Added rules sort by the primary MediaAsset upload timestamp.
      * Both use the same eligible-gallery query and deterministic tie-breakers.
      *
      * @return Collection<int, Artwork>
      */
-    public function configuredHomeCandidates(
+    public function configuredHeroCandidates(
+        array $enabledGalleryIds,
         int $groupSize = 12,
         string $sourceRule = 'newest_artwork',
         array $excludeIds = [],
     ): Collection {
-        $query = $this->homeQuery();
+        $query = $this->heroQuery($enabledGalleryIds);
         if ($excludeIds !== []) {
             $query->whereNotIn('id', $excludeIds);
         }
@@ -97,13 +98,14 @@ class PublicArtworkQuery
      *
      * @return Collection<int, Artwork>
      */
-    public function homeGalleryRepresentatives(
+    public function heroGalleryRepresentatives(
+        array $enabledGalleryIds,
         string $sourceRule = 'newest_artwork',
         array $excludeIds = [],
         int $limit = 50,
         int $perGallery = 1,
     ): Collection {
-        $ranked = $this->homeQuery()->select('artworks.id')
+        $ranked = $this->heroQuery($enabledGalleryIds)->select('artworks.id')
             ->selectRaw(
                 'ROW_NUMBER() OVER (PARTITION BY artworks.artwork_category_id ORDER BY '
                 .ArtworkSort::orderClause($sourceRule).') AS gallery_rank',
@@ -112,11 +114,11 @@ class PublicArtworkQuery
             $ranked->whereNotIn('artworks.id', $excludeIds);
         }
 
-        $representativeIds = DB::query()->fromSub($ranked->toBase(), 'ranked_home_artworks')
+        $representativeIds = DB::query()->fromSub($ranked->toBase(), 'ranked_hero_artworks')
             ->where('gallery_rank', '<=', max(1, min($perGallery, 50)))
             ->select('id');
 
-        $query = $this->homeQuery()->whereIn('artworks.id', $representativeIds);
+        $query = $this->heroQuery($enabledGalleryIds)->whereIn('artworks.id', $representativeIds);
         ArtworkSort::apply($query, $sourceRule);
 
         /** @var Collection<int, Artwork> $artworks */
@@ -129,9 +131,9 @@ class PublicArtworkQuery
      * Number of eligible Galleries after exclusions, independent of the
      * candidate cap. Used to surface overflow rather than silently hiding it.
      */
-    public function eligibleHomeGalleryCount(array $excludeIds = []): int
+    public function eligibleHeroGalleryCount(array $enabledGalleryIds, array $excludeIds = []): int
     {
-        $query = $this->homeQuery();
+        $query = $this->heroQuery($enabledGalleryIds);
         if ($excludeIds !== []) {
             $query->whereNotIn('artworks.id', $excludeIds);
         }
@@ -140,9 +142,9 @@ class PublicArtworkQuery
     }
 
     /** Count actual eligible per-Gallery slots before the public 50-item cap. */
-    public function eligibleHomeCandidateSlotsPerGallery(int $perGallery, array $excludeIds = []): int
+    public function eligibleHeroCandidateSlotsPerGallery(array $enabledGalleryIds, int $perGallery, array $excludeIds = []): int
     {
-        $query = $this->homeQuery()->withoutEagerLoads();
+        $query = $this->heroQuery($enabledGalleryIds)->withoutEagerLoads();
         if ($excludeIds !== []) {
             $query->whereNotIn('artworks.id', $excludeIds);
         }
@@ -156,15 +158,15 @@ class PublicArtworkQuery
     }
 
     /** @return Collection<int, Artwork> */
-    public function newestHomeCandidates(?int $latestYear = null): Collection
+    public function newestHeroCandidates(array $enabledGalleryIds, ?int $latestYear = null): Collection
     {
-        $latestYear ??= $this->homeQuery()->max('year');
+        $latestYear ??= $this->heroQuery($enabledGalleryIds)->max('year');
         if ($latestYear === null) {
             return new Collection;
         }
 
         /** @var Collection<int, Artwork> $artworks */
-        $artworks = $this->homeQuery()
+        $artworks = $this->heroQuery($enabledGalleryIds)
             ->where('year', $latestYear)
             ->orderByRaw(ArtworkSort::DATE_DESC_SQL)
             ->get();
@@ -172,19 +174,19 @@ class PublicArtworkQuery
         return $artworks;
     }
 
-    public function homeCandidateById(int $id): ?Artwork
+    public function heroCandidateById(array $enabledGalleryIds, int $id): ?Artwork
     {
         if ($id <= 0) {
             return null;
         }
 
-        return $this->homeQuery()->whereKey($id)->first();
+        return $this->heroQuery($enabledGalleryIds)->whereKey($id)->first();
     }
 
     /** @param list<int> $ids
      * @return Collection<int, Artwork>
      */
-    public function homeCandidatesByIds(array $ids): Collection
+    public function heroCandidatesByIds(array $ids): Collection
     {
         $ids = $this->normalizedIds($ids);
         if ($ids === []) {
@@ -200,27 +202,27 @@ class PublicArtworkQuery
     }
 
     /**
-     * Home's public candidate search respects publication. The Dummy Gallery
+     * Hero's public candidate search respects publication. The Dummy Gallery
      * editor has its own explicit Working selection, without altering public
-     * visibility, Home automatic eligibility or the published Hero resolver.
+     * visibility, Hero automatic eligibility or the published Hero resolver.
      *
      * @return Collection<int, Artwork>
      */
-    public function searchHomeCandidates(string $search, int $limit = 30, bool $requireHomeGallery = true): Collection
+    public function searchHeroCandidates(array $enabledGalleryIds, string $search, int $limit = 30, bool $requireHeroGallery = true): Collection
     {
         return $this->searchCandidates(
-            $requireHomeGallery ? $this->homeQuery() : $this->publicQuery(), $search, $limit,
+            $requireHeroGallery ? $this->heroQuery($enabledGalleryIds) : $this->publicQuery(), $search, $limit,
         );
     }
 
     /** @return Collection<int, Artwork> */
-    public function searchEditorialHomeCandidates(string $search, int $limit = 30): Collection
+    public function searchEditorialHeroCandidates(string $search, int $limit = 30): Collection
     {
         return $this->searchCandidates($this->editorialQuery(), $search, $limit);
     }
 
     /** @return Collection<int, Artwork> */
-    public function editorialHomeCandidatesByIds(array $ids): Collection
+    public function editorialHeroCandidatesByIds(array $ids): Collection
     {
         $ids = $this->normalizedIds($ids);
         if ($ids === []) {
@@ -254,9 +256,9 @@ class PublicArtworkQuery
     }
 
     /** @return array{eligible:int,newest_year:?int,newest_year_candidates:int} */
-    public function homeCandidateStatistics(): array
+    public function heroCandidateStatistics(array $enabledGalleryIds): array
     {
-        $query = $this->homeQuery()->withoutEagerLoads();
+        $query = $this->heroQuery($enabledGalleryIds)->withoutEagerLoads();
         /** @var Artwork|null $summary */
         $summary = (clone $query)
             ->selectRaw('COUNT(*) AS eligible_count')
@@ -274,9 +276,9 @@ class PublicArtworkQuery
         ];
     }
 
-    public function homeCandidateCount(): int
+    public function heroCandidateCount(array $enabledGalleryIds): int
     {
-        return $this->homeQuery()->count();
+        return $this->heroQuery($enabledGalleryIds)->count();
     }
 
     public function publishedBySlug(string $slug): ?Artwork
@@ -291,21 +293,16 @@ class PublicArtworkQuery
             ->first();
     }
 
-    /** @return Builder<Artwork> */
-    private function homeQuery(): Builder
+    /** @param list<int> $enabledGalleryIds
+     * @return Builder<Artwork>
+     */
+    private function heroQuery(array $enabledGalleryIds): Builder
     {
-        /** @var Builder<Artwork> $query */
-        $query = $this->publicQuery();
-
-        /** @var Builder<Artwork> $result */
-        $result = $query
-            ->whereHas('category', function (Builder $query): void {
-                $query->where('show_on_home', true)
-                    ->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', 'published'));
-            })
+        return $this->publicQuery()
+            ->whereIn('artworks.artwork_category_id', $enabledGalleryIds)
+            ->whereHas('category.siteSection',
+                static fn (Builder $section): Builder => $section->where('state', 'published'))
             ->whereNotNull('year');
-
-        return $result;
     }
 
     /** @return Builder<Artwork> */

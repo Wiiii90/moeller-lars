@@ -89,7 +89,7 @@ final class GalleryHeroDummyGalleryDialog
     private static function candidateOptions(string $search): array
     {
         $options = [];
-        foreach (app(PublicArtworkQuery::class)->searchEditorialHomeCandidates($search, 30) as $artwork) {
+        foreach (app(PublicArtworkQuery::class)->searchEditorialHeroCandidates($search, 30) as $artwork) {
             $key = 'artwork:'.$artwork->getKey();
             $image = ArtworkResource::thumbnailUrl($artwork);
             $preview = $image === null
@@ -132,7 +132,7 @@ final class GalleryHeroDummyGalleryDialog
             return null;
         }
         if ($matches[1] === 'artwork') {
-            $artwork = app(PublicArtworkQuery::class)->editorialHomeCandidatesByIds([(int) $matches[2]])->first();
+            $artwork = app(PublicArtworkQuery::class)->editorialHeroCandidatesByIds([(int) $matches[2]])->first();
             return $artwork instanceof Artwork ? e((string) $artwork->getAttribute('title')) : null;
         }
 

@@ -92,12 +92,12 @@ final class GalleryHeroResolver
 
         if ($mode !== 'manual') {
             $regular = ($perGallery || $galleryFirst)
-                ? $this->artworks->homeGalleryRepresentatives(
-                    $ranking, array_values(array_unique($reservedArtworkIds)),
+                ? $this->artworks->heroGalleryRepresentatives(
+                    $configuration['enabled_gallery_ids'], $ranking, array_values(array_unique($reservedArtworkIds)),
                     12500, $perGallery ? $amount : GalleryHeroConfigurationService::MAX_GROUP_SIZE,
                 )
-                : $this->artworks->configuredHomeCandidates(
-                    GalleryHeroConfigurationService::MAX_GROUP_SIZE, $ranking,
+                : $this->artworks->configuredHeroCandidates(
+                    $configuration['enabled_gallery_ids'], GalleryHeroConfigurationService::MAX_GROUP_SIZE, $ranking,
                     array_values(array_unique($reservedArtworkIds)),
                 );
             foreach ($regular as $artwork) {
@@ -161,7 +161,7 @@ final class GalleryHeroResolver
         )];
     }
 
-    /** Read all stored Dummy members for the Home editor, including inactive ones. */
+    /** Read all stored Dummy members for the Hero editor, including inactive ones. */
     public function dummyCandidates(array $members, int $sourceId, string $sourceName, bool $editorial = false): Collection
     {
         return $this->selectedCandidates($members, $sourceId, $sourceName, $editorial);
@@ -246,8 +246,8 @@ final class GalleryHeroResolver
         }
 
         $artworks = ($editorial
-            ? $this->artworks->editorialHomeCandidatesByIds($artworkIds)
-            : $this->artworks->homeCandidatesByIds($artworkIds))->keyBy('id');
+            ? $this->artworks->editorialHeroCandidatesByIds($artworkIds)
+            : $this->artworks->heroCandidatesByIds($artworkIds))->keyBy('id');
         $media = MediaAsset::query()->whereIn('id', $mediaIds)->where('state', 'available')
             ->with(['variants', 'artworks.category'])->get()->keyBy('id');
         $candidates = new Collection;
@@ -287,7 +287,7 @@ final class GalleryHeroResolver
     ): array {
         $basisPoint = $randomBasisPoint ?? random_int(0, GalleryHeroConfigurationService::WEIGHT_TOTAL - 1);
         if ($basisPoint < 0 || $basisPoint >= GalleryHeroConfigurationService::WEIGHT_TOTAL) {
-            throw ValidationException::withMessages(['random' => 'Random Home sample must be within the configured weight range.']);
+            throw ValidationException::withMessages(['random' => 'Random Hero sample must be within the configured weight range.']);
         }
 
         $current = null;

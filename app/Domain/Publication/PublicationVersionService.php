@@ -488,7 +488,7 @@ END) || jsonb_build_object(
     'artwork_pages_enabled', COALESCE(version_row.payload->'artwork_pages_enabled', 'true'::jsonb),
     'viewer_zoom_enabled', COALESCE(version_row.payload->'viewer_zoom_enabled', 'true'::jsonb),
     'viewer_navigation_enabled', COALESCE(version_row.payload->'viewer_navigation_enabled', 'true'::jsonb)
-))
+)) - 'show_on_home'
 SQL,
             'site_sections' => <<<'SQL'
 (version_row.payload || jsonb_build_object(
@@ -570,7 +570,7 @@ SQL,
                             ->whereRaw("jsonb_exists(payload, 'date_text')");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'artwork_categories')
-                            ->whereRaw("NOT jsonb_exists(payload, 'artwork_page_layout') OR NOT jsonb_exists(payload, 'artwork_information')");
+                            ->whereRaw("NOT jsonb_exists(payload, 'artwork_page_layout') OR NOT jsonb_exists(payload, 'artwork_information') OR jsonb_exists(payload, 'show_on_home')");
                     })->orWhere(static function ($rows): void {
                         $rows->where('table_name', 'site_sections')
                             ->whereRaw("NOT jsonb_exists(payload, 'meta_description') OR NOT jsonb_exists(payload, 'is_home') OR NOT jsonb_exists(payload, 'public_site_gate') OR (payload->>'type' = 'gallery' AND COALESCE(payload->>'template', '') = '')");
