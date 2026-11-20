@@ -324,11 +324,11 @@ test('shared Preview toolbar stays on one row in compact General Stage widths', 
 
   const preview = page.locator('.general-appearance-stage__preview.admin-live-preview');
   const toolbar = preview.getByRole('toolbar', { name: 'Live preview controls' });
-  const device = toolbar.getByRole('combobox', { name: /^Device and viewport resolution:/ });
+  const device = toolbar.getByRole('button', { name: /^Choose preview device, current:/ });
   await expect(preview).toBeVisible();
   await expect(toolbar).toBeVisible();
 
-  const original = await device.inputValue();
+  const originalLabel = (await device.getAttribute('title'))?.replace(/^Device: /, '') ?? 'Current window';
   try {
     // Container pressure is independent of browser viewport. An embedded
     // Gallery/General Preview can be much narrower than the workspace.
@@ -362,11 +362,12 @@ test('shared Preview toolbar stays on one row in compact General Stage widths', 
       })).toBe(true);
     }
 
-    // The icon trigger still owns one accessible native grouped Select.
-    await expect(device.locator('optgroup')).toHaveCount(3);
-    await device.selectOption('tablet-mini');
+    // The ordinary device icon opens the central Filament dropdown,
+    // rather than intercepting clicks with an invisible native Select.
+    await device.click();
+    await page.getByRole('menuitem', { name: 'iPad (768 × 1024)' }).click();
     await expect(preview).toHaveAttribute('data-preview-device', 'tablet');
-    await expect(device).toHaveAttribute('title', 'iPad (768 × 1024)');
+    await expect(device).toHaveAttribute('title', 'Device: iPad (768 × 1024)');
     await toolbar.getByRole('button', { name: 'Rotate device' }).click();
     await expect(toolbar.getByRole('button', { name: 'Restore device orientation' })).toBeVisible();
 
@@ -378,7 +379,8 @@ test('shared Preview toolbar stays on one row in compact General Stage widths', 
     await toolbar.getByRole('button', { name: 'Reset zoom to fitted size' }).click();
     await expect(pan).toBeDisabled();
   } finally {
-    await device.selectOption(original);
+    await device.click();
+    await page.getByRole('menuitem', { name: originalLabel, exact: true }).click();
     await preview.evaluate(node => {
       node.style.removeProperty('width');
       node.style.removeProperty('max-width');

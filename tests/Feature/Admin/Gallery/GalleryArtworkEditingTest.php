@@ -23,6 +23,75 @@ beforeEach(function (): void {
 
 require_once __DIR__.'/GalleryFixtures.php';
 
+
+it('follows one selected previewable Artwork and returns to Gallery for zero or many selections', function (): void {
+    $gallery = galleryFixtureCategory();
+    $first = galleryFixtureArtwork($gallery, ['position' => 0]);
+    $second = galleryFixtureArtwork($gallery, ['position' => 1]);
+    $unavailable = galleryFixtureArtwork($gallery, ['position' => 2]);
+    foreach ([$first, $second] as $artwork) {
+        $asset = galleryFixtureAsset();
+        testStoredImageThumbnail($asset);
+        galleryFixturePrimary($artwork, $asset);
+    }
+    galleryFixtureUnavailableAnalytics();
+
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->assertSet('galleryPreviewAutoFocus', true)
+        ->assertSet('galleryStagePreview', 'gallery');
+
+    $editor->call('toggleArtworkSelection', (int) $first->getKey())
+        ->assertSet('galleryStagePreview', 'artwork')
+        ->assertSet('galleryStagePreviewArtworkId', (int) $first->getKey())
+        ->assertDispatched('gallery-preview-updated');
+    expect($editor->instance()->galleryStagePreviewUrl())
+        ->toBe(route('preview.artworks.show', ['slug' => $first->slug]));
+
+    $editor->call('toggleArtworkSelection', (int) $second->getKey())
+        ->assertSet('galleryStagePreview', 'gallery');
+    $editor->call('toggleArtworkSelection', (int) $first->getKey())
+        ->assertSet('galleryStagePreviewArtworkId', (int) $second->getKey());
+    $editor->call('toggleArtworkSelection', (int) $second->getKey())
+        ->assertSet('galleryStagePreview', 'gallery');
+
+    $editor->call('toggleArtworkSelection', (int) $unavailable->getKey())
+        ->assertSet('galleryStagePreview', 'gallery');
+
+    $editor->call('toggleArtworkSelection', (int) $unavailable->getKey())
+        ->call('toggleArtworkSelection', (int) $first->getKey())
+        ->assertSet('galleryStagePreview', 'artwork');
+    $editor->call('toggleGalleryPreviewAutoFocus')
+        ->assertSet('galleryPreviewAutoFocus', false)
+        ->call('toggleArtworkSelection', (int) $first->getKey())
+        ->assertSet('galleryStagePreview', 'artwork');
+    $editor->call('toggleGalleryPreviewAutoFocus')
+        ->assertSet('galleryPreviewAutoFocus', true)
+        ->assertSet('galleryStagePreview', 'gallery');
+});
+
+it('keeps the staged Artwork as Preview focus while its queue is active', function (): void {
+    $gallery = galleryFixtureCategory();
+    $asset = galleryFixtureAsset();
+    galleryFixtureUnavailableAnalytics();
+
+    $editor = Livewire::test(GalleryWorkspace::class, ['gallery' => $gallery->getKey()])
+        ->call('beginDirectPrimaryMediaBatch')
+        ->call('queueResumablePrimaryMediaAsset', (int) $asset->getKey())
+        ->call('finishDirectPrimaryMediaBatch')
+        ->assertSet('galleryStagePanel', 'queue')
+        ->assertSet('galleryStagePreview', 'staged')
+        ->assertSet('selectedStagedMediaAssetId', (int) $asset->getKey())
+        ->assertDispatched('gallery-preview-updated');
+
+    $editor->call('toggleGalleryPreviewAutoFocus')
+        ->assertSet('galleryPreviewAutoFocus', false)
+        ->call('selectGalleryStagePanel', 'settings')
+        ->assertSet('galleryStagePreview', 'staged')
+        ->call('toggleGalleryPreviewAutoFocus')
+        ->assertSet('galleryPreviewAutoFocus', true)
+        ->assertSet('galleryStagePreview', 'gallery');
+});
+
 it('offers per-artwork ALT text in the Gallery create and edit dialogs without changing the shared file', function (): void {
     $gallery = galleryFixtureCategory();
     $asset = galleryFixtureAsset('image/jpeg', '');
