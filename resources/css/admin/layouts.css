@@ -109,16 +109,17 @@ html.fi select option:disabled {
 }
 
 /*
- * Shared native selects use Chromium's customizable-select surface whenever it
- * exists. Light/Dark therefore keep the same trigger, option and selected-mark
- * geometry; only colors change through tokens. Picker direction remains native
- * so it may open upward when there is not enough room below.
+ * The canonical native Select style belongs to the entire Filament Admin.
+ * Filament teleports action/modal schemas (Account Settings, Create/Edit) out
+ * of .admin-workspace. Restricting the popup to workspace descendants caused
+ * OS-colored dropdowns in these otherwise identical Select fields.
+ * Keep the Chrome customizable picker as progressive enhancement; browsers
+ * without base-select support retain the browser-managed native picker.
  */
 @supports (appearance: base-select) {
-    /* One native select render path for every workspace single-select. Toolbar,
-     * inline table and pager selects therefore share the same trigger baseline,
-     * popup, right-side selected mark and picker icon without generated DOM. */
-    html.fi .admin-workspace select:not([multiple]):not([size]) {
+    /* One native picker implementation for form dialogs, workspace and
+     * inline toolbar controls. Option styling remains centrally owned here. */
+    html.fi select:not([multiple]):is(:not([size]), [size="1"]) {
         position: relative;
         box-sizing: border-box;
         display: block;
@@ -133,7 +134,7 @@ html.fi select option:disabled {
         white-space: nowrap;
     }
 
-    html.fi .admin-workspace select:not([multiple]):not([size])::picker(select) {
+    html.fi select:not([multiple]):is(:not([size]), [size="1"])::picker(select) {
         appearance: base-select;
         box-sizing: border-box;
         /* A compact trigger must not make the actual menu collapse to its
@@ -160,11 +161,11 @@ html.fi select option:disabled {
     /* Grouped pickers own their spacing: no extra outer padding on top of
      * the first heading or below the final option. Plain pickers retain the
      * established .2rem frame padding. */
-    html.fi .admin-workspace select:not([multiple]):not([size]):has(> optgroup)::picker(select) {
+    html.fi select:not([multiple]):is(:not([size]), [size="1"]):has(> optgroup)::picker(select) {
         padding-block: 0;
     }
 
-    html.fi .admin-workspace select:not([multiple]):not([size]) optgroup {
+    html.fi select:not([multiple]):is(:not([size]), [size="1"]) optgroup {
         display: block;
         box-sizing: border-box;
         margin: 0;
@@ -179,11 +180,11 @@ html.fi select option:disabled {
         text-transform: uppercase;
     }
 
-    html.fi .admin-workspace select:not([multiple]):not([size]) optgroup + optgroup {
+    html.fi select:not([multiple]):is(:not([size]), [size="1"]) optgroup + optgroup {
         border-block-start: 1px solid var(--admin-line);
     }
 
-    html.fi .admin-workspace select:not([multiple]):not([size]) optgroup > legend {
+    html.fi select:not([multiple]):is(:not([size]), [size="1"]) optgroup > legend {
         box-sizing: border-box;
         display: block;
         inline-size: 100%;
@@ -198,7 +199,7 @@ html.fi select option:disabled {
         text-transform: uppercase;
     }
 
-    html.fi .admin-workspace select:not([multiple]):not([size]) optgroup > option {
+    html.fi select:not([multiple]):is(:not([size]), [size="1"]) optgroup > option {
         /* Exact symmetric hover/selected inset; group heading/divider instead
          * fill the popup from one side to the other. */
         margin: 0 .1875rem;
@@ -209,7 +210,7 @@ html.fi select option:disabled {
         text-transform: none;
     }
 
-    html.fi .admin-workspace select:not([multiple]):not([size]) option {
+    html.fi select:not([multiple]):is(:not([size]), [size="1"]) option {
         display: flex;
         min-height: 2rem;
         padding: .45rem .7rem;
@@ -220,19 +221,19 @@ html.fi select option:disabled {
         line-height: 1.2;
     }
 
-    html.fi .admin-workspace select:not([multiple]):not([size]) option::checkmark {
+    html.fi select:not([multiple]):is(:not([size]), [size="1"]) option::checkmark {
         order: 2;
         margin-inline-start: auto;
         color: var(--admin-accent);
     }
 
-    html.fi .admin-workspace select:not([multiple]):not([size]) option:hover,
-    html.fi .admin-workspace select:not([multiple]):not([size]) option:checked {
+    html.fi select:not([multiple]):is(:not([size]), [size="1"]) option:hover,
+    html.fi select:not([multiple]):is(:not([size]), [size="1"]) option:checked {
         background: color-mix(in srgb, var(--admin-accent) 16%, var(--admin-control-popup-surface));
         color: var(--admin-control-popup-ink);
     }
 
-    html.fi .admin-workspace select:not([multiple]):not([size])::picker-icon {
+    html.fi select:not([multiple]):is(:not([size]), [size="1"])::picker-icon {
         position: absolute;
         inset-block-start: 50%;
         inset-inline-end: .35rem;
