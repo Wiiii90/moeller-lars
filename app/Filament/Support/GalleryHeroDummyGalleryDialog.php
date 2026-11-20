@@ -32,6 +32,8 @@ final class GalleryHeroDummyGalleryDialog
                 })
                 ->columnSpanFull(),
             AdminControl::select('pending_candidate', 'Insert existing Artwork')
+                // Reuse the shared visual Select dialog-expansion contract.
+                ->extraFieldWrapperAttributes(['class' => 'admin-media-picker--visual'], merge: true)
                 ->placeholder('Choose Artwork or Storage')
                 ->searchable()
                 ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)

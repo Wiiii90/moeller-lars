@@ -1,5 +1,11 @@
 # Dev Worker 6 — Gallery Hero / former Home Hero
 
+## Dummy Gallery visual picker unclipping — 2026-11-20
+
+- The Add/Edit Dummy Gallery combined Artwork/Storage Select already uses visual thumbnail option labels but lacked the shared `admin-media-picker--visual` marker. The existing canonical dialog expansion rule in `resources/css/admin/dialog-contract.css` therefore never applied. The field wrapper now carries that semantic marker and reuses the same expanded native Filament modal scrollport as the existing visual Storage picker. No page-local CSS, overlay replacement, custom scroll lock or duplicate picker was added.
+- Source reviewed against the active Filament `AdminControl` wrapper and canonical CSS; actual desktop/mobile browser clipping and close/scroll lifecycle still require local Preview acceptance. No tests, builds, deployments or unrelated Gallery changes.
+
+
 ## Focused Gallery Hero Random implementation — 2026-11-20
 
 - User explicitly assigned Dev Worker 6 in this chat to implement non-repeating Random on the current **Gallery → Hero Artworks** template, which now belongs to Gallery instead of a Home-only special page. Dev Worker 4 owns general Gallery; limit this lease's edits to the actual Hero Random resolver and direct UI/public consumers.
