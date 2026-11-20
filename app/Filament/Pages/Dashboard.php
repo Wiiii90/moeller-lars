@@ -233,7 +233,14 @@ final class Dashboard extends Page
 
     public function toggleSelectAll(): void
     {
-        $this->toggleFeedSelectionKeys($this->currentSelectableFeedKeys());
+        $keys = $this->currentSelectableFeedKeys();
+        if ($keys === []) {
+            $this->selectedFeedKeys = [];
+
+            return;
+        }
+
+        $this->toggleFeedSelectionKeys($keys);
     }
 
     /** @param list<string> $keys */

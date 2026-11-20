@@ -6,7 +6,6 @@
         $feedHasRecords = $feedPagination['total'] > 0 || (trim($feedSearch) !== '' || $feedType !== 'all' || $notificationFilter !== 'all')
             && app(\App\Domain\Admin\DashboardFeed::class)->paginate('', 'all', 1, 25)['total'] > 0;
         $pinnedFeed = collect($feed)->filter(fn (array $item): bool => ($item['pinned'] ?? false) === true)->values();
-        $regularFeed = collect($feed)->reject(fn (array $item): bool => ($item['pinned'] ?? false) === true)->values();
     @endphp
 
     <x-admin.controls
