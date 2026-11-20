@@ -175,33 +175,33 @@
                                 <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-dashboard__feed-actions">
                                     <x-admin.row-action
                                         :action="\App\Filament\Support\AdminRowAction::Open"
-                                        wire:click='openNotificationGroup(@json($memberKeys))'
+                                        wire:click="openNotificationGroup('{{ $first['key'] }}')"
                                         aria-label="Open all {{ count($members) }} grouped notifications"
                                         title="Open group"
                                     />
                                     <x-admin.row-action
                                         :action="\App\Filament\Support\AdminRowAction::Pin"
-                                        wire:click='pinNotificationGroup(@json($memberKeys))'
+                                        wire:click="pinNotificationGroup('{{ $first['key'] }}')"
                                         aria-label="Pin all {{ count($members) }} grouped notifications"
                                         title="Pin all"
                                     />
                                     <x-admin.row-action
                                         :action="$groupUnread ? \App\Filament\Support\AdminRowAction::MarkRead : \App\Filament\Support\AdminRowAction::MarkUnread"
-                                        wire:click='toggleNotificationGroupRead(@json($memberKeys))'
+                                        wire:click="toggleNotificationGroupRead('{{ $first['key'] }}')"
                                         aria-label="{{ $groupUnread ? 'Mark all grouped notifications read' : 'Mark all grouped notifications unread' }}"
                                         title="{{ $groupUnread ? 'Mark all read' : 'Mark all unread' }}"
                                     />
                                     @if ($deleteWithoutConfirmation)
                                         <x-admin.row-action
                                             :action="\App\Filament\Support\AdminRowAction::Delete"
-                                            wire:click='deleteNotificationGroup(@json($memberKeys))'
+                                            wire:click="deleteNotificationGroup('{{ $first['key'] }}')"
                                             aria-label="Delete all {{ count($members) }} grouped notifications"
                                             title="Delete group"
                                         />
                                     @else
                                         <x-admin.row-action
                                             :action="\App\Filament\Support\AdminRowAction::Delete"
-                                            wire:click='mountAction("deleteNotificationGroup", { keys: @json($memberKeys) })'
+                                            wire:click="mountAction('deleteNotificationGroup', { key: '{{ $first['key'] }}' })"
                                             aria-label="Delete all {{ count($members) }} grouped notifications"
                                             title="Delete group"
                                         />

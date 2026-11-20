@@ -170,13 +170,12 @@ final class Dashboard extends Page
     }
 
     /**
-     * An open group is a view over ordinary Notifications, not another entity.
-     *
-     * @param  list<string>  $keys
+     * A group is only a view over individual Notifications. The client sends
+     * the leader key; the server resolves its current members.
      */
-    public function openNotificationGroup(array $keys): void
+    public function openNotificationGroup(string $key): void
     {
-        $entries = $this->notificationGroupEntries($keys);
+        $entries = $this->notificationGroupEntries($key);
         if ($entries === []) {
             return;
         }
@@ -187,22 +186,20 @@ final class Dashboard extends Page
             }
         });
 
-        $this->mountAction('feedGroup', ['keys' => $keys]);
+        $this->mountAction('feedGroup', ['key' => $key]);
     }
 
-    /** @param list<string> $keys */
-    public function pinNotificationGroup(array $keys): void
+    public function pinNotificationGroup(string $key): void
     {
-        $entries = $this->notificationGroupEntries($keys);
+        $entries = $this->notificationGroupEntries($key);
         if ($entries !== []) {
             app(DashboardFeedPins::class)->pinMany(array_column($entries, 'key'));
         }
     }
 
-    /** @param list<string> $keys */
-    public function toggleNotificationGroupRead(array $keys): void
+    public function toggleNotificationGroupRead(string $key): void
     {
-        $entries = $this->notificationGroupEntries($keys);
+        $entries = $this->notificationGroupEntries($key);
         if ($entries === []) {
             return;
         }
@@ -223,10 +220,9 @@ final class Dashboard extends Page
         });
     }
 
-    /** @param list<string> $keys */
-    public function deleteNotificationGroup(array $keys): void
+    public function deleteNotificationGroup(string $key): void
     {
-        $entries = $this->notificationGroupEntries($keys);
+        $entries = $this->notificationGroupEntries($key);
         if ($entries === []) {
             return;
         }
@@ -525,8 +521,7 @@ final class Dashboard extends Page
                 ->label('Delete group')
                 ->color('danger')
                 ->action(function (array $arguments): void {
-                    $keys = $arguments['keys'] ?? [];
-                    $this->deleteNotificationGroup(is_array($keys) ? $keys : []);
+                    $this->deleteNotificationGroup((string) ($arguments['key'] ?? ''));
                 }),
             'Delete grouped messages?',
         );
@@ -538,13 +533,13 @@ final class Dashboard extends Page
             Action::make('feedGroup')
                 ->label('Open group')
                 ->modalHeading(function (array $arguments): string {
-                    $entries = $this->notificationGroupEntries((array) ($arguments['keys'] ?? []));
+                    $entries = $this->notificationGroupEntries((string) ($arguments['key'] ?? ''));
                     abort_if($entries === [], 404);
 
                     return (string) ($entries[0]['edit_group_title'] ?? $entries[0]['title']);
                 })
                 ->modalContent(function (array $arguments): View {
-                    $entries = $this->notificationGroupEntries((array) ($arguments['keys'] ?? []));
+                    $entries = $this->notificationGroupEntries((string) ($arguments['key'] ?? ''));
                     abort_if($entries === [], 404);
 
                     return view('filament.pages.partials.dashboard-feed-dialog', ['groupEntries' => $entries]);
@@ -656,27 +651,27 @@ final class Dashboard extends Page
     }
 
     /**
-     * A group action resolves the exact current set of individual messages.
-     * No synthetic group ID can be submitted to the ordinary bulk actions.
+     * Resolve group membership from the current view rather than accepting
+     * a client-side array that could be stale or contain unrelated IDs.
      *
-     * @param  list<string>  $keys
      * @return list<array<string,mixed>>
      */
-    private function notificationGroupEntries(array $keys): array
+    private function notificationGroupEntries(string $key): array
     {
-        if (count($keys) < 2 || count($keys) > max(self::PAGE_SIZES)
-            || count(array_unique($keys)) !== count($keys)
-            || ! collect($keys)->every(static fn (mixed $key): bool => is_string($key)
-                && preg_match('/^notification:[1-9][0-9]*$/D', $key) === 1)) {
+        if (preg_match('/^notification:[1-9][0-9]*$/D', $key) !== 1) {
             return [];
         }
 
-        $groups = $this->notificationGroups($this->feedViewItems($this->feedPagination()));
-        foreach ($groups as $group) {
-            $members = $group['items'];
-            if (count($members) > 1 && array_column($members, 'key') === $keys) {
-                return $members;
+        foreach ($this->notificationGroups($this->feedViewItems($this->feedPagination())) as $group) {
+            if ($group['key'] !== $key || count($group['items']) < 2) {
+                continue;
             }
+
+            $members = $group['items'];
+
+            return collect($members)->every(
+                static fn (array $entry): bool => is_int($entry['notification_id'] ?? null),
+            ) ? $members : [];
         }
 
         return [];
