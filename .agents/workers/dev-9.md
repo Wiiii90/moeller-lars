@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 28 (active)  
-**State:** Page-wheel and drag-to-Public-page scroll restoration source-integrated; browser review pending.
+**State:** Artist accepted page navigation and reported a conflicting redundant Space-drag shortcut. Space gesture removed from shared Live Preview source; browser review pending.
 
 ## Ownership and current decisions
 
@@ -45,3 +45,13 @@
 - `resources/views/components/admin/live-preview.blade.php`: update the compact central bulb Help with plain-wheel page scrolling, Shift-wheel zoom, and drag gestures. Keep the temporary pan overlay visible during active drag at fitted zoom. Device and Gallery focus controls unchanged.
 - In-memory JavaScript parsing and bounded simulated interaction succeeded: unmodified wheel not intercepted, Shift-wheel zoom active, dragging at magnification moves the outer viewport and continues into iframe scroll, and middle-drag at 100% scrolls the Public document. Simulated document page height: 4200 CSS px versus 900 CSS px iframe viewport. The drag state is disposed after release.
 - **Acceptance still open:** Actual General/Gallery browser checks for native wheel scrolling across long Public pages, Shift-wheel pointer zoom, drag across both boundaries and in reverse, proper Public links and hover state, touch gestures and browser back/forward conflicts. No application build, full test suite, CI, deployment or publication executed.
+
+
+## 2026-11-20: Retire conflicting Space drag
+
+- Artist confirms that ordinary wheel scrolling, Shift + wheel zoom, and middle-mouse-button drag with inner Public-page scroll chaining now work; the Space + left-button drag behavior conflicts with normal keyboard/browser operations and is redundant.
+- Shared `resources/js/admin-live-preview.js` no longer tracks `spacePan` or pointer-presence keyboard state. Removed all Space key handlers from both the outer Preview and the iframe document, including their teardown. Drag starts only on pointer button 1 (middle mouse). The iframe blur guard still cancels an active gesture. No additional drag overlays persist at rest.
+- `resources/views/components/admin/live-preview.blade.php` removes window keyboard listeners and hover-state bookkeeping; the pan layer shows exclusively during active drag. Compact shared bulb Help documents middle-button drag only.
+- `resources/css/admin/live-preview.css` updates the existing pan-layer comment; geometry, device controls, zoom input, and touch behavior are unchanged.
+- Isolated JavaScript parse/gesture simulation: Space/left-pointer input ignored, middle-button drag scrolls the actual Public document beyond the initially visible device area, iframe keyboard listeners absent, wheel listener and gesture cleanup preserved.
+- Full build, browser test, touch test, suite, CI and deployment were **not run**. Review in General/Gallery with keyboard Space, middle-button drag at fitted and enlarged sizes, native wheel scroll, Shift-wheel zoom and Public navigation clicks.

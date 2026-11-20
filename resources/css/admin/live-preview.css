@@ -268,7 +268,7 @@ html.fi .admin-workspace .admin-live-preview__device-picker > select.admin-live-
 .admin-live-preview__zoom-value:disabled { opacity: 1; cursor: default; }
 .admin-live-preview__page.is-zoomed { cursor: default; touch-action: auto; user-select: auto; }
 .admin-live-preview__page.is-zoomed iframe { pointer-events: auto; user-select: auto; }
-/* Only a held-Space or middle-button gesture covers the Public frame.
+/* Only active middle-button dragging covers the Public frame.
  * Idle zoom leaves all Public controls and links interactive. */
 .admin-live-preview__pan-layer {
     position: absolute;

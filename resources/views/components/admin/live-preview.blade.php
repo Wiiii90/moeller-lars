@@ -15,9 +15,6 @@
     @if ($refreshOnAppearance) x-on:general-appearance-updated.window="refreshPreview()" @endif
     x-on:gallery-preview-updated.window="refreshPreview($event.detail); scheduleFit()"
     x-on:resize.window="scheduleFit()"
-    x-on:keydown.window="handleSpaceDown($event)"
-    x-on:keyup.window="handleSpaceUp($event)"
-    x-on:blur.window="cancelSpacePan()"
 >
     @if ($heading)
         <h2 class="admin-section__kicker admin-live-preview__title admin-visual-stage__heading">Live preview</h2>
@@ -98,15 +95,13 @@
             <x-admin.help
                 :toolbar="true"
                 label="Preview controls and gestures"
-                text="Wheel: scroll page. Shift + wheel: zoom at pointer. Middle-button drag or Space + drag: move page and view. Touch: swipe/tap; two fingers: pan. Zoom %: fit."
+                text="Wheel: scroll page. Shift + wheel: zoom at pointer. Middle-button drag: move page and view. Touch: swipe/tap; two fingers: pan. Zoom %: fit."
             />
         </div>
     </x-admin.stage-tool-row>
 
 
     <div x-ref="viewport" class="admin-live-preview__viewport" tabindex="0"
-        x-on:pointerenter="pointerInside = true"
-        x-on:pointerleave="pointerInside = false; if (!dragging) cancelSpacePan()"
         x-on:pointerdown.capture="startPan($event)"
         x-on:wheel.capture="zoomWithWheel($event)"
         x-on:auxclick="if ($event.button === 1 && (zoom > minZoom || previewScrollRoot())) $event.preventDefault()"
@@ -139,7 +134,7 @@
                     </div>
                 @endif
                 <div x-ref="panLayer" class="admin-live-preview__pan-layer"
-                    x-show="dragging || (zoom > minZoom && spacePan)" x-cloak
+                    x-show="dragging" x-cloak
                     aria-hidden="true"></div>
             </div>
         </div>

@@ -8,7 +8,6 @@ export function adminLivePreview(element) {
         fitFrame: null,
         frameShortcuts: [],
         diagnosticsFrame: null,
-        pointerInside: false,
         previewDevice: 'desktop',
         selectedProfile: 'current-window',
         rotated: false,
@@ -18,7 +17,6 @@ export function adminLivePreview(element) {
         zoom: 1,
         minZoom: 1,
         maxZoom: 3,
-        spacePan: false,
         dragging: false,
         pointerId: null,
         panGestureCleanup: null,
@@ -93,7 +91,6 @@ export function adminLivePreview(element) {
         changeViewport() {
             this.cancelPanGesture()
             this.zoom = this.minZoom
-            this.spacePan = false
             this.touchPanStart = null
             this.$nextTick(() => this.scheduleFit())
         },
@@ -173,7 +170,6 @@ export function adminLivePreview(element) {
             this.cancelPanGesture()
             this.touchPanStart = null
             this.zoom = this.minZoom
-            this.spacePan = false
             this.fitPreview()
         },
         changeZoom(step) {
@@ -232,31 +228,6 @@ export function adminLivePreview(element) {
             const delta = Math.max(-160, Math.min(160, this.wheelPixels(event, rawDelta)))
             this.setZoom(this.zoom * Math.exp(-delta * 0.002), this.previewPoint(event, inFrame))
         },
-        shortcutTargetIsInteractive(target) {
-            return target && typeof target.closest === 'function'
-                && target.closest('a, button, input, textarea, select, [contenteditable], [role=button]') !== null
-        },
-        handleSpaceDown(event) {
-            if (event.code !== 'Space' || this.zoom <= this.minZoom || event.repeat || this.shortcutTargetIsInteractive(event.target)) return
-
-            // Do not hijack Space on unrelated Admin controls or workspaces.
-            if (! this.pointerInside && ! this.$el.contains(document.activeElement)) return
-            event.preventDefault()
-            this.spacePan = true
-        },
-        handleSpaceUp(event) {
-            if (event.code !== 'Space' || ! this.spacePan) return
-
-            event.preventDefault()
-            this.spacePan = false
-            this.cancelPanGesture()
-        },
-        cancelSpacePan() {
-            if (! this.spacePan) return
-
-            this.spacePan = false
-            this.cancelPanGesture()
-        },
         unbindFrameShortcuts() {
             for (const remove of this.frameShortcuts) remove()
             this.frameShortcuts = []
@@ -276,9 +247,7 @@ export function adminLivePreview(element) {
             }
             if (! documentRef || ! windowRef) return
 
-            const down = (event) => this.handleSpaceDown(event)
-            const up = (event) => this.handleSpaceUp(event)
-            const blur = () => this.cancelSpacePan()
+            const blur = () => this.cancelPanGesture()
             const changed = () => this.scheduleDiagnostics()
             const frameWheel = (event) => this.zoomWithWheel(event, true)
             const frameDown = (event) => this.startPan(event, true)
@@ -298,8 +267,6 @@ export function adminLivePreview(element) {
             documentRef.addEventListener('touchmove', frameTouchMove, { passive: false })
             documentRef.addEventListener('touchend', frameTouchEnd)
             documentRef.addEventListener('touchcancel', frameTouchEnd)
-            documentRef.addEventListener('keydown', down)
-            documentRef.addEventListener('keyup', up)
             // Recheck after actual iframe reflow, media completion and fonts.
             documentRef.addEventListener('load', changed, true)
             windowRef.addEventListener('resize', changed)
@@ -320,8 +287,6 @@ export function adminLivePreview(element) {
                 () => documentRef.removeEventListener('touchmove', frameTouchMove),
                 () => documentRef.removeEventListener('touchend', frameTouchEnd),
                 () => documentRef.removeEventListener('touchcancel', frameTouchEnd),
-                () => documentRef.removeEventListener('keydown', down),
-                () => documentRef.removeEventListener('keyup', up),
                 () => documentRef.removeEventListener('load', changed, true),
                 () => windowRef.removeEventListener('resize', changed),
                 () => windowRef.removeEventListener('blur', blur),
@@ -379,7 +344,7 @@ export function adminLivePreview(element) {
             scrollRoot.scrollTop += remainderY / scale
         },
         startPan(event, inFrame = false) {
-            if (this.dragging || (event.button !== 1 && (! this.spacePan || event.button !== 0))) return
+            if (this.dragging || event.button !== 1) return
 
             const viewport = this.$refs.viewport
             const scrollRoot = this.previewScrollRoot()
