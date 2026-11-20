@@ -47,6 +47,7 @@
             ]);
         @endphp
         <section class="gallery-workspace__stage admin-visual-stage admin-visual-stage--split admin-focus-stage"
+            x-ref="galleryStageRoot"
             aria-label="Gallery editor and interactive preview"
             data-gallery-background-preview-kind="{{ $backgroundPreview['kind'] }}"
             data-gallery-background-preview-url="{{ $backgroundPreview['url'] }}"
@@ -64,7 +65,7 @@
 
                     // Only the visible pane is browser-local; the canonical
                     // preview targets are resolved by the Gallery workspace.
-                    const background = this.$el.dataset
+                    const background = this.$refs.galleryStageRoot.dataset
                     const kind = next === 'queue' ? 'staged' : background.galleryBackgroundPreviewKind
                     const artworkId = next === 'queue'
                         ? null : (Number(background.galleryBackgroundPreviewArtworkId) || null)
@@ -75,7 +76,8 @@
                     this.previewKind = kind
                     this.previewArtworkId = artworkId
                     if (url) this.$dispatch('gallery-preview-updated', {
-                        url, title: kind === 'staged' ? 'Interactive staged Artwork preview' : 'Interactive Gallery preview',
+                        url, title: kind === 'staged' ? 'Interactive staged Artwork preview'
+                            : (kind === 'artwork' ? 'Interactive Artwork preview' : 'Interactive Gallery preview'),
                     })
                 },
             }">
