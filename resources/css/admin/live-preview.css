@@ -91,7 +91,11 @@ html.fi .admin-workspace .admin-live-preview__device-picker > select.admin-live-
     border-radius: .2rem;
     background: transparent;
     color: transparent;
-    font-size: 0;
+    /* 0px font-size leaked into the customizable optgroup and caused its
+     * intrinsic popup geometry to recompute after opening. Hide the collapsed
+     * value with color only; keep natural option and group metrics. */
+    font-size: var(--admin-control-value-size);
+    --admin-select-picker-inline-size: 18rem;
     cursor: pointer;
 }
 .admin-live-preview__device-select:is(:hover, :focus-visible) {
@@ -114,19 +118,11 @@ html.fi .admin-workspace .admin-live-preview__device-picker > select.admin-live-
 .admin-live-preview__device-picker:is(:hover, :focus-within) .admin-live-preview__device-glyph {
     color: var(--admin-text);
 }
-html.fi .admin-workspace .admin-live-preview__device-select option,
-html.fi .admin-workspace .admin-live-preview__device-select optgroup {
-    font-size: .8rem;
-    text-indent: 0;
-}
+/* The shared Admin picker owns popup dimensions and optgroup typography.
+ * The compact Preview trigger alone hides the standard caret. */
 @supports (appearance: base-select) {
     html.fi .admin-workspace .admin-live-preview__device-select::picker-icon {
         display: none;
-    }
-    html.fi .admin-workspace .admin-live-preview__device-select::picker(select) {
-        min-width: max-content;
-        max-width: calc(100vw - 1rem);
-        font-size: .8rem;
     }
 }
 .admin-live-preview__zoom-group {

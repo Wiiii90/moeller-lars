@@ -34,6 +34,9 @@
                     x-bind:title="selectedProfileLabel()">
                     @foreach (['desktop' => 'Computers', 'tablet' => 'Tablets', 'mobile' => 'Phones'] as $category => $label)
                         <optgroup label="{{ $label }}">
+                            {{-- Native optgroup labels remain available in classic browsers.
+                                 Customizable Select renders this real legend for styling. --}}
+                            <legend>{{ $label }}</legend>
                             @foreach (\App\Domain\Content\PreviewDeviceProfiles::all() as $id => $profile)
                                 @if ($profile['category'] === $category)
                                     <option value="{{ $id }}">{{ $profile['label'] }}</option>

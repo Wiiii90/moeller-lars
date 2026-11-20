@@ -366,6 +366,7 @@ test('shared Preview toolbar stays on one row in compact General Stage widths', 
     // the click target. Chrome's native Admin picker is styled centrally.
     await expect(device).toBeVisible();
     await expect(device.locator('optgroup')).toHaveCount(3);
+    await expect(device.locator('optgroup > legend')).toHaveText(['Computers', 'Tablets', 'Phones']);
     expect(await device.evaluate(node => {
       const rect = node.getBoundingClientRect();
       const topmost = document.elementFromPoint(
@@ -378,6 +379,15 @@ test('shared Preview toolbar stays on one row in compact General Stage widths', 
     await device.click();
     if (hasNativeOpenState) {
       await expect.poll(() => device.evaluate(node => node.matches(':open'))).toBe(true);
+      const openWidth = await device.evaluate(node =>
+        Number.parseFloat(getComputedStyle(node, '::picker(select)').width));
+      // A 2rem icon-only trigger must not collapse the 18rem menu after
+      // the iframe finishes loading or Chromium recalculates intrinsic sizes.
+      expect(openWidth).toBeGreaterThan(240);
+      await page.waitForTimeout(1600);
+      const settledWidth = await device.evaluate(node =>
+        Number.parseFloat(getComputedStyle(node, '::picker(select)').width));
+      expect(Math.abs(settledWidth - openWidth)).toBeLessThan(1);
     }
     await device.press('Escape');
     await device.selectOption('tablet-mini');

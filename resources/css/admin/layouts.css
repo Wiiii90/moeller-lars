@@ -135,13 +135,64 @@ html.fi select option:disabled {
 
     html.fi .admin-workspace select:not([multiple]):not([size])::picker(select) {
         appearance: base-select;
+        box-sizing: border-box;
+        /* A compact trigger must not make the actual menu collapse to its
+         * currently selected value after Chrome remeasures the open picker.
+         * Normal selects use intrinsic content size; icon-only controls can
+         * request one stable width through this same shared CSS owner. */
+        inline-size: var(--admin-select-picker-inline-size, max-content);
+        max-inline-size: calc(100vw - 1rem);
+        max-block-size: calc(100dvh - 1rem);
+        overflow-y: auto;
+        overflow-x: hidden;
         margin-top: .2rem;
         padding: .2rem 0;
         border: 1px solid var(--admin-line-strong);
-        border-radius: .2rem;
+        border-radius: var(--admin-overlay-corner-radius);
         background: var(--admin-control-popup-surface);
-        color: var(--admin-control-popup-ink);
+        color: var(--admin-control-popup-ink, var(--admin-text));
         box-shadow: none;
+    }
+
+    /* Group structure is shared by every customizable Admin Select, not just
+     * the Preview device catalogue. The label and separator form a quiet
+     * hierarchy; options keep the normal Admin type and selection treatment. */
+    html.fi .admin-workspace select:not([multiple]):not([size]) optgroup {
+        display: block;
+        padding-block: .15rem .3rem;
+        background: var(--admin-control-popup-surface);
+        color: var(--admin-muted);
+        font-size: var(--admin-control-label-size);
+        font-weight: 700;
+        letter-spacing: .075em;
+        text-transform: uppercase;
+    }
+
+    html.fi .admin-workspace select:not([multiple]):not([size]) optgroup + optgroup {
+        margin-block-start: .2rem;
+        padding-block-start: .4rem;
+        border-block-start: 1px solid var(--admin-line);
+    }
+
+    html.fi .admin-workspace select:not([multiple]):not([size]) optgroup > legend {
+        display: block;
+        padding: .35rem .85rem .3rem;
+        background: color-mix(in srgb, var(--admin-subtle) 75%, var(--admin-control-popup-surface));
+        color: var(--admin-muted);
+        font-size: var(--admin-control-label-size);
+        font-weight: 700;
+        letter-spacing: .075em;
+        line-height: 1.35;
+        text-transform: uppercase;
+    }
+
+    html.fi .admin-workspace select:not([multiple]):not([size]) optgroup > option {
+        margin-inline: .15rem;
+        padding-inline-start: 1rem;
+        font-size: var(--admin-control-value-size);
+        font-weight: 400;
+        letter-spacing: normal;
+        text-transform: none;
     }
 
     html.fi .admin-workspace select:not([multiple]):not([size]) option {
