@@ -36,6 +36,8 @@ use LogicException;
 #[Fillable([
     'regional_format',
     'number_format',
+    'time_format',
+    'time_zone',
     'contact_recipient_email',
     'public_email',
     'show_public_email',
@@ -256,6 +258,14 @@ class PublicContentSetting extends Model
         $numberFormat = $setting->getAttribute('number_format');
         if (! is_string($numberFormat) || ! array_key_exists($numberFormat, RegionalFormats::NUMBER_OPTIONS)) {
             throw ValidationException::withMessages(['number_format' => 'Choose a supported number format.']);
+        }
+        $timeFormat = $setting->getAttribute('time_format');
+        if (! is_string($timeFormat) || ! array_key_exists($timeFormat, RegionalFormats::TIME_OPTIONS)) {
+            throw ValidationException::withMessages(['time_format' => 'Choose a supported time format.']);
+        }
+        $timeZone = $setting->getAttribute('time_zone');
+        if (! is_string($timeZone) || ! array_key_exists($timeZone, RegionalFormats::timeZoneOptions())) {
+            throw ValidationException::withMessages(['time_zone' => 'Choose a supported time zone.']);
         }
 
         foreach (PublicAppearance::SURFACE_PREFIXES as $surface) {

@@ -3,7 +3,9 @@
 namespace App\Domain\Content;
 
 use App\Models\PublicContentSetting;
+use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use Illuminate\Support\Facades\Auth;
 
 final class RegionalFormats
@@ -19,7 +21,16 @@ final class RegionalFormats
         'en-US' => '1,234.56',
     ];
 
+    public const TIME_OPTIONS = [
+        '24' => '24-hour (23:45)',
+        '12' => '12-hour (11:45 PM)',
+    ];
+
     public const DEFAULT = 'de-DE';
+
+    public const DEFAULT_TIME_FORMAT = '24';
+
+    public const DEFAULT_TIME_ZONE = 'UTC';
 
     /** @return key-of<self::OPTIONS> */
     public static function publicRegion(): string
@@ -32,17 +43,35 @@ final class RegionalFormats
         return self::numberRegion(PublicContentSetting::general()->getAttribute('number_format'));
     }
 
-    public static function numberRegion(mixed $value): string
+    public static function publicTimeFormat(): string
     {
-        return is_string($value) && array_key_exists($value, self::NUMBER_OPTIONS)
-            ? $value
-            : self::DEFAULT;
+        return self::timeFormat(PublicContentSetting::general()->getAttribute('time_format'));
+    }
+
+    public static function publicTimeZone(): string
+    {
+        return self::timeZone(PublicContentSetting::general()->getAttribute('time_zone'));
     }
 
     /** @return key-of<self::OPTIONS> */
     public static function adminRegion(): string
     {
         return self::region(Auth::user()?->getAttribute('admin_region'));
+    }
+
+    public static function adminNumberRegion(): string
+    {
+        return self::numberRegion(Auth::user()?->getAttribute('admin_number_format'));
+    }
+
+    public static function adminTimeFormat(): string
+    {
+        return self::timeFormat(Auth::user()?->getAttribute('admin_time_format'));
+    }
+
+    public static function adminTimeZone(): string
+    {
+        return self::timeZone(Auth::user()?->getAttribute('admin_time_zone'));
     }
 
     public static function publicDate(DateTimeInterface $date): string
@@ -52,7 +81,7 @@ final class RegionalFormats
 
     public static function publicDateTime(DateTimeInterface $date): string
     {
-        return self::dateTime($date, self::publicRegion());
+        return self::dateTime($date, self::publicRegion(), self::publicTimeFormat(), self::publicTimeZone());
     }
 
     public static function publicDateRange(DateTimeInterface $start, DateTimeInterface $end): string
@@ -72,7 +101,12 @@ final class RegionalFormats
 
     public static function adminDateTime(DateTimeInterface $date): string
     {
-        return self::dateTime($date, self::adminRegion());
+        return self::dateTime($date, self::adminRegion(), self::adminTimeFormat(), self::adminTimeZone());
+    }
+
+    public static function adminNumber(float|int $value, int $decimals = 0): string
+    {
+        return self::number($value, $decimals, self::adminNumberRegion());
     }
 
     public static function pickerDateFormat(): string
@@ -86,7 +120,7 @@ final class RegionalFormats
 
     public static function pickerDateTimeFormat(): string
     {
-        return self::pickerDateFormat().' H:i';
+        return self::pickerDateFormat().' '.self::timePattern(self::adminTimeFormat());
     }
 
     public static function date(DateTimeInterface $date, string $region): string
@@ -98,9 +132,14 @@ final class RegionalFormats
         });
     }
 
-    public static function dateTime(DateTimeInterface $date, string $region): string
+    public static function dateTime(DateTimeInterface $date, string $region, string $timeFormat = self::DEFAULT_TIME_FORMAT, ?string $timeZone = null): string
     {
-        return self::date($date, $region).', '.$date->format('H:i');
+        $instant = DateTimeImmutable::createFromInterface($date);
+        if ($timeZone !== null) {
+            $instant = $instant->setTimezone(new DateTimeZone(self::timeZone($timeZone)));
+        }
+
+        return self::date($instant, $region).', '.$instant->format(self::timePattern($timeFormat));
     }
 
     public static function dateRange(DateTimeInterface $start, DateTimeInterface $end, string $region): string
@@ -126,5 +165,44 @@ final class RegionalFormats
         return is_string($value) && array_key_exists($value, self::OPTIONS)
             ? $value
             : self::DEFAULT;
+    }
+
+    public static function numberRegion(mixed $value): string
+    {
+        return is_string($value) && array_key_exists($value, self::NUMBER_OPTIONS)
+            ? $value
+            : self::DEFAULT;
+    }
+
+    public static function timeFormat(mixed $value): string
+    {
+        return is_string($value) && array_key_exists($value, self::TIME_OPTIONS)
+            ? $value
+            : self::DEFAULT_TIME_FORMAT;
+    }
+
+    public static function timeZone(mixed $value): string
+    {
+        return is_string($value) && in_array($value, DateTimeZone::listIdentifiers(DateTimeZone::ALL), true)
+            ? $value
+            : self::DEFAULT_TIME_ZONE;
+    }
+
+    /** @return array<string,string> */
+    public static function timeZoneOptions(): array
+    {
+        $options = [self::DEFAULT_TIME_ZONE => 'UTC'];
+        foreach (DateTimeZone::listIdentifiers(DateTimeZone::ALL) as $zone) {
+            if ($zone !== self::DEFAULT_TIME_ZONE) {
+                $options[$zone] = str_replace('_', ' ', $zone);
+            }
+        }
+
+        return $options;
+    }
+
+    private static function timePattern(string $value): string
+    {
+        return self::timeFormat($value) === '12' ? 'g:i A' : 'H:i';
     }
 }
