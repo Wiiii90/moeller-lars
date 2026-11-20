@@ -21,7 +21,7 @@ return new class extends Migration
                     ), '[]'::jsonb),
                     true
                 )
-                WHERE NOT (COALESCE(setting.configuration, '{}'::jsonb) ? 'enabled_gallery_ids')");
+                WHERE NOT jsonb_exists(COALESCE(setting.configuration, '{}'::jsonb), 'enabled_gallery_ids')");
 
             DB::statement("ALTER TABLE {$schema}.artwork_categories DROP COLUMN show_on_home");
         }
