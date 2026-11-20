@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 28 (active)  
-**State:** Direct mouse-wheel zoom is source-integrated as a user-requested **trial**, awaiting browser feedback. Previous middle-button navigation was accepted.
+**State:** Direct mouse-wheel zoom works in the artist's browser; shared Help shortened in source, rendered-view freshness to be checked.
 
 ## Ownership and current decisions
 
@@ -18,6 +18,8 @@
 - `resources/views/components/admin/live-preview.blade.php`: local viewport wheel handling and updated Help text; no new button or separate popup.
 - A bounded in-memory JavaScript syntax/behavior check passed for ordinary wheel zoom, browser modifier preservation, Shift-wheel Public scrolling, iframe listener registration/removal, percentage reset and untouched touch methods. No application build, full suite, CI, deployment or real browser/touch check was executed.
 - **Product tradeoff for review:** plain wheel no longer scrolls the embedded Public document; Shift-wheel offers that route. Trackpad two-finger wheel-like scrolling may also zoom. The user asked to view and evaluate this behavior rather than freeze it as final acceptance.
+
+- 2026-11-20: Artist confirmed that direct wheel zoom otherwise works but the displayed Help text still appeared outdated. Simplified the shared tooltip to concise gesture instructions. On `dev` the previous wording was already correct for wheel zoom, so a stale running Blade view or browser-rendered copy remains possible; no runtime cache inspection or browser verification was performed.
 
 ## Next
 

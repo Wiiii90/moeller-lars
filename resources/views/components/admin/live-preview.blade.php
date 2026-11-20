@@ -98,7 +98,7 @@
             <x-admin.help
                 :toolbar="true"
                 label="Preview controls and gestures"
-                text="Mouse wheel: zoom the preview. Shift + mouse wheel: scroll the public page vertically. Hold the middle mouse button and drag, or hold Space and drag, to move a zoomed preview. The zoom buttons also work; click the percentage to fit again. Touch: swipe and tap normally; use two fingers to move a zoomed preview."
+                text="Wheel: zoom. Shift + wheel: scroll page. Middle-button drag or Space + drag: pan. Touch: swipe/tap; two fingers: pan. Zoom %: fit."
             />
         </div>
     </x-admin.stage-tool-row>
