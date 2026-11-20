@@ -324,11 +324,11 @@ test('shared Preview toolbar stays on one row in compact General Stage widths', 
 
   const preview = page.locator('.general-appearance-stage__preview.admin-live-preview');
   const toolbar = preview.getByRole('toolbar', { name: 'Live preview controls' });
-  const device = toolbar.getByRole('button', { name: /^Choose preview device, current:/ });
+  const device = toolbar.getByRole('combobox', { name: /^Device and viewport resolution:/ });
   await expect(preview).toBeVisible();
   await expect(toolbar).toBeVisible();
 
-  const originalLabel = (await device.getAttribute('title'))?.replace(/^Device: /, '') ?? 'Current window';
+  const original = await device.inputValue();
   try {
     // Container pressure is independent of browser viewport. An embedded
     // Gallery/General Preview can be much narrower than the workspace.
@@ -362,12 +362,27 @@ test('shared Preview toolbar stays on one row in compact General Stage widths', 
       })).toBe(true);
     }
 
-    // The ordinary device icon opens the central Filament dropdown,
-    // rather than intercepting clicks with an invisible native Select.
+    // The select, not an overlaid invisible control or an action menu, owns
+    // the click target. Chrome's native Admin picker is styled centrally.
+    await expect(device).toBeVisible();
+    await expect(device.locator('optgroup')).toHaveCount(3);
+    expect(await device.evaluate(node => {
+      const rect = node.getBoundingClientRect();
+      const topmost = document.elementFromPoint(
+        rect.left + rect.width / 2, rect.top + rect.height / 2,
+      );
+      return topmost === node && getComputedStyle(node).opacity === '1';
+    })).toBe(true);
+    const hasNativeOpenState = await device.evaluate(node =>
+      CSS.supports('selector(select:open)') && getComputedStyle(node).appearance === 'base-select');
     await device.click();
-    await page.getByRole('menuitem', { name: 'iPad (768 × 1024)' }).click();
+    if (hasNativeOpenState) {
+      await expect.poll(() => device.evaluate(node => node.matches(':open'))).toBe(true);
+    }
+    await device.press('Escape');
+    await device.selectOption('tablet-mini');
     await expect(preview).toHaveAttribute('data-preview-device', 'tablet');
-    await expect(device).toHaveAttribute('title', 'Device: iPad (768 × 1024)');
+    await expect(device).toHaveAttribute('title', 'iPad (768 × 1024)');
     await toolbar.getByRole('button', { name: 'Rotate device' }).click();
     await expect(toolbar.getByRole('button', { name: 'Restore device orientation' })).toBeVisible();
 
@@ -379,8 +394,7 @@ test('shared Preview toolbar stays on one row in compact General Stage widths', 
     await toolbar.getByRole('button', { name: 'Reset zoom to fitted size' }).click();
     await expect(pan).toBeDisabled();
   } finally {
-    await device.click();
-    await page.getByRole('menuitem', { name: originalLabel, exact: true }).click();
+    await device.selectOption(original);
     await preview.evaluate(node => {
       node.style.removeProperty('width');
       node.style.removeProperty('max-width');

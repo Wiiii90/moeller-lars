@@ -24,28 +24,33 @@
     @endif
     <x-admin.stage-tool-row label="Live preview controls">
         <div class="admin-stage-tool-group admin-live-preview__device-profile" role="group" aria-label="Device preview">
-            <x-filament::dropdown placement="bottom-start" width="xs" max-height="20rem">
-                <x-slot name="trigger">
-                    <button class="admin-action admin-stage-tool-icon" type="button"
-                        x-bind:title="'Device: ' + selectedProfileLabel()"
-                        x-bind:aria-label="'Choose preview device, current: ' + selectedProfileLabel()">
-                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceDesktop->mini()"
-                            x-show="previewDevice === 'desktop'" x-cloak aria-hidden="true" />
-                        <x-filament::icon icon="heroicon-m-device-tablet"
-                            x-show="previewDevice === 'tablet'" x-cloak aria-hidden="true" />
-                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceMobile->mini()"
-                            x-show="previewDevice === 'mobile'" x-cloak aria-hidden="true" />
-                    </button>
-                </x-slot>
-                <x-filament::dropdown.list>
-                    @foreach (\App\Domain\Content\PreviewDeviceProfiles::all() as $id => $profile)
-                        <x-filament::dropdown.list.item
-                            x-on:click="selectProfile(@js($id))"
-                            x-bind:aria-current="selectedProfile === @js($id) ? 'true' : null"
-                        >{{ $profile['label'] }}</x-filament::dropdown.list.item>
+            {{-- A real single-select uses the shared Admin native picker grammar.
+                 The device glyph decorates its trigger without intercepting input. --}}
+            <div class="admin-live-preview__device-picker">
+                <select class="admin-live-preview__device-select"
+                    x-model="selectedProfile"
+                    x-on:change="selectProfile($event.target.value)"
+                    x-bind:aria-label="'Device and viewport resolution: ' + selectedProfileLabel()"
+                    x-bind:title="selectedProfileLabel()">
+                    @foreach (['desktop' => 'Computers', 'tablet' => 'Tablets', 'mobile' => 'Phones'] as $category => $label)
+                        <optgroup label="{{ $label }}">
+                            @foreach (\App\Domain\Content\PreviewDeviceProfiles::all() as $id => $profile)
+                                @if ($profile['category'] === $category)
+                                    <option value="{{ $id }}">{{ $profile['label'] }}</option>
+                                @endif
+                            @endforeach
+                        </optgroup>
                     @endforeach
-                </x-filament::dropdown.list>
-            </x-filament::dropdown>
+                </select>
+                <span class="admin-live-preview__device-glyph" aria-hidden="true">
+                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceDesktop->mini()"
+                        x-show="previewDevice === 'desktop'" x-cloak />
+                    <x-filament::icon icon="heroicon-m-device-tablet"
+                        x-show="previewDevice === 'tablet'" x-cloak />
+                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceMobile->mini()"
+                        x-show="previewDevice === 'mobile'" x-cloak />
+                </span>
+            </div>
             <button class="admin-action admin-stage-tool-icon" type="button"
                 x-on:click="rotateViewport()"
                 x-bind:disabled="selectedProfile === 'current-window'"
