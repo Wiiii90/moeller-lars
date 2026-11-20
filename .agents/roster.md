@@ -1,6 +1,6 @@
 # Dev workstream — branch-local coordination
 
-**Next lease token:** 30
+**Next lease token:** 31
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
@@ -9,7 +9,7 @@
 
 | Dev Worker 6 | 16 | Active — Gallery Hero Random anti-repeat and conditional chance implemented; runtime/browser acceptance pending | Gallery Hero Random draw, per-visitor recent image, Stage next chances, eligibility; coordinate Gallery ownership with Dev Worker 4; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 18 | Shared dropdown CSS tokens consolidated across native/Filament/pager; browser acceptance pending | General Appearance, shared Admin Selects and Gallery/General Preview | [dev-7.md](workers/dev-7.md) |
-| Dev Worker 8 | 15 | Active — Add actions across search/toolbars and shared Add-row now use canonical plain Plus; browser review pending | Central Admin Create dialog controls, shared icon grammar and media picker; no deployment | [dev-8.md](workers/dev-8.md) |
+| Dev Worker 8 | 30 | Active — replacement registered; awaiting next dialog assignment, prior source changes need browser acceptance | Shared Admin Create/Edit dialogs, central dialog geometry, date controls and picker; coordinate shared primitives; no deployment | [dev-8.md](workers/dev-8.md) |
 
 
 | Dev Worker 9 | 28 | Shared toolbar Help mouse-focus release source-corrected; keyboard focus preserved, browser review pending | General/Gallery Live Preview controls and tooltip focus behavior; preserve Dev Worker 7 device controls and Gallery Focus | [dev-9.md](workers/dev-9.md) |
