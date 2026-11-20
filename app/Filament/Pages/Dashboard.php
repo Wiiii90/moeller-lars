@@ -169,6 +169,81 @@ final class Dashboard extends Page
         $this->replaceMountedAction('feedEntry', ['key' => $key]);
     }
 
+    /**
+     * An open group is a view over ordinary Notifications, not another entity.
+     *
+     * @param  list<string>  $keys
+     */
+    public function openNotificationGroup(array $keys): void
+    {
+        $entries = $this->notificationGroupEntries($keys);
+        if ($entries === []) {
+            return;
+        }
+
+        DB::transaction(function () use ($entries): void {
+            foreach ($entries as $entry) {
+                app(DashboardFeed::class)->openEntry((string) $entry['key']);
+            }
+        });
+
+        $this->mountAction('feedGroup', ['keys' => $keys]);
+    }
+
+    /** @param list<string> $keys */
+    public function pinNotificationGroup(array $keys): void
+    {
+        $entries = $this->notificationGroupEntries($keys);
+        if ($entries !== []) {
+            app(DashboardFeedPins::class)->pinMany(array_column($entries, 'key'));
+        }
+    }
+
+    /** @param list<string> $keys */
+    public function toggleNotificationGroupRead(array $keys): void
+    {
+        $entries = $this->notificationGroupEntries($keys);
+        if ($entries === []) {
+            return;
+        }
+
+        $markRead = collect($entries)->contains(
+            static fn (array $entry): bool => str_starts_with((string) $entry['status'], 'Unread'),
+        );
+
+        DB::transaction(function () use ($entries, $markRead): void {
+            $feed = app(DashboardFeed::class);
+            foreach ($entries as $entry) {
+                if ($markRead) {
+                    $feed->openEntry((string) $entry['key']);
+                } else {
+                    $feed->markNotificationUnread((int) $entry['notification_id']);
+                }
+            }
+        });
+    }
+
+    /** @param list<string> $keys */
+    public function deleteNotificationGroup(array $keys): void
+    {
+        $entries = $this->notificationGroupEntries($keys);
+        if ($entries === []) {
+            return;
+        }
+
+        $actualKeys = array_values(array_unique(array_column($entries, 'key')));
+        DB::transaction(function () use ($entries, $actualKeys): void {
+            app(DashboardFeedPins::class)->unpinMany($actualKeys);
+            $feed = app(DashboardFeed::class);
+            foreach ($entries as $entry) {
+                $feed->deleteNotification((int) $entry['notification_id']);
+            }
+        });
+
+        $this->selectedFeedKeys = array_values(array_diff($this->selectedFeedKeys, $actualKeys));
+        $this->feedPage = $this->feedPagination()['page'];
+    }
+
     public function toggleFeedPin(string $key): void
     {
         app(DashboardFeedPins::class)->toggle($key);
@@ -302,7 +377,7 @@ final class Dashboard extends Page
         }
 
         DB::transaction(function (): void {
-            foreach ($this->selectedFeedKeys as $key) {
+            foreach ($this->validSelectedKeys() as $key) {
                 $entry = $this->mutableFeedEntry($key);
                 if ($entry !== null) {
                     $this->deleteProjectedFeedEntry($entry);
@@ -443,6 +518,41 @@ final class Dashboard extends Page
         );
     }
 
+    public function deleteNotificationGroupAction(): Action
+    {
+        return $this->confirmationAction(
+            Action::make('deleteNotificationGroup')
+                ->label('Delete group')
+                ->color('danger')
+                ->action(function (array $arguments): void {
+                    $keys = $arguments['keys'] ?? [];
+                    $this->deleteNotificationGroup(is_array($keys) ? $keys : []);
+                }),
+            'Delete grouped messages?',
+        );
+    }
+
+    public function feedGroupAction(): Action
+    {
+        return AdminDialog::viewer(
+            Action::make('feedGroup')
+                ->label('Open group')
+                ->modalHeading(function (array $arguments): string {
+                    $entries = $this->notificationGroupEntries((array) ($arguments['keys'] ?? []));
+                    abort_if($entries === [], 404);
+
+                    return (string) ($entries[0]['edit_group_title'] ?? $entries[0]['title']);
+                })
+                ->modalContent(function (array $arguments): View {
+                    $entries = $this->notificationGroupEntries((array) ($arguments['keys'] ?? []));
+                    abort_if($entries === [], 404);
+
+                    return view('filament.pages.partials.dashboard-feed-dialog', ['groupEntries' => $entries]);
+                }),
+            AdminDialogSize::Large,
+        );
+    }
+
     public function feedEntryAction(): Action
     {
         return AdminDialog::viewer(
@@ -467,14 +577,10 @@ final class Dashboard extends Page
         $this->feedPage = $pagination['page'];
         $this->feedPageSize = $pagination['per_page'];
         $items = $this->feedViewItems($pagination);
-        $regular = array_values(array_filter(
-            $items,
-            static fn (array $item): bool => ! ($item['pinned'] ?? false),
-        ));
         return [
             ...$overview,
             'feed' => $items,
-            'regularFeedGroups' => app(DashboardFeed::class)->groupConsecutiveNotifications($regular),
+            'regularFeedGroups' => $this->notificationGroups($items),
             'feedTypes' => DashboardFeed::types(),
             'feedPagination' => $pagination,
             'notificationFilters' => self::NOTIFICATION_FILTERS,
@@ -537,6 +643,45 @@ final class Dashboard extends Page
         return [...$priority, ...$chronological];
     }
 
+    /**
+     * @param  list<array<string,mixed>>  $items
+     * @return list<array{key:string,items:list<array<string,mixed>>}>
+     */
+    private function notificationGroups(array $items): array
+    {
+        return app(DashboardFeed::class)->groupConsecutiveNotifications(array_values(array_filter(
+            $items,
+            static fn (array $item): bool => ! ($item['pinned'] ?? false),
+        )));
+    }
+
+    /**
+     * A group action resolves the exact current set of individual messages.
+     * No synthetic group ID can be submitted to the ordinary bulk actions.
+     *
+     * @param  list<string>  $keys
+     * @return list<array<string,mixed>>
+     */
+    private function notificationGroupEntries(array $keys): array
+    {
+        if (count($keys) < 2 || count($keys) > max(self::PAGE_SIZES)
+            || count(array_unique($keys)) !== count($keys)
+            || ! collect($keys)->every(static fn (mixed $key): bool => is_string($key)
+                && preg_match('/^notification:[1-9][0-9]*$/D', $key) === 1)) {
+            return [];
+        }
+
+        $groups = $this->notificationGroups($this->feedViewItems($this->feedPagination()));
+        foreach ($groups as $group) {
+            $members = $group['items'];
+            if (count($members) > 1 && array_column($members, 'key') === $keys) {
+                return $members;
+            }
+        }
+
+        return [];
+    }
+
     /** @return list<string> */
     private function currentSelectableFeedKeys(): array
     {
@@ -554,6 +699,7 @@ final class Dashboard extends Page
 
         return collect($this->selectedFeedKeys)
             ->filter(static fn (string $key): bool => $key !== '')
+            ->unique()
             ->filter(fn (string $key): bool => is_array($feed->entry($key)))
             ->values()
             ->all();
