@@ -68,7 +68,9 @@ final class StagedArtworkPreviewController extends Controller
             'artwork_category_id' => $gallery,
             'slug' => 'staged-'.(int) $asset->getKey(),
             'title' => $title,
-            'description' => $data['description'] ?? null,
+            // Stage has no Description editor. Rich Text form data may be
+            // structured before validation and must not enter this string model.
+            'description' => null,
             'medium' => filled($data['medium'] ?? null) ? trim((string) $data['medium']) : null,
             'dimensions' => $dimensions,
             'state' => 'draft',

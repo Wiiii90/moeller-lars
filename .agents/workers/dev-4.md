@@ -2,7 +2,14 @@
 
 **Lease:** 23
 **Branch:** dev
-**State:** Active — Gallery Public link eligibility reconciled with canonical committed public detail reads; runtime/browser acceptance pending.
+**State:** Active — compact Staged Artwork form and private preview description contract corrected in source; runtime/browser acceptance pending.
+
+## Gallery Staged Artwork form and private Preview — 2026-11-20
+
+- User-supplied 500 trace: `Array to string conversion` in `resources/views/pages/artworks/show.blade.php` on `/preview/gallery-stage/{gallery}/{token}`. The Stage Rich Text form stored an array in the unsaved `description`; the canonical public view and SafeRichTextRenderer require a string. Fixed the Stage projection in `StagedArtworkPreviewController`: Stage no longer has Description, so the in-memory Artwork explicitly uses `null`. Do not weaken the public renderer or cast the structured value.
+- The **existing** `ArtworkEditDialog::schema(compact: true)` Stage variant now presents Title and Artwork Date side by side, immutable Media File across the next row, Material and Position side by side, then the existing full-width Dimensions control. The Stage omits Public URL slug, Description and optional ALT text override; the full Add/Edit dialogs retain the prior schema and order.
+- Both single and batch Stage creation preserve the queued Media Asset identity, discard retired old-queue fields and delegate collision-safe Slug generation to the existing `ArtworkDraftService::create()`. Position remains explicitly overridden only by the existing Position event path. No new source owner, persistence representation, tests or migration.
+- Source inspected only. Local PHP/Laravel and browser verification not executed. Verify Stage queue selection, two-column geometry at wide/mobile Stage sizes, date → suggested Position changes, Media File display, Preview after each edit, Create Selected and Create All with repeated titles/partial dates. Add Artwork dialog should remain visually/behaviorally identical.
 
 ## Public link versus Working publication — 2026-11-20
 

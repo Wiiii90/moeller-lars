@@ -6,7 +6,6 @@ use App\Domain\Admin\AdminMediaUploadFeedback;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
-use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Artwork\ArtworkSort;
 use App\Models\ArtworkCategory;
 use App\Domain\Media\MediaTypePolicy;
@@ -114,16 +113,16 @@ trait GalleryWorkspaceDirectUpload
         if ($form === []) {
             $form = [
                 'title' => (string) $selected['title'],
-                'slug' => '',
                 'primary_media_asset_id' => $assetId,
-                'primary_alt_text' => null,
                 'artwork_date' => null,
                 'medium' => null,
-                'description' => null,
                 'position' => ArtworkSort::suggestedAdditionPosition($gallery, null, $assetId),
                 'position_explicit' => false,
             ];
         }
+        // Stage owns only the compact fields. Existing queue snapshots must not
+        // keep hidden slug, description or ALT override values after this change.
+        unset($form['slug'], $form['description'], $form['primary_alt_text']);
         // The queue row, not a disabled form control, owns the media link.
         $form['primary_media_asset_id'] = $assetId;
         $this->stagedArtworkData = $form;
@@ -168,19 +167,18 @@ trait GalleryWorkspaceDirectUpload
             ]);
         }
 
-         $explicit = (bool) ($data['position_explicit'] ?? false);
+        $explicit = (bool) ($data['position_explicit'] ?? false);
         $payload = $this->normalizeArtworkFormData($data);
+        // The canonical draft service owns collision-safe slug generation.
+        // Old queue snapshots must never inject fields retired from Stage.
+        unset($payload['slug'], $payload['description']);
         if (! $explicit) {
             unset($payload['position']);
         }
         unset($payload['position_explicit']);
-        $alt = filled($data['primary_alt_text'] ?? null) ? (string) $data['primary_alt_text'] : null;
 
         $artwork = app(ArtworkDraftService::class)->create($payload, $assetId);
         app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
-        if ($alt !== null) {
-            app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($artwork, $alt);
-        }
     }
 
     public function createSelectedStagedArtwork(): void
@@ -195,7 +193,7 @@ trait GalleryWorkspaceDirectUpload
             return;
         }
 
-        // Filament validates exactly the same schema as standalone Add Artwork.
+        // The compact Stage form reuses the canonical Artwork field controls and rules.
         $state = $this->stagedArtworkForm->getState();
         try {
             DB::transaction(function () use ($selected, $state): void {
@@ -249,8 +247,6 @@ trait GalleryWorkspaceDirectUpload
                     if ($data === []) {
                         $data = [
                             'title' => $row['title'],
-                            'slug' => '',
-                            'primary_media_asset_id' => $row['media_asset_id'],
                             'position_explicit' => false,
                         ];
                     }

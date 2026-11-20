@@ -95,20 +95,20 @@ final class ArtworkEditDialog
         }
 
         return [
-            // Stage editor is one metric-aligned third of the workspace;
-            // do not inherit Filament's default lg two-column constraint.
-            Grid::make($compact ? ['default' => 1] : ['md' => 2])
+            // The Stage uses two immediate columns within its own editor pane;
+            // ordinary Add/Edit Artwork retains its existing responsive schema.
+            Grid::make($compact ? ['default' => 2] : ['md' => 2])
                 ->schema([
                     TextInput::make('title')
                         ->required(! $creating)
                         ->maxLength(240)
                         ->live(onBlur: true)
-                        ->afterStateUpdated(function (?string $state, callable $set, callable $get): void {
-                            if (blank($get('slug')) && filled($state)) {
+                        ->afterStateUpdated(function (?string $state, callable $set, callable $get) use ($compact): void {
+                            if (! $compact && blank($get('slug')) && filled($state)) {
                                 $set('slug', Str::slug($state));
                             }
                         }),
-                    $slug,
+                    ...($compact ? [$dateControl->columnSpan(1)] : [$slug]),
                     ...($includeGalleryAssignment ? [
                         Select::make('artwork_category_id')
                             ->label('Gallery')
@@ -145,13 +145,14 @@ final class ArtworkEditDialog
                             }
                         })
                         ->columnSpanFull(),
-                    TextInput::make('primary_alt_text')
-                        ->label('ALT text override')
-                        ->maxLength(500)
-                        ->nullable()
-                        ->columnSpanFull(),
-
-                    $dateControl,
+                    ...($compact ? [] : [
+                        TextInput::make('primary_alt_text')
+                            ->label('ALT text override')
+                            ->maxLength(500)
+                            ->nullable()
+                            ->columnSpanFull(),
+                        $dateControl,
+                    ]),
 
                     $material,
                     ...($positionCount !== null ? [
@@ -160,7 +161,7 @@ final class ArtworkEditDialog
 
                     AdminDimensionsControl::make(),
 
-                    ...AdminRichText::schema('description', 'Description', 10000),
+                    ...($compact ? [] : AdminRichText::schema('description', 'Description', 10000)),
 
                     ...(! $creating ? [$this->individualInformationPanel()] : []),
                 ]),
