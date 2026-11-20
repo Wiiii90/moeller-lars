@@ -603,7 +603,6 @@ final class SitePages extends Page
             'name' => $this->newPageTitle,
             'slug' => $this->newPageSlug,
             'parent_section_id' => $parentId,
-            'show_on_home' => false,
         ]);
         $section = SiteSection::query()
             ->where('type', SiteSectionType::Gallery->value)

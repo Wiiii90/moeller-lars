@@ -523,6 +523,30 @@ SQL,
     'public_site_gate', COALESCE(version_row.payload->'public_site_gate', 'false'::jsonb)
 ))
 SQL,
+            // Historical versions keep their original category-level Hero
+            // eligibility in immutable ArtworkCategory snapshots. Project it
+            // into the page-owned Hero configuration only when restored/read.
+            'gallery_hero_settings' => <<<'SQL'
+(version_row.payload || jsonb_build_object(
+    'configuration',
+    CASE
+        WHEN COALESCE(version_row.payload->'configuration', '{}'::jsonb) ? 'enabled_gallery_ids'
+            THEN version_row.payload->'configuration'
+        ELSE jsonb_set(
+            COALESCE(version_row.payload->'configuration', '{}'::jsonb),
+            '{enabled_gallery_ids}',
+            COALESCE((
+                SELECT jsonb_agg(category.row_key::bigint ORDER BY category.row_key::bigint)
+                FROM publication_version_rows AS category
+                WHERE category.publication_checkpoint_id = version_row.publication_checkpoint_id
+                  AND category.table_name = 'artwork_categories'
+                  AND COALESCE((category.payload->>'show_on_home')::boolean, false)
+            ), '[]'::jsonb),
+            true
+        )
+    END
+))
+SQL,
             'media_variants' => "(version_row.payload - 'transform_profile')",
             // Admin confirmation is now a per-user preference, not published
             // site content. Preserve old immutable snapshots without the field.

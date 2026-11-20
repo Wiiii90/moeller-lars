@@ -2,10 +2,12 @@
 
 namespace App\Domain\Migration;
 
+use App\Domain\Content\GalleryTemplate;
 use App\Domain\Media\MediaIngestService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
+use App\Models\GalleryHeroSetting;
 use App\Models\SiteSection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -34,21 +36,25 @@ final class LegacyArtworkManifestImporter
         try {
             DB::transaction(function () use ($batch, $categories, $mediaRoot, &$storageKeys, &$artworkCount, &$mediaCount): void {
                 $now = now();
+                $enabledLegacySourceIds = [];
 
                 foreach ($categories as $categoryData) {
                     $category = new ArtworkCategory;
                     $category->fill([
                         'slug' => $categoryData['slug'],
                         'name' => $categoryData['name'],
-                        'show_on_home' => $categoryData['show_on_home'],
                         'legacy_source' => $categoryData['legacy_source'],
                         'migration_batch_id' => $batch,
                         'migrated_at' => $now,
                     ]);
                     $category->save();
+                    if ($categoryData['show_on_home']) {
+                        $enabledLegacySourceIds[] = (int) $category->getKey();
+                    }
 
                     SiteSection::query()->create([
                         'type' => SiteSection::TYPE_GALLERY,
+                        'template' => GalleryTemplate::Standard->value,
                         'title' => $categoryData['name'],
                         'navigation_label' => $categoryData['name'],
                         'slug' => $categoryData['slug'],
@@ -125,6 +131,27 @@ final class LegacyArtworkManifestImporter
 
                         $artworkCount++;
                         $mediaCount++;
+                    }
+                }
+
+                // Import-era source flags are manifest data, not a category
+                // property. Each Hero page owns its own persisted membership.
+                if ($enabledLegacySourceIds !== []) {
+                    $settingsRows = GalleryHeroSetting::query()->orderBy('id')->lockForUpdate()->get();
+                    if ($settingsRows->isEmpty()) {
+                        throw new RuntimeException('Import has Hero source selections but no Hero Artworks page.');
+                    }
+                    foreach ($settingsRows as $settings) {
+                        $configuration = $settings->configuration();
+                        $existing = is_array($configuration['enabled_gallery_ids'] ?? null)
+                            ? array_filter($configuration['enabled_gallery_ids'], static fn (mixed $id): bool => is_int($id) && $id > 0)
+                            : [];
+                        $configuration['enabled_gallery_ids'] = array_values(array_unique([
+                            ...$existing, ...$enabledLegacySourceIds,
+                        ]));
+                        sort($configuration['enabled_gallery_ids'], SORT_NUMERIC);
+                        $settings->setAttribute('configuration', $configuration);
+                        $settings->save();
                     }
                 }
             });

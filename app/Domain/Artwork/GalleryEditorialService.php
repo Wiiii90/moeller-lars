@@ -36,7 +36,7 @@ final class GalleryEditorialService
 
             SiteSection::query()->create([
                 'type' => SiteSectionType::Gallery->value,
-                'template' => GalleryTemplate::Showcase->value,
+                'template' => GalleryTemplate::Standard->value,
                 'title' => (string) $gallery->getAttribute('name'),
                 'navigation_label' => (string) $gallery->getAttribute('name'),
                 'slug' => (string) $gallery->getAttribute('slug'),
@@ -217,12 +217,12 @@ final class GalleryEditorialService
             $fresh = ArtworkCategory::query()->whereKey($gallery->getKey())->lockForUpdate()->firstOrFail();
             $oldSlug = (string) $fresh->getAttribute('slug');
 
-            // A Showcase at / is an artist-owned collection behind the
+            // A Standard at / is an artist-owned collection behind the
             // protected Home identity. Its public path is not the category slug.
             if (SiteSection::query()->where('artwork_category_id', $fresh->getKey())
                 ->where('is_home', true)->exists()) {
                 throw ValidationException::withMessages([
-                    'slug' => 'The Home Showcase has a fixed public path (/).',
+                    'slug' => 'The Home Standard has a fixed public path (/).',
                 ]);
             }
 

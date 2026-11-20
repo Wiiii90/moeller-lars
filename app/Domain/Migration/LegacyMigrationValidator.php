@@ -4,10 +4,13 @@ namespace App\Domain\Migration;
 
 use App\Domain\Content\ExhibitionAddressNormalizer;
 use App\Domain\Content\ExhibitionDate;
+use App\Domain\Content\GalleryTemplate;
 use App\Domain\Media\MediaIntegrityService;
 use App\Domain\Media\MediaPreviewVariant;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
+use App\Models\GalleryHeroSetting;
+use App\Models\SiteSection;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use Illuminate\Support\Facades\DB;
@@ -137,7 +140,7 @@ final class LegacyMigrationValidator
 
         // This comparison verifies the source manifest migration marker,
         // not the Home Hero. Public Home is resolved exclusively by the
-        // configured HomeHeroResolver and never uses featured_on_home.
+        // configured GalleryHeroResolver and never uses featured_on_home.
         $importedFeaturedSlugs = Artwork::query()
             ->where('migration_batch_id', $batch)
             ->where('featured_on_home', true)
@@ -185,21 +188,33 @@ final class LegacyMigrationValidator
     /** @param array<string, mixed> $expected @param list<string> $errors */
     private function compareCategory(ArtworkCategory $category, array $expected, array &$errors): void
     {
-        $checks = [
-            'name' => $expected['name'] ?? null,
-            'position' => $expected['position'] ?? null,
-            'show_on_home' => $expected['show_on_home'] ?? null,
-            'description' => $expected['description'] ?? null,
-            'state' => 'published',
-        ];
+        $slug = (string) $category->getAttribute('slug');
+        if ((string) $category->getAttribute('name') !== (string) ($expected['name'] ?? '')) {
+            $errors[] = "Category {$slug} name does not match the manifest.";
+        }
 
-        foreach ($checks as $field => $value) {
-            $actual = $category->getAttribute($field);
-            if (is_bool($value)) {
-                $actual = (bool) $actual;
-            }
-            if ($actual !== $value) {
-                $errors[] = "Category {$category->getAttribute('slug')} field {$field} does not match the manifest.";
+        /** @var SiteSection|null $section */
+        $section = $category->siteSection()->first();
+        if (! $section instanceof SiteSection
+            || $section->galleryTemplate() !== GalleryTemplate::Standard
+            || $section->getAttribute('state') !== 'published'
+            || (int) $section->getAttribute('position') !== (int) ($expected['position'] ?? -1)
+            || $section->getAttribute('meta_description') !== ($expected['description'] ?? null)) {
+            $errors[] = "Category {$slug} public Gallery page does not match the manifest.";
+        }
+
+        // The old manifest's global flag is a source-era input only. Modern
+        // source memberships live independently in each Hero configuration.
+        $expectedSource = (bool) ($expected['show_on_home'] ?? false);
+        $settingsRows = GalleryHeroSetting::query()->get(['id', 'configuration']);
+        if ($expectedSource && $settingsRows->isEmpty()) {
+            $errors[] = "Category {$slug} has a legacy Hero source but no Hero Artworks page.";
+        }
+        foreach ($settingsRows as $settings) {
+            $membership = $settings->configuration()['enabled_gallery_ids'] ?? [];
+            $enabled = is_array($membership) && in_array((int) $category->getKey(), $membership, true);
+            if ($expectedSource !== $enabled) {
+                $errors[] = "Category {$slug} Hero source selection does not match the manifest.";
             }
         }
     }
