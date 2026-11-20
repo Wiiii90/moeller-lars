@@ -61,7 +61,7 @@ trait ManagesSitePageCreateDialog
                             ->visible(fn (Get $get): bool => in_array($get('type'), [SiteSectionType::Gallery->value, SiteSectionType::Journal->value], true)),
                         TextInput::make('name')
                             ->label('Name')
-                            ->placeholder('Generated automatically')
+                            ->placeholder('')
                             ->maxLength(160),
                         TextInput::make('slug')
                             ->label('Public slug')

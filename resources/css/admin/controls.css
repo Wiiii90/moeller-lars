@@ -768,20 +768,38 @@
     row-gap: .4rem;
     column-gap: .65rem;
 }
-.admin-option-panel__header,
-.admin-option-panel__header :is(.fi-sc, .fi-sc-grid) {
+/* One shared header axis for checkbox, uppercase label and disclosure.
+ * Do not apply a second two-column layout to nested Filament form grids. */
+.admin-option-panel__header {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) 1.9rem;
+    min-height: 2rem;
+    gap: .55rem;
+    align-items: center;
+}
+.admin-option-panel__header > :is(.fi-sc, .fi-sc-grid) {
     align-items: center;
 }
 .admin-option-panel__switch {
+    min-width: 0;
     min-height: 0;
+    align-self: center;
 }
-.admin-option-panel__switch input[type="checkbox"] {
-    width: 1rem;
-    height: 1rem;
-    border-radius: 50%;
-    cursor: pointer;
+.admin-option-panel__switch .fi-fo-field-label:has(> .fi-checkbox-input) {
+    min-height: 2rem !important;
+    display: grid !important;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center !important;
+    gap: .5rem !important;
+    margin-block: 0 !important;
+}
+.admin-option-panel__switch .fi-fo-field-label > .fi-checkbox-input {
+    align-self: center;
+    margin: 0 !important;
+}
+.admin-option-panel__switch .fi-fo-field-label-content {
+    align-self: center;
+    line-height: 1.2 !important;
 }
 .admin-option-panel__body {
     min-width: 0;
@@ -798,25 +816,47 @@
 }
 
 .admin-option-panel__disclosure {
-    display: inline-grid;
-    width: 1.6rem;
-    height: 1.6rem;
+    box-sizing: border-box;
+    display: grid;
+    width: 1.9rem;
+    height: 1.9rem;
     padding: 0;
     place-items: center;
+    justify-self: end;
+    align-self: center;
     border: 0;
+    border-radius: .2rem;
     background: transparent;
     color: var(--admin-muted);
     cursor: pointer;
+}
+.admin-option-panel__disclosure:hover {
+    background: var(--admin-subtle);
+    color: var(--admin-text);
 }
 .admin-option-panel__disclosure:focus-visible {
     outline: 2px solid var(--admin-accent);
     outline-offset: -2px;
 }
 .admin-option-panel__chevron {
-    display: inline-block;
-    font-size: .8rem;
-    transition: transform .14s ease;
+    display: block;
+    width: 1.05rem;
+    height: 1.05rem;
+    transition: transform .16s ease;
 }
 .admin-option-panel__chevron.is-collapsed {
     transform: rotate(-90deg);
+}
+/* Opt-in style for an already framed panel: the parent contour supplies the
+ * field boundary, while keyboard focus remains visible without underlines.
+ * Ordinary Admin form inputs retain their canonical underline by default. */
+.admin-option-panel--unlined-fields .admin-option-panel__body .admin-control-field .fi-input-wrp:not(.fi-fo-rich-editor) {
+    border-bottom: 0 !important;
+}
+.admin-option-panel--unlined-fields .admin-option-panel__body .admin-control-field .fi-input-wrp:not(.fi-fo-rich-editor):is(:hover, :focus-within) {
+    background: var(--admin-subtle) !important;
+}
+.admin-option-panel--unlined-fields .admin-option-panel__body .admin-control-field .fi-input-wrp:not(.fi-fo-rich-editor):focus-within {
+    outline: 1px solid var(--admin-control-border-focus);
+    outline-offset: -1px;
 }

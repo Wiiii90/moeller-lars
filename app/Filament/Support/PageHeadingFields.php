@@ -31,6 +31,7 @@ final class PageHeadingFields
             self::persist($livewire, $persist, 'content_heading_enabled', (bool) $state, $successTitle),
             collapsible: true,
             bodyColumns: ['default' => 1, 'md' => 2],
+            unlinedFields: true,
         );
     }
 

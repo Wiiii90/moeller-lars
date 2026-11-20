@@ -6,5 +6,5 @@
     x-bind:aria-label="expanded ? 'Collapse options' : 'Expand options'"
     title="Expand or collapse options"
 >
-    <span class="admin-option-panel__chevron" x-bind:class="{ 'is-collapsed': !expanded }" aria-hidden="true">▾</span>
+    <x-filament::icon icon="heroicon-m-chevron-down" class="admin-option-panel__chevron" x-bind:class="{ 'is-collapsed': !expanded }" aria-hidden="true" />
 </button>
