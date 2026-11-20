@@ -315,3 +315,73 @@ test('General Site icon retains searchable Storage dropdown outside the clipped 
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await expect(dropdown).toBeHidden();
 });
+
+
+test('shared Preview toolbar stays on one row in compact General Stage widths', async ({ page }) => {
+  await signIn(page);
+  await page.setViewportSize({ width: 1900, height: 1000 });
+  await page.goto('/admin/general');
+
+  const preview = page.locator('.general-appearance-stage__preview.admin-live-preview');
+  const toolbar = preview.getByRole('toolbar', { name: 'Live preview controls' });
+  const device = toolbar.getByRole('combobox', { name: /^Device and viewport resolution:/ });
+  await expect(preview).toBeVisible();
+  await expect(toolbar).toBeVisible();
+
+  const original = await device.inputValue();
+  try {
+    // Container pressure is independent of browser viewport. An embedded
+    // Gallery/General Preview can be much narrower than the workspace.
+    for (const width of [500, 340, 280, 240, 200]) {
+      await preview.evaluate((node, px) => {
+        node.style.width = `${px}px`;
+        node.style.maxWidth = `${px}px`;
+      }, width);
+
+      await expect.poll(() => toolbar.evaluate(node => {
+        const container = node.getBoundingClientRect();
+        const groups = [
+          node.querySelector('.admin-live-preview__device-profile'),
+          node.querySelector('.admin-live-preview__zoom-group'),
+          node.querySelector('.admin-live-preview__actions-group'),
+        ];
+        if (groups.some(group => !group)) return false;
+
+        const rects = groups.map(group => group.getBoundingClientRect());
+        const midY = rect => (rect.top + rect.bottom) / 2;
+        const zoom = rects[1];
+        const centered = Math.abs((zoom.left + zoom.right) / 2
+          - (container.left + container.right) / 2) <= 2;
+
+        return centered
+          && rects.every(rect => Math.abs(midY(rect) - midY(zoom)) <= 2)
+          && rects.every(rect => rect.left >= container.left - 1 && rect.right <= container.right + 1)
+          && rects[0].right <= zoom.left + 1
+          && zoom.right <= rects[2].left + 1
+          && getComputedStyle(groups[2]).borderLeftWidth === '0px';
+      })).toBe(true);
+    }
+
+    // The icon trigger still owns one accessible native grouped Select.
+    await expect(device.locator('optgroup')).toHaveCount(3);
+    await device.selectOption('tablet-mini');
+    await expect(preview).toHaveAttribute('data-preview-device', 'tablet');
+    await expect(device).toHaveAttribute('title', 'iPad (768 × 1024)');
+    await toolbar.getByRole('button', { name: 'Rotate device' }).click();
+    await expect(toolbar.getByRole('button', { name: 'Restore device orientation' })).toBeVisible();
+
+    await toolbar.getByRole('button', { name: 'Zoom in preview' }).click();
+    const pan = toolbar.getByRole('button', { name: 'Toggle preview pan mode' });
+    await expect(pan).toBeEnabled();
+    await pan.click();
+    await expect(pan).toHaveAttribute('aria-pressed', 'true');
+    await toolbar.getByRole('button', { name: 'Reset zoom to fitted size' }).click();
+    await expect(pan).toBeDisabled();
+  } finally {
+    await device.selectOption(original);
+    await preview.evaluate(node => {
+      node.style.removeProperty('width');
+      node.style.removeProperty('max-width');
+    });
+  }
+});
