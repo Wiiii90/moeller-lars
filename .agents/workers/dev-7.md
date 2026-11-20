@@ -141,6 +141,10 @@
 - Improved the existing global `resources/css/admin/layouts.css` native Select customization for grouped choices: optgroup presentation and accessible legend labels share subdued Admin typography, compact heading surface, visible separators and indented normal-weight choices. Gallery and General share the same Preview device control; other grouped native Admin Selects inherit the group styles without page-specific duplicates. The Preview optgroups now each contain a real `legend` for customizable native Select browsers, while the original `label` attribute stays for classic native compatibility.
 - Removed the now-obsolete Preview-local popup width and grouped-option font overrides. Updated the existing General browser regression with three group/legend assertions and explicit open/settled width stability across the reported delayed reflow interval. Browser tests, builds, CI and deployment were not executed.
 
+## Grouped Select separator cleanup (2026-11-20)
+- The user's Preview screenshot showed uncovered dark popup surface above Tablets and Phones. The cause is shared `optgroup` block padding plus an extra margin/top padding between successive groups. In the canonical customizable Select stylesheet, removed those spaces while retaining all labels, divider borders, option geometry and light/dark tokens. No Preview-specific override.
+- Source-only correction; browser rendering, tests, builds and deployment were not executed.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.

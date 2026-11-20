@@ -159,7 +159,8 @@ html.fi select option:disabled {
      * hierarchy; options keep the normal Admin type and selection treatment. */
     html.fi .admin-workspace select:not([multiple]):not([size]) optgroup {
         display: block;
-        padding-block: .15rem .3rem;
+        /* The separator must meet the heading; no exposed background gap. */
+        padding: 0;
         background: var(--admin-control-popup-surface);
         color: var(--admin-muted);
         font-size: var(--admin-control-label-size);
@@ -169,8 +170,7 @@ html.fi select option:disabled {
     }
 
     html.fi .admin-workspace select:not([multiple]):not([size]) optgroup + optgroup {
-        margin-block-start: .2rem;
-        padding-block-start: .4rem;
+        margin: 0;
         border-block-start: 1px solid var(--admin-line);
     }
 
