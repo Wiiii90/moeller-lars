@@ -117,6 +117,42 @@ Mailbox behavior includes:
 
 Deleting or pruning a Notification never deletes Activity or Publication history.
 
+
+### Consecutive editorial-edit groups
+
+The Dashboard chronologically groups consecutive successful edits of the same
+record by the same actor into one **expandable table presentation**, regardless
+of which field was changed. An intervening unrelated entry interrupts a group.
+There is no time threshold and no additional stored group or synthetic
+Notification. Grouping is limited to the visible page; filtering and ordinary
+pagination retain their existing semantics. Pinned entries remain individual
+priority rows.
+
+Collapsed groups retain the canonical table columns and provide **Open all**,
+**Pin all**, **Read/Unread all**, and **Delete all**. Opening presents the real
+messages in one viewer and marks those messages read. If any member is unread,
+the group's read command marks all as read; only when every member is read does
+it offer Mark all unread. Pin applies to each real Notification. Group deletion
+removes each underlying Notification once, preserving user-scoped permissions,
+pin cleanup and retention rules. Expanding keeps each child message's regular
+actions. Group and multi-selection operate only on real message keys, never an
+additional parent identity.
+
+The shared Dashboard deletion confirmation may offer the canonical **Delete
+messages without confirmation** checkbox. Checking it changes the saved
+Dashboard preference only after the destructive action is confirmed; cancelling
+does not change the preference. When the preference is already enabled,
+deletion uses the established direct-action path.
+
+The Notification title identifies the edited object and field concisely. Its
+viewer displays available canonical Audit field changes as labeled **Before**
+and **After** values rather than repeating the same detail in both title and
+body. The same structured detail presentation is reused for individual and
+grouped messages. Historical generic titles can be projected more
+informatively when linked Audit evidence survives, without rewriting mailbox
+or immutable Activity records. Other non-Audit messages retain their authored
+content.
+
 ## Versioned Dashboard release communication
 
 Announcements and Changelogs are immutable, Git-owned Markdown documents,

@@ -39,6 +39,22 @@ The grouping is state-continuous and publication-bounded, never timer-, debounce
 
 The projection never rewrites or deletes `audit_events`; it only controls how multiple raw ordering mutations are represented as one visible Activity.
 
+
+### Ordinary editorial-edit grouping
+
+Unlike the ordering-specific stored projection above, successive eligible
+editorial edits of one object by the same actor are grouped **only for reading**
+in the current Activity table. Different fields may belong to the same
+consecutive group, but an intervening unrelated event breaks the sequence.
+There is no timer threshold, and every original Audit event is preserved.
+
+The collapsed row can expand into ordinary Activity rows within the existing
+table columns. Each child retains its own Details, eligible Undo receipt and
+selection identity; group selection selects only the underlying event ids.
+The group header does **not** perform a blanket Undo. The separately governed
+ordering projection, publication boundaries, and immutable Commit history
+remain unchanged.
+
 Activity uses the shared `AdminActivityFeed` read model. Its visible projection has four explicit semantic fields before the ordinary actor/time/publication context:
 
 - **Area** — the admin domain in which the change happened;
