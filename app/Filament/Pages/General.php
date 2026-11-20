@@ -665,6 +665,10 @@ final class General extends Page
                             ->label(self::regionalTimeZoneLabel())
                             ->options(RegionalFormats::timeZoneOptions())
                             ->searchable()
+                            // Filament limits searchable selects to 50 by default,
+                            // hiding every non-African zone from the initial list.
+                            // The IANA catalog is bounded and versioned with PHP.
+                            ->optionsLimit(count(RegionalFormats::timeZoneOptions()))
                             ->live()
                             ->afterStateUpdated(self::persist('time_zone')),
                     ])

@@ -5,7 +5,7 @@
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
 | Dev Worker 1 | 9 | Active — replaced archived chat; local migration verified, qualification pending | Exhibition date precision/migration, address, map and autosave; Public Exhibitions baseline | [dev-1.md](workers/dev-1.md) |
-| Dev Worker 2 | 24 | General Regional Formats grid aligned in source; browser/migration acceptance pending | Account/security and per-user Settings; independent Public regional formats in General; shared dialog owner reused | [dev-2.md](workers/dev-2.md) |
+| Dev Worker 2 | 24 | Regional time-zone select limit corrected in source; browser/migration acceptance pending | Account/security and per-user Settings; independent Public regional formats in General; shared dialog owner reused | [dev-2.md](workers/dev-2.md) |
 | Dev Worker 3 | 25 | Source corrected — group actions and detailed Notification viewer; runtime/browser acceptance pending | Dashboard group actions, mixed read state, confirmation checkbox, canonical Audit-linked before/after display; maintain Activity grouping | [dev-3.md](workers/dev-3.md) |
 | Dev Worker 4 | 23 | Shared Media completion progress plus immediate reference-safe Stage Discard; browser/runtime acceptance pending | Gallery Artwork table, title editor, selection/ordering, Stage/Settings and Public Artwork/Gallery; coordinate shared controls with owners | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 19 | Source cleanup committed; isolated migration and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom types and Hero Artworks template; preserve Gallery/Exhibitions, retire Home-only editors | [dev-5.md](workers/dev-5.md) |

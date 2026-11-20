@@ -175,6 +175,7 @@ final class AccountMenuAction
                             ->label(__('Time zone'))
                             ->options(RegionalFormats::timeZoneOptions())
                             ->searchable()
+                            ->optionsLimit(count(RegionalFormats::timeZoneOptions()))
                             ->in(array_keys(RegionalFormats::timeZoneOptions())),
                     ])
                         ->columns(2)

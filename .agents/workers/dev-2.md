@@ -2,7 +2,7 @@
 
 **Branch:** `dev`
 **Lease:** 24
-**State:** General Regional Formats spacing corrected in source; runtime/browser acceptance pending
+**State:** Time-zone select catalog visibility corrected in source; runtime/browser acceptance pending
 **Claimed work:** Top-right Account/Settings, per-user Admin formats, Public General regional formats, and directly affected formatter consumers. The shared dialog system and unrelated feature editors retain their owners.
 
 ## Current source state
@@ -14,6 +14,8 @@
 - Human-facing metric counts and Activity timestamps in major Admin surfaces already use the personal formatter. Technical numeric payloads remain invariant.
 
 - General Regional Formats' two-row grid now uses the same metric-aligned half-width gutter as Contact/Legal, with vertical row gaps and responsive single-column stacking. Its section wrapper is back to the shared one-column heading/content structure. This scoped layout change does not modify global controls or autosave behavior.
+
+- Both Time zone searchable selects now explicitly size Filament's built-in options limit from the complete dynamically generated IANA/PHP list. Filament previously rendered only the first 50 alphabetic identifiers, which are all African zones (PHP currently lists 419 total; Europe/Berlin lies at index 316). No hand-coded timezone table, filtered secondary catalog, new JavaScript, separate popup or persistence layer was added. Distinct identifiers can currently share offsets or abbreviations; retaining canonical names preserves history and future daylight-saving behavior.
 
 ## Evidence and next
 - Source-only commit on `dev`; no local runtime, isolated database migration, browser review or user acceptance was executed in this worker session. The shared Edit Action lifecycle was verified from current source and canonical dialog contract.
