@@ -1,11 +1,12 @@
 # Dev workstream — branch-local coordination
 
-**Next lease token:** 25
+**Next lease token:** 26
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
 | Dev Worker 1 | 9 | Active — replaced archived chat; local migration verified, qualification pending | Exhibition date precision/migration, address, map and autosave; Public Exhibitions baseline | [dev-1.md](workers/dev-1.md) |
 | Dev Worker 2 | 24 | Active — account/profile area registered; no implementation yet | Admin user-profile and account settings accessed through the top-right user badge; coordinate shared header/dialog changes with owning workers | [dev-2.md](workers/dev-2.md) |
+| Dev Worker 3 | 25 | Active — Dashboard assignment registered; implementation not started | Admin Dashboard workspace, dashboard-specific content and actions; coordinate shared Admin owners | [dev-3.md](workers/dev-3.md) |
 | Dev Worker 4 | 23 | Active — replacement chat; Gallery List/Dense browser acceptance and reported error under review | Gallery Artwork table, title editor, selection/ordering, Stage/Settings and Public Artwork/Gallery; coordinate shared controls with owners | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 19 | Source cleanup committed; isolated migration and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom types and Hero Artworks template; preserve Gallery/Exhibitions, retire Home-only editors | [dev-5.md](workers/dev-5.md) |
 
