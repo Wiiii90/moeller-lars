@@ -29,7 +29,7 @@
                 <th scope="col" class="admin-table__yield--narrow">{{ __('Dimensions') }}</th>
                 <th scope="col" class="admin-table__yield--compact">{{ __('Material') }}</th>
                 <th scope="col" class="gallery-workspace__analytics-column">{{ __('30d analytics') }}</th>
-                <th scope="col">{{ __('Status') }}</th>
+                <th scope="col" class="gallery-workspace__status-head">{{ __('Status') }}</th>
                 <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">{{ __('Actions') }}</span></th>
                 <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                     <input type="checkbox" x-data="{}" wire:click.prevent="toggleVisibleArtworkSelection"
@@ -83,6 +83,7 @@
                     <td class="admin-table__identity admin-table__identity--ellipsis-meta gallery-workspace__table-identity">
                         <x-admin.artwork-title-editor :artwork="$artwork" />
                         <small class="gallery-workspace__folded-meta">
+                            <span class="gallery-workspace__folded-state">{{ $artwork['state_label'] }}</span>
                             @if ($artwork['year'])<span class="gallery-workspace__folded-year">{{ $artwork['year'] }}</span>@endif
                             @if ($artwork['dimensions'])<span class="gallery-workspace__folded-dimensions">{{ $artwork['dimensions'] }}</span>@endif
                             @if ($artwork['medium'])<span class="gallery-workspace__folded-material">{{ $artwork['medium'] }}</span>@endif

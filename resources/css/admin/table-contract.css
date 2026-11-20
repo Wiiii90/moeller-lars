@@ -64,6 +64,7 @@
         + 1.125rem
     );
     --admin-row-actions-seven-artwork-compact-width: calc(7 * 1.35rem + 6 * .3rem);
+    --admin-row-actions-seven-artwork-minimal-width: calc(7 * 1.2rem + 6 * .12rem);
     --admin-row-actions-two-static-width: 9.5rem;
     --admin-row-actions-three-static-width: 15.5rem;
     --admin-row-actions-edit-state-delete-width: calc(
@@ -417,6 +418,18 @@
     }
     .admin-row-actions--seven-artwork .admin-action__label {
         display: none !important;
+    }
+}
+
+@container admin-table (max-width: 32rem) {
+    .admin-row-actions--seven-artwork {
+        --admin-row-actions-width: var(--admin-row-actions-seven-artwork-minimal-width);
+        --admin-row-actions-columns: repeat(7, 1.2rem);
+        --admin-row-actions-gap: .12rem;
+    }
+    .admin-row-actions--seven-artwork .admin-action {
+        width: 1.2rem !important;
+        min-width: 1.2rem !important;
     }
 }
 

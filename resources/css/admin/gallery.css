@@ -739,6 +739,36 @@
         content: ", ";
     }
 }
+@container admin-table (max-width: 32rem) {
+    .gallery-workspace__table {
+        --admin-row-actions-width: var(--admin-row-actions-seven-artwork-minimal-width);
+    }
+    .gallery-workspace__table :is(
+        .gallery-workspace__col-status,
+        .gallery-workspace__status-head,
+        .gallery-workspace__table-status
+    ) {
+        display: none;
+    }
+    .gallery-workspace__table .gallery-workspace__folded-meta:has(.gallery-workspace__folded-state) {
+        display: block;
+    }
+    .gallery-workspace__folded-meta > .gallery-workspace__folded-state {
+        display: inline;
+    }
+    .gallery-workspace__folded-state:has(~ span)::after {
+        content: ", ";
+    }
+}
+@container admin-table (max-width: 26rem) {
+    .gallery-workspace__table :is(
+        .gallery-workspace__col-media,
+        .gallery-workspace__media-head,
+        .gallery-workspace__media-cell
+    ) {
+        display: none;
+    }
+}
 @container admin-table (max-width: 38rem) {
     .gallery-workspace__table .gallery-workspace__folded-meta:has(.gallery-workspace__folded-year) {
         display: block;
