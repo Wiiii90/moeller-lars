@@ -83,7 +83,7 @@ final class ArtworkDraftService
             $placement = GalleryPresentation::addPlacement($gallery);
             $priorIds = [];
             $insertionAt = null;
-            if ($requestedPosition === null) {
+            if ($requestedPosition === null && $placement !== GalleryPresentation::ADD_FOLLOW) {
                 $query = $gallery->artworks()->getQuery();
                 $query = in_array($placement, [GalleryPresentation::ADD_FIRST, GalleryPresentation::ADD_LAST], true)
                     ? GalleryPresentation::orderArtworks($query, $gallery)
@@ -112,7 +112,7 @@ final class ArtworkDraftService
                 // An intentional Position override is the Manual handoff;
                 // GalleryEditorialService owns both ranking and its audit.
                 app(GalleryEditorialService::class)->reorderArtworks($gallery, $ids);
-            } else {
+            } elseif ($placement !== GalleryPresentation::ADD_FOLLOW) {
                 if ($placement === GalleryPresentation::ADD_FIRST) {
                     $ids = [(int) $artwork->getKey(), ...$priorIds];
                 } elseif ($placement === GalleryPresentation::ADD_LAST) {
@@ -125,6 +125,15 @@ final class ArtworkDraftService
                 // A fixed placement is a deliberate Manual handoff. Otherwise
                 // an active automatic sort would immediately undo the choice.
                 app(GalleryEditorialService::class)->reorderArtworks($gallery, $ids);
+            } elseif (GalleryPresentation::sortMode($gallery) === GalleryPresentation::SORT_MANUAL && $maxPosition !== null) {
+                // Automatic follows the current Manual order's original
+                // insertion behavior: new Artwork first, without a mode switch.
+                $ids = $gallery->artworks()
+                    ->whereKeyNot($artwork->getKey())
+                    ->orderBy('position')
+                    ->orderBy('id')
+                    ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
+                app(GalleryEditorialService::class)->reorderArtworks($gallery, [(int) $artwork->getKey(), ...$ids]);
             }
 
             return $artwork->fresh();

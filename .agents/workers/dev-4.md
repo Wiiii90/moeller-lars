@@ -2,7 +2,15 @@
 
 **Lease:** 23
 **Branch:** dev
-**State:** Active — Stage Submit All defaults and Gallery placement/order policy repaired; Gallery/Storage bar interpolation and Stage hover semantics updated; browser/runtime acceptance pending.
+**State:** Active — restored Automatic placement following live Gallery Artwork order in Stage and Add Artwork; runtime/browser acceptance pending.
+
+## Restore Automatic new Artwork placement — 2026-11-20
+
+- Restored the historical persisted `add_placement = follow` policy as the first selectable `Automatic` option in New Artwork placement. The default and invalid/missing-value fallback use Automatic again. Existing persisted `follow` selections retain their original behavior without a migration or a replacement value.
+- `ArtworkDraftService` now skips forced manual reorder when Automatic is selected. For automatically sorted Galleries, new Artwork is ordered continuously by the active `Artwork order` mode; for manually ordered Galleries, Automatic inserts newly created Artwork at the beginning using the original shared reorder owner. Explicit Position overrides remain the existing intentional Manual handoff.
+- Restored the `ArtworkSort::suggestedAdditionPosition` contract for the shared grey Position hint: Automatic computes its non-authoritative rank from the Gallery's current sort. No numeric value is submitted until the artist enters one.
+- Stage Submit All once again reverses processing for Automatic + Manual Galleries, preserving the artist's staged queue order in the final sequence. Fixed placement and alternate source-order policies remain unchanged.
+- Updated the existing AdminHelp detail to describe that Automatic retains the current mode whereas fixed choices may switch an automatically sorted Gallery to Manual. No new persistence, parallel logic or migration. Source-only verification; no runtime/browser checks or tests modified.
 
 ## Gallery Stage batch submission, ordering and upload progress — 2026-11-20
 

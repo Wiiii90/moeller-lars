@@ -279,7 +279,9 @@ trait GalleryWorkspaceDirectUpload
         // final Manual sequence preserves the artist's staged queue order.
         $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
         $placement = \App\Domain\Artwork\GalleryPresentation::addPlacement($gallery);
-        if ($placement === \App\Domain\Artwork\GalleryPresentation::ADD_FIRST) {
+        if ($placement === \App\Domain\Artwork\GalleryPresentation::ADD_FIRST
+            || ($placement === \App\Domain\Artwork\GalleryPresentation::ADD_FOLLOW
+                && \App\Domain\Artwork\GalleryPresentation::sortMode($gallery) === \App\Domain\Artwork\GalleryPresentation::SORT_MANUAL)) {
             $items = array_reverse($items);
         }
 

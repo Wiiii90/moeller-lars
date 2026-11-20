@@ -110,6 +110,7 @@ final class ArtworkSort
         return match ($placement) {
             GalleryPresentation::ADD_FIRST => 1,
             GalleryPresentation::ADD_LAST => $gallery->artworks()->count() + 1,
+            GalleryPresentation::ADD_FOLLOW => self::suggestedPosition($gallery, $date, $mediaAssetId),
             default => self::suggestedPosition($gallery, $date, $mediaAssetId, $placement),
         };
     }

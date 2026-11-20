@@ -68,7 +68,7 @@ final class GalleryPresentation
         ArtworkSort::OLDEST_CREATED => 'Oldest by Artwork Added',
     ];
 
-    /** Historical persisted key retained only for compatibility. */
+    /** Follow the Gallery's live Artwork order, without switching to Manual. */
     public const ADD_FOLLOW = 'follow';
 
     public const ADD_FIRST = 'first';
@@ -77,6 +77,7 @@ final class GalleryPresentation
 
     /** Placement is evaluated only when a new Artwork is created. */
     public const ADD_OPTIONS = [
+        self::ADD_FOLLOW => 'Automatic',
         self::ADD_FIRST => 'Always first',
         self::ADD_LAST => 'Always last',
         self::SORT_NEWEST => 'Newest by Artwork Date',
@@ -91,10 +92,8 @@ final class GalleryPresentation
     {
         $value = $gallery->getAttribute('add_placement');
 
-        // Historical galleries may still persist 'follow'. It is no longer
-        // an available creation policy; show and apply Always first instead.
         return is_string($value) && array_key_exists($value, self::ADD_OPTIONS)
-            ? $value : self::ADD_FIRST;
+            ? $value : self::ADD_FOLLOW;
     }
 
     public static function sortMode(ArtworkCategory $gallery): string
