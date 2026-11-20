@@ -4,6 +4,13 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Five-item Carousel overlap — CSS track-width precedence (2026-11-20)
+
+- Artist screenshot shows the 5-item Carousel's two immediate neighbors stretched over the active central artwork, while 3/4-item Carousels continue working.
+- Root cause: inside the >=72rem container rule, the later generic `.journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__item` assigned the center track's width to **every** item. Its selector has equal specificity to the earlier three-item neighbor-width rules, and therefore overrode them. Specific far-neighbor widths had been reapplied, but **near** neighbors were not.
+- Scoped fix in `resources/css/journal-presentation.css`: restore `width: var(--journal-carousel-preview-width)` explicitly for the immediate previous/next items with the five-mode selector. All five tracks now have separate widths/positions and no media overlap. Leave 3/4 items, arrow position, fallback, image scaling and Slideshow unchanged.
+- **Verification:** code-level CSS precedence and published blob checked. Browser layout review of the actual Exhibition in >=72rem Content, including cycling and 5/6 items, is outstanding; no suite, CI, deploy or migration.
+
 ## Carousel state after reducing media below three (2026-11-20)
 
 - Artist reproduced a real Exhibition editor bug: select Carousel with five or more media, delete down to two, save successfully, reopen; Carousel is grey only after manually changing to Slideshow. Root cause: the earlier Select option guard exempted the currently selected Carousel, while editorial services validated the name but not its minimum gallery count.
@@ -117,4 +124,4 @@
 
 ## Next
 
-Verify the Gallery Repeater automatic Carousel-to-Slideshow switch when deleting below three media and domain persistence on save/reopen, including legacy invalid Exhibition and Blog entries, then hand editor and public regression cases to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
+Review corrected five-image Carousel without neighbor overlap on the real Exhibition public page at >=72rem Content width, then verify 3/4/5/6 media cycles, responsive breakpoints and the Carousel-to-Slideshow edit state; hand browser regressions to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.

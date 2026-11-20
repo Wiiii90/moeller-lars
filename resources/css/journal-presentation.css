@@ -419,6 +419,14 @@
         width: calc(100% - 2 * (var(--journal-carousel-far-preview-width) + var(--journal-carousel-preview-width) + var(--journal-carousel-arrow-rail)));
     }
 
+    /* The wide center-track selector above has the same specificity as the
+       regular near-neighbor width rule and comes later in the cascade.
+       Restore the near-track width explicitly, or all three images overlap. */
+    .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__item[data-journal-slide-position="previous"],
+    .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__item[data-journal-slide-position="next"] {
+        width: var(--journal-carousel-preview-width);
+    }
+
     .journal-entry-gallery--carousel[data-journal-carousel-five] .journal-entry-gallery__item[data-journal-slide-position="previous"] {
         left: var(--journal-carousel-far-preview-width);
     }
