@@ -2,13 +2,19 @@
 
 **Lease:** 29
 **Branch:** dev
-**State:** Active — Gallery and Storage List/Grid/Dense local view switching source-prepared, plus Gallery Public action removal; browser verification pending.
+**State:** Active — Gallery List labels restored at the original 70rem compact breakpoint; browser acceptance pending.
 
 ## Takeover — 2026-11-20
 
 - New chat explicitly replaces the previous Dev Worker 4 under lease 29 on `dev`.
 - User assigned continued Gallery ownership but did not yet specify a new feature or defect for implementation. Await the next concrete task; do not automatically restart historical tasks.
 - Preserve previous Gallery Stage/media/publication and table contracts. All prior browser/runtime checks listed below remain pending; no application code, tests, deployment or Continuous Integration were changed during takeover.
+
+## Gallery List action labels regression — 2026-11-21
+
+- Artist reported action text disappearing after the shared six-action rail replaced Gallery's seven-action rail. Confirmed regression: existing generic six-action compact breakpoint was 76rem instead of the former Gallery List breakpoint of 70rem.
+- Introduced a scoped Gallery six-action rail variant in the canonical table toolbar, excluding that variant from the 76rem compact fallback; it retains the pre-existing Gallery 70rem compact breakpoint. The Dense variant remains intentionally compact at all widths, and Storage/other six-action tables remain unchanged.
+- This restores existing action labels on Gallery List between 70rem and 76rem without undoing the requested removal of the Public action. Code inspection only; browser verification pending. No tests, CI or deploy.
 
 ## Gallery/Storage List, Grid and Dense view switching — 2026-11-21
 

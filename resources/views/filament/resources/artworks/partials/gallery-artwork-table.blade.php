@@ -103,7 +103,7 @@
                         @endif
                     </td>
                     <td class="media-workspace__actions admin-table__actions">
-                        <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--six-static"
+                        <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--six-static admin-row-actions--six-static--gallery"
                             x-bind:class="{ 'admin-row-actions--six-static--dense': viewMode === 'dense' }">
                             <x-admin.row-action action="edit" wire:click="mountAction('editArtwork', { artwork: {{ $artwork['id'] }} })" />
                             <x-admin.row-action action="move-up" wire:click="moveArtwork({{ $artwork['id'] }}, 'up')"
