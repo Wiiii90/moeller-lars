@@ -42,10 +42,6 @@
 
         @php
             $stagePublicUrl = $this->galleryStagePreviewUrl();
-            $stagePreviewableCount = count(array_filter(
-                $artworkDataset,
-                static fn (array $artwork): bool => ($artwork['state'] ?? null) === 'published',
-            ));
         @endphp
         <section class="gallery-workspace__stage admin-visual-stage admin-visual-stage--split admin-focus-stage"
             aria-label="Gallery editor and interactive preview">
@@ -165,20 +161,7 @@
             <div class="gallery-stage__preview admin-visual-stage__pane" data-admin-stage-pane="preview" data-admin-stage-slot="2">
                 <header class="gallery-stage__preview-header">
                     <h2 class="admin-section__kicker admin-visual-stage__heading">{{ $galleryStagePreview === 'staged' ? 'Staged Artwork preview' : 'Live preview' }}</h2>
-                    @unless ($galleryStagePreview === 'staged')
-                    <div class="admin-stage-tool-group" role="group" aria-label="Gallery preview navigation">
-                        <button class="admin-action" type="button" wire:click="previewGalleryStage"
-                            aria-pressed="{{ $galleryStagePreview === 'gallery' ? 'true' : 'false' }}">Gallery</button>
-                        <button class="admin-action" type="button" wire:click="stepGalleryPreview('previous')"
-                            @disabled($stagePreviewableCount === 0) aria-label="Previous Artwork" title="Previous Artwork">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Previous->mini()" class="admin-action__icon" />
-                        </button>
-                        <button class="admin-action" type="button" wire:click="stepGalleryPreview('next')"
-                            @disabled($stagePreviewableCount === 0) aria-label="Next Artwork" title="Next Artwork">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Next->mini()" class="admin-action__icon" />
-                        </button>
-                    </div>
-                    @endunless
+
                 </header>
 
                 <x-admin.live-preview
@@ -188,6 +171,15 @@
                     :frame-title="$this->galleryStagePreviewTitle()"
                     wire:key="gallery-live-preview"
                 >
+                    <x-slot:focusAction>
+                        <button class="admin-action admin-stage-tool-icon {{ $galleryPreviewAutoFocus ? 'is-primary' : '' }}"
+                            type="button" wire:click="toggleGalleryPreviewAutoFocus"
+                            aria-label="Auto-focus preview to selection"
+                            aria-pressed="{{ $galleryPreviewAutoFocus ? 'true' : 'false' }}"
+                            title="{{ $galleryPreviewAutoFocus ? 'Auto-focus selection on' : 'Auto-focus selection off' }}">
+                            <x-filament::icon icon="heroicon-m-cursor-arrow-rays" />
+                        </button>
+                    </x-slot:focusAction>
                 </x-admin.live-preview>
             </div>
         </section>

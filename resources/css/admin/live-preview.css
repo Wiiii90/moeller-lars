@@ -11,7 +11,7 @@
     min-width: 0;
     min-height: 0;
     gap: 0;
-    overflow: hidden;
+    overflow: visible;
 }
 .admin-live-preview:not(:has(> .admin-live-preview__title)) {
     grid-template-rows: auto minmax(0, 1fr);
@@ -26,7 +26,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
     min-width: 0;
-    min-height: calc(var(--admin-control-height) + .35rem);
+    min-height: 2.35rem;
     column-gap: .2rem;
     align-items: center;
     padding: 0 0 .35rem;
@@ -69,52 +69,10 @@
 .admin-live-preview__device-profile {
     justify-self: start;
 }
-.admin-live-preview__device-trigger {
-    box-sizing: border-box;
-    position: relative;
-    display: grid;
-    width: var(--admin-live-preview-tool-size);
-    height: var(--admin-live-preview-tool-size);
-    min-width: var(--admin-live-preview-tool-size);
-    flex: 0 0 var(--admin-live-preview-tool-size);
-    padding: 0;
-    place-items: center;
-    border: 1px solid transparent;
-    border-radius: .2rem;
-    background: transparent;
-    color: var(--admin-text);
-    cursor: pointer;
-}
-.admin-live-preview__device-trigger > svg:not(.admin-live-preview__device-caret) {
-    width: 1rem;
-    height: 1rem;
-}
-.admin-live-preview__device-caret {
-    position: absolute;
-    right: .02rem;
-    bottom: .03rem;
-    width: .45rem;
-    height: .45rem;
-    pointer-events: none;
-}
-.admin-live-preview__device-trigger:hover,
-.admin-live-preview__device-trigger:focus-within {
-    border-color: var(--admin-accent);
-    background: var(--admin-subtle);
-    outline: none;
-}
-.admin-live-preview__device-trigger > .admin-live-preview__width-select {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    margin: 0;
-    padding: 0;
-    opacity: 0;
-    appearance: none;
-    cursor: pointer;
+/* Filament's canonical dropdown owns placement, items, focus and dismissal.
+ * Its trigger is a plain icon action, not an invisible overlaid form field. */
+.admin-live-preview__device-profile .fi-dropdown {
+    flex: 0 0 auto;
 }
 .admin-live-preview__zoom-group {
     justify-self: center;
@@ -136,8 +94,15 @@
  * the *outer* preview pane approaches 200px. All actions stay visible. */
 @container admin-live-preview (max-width: 13rem) {
     .admin-live-preview .admin-stage-tool-row {
-        --admin-live-preview-tool-size: 1.25rem;
-        --admin-live-preview-zoom-label-width: 2rem;
+        --admin-live-preview-tool-size: 1.1rem;
+        --admin-live-preview-zoom-label-width: 1.9rem;
+    }
+}
+@container admin-live-preview (max-width: 11rem) {
+    .admin-live-preview .admin-stage-tool-row {
+        --admin-live-preview-tool-size: .95rem;
+        --admin-live-preview-zoom-label-width: 1.7rem;
+        column-gap: 0;
     }
 }
 .admin-live-preview__viewport {
@@ -146,13 +111,12 @@
     position: relative;
     min-width: 0;
     min-height: 0;
-    margin-block: .45rem .1rem;
-    padding: .8rem .65rem;
+    margin-block: var(--admin-stage-header-gap) 0;
+    padding: 0;
     place-items: center;
     overflow: hidden;
-    border: 1px solid var(--admin-line);
-    border-radius: .15rem;
-    background: color-mix(in srgb, var(--admin-subtle) 60%, var(--admin-surface));
+    border: 0;
+    background: transparent;
 }
 .admin-live-preview__surface {
     box-sizing: border-box;
@@ -163,10 +127,6 @@
     max-width: 100%;
     max-height: 100%;
     overflow: hidden;
-    outline: 1px solid var(--admin-line-strong);
-    box-shadow:
-        0 0 0 .24rem color-mix(in srgb, var(--admin-surface) 72%, transparent),
-        0 .25rem .85rem color-mix(in srgb, #000 12%, transparent);
     background: #fff;
 }
 .admin-live-preview__page {

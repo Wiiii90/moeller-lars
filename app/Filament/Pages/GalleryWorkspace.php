@@ -89,6 +89,9 @@ final class GalleryWorkspace extends Page
 
     public string $galleryStagePreview = 'gallery';
 
+    #[Session]
+    public bool $galleryPreviewAutoFocus = true;
+
     public ?int $galleryStagePreviewArtworkId = null;
 
     /** Queue size when the current file-upload run began. */
@@ -154,18 +157,16 @@ final class GalleryWorkspace extends Page
             || ($panel === 'queue' && $this->pendingBatchArtworkMedia === [])) {
             return;
         }
+
         $this->rememberStagedArtworkChanges();
         $this->galleryStagePanel = $panel;
-        if ($panel === 'queue') {
-            if ($this->selectedStagedMediaAssetId === null) {
-                $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[0]['media_asset_id']);
-            } else {
-                $this->galleryStagePreview = 'staged';
-                $this->publishStagedArtworkPreview();
-            }
-        } elseif ($this->galleryStagePreview === 'staged') {
-            $this->previewGalleryStage();
+        if ($panel === 'queue' && $this->selectedStagedMediaAssetId === null) {
+            $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[0]['media_asset_id']);
+
+            return;
         }
+
+        $this->syncGalleryPreviewFocus();
     }
 
     /** Stage form changes refresh only a private session-backed Public preview. */
@@ -192,10 +193,12 @@ final class GalleryWorkspace extends Page
             'media_asset_id' => $this->selectedStagedMediaAssetId,
             'form' => is_array($this->stagedArtworkData) ? $this->stagedArtworkData : [],
         ]);
-        $this->dispatch('gallery-preview-updated',
-            url: $this->galleryStagePreviewUrl(),
-            title: $this->galleryStagePreviewTitle(),
-        );
+        if ($this->galleryPreviewAutoFocus && $this->galleryStagePanel === 'queue') {
+            $this->dispatch('gallery-preview-updated',
+                url: $this->galleryStagePreviewUrl(),
+                title: $this->galleryStagePreviewTitle(),
+            );
+        }
     }
 
     private function forgetStagedArtworkPreview(): void
@@ -203,53 +206,70 @@ final class GalleryWorkspace extends Page
         session()->forget('gallery.stage.preview.'.$this->getId());
     }
 
-    public function previewGalleryStage(): void
+    public function toggleGalleryPreviewAutoFocus(): void
     {
-        $this->galleryStagePreview = 'gallery';
-        $this->galleryStagePreviewArtworkId = null;
-        $this->dispatch('gallery-preview-updated', url: $this->galleryStagePreviewUrl(), title: $this->galleryStagePreviewTitle());
+        $this->galleryPreviewAutoFocus = ! $this->galleryPreviewAutoFocus;
+
+        if ($this->galleryPreviewAutoFocus) {
+            $this->syncGalleryPreviewFocus();
+        }
     }
 
-    public function previewGalleryArtwork(int $artworkId): void
+    /** The editor selection and the staged queue own the focused preview. */
+    private function syncGalleryPreviewFocus(bool $forceRefresh = false): void
     {
-        $previewable = collect($this->artworkDataset)
-            ->contains(static fn (array $artwork): bool => (int) $artwork['id'] === $artworkId
-                && ($artwork['state'] ?? null) === 'published');
-        if (! $previewable) {
+        if (! $this->galleryPreviewAutoFocus) {
+            // Pinned targets stay put except when the underlying Artwork or
+            // staged media was removed and its preview route is no longer valid.
+            $invalidStaged = $this->galleryStagePreview === 'staged'
+                && $this->selectedStagedMediaAssetId === null;
+            $invalidArtwork = $this->galleryStagePreview === 'artwork'
+                && ! collect($this->artworkDataset)->contains(
+                    fn (array $artwork): bool => (int) $artwork['id'] === $this->galleryStagePreviewArtworkId
+                        && ($artwork['can_preview'] ?? false) === true,
+                );
+            if ($invalidStaged || $invalidArtwork) {
+                $this->galleryStagePreview = 'gallery';
+                $this->galleryStagePreviewArtworkId = null;
+                $forceRefresh = true;
+            }
+            if ($forceRefresh) {
+                $this->dispatch('gallery-preview-updated',
+                    url: $this->galleryStagePreviewUrl(), title: $this->galleryStagePreviewTitle());
+            }
+
             return;
         }
-        $this->galleryStagePreview = 'artwork';
-        $this->galleryStagePreviewArtworkId = $artworkId;
-        $this->dispatch('gallery-preview-updated', url: $this->galleryStagePreviewUrl(), title: $this->galleryStagePreviewTitle());
+
+        if ($this->galleryStagePanel === 'queue' && $this->selectedStagedMediaAssetId !== null) {
+            $this->galleryStagePreview = 'staged';
+            $this->galleryStagePreviewArtworkId = null;
+            $this->publishStagedArtworkPreview();
+
+            return;
+        }
+
+        $ids = array_keys($this->selectedArtworkIdSet());
+        $single = count($ids) === 1 ? (int) $ids[0] : null;
+        $target = $single !== null && collect($this->artworkDataset)->contains(
+            static fn (array $artwork): bool => (int) $artwork['id'] === $single
+                && ($artwork['can_preview'] ?? false) === true,
+        ) ? $single : null;
+        $mode = $target === null ? 'gallery' : 'artwork';
+        $changed = $this->galleryStagePreview !== $mode || $this->galleryStagePreviewArtworkId !== $target;
+
+        $this->galleryStagePreview = $mode;
+        $this->galleryStagePreviewArtworkId = $target;
+
+        if ($changed || $forceRefresh) {
+            $this->dispatch('gallery-preview-updated',
+                url: $this->galleryStagePreviewUrl(), title: $this->galleryStagePreviewTitle());
+        }
     }
 
-    public function stepGalleryPreview(string $direction): void
+    public function updatedSelectedArtworkIds(): void
     {
-        if (! in_array($direction, ['previous', 'next'], true)) {
-            return;
-        }
-        $ids = array_values(array_map(
-            static fn (array $artwork): int => (int) $artwork['id'],
-            array_filter(
-                $this->artworkDataset,
-                static fn (array $artwork): bool => ($artwork['state'] ?? null) === 'published',
-            ),
-        ));
-        if ($ids === []) {
-            $this->previewGalleryStage();
-            return;
-        }
-        $from = array_search($this->galleryStagePreviewArtworkId, $ids, true);
-        if ($from === false) {
-            $this->previewGalleryArtwork($direction === 'previous' ? $ids[array_key_last($ids)] : $ids[0]);
-            return;
-        }
-        $target = $from + ($direction === 'next' ? 1 : -1);
-        if (isset($ids[$target])) {
-            $this->previewGalleryArtwork($ids[$target]);
-        } elseif ($direction === 'next') {
-            $this->previewGalleryStage();
-        }
+        $this->syncGalleryPreviewFocus();
     }
 
     public function galleryStagePreviewTitle(): string
@@ -274,7 +294,7 @@ final class GalleryWorkspace extends Page
         }
         foreach ($this->artworkDataset as $artwork) {
             if ((int) $artwork['id'] === $this->galleryStagePreviewArtworkId
-                && ($artwork['state'] ?? null) === 'published') {
+                && ($artwork['can_preview'] ?? false) === true) {
                 return route('preview.artworks.show', ['slug' => $artwork['slug']]);
             }
         }
@@ -307,6 +327,7 @@ final class GalleryWorkspace extends Page
         $this->selectedArtworkIds = in_array($artworkId, $selected, true)
             ? array_values(array_diff($selected, [$artworkId]))
             : array_values(array_unique([...$selected, $artworkId]));
+        $this->syncGalleryPreviewFocus();
     }
 
     public function toggleVisibleArtworkSelection(): void
@@ -320,11 +341,13 @@ final class GalleryWorkspace extends Page
         $this->selectedArtworkIds = $allSelected
             ? array_values(array_diff($selected, $visibleIds))
             : array_values(array_unique([...$selected, ...$visibleIds]));
+        $this->syncGalleryPreviewFocus();
     }
 
     public function updatedSearch(): void
     {
         $this->projectArtworks();
+        $this->syncGalleryPreviewFocus();
     }
 
     public function updatedStatusFilter(): void
@@ -334,6 +357,7 @@ final class GalleryWorkspace extends Page
         }
 
         $this->projectArtworks();
+        $this->syncGalleryPreviewFocus();
     }
 
     public function updatedReadinessFilter(): void
@@ -343,6 +367,7 @@ final class GalleryWorkspace extends Page
         }
 
         $this->projectArtworks();
+        $this->syncGalleryPreviewFocus();
     }
 
     public function resetFilters(): void
@@ -351,6 +376,7 @@ final class GalleryWorkspace extends Page
         $this->statusFilter = 'any';
         $this->readinessFilter = 'any';
         $this->projectArtworks();
+        $this->syncGalleryPreviewFocus();
     }
 
     public function renameArtwork(int $artworkId, string $title): ?string

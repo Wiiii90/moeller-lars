@@ -3,8 +3,8 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Analytics\ArtistReportingService;
-use App\Domain\Artwork\ArtworkDate;
 use App\Domain\Artwork\GalleryPresentation;
+use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaTypePolicy;
@@ -36,6 +36,7 @@ trait GalleryWorkspaceDataProjection
         $this->unfilteredArtworkCount = $records->count();
         $this->publishedCount = $records->where('state', 'published')->count();
         $galleryPublished = $this->galleryContext['state'] === 'published';
+        $artworkPagesEnabled = GalleryPresentation::artworkPagesEnabled($gallery);
         $count = $records->count();
 
         // Live links must come from the actual Committed snapshot, never
@@ -51,7 +52,7 @@ trait GalleryWorkspaceDataProjection
             ->pluck('artwork.slug', 'artwork.id')
             ->all();
 
-        $this->artworkDataset = $records->values()->map(function (Artwork $artwork, int $index) use ($galleryPublished, $count, $committedSlugs): array {
+        $this->artworkDataset = $records->values()->map(function (Artwork $artwork, int $index) use ($galleryPublished, $artworkPagesEnabled, $count, $committedSlugs): array {
             /** @var EloquentCollection<int, ArtworkMedia> $primaries */
             $primaries = $artwork->getRelation('artworkMedia')->where('role', 'primary')->values();
             /** @var ArtworkMedia|null $primary */
@@ -75,8 +76,17 @@ trait GalleryWorkspaceDataProjection
                 'state_label' => ucfirst((string) $artwork->getAttribute('state')),
                 'readiness_label' => $this->readinessLabel($artwork, $galleryPublished, $primaries->count(), $primaryAsset, $primary),
                 'is_ready' => $this->isReadyToPublish($artwork, $galleryPublished, $primaries->count(), $primaryAsset, $primary),
+                // The public Preview route accepts viable Working drafts too.
+                // Never auto-focus an incomplete page that would return 404.
+                'can_preview' => $artworkPagesEnabled
+                    && $artwork->getAttribute('state') !== 'archived'
+                    && filled($artwork->getAttribute('slug'))
+                    && $primaries->count() === 1
+                    && $primaryAsset instanceof MediaAsset
+                    && app(ArtworkPublicationService::class)->mediaReady(
+                        $primaryAsset, $primary?->getAttribute('alt_text_override'),
+                    ),
                 'year' => $artwork->getAttribute('year'),
-                'date' => ArtworkDate::display($artwork),
                 'medium' => $artwork->getAttribute('medium'),
                 'dimensions' => $artwork->getAttribute('dimensions'),
                 'primary_kind' => $kind,
@@ -156,7 +166,6 @@ trait GalleryWorkspaceDataProjection
                     $artwork['title'] ?? null,
                     $artwork['medium'] ?? null,
                     $artwork['year'] ?? null,
-                    $artwork['date'] ?? null,
                     $artwork['dimensions'] ?? null,
                 ], static fn (mixed $value): bool => $value !== null && $value !== '')));
 
@@ -196,7 +205,7 @@ trait GalleryWorkspaceDataProjection
         // The canonical Preview owner refreshes without remounting controls.
         // Pass the current route because an editorial update can change an
         // Artwork slug while retaining the selected Artwork identity.
-        $this->dispatch('gallery-preview-updated', url: $this->galleryStagePreviewUrl(), title: $this->galleryStagePreviewTitle());
+        $this->syncGalleryPreviewFocus(forceRefresh: true);
     }
 
     private function refreshGalleryMetrics(): void

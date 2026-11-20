@@ -24,32 +24,28 @@
     @endif
     <x-admin.stage-tool-row label="Live preview controls">
         <div class="admin-stage-tool-group admin-live-preview__device-profile" role="group" aria-label="Device preview">
-            {{-- The canonical native Select remains the only device chooser.
-                 Its icon-sized presentation matches the shared Stage tabs. --}}
-            <label class="admin-action admin-live-preview__device-trigger">
-                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceDesktop->mini()"
-                    x-show="previewDevice === 'desktop'" x-cloak aria-hidden="true" />
-                <x-filament::icon icon="heroicon-o-device-tablet"
-                    x-show="previewDevice === 'tablet'" x-cloak aria-hidden="true" />
-                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceMobile->mini()"
-                    x-show="previewDevice === 'mobile'" x-cloak aria-hidden="true" />
-                <x-filament::icon icon="heroicon-m-chevron-down"
-                    class="admin-live-preview__device-caret" aria-hidden="true" />
-                <select class="admin-form-control admin-live-preview__width-select" x-model="selectedProfile"
-                    x-on:change="selectProfile($event.target.value)"
-                    x-bind:aria-label="'Device and viewport resolution: ' + selectedProfileLabel()"
-                    x-bind:title="selectedProfileLabel()">
-                @foreach (['desktop' => 'Computers', 'tablet' => 'Tablets', 'mobile' => 'Phones'] as $category => $label)
-                    <optgroup label="{{ $label }}">
-                        @foreach (\App\Domain\Content\PreviewDeviceProfiles::all() as $id => $profile)
-                            @if ($profile['category'] === $category)
-                                <option value="{{ $id }}">{{ $profile['label'] }}</option>
-                            @endif
-                        @endforeach
-                    </optgroup>
-                @endforeach
-                </select>
-            </label>
+            <x-filament::dropdown placement="bottom-start">
+                <x-slot name="trigger">
+                    <button class="admin-action admin-stage-tool-icon" type="button"
+                        x-bind:title="'Device: ' + selectedProfileLabel()"
+                        x-bind:aria-label="'Choose preview device, current: ' + selectedProfileLabel()">
+                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceDesktop->mini()"
+                            x-show="previewDevice === 'desktop'" x-cloak aria-hidden="true" />
+                        <x-filament::icon icon="heroicon-m-device-tablet"
+                            x-show="previewDevice === 'tablet'" x-cloak aria-hidden="true" />
+                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceMobile->mini()"
+                            x-show="previewDevice === 'mobile'" x-cloak aria-hidden="true" />
+                    </button>
+                </x-slot>
+                <x-filament::dropdown.list>
+                    @foreach (\App\Domain\Content\PreviewDeviceProfiles::all() as $id => $profile)
+                        <x-filament::dropdown.list.item
+                            x-on:click="selectProfile(@js($id))"
+                            x-bind:aria-current="selectedProfile === @js($id) ? 'true' : null"
+                        >{{ $profile['label'] }}</x-filament::dropdown.list.item>
+                    @endforeach
+                </x-filament::dropdown.list>
+            </x-filament::dropdown>
             <button class="admin-action admin-stage-tool-icon" type="button"
                 x-on:click="rotateViewport()"
                 x-bind:disabled="selectedProfile === 'current-window'"
@@ -81,11 +77,14 @@
                 title="Pan (or hold Space and drag)" aria-label="Toggle preview pan mode">
                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::PreviewPan->mini()" />
             </button>
+            @isset($focusAction)
+                {{ $focusAction }}
+            @endisset
             @if (filled($url))
                 <a class="admin-action admin-stage-tool-icon" href="{{ $url }}"
                     x-bind:href="currentUrl || '{{ $url }}'"
                     target="_blank" rel="noopener noreferrer"
-                    title="Open interactive preview" aria-label="Open interactive preview">
+                    title="Open preview" aria-label="Open preview">
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" />
                 </a>
             @else

@@ -105,8 +105,10 @@ trait GalleryWorkspaceDirectUpload
         $this->rememberStagedArtworkChanges();
         $this->selectedStagedMediaAssetId = $assetId;
         $this->galleryStagePanel = 'queue';
-        $this->galleryStagePreview = 'staged';
-        $this->galleryStagePreviewArtworkId = null;
+        if ($this->galleryPreviewAutoFocus) {
+            $this->galleryStagePreview = 'staged';
+            $this->galleryStagePreviewArtworkId = null;
+        }
         $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
         $form = is_array($selected['form'] ?? null) ? $selected['form'] : [];
         if ($form === []) {
@@ -144,7 +146,7 @@ trait GalleryWorkspaceDirectUpload
             } else {
                 $this->galleryStagePanel = 'settings';
                 $this->forgetStagedArtworkPreview();
-                $this->previewGalleryStage();
+                $this->syncGalleryPreviewFocus();
             }
         }
 
@@ -290,7 +292,7 @@ trait GalleryWorkspaceDirectUpload
         if ($this->pendingBatchArtworkMedia === []) {
             $this->galleryStagePanel = 'settings';
             $this->forgetStagedArtworkPreview();
-            $this->previewGalleryStage();
+            $this->syncGalleryPreviewFocus();
         } else {
             $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[0]['media_asset_id']);
         }
