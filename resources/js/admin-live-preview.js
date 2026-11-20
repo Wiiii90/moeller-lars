@@ -247,6 +247,17 @@ export function adminLivePreview(element) {
             }
             if (! documentRef || ! windowRef) return
 
+            // The Public body carries the configurable fixed background.
+            // When its iframe is scaled, some browsers expose the white
+            // root canvas below the initially painted viewport on scroll.
+            // Scope the matching root backing to this embedded Preview only.
+            if (documentRef.body?.classList.contains('public-site')) {
+                documentRef.documentElement.classList.add('public-preview--embedded')
+                this.frameShortcuts.push(() => {
+                    documentRef.documentElement.classList.remove('public-preview--embedded')
+                })
+            }
+
             const blur = () => this.cancelPanGesture()
             const changed = () => this.scheduleDiagnostics()
             const frameWheel = (event) => this.zoomWithWheel(event, true)

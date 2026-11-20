@@ -64,6 +64,16 @@ body {
     font-size: 14px;
 }
 
+/* A scaled Admin iframe can expose blank canvas while scrolling a Public
+ * document whose page gradient is attached to the body. Give only the
+ * embedded Preview an explicit root-canvas backing with that very same
+ * configured paint. Standalone Preview and Published Public remain unchanged,
+ * including their fixed gradient and sticky header behavior. */
+html.public-preview--embedded {
+    background: var(--public-page);
+    background-attachment: fixed;
+}
+
 /* Header geometry only. Document scroll and sticky positioning live in app.css.
  * The base Menu has no implicit lower line: the selected Menu to page mode
  * alone owns any divider. */

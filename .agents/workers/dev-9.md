@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 28 (active)  
-**State:** Shared Help toolbar mouse-dismissal now clears residual button focus without disabling keyboard focus; real-browser review pending.
+**State:** Embedded Preview initial background repaint mitigation source-integrated; actual browser acceptance pending.
 
 ## Ownership and current decisions
 
@@ -64,3 +64,13 @@
 - `resources/views/components/admin/help.blade.php`: use one centralized opt-in `toolbar` flag already carried by the canonical Help component. Track the input pointer type on the trigger; after a real **mouse** click that closes the popover, blur that closed trigger so a later Shift key cannot reveal residual focus. A keyboard-triggered click (`detail === 0`), touch click, and all non-toolbar Help controls retain their existing focus behavior. Mouse click to reopen does not blur and remains operable.
 - Do **not** change `Shift + wheel` zoom, general `:focus-visible` styling, or shared Stage toolbar CSS. No duplicated Preview-local tooltip logic.
 - In-memory Alpine object parsing and behavior simulation passed for toolbar mouse-close/mouse-open, keyboard-close, touch-close and ordinary field Help. Browser reproduction on actual Chromium/Firefox and keyboard accessibility acceptance remain pending; no suite, build, Continuous Integration or deployment was run.
+
+
+## 2026-11-21: Scaled iframe page-background paint gap
+
+- User confirmed that the centralized Help bulb focus fix worked. New General Preview screenshot shows the page-background gradient abruptly terminating at a horizontal line while the embedded Public page scrolls, exposing white underneath; standalone Public Preview displays the background correctly. This concerns **initial loaded/scrolled iframe painting**, not saved appearance values.
+- Root cause hypothesis grounded by source: Public body and sticky header both use `background: var(--public-page)` with `background-attachment: fixed` in `resources/css/public-presentation.css`. The Admin Preview scales the embedded iframe's rendering via a CSS transform, which can expose its default white root canvas during inner-document scrolling/repaint. CSS background propagation between body and root is a plausible source of the gap; browser-specific proof is not available.
+- `resources/css/public-presentation.css`: add a narrowly scoped `html.public-preview--embedded` rule to paint the root canvas using the **same** dynamic `--public-page` variable and fixed attachment. No new hard-coded color or different Public appearance mode.
+- `resources/js/admin-live-preview.js`: for a loaded same-origin iframe whose body is a Public site, mark its root as embedded; register the corresponding remove on the existing iframe listener/observer disposal. Standalone Public and standalone Preview never receive this class. No additional iframe, polling, scroll listeners, page height overrides, viewport geometry changes, or Public background-setting mutations.
+- Verified by in-memory JavaScript parsing and lifecycle simulation that the embedded marker is set for the Public iframe and removed when shortcuts unbind. This does not prove paint correctness in Chromium/WebKit; app build, browser test, CI, server deployment and production changes were not run.
+- **Browser acceptance pending:** General and Gallery initial load at fitted 100%, scroll across the former horizontal boundary, fixed gradient consistency and sticky header; zoom and phone/desktop device selection; standalone Preview rendering unchanged.
