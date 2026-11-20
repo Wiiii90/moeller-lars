@@ -95,6 +95,11 @@
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" />
                 </button>
             @endif
+            <x-admin.help
+                :toolbar="true"
+                label="Preview controls and gestures"
+                text="Mouse wheel: scroll the page. Ctrl + mouse wheel: zoom the preview. Hold the middle mouse button and drag, or hold Space and drag, to move a zoomed preview. Touch: swipe and tap normally; use two fingers to move a zoomed preview. Use the zoom buttons on touch devices. Click the zoom percentage to fit the preview again."
+            />
         </div>
     </x-admin.stage-tool-row>
 
@@ -103,6 +108,7 @@
         x-on:pointerenter="pointerInside = true"
         x-on:pointerleave="pointerInside = false; if (!dragging) cancelSpacePan()"
         x-on:pointerdown.capture="startPan($event)"
+        x-on:wheel.capture="zoomWithWheel($event)"
         x-on:auxclick="if (zoom > minZoom && $event.button === 1) $event.preventDefault()"
         x-on:touchstart="startTouchPan($event)"
         x-on:touchmove="moveTouchPan($event)"

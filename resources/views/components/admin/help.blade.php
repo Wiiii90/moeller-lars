@@ -1,10 +1,16 @@
+@props([
+    'label' => 'Help',
+    'text' => '',
+    'toolbar' => false,
+])
+
 @php
     // Repeated help text on the same page must still have unique ARIA targets.
     $tooltipId = 'admin-help-'.\Illuminate\Support\Str::uuid();
 @endphp
 
 <span
-    class="admin-help"
+    @class(['admin-help', 'admin-help--toolbar' => $toolbar])
     x-data="{
         open: false,
         show() {
@@ -51,7 +57,7 @@
     <button
         x-ref="trigger"
         type="button"
-        class="admin-help__trigger"
+        @class(['admin-help__trigger', 'admin-action admin-stage-tool-icon' => $toolbar])
         aria-label="{{ $label }}"
         aria-describedby="{{ $tooltipId }}"
         aria-controls="{{ $tooltipId }}"

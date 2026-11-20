@@ -2,28 +2,28 @@
 
 **Branch:** `dev`  
 **Lease:** 28 (active)  
-**State:** Shared zoom/pan interaction replacement implemented in source; runtime/browser acceptance pending.
+**State:** Existing mouse navigation browser-accepted by the artist; Help and modifier-wheel zoom source-integrated, browser acceptance pending.
 
-## Ownership and current user requirements
+## Ownership and accepted behavior
 
-- Shared Admin Live Preview in General and Gallery and direct uses of `x-admin.live-preview`. Coordinate component/device-picker overlap with Dev Worker 7; Gallery content selection/focus and General Appearance settings remain owned by their feature workers.
-- User reports that zoom cuts off free movement, including reaching the top; the persistent Pan tool blocks Public menu/link clicks. User requests middle-mouse-button horizontal and vertical panning plus a viable touch interaction.
-- Preserve single actual Public iframe, embedded native page scrolling, normal clickable navigation, selected device and rotation, zoom/fit, Gallery Focus, appearance refresh and responsive Stage geometry.
+- Own shared `x-admin.live-preview` controls and gestures across General and Gallery. Coordinate with Dev Worker 7's device picker and shared Admin Select styling; Gallery focus/selection and General Appearance settings remain with their owners.
+- Artist confirms (2026-11-20) that native scroll-owned zoom, middle-button drag and fully reachable page edges now work substantially better. Maintain ordinary clickable Public menu, normal unmodified mouse-wheel scrolling, Space+drag alternative and toolbar zoom/reset.
+- The persistent Pan toggle has been retired; only an active gesture may temporarily cover the embedded page. Touch remains untested by the artist.
 
-## Source implementation
+## Current implementation
 
-- `resources/js/admin-live-preview.js`: native Stage viewport scrolling replaces manually clamped negative `panX/panY` and CSS frame offsets. The fitted page is the scroll content at current zoom; zoom preserves the content center. Middle-button drag works in the same-origin iframe and the surrounding Stage through temporary document listeners and pointer capture. Held Space + left drag remains an alternative. Two-finger touch gesture pans the zoomed viewport while one-finger page interaction remains native.
-- `resources/views/components/admin/live-preview.blade.php`: removes the persistent Pan toggle; its overlay now appears only during a gesture, leaving Public links/buttons interactive the rest of the time. Mouse and touch gesture hooks live on the canonical Preview viewport.
-- `resources/css/admin/live-preview.css`: replaces the clipped, centered Stage with a native scroll owner; centered fit uses auto margins, with no inaccessible negative overflow. Keeps scrollbar chrome hidden without suppressing native scrolling. The device picker, profiles, and Gallery Focus markup are unchanged.
+- `resources/js/admin-live-preview.js`: native scrollable Stage viewport and same-origin Public iframe with temporary middle-button/Space/two-finger gestures. New Ctrl/Command + mouse-wheel zoom at pointer focus; native wheel scrolling remains untouched without the modifier, input is normalized by wheel delta mode and per-notch accumulation. One owner binds/unbinds the iframe's non-passive, capture-phase wheel listener on load/refresh.
+- `resources/views/components/admin/live-preview.blade.php`: one shared Help bulb to the right of Open Preview in every General/Gallery consumer, using existing `x-admin.help`; parent viewport captures modifier-wheel zoom. Existing Gallery Focus action, Open Preview behavior and device profile selection remain intact.
+- `resources/views/components/admin/help.blade.php` and `resources/css/admin/forms.css`: opt-in `toolbar` variant applies established Admin action-button geometry to the existing popover's trigger; ordinary field-label Help remains unchanged.
 
 ## Verification and open gates
 
-- In-memory JavaScript parsing and bounded simulated fit/zoom/middle-drag/reset checks passed (fitted 400x300, zoom 800x600 with centered native scroll offset; drag scrolls in both directions and cleans up listeners).
-- No application/runtime build, connected browser, touch device, existing test suite, Continuous Integration, deployment, database mutation or publication performed.
-- **Browser acceptance pending:** General and Gallery at 100%, 125%, 200% and 1:1 zoom; reach all four edges and full top after inner page scrolling; middle-button gesture started inside iframe and across its border; normal Public navigation clicks after pan and with zoom active; native wheel scrolling, Space+drag, keyboard, one-finger scrolling/taps and two-finger touch panning; device rotation/selection, Gallery Focus and refresh; narrow Stage and Stage expansion.
-- Middle mouse behavior is press-and-drag, not a sticky click-once browser autoscroll mode. If the user specifically requires click-once autoscroll, obtain that product decision rather than adding a parallel mode.
+- JavaScript parsed in isolation. An in-memory gesture simulation confirmed unmodified wheel does not modify zoom, Ctrl-wheel prevents browser zoom, pointer-anchored zoom increments, iframe wheel binding and listener removal. These are **not** browser or touch acceptance.
+- **Still unverified:** hover/click/keyboard Help placement in General and Gallery, toolbar fit across narrow widths, Ctrl-wheel inside the iframe and on its edge with actual Chromium, touch one-finger scroll/tap and two-finger pan, zoom with native scroll and clickable navigation in the actual running preview.
+- No application build, persistent tests, CI, deployment, database mutation or production action performed.
 
 ## Next
 
-1. Obtain the user's real-browser General/Gallery interaction feedback; isolate any event/geometry discrepancy in the shared component before further edits.
-2. Re-read `dev` HEAD, roster lease and Dev Worker 7's overlapping Preview scope before the next mutation.
+1. Review the real General/Gallery browser after updating to the new source, focusing on Help popover and Ctrl-wheel without losing plain-wheel scrolling or link clicks.
+2. Test the touch gestures on a device or isolated browser only when appropriate; do not claim verified touchscreen behavior from source review.
+3. Before any further edit, confirm exact `dev` HEAD, lease 28 and overlap with Dev Worker 7.

@@ -399,6 +399,13 @@
     align-items: center;
 }
 
+/* Reuse the exact Help popover in action toolbars without inheriting
+ * field-label-sized trigger geometry. Toolbar actions own their slot size. */
+.admin-help--toolbar {
+    width: auto;
+    height: auto;
+}
+
 .admin-help__trigger {
     display: inline-grid;
     width: 1rem;
