@@ -72,6 +72,23 @@ final readonly class GalleryHeroCandidate
         return $this->kind.':'.$this->record->getKey();
     }
 
+    /** A displayed image may be referenced both by Artwork and direct Storage. */
+    public function visualKey(): string
+    {
+        if ($this->record instanceof MediaAsset) {
+            return 'media:'.$this->record->getKey();
+        }
+
+        $this->record->loadMissing('artworkMedia');
+        $primary = $this->record->getRelation('artworkMedia')->first(
+            static fn ($usage): bool => $usage->getAttribute('role') === 'primary',
+        );
+
+        return $primary === null
+            ? $this->key()
+            : 'media:'.(int) $primary->getAttribute('media_asset_id');
+    }
+
     public function artwork(): ?Artwork
     {
         return $this->record instanceof Artwork ? $this->record : null;

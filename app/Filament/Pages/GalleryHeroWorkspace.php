@@ -76,6 +76,7 @@ final class GalleryHeroWorkspace extends Page
     /** @var list<array<string,mixed>> */
     public array $excludedHeroRows = [];
     public string $heroDisplayStrategy = 'ordered';
+    public bool $randomAvailable = false;
     public string $heroSourceRule = 'newest_artwork';
     public string $heroSelectionMode = 'global';
     public int $heroGroupSize = GalleryHeroConfigurationService::DEFAULT_GROUP_SIZE;

@@ -1,4 +1,13 @@
-# Dev Worker 6 — Home Hero
+# Dev Worker 6 — Gallery Hero / former Home Hero
+
+## Focused Gallery Hero Random implementation — 2026-11-20
+
+- User explicitly assigned Dev Worker 6 in this chat to implement non-repeating Random on the current **Gallery → Hero Artworks** template, which now belongs to Gallery instead of a Home-only special page. Dev Worker 4 owns general Gallery; limit this lease's edits to the actual Hero Random resolver and direct UI/public consumers.
+- Public Hero draws weighted candidates with the previous **visual asset** excluded when at least two distinct media with positive base weights are eligible. Artwork and direct Storage references to the same primary Media Asset count as one visual. Historical per-Hero, per-visitor last visual is stored in the ordinary Laravel session, independently for public and protected Preview; there is no global persistent presentation counter, new cookie, or changed canonical publishing state. The exact original source weights remain editable/persisted; only each draw's weights are normalized across the remaining images.
+- Both the Gallery Hero Stage simulation and public resolver apply the same exclusion semantics. Stage shows editable **Base chance** and an automatically updated **Next** percentage per row, using existing Stage row projection and percentage control. Random is disabled as a selectable option in Stage and Settings when there is fewer than two distinct positively weighted media; a previously saved Random strategy is retained and renders the only possible candidate without fake rotation.
+- All changes are restricted to GalleryHeroCandidate, GalleryHeroResolver, GalleryHeroPresentationResolver, the existing GalleryHeroWorkspace/Projection, GalleryHeroSettingsDialog, Gallery Hero Stage Blade, its JavaScript and CSS. No manual artwork sorting or Gallery-first ranking changes, no new files/tables/migrations/services, no work on Public Gallery batching or media ingest.
+- **Acceptance pending:** server session persistence on local Preview and public GETs; simultaneous visitors' independent sequences; duplicate Artwork/Storage media visual identity, positive/zero-weight and 1/2/3+ distinct-media cases; exact next percentages after ticks/weight changes; disabled Random in both dialogs; browser/narrow Stage width; JavaScript and PHP syntax where a runtime is available. No Dev-authored tests, CI, build or deployment performed.
+
 
 - **Branch:** `dev`
 - **Lease:** 16, active in this chat only.

@@ -12,6 +12,7 @@ final class GalleryHeroPresentationResolver
         private readonly PublicMedia $media,
         private readonly GalleryHeroConfigurationService $configuration,
         private readonly GalleryHeroResolver $resolver,
+        private readonly SitePreviewContext $preview,
     ) {}
 
     /** @return array<string, mixed> */
@@ -19,7 +20,22 @@ final class GalleryHeroPresentationResolver
     {
         $settings = GalleryHeroSetting::forSection($section);
         $configuration = $this->configuration->configuration($settings);
-        $resolved = $this->resolver->resolve($settings);
+        $request = request();
+        // One functional, session-local history entry per Hero page. Preview
+        // has its own history and cannot alter a visitor's public sequence.
+        $historyKey = 'gallery_hero.last_random.'
+            .($this->preview->active() ? 'preview.' : 'public.')
+            .$section->getKey();
+        $lastVisual = $request->hasSession() ? $request->session()->get($historyKey) : null;
+        $resolved = $this->resolver->resolve(
+            $settings,
+            previousVisualKey: is_string($lastVisual) ? $lastVisual : null,
+        );
+        if ($configuration['display_strategy'] === 'random'
+            && $resolved['current'] instanceof GalleryHeroCandidate
+            && $request->hasSession()) {
+            $request->session()->put($historyKey, $resolved['current']->visualKey());
+        }
 
         return [
             'section' => $section,

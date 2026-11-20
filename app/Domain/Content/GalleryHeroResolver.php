@@ -24,7 +24,7 @@ final class GalleryHeroResolver
      *     group:Collection<int,GalleryHeroCandidate>,
      *     current:?GalleryHeroCandidate,
      *     sequence:Collection<int,GalleryHeroCandidate>,
-     *     weights:array<int,int>,
+     *     weights:array<string,int>,
      *     rotation_slot:int,
      *     next_rotation_at:?CarbonImmutable
      * }
@@ -33,6 +33,7 @@ final class GalleryHeroResolver
         GalleryHeroSetting $settings,
         ?DateTimeInterface $at = null,
         ?int $randomBasisPoint = null,
+        ?string $previousVisualKey = null,
     ): array {
         $configuration = $this->configuration->configuration($settings);
         [$group, $weights] = $this->sourceGroup($configuration);
@@ -50,7 +51,7 @@ final class GalleryHeroResolver
         }
 
         return match ($configuration['display_strategy']) {
-            'random' => $this->randomResolution($configuration, $group, $weights, $randomBasisPoint),
+            'random' => $this->randomResolution($configuration, $group, $weights, $randomBasisPoint, $previousVisualKey),
             'sequential' => $this->sequentialResolution($settings, $configuration, $group, $weights, $at),
             default => [
                 'configuration' => $configuration,
@@ -274,6 +275,92 @@ final class GalleryHeroResolver
         return $candidates;
     }
 
+    /**
+     * A drawable alternative is a distinct visual asset with a positive
+     * configured chance, not merely another Artwork referring to that asset.
+     *
+     * @param Collection<int,GalleryHeroCandidate> $group
+     * @param array<string,int> $weights
+     */
+    public function hasRandomAlternatives(Collection $group, array $weights): bool
+    {
+        $visuals = [];
+        foreach ($group as $candidate) {
+            if (($weights[$candidate->key()] ?? 0) <= 0) {
+                continue;
+            }
+            $visuals[$candidate->visualKey()] = true;
+            if (count($visuals) > 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Form choices use the same sourced membership as the public resolver.
+     * Uncommitted source/amount edits are evaluated without persisting them.
+     *
+     * @param array<string,mixed> $draft
+     */
+    public function canRandomize(GalleryHeroSetting $settings, array $draft = []): bool
+    {
+        $mode = $draft['group_source'] ?? null;
+        $configuration = $this->configuration->configuration(
+            $settings,
+            is_string($mode) && in_array($mode, ['automatic', 'semi_automatic', 'manual'], true)
+                ? $mode : null,
+        );
+        $selection = $draft['selection_mode'] ?? null;
+        if (is_string($selection) && array_key_exists($selection, GalleryHeroConfigurationService::SELECTION_MODES)) {
+            $configuration['selection_mode'] = $selection;
+        }
+        $rule = $draft['source_rule'] ?? null;
+        if (is_string($rule) && array_key_exists($rule, GalleryHeroConfigurationService::SOURCE_RULES)) {
+            $configuration['source_rule'] = $rule;
+        }
+        $amount = filter_var($draft['group_size'] ?? null, FILTER_VALIDATE_INT);
+        if ($amount !== false && $amount >= 1 && $amount <= GalleryHeroConfigurationService::MAX_GROUP_SIZE) {
+            $configuration['group_size'] = $amount;
+        }
+
+        [$group, $weights] = $this->sourceGroup($configuration);
+
+        return $this->hasRandomAlternatives($group, $weights);
+    }
+
+    /**
+     * Reweight only this draw; stored basis-point chances remain unchanged.
+     * If there is no positively weighted alternative, keep the only possible
+     * image rather than falsely allowing a zero-weighted candidate.
+     *
+     * @param Collection<int,GalleryHeroCandidate> $group
+     * @param array<string,int> $weights
+     * @return array<string,int>
+     */
+    public function nextRandomWeights(Collection $group, array $weights, ?string $lastVisualKey): array
+    {
+        if ($lastVisualKey === null || ! $this->hasRandomAlternatives($group, $weights)) {
+            return $weights;
+        }
+
+        $adjusted = [];
+        $changed = false;
+        foreach ($group as $candidate) {
+            $weight = $weights[$candidate->key()] ?? 0;
+            if ($candidate->visualKey() === $lastVisualKey && $weight > 0) {
+                $weight = 0;
+                $changed = true;
+            }
+            $adjusted[$candidate->key()] = $weight;
+        }
+
+        return $changed
+            ? $this->configuration->sourcedGroupWeights($group, $adjusted)
+            : $weights;
+    }
+
     /** @param array<string,mixed> $configuration
      * @param  Collection<int,GalleryHeroCandidate>  $group
      * @param  array<string,int>  $weights
@@ -284,7 +371,9 @@ final class GalleryHeroResolver
         Collection $group,
         array $weights,
         ?int $randomBasisPoint,
+        ?string $previousVisualKey,
     ): array {
+        $drawWeights = $this->nextRandomWeights($group, $weights, $previousVisualKey);
         $basisPoint = $randomBasisPoint ?? random_int(0, GalleryHeroConfigurationService::WEIGHT_TOTAL - 1);
         if ($basisPoint < 0 || $basisPoint >= GalleryHeroConfigurationService::WEIGHT_TOTAL) {
             throw ValidationException::withMessages(['random' => 'Random Hero sample must be within the configured weight range.']);
@@ -293,7 +382,7 @@ final class GalleryHeroResolver
         $current = null;
         $cumulative = 0;
         foreach ($group as $artwork) {
-            $cumulative += $weights[$artwork->key()] ?? 0;
+            $cumulative += $drawWeights[$artwork->key()] ?? 0;
             if ($basisPoint < $cumulative) {
                 $current = $artwork;
                 break;

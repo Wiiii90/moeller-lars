@@ -83,8 +83,10 @@ trait GalleryHeroWorkspaceProjection
                 ->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', 'published'))->count();
         $this->sourceGalleryCount = $regularCount + count($activeDummy);
 
-        $resolution = app(GalleryHeroResolver::class)->resolve($settings);
+        $resolver = app(GalleryHeroResolver::class);
+        $resolution = $resolver->resolve($settings);
         $this->candidatePoolCount = $resolution['group']->count();
+        $this->randomAvailable = $resolver->hasRandomAlternatives($resolution['group'], $resolution['weights']);
         if ($this->heroSelectionMode === 'per_gallery') {
             $reserved = $this->disabledAutoHeroIds;
             foreach ($activeDummy as $dummy) {
@@ -151,7 +153,11 @@ trait GalleryHeroWorkspaceProjection
         $rotationKeys = $resolution['sequence']
             ->map(static fn (GalleryHeroCandidate $candidate): string => $candidate->key())->all();
         $currentId = $current instanceof GalleryHeroCandidate ? $current->key() : null;
-        $this->heroRailRows = $sequence->values()->map(function (GalleryHeroCandidate $candidate) use ($currentId, $resolution, $rotationKeys): array {
+        $nextWeights = $resolver->nextRandomWeights(
+            $resolution['group'], $resolution['weights'],
+            $current instanceof GalleryHeroCandidate ? $current->visualKey() : null,
+        );
+        $this->heroRailRows = $sequence->values()->map(function (GalleryHeroCandidate $candidate) use ($currentId, $resolution, $rotationKeys, $nextWeights): array {
             $row = $this->candidateRow($candidate);
             $row['eligible'] = true;
             $row['is_manual'] = $candidate->sourceId !== null && $candidate->sourceId < 0;
@@ -160,6 +166,7 @@ trait GalleryHeroWorkspaceProjection
             $weight = $resolution['weights'][$candidate->key()] ?? 0;
             $row['weight'] = $weight;
             $row['percentage'] = number_format($weight / 100, 2, '.', '');
+            $row['next_percentage'] = number_format(($nextWeights[$candidate->key()] ?? 0) / 100, 2, '.', '');
             $rotationRank = array_search($candidate->key(), $rotationKeys, true);
             $row['sequence_label'] = $this->heroDisplayStrategy === 'sequential'
                 ? ($rotationRank === 0 ? 'Current' : ($rotationRank === 1 ? 'Next' : 'Then'))
@@ -194,6 +201,7 @@ trait GalleryHeroWorkspaceProjection
 
         return [
             'id' => $candidate->key(),
+            'visual_key' => $candidate->visualKey(),
             'title' => $candidate->title(),
             'year' => $artwork?->getAttribute('year') ?? $candidate->year,
             'date' => $artwork instanceof Artwork ? ArtworkDate::display($artwork)

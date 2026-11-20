@@ -7,7 +7,7 @@
 | Dev Worker 4 | 29 | Active — replacement chat registered; awaiting next Gallery assignment, prior Stage/Media browser acceptance pending | Gallery Artwork table, title editor, selection/ordering, Stage/Settings and Public Artwork/Gallery; coordinate shared controls with owners | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 19 | Source cleanup committed; isolated migration and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom types and Hero Artworks template; preserve Gallery/Exhibitions, retire Home-only editors | [dev-5.md](workers/dev-5.md) |
 
-| Dev Worker 6 | 16 | Active — targeted source corrections committed; local Preview/browser acceptance outstanding | Home Hero: Dummy Galleries, candidate ranking/selection, Stage/Settings, public resolver, shared Create dialog; no tests/deployment | [dev-6.md](workers/dev-6.md) |
+| Dev Worker 6 | 16 | Active — Gallery Hero Random anti-repeat and conditional chance implemented; runtime/browser acceptance pending | Gallery Hero Random draw, per-visitor recent image, Stage next chances, eligibility; coordinate Gallery ownership with Dev Worker 4; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 18 | Shared dropdown CSS tokens consolidated across native/Filament/pager; browser acceptance pending | General Appearance, shared Admin Selects and Gallery/General Preview | [dev-7.md](workers/dev-7.md) |
 | Dev Worker 8 | 15 | Active — Add actions across search/toolbars and shared Add-row now use canonical plain Plus; browser review pending | Central Admin Create dialog controls, shared icon grammar and media picker; no deployment | [dev-8.md](workers/dev-8.md) |
 

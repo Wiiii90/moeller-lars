@@ -4,6 +4,7 @@ namespace App\Filament\Support;
 
 use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Content\GalleryHeroConfigurationService;
+use App\Domain\Content\GalleryHeroResolver;
 use App\Domain\Content\PublicImageViewer;
 use App\Filament\Support\Controls\AdminControl;
 use App\Models\GalleryHeroSetting;
@@ -12,6 +13,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Support\HtmlString;
 
@@ -78,6 +80,7 @@ final class GalleryHeroSettingsDialog
                         ))
                         ->options(GalleryHeroConfigurationService::SOURCE_RULES)
                         ->required()
+                        ->live()
                         ,
                     Select::make('selection_mode')
                         ->label(self::helpLabel(
@@ -99,6 +102,7 @@ final class GalleryHeroSettingsDialog
                         ->minValue(1)
                         ->maxValue(GalleryHeroConfigurationService::MAX_GROUP_SIZE)
                         ->required()
+                        ->live(onBlur: true)
                         ,
                     Select::make('display_strategy')
                         ->label(self::helpLabel(
@@ -107,6 +111,13 @@ final class GalleryHeroSettingsDialog
                             'Top Only displays the first sourced candidate. Random selects from the group using its weights. Sequential advances through the group after each rotation interval.',
                         ))
                         ->options(['ordered' => __('Top Only'), 'random' => __('Random'), 'sequential' => __('Sequential')])
+                        ->disableOptionWhen(static fn (string $value, Get $get): bool =>
+                            $value === 'random' && ! app(GalleryHeroResolver::class)->canRandomize($settings, [
+                                'group_source' => $get('group_source'),
+                                'source_rule' => $get('source_rule'),
+                                'selection_mode' => $get('selection_mode'),
+                                'group_size' => $get('group_size'),
+                            ]))
                         ->required()
                         ->live()
                         ,

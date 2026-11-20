@@ -279,9 +279,18 @@
     display: flex;
     grid-column: 5;
     min-width: 0;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: .12rem;
     color: var(--admin-muted);
+}
+
+.gallery-hero-weight__next {
+    font-size: .58rem;
+    line-height: 1.15;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 }
 
 .gallery-hero-weight__inactive {

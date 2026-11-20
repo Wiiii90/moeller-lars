@@ -16,6 +16,7 @@
                     ->filter(static fn (array $row): bool => $row['eligible'] ?? true)
                     ->map(static fn (array $row): array => [
                         'id' => $row['id'],
+                        'visual_key' => $row['visual_key'],
                         'eligible' => true,
                         'thumbnail_url' => $row['thumbnail_url'],
                         'weight' => $row['weight'] ?? null,
@@ -84,7 +85,7 @@
                                 @if ($heroDisplayStrategy === 'sequential')
                                     <span x-text="nextAt ? nextAt.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }) + ' UTC' : 'Not scheduled'">{{ $nextRotationAt ? \Carbon\CarbonImmutable::parse($nextRotationAt)->setTimezone('UTC')->format('j M Y, H:i').' UTC' : __('Not scheduled') }}</span>
                                 @elseif ($heroDisplayStrategy === 'random')
-                                    {{ __('Every 10 seconds (Stage simulation)') }}
+                                    {{ $randomAvailable ? __('Every 10 seconds (Stage simulation)') : __('No rotation') }}
                                 @else
                                     {{ __('No rotation') }}
                                 @endif
@@ -123,7 +124,7 @@
                                 <span>{{ __('Display') }}</span>
                                 <select wire:change="updateHeroStageSetting('display_strategy', $event.target.value)" aria-label="Hero display strategy">
                                     <option value="ordered" @selected($heroDisplayStrategy === 'ordered')>{{ __('Top Only') }}</option>
-                                    <option value="random" @selected($heroDisplayStrategy === 'random')>{{ __('Random') }}</option>
+                                    <option value="random" @selected($heroDisplayStrategy === 'random') @disabled(! $randomAvailable)>{{ __('Random') }}</option>
                                     <option value="sequential" @selected($heroDisplayStrategy === 'sequential')>{{ __('Sequential') }}</option>
                                 </select>
                             </label>
@@ -162,9 +163,13 @@
                                         @if ($heroDisplayStrategy === 'random' && ($row['eligible'] ?? false))
                                             <x-admin.inline-percentage
                                                 :value="$row['percentage']"
-                                                :label="'Random chance for '.$row['title']"
+                                                :label="'Base random chance for '.$row['title']"
                                                 wire:change="setHeroPercentage('{{ $row['id'] }}', $event.target.value)"
                                             />
+                                            <span class="gallery-hero-weight__next"
+                                                x-text="'Next ' + nextChance($el.closest('[data-candidate-key]').dataset.candidateKey)">
+                                                {{ __('Next') }} {{ $row['next_percentage'] }}%
+                                            </span>
                                         @elseif ($heroDisplayStrategy === 'random')
                                             <span class="gallery-hero-weight__inactive">—</span>
                                         @endif

@@ -7,6 +7,7 @@ export function adminGalleryHeroStage(config = {}) {
         .filter((row) => row && row.eligible !== false && typeof row.id === 'string' && /^(artwork|media):[1-9]\d*$/.test(row.id))
         .map((row) => ({
             id: row.id,
+            visual_key: String(row.visual_key),
             thumbnail_url: row.thumbnail_url || null,
             weight: Number.isFinite(Number(row.weight)) ? Number(row.weight) : null,
             is_manual: row.is_manual === true,
@@ -48,8 +49,26 @@ export function adminGalleryHeroStage(config = {}) {
         monthIndex,
         get activeId() { return this.rows[this.activeIndex]?.id ?? null; },
         get active() { return this.rows[this.activeIndex] ?? null; },
+        get randomAvailable() {
+            return new Set(this.rows
+                .filter((row) => (row.weight ?? 0) > 0)
+                .map((row) => row.visual_key)).size > 1;
+        },
+        // The readonly next chance follows the currently simulated image.
+        // The artist edits the original row.weight, never this distribution.
+        nextChance(id) {
+            const excluded = this.randomAvailable ? this.active?.visual_key : null;
+            const distribution = this.rows.map((row) => ({
+                id: row.id,
+                weight: row.visual_key === excluded ? 0 : Math.max(0, row.weight ?? 0),
+            }));
+            const total = distribution.reduce((sum, row) => sum + row.weight, 0);
+            const candidate = distribution.find((row) => row.id === id);
+            return (total > 0 ? (candidate?.weight ?? 0) * 100 / total : 0).toFixed(2) + '%';
+        },
         init() {
-            if (this.rows.length === 0 || this.strategy === 'ordered') return;
+            if (this.rows.length === 0 || this.strategy === 'ordered'
+                || (this.strategy === 'random' && !this.randomAvailable)) return;
             this.timer = window.setInterval(
                 () => this.tick(),
                 this.strategy === 'random' ? 10000 : 3000,
@@ -62,15 +81,25 @@ export function adminGalleryHeroStage(config = {}) {
         tick() {
             if (this.rows.length === 0) return;
             if (this.strategy === 'random') {
-                const total = this.rows.reduce((sum, row) => sum + Math.max(0, row.weight ?? 0), 0);
-                let chance = Math.random() * (total > 0 ? total : this.rows.length);
-                for (let i = 0; i < this.rows.length; i += 1) {
-                    chance -= total > 0 ? Math.max(0, this.rows[i].weight ?? 0) : 1;
-                    if (chance < 0 || i === this.rows.length - 1) {
-                        this.activeIndex = i;
-                        break;
+                if (!this.randomAvailable) return;
+                const lastVisual = this.active?.visual_key;
+                const choices = this.rows
+                    .map((row, index) => ({
+                        index,
+                        weight: row.visual_key === lastVisual ? 0 : Math.max(0, row.weight ?? 0),
+                    }))
+                    .filter((row) => row.weight > 0);
+                const total = choices.reduce((sum, row) => sum + row.weight, 0);
+                if (total === 0) return;
+                let draw = Math.random() * total;
+                for (const choice of choices) {
+                    if (draw < choice.weight) {
+                        this.activeIndex = choice.index;
+                        return;
                     }
+                    draw -= choice.weight;
                 }
+                this.activeIndex = choices[choices.length - 1].index;
                 return;
             }
             if (this.strategy !== 'sequential') return;
