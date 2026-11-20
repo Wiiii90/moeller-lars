@@ -2,7 +2,15 @@
 
 **Lease:** 22
 **Branch:** dev
-**State:** Active — 2026-11-20 compact Gallery Settings and Gallery/List view source implementation prepared; browser/runtime acceptance pending.
+**State:** Active — 2026-11-20 shared Gallery/General Live Preview presentation refinement prepared; browser visual acceptance pending.
+
+## Shared Gallery/General Live Preview visual refinement — 2026-11-20
+
+- User supplied screenshots of large Desktop (1440 x 900) and phone (390 x 844) selections, with misaligned native Select/rotate/zoom/actions, misleadingly wide space between zoom controls, poor compact composition, unused matte space and missing preview boundary. Explicit instruction: change only visual presentation, preserve existing preview/iframe/zoom/pan/device engine, and avoid old simulated device silhouettes.
+- Central owner: `resources/views/components/admin/live-preview.blade.php` plus `resources/css/admin/live-preview.css`, consumed directly by Gallery Stage and General Appearance. The native profile Select now uses the existing `admin-form-control` design and shared customizable native select menu; device/rotate, zoom, and pan/open are aligned in distinct control groups. Zoom base reads 100% instead of Fit (relative to fitted preview, **not** 1 physical pixel per CSS pixel); this is a label-only change to `zoomPercent()` in `resources/js/admin-live-preview.js`.
+- Small-screen CSS container query lays out two deliberate control rows with all actions still accessible, replacing the old hidden zoom and pan fallback. Preview viewport centers its unchanged real-aspect fitted surface on a subtle bordered matte; the surface gains a lightweight abstract outline/shadow, not a handset/window mockup. Fixed stage height, Public iframe/source dimensions, `fitPreview`, `changeZoom`, pan, rotate, refresh and Livewire events remain unchanged.
+- Source/static-only. JavaScript syntax parsed in an isolated V8 function and all existing engine method names confirmed; no browser/runtime, screenshot, local preview, test, CI or deployment. Browser acceptance required for (1) Gallery and General desktop + phone, (2) custom native Select appearance/focus at wide/narrow widths, (3) two-row toolbar and overflow indicator, (4) preview iframe scale and centering under device changes, pan and zoom, (5) Light/Dark.
+- No public layout, persisted Gallery settings, dashboard/other stages, or upload changes.
 
 ## Gallery Stage refinement and Gallery/List view — 2026-11-20
 

@@ -24,7 +24,7 @@
     @endif
     <x-admin.stage-tool-row label="Live preview controls">
         <div class="admin-stage-tool-group admin-live-preview__device-profile" role="group" aria-label="Device preview">
-            <select class="admin-live-preview__width-select" x-model="selectedProfile"
+            <select class="admin-form-control admin-live-preview__width-select" x-model="selectedProfile"
                 x-on:change="selectProfile($event.target.value)"
                 aria-label="Device and viewport resolution"
                 x-bind:title="viewportSize().join(' × ') + ' layout pixels'">
@@ -59,7 +59,7 @@
             <button class="admin-live-preview__zoom-value" type="button"
                 x-on:click="resetZoom()" x-bind:disabled="zoom <= minZoom"
                 x-bind:class="{ 'is-active': zoom > minZoom }"
-                title="Reset to fitted preview" aria-label="Reset zoom" x-text="zoomPercent()"></button>
+                title="Reset to fitted preview (100%)" aria-label="Reset zoom to fitted size" x-text="zoomPercent()"></button>
             <button class="admin-action admin-stage-tool-icon" type="button"
                 x-on:click="changeZoom(0.25)" x-bind:disabled="zoom >= maxZoom"
                 title="Zoom in" aria-label="Zoom in preview">

@@ -117,7 +117,7 @@ export function adminLivePreview(element) {
                 : [profile.width, profile.height]
         },
         zoomPercent() {
-            return this.zoom <= this.minZoom ? 'Fit' : `${Math.round(this.zoom * 100)}%`
+            return `${Math.round(this.zoom * 100)}%`
         },
         fitPreview() {
             const viewport = this.$refs.viewport
