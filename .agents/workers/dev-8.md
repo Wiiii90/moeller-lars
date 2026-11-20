@@ -2,7 +2,7 @@
 
 **Branch:** `dev`
 **Lease:** 30 (active; replacement registered 2026-11-21)
-**State:** The shared Clear icon has been changed from Heroicons Backspace to one centrally registered eraser glyph. Browser appearance review is pending; no modal behavior or persistence was modified.
+**State:** The native Admin header surface is shared across modal types, and explicit Create/Command/Confirm submissions now occupy the rightmost slot after X. Confirm defaults to a Check glyph (danger styling retained); browser acceptance remains pending.
 
 ## Assigned ownership and canonical sources
 - Central Filament Action modal lifecycle: `app/Filament/Support/Dialogs/AdminDialog.php`, `resources/js/admin-dialog-geometry.js` and `resources/css/admin/dialog-contract.css`. Preserve native focus, close/Escape, form validation, Create submission, Edit autosave, overlay stacking, scroll lock and nested picker interactions.
@@ -23,10 +23,17 @@
 - Added `resources/svg/admin/eraser.svg` with a 24-unit, currentColor, 1.5-stroke outline matching existing custom icon treatment. Repointed only `AdminIcon::Clear` from `heroicon-o-backspace` to `admin-eraser`; `AdminDialog::committedTask()` retains the same native Filament Action and Clear callback.
 - Static checks: inspected the shared Blade icon registry, central enum and Create dialog call site; existing custom glyph format and icon naming reused. Actual browser size, baseline, color and accessibility behavior have not been visually reviewed. No tests, Preview or deployment were run.
 
+## Shared dialog consistency correction (2026-11-21)
+- Report: Exhibition Delete confirmation lacked the expected tinted draggable title bar and showed a trash submit icon before native X. Review found the central `AdminDialog::confirm()` explicitly chose `AdminIcon::Delete` for dangerous confirmations, and header Submit/X order was narrowly styled for `admin-dialog--create` only; all command/confirmation dialogs inherited the older order.
+- Canonical correction: add `admin-dialog--submit` to the existing `AdminDialog::base()` for Create, Command and Confirm. Existing shared `dialog-contract.css` lifts their native Filament Submit action to the far-right of the native X with the same spacing and hitboxes as the previously accepted Create order. The confirmation default is `AdminIcon::DialogSubmit` (plain check), while explicit semantic confirmation icons (for instance Activity Undo) are preserved. Danger confirmation actions remain red; launcher and row Delete continue using trash.
+- Promote the existing subtle full-width header tint/bottom border from Create/Edit's `admin-dialog--header-actions` style to the actual common native Filament modal header owner, covering Confirm/Command and framework-owned Account/Security dialogs. Task-specific header spacing, mouse-drag handle and modal geometry remain unchanged. No feature-local modal changes or second event/state system.
+- Scoped source review: Journal's post/exhibition and batch deletes, Pages, Gallery Artwork and batch, Storage, Dashboard, Activity, Custom Pages, Home Hero source confirmations share `AdminDialog::confirm()`; scheduling/move/Account actions use `command()`. Existing Create and autosaving Edit/Viewer behavior preserved. Product contract `docs/admin/dialogs.md` still describes old X/danger-icon conventions and needs Docs-owned reconciliation when the new behavior is browser accepted.
+- Verification is source-only: reviewed actual factory, layout selectors, action consumers and overlapping `dialog-interactions.css`; browser output, narrow/light/dark positioning, interactive header hitboxes and lifecycle are unverified. No tests, continuous integration, Preview or deployment run.
+
 ## Current verification boundary
 - Previous holder reported central source changes and isolated JavaScript simulations/static checks, **not** browser acceptance. Current replacement changed only the centrally mapped Clear glyph as described above.
 - Still unverified in a real browser: initial modal centering, moved-window clamping and keyboard drag; create button ordering and actual submit/cancel semantics in compact/wide dialogs; background-scroll restoration; light/dark header alignment; Starts/Ends switching and absence of initial flash; Vernissage icon/row alignment and actual date autosave; media picker nested interactions. Do not infer acceptance from source inspection.
 - For future requests, reread fresh `dev` HEAD, current lease and the governing `docs/admin/dialogs.md` and scoped architecture before editing. Inspect overlapping consumer changes and report source-only versus runtime/browser evidence precisely.
 
 ## Next
-Review the actual Clear eraser alongside Create Submit/X in a local browser at wide/narrow sizes and light/dark themes. Continue only on an explicit scoped dialog request; preserve concurrent workers' accepted behavior.
+Browser-check Create, Command and Confirm examples (Exhibition Delete, Gallery move and Create with Clear) in narrow/wide and light/dark modes: subtle full header tint/border, exact secondary – X – Check ordering, no overlap/mis-click, dangerous red Check and successful/cancelled behavior. Check native account/security dialogs inherit tint, and verify Edit/Viewer remain autosaving/read-only. Reconcile the canonical dialog documentation through Docs after user acceptance. No deployment without approval.

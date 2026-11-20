@@ -243,8 +243,8 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
  * -------------
  * Filament owns modal state, focus, Escape and the native close button. We only
  * normalize the visual rail. Context actions stay native Filament Actions in
- * the modal footer and are lifted into the header. Only Create places its
- * Submit after the native X; other dialog types keep their established order.
+ * the modal footer and are lifted into the header. All explicitly submitted
+ * Create, Command and Confirm tasks place Submit after the native X.
  * Filament still owns actual submission and dismissal.
  */
 .admin-dialog--header-actions {
@@ -286,9 +286,15 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     );
 }
 
-/* A restrained title-bar surface groups the native heading, contextual
- * actions and close control. The border belongs to the full-width header,
- * not to the text, so it spans both edges of every shared dialog. */
+/* Every native Admin dialog, including framework-owned confirmation and
+ * security dialogs, shares the one titled header surface. Size and action
+ * placement remain the semantic AdminDialog factory's responsibility. */
+.fi-modal:not(.fi-modal-click-through) .fi-modal-window > .fi-modal-header {
+    background: color-mix(in srgb, var(--admin-subtle) 55%, var(--admin-surface));
+    border-bottom: 1px solid var(--admin-line);
+}
+
+/* Common task dialog heading and action rail geometry. */
 .admin-dialog--header-actions .fi-modal-header {
     box-sizing: border-box;
     min-height: calc(var(--admin-dialog-header-action-size) + (2 * var(--admin-dialog-header-action-inset)));
@@ -298,8 +304,6 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
         .7rem
         var(--admin-dialog-content-inset) !important;
     align-items: flex-start !important;
-    background: color-mix(in srgb, var(--admin-subtle) 55%, var(--admin-surface));
-    border-bottom: 1px solid var(--admin-line);
 }
 
 .admin-dialog--header-actions .fi-modal-header > div:last-child {
@@ -395,29 +399,29 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     inset-inline-end: var(--admin-dialog-header-action-inset) !important;
 }
 
-/* A Create form commits explicitly, unlike autosaving Edit forms.
- * Filament emits Submit first, then Clear/other extra footer actions.
- * Reverse that visual list so Submit occupies the far-right slot. Reserve
- * precisely one native X slot between Submit and the other controls.
- * The empty footer gap is non-interactive (see dialog-interactions.css);
- * the native X remains the only cancel/close control. */
-.admin-dialog--header-actions.admin-dialog--create .fi-modal-footer {
+/* Submitted Create, Command and Confirm dialogs share the same order:
+ * optional secondary actions, native X, then Submit at the far right.
+ * Filament emits Submit first, then any extra footer actions; reverse only
+ * the visual order. The reserved native X slot stays non-interactive within
+ * the footer (see dialog-interactions.css). Autosaving Edit and read-only
+ * Viewer dialogs have no submit and keep their established action rail. */
+.admin-dialog--header-actions.admin-dialog--submit .fi-modal-footer {
     right: var(--admin-dialog-header-action-inset) !important;
     inset-inline-end: var(--admin-dialog-header-action-inset) !important;
 }
 
-.admin-dialog--header-actions.admin-dialog--create .fi-modal-footer-actions {
+.admin-dialog--header-actions.admin-dialog--submit .fi-modal-footer-actions {
     flex-direction: row-reverse;
 }
 
-.admin-dialog--header-actions.admin-dialog--create .fi-modal-footer-actions > :first-child {
+.admin-dialog--header-actions.admin-dialog--submit .fi-modal-footer-actions > :first-child {
     margin-inline-start: calc(
         var(--admin-dialog-header-action-size)
         + var(--admin-dialog-header-action-gap)
     ) !important;
 }
 
-.admin-dialog--header-actions.admin-dialog--create .fi-modal-close-btn {
+.admin-dialog--header-actions.admin-dialog--submit .fi-modal-close-btn {
     right: calc(
         var(--admin-dialog-header-action-inset)
         + var(--admin-dialog-header-action-size)

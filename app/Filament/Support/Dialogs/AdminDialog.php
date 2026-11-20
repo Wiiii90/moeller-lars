@@ -122,7 +122,7 @@ final class AdminDialog
         bool|Closure $condition = true,
         ?AdminIcon $icon = null,
     ): Action {
-        $submitIcon = $icon ?? ($danger ? AdminIcon::Delete : AdminIcon::DialogSubmit);
+        $submitIcon = $icon ?? AdminIcon::DialogSubmit;
         $submitClass = 'admin-dialog__header-action '.($danger ? 'is-danger' : 'is-primary');
 
         return self::base($action, AdminDialogType::Confirm, AdminDialogSize::Small)
@@ -188,6 +188,10 @@ final class AdminDialog
             'admin-dialog--header-actions',
             'admin-dialog--'.$type->value,
         ];
+
+        if (in_array($type, [AdminDialogType::Create, AdminDialogType::Command, AdminDialogType::Confirm], true)) {
+            $classes[] = 'admin-dialog--submit';
+        }
 
         if ($type === AdminDialogType::Confirm) {
             $classes[] = 'admin-dialog--confirmation';

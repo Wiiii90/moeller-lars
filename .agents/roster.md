@@ -9,7 +9,7 @@
 
 | Dev Worker 6 | 16 | Active — Gallery Hero Random anti-repeat and conditional chance implemented; runtime/browser acceptance pending | Gallery Hero Random draw, per-visitor recent image, Stage next chances, eligibility; coordinate Gallery ownership with Dev Worker 4; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 18 | Shared dropdown CSS tokens consolidated across native/Filament/pager; browser acceptance pending | General Appearance, shared Admin Selects and Gallery/General Preview | [dev-7.md](workers/dev-7.md) |
-| Dev Worker 8 | 30 | Central Clear icon now uses shared custom eraser glyph; browser review pending | Shared Admin Create/Edit dialogs, central dialog geometry, date controls and picker; coordinate shared primitives; no deployment | [dev-8.md](workers/dev-8.md) |
+| Dev Worker 8 | 30 | Unified Submit/X ordering for Create/Command/Confirm and all modal title surfaces source-committed; browser review pending | Shared Admin dialogs, header geometry/icons, date controls and media picker; coordinate shared primitives; no deployment | [dev-8.md](workers/dev-8.md) |
 
 
 | Dev Worker 9 | 28 | Shared pointer-origin focus state integrated for Admin actions; Shift-only no false focus ring, keyboard navigation preserved; browser review pending | General/Gallery Live Preview focus and interactions, central Admin action focus grammar; coordinate Dev Worker 7 and Gallery ownership | [dev-9.md](workers/dev-9.md) |
