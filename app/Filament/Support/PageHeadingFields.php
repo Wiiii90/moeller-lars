@@ -26,12 +26,13 @@ final class PageHeadingFields
 
         return AdminPanelControl::make('Show page heading', 'content_heading_enabled', [
             $heading,
-            Grid::make(['default' => 2])->schema([$alignment, $divider]),
+            Grid::make(['default' => 1, 'md' => 2])->schema([$alignment, $divider]),
         ], $persist === null ? null : fn (Component $livewire, mixed $state) =>
             self::persist($livewire, $persist, 'content_heading_enabled', (bool) $state, $successTitle),
             collapsible: true,
             bodyColumns: ['default' => 1, 'md' => 2],
             unlinedFields: true,
+            inlineFieldLabels: true,
         );
     }
 

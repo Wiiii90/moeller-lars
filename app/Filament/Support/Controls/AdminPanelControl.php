@@ -14,10 +14,11 @@ final class AdminPanelControl
 {
     /** @param list<mixed> $fields
      *  @param array<string, int> $bodyColumns
-     *  The optional unlined body is reserved for compact framed groups where
+     *  Optional unlined inputs and inline labels are independent panel variants.
+     *  The unlined body is reserved for compact framed groups where
      *  the parent panel already supplies a clear interaction boundary.
      */
-    public static function make(string $title, string $enabledField, array $fields, ?Closure $onUpdated = null, bool $collapsible = false, array $bodyColumns = ['default' => 2], bool $unlinedFields = false): Group
+    public static function make(string $title, string $enabledField, array $fields, ?Closure $onUpdated = null, bool $collapsible = false, array $bodyColumns = ['default' => 2], bool $unlinedFields = false, bool $inlineFieldLabels = false): Group
     {
         $toggle = AdminControl::checkbox($enabledField, $title)
             ->live()
@@ -45,7 +46,8 @@ final class AdminPanelControl
 
         $classes = 'admin-option-panel'
             .($collapsible ? ' admin-option-panel--collapsible' : '')
-            .($unlinedFields ? ' admin-option-panel--unlined-fields' : '');
+            .($unlinedFields ? ' admin-option-panel--unlined-fields' : '')
+            .($inlineFieldLabels ? ' admin-option-panel--inline-labels' : '');
 
         return Group::make([$header, $body])
             ->columns(1)

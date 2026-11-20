@@ -800,16 +800,17 @@
     row-gap: .4rem;
     column-gap: .65rem;
 }
-/* One shared header axis for checkbox, uppercase label and disclosure.
- * Do not apply a second two-column layout to nested Filament form grids. */
-.admin-option-panel__header {
+/* The Group's immediate Filament grid owns the two header tracks. Matching
+ * its actual container (not all nested grids) makes the right disclosure
+ * mirror the leading checkbox instead of drifting into a half-width column. */
+.admin-option-panel__header,
+.admin-option-panel__header > :is(.fi-sc, .fi-sc-grid) {
     display: grid;
+    width: 100%;
     grid-template-columns: minmax(0, 1fr) 1.9rem;
     min-height: 2rem;
-    gap: .55rem;
-    align-items: center;
-}
-.admin-option-panel__header > :is(.fi-sc, .fi-sc-grid) {
+    column-gap: .55rem;
+    row-gap: 0;
     align-items: center;
 }
 .admin-option-panel__switch {
@@ -849,11 +850,12 @@
 
 .admin-option-panel__disclosure {
     box-sizing: border-box;
-    display: grid;
+    display: flex;
     width: 1.9rem;
     height: 1.9rem;
     padding: 0;
-    place-items: center;
+    align-items: center;
+    justify-content: flex-end;
     justify-self: end;
     align-self: center;
     border: 0;
@@ -879,6 +881,37 @@
 .admin-option-panel__chevron.is-collapsed {
     transform: rotate(-90deg);
 }
+/* Compact, framed option panels can put each label and its native
+ * input/select on one line. Filament still owns the accessible label, state,
+ * validation, and input behavior; no replacement markup is introduced. */
+.admin-option-panel--inline-labels .admin-option-panel__body :is(
+    .admin-control-field.fi-fo-field-wrp,
+    .admin-control-field > .fi-fo-field-wrp
+) {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: .4rem;
+    min-height: var(--admin-control-height);
+    align-items: center;
+}
+.admin-option-panel--inline-labels .admin-option-panel__body :is(
+    .fi-fo-field-wrp-label,
+    .fi-fo-field-label,
+    .fi-fo-field-label-content
+) {
+    min-width: 0;
+    white-space: nowrap;
+}
+.admin-option-panel--inline-labels .admin-option-panel__body :is(
+    .fi-fo-field-wrp-content-ctn,
+    .fi-input-wrp
+) {
+    min-width: 0;
+}
+.admin-option-panel--inline-labels .admin-option-panel__body .fi-fo-field-wrp-label {
+    margin-block: 0;
+}
+
 /* Opt-in style for an already framed panel: the parent contour supplies the
  * field boundary, while keyboard focus remains visible without underlines.
  * Ordinary Admin form inputs retain their canonical underline by default. */
