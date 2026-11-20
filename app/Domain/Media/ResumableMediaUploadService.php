@@ -201,6 +201,10 @@ final class ResumableMediaUploadService
                 throw $this->invalid('The upload is incomplete or could not be recovered from its original. Contact the site administrator before retrying.');
             }
 
+            // The same durable staging receipt supplies live processing
+            // milestones; no second job or media representation is created.
+            $this->setProcessingPhase($id, $meta, 'verifying');
+
             // Persist the checksum BEFORE moving the staging file. A crash
             // after a successful DB/FS commit but before recording asset_id
             // can then recover the canonical identity without duplicating it.
@@ -216,19 +220,55 @@ final class ResumableMediaUploadService
             $this->writeManifest($id, $meta);
 
             $upload = new UploadedFile($path, (string) $meta['filename'], null, UPLOAD_ERR_OK, true);
-            // MediaIngestService alone owns canonical original and preview.
-            $result = app(MediaIngestService::class)->ingestUnique($upload, fromPrivateStaging: true);
+            // The callback records actual canonical ingest checkpoints in
+            // this one session manifest, readable without waiting on the
+            // session's long-running exclusive finalize lock.
+            $onProgress = function (string $phase) use ($id, &$meta): void {
+                $this->setProcessingPhase($id, $meta, $phase);
+            };
+            $result = app(MediaIngestService::class)->ingestUnique(
+                $upload, fromPrivateStaging: true, onProgress: $onProgress,
+            );
             /** @var MediaAsset $asset */
             $asset = $result['asset'];
             $meta['asset_id'] = (int) $asset->getKey();
             $meta['duplicate'] = (bool) $result['duplicate'];
-            $meta['updated_at'] = time();
-            $this->writeManifest($id, $meta);
+            $this->setProcessingPhase($id, $meta, 'complete');
             @unlink($path);
             app(MediaCapacityService::class)->refreshCachedSnapshot();
 
             return $this->status($id, $meta);
         });
+    }
+
+    /**
+     * Read the existing atomically replaced private manifest without taking
+     * the finalize lock. The session owner is authenticated on every request.
+     * This is stage completion, not a fictitious wall-clock time estimate.
+     *
+     * @return array{phase:string,complete:bool}
+     */
+    public function progress(int $userId, string $id): array
+    {
+        if (! Str::isUuid($id)) {
+            throw $this->invalid('Invalid upload identifier.');
+        }
+        $meta = $this->authorizedManifest($userId, $id);
+        $phase = isset($meta['asset_id']) ? 'complete' : (string) ($meta['processing_phase'] ?? 'transferring');
+
+        if (! in_array($phase, ['transferring', 'verifying', 'checking', 'preparing', 'saving', 'finalizing', 'complete'], true)) {
+            $phase = 'transferring';
+        }
+
+        return ['phase' => $phase, 'complete' => isset($meta['asset_id'])];
+    }
+
+    /** @param array<string,mixed> $meta */
+    private function setProcessingPhase(string $id, array &$meta, string $phase): void
+    {
+        $meta['processing_phase'] = $phase;
+        $meta['updated_at'] = time();
+        $this->writeManifest($id, $meta);
     }
 
     /**

@@ -57,6 +57,11 @@ final class AdminResumableMediaUploadController extends Controller
         return response()->json($uploads->finish($this->adminId(), $id));
     }
 
+    public function status(ResumableMediaUploadService $uploads, string $id): JsonResponse
+    {
+        return response()->json($uploads->progress($this->adminId(), $id));
+    }
+
     public function cancel(ResumableMediaUploadService $uploads, string $id): JsonResponse
     {
         $uploads->cancel($this->adminId(), $id);

@@ -6,6 +6,7 @@
     x-data="{
         phase: 'idle',
         progress: 0,
+        processingStep: '',
         completed: 0,
         result: '',
         async uploadFile(input) {
@@ -26,21 +27,21 @@
     <p
         aria-live="polite"
         x-text="phase === 'uploading'
-            ? 'Uploading ' + progress + '%'
+            ? 'Uploading ' + progress.toFixed(1) + '%'
             : phase === 'processing'
-                ? 'Transfer complete. Checking and processing media…'
+                ? processingStep + ' · ' + progress.toFixed(1) + '%'
                 : result"
     ></p>
     <div
         class="media-workspace__upload-progress"
         x-show="phase === 'uploading' || phase === 'processing'"
-        x-bind:class="{ 'is-processing': phase === 'processing' }"
         x-cloak
         role="progressbar"
         aria-label="Media upload status"
         aria-valuemin="0"
         aria-valuemax="100"
-        x-bind:aria-valuenow="phase === 'uploading' ? progress : null"
+        x-bind:aria-valuenow="(phase === 'uploading' || phase === 'processing') ? progress : null"
+        x-bind:aria-valuetext="phase === 'processing' ? processingStep : null"
     >
         <span class="media-workspace__upload-progress-track" aria-hidden="true">
             <span class="media-workspace__upload-progress-fill" x-bind:style="'width: ' + progress + '%'"></span>

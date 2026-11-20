@@ -154,6 +154,61 @@ async function verifyOrRestart(file, session, key, state) {
     return fresh;
 }
 
+// Progress is based on acknowledged workflow checkpoints, not elapsed-time
+// extrapolation. A thumbnail subprocess has no finer native progress signal.
+const processingMilestones = {
+    verifying: { percent: 82, label: 'Verifying transferred file' },
+    checking: { percent: 87, label: 'Checking existing Storage media' },
+    preparing: { percent: 91, label: 'Generating media preview' },
+    saving: { percent: 96, label: 'Saving original and preview' },
+    finalizing: { percent: 98, label: 'Finalizing Storage entry' },
+    complete: { percent: 99, label: 'Media ready in Storage' },
+};
+
+async function finishWithProgress(session, state) {
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const progressUrl = endpoint + '/' + encodeURIComponent(session.id) + '/status';
+
+    // The server finalizes under a session lock. Its existing atomic manifest
+    // can be safely observed by a separate authenticated status request.
+    const poll = (async () => {
+        while (!signal.aborted) {
+            try {
+                const response = await fetch(progressUrl, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: requestHeaders(),
+                    cache: 'no-store',
+                    signal,
+                });
+                if (response.ok && !signal.aborted) {
+                    const report = await response.json();
+                    const step = processingMilestones[report.phase];
+                    if (step && !signal.aborted) {
+                        state.progress = Math.max(state.progress, step.percent);
+                        state.processingStep = step.label;
+                    }
+                }
+            } catch {
+                // The finalization request owns success and error handling.
+                // A transient status-read failure does not fail the ingest.
+            }
+            if (!signal.aborted) {
+                await new Promise((resolve) => setTimeout(resolve, 550));
+            }
+        }
+    })();
+
+    try {
+        return await jsonRequest('/' + session.id + '/finish', {});
+    } finally {
+        controller.abort();
+        // Do not await the poll's remaining delay before opening Stage.
+        void poll;
+    }
+}
+
 async function transfer(file, state, fileIndex, total) {
     const key = await fileIdentity(file);
     let resumeId = readResume(key);
@@ -176,11 +231,11 @@ async function transfer(file, state, fileIndex, total) {
         const offset = Number(session.offset);
         const next = Math.min(file.size, offset + Number(session.chunk_size));
         state.phase = 'uploading';
-        state.progress = Math.max(state.progress, Math.round((fileIndex + offset / file.size) * 1000 / total) / 10);
+        state.progress = Math.max(state.progress, Math.round((fileIndex + offset / file.size) * 800 / total) / 10);
 
         try {
             session = await sendChunk(session.id, offset, file.slice(offset, next), (sent) => {
-                state.progress = Math.max(state.progress, Math.min(100, Math.round((fileIndex + (offset + sent) / file.size) * 1000 / total) / 10));
+                state.progress = Math.max(state.progress, Math.min(80, Math.round((fileIndex + (offset + sent) / file.size) * 800 / total) / 10));
             });
             failures = 0;
         } catch (error) {
@@ -194,11 +249,12 @@ async function transfer(file, state, fileIndex, total) {
     }
 
     state.phase = 'processing';
-    state.progress = 100; // Verified byte transfer, not the end of server-side ingest.
+    state.progress = Math.max(state.progress, 80);
+    state.processingStep = 'Verifying transferred file';
     state.result = '';
     if (!session.complete) {
         try {
-            session = await jsonRequest('/' + session.id + '/finish', {});
+            session = await finishWithProgress(session, state);
         } catch (error) {
             // If the final acknowledgment was lost after saving, consult the
             // durable session. Never overwrite the actual processing failure
@@ -217,6 +273,8 @@ async function transfer(file, state, fileIndex, total) {
     }
 
     if (!session.complete || !session.asset_id) throw new Error('File was not confirmed in Storage.');
+    state.progress = Math.max(state.progress, 99);
+    state.processingStep = 'Media ready in Storage';
     return { ...session, resumeKey: key };
 }
 
@@ -239,6 +297,7 @@ export async function adminMediaUploader(state, input, wire, context) {
     state.uploadRunning = true;
     state.completed = 0;
     state.progress = 0;
+    state.processingStep = '';
     state.result = '';
     state.phase = 'uploading';
     let added = 0;
@@ -260,6 +319,7 @@ export async function adminMediaUploader(state, input, wire, context) {
             const file = state.pendingUploads.shift();
             let savedToStorage = false;
             state.progress = 0;
+            state.processingStep = '';
             state.phase = 'uploading';
             state.result = '';
             try {
@@ -268,8 +328,12 @@ export async function adminMediaUploader(state, input, wire, context) {
                 // Gallery receives the file as soon as Storage acknowledges it,
                 // not after all subsequent files finish uploading.
                 if (context === 'gallery') {
+                    state.processingStep = 'Adding media to Gallery Stage';
                     await wire.queueResumablePrimaryMediaAsset(result.asset_id);
                 }
+                // 100% means that the file is ready to use in its consumer.
+                state.progress = 100;
+                state.processingStep = context === 'gallery' ? 'Ready in Gallery Stage' : 'Ready in Storage';
                 forget(result.resumeKey);
                 if (result.duplicate) duplicates++;
                 else added++;
@@ -348,6 +412,7 @@ export async function adminMediaUploadField(state, input, wire, statePath, image
     if (!file) return;
     state.phase = 'uploading';
     state.progress = 0;
+    state.processingStep = '';
     state.result = '';
     try {
         // The transfer updates this Alpine state through the shared transport.
@@ -356,10 +421,13 @@ export async function adminMediaUploadField(state, input, wire, statePath, image
         }
         const outcome = await transfer(file, state, 0, 1);
         try {
+            state.processingStep = 'Linking media to field';
             await wire.set(statePath, outcome.asset_id);
         } catch {
             throw new Error('File saved to Storage, but could not be linked to this field. Select it from Storage or contact the site administrator.');
         }
+        state.progress = 100;
+        state.processingStep = 'Ready in Artwork field';
         forget(outcome.resumeKey);
         state.result = file.name + ' — uploaded to Storage and ready to save with the Artwork';
     } catch (error) {

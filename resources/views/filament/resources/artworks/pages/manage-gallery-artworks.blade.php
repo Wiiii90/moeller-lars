@@ -53,7 +53,7 @@
             />
             <div class="gallery-stage__workspace admin-visual-stage__pane" data-admin-stage-pane="editor" data-admin-stage-slot="1"
                 x-data="{
-                    phase: 'idle', progress: 0, fileCount: 0, completed: 0, result: '',
+                    phase: 'idle', progress: 0, processingStep: '', fileCount: 0, completed: 0, result: '',
                     pendingUploads: [], uploadRunning: false,
                     async uploadFiles(input) {
                         await window.adminMediaUploader(this, input, $wire, 'gallery')
@@ -95,14 +95,14 @@
                 <div class="gallery-stage__upload-status" role="status" aria-live="polite" aria-atomic="true">
                     <span x-text="
                         phase === 'uploading' ? 'Uploading to Storage'
-                        : phase === 'processing' ? 'Processing uploaded media'
+                        : phase === 'processing' ? processingStep
                         : phase === 'result' ? 'Upload finished'
                         : 'Ready for new files'
                     ">Ready for new files</span>
                     <span class="gallery-stage__upload-status-value"
                         x-text="
                             phase === 'uploading' ? (completed + 1) + ' / ' + fileCount + ' · ' + progress.toFixed(1) + '%'
-                            : phase === 'processing' ? (completed + 1) + ' / ' + fileCount + ' · 100% sent'
+                            : phase === 'processing' ? (completed + 1) + ' / ' + fileCount + ' · ' + progress.toFixed(1) + '%'
                             : phase === 'result' ? 'Review Staged'
                             : @js(count($pendingBatchArtworkMedia)) + ' staged'
                         ">{{ count($pendingBatchArtworkMedia) }} staged</span>
@@ -112,7 +112,7 @@
                     aria-label="Media upload status"
                     aria-valuemin="0" aria-valuemax="100"
                     x-bind:aria-valuenow="uploadRunning ? progress : null"
-                    x-bind:aria-valuetext="phase === 'processing' ? '100% of file bytes transferred; processing on server' : null">
+                    x-bind:aria-valuetext="phase === 'processing' ? processingStep + ' · ' + progress.toFixed(1) + '% complete' : null">
                     <span class="admin-gallery-upload__progress-track" aria-hidden="true">
                         <span class="admin-gallery-upload__progress-fill" x-bind:style="'width: ' + progress + '%'"></span>
                     </span>
@@ -130,7 +130,7 @@
                             <strong
                                 x-text="
                                     phase === 'uploading' ? 'Uploading file ' + (completed + 1) + ' of ' + fileCount + ' · ' + progress.toFixed(1) + '%'
-                                    : phase === 'processing' ? '100% transferred · Processing file ' + (completed + 1) + ' of ' + fileCount + '…'
+                                    : phase === 'processing' ? processingStep + ' · ' + progress.toFixed(1) + '%'
                                     : 'Drop images or videos here, or choose files'
                                 "
                             >Drop images or videos here, or choose files</strong>
@@ -151,7 +151,8 @@
                             <div class="gallery-stage__action-group">
                                 <button class="admin-action gallery-stage__action-discard" type="button"
                                     title="Discard staged file and delete it from Storage" aria-label="Discard staged file from Storage"
-                                    wire:click="mountAction('discardStagedMedia', { asset: {{ $selectedStagedMediaAssetId }} })">
+                                    wire:click="discardStagedMedia({{ $selectedStagedMediaAssetId }})"
+                                    wire:loading.attr="disabled" wire:target="discardStagedMedia,discardAllStagedMedia">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
                                     <span class="gallery-stage__action-label">Discard</span>
                                 </button>
@@ -166,7 +167,8 @@
                             <div class="gallery-stage__action-group gallery-stage__action-group--batch">
                                 <button class="admin-action is-danger" type="button"
                                     title="Discard all staged files and delete them from Storage" aria-label="Discard all staged files from Storage"
-                                    wire:click="mountAction('discardAllStagedMedia')">
+                                    wire:click="discardAllStagedMedia"
+                                    wire:loading.attr="disabled" wire:target="discardStagedMedia,discardAllStagedMedia">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
                                     <span class="gallery-stage__action-label">Discard All</span>
                                 </button>

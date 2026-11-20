@@ -11,13 +11,8 @@ use App\Domain\Artwork\ArtworkSort;
 use App\Models\ArtworkCategory;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\MediaAssetEditorialService;
-use App\Filament\Support\Dialogs\AdminDialog;
-use App\Filament\Support\MediaReferenceCatalog;
 use App\Models\Artwork;
 use App\Models\MediaAsset;
-use Filament\Actions\Action;
-use Filament\Forms\Components\Hidden;
-use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -172,132 +167,17 @@ trait GalleryWorkspaceDirectUpload
         $this->publishStagedArtworkPreview();
     }
 
-    /** Forget the queue row only after the canonical Storage deletion succeeds. */
-    private function forgetStagedMediaAsset(int $assetId): void
+    /** Immediate Stage discard; never silently detach other content that
+     * happens to reference a deduplicated Storage original.
+     */
+    public function discardStagedMedia(int $assetId): void
     {
-        $selectedIndex = max(0, $this->stagedArtworkPosition() - 1);
-        $this->rememberStagedArtworkChanges();
-        $this->pendingBatchArtworkMedia = array_values(array_filter(
-            $this->pendingBatchArtworkMedia,
-            static fn (array $row): bool => (int) $row['media_asset_id'] !== $assetId,
-        ));
-        if ($this->selectedStagedMediaAssetId === $assetId) {
-            $this->selectedStagedMediaAssetId = null;
-            $this->stagedArtworkData = [];
-            if ($this->pendingBatchArtworkMedia !== []) {
-                $nextIndex = min($selectedIndex, count($this->pendingBatchArtworkMedia) - 1);
-                $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[$nextIndex]['media_asset_id']);
-            } else {
-                $this->galleryStagePanel = 'settings';
-                $this->forgetStagedArtworkPreview();
-                $this->syncGalleryPreviewFocus();
-            }
-        }
-    }
-
-    /** Stage Discard delegates to the confirmed, reference-aware Storage deletion. */
-    public function discardStagedMediaAction(): Action
-    {
-        $action = Action::make('discardStagedMedia')
-            ->label('Discard')
-            ->color('danger')
-            ->fillForm(fn (array $arguments): array => [
-                'reference_snapshot' => $this->stagedMediaReferenceSnapshot($this->stagedMediaAssetForAction($arguments)),
-            ])
-            ->schema([Hidden::make('reference_snapshot')])
-            ->modalContent(fn (array $arguments): View => view(
-                'filament.resources.media-assets.partials.delete-dialog',
-                ['references' => $this->stagedMediaReferences($this->stagedMediaAssetForAction($arguments))],
-            ))
-            ->action(function (array $data, array $arguments): void {
-                $asset = $this->stagedMediaAssetForAction($arguments);
-                $id = (int) $asset->getKey();
-                if (! hash_equals(
-                    $this->stagedMediaReferenceSnapshot($asset),
-                    (string) ($data['reference_snapshot'] ?? ''),
-                )) {
-                    throw ValidationException::withMessages([
-                        'media' => 'This file or its content references changed. Reopen Discard to review the current references.',
-                    ]);
-                }
-
-                try {
-                    $deleted = app(MediaAssetEditorialService::class)->delete($asset);
-                } catch (Throwable $exception) {
-                    if ((string) $asset->fresh()?->getAttribute('state') === 'deleted') {
-                        // The logical deletion committed, but physical cleanup
-                        // may require the existing durable cleanup retry.
-                        report($exception);
-                        $this->forgetStagedMediaAsset($id);
-                        app(AdminNotifier::class)->notification(
-                            title: 'File discarded; cleanup incomplete',
-                            body: 'Storage references were removed. Physical file cleanup needs attention.',
-                            status: 'danger',
-                        );
-
-                        return;
-                    }
-                    if ($exception instanceof ValidationException) {
-                        $this->notifyValidationFailure('File was not discarded', $exception);
-
-                        return;
-                    }
-
-                    throw $exception;
-                }
-
-                if ($deleted) {
-                    $this->forgetStagedMediaAsset($id);
-                    app(AdminNotifier::class)->notification(
-                        title: 'Staged media discarded from Storage',
-                        status: 'success',
-                    );
-                }
-            });
-
-        return AdminDialog::confirm(
-            $action,
-            'Discard staged file?',
-            'Discard this file from Stage and permanently delete it from Storage, including any remaining content references.',
-            'Discard',
-            danger: true,
-        );
-    }
-
-    /** @param array<string, mixed> $arguments */
-    private function stagedMediaAssetForAction(array $arguments): MediaAsset
-    {
-        $id = $arguments['asset'] ?? null;
-        if (! is_numeric($id) || (int) $id !== $this->selectedStagedMediaAssetId
+        if ($assetId !== $this->selectedStagedMediaAssetId
             || $this->stagedArtworkPosition() === 0) {
-            throw ValidationException::withMessages([
-                'media' => 'The selected Staged Artwork changed. Reopen Discard for the current file.',
-            ]);
+            return;
         }
 
-        /** @var MediaAsset|null $asset */
-        $asset = MediaAsset::query()->whereKey((int) $id)->where('state', 'available')->first();
-        if (! $asset instanceof MediaAsset) {
-            throw ValidationException::withMessages([
-                'media' => 'The media file is no longer available in Storage.',
-            ]);
-        }
-
-        return $asset;
-    }
-
-    private function stagedMediaReferenceSnapshot(MediaAsset $asset): string
-    {
-        return hash('sha256', json_encode($this->stagedMediaReferences($asset), JSON_THROW_ON_ERROR));
-    }
-
-    /** @return list<array{type:string,label:string,url:?string}> */
-    private function stagedMediaReferences(MediaAsset $asset): array
-    {
-        $catalog = app(MediaReferenceCatalog::class);
-        $catalog->loadAssetReferences($asset);
-
-        return $catalog->references($asset);
+        $this->discardStagedAssets([$assetId]);
     }
 
     /** The single and batch commands both delegate to the canonical Artwork owners. */
@@ -428,122 +308,73 @@ trait GalleryWorkspaceDirectUpload
         app(AdminNotifier::class)->notification(title: $count.' Artworks submitted and published in Working', status: 'success');
     }
 
-    /** Bulk Discard deletes each staged original via the canonical Storage owner. */
-    public function discardAllStagedMediaAction(): Action
+    /** Both Stage buttons use one immediate reference-safe Storage operation. */
+    public function discardAllStagedMedia(): void
     {
-        $action = Action::make('discardAllStagedMedia')
-            ->label('Discard All')
-            ->color('danger')
-            ->fillForm(fn (): array => [
-                'reference_snapshot' => $this->stagedAllMediaDeleteSnapshot(),
-            ])
-            ->schema([Hidden::make('reference_snapshot')])
-            ->modalContent(fn (): View => view(
-                'filament.resources.media-assets.partials.delete-selected-dialog',
-                $this->stagedAllMediaDeleteData(),
-            ))
-            ->action(function (array $data): void {
-                if (! hash_equals(
-                    $this->stagedAllMediaDeleteSnapshot(),
-                    (string) ($data['reference_snapshot'] ?? ''),
-                )) {
-                    throw ValidationException::withMessages([
-                        'media' => 'The staged files or their references changed. Reopen Discard All to review them.',
-                    ]);
-                }
-                $ids = array_map('intval', array_column($this->pendingBatchArtworkMedia, 'media_asset_id'));
-                if ($ids === []) {
-                    return;
-                }
-
-                $deleted = [];
-                $failed = [];
-                $cleanupDelayed = [];
-                foreach ($ids as $id) {
-                    $asset = MediaAsset::query()->whereKey($id)->where('state', 'available')->first();
-                    if (! $asset instanceof MediaAsset) {
-                        $failed[] = 'File '.$id.': no longer available.';
-                        continue;
-                    }
-                    try {
-                        if (app(MediaAssetEditorialService::class)->delete($asset)) {
-                            $deleted[] = $id;
-                        }
-                    } catch (Throwable $exception) {
-                        if ((string) $asset->fresh()?->getAttribute('state') === 'deleted') {
-                            report($exception);
-                            $deleted[] = $id;
-                            $cleanupDelayed[] = $id;
-                            continue;
-                        }
-                        if (! $exception instanceof ValidationException) {
-                            report($exception);
-                        }
-                        $failed[] = (string) $asset->getAttribute('original_filename').': '.
-                            ($exception instanceof ValidationException
-                                ? collect($exception->errors())->flatten()->first()
-                                : 'Storage deletion failed.');
-                    }
-                }
-                if ($deleted !== []) {
-                    $this->forgetCompletedStagedArtworks($deleted);
-                }
-                app(AdminNotifier::class)->notification(
-                    title: count($deleted).' staged files discarded from Storage',
-                    body: $failed !== [] || $cleanupDelayed !== []
-                        ? count($failed).' failed. '.count($cleanupDelayed).' physical cleanups pending.'
-                        : null,
-                    status: $failed !== [] || $cleanupDelayed !== [] ? 'warning' : 'success',
-                );
-            });
-
-        return AdminDialog::confirm(
-            $action,
-            'Discard all staged files?',
-            'Discard all queued files and permanently delete their originals from Storage, including any remaining references. Artworks already submitted are unaffected.',
-            'Discard All',
-            danger: true,
-        );
+        $this->discardStagedAssets(array_map(
+            'intval', array_column($this->pendingBatchArtworkMedia, 'media_asset_id'),
+        ));
     }
 
-    /** This snapshot also guards against a new upload arriving while Delete All is open. */
-    private function stagedAllMediaDeleteSnapshot(): string
+    /** @param list<int> $ids */
+    private function discardStagedAssets(array $ids): void
     {
-        return hash('sha256', json_encode([
-            'ids' => array_map('intval', array_column($this->pendingBatchArtworkMedia, 'media_asset_id')),
-            'references' => $this->stagedAllMediaDeleteData()['references'],
-        ], JSON_THROW_ON_ERROR));
-    }
+        $queuedIds = array_map('intval', array_column($this->pendingBatchArtworkMedia, 'media_asset_id'));
+        $ids = array_values(array_unique(array_intersect($ids, $queuedIds)));
+        if ($ids === []) {
+            return;
+        }
 
-    /** @return array{selectedCount:int,referencedFileCount:int,referenceCount:int,references:list<array{filename:string,type:string,label:string}>} */
-    private function stagedAllMediaDeleteData(): array
-    {
-        $ids = array_map('intval', array_column($this->pendingBatchArtworkMedia, 'media_asset_id'));
-        $assets = MediaAsset::query()->whereIn('id', $ids)->where('state', 'available')->get();
-        $catalog = app(MediaReferenceCatalog::class);
-        $referencedFiles = 0;
-        $references = [];
-        foreach ($assets as $asset) {
-            $catalog->loadAssetReferences($asset);
-            $rows = $catalog->references($asset);
-            if ($rows !== []) {
-                $referencedFiles++;
+        $deleted = [];
+        $failed = [];
+        $cleanupDelayed = [];
+        foreach ($ids as $id) {
+            $asset = MediaAsset::query()->whereKey($id)->where('state', 'available')->first();
+            if (! $asset instanceof MediaAsset) {
+                $failed[] = 'File '.$id.': no longer available.';
+                continue;
             }
-            foreach ($rows as $row) {
-                $references[] = [
-                    'filename' => (string) $asset->getAttribute('original_filename'),
-                    'type' => $row['type'],
-                    'label' => $row['label'],
-                ];
+
+            try {
+                // A one-click Discard must never silently detach content used
+                // elsewhere. The constraint is checked under the Storage lock.
+                if (app(MediaAssetEditorialService::class)->delete($asset, requireUnreferenced: true)) {
+                    $deleted[] = $id;
+                } else {
+                    $failed[] = (string) $asset->getAttribute('original_filename').': no longer available.';
+                }
+            } catch (Throwable $exception) {
+                if ((string) $asset->fresh()?->getAttribute('state') === 'deleted') {
+                    report($exception);
+                    $deleted[] = $id;
+                    $cleanupDelayed[] = $id;
+                    continue;
+                }
+
+                if (! $exception instanceof ValidationException) {
+                    report($exception);
+                }
+                $detail = $exception instanceof ValidationException
+                    ? collect($exception->errors())->flatten()->first()
+                    : null;
+                $failed[] = (string) $asset->getAttribute('original_filename').': '.
+                    (is_string($detail) && $detail !== '' ? $detail : 'Storage deletion failed.');
             }
         }
 
-        return [
-            'selectedCount' => count($ids),
-            'referencedFileCount' => $referencedFiles,
-            'referenceCount' => count($references),
-            'references' => $references,
-        ];
+        if ($deleted !== []) {
+            $this->forgetCompletedStagedArtworks($deleted);
+        }
+        app(AdminNotifier::class)->notification(
+            title: count($deleted).' staged '.(count($deleted) === 1 ? 'file' : 'files').' discarded from Storage',
+            body: $failed !== [] || $cleanupDelayed !== []
+                ? implode(' ', array_slice($failed, 0, 3)).
+                    ($cleanupDelayed !== [] ? ' Some physical cleanup is pending.' : '')
+                : null,
+            status: $failed !== []
+                ? ($deleted !== [] ? 'warning' : 'danger')
+                : ($cleanupDelayed !== [] ? 'warning' : 'success'),
+        );
     }
 
     /** Remove completed queue rows after submission or confirmed Storage discard. */

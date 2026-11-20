@@ -157,14 +157,14 @@ class MediaAssetEditorialService
      * transaction. This protects the Gallery's "delete file too" action from
      * deleting its Artwork before Storage-reference cleanup can succeed.
      */
-    public function delete(MediaAsset $asset, ?Artwork $deleteDraftArtwork = null): bool
+    public function delete(MediaAsset $asset, ?Artwork $deleteDraftArtwork = null, bool $requireUnreferenced = false): bool
     {
         $actor = $this->adminAuditService->requireActor();
         $assetId = (int) $asset->getKey();
         $keys = [];
         $deferCleanup = false;
 
-        $changed = DB::transaction(function () use ($assetId, $actor, $deleteDraftArtwork, &$keys, &$deferCleanup): bool {
+        $changed = DB::transaction(function () use ($assetId, $actor, $deleteDraftArtwork, $requireUnreferenced, &$keys, &$deferCleanup): bool {
             DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
             $deferCleanup = DB::table('committed.media_assets')
                 ->where('id', $assetId)
@@ -187,6 +187,18 @@ class MediaAssetEditorialService
                 }
 
                 return false;
+            }
+
+            // Immediate Stage Discard has no review dialog. A duplicate
+            // Storage file may already belong to other content, which must
+            // never be detached silently by a one-click action.
+            if ($requireUnreferenced) {
+                $this->referenceQuery->forgetContentReferences();
+                if ($this->referenceQuery->isReferenced($locked)) {
+                    throw ValidationException::withMessages([
+                        'media' => 'This file is used elsewhere. It was not discarded. Remove its existing references in Storage before deleting it.',
+                    ]);
+                }
             }
 
             $draftToDelete = null;

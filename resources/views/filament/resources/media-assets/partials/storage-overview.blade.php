@@ -121,7 +121,7 @@
         <div
             class="media-workspace__dropzone admin-storage__dropzone"
             x-data="{
-                phase: 'idle', progress: 0, fileCount: 0,
+                phase: 'idle', progress: 0, processingStep: '', fileCount: 0,
                 completed: 0, result: '', pendingUploads: [], uploadRunning: false,
                 async uploadFiles(input) {
                     await window.adminMediaUploader(this, input, $wire, 'storage')
@@ -146,7 +146,7 @@
                         phase === 'uploading'
                             ? `Uploading file ${completed + 1} of ${fileCount} · ${progress.toFixed(1)}%`
                             : phase === 'processing'
-                                ? `100% transferred · Processing file ${completed + 1} of ${fileCount}…`
+                                ? `${processingStep} · ${progress.toFixed(1)}%`
                                 : phase === 'result'
                                     ? result
                                     : 'Drop files here or choose from your device'
@@ -163,7 +163,7 @@
                 aria-valuemin="0"
                 aria-valuemax="100"
                 x-bind:aria-valuenow="uploadRunning ? progress : null"
-                x-bind:aria-valuetext="phase === 'processing' ? '100% of file bytes transferred; processing on server' : null"
+                x-bind:aria-valuetext="phase === 'processing' ? processingStep + ' · ' + progress.toFixed(1) + '% complete' : null"
             >
                 <span class="media-workspace__upload-progress-track" aria-hidden="true">
                     <span class="media-workspace__upload-progress-fill" x-bind:style="`width: ${progress}%`"></span>

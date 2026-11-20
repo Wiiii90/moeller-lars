@@ -5,6 +5,7 @@ namespace App\Domain\Media;
 use App\Jobs\PrepareMediaRightsImage;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
+use Closure;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -55,18 +56,26 @@ class MediaIngestService
     }
 
     /** @return array{asset:MediaAsset,duplicate:bool} */
-    public function ingestUnique(UploadedFile $upload, bool $fromPrivateStaging = false): array
+    public function ingestUnique(UploadedFile $upload, bool $fromPrivateStaging = false, ?Closure $onProgress = null): array
     {
         $lock = $this->acquireIngestLock();
 
         try {
+            $onProgress?->__invoke('checking');
             $duplicate = $this->findReusableOriginal($upload);
             if ($duplicate instanceof MediaAsset) {
+                $onProgress?->__invoke('finalizing');
+
                 return ['asset' => $duplicate, 'duplicate' => true];
             }
 
+            // Thumbnail/poster generation is required before a MediaAsset
+            // becomes available to both Storage and the Gallery Stage preview.
+            $onProgress?->__invoke('preparing');
             $prepared = $this->prepareForIngest($upload);
+            $onProgress?->__invoke('saving');
             $asset = $this->storePreparedLocked($upload, $prepared, $fromPrivateStaging);
+            $onProgress?->__invoke('finalizing');
             if (config('media.rights_preparation_enabled', false) === true) {
                 PrepareMediaRightsImage::dispatch((int) $asset->getKey())->afterCommit();
             }
