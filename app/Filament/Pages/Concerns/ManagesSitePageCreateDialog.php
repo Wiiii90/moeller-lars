@@ -7,6 +7,7 @@ use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SitePageHeading;
+use App\Domain\Content\SiteSectionCreationDefaults;
 use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
@@ -23,7 +24,6 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 trait ManagesSitePageCreateDialog
@@ -42,7 +42,6 @@ trait ManagesSitePageCreateDialog
                             ->options(array_map('__', SiteSectionType::compactOptions()))
                             ->default(SiteSectionType::CustomPage->value)
                             ->native()
-                            ->required()
                             ->live()
                             ->afterStateUpdated(function (?string $state, Set $set): void {
                                 $set('template', match ($state) {
@@ -59,23 +58,17 @@ trait ManagesSitePageCreateDialog
                                 default => [],
                             })
                             ->native()
-                            ->required(fn (Get $get): bool => in_array($get('type'), [SiteSectionType::Gallery->value, SiteSectionType::Journal->value], true))
                             ->visible(fn (Get $get): bool => in_array($get('type'), [SiteSectionType::Gallery->value, SiteSectionType::Journal->value], true)),
                         TextInput::make('name')
                             ->label('Name')
-                            ->required()
-                            ->maxLength(160)
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(function (?string $state, Set $set, Get $get): void {
-                                if (blank($get('slug')) && filled($state)) {
-                                    $set('slug', rtrim(mb_substr(Str::slug($state), 0, 80), '-'));
-                                }
-                            }),
+                            ->placeholder('Generated automatically')
+                            ->maxLength(160),
                         TextInput::make('slug')
                             ->label('Public slug')
+                            ->placeholder('Generated automatically')
+                            ->nullable()
                             ->maxLength(80)
                             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                            ->required(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
                             ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false),
                         Select::make('parent_id')
                             ->label('Parent page')
@@ -121,8 +114,11 @@ trait ManagesSitePageCreateDialog
             throw ValidationException::withMessages(['type' => 'Choose a supported page type.']);
         }
 
-        $name = trim((string) ($data['name'] ?? ''));
-        $slug = trim((string) ($data['slug'] ?? ''));
+        $identity = app(SiteSectionCreationDefaults::class)->resolve(
+            $type, (string) ($data['name'] ?? ''), (string) ($data['slug'] ?? ''),
+        );
+        $name = $identity['name'];
+        $slug = $identity['slug'];
         $parentId = $this->dialogParentId($data['parent_id'] ?? null);
         $position = $this->dialogPosition($data['position'] ?? null);
         $editorial = app(SiteSectionEditorialService::class);

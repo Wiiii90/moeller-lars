@@ -12,8 +12,10 @@ use Filament\Schemas\Components\View;
  */
 final class AdminPanelControl
 {
-    /** @param list<mixed> $fields */
-    public static function make(string $title, string $enabledField, array $fields, ?Closure $onUpdated = null, bool $collapsible = false): Group
+    /** @param list<mixed> $fields
+     *  @param array<string, int> $bodyColumns
+     */
+    public static function make(string $title, string $enabledField, array $fields, ?Closure $onUpdated = null, bool $collapsible = false, array $bodyColumns = ['default' => 2]): Group
     {
         $toggle = AdminControl::checkbox($enabledField, $title)
             ->live()
@@ -27,7 +29,7 @@ final class AdminPanelControl
         $header = $collapsible
             ? Group::make([
                 $toggle,
-                View::make('filament.resources.artworks.partials.gallery-panel-disclosure'),
+                View::make('filament.support.admin-panel-disclosure'),
             ])->columns(['default' => 2])->extraAttributes(['class' => 'admin-option-panel__header'])
             : $toggle->columnSpanFull();
 
@@ -36,7 +38,7 @@ final class AdminPanelControl
             ->extraAttributes($collapsible
                 ? ['class' => 'admin-option-panel__body', 'x-show' => 'expanded', 'x-cloak' => true]
                 : ['class' => 'admin-option-panel__body'])
-            ->columns(['default' => 2])
+            ->columns($bodyColumns)
             ->columnSpanFull();
 
         return Group::make([$header, $body])

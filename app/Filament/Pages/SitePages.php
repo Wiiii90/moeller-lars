@@ -7,6 +7,7 @@ use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
+use App\Domain\Content\SiteSectionCreationDefaults;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\Concerns\ManagesSitePageDialogs;
@@ -541,12 +542,20 @@ final class SitePages extends Page
 
         try {
             $parentId = $this->newParentId();
-            $message = DB::transaction(fn (): string => match ($type) {
-                SiteSectionType::NavigationNode => $this->createNavigationGroup($parentId),
-                SiteSectionType::CustomPage => $this->createCustomPage($parentId),
-                SiteSectionType::Journal => $this->createJournal($parentId),
-                SiteSectionType::Gallery => $this->createGallery($parentId),
-                default => throw ValidationException::withMessages(['type' => 'Choose Gallery, Journal, Custom Page or Group Node.']),
+            $message = DB::transaction(function () use ($type, $parentId): string {
+                if (! $type instanceof SiteSectionType) {
+                    throw ValidationException::withMessages(['type' => 'Choose Gallery, Journal, Custom Page or Group Node.']);
+                }
+                $identity = app(SiteSectionCreationDefaults::class)->resolve(
+                    $type, $this->newPageTitle, $this->newPageSlug,
+                );
+
+                return match ($type) {
+                    SiteSectionType::NavigationNode => $this->createNavigationGroup($parentId, $identity['name']),
+                    SiteSectionType::CustomPage => $this->createCustomPage($parentId, $identity['name'], $identity['slug']),
+                    SiteSectionType::Journal => $this->createJournal($parentId, $identity['name'], $identity['slug']),
+                    SiteSectionType::Gallery => $this->createGallery($parentId, $identity['name'], $identity['slug']),
+                };
             });
 
             $this->addingPage = false;
@@ -566,29 +575,29 @@ final class SitePages extends Page
         }
     }
 
-    private function createNavigationGroup(?int $parentId): string
+    private function createNavigationGroup(?int $parentId, string $name): string
     {
-        $section = app(SiteSectionEditorialService::class)->createNavigationGroup($this->newPageTitle);
+        $section = app(SiteSectionEditorialService::class)->createNavigationGroup($name);
         $this->placeCreatedSection($section, $parentId);
         $section = $this->publishNewPageIfConfigured(SiteSection::query()->findOrFail($section->getKey()));
 
         return $section->getAttribute('state') === 'published' ? 'Group Node added as published' : 'Group Node added';
     }
 
-    private function createCustomPage(?int $parentId): string
+    private function createCustomPage(?int $parentId, string $name, string $slug): string
     {
-        $section = app(SiteSectionEditorialService::class)->createCustomPage($this->newPageTitle, $this->newPageSlug);
+        $section = app(SiteSectionEditorialService::class)->createCustomPage($name, $slug);
         $this->placeCreatedSection($section, $parentId);
         $section = $this->publishNewPageIfConfigured(SiteSection::query()->findOrFail($section->getKey()));
 
         return $section->getAttribute('state') === 'published' ? 'Custom Page added as published' : 'Custom Page added as unpublished';
     }
 
-    private function createJournal(?int $parentId): string
+    private function createJournal(?int $parentId, string $name, string $slug): string
     {
         $section = app(SiteSectionEditorialService::class)->createJournal(
-            $this->newPageTitle,
-            $this->newPageSlug,
+            $name,
+            $slug,
             $this->newJournalTemplate,
         );
         $this->placeCreatedSection($section, $parentId);
@@ -597,11 +606,11 @@ final class SitePages extends Page
         return $section->getAttribute('state') === 'published' ? 'Journal added as published' : 'Journal added as unpublished';
     }
 
-    private function createGallery(?int $parentId): string
+    private function createGallery(?int $parentId, string $name, string $slug): string
     {
         $gallery = app(GalleryEditorialService::class)->create([
-            'name' => $this->newPageTitle,
-            'slug' => $this->newPageSlug,
+            'name' => $name,
+            'slug' => $slug,
             'parent_section_id' => $parentId,
         ]);
         $section = SiteSection::query()

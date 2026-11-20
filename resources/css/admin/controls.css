@@ -768,6 +768,12 @@
     row-gap: .4rem;
     column-gap: .65rem;
 }
+.admin-option-panel__header,
+.admin-option-panel__header :is(.fi-sc, .fi-sc-grid) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+}
 .admin-option-panel__switch {
     min-height: 0;
 }
@@ -789,4 +795,28 @@
 }
 .admin-option-panel__body .admin-control-field {
     min-width: 0;
+}
+
+.admin-option-panel__disclosure {
+    display: inline-grid;
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--admin-muted);
+    cursor: pointer;
+}
+.admin-option-panel__disclosure:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: -2px;
+}
+.admin-option-panel__chevron {
+    display: inline-block;
+    font-size: .8rem;
+    transition: transform .14s ease;
+}
+.admin-option-panel__chevron.is-collapsed {
+    transform: rotate(-90deg);
 }

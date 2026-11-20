@@ -4,69 +4,60 @@ namespace App\Filament\Support;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\SitePageHeading;
+use App\Filament\Support\Controls\AdminControl;
+use App\Filament\Support\Controls\AdminPanelControl;
 use Closure;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Group;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
-/** Shared form schema for the Pages Edit dialog and Home settings. */
+/** Shared heading panel for Pages creation and editing. */
 final class PageHeadingFields
 {
-    /** Persist each heading field through the owner on a Livewire update. */
-    public static function schema(?Closure $persist = null, string $successTitle = 'Page updated'): Grid
+    /**
+     * The shared disclosure panel owns Page headings as well as Gallery options.
+     * Editing autosaves each field; Create saves once with the new page.
+     */
+    public static function schema(?Closure $persist = null, string $successTitle = 'Page updated'): Group
     {
-        return Grid::make()
-            ->columns(['md' => 2])
-            ->schema([
-                self::headingToggle($persist, $successTitle)->columnSpanFull(),
-                ...self::detailFields($persist, $successTitle),
-            ]);
-    }
+        [$heading, $alignment, $divider] = self::detailFields($persist, $successTitle);
 
-    public static function headingToggle(?Closure $persist = null, string $successTitle = 'Page updated'): Toggle
-    {
-        return Toggle::make('content_heading_enabled')
-            ->label('Show page heading')
-            ->default(false)
-            ->live()
-            ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_enabled', (bool) $state, $successTitle));
+        return AdminPanelControl::make('Show page heading', 'content_heading_enabled', [
+            $heading,
+            Grid::make(['default' => 2])->schema([$alignment, $divider]),
+        ], $persist === null ? null : fn (Component $livewire, mixed $state) =>
+            self::persist($livewire, $persist, 'content_heading_enabled', (bool) $state, $successTitle),
+            collapsible: true,
+            bodyColumns: ['default' => 1, 'md' => 2],
+        );
     }
 
     /** @return list<mixed> */
     public static function detailFields(?Closure $persist = null, string $successTitle = 'Page updated'): array
     {
         return [
-            TextInput::make('content_heading_override')
+            AdminControl::text('content_heading_override')
                 ->label('Heading text')
                 ->placeholder('Use page name')
                 ->maxLength(160)
                 ->live(onBlur: true)
-                ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_override', $state, $successTitle))
-                ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled'))
-                ->columnSpanFull(),
-            Select::make('content_heading_alignment')
+                ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_override', $state, $successTitle)),
+            AdminControl::select('content_heading_alignment')
                 ->label('Alignment')
                 ->options(SitePageHeading::ALIGNMENTS)
                 ->default('left')
                 ->native()
-                ->required()
                 ->live()
-                ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_alignment', $state, $successTitle))
-                ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled')),
-            Select::make('content_heading_divider')
-                ->label('Divider below heading')
+                ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_alignment', $state, $successTitle)),
+            AdminControl::select('content_heading_divider')
+                ->label('Divider')
                 ->options(SitePageHeading::DIVIDERS)
                 ->default('none')
                 ->native()
-                ->required()
                 ->live()
-                ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_divider', $state, $successTitle))
-                ->visible(fn (Get $get): bool => (bool) $get('content_heading_enabled')),
+                ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_divider', $state, $successTitle)),
         ];
     }
 
