@@ -894,6 +894,22 @@ final class Dashboard extends Page
             submitLabel: 'Delete',
             danger: true,
             condition: fn (): bool => ! $this->deleteWithoutConfirmation(),
-        );
+        )
+            ->fillForm(fn (): array => ['delete_without_confirmation' => $this->deleteWithoutConfirmation()])
+            ->schema([
+                AdminControl::checkbox('delete_without_confirmation', 'Delete messages without confirmation'),
+            ])
+            ->after(function (array $data): void {
+                // Like "don't ask again": persist only after a confirmed delete,
+                // never when a user closes the confirmation without deleting.
+                if (($data['delete_without_confirmation'] ?? false) !== true) {
+                    return;
+                }
+
+                $user = auth()->user();
+                if ($user instanceof User && ! $this->deleteWithoutConfirmation()) {
+                    $user->forceFill(['dashboard_delete_without_confirmation' => true])->save();
+                }
+            });
     }
 }
