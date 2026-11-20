@@ -332,7 +332,7 @@ test('shared Preview toolbar stays on one row in compact General Stage widths', 
   try {
     // Container pressure is independent of browser viewport. An embedded
     // Gallery/General Preview can be much narrower than the workspace.
-    for (const width of [500, 340, 280, 240, 200]) {
+    for (const width of [500, 340, 280, 240, 200, 180]) {
       await preview.evaluate((node, px) => {
         node.style.width = `${px}px`;
         node.style.maxWidth = `${px}px`;

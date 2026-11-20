@@ -132,6 +132,14 @@
     }
     .admin-live-preview .admin-stage-tool-group { gap: 0; }
 }
+/* Allow for the General/Gallery Stage's own interior gutter even when
+ * the *outer* preview pane approaches 200px. All actions stay visible. */
+@container admin-live-preview (max-width: 13rem) {
+    .admin-live-preview .admin-stage-tool-row {
+        --admin-live-preview-tool-size: 1.25rem;
+        --admin-live-preview-zoom-label-width: 2rem;
+    }
+}
 .admin-live-preview__viewport {
     box-sizing: border-box;
     display: grid;
