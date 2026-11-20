@@ -7,7 +7,6 @@ use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
-use App\Domain\Artwork\ArtworkSort;
 use App\Models\ArtworkCategory;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\MediaAssetEditorialService;
@@ -153,13 +152,18 @@ trait GalleryWorkspaceDirectUpload
                 'primary_media_asset_id' => $assetId,
                 'artwork_date' => null,
                 'medium' => null,
-                'position' => ArtworkSort::suggestedAdditionPosition($gallery, null, $assetId),
+                'position' => null,
                 'position_explicit' => false,
             ];
         }
         // Stage owns only the compact fields. Existing queue snapshots must not
         // keep hidden slug, description or ALT override values after this change.
         unset($form['slug'], $form['description'], $form['primary_alt_text']);
+        if (! (bool) ($form['position_explicit'] ?? false)) {
+            // Older queue snapshots contained a white numeric suggestion.
+            // Automatic placement now lives only in the grey placeholder.
+            $form['position'] = null;
+        }
         // The queue row, not a disabled form control, owns the media link.
         $form['primary_media_asset_id'] = $assetId;
         $this->stagedArtworkData = $form;
@@ -192,11 +196,19 @@ trait GalleryWorkspaceDirectUpload
         }
 
         if (blank($asset->getAttribute('alt_text'))) {
-            throw ValidationException::withMessages([
-                'media' => 'Add descriptive ALT text to this media file in Storage before publishing.',
+            // A previously uploaded file may predate automatic Storage ALT
+            // defaults. Use the same canonical metadata writer as Storage;
+            // do not invent an Artwork-specific alternate description.
+            $asset = app(MediaAssetEditorialService::class)->updateMetadata($asset, [
+                'alt_text' => MediaAssetEditorialService::defaultAltTextFromFilename(
+                    (string) $asset->getAttribute('original_filename'),
+                ),
             ]);
         }
 
+        // The queue filename remains the default for an untouched or blank
+        // title; the draft service owns a collision-safe public slug.
+        $data['title'] = trim((string) ($data['title'] ?? '')) ?: (string) $row['title'];
         $explicit = (bool) ($data['position_explicit'] ?? false);
         $payload = $this->normalizeArtworkFormData($data);
         // The canonical draft service owns collision-safe slug generation.
@@ -267,9 +279,7 @@ trait GalleryWorkspaceDirectUpload
         // final Manual sequence preserves the artist's staged queue order.
         $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
         $placement = \App\Domain\Artwork\GalleryPresentation::addPlacement($gallery);
-        if ($placement === \App\Domain\Artwork\GalleryPresentation::ADD_FIRST
-            || ($placement === \App\Domain\Artwork\GalleryPresentation::ADD_FOLLOW
-                && \App\Domain\Artwork\GalleryPresentation::sortMode($gallery) === \App\Domain\Artwork\GalleryPresentation::SORT_MANUAL)) {
+        if ($placement === \App\Domain\Artwork\GalleryPresentation::ADD_FIRST) {
             $items = array_reverse($items);
         }
 

@@ -216,7 +216,9 @@
     white-space: nowrap;
 }
 
-.gallery-stage__editor-actions .gallery-stage__action-discard {
+/* In Stage, action meaning appears on hover/focus, not as persistent text
+ * color. The canonical danger/success hover rules still own their effects. */
+.gallery-stage__editor-actions .admin-action:not(:hover):not(:focus-visible) {
     color: var(--admin-text);
 }
 
@@ -471,7 +473,7 @@
 .admin-gallery-upload__progress-fill {
     width: 0;
     background: var(--admin-accent);
-    transition: width .12s linear;
+    transition: width .4s ease-out;
 }
 
 .gallery-workspace__result-surface > .admin-empty-state {
@@ -834,5 +836,11 @@
         .gallery-workspace__media-cell
     ) {
         display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-gallery-upload__progress-fill {
+        transition: none;
     }
 }

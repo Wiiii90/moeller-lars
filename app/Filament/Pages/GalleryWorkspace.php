@@ -136,16 +136,14 @@ final class GalleryWorkspace extends Page
                 compact: true,
                 positionCount: count($this->artworkDataset) + 1,
                 onPositionChanged: static function (mixed $state, callable $set): void {
-                    $set('position_explicit', true);
+                    $set('position_explicit', filled($state));
                 },
-                onCreateOrderSourceChanged: function (callable $get, callable $set): void {
-                    if ((bool) $get('position_explicit')) {
-                        return;
-                    }
+                positionSuggestion: function (callable $get): int {
                     $gallery = \App\Models\ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
-                    $set('position', \App\Domain\Artwork\ArtworkSort::suggestedAdditionPosition(
+
+                    return \App\Domain\Artwork\ArtworkSort::suggestedAdditionPosition(
                         $gallery, $get('artwork_date'), $this->selectedStagedMediaAssetId,
-                    ));
+                    );
                 },
             ))
             ->statePath('stagedArtworkData');

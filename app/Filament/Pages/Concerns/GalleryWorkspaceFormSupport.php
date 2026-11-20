@@ -14,26 +14,22 @@ trait GalleryWorkspaceFormSupport
     /** @return list<mixed> */
     private function artworkCreateFormSchema(): array
     {
-        // Create and Edit share one semantic field schema. Position defaults
-        // to the currently selected Gallery sort without changing its mode.
+        // A creation Position is an override only; the automatic placement
+        // remains a suggested placeholder from the Gallery's policy.
         return app(ArtworkEditDialog::class)->schema(
             creating: true,
             positionCount: count($this->artworkDataset) + 1,
             onPositionChanged: static function (mixed $state, callable $set): void {
-                $set('position_explicit', true);
+                $set('position_explicit', filled($state));
             },
-            onCreateOrderSourceChanged: function (callable $get, callable $set): void {
-                if ((bool) $get('position_explicit')) {
-                    return;
-                }
+            positionSuggestion: function (callable $get): int {
                 /** @var ArtworkCategory $gallery */
                 $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
                 $assetId = (int) ($get('primary_media_asset_id') ?? 0);
-                $set('position', ArtworkSort::suggestedPosition(
-                    $gallery,
-                    $get('artwork_date'),
-                    $assetId > 0 ? $assetId : null,
-                ));
+
+                return ArtworkSort::suggestedAdditionPosition(
+                    $gallery, $get('artwork_date'), $assetId > 0 ? $assetId : null,
+                );
             },
         );
     }

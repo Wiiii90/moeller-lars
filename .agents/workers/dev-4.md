@@ -2,7 +2,17 @@
 
 **Lease:** 23
 **Branch:** dev
-**State:** Active — canonical Media ingest emits durable processing checkpoints for Gallery/Storage progress; Stage Discard is immediate and safeguards referenced originals; runtime/browser acceptance pending.
+**State:** Active — Stage Submit All defaults and Gallery placement/order policy repaired; Gallery/Storage bar interpolation and Stage hover semantics updated; browser/runtime acceptance pending.
+
+## Gallery Stage batch submission, ordering and upload progress — 2026-11-20
+
+- Smoothed only the real `width` transitions for the existing determinate Gallery and Storage upload bars from .12s to .4s ease-out. Values and server checkpoints are unchanged, so no fabricated progress. Reduced-motion preferences disable transitions.
+- Stage action buttons retain their existing boxed designs but display neutral `--admin-text` in their idle state; semantic danger/success colors appear only on hover or keyboard focus, including Discard and Discard All. Shared danger/success state rules remain authoritative; other Admin buttons are unaffected.
+- Expanded Gallery `Artwork order` to include `Newest by Artwork Added` and `Oldest by Artwork Added`, reusing the existing created_at sort contract. Renamed the date-order labels `Newest by Artwork Date` / `Oldest by Artwork Date`. Removed the `Follow Artwork order` option from `New Artwork placement`; previously persisted `follow` values are still recognized as historical storage keys but now resolve to `Always first` when read. The default and the existing domain creation/suggestion path now use the explicit placement policy without the retired follow-order branch.
+- Reworked the shared Artwork creation form's Position to a grey dynamic placeholder, computed by `ArtworkSort::suggestedAdditionPosition` using the selected Gallery, date and Media File. The input value stays null until an artist manually types a rank, which alone sets `position_explicit`. The Stage's old non-explicit numeric queue snapshots are normalized back to null. Add Artwork shares the same rule and continues to create an unpublished draft; existing Edit Artwork schema is unchanged.
+- The canonical `MediaIngestService` now creates an initial editable Storage ALT description from the original filename on image/video admission through a single `MediaAssetEditorialService::defaultAltTextFromFilename` policy. Older staged files missing that value are updated through the same audited metadata owner during the existing batch/single-submit transaction; existing manually edited ALT text is never overwritten. There is no generated primary ALT override.
+- Submit All already owns the batch transaction. It now works with untouched Stage rows using the queue's filename Title fallback and normalized empty date, material, dimensions and description. The established `ArtworkDraftService` supplies a collision-safe public slug; the existing publication readiness and Gallery published-state requirements remain enforced. On failure the entire batch rolls back, and the queue remains staged. No new Artwork fields, media storage duplicate, auxiliary record or migration was created.
+- Source contract checks only. No runtime/browser/compiled asset tests, CI, deployment or migration. Acceptance: direct upload then Submit All with no edits, older files without ALT and existing ALT preserved, date/material/dimension/description null, no ALT override, per-gallery position placement and manual overrides, effective old persisted follow key, all seven order/placement options, Stage button idle/hover/focus in light/dark, Gallery and Storage determinate progress smoothing with reduced motion.
 
 ## Shared media completion progress and direct Stage Discard — 2026-11-20
 

@@ -285,6 +285,9 @@ class MediaIngestService
                     'storage_key' => $originalKey,
                     'original_filename' => $this->basename($upload->getClientOriginalName()),
                     'mime_type' => $prepared['mime'],
+                    'alt_text' => MediaTypePolicy::isImage($prepared['mime']) || MediaTypePolicy::isVideo($prepared['mime'])
+                        ? MediaAssetEditorialService::defaultAltTextFromFilename($upload->getClientOriginalName())
+                        : null,
                     'byte_size' => $prepared['size'],
                     'sha256' => $prepared['sha256'],
                     'state' => 'available',

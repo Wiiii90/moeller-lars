@@ -36,6 +36,17 @@ class MediaAssetEditorialService
         private readonly PublicationMediaCleanupService $publicationMediaCleanup,
     ) {}
 
+    /** Initial, editable Storage description derived from the filename.
+     * This is not image recognition or an author-supplied ALT override.
+     */
+    public static function defaultAltTextFromFilename(string $filename): string
+    {
+        $stem = trim((string) pathinfo(basename(str_replace('\\', '/', $filename)), PATHINFO_FILENAME));
+        $label = trim((string) preg_replace('/[_-]+/u', ' ', $stem));
+
+        return mb_substr($label !== '' ? $label : 'Uploaded media', 0, 500);
+    }
+
     public function updateMetadata(MediaAsset $asset, array $data): MediaAsset
     {
         $actor = $this->adminAuditService->requireActor();

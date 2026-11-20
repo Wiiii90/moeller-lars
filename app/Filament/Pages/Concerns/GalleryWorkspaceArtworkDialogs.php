@@ -4,7 +4,6 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
-use App\Domain\Artwork\ArtworkSort;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Filament\Support\AdminRowAction;
@@ -28,11 +27,8 @@ trait GalleryWorkspaceArtworkDialogs
             ->fillForm(fn (): array => [
                 'primary_media_asset_id' => $this->pendingPrimaryMediaAssetId,
                 'artwork_date' => null,
-                'position' => ArtworkSort::suggestedAdditionPosition(
-                    ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']),
-                    null,
-                    $this->pendingPrimaryMediaAssetId,
-                ),
+                // The automatic placement appears as a grey field hint.
+                'position' => null,
                 'position_explicit' => false,
             ])
             ->schema($this->artworkCreateFormSchema())

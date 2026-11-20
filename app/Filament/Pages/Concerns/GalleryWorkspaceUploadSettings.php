@@ -133,11 +133,11 @@ trait GalleryWorkspaceUploadSettings
                 ->label(AdminHelp::label(
                     'New Artwork placement',
                     'Placement when creating an Artwork',
-                    'Follow Artwork order retains the active Gallery sort. Other placement choices switch an automatically sorted Gallery to Manual on creation. An explicit Artwork Position always wins.',
+                    'Placement controls where a new Artwork enters the Gallery. A manual Position entry overrides this setting.',
                 ))
                 ->options(GalleryPresentation::ADD_OPTIONS)
                 ->placeholder('')
-                ->default(GalleryPresentation::ADD_FOLLOW)
+                ->default(GalleryPresentation::ADD_FIRST)
                 ->required(! $stage),
             'add_placement', $stage,
         );

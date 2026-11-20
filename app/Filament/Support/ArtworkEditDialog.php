@@ -58,7 +58,7 @@ final class ArtworkEditDialog
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true, ?Closure $onPositionChanged = null, ?Closure $onCreateOrderSourceChanged = null, bool $compact = false): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true, ?Closure $onPositionChanged = null, ?Closure $positionSuggestion = null, bool $compact = false): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
@@ -75,7 +75,7 @@ final class ArtworkEditDialog
         }
 
         $dateControl = AdminPartialDateControl::make(
-            liveUpdates: $creating && $onCreateOrderSourceChanged instanceof Closure,
+            liveUpdates: $creating,
         )
             ->rule(static fn (): Closure => static function (string $attribute, mixed $value, Closure $fail): void {
                 try {
@@ -86,12 +86,8 @@ final class ArtworkEditDialog
             })
             ->columnSpanFull();
 
-        if ($creating && $onCreateOrderSourceChanged instanceof Closure) {
-            $dateControl->live()->afterStateUpdated(
-                static function (callable $get, callable $set) use ($onCreateOrderSourceChanged): void {
-                    $onCreateOrderSourceChanged($get, $set);
-                },
-            );
+        if ($creating) {
+            $dateControl->live();
         }
 
         // Reuse the canonical Media picker in both views; only the field
@@ -111,22 +107,24 @@ final class ArtworkEditDialog
                     : 'Unpublish this Artwork before changing or removing its primary Media File.',
             ] : [], merge: true)
             ->live()
-            ->afterStateUpdated(static function (mixed $state, callable $set, callable $get) use ($onPrimaryMediaChanged, $creating, $onCreateOrderSourceChanged): void {
+            ->afterStateUpdated(static function (mixed $state, callable $set) use ($onPrimaryMediaChanged): void {
                 // One Media-file selection owns the Artwork association.
                 // On Edit, persist only this mutation, independent of the modal form.
                 if ($onPrimaryMediaChanged instanceof Closure) {
                     $onPrimaryMediaChanged(filled($state) ? (int) $state : null);
                 }
                 $set('primary_alt_text', null);
-                if ($creating && $onCreateOrderSourceChanged instanceof Closure) {
-                    $onCreateOrderSourceChanged($get, $set);
-                }
             })
             ->columnSpanFull();
 
         $position = $positionCount !== null
             ? $this->positionControl($positionCount, $positionEditable, $onPositionChanged)
             : null;
+        if ($creating && $position !== null && $positionSuggestion instanceof Closure) {
+            // The automatic rank is a grey hint, never a submitted manual
+            // position. Only typing a number switches to explicit placement.
+            $position->placeholder(static fn (callable $get): string => (string) $positionSuggestion($get));
+        }
 
         return [
             // The Stage uses two immediate columns within its own editor pane;

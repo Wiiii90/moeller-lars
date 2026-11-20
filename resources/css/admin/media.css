@@ -796,7 +796,7 @@
 .media-workspace__upload-progress-fill {
     width: 0;
     background: var(--admin-accent);
-    transition: width .12s linear;
+    transition: width .4s ease-out;
 }
 
 /* Processing begins after all bytes are transferred. Keep the bar at
@@ -1118,4 +1118,10 @@
     font: inherit;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .media-workspace__upload-progress-fill {
+        transition: none;
+    }
 }
