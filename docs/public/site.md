@@ -416,7 +416,12 @@ Informative public images require canonical ALT; explicit Artwork usage override
 
 Gallery Artwork primary media may be a canonical image or supported video. Inline Gallery/Home/Artwork videos use a single page-scoped playback owner (`public-media-playback.js`): muted looping video plays only while intersecting, the document and slide are visible, and reduced-motion policy permits it. Browser autoplay rejection is handled without a retry timer. An artist-enabled sound toggle is scoped by the Gallery/Home sound policy; the separate Artwork Viewer owns its own full-size player and navigation. Video uses the canonical immutable `video-poster-v1` WebP poster and its recorded intrinsic dimensions rather than an inline sizing workaround.
 
-Artwork cards, Home Hero Artworks and Artwork detail pages use the shared unboxed `artwork-caption.blade.php`. The first line contains **Title, Year** (if present); the second contains **Dimensions, Material** (whichever is authored). Dimensions preserve saved cm/mm/in, while strict numeric legacy dimensions without unit use the existing editorial cm default and free-form text remains unmodified. Long lines wrap within the available artwork width without clipping or inventing missing fields. Optional MediaAsset file-rights attribution remains **separate from** authored Artwork information; the Gallery may align these as left/right regions under the media. Artwork descriptions stay separate on the detail page. On Gallery/Home Artwork cards the caption remains a detail link regardless of media viewer activation.
+Artwork cards, Home Hero Artworks and Artwork detail pages use the shared unboxed `artwork-caption.blade.php`. The first line contains **Title, Year** (if present); the second contains **Dimensions, Material** (whichever is authored). Dimensions preserve saved cm/mm/in, while strict numeric legacy dimensions without unit use the existing editorial cm default and free-form text remains unmodified. Long lines wrap within the available artwork width without clipping or inventing missing fields. Optional MediaAsset file-rights attribution remains **separate from** authored Artwork information; the Gallery may align these as left/right regions under the media. Artwork descriptions stay separate on the detail page, but their full-width
+text and divider follow the available General Content width rather than
+the image-sized Artwork track or an additional 36rem limit. Actual Artwork
+media and its metadata keep their independent centered size; Museum
+description content follows below the two-column media/metadata composition.
+On Gallery/Home Artwork cards the caption remains a detail link regardless of media viewer activation.
 
 Individual Artwork detail pages preserve two **independent Gallery opt-ins**: **Expand landscape Artwork pages** and `portrait_detail_enabled` (portrait screen-height fitting), both OFF by default. Image orientation comes server-side from stored public thumbnail dimensions; video and nonmatching/square Artworks do not use either fitted image class. Gallery indexes, Home Hero and disabled Galleries retain General's ordinary paper/media sizing.
 
@@ -452,7 +457,7 @@ A Blog Journal lists only public Posts belonging to it and satisfying lifecycle/
 
 ### Exhibitions
 
-An Exhibitions Journal lists public Exhibitions belonging to it.
+An Exhibitions Journal lists only `state=published` Exhibitions belonging to the active Site Section on an ordinary Public request. The artist-only preview may show any non-archived Exhibition, including drafts and unpublished entries. A preview-visible draft must not become publicly available merely because it rendered there.
 
 Exhibitions use one [canonical editorial contract](../content/exhibitions.md): title, independent `organizer` and physical `venue`, address (street/postal code/city/country), structured start/end dates, optional structured or preserved text vernissage, explicit `show_vernissage`, rich description, external URL, Gallery and Map. Structured opening display stops after its timestamp; hiding an opening never deletes its editorial details. The date-only chronology, organizer byline and geocoding responsibilities must not be inferred from one legacy `venue` string.
 
@@ -492,6 +497,9 @@ compact original-ratio covers, bounded excerpts and explicit article links.
 Illustrated entries alternate image side by illustrated-entry order; prose
 flows beside and beneath an uncropped work. Text-only entries create no empty
 cover slots. A content-fit threshold stacks the layout without changing fonts.
+Blog index and article prose use the General-owned available inner Content
+width; the older Artwork track limit (650px) and separate 38rem text cap
+must not truncate Blog text or divider width.
 
 Every Public page, including Home, Gallery, Blog, Exhibitions, Artwork detail
 and Custom Page, shares the same artist-configured `#content` shell. Exterior
@@ -547,6 +555,8 @@ validation, shared Journal Editor and existing Working/Committed
 `gallery_presentation` string column; adding Carousel does not migrate or
 change any existing saved selection.
 
+**Slideshow and Carousel remain separate editorial presentation choices by explicit artist decision (20 November 2026).** They may evolve independently; they must not be collapsed into one Admin choice or coupled by an unrequested redesign. The current source reuses the shared Journal media/viewer infrastructure and a navigation owner where appropriate.
+
 The shared `journal-gallery` Blade component and `journal-presentation.js`
 own Slideshow/Carousel navigation. Slideshow and Carousel reuse a fixed,
 responsive, uncropped media stage instead of allowing differently shaped
@@ -571,12 +581,41 @@ suppressed at the 48rem content-container breakpoint, and arrows flank
 pagination above a full-width center image.
 Exhibition's generic Journal padding is reset for this explicitly sized stage.
 Side previews remain `inert`, aria-hidden and excluded from background
-playback; they are never duplicated. Carousel remains opt-in.
+playback; they are never duplicated. Carousel remains opt-in. A Carousel requires
+at least **three actual Gallery media**: the Editor disables selecting it below
+three, removal down to one/two selects Slideshow, and the canonical Journal
+media service reconciles saved Blog/Exhibition entries after media updates
+or asset deletion. Older invalid saved selections render defensively as
+Slideshow until the next canonical edit. With three/four media the Carousel
+provides one immediate neighbor on each side; with at least five media and
+at least 72rem available Content width it offers two neighbors per side.
+Under 48rem Content width it shows only the center image, retaining the
+navigation. The five-slot layout must explicitly retain the narrower width
+of the *immediate* neighbors as well as the far neighbors: a broad center
+width rule previously overrode them and made images overlap. The arrows
+remain in their dedicated plain-paper rails between the center and its
+immediate neighbors, not on artwork pixels.
+
+Slideshow uses one fixed stage width derived, when dimensions are available,
+from the widest image/video aspect ratio across the *whole gallery*; the
+layout and arrow position must not change on each slide switch. It otherwise
+uses its bounded width. Both presentation modes place pagination above
+media and credits closely below it, retain uncropped artwork and keep the
+page flow stable across portrait/landscape changes.
+
 `JournalMosaicColumns` continues to own Mosaic. The existing Gallery image
 viewer, mixed image/video assets and optional Exhibition credits keep their
 separate owners. No new model, route or persistence field is added. Browser
 acceptance for varying artwork aspect ratios, caption lengths, small screens,
-and video/Viewer navigation remains outstanding.
+and video/Viewer navigation remains outstanding. **Qualification ownership:**
+Testing Worker 1 (`testing` branch) must reconcile the current development
+source and verify real Blog/Exhibition gallery navigation for 1–6 media,
+3/5-slot layout at 48rem/72rem boundaries, mixed image/video, rights credits,
+carousel minimum-count save/reopen, modal viewer focus/playback and responsive
+General Content settings. Source inspection and isolated synthetic markup
+do not constitute passing browser tests. Docs Worker 1 (`docs` branch)
+owns further source-to-document reconciliation when the accepted code is
+transferred; no automatic cross-branch integration is implied.
 
 Artwork images remain uncropped. The complete Blog detail remains an
 editorial folio with a framed cover, structured rich-text reading measure,
@@ -756,9 +795,12 @@ Custom Pages are ordered structured components validated by `CustomPageSetting`.
 
 An Image marked `image_decorative` can own one ordered level of children: Text, List (without another image), Divider, Contact details (Email and Social links, not Form), and Legal Disclaimer. The Image editor controls media, size, independent Left/Right alignment and the Decorative flag; it never edits child content. Every child has the same complete Position, Type, Content, five Actions and Selection as a root component. Storage uses `image.children` solely for the parent relationship. Validation forbids child images, nested Contact Forms, image-bearing Lists and second-level nested content; the Legal Disclaimer remains unique across the page. Divider children are supported by the same persistence, Parent selector and native group-sorting contract.
 
-The public image and its children share ONE native float formatting context. The selected Left/Right alignment controls the float side, independently of the Decorative flag; for a standalone Image it controls the image position without enabling text wrap. Children flow alongside the floated image while width permits and continue underneath. Following root components start after the Image group. The Custom Page renderer owns ONE `--custom-page-component-gap` rule between adjacent components at both root and child levels: no type-specific trailing padding, no extra Divider margins and no special last-child spacing. Floated Images reserve horizontal clearance but **no bottom float margin**; the Image group's height and the standard following sibling gap supply the vertical clearance. This keeps top/bottom Divider clearance and Contact/Legal headings consistent without inserting blank spacer components.
+The public image and its children share ONE native float formatting context. The selected Left/Right alignment controls the float side, independently of the Decorative flag; for a standalone Image it controls the image position without enabling text wrap. Children flow alongside the floated image while width permits and continue underneath. Following root components start after the Image group. The Custom Page root and page heading use the entire available General
+Content width, not the 650px Artwork reading track. Images retain their
+independent size and natural child text flow. The Custom Page renderer owns
+ONE `--custom-page-component-gap` rule between adjacent components at both root and child levels: no type-specific trailing padding, no extra Divider margins and no special last-child spacing. Floated Images reserve horizontal clearance but **no bottom float margin**; the Image group's height and the standard following sibling gap supply the vertical clearance. This keeps top/bottom Divider clearance and Contact/Legal headings consistent without inserting blank spacer components.
 
-The generic List presents each entry as a local two-column description-left/context-right row, allowing each column to wrap within its own width. The heading-to-first-entry separation is stronger than inter-entry spacing, and Contact details use compact shared label/value rows. Contact's platform selection reuses the existing Admin Toggle controls for each configured General profile; the old chip-based multi-select is removed. Visibility is still explicitly controlled by each Contact component, so adding a new General platform does not silently publish it. Deleting a General social profile cascades in the same transaction to all Custom Page and Home Contact selections, including nested Image children; the deleted platform is removed from stored selections and is not automatically restored when re-added. Hiding a configured General profile does not erase its existing Contact selection. Newly selected platforms must be available in General. An undated entry spans the available row. List Details and publication filters remain generic. Contact is one reusable Custom Page/Home component with full-width, vertically stacked Name, Email and Message inputs; form security and delivery behavior remain unchanged. The Legal Disclaimer remains General-owned legal text with shared editorial heading typography; the component never invents legal copy.
+The generic List presents each entry as a local two-column description-left/context-right row, allowing each column to wrap within its own width. The heading-to-first-entry separation is stronger than inter-entry spacing, and Contact details use compact shared label/value rows. Contact's platform selection reuses the existing Admin Toggle controls for each configured General profile; the old chip-based multi-select is removed. Visibility is still explicitly controlled by each Contact component, so adding a new General platform does not silently publish it. Deleting a General social profile cascades in the same transaction to all Custom Page and Home Contact selections, including nested Image children; the deleted platform is removed from stored selections and is not automatically restored when re-added. Hiding a configured General profile does not erase its existing Contact selection. Newly selected platforms must be available in General. An undated entry spans the available row. List Details and publication filters remain generic. Contact is one reusable Custom Page/Home component with full-width, vertically stacked Name, Email and Message inputs; form security and delivery behavior remain unchanged. The retired Contact Form `under_construction` presentation and status-text editor field must not reappear: a published Contact Form renders the real form, including old persisted under-construction entries; unpublished/hidden remains the only visibility control, and the submit controller no longer rejects a published form due to that obsolete flag. The Legal Disclaimer remains General-owned legal text with shared editorial heading typography; the component never invents legal copy.
 
 Public Contact workflow uses English fixed UI labels and plain-text notification labels, CSRF middleware, a single named limiter with 5/minute/IP, 6/hour per HMAC-hashed sender address and 60/hour across the site (shared cache required), server-side validation (name 160, email RFC/320, message 5000 characters), and a hidden company honeypot. It accepts submissions only while an eligible published Contact Form is enabled, stores each received message, attempts delivery to the private recipient from the configured sender with the visitor's email as Reply-To, and returns a safe acknowledgement even if delivery fails. **180-day retention for database ContactMessage rows is implemented in source** using `ContactMessageRetentionService`, `contact:purge` (preview unless `--apply`) and a daily Laravel Scheduler registration. It deletes by submission creation time in bounded batches, including read, unread and mail-failed records. Mailbox copies, backup archives and their separately defined retention remain untouched. **Running scheduler/production execution and local tests are not verified**; activation requires checking the standard `schedule:run` operator, without deploying/altering server configuration in this workstream. The distributed-source quota limits total throughput, not bot identity, and can temporarily lock out legitimate messages; proxy trust, shared cache and production mail protection still require deployment review.
 

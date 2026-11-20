@@ -1,6 +1,6 @@
 # Exhibition editorial contract
 
-**Source review:** `dev@671d8214e060` (25 October 2026). This is a normative source reconciliation, not a newly executed browser or application test.
+**Source reconciliation:** development source reviewed 20 November 2026. The notes below record current contracts and verified local migration evidence, **not** a passing new browser test or production qualification.
 
 The Exhibitions Journal uses the canonical `Exhibition` model,
 `ExhibitionEditorialService`, `JournalEntryEditorSchema` and public
@@ -51,15 +51,32 @@ duplicates the structured address; no geographic pin is invented.
 - A structured vernissage appears in Public only until its date and time
   pass. A legacy textual vernissage without a timestamp appears only for
   `upcoming` exhibitions. Hiding the vernissage never deletes its details.
-- `starts_on` and `ends_on` remain structured dates that control
-  Upcoming/Current/Past; `date_text` remains a presentation override and
-  must not redefine exhibition timing.
-- Admin uses the existing native Filament date picker with ISO persistence
-  and German input language hint. Native typing behavior is browser-dependent
-  and needs browser acceptance, not just source inspection.
+- `starts_on` and `ends_on` are independently normalized precision-aware
+  expressions: `YYYY`, `YYYY-MM`, or `YYYY-MM-DD`. `ExhibitionDate`
+  owns validation, inclusive ranges, regional display and temporal status.
+  An exact start with no end denotes a single day, not an open-ended event;
+  an imprecise year/month is never silently changed into an exact day.
+  The retired runtime `date_text` is not a second presentation/temporal owner.
+- Admin uses the shared `AdminPartialDateControl` for Starts and Ends,
+  including the Starts help explaining the one-day case. Do not restore a
+  native date-only control that loses year/month precision or a parallel
+  string-date path. Historical snapshots are immutable; restoration must
+  project precise and imprecise original values without guessing.
 
 Changes use the existing transactional editorial/audit/notification path.
-Public preview may include drafts; normal Public is publication-filtered.
+Public preview includes non-archived exhibitions (including Draft and
+Unpublished); ordinary Public shows only `state=published` exhibitions
+belonging to that Site Section.
+
+**Local migration evidence (3 November 2026, user-provided command output):**
+Working and Committed `starts_on`/`ends_on` columns were confirmed
+`varchar(10)`; the former `date_text` columns were absent; the publication
+schema parity check returned `PARITY_OK`. An earlier conversion preflight
+covered 29 Working, 29 Committed and 116 retained checkpoint rows without
+recognized ambiguity. This establishes local schema readiness only; it does
+not prove each converted date, historical restore behavior or the separate
+Validation database was verified. A Validation inventory and user-approved
+backup/recovery plan are required before any later migration/deployment.
 
 ## Per-field public visibility
 
@@ -96,18 +113,43 @@ is preserved; hiding an existing street can still show opted-in locality.
 
 ## Exhibition editor layout and audit
 
-Exhibition Create and Edit use the same flat Filament schema with the shared
-admin dialog spacing. There are no Basics, Organizer & location, Text, Dates,
-Gallery or Map section wrappers. Organizer, Venue, Exhibition website and
-Street address each occupy a full row; City and Postal code share a row;
-Country occupies the next full row. Start/End dates, the date override,
-and Vernissage controls follow the cover field. Gallery presentation spans the full form width. Gallery media uses
-the existing AdminTableRepeater table with visual Storage selection and native
-add/delete/order actions. Select changes and media list actions trigger the
-normal shared Edit autosave. Validation and publication behavior are unchanged;
-Blog retains its existing field order.
+Exhibition Create and Edit use the shared Journal editor rather than a
+separate Gallery or map editor. Organizer and Venue share a responsive
+two-field row; the Exhibition website is full width. The structured address
+fields (Street address, City, Postal code and Country) share one fixed
+four-column row even at narrow widths, as expressly chosen by the artist.
+Starts/Ends use the shared precision-aware controls; Vernissage and map
+settings remain independent. Gallery presentation spans the form width;
+media use the existing AdminTableRepeater with Storage selection and
+add/delete/order actions. Live changes use the established Edit autosave;
+Blog retains its own field order. No parallel save path may be introduced.
 
 Per-field visibility changes use the canonical `exhibition.updated` audit
 action and mutation snapshot, without unsupported audit metadata or a
 separate action catalog entry. No-op visibility changes do not create audit
 or notification records.
+
+An Exhibition Carousel must contain at least three persisted Gallery media:
+the editor disables choosing Carousel below that count, live deletion below
+three changes the selection to Slideshow, and the shared Journal media
+service also reconciles the saved presentation after media mutations and
+direct asset removal. Entries saved earlier with fewer media render via the
+public Slideshow fallback until corrected. This requirement applies equally
+to Blog, without silently rewriting other authored Gallery layouts.
+
+In an opened Public Exhibition with a cover, the image remains in its own
+left column while facts, actions and long rich-text description occupy one
+continuous right column at sufficiently wide Content widths. The description
+and its divider use the available column width instead of a 38rem text cap
+or wrapping under the cover. Narrow widths stack; without a cover, content
+uses the full available reading width. Exhibition gallery options remain
+Grid, Mosaic, Slideshow and Carousel as distinct selectable presentations.
+
+**Acceptance handoff:** Testing Worker 1 owns the pending source-reconciled
+regression qualification: date precision and save/reopen, historical restore,
+field/map optimistic concurrency, publication versus preview visibility,
+cover/description layout with and without a cover, Carousel 3/5 tracks
+and reduction below three media, slideshow/video/modal navigation,
+long copyrights and mobile widths. These are outstanding browser/runtime
+checks, not assumed passing results. Docs Worker 1 owns any further
+canonical prose reconciliation after accepted changes are transferred.
