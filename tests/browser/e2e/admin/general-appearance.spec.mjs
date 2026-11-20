@@ -367,6 +367,29 @@ test('shared Preview toolbar stays on one row in compact General Stage widths', 
     await expect(device).toBeVisible();
     await expect(device.locator('optgroup')).toHaveCount(3);
     await expect(device.locator('optgroup > legend')).toHaveText(['Computers', 'Tablets', 'Phones']);
+    // Section headers span their full group. Options have symmetric horizontal
+    // hover insets and equal breathing room above/below each group of items.
+    const groupedMetrics = await device.evaluate(node => {
+      const firstGroup = node.querySelector('optgroup');
+      const firstLegend = firstGroup.querySelector('legend');
+      const firstOption = firstGroup.querySelector('option');
+      const groupStyle = getComputedStyle(firstGroup);
+      const legendStyle = getComputedStyle(firstLegend);
+      const optionStyle = getComputedStyle(firstOption);
+      const px = value => Number.parseFloat(value);
+      return {
+        groupBottom: px(groupStyle.paddingBottom),
+        headingBottom: px(legendStyle.marginBottom),
+        headingWidth: px(legendStyle.width),
+        groupWidth: firstGroup.getBoundingClientRect().width,
+        optionLeft: px(optionStyle.marginLeft),
+        optionRight: px(optionStyle.marginRight),
+      };
+    });
+    expect(groupedMetrics.groupBottom).toBeGreaterThan(0);
+    expect(Math.abs(groupedMetrics.groupBottom - groupedMetrics.headingBottom)).toBeLessThan(.1);
+    expect(Math.abs(groupedMetrics.optionLeft - groupedMetrics.optionRight)).toBeLessThan(.1);
+    expect(Math.abs(groupedMetrics.headingWidth - groupedMetrics.groupWidth)).toBeLessThan(1);
     expect(await device.evaluate(node => {
       const rect = node.getBoundingClientRect();
       const topmost = document.elementFromPoint(

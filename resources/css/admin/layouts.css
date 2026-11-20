@@ -157,10 +157,20 @@ html.fi select option:disabled {
     /* Group structure is shared by every customizable Admin Select, not just
      * the Preview device catalogue. The label and separator form a quiet
      * hierarchy; options keep the normal Admin type and selection treatment. */
+    /* Grouped pickers own their spacing: no extra outer padding on top of
+     * the first heading or below the final option. Plain pickers retain the
+     * established .2rem frame padding. */
+    html.fi .admin-workspace select:not([multiple]):not([size]):has(> optgroup)::picker(select) {
+        padding-block: 0;
+    }
+
     html.fi .admin-workspace select:not([multiple]):not([size]) optgroup {
         display: block;
-        /* The separator must meet the heading; no exposed background gap. */
-        padding: 0;
+        box-sizing: border-box;
+        margin: 0;
+        /* One small rhythm below the last option, also at the popup bottom.
+         * Never insert blank space between the divider and next heading. */
+        padding: 0 0 .1875rem;
         background: var(--admin-control-popup-surface);
         color: var(--admin-muted);
         font-size: var(--admin-control-label-size);
@@ -170,12 +180,14 @@ html.fi select option:disabled {
     }
 
     html.fi .admin-workspace select:not([multiple]):not([size]) optgroup + optgroup {
-        margin: 0;
         border-block-start: 1px solid var(--admin-line);
     }
 
     html.fi .admin-workspace select:not([multiple]):not([size]) optgroup > legend {
+        box-sizing: border-box;
         display: block;
+        inline-size: 100%;
+        margin: 0 0 .1875rem;
         padding: .35rem .85rem .3rem;
         background: color-mix(in srgb, var(--admin-subtle) 75%, var(--admin-control-popup-surface));
         color: var(--admin-muted);
@@ -187,7 +199,9 @@ html.fi select option:disabled {
     }
 
     html.fi .admin-workspace select:not([multiple]):not([size]) optgroup > option {
-        margin-inline: .15rem;
+        /* Exact symmetric hover/selected inset; group heading/divider instead
+         * fill the popup from one side to the other. */
+        margin: 0 .1875rem;
         padding-inline-start: 1rem;
         font-size: var(--admin-control-value-size);
         font-weight: 400;

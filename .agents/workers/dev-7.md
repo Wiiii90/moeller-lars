@@ -145,6 +145,12 @@
 - The user's Preview screenshot showed uncovered dark popup surface above Tablets and Phones. The cause is shared `optgroup` block padding plus an extra margin/top padding between successive groups. In the canonical customizable Select stylesheet, removed those spaces while retaining all labels, divider borders, option geometry and light/dark tokens. No Preview-specific override.
 - Source-only correction; browser rendering, tests, builds and deployment were not executed.
 
+## Grouped Select exact-edge and vertical-rhythm correction (2026-11-20)
+- Based on the latest artist screenshot, verified that the three native Select group legends were visually asymmetric relative to option hover rows, that the last option and its following heading had no group breath, and that the final picker bottom received an unrelated outer padding.
+- Corrected only the canonical grouped customizable-select owner in `resources/css/admin/layouts.css`: grouped pickers no longer add their ungrouped outer padding; each optgroup has the same .1875rem bottom breathing room, its legend has the same .1875rem separation before the first choice, every choice has exactly symmetrical .1875rem inline hover insets, and each legend explicitly fills its full group width while the border/heading remain flush. Separators still meet the next heading without reintroducing the dark strip. Plain ungrouped Selects remain unchanged.
+- Updated the existing General browser regression to inspect symmetric choice margins, full legend width and matching group/item spacing. The browser test was authored, **not executed**. No build, CI or deployment was initiated.
+- Source inventory for user explanation: ordinary Filament Select; ordinary native workspace Select with the shared customizable Chrome surface; specialized MediaAssetPicker (Filament Select subclass with custom paginated option UI); independent custom page-size dropdown. Action menus and Rich Text popovers are separate interaction types, not interchangeable ordinary value Selects.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.
