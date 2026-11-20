@@ -851,16 +851,6 @@ body.public-site:has(.site-content--fitted-image, .site-content--gallery-hero-fi
     max-width: 100%;
     min-width: 0;
 }
-/* Keep the existing Gallery video footprint when a poster is absent or
-   the browser reports a generic intrinsic video size. The visual drift and
-   image-width caption alignment target still image Artworks only. */
-.artwork-list .artwork-card__composition--video {
-    grid-column: 1 / -1;
-    width: 100%;
-}
-.artwork-list .artwork-card__composition--video > .artwork-card__link {
-    width: 100%;
-}
 /* Metadata must not make the intrinsic image/caption grouping wider than the
    actual displayed image. Inline-size containment still allows natural text
    height and wrapping; both rights and Artwork information keep their
@@ -899,9 +889,8 @@ body.public-site:has(.site-content--fitted-image, .site-content--gallery-hero-fi
     margin-block: calc((var(--gallery-artwork-gap) + var(--gallery-gap-jitter, 0rem)) / 2);
 }
 
-/* Unlike the Gallery Hero and individual Artwork pages, an index card is sized
-   by the image's intrinsic aspect ratio, constrained by both the Content
-   column and a common viewport-height ceiling. No crop or width stretch. */
+/* Gallery stills and videos use their real aspect ratios, constrained by
+   Content width and a shared viewport-height ceiling without cropping. */
 .artwork-list .artwork-card__link {
     width: fit-content;
     max-width: 100%;
@@ -915,15 +904,12 @@ body.public-site:has(.site-content--fitted-image, .site-content--gallery-hero-fi
     margin-inline: 0;
     object-fit: contain;
 }
-/* Render Gallery stills as large as both existing constraints allow:
-   the configured height ceiling and the unchanged General content width.
-   Media dimensions supply a numerical aspect ratio in the nonce-protected
-   component style; 100cqw resolves against the Gallery's fixed-size track,
-   not the intrinsic/shrink-to-fit media link. Auto height preserves the
-   true proportions and keeps captions at exactly the visible image width.
-   Images without valid variant dimensions keep the intrinsic sizing above. */
-.artwork-list .artwork-card--gallery-dimensioned .artwork-card__image {
-    width: min(100cqw, calc(var(--gallery-artwork-height) * var(--gallery-image-aspect)));
+/* Use thumbnail or video-poster dimensions against the Gallery's real
+   Content-width container. Both media types preserve their display aspect;
+   the shared composition keeps captions aligned to the visible media. */
+.artwork-list .artwork-card--gallery-dimensioned :is(.artwork-card__image, .artwork-card__video) {
+    width: min(100cqw, calc(var(--gallery-artwork-height) * var(--gallery-media-aspect)));
+    height: auto;
 }
 .artwork-list .artwork-card__video {
     max-height: var(--gallery-artwork-height);

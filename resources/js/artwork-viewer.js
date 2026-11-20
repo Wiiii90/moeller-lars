@@ -227,6 +227,23 @@ export function initializeArtworkViewer(root = document) {
         return true;
     };
 
+    const fitVideoToStage = () => {
+        const fitted = calculateFittedSize(
+            video.videoWidth,
+            video.videoHeight,
+            stage.clientWidth,
+            stage.clientHeight,
+        );
+        if (fitted.width <= 0 || fitted.height <= 0) return false;
+
+        // Fit the decoded frame instead of stretching a viewport-sized box.
+        video.style.width = `${fitted.width}px`;
+        video.style.height = `${fitted.height}px`;
+        video.style.maxWidth = 'none';
+        video.style.maxHeight = 'none';
+        return true;
+    };
+
     const panBounds = () => calculatePanBounds(
         image.clientWidth,
         image.clientHeight,
@@ -323,6 +340,7 @@ export function initializeArtworkViewer(root = document) {
         video.removeAttribute('src');
         video.removeAttribute('aria-label');
         video.hidden = true;
+        video.removeAttribute('style');
         video.load();
         synchronizeVideoControls();
     };
@@ -579,9 +597,11 @@ export function initializeArtworkViewer(root = document) {
         loading.hidden = true;
         missing.hidden = true;
         video.hidden = false;
+        fitVideoToStage();
         synchronizeVideoControls();
         resumeAttention();
     };
+    video.addEventListener('loadedmetadata', fitVideoToStage);
     video.addEventListener('loadeddata', videoReady);
     video.addEventListener('canplay', videoReady);
     video.addEventListener('error', () => {
@@ -710,9 +730,14 @@ export function initializeArtworkViewer(root = document) {
 
     const recalculate = () => {
         resizeFrame = null;
-        if (!dialog.open || !currentIsImage() || image.hidden) return;
-        fitImageToStage();
-        updateTransform();
+        if (!dialog.open) return;
+        if (currentIsImage()) {
+            if (image.hidden) return;
+            fitImageToStage();
+            updateTransform();
+        } else if (!video.hidden) {
+            fitVideoToStage();
+        }
     };
     const scheduleResize = () => {
         if (resizeFrame === null) resizeFrame = requestAnimationFrame(recalculate);

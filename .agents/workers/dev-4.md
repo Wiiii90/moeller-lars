@@ -2,13 +2,21 @@
 
 **Lease:** 29
 **Branch:** dev
-**State:** Active — successor Gallery chat registered; awaiting a specific next assignment. Prior Stage/media features are source-integrated with runtime/browser acceptance still pending.
+**State:** Active — Public Gallery video playback/sizing and fullscreen fitting source-integrated; runtime/browser acceptance pending.
 
 ## Takeover — 2026-11-20
 
 - New chat explicitly replaces the previous Dev Worker 4 under lease 29 on `dev`.
 - User assigned continued Gallery ownership but did not yet specify a new feature or defect for implementation. Await the next concrete task; do not automatically restart historical tasks.
 - Preserve previous Gallery Stage/media/publication and table contracts. All prior browser/runtime checks listed below remain pending; no application code, tests, deployment or Continuous Integration were changed during takeover.
+
+## Public Gallery video display and fullscreen fitting — 2026-11-20
+
+- Current assignment: Gallery video Artworks must display as playable video, start silently when visible if visitor/browser policy permits, preserve natural proportions and existing captions, and fit without crop/stretch in the fullscreen Viewer.
+- Removed the Gallery-only full-width video exception. Canonical video-poster dimensions now feed the same bounded media aspect sizing as still thumbnails; captions keep existing ArtworkInformation rows. Historical missing posters retain the bounded fallback.
+- Page-scoped playback requests muted inline autoplay while in view with motion allowed; browser denial remains respected. Offscreen or invisible video is paused.
+- Shared fullscreen Viewer sizes video by decoded frame dimensions with existing fitted-size calculation on metadata readiness and viewport/orientation changes, clears video layout on navigation/close.
+- Source-reviewed only; browser/mobile behavior not yet verified. No tests, migration, Continuous Integration, deployment, or site publication. Acceptance: portrait/landscape, autoplay denied, reduced motion, image/video changes, rotated displays, captions and batched Gallery.
 
 ## Gallery completion and next-chat handoff — 2026-11-20
 

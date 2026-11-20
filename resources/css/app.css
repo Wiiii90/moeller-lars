@@ -214,9 +214,9 @@ body.public-site .site-header {
 
 .artwork-viewer__video {
     display: block;
-    width: 100%;
+    width: auto;
     max-width: 100%;
-    height: 100%;
+    height: auto;
     max-height: 100%;
     object-fit: contain;
     background: #000;

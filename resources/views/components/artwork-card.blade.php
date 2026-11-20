@@ -16,8 +16,11 @@
     $category = $artwork->getRelationValue('category');
     $thumbnailWidth = (int) ($thumbnail?->getAttribute('width') ?? 0);
     $thumbnailHeight = (int) ($thumbnail?->getAttribute('height') ?? 0);
-    $galleryImageAspect = $galleryIndex && ! $isVideo && $thumbnailWidth > 0 && $thumbnailHeight > 0
-        ? $thumbnailWidth / $thumbnailHeight
+    // Use the canonical media preview dimensions for either artwork kind.
+    $galleryMediaWidth = $isVideo ? (int) ($posterVariant?->getAttribute('width') ?? 0) : $thumbnailWidth;
+    $galleryMediaHeight = $isVideo ? (int) ($posterVariant?->getAttribute('height') ?? 0) : $thumbnailHeight;
+    $galleryMediaAspect = $galleryIndex && $galleryMediaWidth > 0 && $galleryMediaHeight > 0
+        ? $galleryMediaWidth / $galleryMediaHeight
         : null;
     $preview = app(\App\Domain\Content\SitePreviewContext::class);
     $detailUrl = $preview->url(route('artworks.show', $artwork->slug));
@@ -58,20 +61,20 @@
     $titleLinked = $detailPageEnabled && $configuration['enabled'] && $configuration['visible']['title'];
 @endphp
 
-@if ($galleryImageAspect !== null)
+@if ($galleryMediaAspect !== null)
     {{-- Gallery alone consumes the existing nonce-authorized stylesheet slot;
          no inline style attribute, viewport expansion or new script path. --}}
     @push('public-component-styles')
         <style nonce="{{ request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE) }}">
             .artwork-card--gallery-dimensioned[data-gallery-artwork="{{ (int) $artwork->getKey() }}"] {
-                --gallery-image-aspect: {{ round($galleryImageAspect, 8) }};
+                --gallery-media-aspect: {{ round($galleryMediaAspect, 8) }};
             }
         </style>
     @endpush
 @endif
 
-<article class="artwork-card{{ $galleryIndex ? ' artwork-card--gallery-index artwork-card--gallery-shift-'.(max(-2, min(2, (int) $galleryShift)) + 2).' artwork-card--gallery-gap-'.max(0, min(4, (int) $galleryGap)) : '' }}{{ $galleryImageAspect !== null ? ' artwork-card--gallery-dimensioned' : '' }}"
-    @if ($galleryImageAspect !== null) data-gallery-artwork="{{ (int) $artwork->getKey() }}" @endif>
+<article class="artwork-card{{ $galleryIndex ? ' artwork-card--gallery-index artwork-card--gallery-shift-'.(max(-2, min(2, (int) $galleryShift)) + 2).' artwork-card--gallery-gap-'.max(0, min(4, (int) $galleryGap)) : '' }}{{ $galleryMediaAspect !== null ? ' artwork-card--gallery-dimensioned' : '' }}"
+    @if ($galleryMediaAspect !== null) data-gallery-artwork="{{ (int) $artwork->getKey() }}" @endif>
     <x-artwork-navigation
         :category="$category"
         :show-gallery-link="$showCategoryLink"

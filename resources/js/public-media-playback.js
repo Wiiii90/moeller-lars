@@ -19,11 +19,15 @@ export function initializePublicMediaPlayback(root = document) {
             !video.closest('[hidden], [data-journal-slide][aria-hidden="true"]') && video.isConnected,
             reducedMotion.matches,
         );
+        // Permit native muted autoplay only for visible, motion-allowed media.
+        // Browser/device autoplay restrictions still take precedence.
+        video.autoplay = active;
         if (!active) {
             video.pause();
             return;
         }
 
+        if (!video.paused) return;
         const result = video.play();
         if (result && typeof result.catch === 'function') result.catch(() => {
             // Browsers may reject autoplay. Opening the accessible Viewer
