@@ -381,7 +381,7 @@
     color: var(--admin-text);
 }
 
-.admin-stage-tabs > .admin-action:focus-visible:not([data-admin-pointer-focus]) {
+.admin-stage-tabs > .admin-action:focus-visible {
     outline: 2px solid var(--admin-accent);
     outline-offset: 2px;
 }

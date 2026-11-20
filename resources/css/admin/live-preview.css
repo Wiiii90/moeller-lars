@@ -60,7 +60,7 @@
     height: 1rem;
 }
 .admin-live-preview .admin-stage-tool-icon:hover:not(:disabled),
-.admin-live-preview .admin-stage-tool-icon:focus-visible:not([data-admin-pointer-focus]),
+.admin-live-preview .admin-stage-tool-icon:focus-visible,
 .admin-live-preview .admin-stage-tool-icon.is-primary {
     border-color: var(--admin-line-strong);
     background: var(--admin-subtle);

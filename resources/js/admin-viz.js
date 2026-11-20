@@ -7,31 +7,6 @@ import './admin-dialog-geometry.js';
 import './admin-partial-date.js';
 import { adminLivePreview } from './admin-live-preview.js';
 window.adminLivePreview = adminLivePreview;
-
-// An Admin action activated with a mouse can retain native button focus.
-// Pressing Shift later may switch the browser's :focus-visible heuristic,
-// making the previously clicked action appear keyboard-focused.
-// Keep the pointer origin until a real keyboard action occurs; Tab/Shift+Tab
-// clears it before focus navigation, preserving accessible focus indicators.
-// This belongs to the shared action grammar, not individual tool buttons.
-const pointerFocusAttribute = 'data-admin-pointer-focus';
-const clearPointerFocus = () => {
-    document.querySelectorAll('[data-admin-pointer-focus]')
-        .forEach((element) => element.removeAttribute(pointerFocusAttribute));
-};
-
-document.addEventListener('pointerdown', (event) => {
-    if (event.pointerType !== 'mouse' || !(event.target instanceof Element)) return;
-    const action = event.target.closest('button.admin-action, a.admin-action, [role="button"].admin-action');
-    if (! action) return;
-    clearPointerFocus();
-    action.setAttribute(pointerFocusAttribute, '');
-}, true);
-
-document.addEventListener('keydown', (event) => {
-    if (['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return;
-    clearPointerFocus();
-}, true);
 import { adminGalleryHeroStage } from './gallery-hero-stage.js';
 window.adminGalleryHeroStage = adminGalleryHeroStage;
 

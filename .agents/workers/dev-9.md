@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 28 (active)  
-**State:** Shift-only focus-outline issue unified under central Admin action pointer-origin tracking; browser review pending.
+**State:** Artist chose standard browser focus behavior; custom mouse-origin overrides and special Help dismissal focus reset have been removed.
 
 ## Ownership and current decisions
 
@@ -83,3 +83,12 @@
 - `resources/css/admin/primitives.css`, `stage.css`, `live-preview.css`, `forms.css`: the existing common action, Stage tab, Live Preview button and shared Help focus styles show keyboard focus only when the current focused control is not marked as mouse-activated. Hover and active/pressed styles remain unchanged.
 - `resources/views/components/admin/help.blade.php`: remove the superseded mouse-blur special case. The Help popover retains its existing central show/hide behavior; the shared Admin action policy handles its trigger without a local exception.
 - Isolated event-handling simulation checked mouse click on Settings/Help, Shift without navigation, Shift + Tab, touch and Enter keyboard action. Source-level focus selector checks completed; real browser rendering in General/Gallery, Filament Settings dialog focus restoration and accessibility remain pending. No application build, full suite, Continuous Integration, server deployment or production changes performed.
+
+
+## 2026-11-21: Return to native focus behavior (artist decision)
+
+- Artist clarified that Shift highlights whichever control was last clicked and wants all special focus handling removed for both Settings and Help, even if the native browser focus indicator remains after pressing Shift.
+- Reverted the custom pointer-origin focus tracker in `resources/js/admin-viz.js` and its conditional focus selectors in `resources/css/admin/primitives.css`, `stage.css`, `live-preview.css`, and `forms.css`. These were introduced in the previous worker change and are no longer wanted.
+- The Help-specific mouse-dismissal `blur()` workaround had already been removed from the canonical `resources/views/components/admin/help.blade.php`; keep it removed. No new focus event listeners, styles, or per-button exceptions.
+- Settings buttons, Help triggers, hover/focus-visible states, and Shift follow normal native browser behavior. The shared Live Preview wheel zoom/scroll, middle-button drag, and existing Help popover functionality remain unchanged.
+- Verified the affected source blobs match their pre-override versions and the Help component contains no special focus-reset logic. No build, suite, connected browser, Continuous Integration or deployment run.
