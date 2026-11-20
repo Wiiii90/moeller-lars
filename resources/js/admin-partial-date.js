@@ -70,8 +70,8 @@ export function adminPartialDateControl(entangledValue, preferredRegion) {
         normalizeYear() {
             this.year = Math.min(9999, Math.max(1000, Number(this.year) || new Date().getFullYear()));
         },
-        reposition() {
-            if (!this.open) return;
+        reposition(force = false) {
+            if (!this.open && !force) return;
             const rect = this.$refs.trigger.getBoundingClientRect();
             const width = Math.min(340, Math.max(260, window.innerWidth - 16));
             this.position = {
@@ -82,11 +82,16 @@ export function adminPartialDateControl(entangledValue, preferredRegion) {
             };
         },
         toggle() {
-            this.open = !this.open;
             if (this.open) {
-                this.readValue();
-                this.$nextTick(() => this.reposition());
+                this.close();
+                return;
             }
+
+            this.readValue();
+            // The teleported panel must be positioned before Alpine exposes
+            // it. Scheduling this after opening briefly paints at 8px/8px.
+            this.reposition(true);
+            this.open = true;
         },
         close() { this.open = false; },
         chooseMode(mode) {

@@ -12,7 +12,7 @@
 
 | Dev Worker 6 | 16 | Active — targeted source corrections committed; local Preview/browser acceptance outstanding | Home Hero: Dummy Galleries, candidate ranking/selection, Stage/Settings, public resolver, shared Create dialog; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 18 | Source-corrected — stable Preview device picker width and canonical optgroup styling; browser acceptance pending | General Appearance and shared Gallery/General Preview; Gallery Preview focus consumer | [dev-7.md](workers/dev-7.md) |
-| Dev Worker 8 | 15 | Active — shared date labels, sibling popover dismissal, global DateTime calendar icon source-integrated; browser acceptance pending | Shared Admin dialog geometry/chrome, date controls, paginated Media picker; no deployment | [dev-8.md](workers/dev-8.md) |
+| Dev Worker 8 | 15 | Active — fixed prepaint partial-date popover position; shared date/time control value row and calendar icon standardized; browser review pending | Shared Admin dialogs, date field geometry and media picker; no deployment | [dev-8.md](workers/dev-8.md) |
 
 | Dev Worker 9 | 21 | Active — accepted Public hover navigation consolidated; browser recheck pending | Public cyclic inline navigation, countdown and Back; shared General/Pages remain with existing owners | [dev-9.md](workers/dev-9.md) |
 

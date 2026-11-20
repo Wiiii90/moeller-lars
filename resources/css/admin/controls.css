@@ -669,7 +669,35 @@
     border-bottom-color: var(--admin-control-border-focus);
     outline: none;
 }
-.admin-partial-date__icon { width: 1rem; height: 1rem; color: var(--admin-muted); }
+/* The native Filament DateTimePicker and the partial-date picker share one
+ * canonical value row: text inset, border position and calendar glyph. The
+ * same icon asset is already supplied by AdminControl on DateTimePicker. */
+.admin-control-field .fi-fo-date-time-picker .fi-fo-date-time-picker-display-text-input {
+    box-sizing: border-box;
+    min-height: calc(var(--admin-control-height) - 1px);
+    padding-block: .2rem;
+    padding-inline: var(--admin-control-text-inset);
+    font-size: var(--admin-control-value-size);
+    line-height: normal;
+}
+
+.admin-control-field .fi-fo-date-time-picker .fi-input-wrp-suffix {
+    box-sizing: border-box;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    padding-inline: var(--admin-control-text-inset);
+}
+
+.admin-partial-date__icon,
+.admin-control-field .fi-fo-date-time-picker .fi-input-wrp-suffix .fi-icon {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    color: var(--admin-muted);
+}
+
+.admin-partial-date__icon { margin-inline: 0; }
 .admin-partial-date__popover {
     position: fixed;
     z-index: 10050;
