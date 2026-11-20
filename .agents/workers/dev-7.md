@@ -158,6 +158,10 @@
 - The already central Filament custom/searchable `.fi-select-input-dropdown` was given the same popup surface, border, corner, no-shadow contour, option spacing, 16% selected/hover hue and group-header presentation. No changes to underlying searchable, relationship, pagination, modal save or selection event behavior.
 - Authored a targeted browser regression in the existing Admin dialog lifecycle suite which creates a representative native Filament Select under a portal-like `.fi-modal` outside `.admin-workspace`; checks the customizable picker, frame, option styling and `size="1"` case where the browser supports it. Not executed (Dev worker test gate); no builds, CI, real-browser acceptance or deployments executed.
 
+## Table page-size selector visual parity (2026-11-20)
+- The bounded Admin-wide picker inventory also identified the deliberate `x-admin.page-size-picker` mini-listbox. Kept its user interaction and current-page update path, but harmonized its popup background, border radius, shadow-free contour, option insets and selected/hover accent in the canonical `resources/css/admin/data-workspace.css` owner. This is a specialized value picker, not a reason to duplicate the native Select implementation.
+- Not browser-accepted; no tests, builds, CI or deployment executed.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.
