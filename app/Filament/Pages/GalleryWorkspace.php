@@ -209,7 +209,9 @@ final class GalleryWorkspace extends Page
         $this->galleryPreviewAutoFocus = ! $this->galleryPreviewAutoFocus;
 
         if ($this->galleryPreviewAutoFocus) {
-            $this->syncGalleryPreviewFocus();
+            // Re-enabling auto-focus explicitly refreshes a previously pinned
+            // preview, even when its type has not changed.
+            $this->syncGalleryPreviewFocus(forceRefresh: true);
         }
     }
 
@@ -240,9 +242,15 @@ final class GalleryWorkspace extends Page
         }
 
         if ($this->galleryStagePanel === 'queue' && $this->selectedStagedMediaAssetId !== null) {
+            $changed = $this->galleryStagePreview !== 'staged'
+                || $this->galleryStagePreviewArtworkId !== null;
             $this->galleryStagePreview = 'staged';
             $this->galleryStagePreviewArtworkId = null;
-            $this->publishStagedArtworkPreview();
+            // Switching tabs must not reload the same iframe. The selected
+            // Artwork and its form updates already call the preview owner.
+            if ($changed || $forceRefresh) {
+                $this->publishStagedArtworkPreview();
+            }
 
             return;
         }

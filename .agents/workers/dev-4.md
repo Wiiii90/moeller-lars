@@ -2,13 +2,20 @@
 
 **Lease:** 29
 **Branch:** dev
-**State:** Active — Gallery Stage upload progress copy standardized; runtime/browser acceptance pending.
+**State:** Active — first accepted batch upload selects Staged; redundant preview refresh on tab re-entry removed; browser timing and acceptance pending.
 
 ## Takeover — 2026-11-20
 
 - New chat explicitly replaces the previous Dev Worker 4 under lease 29 on `dev`.
 - User assigned continued Gallery ownership but did not yet specify a new feature or defect for implementation. Await the next concrete task; do not automatically restart historical tasks.
 - Preserve previous Gallery Stage/media/publication and table contracts. All prior browser/runtime checks listed below remain pending; no application code, tests, deployment or Continuous Integration were changed during takeover.
+
+## Gallery Stage first-upload selection and tab response — 2026-11-21
+
+- Report: After the first upload completes, the Stage does not always automatically open the newly staged Artwork. Existing `queueResumablePrimaryMediaAsset()` only selects it when the entire queue had no selected asset; this fails when another Staged Artwork remains selected. It now explicitly selects the first newly accepted asset in each batch, while subsequent files remain queued without stealing selection.
+- Tab response investigation: Stage's Upload/Staged/Settings buttons invoke full Livewire actions, so they incur a server round trip and potentially rebuild the conditional Filament form. Additionally `syncGalleryPreviewFocus()` unnecessarily republished/reloaded the exact same staged iframe on reentry. The canonical preview focus method now dispatches only when the focus target actually changes or an explicit refresh is requested; edits and selection changes still publish through their existing owners. Enabling preview auto-focus passes an explicit force-refresh to retain its meaning.
+- No parallel client-side tabs, caching, polling, or extra preview pipeline. Remaining network/render latency needs measured browser profiling, not a source-only performance claim.
+- Source-level verification only; browser/runtime acceptance and profiling still pending. No testing-branch work, CI, deployment or publication.
 
 ## Gallery Stage upload progress display — 2026-11-20
 

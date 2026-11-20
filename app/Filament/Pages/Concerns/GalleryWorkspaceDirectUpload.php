@@ -48,9 +48,10 @@ trait GalleryWorkspaceDirectUpload
 
         $this->pendingBatchArtworkMedia[] = $this->pendingBatchArtworkRow($asset);
         $this->directPrimaryBatchAddedCount++;
-        // The first completed upload becomes immediately editable. Later
-        // completions only grow the queue, never steal the user's selection.
-        if ($this->selectedStagedMediaAssetId === null) {
+        // Select the first newly accepted file of every upload batch, even
+        // when an earlier Staged item remains selected. Subsequent uploads
+        // extend the queue without overriding the user's current selection.
+        if ($this->directPrimaryBatchAddedCount === 1 || $this->selectedStagedMediaAssetId === null) {
             $this->selectStagedArtwork($assetId);
         }
     }
