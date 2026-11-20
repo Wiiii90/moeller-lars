@@ -8,7 +8,8 @@ use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Artwork\ArtworkDate;
 use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Artwork\ArtworkPublicationService;
-use App\Domain\Content\SiteSectionType;
+use App\Domain\Artwork\PublicArtworkQuery;
+use App\Domain\Publication\CommittedRead;
 use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaTypePolicy;
 use App\Models\Artwork;
@@ -17,7 +18,7 @@ use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Support\Facades\DB;
+
 
 trait GalleryWorkspaceDataProjection
 {
@@ -42,18 +43,12 @@ trait GalleryWorkspaceDataProjection
         $artworkPagesEnabled = GalleryPresentation::artworkPagesEnabled($gallery);
         $count = $records->count();
 
-        // Live links must come from the actual Committed snapshot, never
-        // from Working publication flags. This also preserves the old public
-        // URL while a slug change or unpublication awaits Commit.
-        $committedSlugs = $records->isEmpty() ? [] : DB::table('committed.artworks as artwork')
-            ->join('committed.artwork_categories as gallery', 'gallery.id', '=', 'artwork.artwork_category_id')
-            ->join('committed.site_sections as section', 'section.artwork_category_id', '=', 'gallery.id')
-            ->where('section.type', SiteSectionType::Gallery->value)
-            ->where('section.state', 'published')
-            ->where('artwork.state', 'published')
-            ->whereIn('artwork.id', $records->modelKeys())
-            ->pluck('artwork.slug', 'artwork.id')
-            ->all();
+        // The button opens the last truly public Artwork detail page, not a
+        // Working draft and not merely a row bearing a published state flag.
+        // One canonical public read also preserves the old LIVE slug until Commit.
+        $committedSlugs = $records->isEmpty() ? [] : app(CommittedRead::class)->run(
+            fn (): array => app(PublicArtworkQuery::class)->publicDetailSlugsForIds($records->modelKeys()),
+        );
 
         $this->artworkDataset = $records->values()->map(function (Artwork $artwork, int $index) use ($galleryPublished, $artworkPagesEnabled, $count, $committedSlugs): array {
             /** @var EloquentCollection<int, ArtworkMedia> $primaries */

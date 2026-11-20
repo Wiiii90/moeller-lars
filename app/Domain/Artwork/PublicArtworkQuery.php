@@ -283,14 +283,49 @@ class PublicArtworkQuery
 
     public function publishedBySlug(string $slug): ?Artwork
     {
-        return $this->publicQuery()
+        return $this->detailQuery()
             ->where('slug', $slug)
+            ->first();
+    }
+
+    /**
+     * Resolve genuine LIVE Artwork detail links, not only publication flags.
+     * Call under CommittedRead when used from an Admin Working context.
+     *
+     * @param list<int> $ids
+     * @return array<int, string>
+     */
+    public function publicDetailSlugsForIds(array $ids): array
+    {
+        $ids = $this->normalizedIds($ids);
+        if ($ids === []) {
+            return [];
+        }
+
+        return $this->detailQuery()
+            ->withoutEagerLoads()
+            ->whereIn('artworks.id', $ids)
+            ->where('artworks.state', 'published')
+            ->whereHas('category.siteSection', static fn (Builder $section): Builder => $section->where('state', 'published'))
+            // When detail pages are disabled, the old URL redirects to the Gallery.
+            // That is not an independently openable public Artwork page.
+            ->whereHas('category', static fn (Builder $category): Builder => $category
+                ->where(static fn (Builder $pages): Builder => $pages
+                    ->where('artwork_pages_enabled', true)
+                    ->orWhereNull('artwork_pages_enabled')))
+            ->pluck('artworks.slug', 'artworks.id')
+            ->all();
+    }
+
+    /** @return Builder<Artwork> */
+    private function detailQuery(): Builder
+    {
+        return $this->publicQuery()
             ->whereHas('category.siteSection', function (Builder $query): void {
                 if (! $this->preview->active()) {
                     $query->where('state', 'published');
                 }
-            })
-            ->first();
+            });
     }
 
     /** @param list<int> $enabledGalleryIds

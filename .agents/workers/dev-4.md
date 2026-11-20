@@ -2,7 +2,13 @@
 
 **Lease:** 23
 **Branch:** dev
-**State:** Active — Gallery List/Dense projection and CSS regression reconciled with parallel Preview changes; runtime/browser acceptance pending.
+**State:** Active — Gallery Public link eligibility reconciled with canonical committed public detail reads; runtime/browser acceptance pending.
+
+## Public link versus Working publication — 2026-11-20
+
+- An Artwork marked unpublished in Working can remain visible in the public Gallery and keep its Public action until the next explicit website Commit. That is the intended Working/Committed boundary; the protected Preview can also show viable drafts.
+- Found a separate source mismatch: the Gallery row's committed-Public-link query checked publication flags only, whereas the actual public detail route also requires viable media and may redirect when Artwork detail pages are disabled. Replaced the duplicate raw committed SQL with one bounded `CommittedRead` call to the canonical `PublicArtworkQuery` eligibility shared by the detail route; enabled links still preserve the committed slug after Working edits/unpublication.
+- Source only; no database changes, runtime or browser tests, deployment or Continuous Integration. Verify all Working/Committed publication combinations, incomplete media, disabled detail pages, and pending slug changes.
 
 ## Latest incident and correction — 2026-11-20
 
