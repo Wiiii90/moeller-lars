@@ -543,5 +543,11 @@
     "Relaxed": "Großzügig",
     "Remove color": "Farbe entfernen",
     "Text color": "Textfarbe",
-    "Default": "Standard"
+    "Default": "Standard",
+    "Save settings": "Einstellungen speichern",
+    "Time zone": "Zeitzone",
+    "24-hour (23:45)": "24 Stunden (23:45)",
+    "12-hour (11:45 PM)": "12 Stunden (11:45 PM)",
+    "Public time format": "Öffentliches Uhrzeitformat",
+    "Public time zone": "Öffentliche Zeitzone"
 }

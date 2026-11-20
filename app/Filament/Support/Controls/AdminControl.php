@@ -2,6 +2,8 @@
 
 namespace App\Filament\Support\Controls;
 
+use App\Domain\Content\RegionalFormats;
+
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\DatePicker;
@@ -28,8 +30,11 @@ final class AdminControl
         Select::configureUsing(fn (Select $field) => self::decorate($field));
         Checkbox::configureUsing(fn (Checkbox $field) => self::decorate($field));
         Toggle::configureUsing(fn (Toggle $field) => self::decorateToggle($field));
-        DatePicker::configureUsing(fn (DatePicker $field) => self::decorate($field));
-        DateTimePicker::configureUsing(fn (DateTimePicker $field) => self::decorate($field));
+        DatePicker::configureUsing(fn (DatePicker $field) => self::decorate($field)
+            ->displayFormat(fn (): string => RegionalFormats::pickerDateFormat()));
+        DateTimePicker::configureUsing(fn (DateTimePicker $field) => self::decorate($field)
+            ->displayFormat(fn (): string => RegionalFormats::pickerDateTimeFormat())
+            ->timezone(fn (): string => RegionalFormats::adminTimeZone()));
         FileUpload::configureUsing(fn (FileUpload $field) => self::decorate($field));
         MarkdownEditor::configureUsing(fn (MarkdownEditor $field) => self::decorate($field));
         RichEditor::configureUsing(fn (RichEditor $field) => self::decorate($field));

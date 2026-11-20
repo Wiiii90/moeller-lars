@@ -123,6 +123,8 @@ final class General extends Page
         'legal_usage_rights',
         'regional_format',
         'number_format',
+        'time_format',
+        'time_zone',
     ];
 
     protected static string|BackedEnum|null $navigationIcon = AdminIcon::General;
@@ -655,6 +657,20 @@ final class General extends Page
                             ->required()
                             ->live()
                             ->afterStateUpdated(self::persist('number_format')),
+                        Select::make('time_format')
+                            ->label(__('Time'))
+                            ->options(RegionalFormats::TIME_OPTIONS)
+                            ->native()
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(self::persist('time_format')),
+                        Select::make('time_zone')
+                            ->label(__('Time zone'))
+                            ->options(RegionalFormats::timeZoneOptions())
+                            ->searchable()
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(self::persist('time_zone')),
                     ])
                         ->columns(2)
                         ->extraAttributes(['class' => 'general-two-column-settings general-regional-settings'])
@@ -1477,6 +1493,8 @@ final class General extends Page
             'legal_usage_rights' => 'Copyright & AI Use',
             'regional_format' => 'Public date format',
             'number_format' => 'Public number format',
+            'time_format' => 'Public time format',
+            'time_zone' => 'Public time zone',
             'default_media_copyright_notice' => 'Default copyright notice',
             'background_mode' => 'Background',
             'background_color' => 'Background color',

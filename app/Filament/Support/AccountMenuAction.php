@@ -36,8 +36,6 @@ final class AccountMenuAction
                 ->fillForm(fn (): array => [
                     'name' => (string) self::user()->getAttribute('name'),
                     'email' => (string) self::user()->getAttribute('email'),
-                    'admin_region' => (string) self::user()->getAttribute('admin_region'),
-                    'admin_language' => (string) (self::user()->getAttribute('admin_language') ?: 'en'),
                 ])
                 ->schema(fn (): array => [
                     View::make('filament.schemas.components.admin-section-heading')
@@ -56,24 +54,6 @@ final class AccountMenuAction
                             ->rule(fn () => Rule::unique('users', 'email')->ignore(self::user()->getKey())),
                     ])
                         ->columns(2)
-                        ->columnSpanFull(),
-                    View::make('filament.schemas.components.admin-section-heading')
-                        ->viewData(['label' => __('Preferences')])
-                        ->columnSpanFull(),
-                    Select::make('admin_language')
-                        ->label(__('Language'))
-                        ->options(['en' => 'English', 'de' => 'Deutsch'])
-                        ->required()
-                        ->in(['en', 'de'])
-                        ->columnSpanFull(),
-                    View::make('filament.schemas.components.admin-section-heading')
-                        ->viewData(['label' => __('Regional Formats')])
-                        ->columnSpanFull(),
-                    Select::make('admin_region')
-                        ->label(__('Dates and numbers'))
-                        ->options(RegionalFormats::OPTIONS)
-                        ->required()
-                        ->in(array_keys(RegionalFormats::OPTIONS))
                         ->columnSpanFull(),
                     View::make('filament.schemas.components.admin-section-heading')
                         ->viewData(['label' => __('Security')])
@@ -125,14 +105,15 @@ final class AccountMenuAction
 
                     $action->halt();
                 })
-                ->action(function (array $data, Component $livewire): void {
+                ->action(function (array $data): void {
                     $user = self::user();
-                    $passwordChanged = array_key_exists('password', $data);
-                    $previousLanguage = self::language();
+                    $user->fill($data);
+                    if (! $user->isDirty()) {
+                        return;
+                    }
 
-                    $user->update($data);
-                    $newLanguage = self::language();
-                    self::refreshLanguage($previousLanguage, $newLanguage, $livewire);
+                    $passwordChanged = $user->isDirty('password');
+                    $user->save();
 
                     if ($passwordChanged && request()->hasSession()) {
                         request()->session()->put([
@@ -144,64 +125,86 @@ final class AccountMenuAction
                         title: __('Account updated'),
                         status: 'success',
                     );
-
                 }),
             fn (): string => __('Save account'),
             AdminDialogSize::Default,
         );
     }
 
-    public static function languageAction(): Action
+    public static function settingsAction(): Action
     {
         return AdminDialog::command(
-            Action::make('changeAdminLanguage')
-                ->label(fn (): string => __('Language'))
-                ->icon(AdminIcon::Language->value)
+            Action::make('changeAdminSettings')
+                ->label(fn (): string => __('Settings'))
+                ->icon(AdminIcon::Settings->value)
                 ->sort(1)
-                ->modalHeading(fn (): string => __('Language'))
-                ->fillForm(fn (): array => ['admin_language' => self::language()])
+                ->modalHeading(fn (): string => __('Settings'))
+                ->fillForm(fn (): array => [
+                    'admin_language' => (string) (self::user()->getAttribute('admin_language') ?: 'en'),
+                    'admin_region' => RegionalFormats::region(self::user()->getAttribute('admin_region')),
+                    'admin_number_format' => RegionalFormats::numberRegion(self::user()->getAttribute('admin_number_format')),
+                    'admin_time_format' => RegionalFormats::timeFormat(self::user()->getAttribute('admin_time_format')),
+                    'admin_time_zone' => RegionalFormats::timeZone(self::user()->getAttribute('admin_time_zone')),
+                ])
                 ->schema(fn (): array => [
+                    View::make('filament.schemas.components.admin-section-heading')
+                        ->viewData(['label' => __('Preferences')])
+                        ->columnSpanFull(),
                     Select::make('admin_language')
                         ->label(__('Language'))
                         ->options(['en' => 'English', 'de' => 'Deutsch'])
                         ->required()
-                        ->in(['en', 'de']),
+                        ->in(['en', 'de'])
+                        ->columnSpanFull(),
+                    View::make('filament.schemas.components.admin-section-heading')
+                        ->viewData(['label' => __('Regional Formats')])
+                        ->columnSpanFull(),
+                    Group::make([
+                        Select::make('admin_region')
+                            ->label(__('Dates'))
+                            ->options(RegionalFormats::OPTIONS)
+                            ->required()
+                            ->in(array_keys(RegionalFormats::OPTIONS)),
+                        Select::make('admin_number_format')
+                            ->label(__('Numbers'))
+                            ->options(RegionalFormats::NUMBER_OPTIONS)
+                            ->required()
+                            ->in(array_keys(RegionalFormats::NUMBER_OPTIONS)),
+                        Select::make('admin_time_format')
+                            ->label(__('Time'))
+                            ->options(RegionalFormats::TIME_OPTIONS)
+                            ->required()
+                            ->in(array_keys(RegionalFormats::TIME_OPTIONS)),
+                        Select::make('admin_time_zone')
+                            ->label(__('Time zone'))
+                            ->options(RegionalFormats::timeZoneOptions())
+                            ->searchable()
+                            ->required()
+                            ->in(array_keys(RegionalFormats::timeZoneOptions())),
+                    ])
+                        ->columns(2)
+                        ->columnSpanFull(),
                 ])
                 ->action(function (array $data, Component $livewire): void {
                     $user = self::user();
-                    $next = (string) ($data['admin_language'] ?? '');
-                    $previous = self::language();
-
-                    if ($previous === $next) {
+                    $user->fill($data);
+                    if (! $user->isDirty()) {
                         return;
                     }
 
-                    $user->update(['admin_language' => $next]);
-                    self::refreshLanguage($previous, $next, $livewire);
+                    $user->save();
                     app(AdminNotifier::class)->notification(
-                        title: __('Account updated'),
+                        title: __('Settings updated'),
                         status: 'success',
                     );
+
+                    // Reload the rendered tree under the new preferences.
+                    app()->setLocale((string) $user->getAttribute('admin_language'));
+                    $livewire->redirect(request()->header('Referer') ?: url('/admin'), navigate: false);
                 }),
-            fn (): string => __('Save language'),
-            AdminDialogSize::Small,
+            fn (): string => __('Save settings'),
+            AdminDialogSize::Default,
         );
-    }
-
-    private static function language(): string
-    {
-        return (string) (self::user()->getAttribute('admin_language') ?: 'en');
-    }
-
-    private static function refreshLanguage(string $previous, string $next, Component $livewire): void
-    {
-        if ($next === $previous) {
-            return;
-        }
-
-        app()->setLocale($next);
-
-        $livewire->redirect(request()->header('Referer') ?: url('/admin'), navigate: false);
     }
 
     private static function requiresCurrentPassword(Get $get): bool

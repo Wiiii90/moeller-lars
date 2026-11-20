@@ -2,16 +2,18 @@
 
 **Branch:** `dev`
 **Lease:** 24
-**State:** Active — registered for the account/profile work area; no feature edits or browser acceptance yet
-**Claimed work:** Authenticated Admin account settings and current-user profile opened through the top-right user badge, including the owning menu, account-specific forms, validation, persistence and immediate feedback. Shared Admin header, dialogs and global General Appearance remain with their respective active owners; coordinate direct dependencies rather than independently rewriting those systems.
+**State:** Account/Settings menu and public/Admin regional preferences source-implemented; runtime, migration and browser acceptance pending.
+**Claimed work:** Account security, per-user Admin Settings (language, date, number, time and time zone), matching independent Public formats in General. Shared General Stage, Admin header/dialog infrastructure and feature editors remain owned elsewhere.
 
-## Current state
-- The user activated a new Dev worker for the account settings/profile surface on 2026-11-20. No individual changes, defects or desired redesign have yet been specified.
-- Registration baseline: `754bf32140545cc8175749206e336b46dbf80133` on `dev`; this commit only creates the new worker lease and its branch-local coordination record.
-- No application code, test code, general documentation, deployment or Continuous Integration work has been undertaken for this assignment.
-- Preserve existing account security, authentication and authorization behavior until an explicit scoped change is requested.
+## Implemented source scope
+- Top-right menu's standalone Language action replaced by Settings; Account retains name, email, password and app multi-factor authentication management.
+- Settings has separate Language, Dates, Numbers, Time (12/24-hour) and Time zone (named IANA zones). User preferences are stored separately from public General; changing a preference reloads the Admin presentation.
+- Public General now has Date, Number, Time and Time zone controls stored on both editorial/public and committed/public settings. Public date-time conversion is separated from authenticated user preferences, and daylight saving is derived from the named zone.
+- A forward migration adds preferences with defaults matching historical time output (UTC/24-hour) and backfills per-user number formats from the former combined admin region. Existing date preferences remain unchanged.
+- Central Admin date/date-time picker presentation uses the current user preference; downstream number/date consumers are to be reviewed without changing machine-readable values.
+- No unit-system conversion or new tests were implemented.
 
-## Next
-- Inspect only the current authenticated Profile entry from the top-right account badge, its route/forms and direct source/persistence owners; use the established shared Admin controls as references.
-- Ask for or receive the first specific user-requested behavior, then implement a bounded coherent slice on current `dev` with fresh lease/HEAD checks.
-- Do not claim browser acceptance or test results without actual execution, and do not change shared header/dialog owners without coordination.
+## Verification and next
+- Source-only changes committed on `dev`; no isolated migration execution, browser review, full suite or deployment has been performed.
+- Review downstream date/time and human-facing number consumers, fix any remaining direct formatting paths in scope, and verify the exact final diff after concurrent `dev` commits.
+- Testing owns migration/behavior tests; browser acceptance must confirm the menu position, settings persistence, time-zone transitions and independent Public/Admin rendering.
