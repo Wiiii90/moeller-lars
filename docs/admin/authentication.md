@@ -73,7 +73,7 @@ The account dialog owns:
 - optional TOTP setup and disable actions;
 - recovery-code regeneration for administrators who enabled TOTP.
 
-There is intentionally no `/admin/profile` account page. Dark/Night mode and Logout remain separate controls in the same Filament user menu and are not coupled to the Account dialog.
+There is intentionally no `/admin/profile` account page. Dark/Night mode, **Settings**, and Logout remain separate user-menu controls, not part of the security-sensitive Account form. Settings owns the per-user language and display formats through discrete autosave; the Account form retains explicit submission. See [Administration language and regional display](ui.md#27-administration-language-and-regional-display) for the single regional-preferences contract.
 
 ## Optional multi-factor authentication
 

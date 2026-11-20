@@ -515,39 +515,75 @@ The [Admin control contract](controls.md#public-appearance-controls-source-to-de
 
 ## 27. Administration language and regional display
 
-**Source basis:** selected implementation paths on `dev@74e629274ac28828d9ce9e9c881ab87e7490f2d3`; source/contract review, not newly executed tests or browser acceptance.
+**Source basis:** the currently published `dev` implementation of `AccountMenuAction`,
+`RegionalFormats`, `General`, the user and public setting models, and the
+regional-preferences migration. This is source review, not executed migration or
+browser acceptance.
 
-The authenticated Filament SPA supports per-user `admin_language` values:
-`en` (English) and `de` (Deutsch). This is independent of the same user's
-`admin_region` preference (de-DE/en-GB/en-US) for dates and numbers.
-Both are managed in Account. The top-right user-badge dropdown retains
-its existing Theme → Account → Logout order, with the new Language action
-inserted directly after Account. Its label is simply "Language" (or "Sprache"
-in German), without displaying the current value. Both entry points update
-the same users.admin_language preference.
-Changing Language requires a full SPA page reload, because a pre-existing
-Livewire/Alpine tree contains already rendered server-side labels.
+The authenticated administration supports a per-user UI language
+(`users.admin_language`: `en` or `de`). In the top-right user badge,
+**Account** opens the security-sensitive committed form for name, email,
+password and multi-factor authentication. The separate **Settings** action
+replaces the former Language menu item and contains Language and four
+personal regional preferences:
 
-`SetAdminLocale` is a persistent authenticated admin middleware, including
-Livewire updates. Public routes MUST NOT inherit a signed-in editor's language
-or region. Public date and numeric formats are controlled in General via
-`regional_format`; the public language is unchanged (English).
+- Dates: `users.admin_region` (`de-DE`, `en-GB`, `en-US`);
+- Numbers: `users.admin_number_format` (`de-DE`, `en-US`);
+- Time: `users.admin_time_format` (12-hour or 24-hour clock);
+- Time zone: `users.admin_time_zone` (named time-zone identifier).
 
-The default source language for artist-admin UI is English.
-Laravel translations live in `lang/de.json` and German validation/auth
-messages in `lang/de`. All own visible labels, headings, option labels,
-errors, tooltips, navigation, dialogs, and Blade text should use Laravel
-translation at **render time**, not be stored translated in canonical
-publication/audit data. Where information originates from artist content,
-never translate or mutate it.
+The Settings modal reuses `AdminDialog::edit()` and its existing discrete
+change-event autosave. It has no Save footer or red required stars; its
+native X only closes the dialog. Allowlisted values remain validated.
+Unchanged values do not write or notify. A language change reloads the
+administration because existing Livewire/Alpine labels were rendered under
+the previous locale. Ordinary regional changes keep the modal open.
+The Account/password form does **not** autosave credentials.
 
-Filament package translations are used for framework-owned controls.
-New artist-facing strings need an English source and German translation
-in the same change; do not add a fake placeholder language switch.
-Do not rely on APP_LOCALE=de as a substitute for personal preferences,
-and do not change public language when an admin changes theirs.
+**General → Regional Formats** owns a separate set of **Public** options:
+`regional_format`, `number_format`, `time_format`, and `time_zone` on
+the public content settings, using the existing editorial/committed
+publication model. These four fields autosave using General's existing
+field mutation owner. They share the Contact/Legal two-column alignment,
+with regular row spacing and a single-column narrow layout. Editing an
+admin's personal preferences cannot mutate the Public preferences or
+change the language of published prose.
 
-End-to-end review must include new sessions, navigation, action modals,
-date/number controls, validation, storage, journal, gallery, custom pages,
-general, dashboard and Livewire navigations. The code has not been
-browser-accepted simply because translations and middleware exist.
+`RegionalFormats` is the single date, number and time-presentation owner.
+The user-specific numeric display preference is migrated from the former
+admin date-region choice; the new time format defaults to 24 hours and
+the time zone defaults to `UTC`. Actual timestamps are converted to
+the selected named time zone for date-time presentation, including
+daylight-saving transitions, while date-only values are not shifted.
+Stored canonical timestamps and publication data are never reformatted.
+Some native browser date/time **inputs** still use browser/operating-system
+presentation independently of the PHP formatter; forcing every picker to
+a non-native mode is not an accepted general change.
+
+Time-zone choices are generated from PHP's
+`DateTimeZone::listIdentifiers(DateTimeZone::ALL)`, not an individually
+hardcoded list. Labels include the locality and seasonal time-zone
+abbreviations, but abbreviations and current offsets are **not** unique
+identifiers: distinct localities must not be merged merely because their
+current clock times match. Both searchable Filament selectors explicitly
+raise their option limit to the complete generated catalog rather than
+showing only the framework's first 50 alphabetic results. The selected
+named identifier is persisted; actual time-zone rules come from the
+runtime's time-zone database.
+
+`SetAdminLocale` is the authenticated administration locale middleware,
+including Livewire updates. Public routes must not inherit a signed-in
+editor's language or personal region; the public language remains English.
+The admin source language is English, `lang/de.json` owns translated
+application labels, and the framework owns its package translations.
+Translate UI strings at render time; do not rewrite artist-authored content,
+historical data, or canonical audit/publication values.
+
+**Outstanding verification owners:** the Testing workstream must validate
+the isolated forward migration, independent User/Public persistence,
+discrete autosave and no-op notification behavior, locale reload, date/number
+and 12/24-hour output, and daylight-saving transitions. Browser acceptance
+must establish actual selector coverage beyond Africa, keyboard/search
+selection, close/reopen state, native-input behavior, and regional form
+alignment at wide and narrow widths. Source review alone does not certify
+those behaviors; user visual approval remains separate.
