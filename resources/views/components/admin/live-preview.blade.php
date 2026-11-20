@@ -98,7 +98,7 @@
             <x-admin.help
                 :toolbar="true"
                 label="Preview controls and gestures"
-                text="Wheel: zoom. Shift + wheel: scroll page. Middle-button drag or Space + drag: pan. Touch: swipe/tap; two fingers: pan. Zoom %: fit."
+                text="Wheel: scroll page. Shift + wheel: zoom at pointer. Middle-button drag or Space + drag: move page and view. Touch: swipe/tap; two fingers: pan. Zoom %: fit."
             />
         </div>
     </x-admin.stage-tool-row>
@@ -109,7 +109,7 @@
         x-on:pointerleave="pointerInside = false; if (!dragging) cancelSpacePan()"
         x-on:pointerdown.capture="startPan($event)"
         x-on:wheel.capture="zoomWithWheel($event)"
-        x-on:auxclick="if (zoom > minZoom && $event.button === 1) $event.preventDefault()"
+        x-on:auxclick="if ($event.button === 1 && (zoom > minZoom || previewScrollRoot())) $event.preventDefault()"
         x-on:touchstart="startTouchPan($event)"
         x-on:touchmove="moveTouchPan($event)"
         x-on:touchend="endTouchPan($event)"
@@ -139,7 +139,7 @@
                     </div>
                 @endif
                 <div x-ref="panLayer" class="admin-live-preview__pan-layer"
-                    x-show="zoom > minZoom && (dragging || spacePan)" x-cloak
+                    x-show="dragging || (zoom > minZoom && spacePan)" x-cloak
                     aria-hidden="true"></div>
             </div>
         </div>

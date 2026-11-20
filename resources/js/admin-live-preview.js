@@ -22,10 +22,9 @@ export function adminLivePreview(element) {
         dragging: false,
         pointerId: null,
         panGestureCleanup: null,
-        dragStartX: 0,
-        dragStartY: 0,
-        dragStartScrollX: 0,
-        dragStartScrollY: 0,
+        dragLastX: 0,
+        dragLastY: 0,
+        dragScrollRoot: null,
         touchPanStart: null,
         init() {
             // A device preference belongs to the artist's browser tab, not to
@@ -220,31 +219,18 @@ export function adminLivePreview(element) {
             return delta * unit
         },
         zoomWithWheel(event, inFrame = false) {
-            // This trial deliberately uses the plain wheel for preview zoom.
-            // Browser-reserved modifier gestures still belong to the browser.
-            if (event.ctrlKey || event.metaKey || event.altKey || ! event.cancelable) return
-
-            if (event.shiftKey) {
-                // Keep long Public pages scrollable while plain wheel is zoom:
-                // Shift + wheel scrolls the embedded document vertically.
-                if (! inFrame) return
-                const documentRef = this.$refs.frame?.contentDocument
-                const scrollRoot = documentRef?.scrollingElement
-                const delta = this.wheelPixels(event, event.deltaY || event.deltaX)
-                if (! scrollRoot || ! delta) return
-                event.preventDefault()
-                scrollRoot.scrollTop += delta
-                return
-            }
-            if (! event.deltaY) return
+            // Native wheel scrolling must reach the Public page even at 100%.
+            // Shift + wheel is reserved only inside this Preview for zoom.
+            // Ctrl/Command/Alt keep their browser and operating-system roles.
+            if (! event.shiftKey || event.ctrlKey || event.metaKey || event.altKey || ! event.cancelable) return
+            const rawDelta = event.deltaY || event.deltaX
+            if (! rawDelta) return
             event.preventDefault()
 
-            // One ordinary wheel notch should be distinct, while fine
-            // touchpad deltas give incremental zoom without whole-step jumps.
-            const delta = Math.max(-160, Math.min(160, this.wheelPixels(event, event.deltaY)))
-            const nextZoom = this.zoom * Math.exp(-delta * 0.002)
-            const point = this.previewPoint(event, inFrame)
-            this.setZoom(nextZoom, point)
+            // Browsers may remap Shift + wheel from deltaY to deltaX.
+            // A notch is distinct, while fine trackpad deltas are smoother.
+            const delta = Math.max(-160, Math.min(160, this.wheelPixels(event, rawDelta)))
+            this.setZoom(this.zoom * Math.exp(-delta * 0.002), this.previewPoint(event, inFrame))
         },
         shortcutTargetIsInteractive(target) {
             return target && typeof target.closest === 'function'
@@ -300,7 +286,9 @@ export function adminLivePreview(element) {
             const frameTouchMove = (event) => this.moveTouchPan(event, true)
             const frameTouchEnd = (event) => this.endTouchPan(event)
             const preventMiddleAutoscroll = (event) => {
-                if (event.button === 1 && this.zoom > this.minZoom) event.preventDefault()
+                if (event.button === 1 && (this.zoom > this.minZoom || this.previewScrollRoot())) {
+                    event.preventDefault()
+                }
             }
             documentRef.addEventListener('wheel', frameWheel, { capture: true, passive: false })
             documentRef.addEventListener('pointerdown', frameDown, true)
@@ -355,20 +343,54 @@ export function adminLivePreview(element) {
                 y: rect.top + event.clientY * (rect.height / frame.clientHeight),
             }
         },
-        startPan(event, inFrame = false) {
-            if (this.zoom <= this.minZoom || this.dragging
-                || (event.button !== 1 && (! this.spacePan || event.button !== 0))) return
-
+        previewScrollRoot() {
+            const frame = this.$refs.frame
+            if (! frame || frame.tagName !== 'IFRAME') return null
+            try {
+                const documentRef = frame.contentDocument
+                const root = documentRef?.scrollingElement
+                if (! root) return null
+                const scrollHeight = Math.max(root.scrollHeight, documentRef.body?.scrollHeight || 0)
+                const scrollWidth = Math.max(root.scrollWidth, documentRef.body?.scrollWidth || 0)
+                return scrollHeight > root.clientHeight + 1 || scrollWidth > root.clientWidth + 1
+                    ? root : null
+            } catch (_) {
+                return null
+            }
+        },
+        scrollPreviewBy(deltaX, deltaY, scrollRoot = this.previewScrollRoot()) {
             const viewport = this.$refs.viewport
             if (! viewport) return
+
+            // Consume gesture movement in the zoomed outer canvas first.
+            // The remaining distance scrolls the actual Public document,
+            // making content below the device's first viewport reachable.
+            const oldX = viewport.scrollLeft
+            const oldY = viewport.scrollTop
+            viewport.scrollLeft += deltaX
+            viewport.scrollTop += deltaY
+            if (! scrollRoot) return
+
+            const remainderX = deltaX - (viewport.scrollLeft - oldX)
+            const remainderY = deltaY - (viewport.scrollTop - oldY)
+            const scale = this.fitScale * this.zoom
+            if (! Number.isFinite(scale) || scale <= 0) return
+            scrollRoot.scrollLeft += remainderX / scale
+            scrollRoot.scrollTop += remainderY / scale
+        },
+        startPan(event, inFrame = false) {
+            if (this.dragging || (event.button !== 1 && (! this.spacePan || event.button !== 0))) return
+
+            const viewport = this.$refs.viewport
+            const scrollRoot = this.previewScrollRoot()
+            if (! viewport || (this.zoom <= this.minZoom && ! scrollRoot)) return
             event.preventDefault()
             const point = this.previewPoint(event, inFrame)
             this.dragging = true
             this.pointerId = event.pointerId
-            this.dragStartX = point.x
-            this.dragStartY = point.y
-            this.dragStartScrollX = viewport.scrollLeft
-            this.dragStartScrollY = viewport.scrollTop
+            this.dragLastX = point.x
+            this.dragLastY = point.y
+            this.dragScrollRoot = scrollRoot
 
             // An embedded iframe owns another document. Capture both event
             // paths only during the gesture; ordinary clicks stay untouched.
@@ -405,13 +427,19 @@ export function adminLivePreview(element) {
             if (! viewport) return
             event.preventDefault()
             const point = this.previewPoint(event, inFrame)
-            viewport.scrollLeft = this.dragStartScrollX - (point.x - this.dragStartX)
-            viewport.scrollTop = this.dragStartScrollY - (point.y - this.dragStartY)
+            const rect = viewport.getBoundingClientRect()
+            if (! rect.width || ! rect.height) return
+            const deltaX = (this.dragLastX - point.x) * viewport.clientWidth / rect.width
+            const deltaY = (this.dragLastY - point.y) * viewport.clientHeight / rect.height
+            this.dragLastX = point.x
+            this.dragLastY = point.y
+            this.scrollPreviewBy(deltaX, deltaY, this.dragScrollRoot)
         },
         endPan(event) {
             if (! this.dragging || (event?.pointerId !== undefined && event.pointerId !== this.pointerId)) return
             this.dragging = false
             this.pointerId = null
+            this.dragScrollRoot = null
             this.panGestureCleanup?.()
             this.panGestureCleanup = null
         },
@@ -432,12 +460,7 @@ export function adminLivePreview(element) {
             const point = this.touchPoint(event, inFrame)
             const viewport = this.$refs.viewport
             if (! point || ! viewport) return
-            this.touchPanStart = {
-                x: point.x,
-                y: point.y,
-                scrollX: viewport.scrollLeft,
-                scrollY: viewport.scrollTop,
-            }
+            this.touchPanStart = { x: point.x, y: point.y }
         },
         moveTouchPan(event, inFrame = false) {
             if (this.zoom <= this.minZoom || event.touches.length !== 2) return
@@ -447,8 +470,12 @@ export function adminLivePreview(element) {
             const point = this.touchPoint(event, inFrame)
             const viewport = this.$refs.viewport
             if (! point || ! viewport) return
-            viewport.scrollLeft = this.touchPanStart.scrollX - (point.x - this.touchPanStart.x)
-            viewport.scrollTop = this.touchPanStart.scrollY - (point.y - this.touchPanStart.y)
+            const rect = viewport.getBoundingClientRect()
+            if (! rect.width || ! rect.height) return
+            const deltaX = (this.touchPanStart.x - point.x) * viewport.clientWidth / rect.width
+            const deltaY = (this.touchPanStart.y - point.y) * viewport.clientHeight / rect.height
+            this.touchPanStart = { x: point.x, y: point.y }
+            this.scrollPreviewBy(deltaX, deltaY)
         },
         endTouchPan(event) {
             if (event.touches.length !== 2) this.touchPanStart = null

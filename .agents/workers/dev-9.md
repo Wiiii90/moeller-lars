@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 28 (active)  
-**State:** Cursor-anchored wheel zoom source-corrected after artist feedback; real-browser review pending.
+**State:** Page-wheel and drag-to-Public-page scroll restoration source-integrated; browser review pending.
 
 ## Ownership and current decisions
 
@@ -35,3 +35,13 @@
 - **Verification:** JavaScript parsing succeeded. Isolated geometry simulation with an enclosing 0.8 CSS scale, 1200x900 iframe and 400x300 Preview preserved the same cursor location across seven consecutive wheel zooms (100% to 300%) and repeat fit recalculations with less than 0.001 CSS pixel drift. This is not browser validation.
 - **Open:** Verify zoom toward paintings and menu locations in the actual General and Gallery Live Preview, including an already-shifted viewport and viewport resizing. No application build, suite, CI, deployment or production action performed.
 
+
+
+## 2026-11-20: Restore browsing through long Public pages
+
+- User confirms cursor-anchored zoom feels better but reports inability to scroll a long embedded Public page, including when middle-button panning reaches the boundary of the initial device viewport. This is an interaction issue between the outer fitted Preview canvas and the iframe's independent scrolling document, not a canvas pan-clamp defect.
+- `resources/js/admin-live-preview.js`: reserve plain wheel for native Public-page scrolling; use Shift + wheel for pointer-anchored Preview zoom. Do not intercept Ctrl/Command, Alt or wheel outside the Preview. The iframe listener remains scoped and cleaned up on refresh/destroy.
+- `resources/js/admin-live-preview.js`: middle-button drag can now begin even at fitted 100% when the iframe document is scrollable. At any zoom, consume pointer displacement in the outer Preview viewport first and transfer remaining distance, normalized by render zoom, into the same-origin Public document's scroll root. Two-finger panning of the magnified Preview shares that scroll-boundary handoff. Native one-finger browsing and Public click targets remain untouched when idle.
+- `resources/views/components/admin/live-preview.blade.php`: update the compact central bulb Help with plain-wheel page scrolling, Shift-wheel zoom, and drag gestures. Keep the temporary pan overlay visible during active drag at fitted zoom. Device and Gallery focus controls unchanged.
+- In-memory JavaScript parsing and bounded simulated interaction succeeded: unmodified wheel not intercepted, Shift-wheel zoom active, dragging at magnification moves the outer viewport and continues into iframe scroll, and middle-drag at 100% scrolls the Public document. Simulated document page height: 4200 CSS px versus 900 CSS px iframe viewport. The drag state is disposed after release.
+- **Acceptance still open:** Actual General/Gallery browser checks for native wheel scrolling across long Public pages, Shift-wheel pointer zoom, drag across both boundaries and in reverse, proper Public links and hover state, touch gestures and browser back/forward conflicts. No application build, full test suite, CI, deployment or publication executed.
