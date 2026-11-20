@@ -5,6 +5,9 @@ export function initializeGalleryBatches(root = document) {
     const list = root.querySelector('[data-gallery-infinite]');
     const more = root.querySelector('[data-gallery-load-more]');
     if (!list || !more) return () => {};
+    const status = more.querySelector('[data-gallery-load-more-label]');
+    const dots = more.querySelector('[data-gallery-load-more-dots]');
+    if (!status || !dots) return () => {};
 
     const lifetime = new AbortController();
     const attachedStyles = [];
@@ -12,12 +15,23 @@ export function initializeGalleryBatches(root = document) {
     let failed = false;
     let observer = null;
 
+    const showState = (state) => {
+        more.dataset.galleryLoadState = state;
+        status.textContent = state === 'loading' ? 'Loading artworks…'
+            : state === 'error' ? 'Retry loading artworks' : 'Load more artworks';
+        dots.hidden = state === 'error';
+        if (state === 'loading') more.setAttribute('aria-busy', 'true');
+        else more.removeAttribute('aria-busy');
+    };
+    // The native text link survives when scripts are disabled; when enhanced,
+    // the same link becomes a restrained three-dot progress indicator.
+    showState('idle');
+
     const next = async () => {
         if (busy || lifetime.signal.aborted || !more.isConnected) return;
         busy = true;
         failed = false;
-        more.textContent = 'Loading artworks…';
-        more.setAttribute('aria-busy', 'true');
+        showState('loading');
         observer?.unobserve(more);
 
         try {
@@ -50,6 +64,11 @@ export function initializeGalleryBatches(root = document) {
 
             const fragment = document.createElement('template');
             fragment.innerHTML = batch.html;
+            // A dynamically parsed <noscript> is treated as ordinary markup:
+            // its fallback <img> becomes a second live image with visible ALT
+            // text and an unwanted request. No-script visitors never use this
+            // transport, so discard only these fallbacks before DOM insertion.
+            fragment.content.querySelectorAll('.artwork-card noscript').forEach((fallback) => fallback.remove());
             const added = [...fragment.content.children];
             list.append(fragment.content);
             root.dispatchEvent(new CustomEvent('gallery:items-appended', { detail: { elements: added } }));
@@ -60,18 +79,17 @@ export function initializeGalleryBatches(root = document) {
                 const destination = new URL(more.href);
                 destination.searchParams.set('gallery_page', String(batch.nextPage));
                 more.href = destination.href;
-                more.textContent = 'Load more artworks';
+                showState('idle');
                 observer?.observe(more);
             }
         } catch (error) {
             if (lifetime.signal.aborted) return;
             failed = true;
-            more.textContent = 'Retry loading artworks';
+            showState('error');
             // An automatic retry loop would contend with visible images.
             // Keep the link usable for an explicit click instead.
         } finally {
             busy = false;
-            more.removeAttribute('aria-busy');
         }
     };
 

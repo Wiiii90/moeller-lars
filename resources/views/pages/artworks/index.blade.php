@@ -13,6 +13,11 @@
     </div>
     @if ($hasMore)
         <a class="gallery-load-more" data-gallery-load-more
-            href="{{ request()->fullUrlWithQuery(['gallery_page' => $page + 1]) }}">Load more artworks</a>
+            href="{{ request()->fullUrlWithQuery(['gallery_page' => $page + 1]) }}">
+            <span class="gallery-load-more__label" data-gallery-load-more-label aria-live="polite">Load more artworks</span>
+            <span class="gallery-load-more__dots" data-gallery-load-more-dots aria-hidden="true" hidden>
+                <span></span><span></span><span></span>
+            </span>
+        </a>
     @endif
 @endsection

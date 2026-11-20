@@ -1,6 +1,6 @@
 # Dev Worker 11 — public-site presentation and CMS-consistent small fixes
 
-**Working branch:** `dev` | **Lease:** 27 | **State:** Active — real server-batched Public Gallery implementation pending runtime/browser acceptance.
+**Working branch:** `dev` | **Lease:** 27 | **State:** Active — progressive Gallery placeholder and loading-dots fix source-implemented; project-browser acceptance pending.
 **User assignment:** Handle a continuing sequence of small, user-reported issues on the public-facing pages of the artist homepage. Resolve each coherently through the existing content management system (CMS) architecture rather than making isolated presentation patches. No specific defect was assigned in the activation request.
 
 ## Scope and owner boundaries
@@ -36,6 +36,12 @@
 - `public-gallery-batches.js` owns only server-fragment transport, `public-gallery-loading.js` continues to own image requests/decode, and `public-media-playback.js` registers subsequently appended video cards. The shared Artwork Viewer opens the clicked item immediately and fetches the complete sequence only on first use, preserving navigation across not-yet-rendered Gallery cards without loading all media on the initial page.
 - No separate Gallery renderer, visual thumbnail grid, parallel media URL scheme, publication bypass, stage/Storage implementation or admin editor changes. Working/Committed and preview gate remain on their original controller path. The six-card fallback links allow progress when script is disabled or a request fails.
 - Production source only, no Laravel/database/runtime browser tests, request-waterfall measurements, CI, deploy or test-source edits. Required acceptance: initial 6 markup, follow-up six cards, final page, no duplicates/separator gaps, all Gallery order modes, initial and scroll-loaded image/video, nonce enforcement, Gallery under Home and Preview, viewer full sequence including cyclic/disabled cases, keyboard focus and no-JS fallback, SPA disposal/errors.
+
+## Gallery loading placeholder and three-dot indicator — 2026-11-20
+- Artist confirmed server-batched Gallery loading appears faster, but reported vertically rendered text in not-yet-loaded artworks and requested a restrained three-dot loading indicator in place of the text below Gallery.
+- The browser reinterprets a `<noscript>` image fallback as actual child markup when the server-rendered card HTML is parsed using `template.innerHTML`. On dynamic append, this creates an unintended second image alongside the intentionally gated Gallery image. Isolated Chromium reproduced two images and nested fallback content; removing Gallery `noscript` elements before insertion produces exactly one image, still hidden while deferred and retaining the canonical ALT string. Full-page HTML fallback remains untouched for no-JavaScript visitors.
+- The existing server-rendered Load more link now includes one accessible text label and three hidden dot elements. `public-gallery-batches.js` progressively enhances that same link into three dots, uses the existing busy/network lifecycle to animate them only during an actual request, and restores a visible `Retry loading artworks` link on request failure. CSS keeps neutral styling, keyboard focus indication and a reduced-motion static fallback; no icon framework replacement, timers or duplicate loader.
+- Source review, JavaScript syntax check and isolated Chromium DOM reproduction were completed. No application Laravel/Blade runtime, live Preview, compiled CSS acceptance, end-to-end tests, CI, deployment or unrelated Admin changes. Browser check still required for initial Gallery, multiple batches, no-JavaScript fallback, image errors, scrolling, reduced motion and retry interaction.
 
 ## Next actions
 1. Obtain current-dev real browser acceptance for six-card Gallery batches, scroll append, Gallery opening as Home, full Viewer navigation and Preview rights/security boundaries.

@@ -749,15 +749,19 @@ body.public-site:has(.site-content--fitted-image, .site-content--gallery-hero-fi
     margin-inline: auto;
 }
 
-/* A progressive Gallery keeps a real next-page link for no-script and
-   network-failure fallback; JavaScript observes the same element for scroll
-   loading rather than introducing a second pagination control. */
+/* One real next-page link serves no-script visitors, keyboard users and
+   the automatic scroll observer. Enhanced loading has only three discreet dots,
+   while an actionable retry remains explicit text on network failure. */
 .gallery-load-more {
-    display: block;
+    display: flex;
     width: fit-content;
     max-width: 100%;
+    min-width: 6rem;
+    min-height: 3rem;
     margin: 1.75rem auto 0;
     padding: .7rem 1rem;
+    align-items: center;
+    justify-content: center;
     color: var(--public-index-ink);
     font-family: var(--public-index-typeface);
     font-size: .9rem;
@@ -767,6 +771,50 @@ body.public-site:has(.site-content--fitted-image, .site-content--gallery-hero-fi
 .gallery-load-more:focus-visible {
     outline: 1px dotted currentColor;
     outline-offset: .15rem;
+}
+/* Keep the accessible label in the link without displaying the word
+   "Loading" beneath the artworks. The native link stays textual without JS. */
+.gallery-load-more[data-gallery-load-state]:not([data-gallery-load-state="error"])
+    .gallery-load-more__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    clip-path: inset(50%);
+}
+.gallery-load-more__dots {
+    display: inline-flex;
+    min-height: .6rem;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+}
+.gallery-load-more__dots[hidden] {
+    display: none;
+}
+.gallery-load-more__dots > span {
+    width: .36rem;
+    height: .36rem;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: .43;
+}
+@media (prefers-reduced-motion: no-preference) {
+    @keyframes gallery-load-dot {
+        0%, 65%, 100% { transform: translateY(0); opacity: .38; }
+        32% { transform: translateY(-.18rem); opacity: .88; }
+    }
+    .gallery-load-more[data-gallery-load-state="loading"] .gallery-load-more__dots > span {
+        animation: gallery-load-dot 1.2s ease-in-out infinite;
+    }
+    .gallery-load-more[data-gallery-load-state="loading"] .gallery-load-more__dots > span:nth-child(2) {
+        animation-delay: .15s;
+    }
+    .gallery-load-more[data-gallery-load-state="loading"] .gallery-load-more__dots > span:nth-child(3) {
+        animation-delay: .3s;
+    }
 }
 
 .artwork-card,
