@@ -238,8 +238,8 @@ body {
 /* A parent item's existing underline doubles as a hover-to-open countdown.
    Shrink symmetrically until it disappears; animationend opens the same child
    menu used by click and keyboard. No secondary progress indicator or timer.
-   Touch retains click opening; reduced-motion mode keeps the opening clock
-   while removing its visible movement. The actual mouse starts the countdown. */
+   Touch retains click opening. The existing underline is the functional
+   progress indicator in all motion modes; the actual mouse starts it. */
 @keyframes site-navigation-submenu-hover-countdown {
     from { transform: scaleX(1); }
     to { transform: scaleX(0); }
@@ -248,14 +248,6 @@ body {
 .site-navigation[data-navigation-ready] .site-navigation__rail [data-navigation-parent-link].is-hover-counting > .site-navigation__label::after {
     opacity: 1;
     animation: site-navigation-submenu-hover-countdown 2s linear forwards;
-}
-
-/* The countdown remains a functional opening trigger when motion is reduced.
-   Show the static underline until completion instead of moving it. */
-@media (prefers-reduced-motion: reduce) {
-    .site-navigation[data-navigation-ready] .site-navigation__rail [data-navigation-parent-link].is-hover-counting > .site-navigation__label::after {
-        animation-timing-function: steps(1, end);
-    }
 }
 
 /* The cyclic window and level change remain immediate; only feedback inside

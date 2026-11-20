@@ -2,16 +2,17 @@
 
 **Branch:** `dev`
 **Lease:** 21
-**State:** Active — reduced-motion countdown defect corrected; project-browser acceptance pending
-**Claimed work:** Public cyclic inline navigation, including hover countdown and child Back control. General/Menu and Pages stay with assigned workers.
+**State:** Active — hover underline visibility repaired; application-browser acceptance pending
+**Claimed work:** Public cyclic inline navigation including timed hover, child return, and direct presentation. General/Menu and Pages remain with their owners.
 
 ## Current state
-- User reported that hovering `Prints` never opened its child menu after repeated source commits; prior reports did not establish browser acceptance.
-- In `dev` at `577b2e3148e135ac380e373938a8f77a473b21ff`, the countdown was enclosed in `@media (prefers-reduced-motion: no-preference)`, yet its `animationend` event was the **sole** hover-triggered submenu opener. Under `prefers-reduced-motion: reduce`, no animation meant no completion event or submenu opening. A controlled real-Chromium reproduction confirmed the missing event.
-- The canonical CSS animation now runs for two seconds for either motion preference. When reduced motion is requested, a `steps(1, end)` timing function keeps the underline static until the 2-second completion; ordinary mode retains the symmetric shrink. This fixes the broken functional trigger without adding JavaScript timers, parallel opening logic or a second renderer. Click, keyboard, touch and ordinary page items are unchanged.
-- Controlled Chromium reproduction confirmed `animationend` on `::after` bubbles from the label to the parent control with the expected name in both motion settings after this change. This is **component-level browser evidence**, not verification of the running application or the user's browser configuration.
-- Production owner changed: `resources/css/public-presentation.css`; worker record updated. No tests or general documentation edited.
+- User confirmed that hovering `Prints` opens its submenu after about two seconds but the countdown line does not visibly shrink.
+- Root cause: a `prefers-reduced-motion: reduce` CSS override imposed `steps(1,end)` on the functional underline animation. At one second in real Chromium, the CSS transform stayed at `scaleX(1)` under reduced motion, whereas ordinary mode reached about `scaleX(.5)`. The completion event was unaffected, explaining why the submenu opened without visible shrink.
+- Removed the defective override from canonical `resources/css/public-presentation.css` at baseline `8af2a7b10a4f909da9b261162b54a11b9ffd4ddd`. Both motion settings now use the same two-second linear, symmetric underline collapse and its existing completion event. No timers, alternate renderers or navigation lifecycle changes were introduced.
+- Controlled Chromium reproduction verified the computed midway transform with and without the override for both motion settings. This is component-level evidence; the full application has not been browser-tested in this worker session.
+- Previous icon-only child Back control, immediate click/keyboard access, pointer exit cancellation and cyclic whole-item navigation are unchanged.
+- No test source or general docs edited.
 
 ## Next
-- Verify live browser functionality on the actual built `dev` preview: normal 2-second symmetric shrink, hover open, early pointer leave cancellation, instantaneous click, Back/Escape, and standard page links. Confirm reduced-motion opening without movement.
-- If it still fails in the project preview, inspect the loaded Vite revision, actual computed pseudo-element animation and registered pointer listeners on the live navigation; do not apply additional speculative source patches.
+- Review the current built public preview in a browser using `Prints`, with normal/reduced Windows motion settings, verifying smooth shrinking over exactly two seconds, early leave cancellation, link/click behavior and expected submenu opening.
+- If an application build still behaves differently, inspect its actually loaded stylesheet revision and the computed pseudo-element `animation-timing-function` and `transform` instead of applying further speculative patches.
