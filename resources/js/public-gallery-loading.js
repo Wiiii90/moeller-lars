@@ -1,17 +1,5 @@
-// The first Gallery images expose src in initial HTML. Defer subsequent URLs
-// until close to the viewport, prioritizing the topmost Artwork when candidates
-// are equally close. Native lazy loading remains the observer-free fallback.
-export const GALLERY_PREFETCH_LIMIT = 2;
-const GALLERY_PREFETCH_MIN_PX = 960;
-export const GALLERY_PREFETCH_MARGIN = `${GALLERY_PREFETCH_MIN_PX}px 0px`;
-
-export function galleryImageDistance(image, viewportHeight) {
-    const bounds = image.getBoundingClientRect();
-    if (bounds.top >= viewportHeight) return bounds.top - viewportHeight;
-    if (bounds.bottom <= 0) return -bounds.bottom;
-    return 0;
-}
-
+// Gallery Artwork cards carry one native lazy-loaded src. Server batches
+// limit initial markup; no second image-fetch queue or <noscript> duplicate.
 /* The shared fitted-media owner. Both a Gallery's individual Artwork and
    Home's currently visible Hero slide use the same measured width/height
    budget, so captions and bottom padding cannot diverge between templates. */
@@ -219,192 +207,45 @@ export function initializeGalleryImageLoading(root = document) {
         disposeDetail();
         disposeGalleryHero();
     };
-    const images = Array.from(root.querySelectorAll('.artwork-card__image'));
-    const streamedGallery = root.querySelector('[data-gallery-infinite]');
-    if (images.length === 0 && !streamedGallery) return disposeFitted;
+    const images = new Set(root.querySelectorAll('.artwork-card__image'));
+    if (images.size === 0 && !root.querySelector?.('[data-gallery-infinite]')) return disposeFitted;
 
     const lifetime = new AbortController();
-    const allImages = new Set(images);
-    const documentOrder = new Map(images.map((image, index) => [image, index]));
-    let releaseBuffered = () => {};
-    const decoded = (image) => {
-        const completion = revealDecodedImage(image, 'galleryImageState', lifetime.signal);
-        if (completion) {
-            void completion.then(() => releaseBuffered(image));
-        } else {
-            releaseBuffered(image);
-        }
-    };
     const settled = (event) => {
-        if (lifetime.signal.aborted || !allImages.has(event.target)) return;
         const image = event.target;
+        if (lifetime.signal.aborted || !images.has(image)) return;
         if (event.type === 'error') {
+            // Preserve the canonical ALT text on a genuine media failure.
             image.dataset.galleryImageState = 'error';
-            releaseBuffered(image);
         } else {
-            decoded(image);
+            revealDecodedImage(image, 'galleryImageState', lifetime.signal);
         }
     };
+
+    // Every image already has its canonical src. Hide native ALT rendering
+    // until decoding finishes while intrinsic dimensions reserve its space.
     root.addEventListener('load', settled, { capture: true, signal: lifetime.signal });
     root.addEventListener('error', settled, { capture: true, signal: lifetime.signal });
 
-    for (const image of images) {
-        if (image.src && !image.dataset.gallerySrc && image.complete) {
-            decoded(image);
-        }
-    }
-
-    const cleanup = () => {
-        lifetime.abort();
-        disposeFitted();
-    };
-    const deferred = images.filter(image => image.dataset.gallerySrc);
-    if (deferred.length === 0 && !streamedGallery) return cleanup;
-
-    // HTML keeps gated images hidden for the no-JS <noscript> fallback.
-    // Reveal before observing: intrinsic width/height reserve layout space.
-    for (const image of deferred) {
-        image.hidden = false;
-        image.dataset.galleryImageState = 'deferred';
-    }
-
-    if (typeof globalThis.IntersectionObserver !== 'function') {
-        // Degrade to native lazy loading, including appended server batches.
-        const attachNative = (image) => {
-            allImages.add(image);
-            if (!image.dataset.gallerySrc) return;
-            image.hidden = false;
-            image.loading = 'lazy';
-            image.src = image.dataset.gallerySrc;
-            delete image.dataset.gallerySrc;
-            image.dataset.galleryImageState = 'pending';
-            if (image.complete) decoded(image);
-        };
-        deferred.forEach(attachNative);
-        root.addEventListener('gallery:items-appended', (event) => {
-            event.detail.elements.forEach((element) => {
-                element.querySelectorAll('.artwork-card__image').forEach(attachNative);
-            });
-        }, { signal: lifetime.signal });
-        return cleanup;
-    }
-
-    const owned = new Set(deferred);
-    const nearby = new Set();
-    const speculative = new Set();
-    let disposed = false;
-
-    const finish = (image) => {
-        nearby.delete(image);
-        speculative.delete(image);
-        bufferObserver.unobserve(image);
-        visibleObserver.unobserve(image);
-    };
-
-    const request = (image, visible = false) => {
-        if (!owned.has(image)) return;
-        if (!image.dataset.gallerySrc) {
-            if (visible && image.dataset.galleryImageState === 'pending') {
-                image.fetchPriority = 'high';
-                speculative.delete(image);
-            }
-            return;
-        }
-
-        nearby.delete(image);
-        if (visible) {
-            speculative.delete(image);
-            image.fetchPriority = 'high';
-        } else {
-            speculative.add(image);
-            image.fetchPriority = 'low';
-        }
-
-        // Assign the canonical src only here. loading=eager guarantees that
-        // the near-viewport buffer is not delayed by native lazy heuristics.
-        image.loading = 'eager';
-        image.dataset.galleryImageState = 'pending';
-        image.src = image.dataset.gallerySrc;
-        delete image.dataset.gallerySrc;
-
-        if (image.complete) decoded(image);
-    };
-
-    const pump = () => {
-        while (!disposed && speculative.size < GALLERY_PREFETCH_LIMIT && nearby.size > 0) {
-            const viewportHeight = globalThis.window?.innerHeight || 800;
-            const image = [...nearby].sort((a, b) =>
-                galleryImageDistance(a, viewportHeight) - galleryImageDistance(b, viewportHeight)
-                    || documentOrder.get(a) - documentOrder.get(b))[0];
-            request(image);
+    const track = (image) => {
+        if (images.has(image) && image.dataset.galleryImageState === 'ready') return;
+        images.add(image);
+        if (image.src && image.complete) {
+            revealDecodedImage(image, 'galleryImageState', lifetime.signal);
         }
     };
+    images.forEach(track);
 
-    // Keep the next viewport plus a modest runway warm at large screen sizes,
-    // without fetching the complete Gallery or changing the DOM/viewer order.
-    // On smaller screens the original 960px minimum remains in effect.
-    const viewportHeight = globalThis.window?.innerHeight || 800;
-    const lookahead = Math.max(GALLERY_PREFETCH_MIN_PX, Math.ceil(viewportHeight * 1.2));
-    const bufferObserver = new IntersectionObserver((entries) => {
-        if (disposed) return;
-        for (const entry of entries) {
-            if (!owned.has(entry.target) || !entry.target.dataset.gallerySrc) continue;
-            if (entry.isIntersecting) nearby.add(entry.target);
-            else nearby.delete(entry.target);
-        }
-        pump();
-    }, { rootMargin: `${lookahead}px 0px` });
-
-    const visibleObserver = new IntersectionObserver((entries) => {
-        if (disposed) return;
-        // Intersection callbacks need not be delivered in visual order. When
-        // several Artwork cards enter together, start their URLs top-first.
-        for (const entry of entries.filter((candidate) => candidate.isIntersecting)
-            .sort((a, b) => documentOrder.get(a.target) - documentOrder.get(b.target))) {
-            request(entry.target, true);
-        }
-        // Scrolled-to images bypass the speculative budget; freed slots
-        // remain available to buffer the next unseen artwork.
-        pump();
-    }, { rootMargin: '0px' });
-
-    releaseBuffered = (image) => {
-        if (disposed || !owned.has(image)) return;
-        finish(image);
-        pump();
-    };
-
-    for (const image of deferred) {
-        bufferObserver.observe(image);
-        visibleObserver.observe(image);
-    }
-
-    // Register newly appended server-rendered cards with this same image
-    // lifecycle. Do not initialize a second set of observers on each batch.
+    // Server-rendered batches enter the same decode/error lifecycle.
+    // Browser-native loading="lazy" also works when JavaScript is disabled.
     root.addEventListener('gallery:items-appended', (event) => {
         for (const element of event.detail.elements) {
-            for (const image of element.querySelectorAll('.artwork-card__image')) {
-                allImages.add(image);
-                documentOrder.set(image, documentOrder.size);
-                if (!image.dataset.gallerySrc) {
-                    if (image.complete) decoded(image);
-                    continue;
-                }
-                owned.add(image);
-                image.hidden = false;
-                image.dataset.galleryImageState = 'deferred';
-                bufferObserver.observe(image);
-                visibleObserver.observe(image);
-            }
+            element.querySelectorAll('.artwork-card__image').forEach(track);
         }
     }, { signal: lifetime.signal });
 
     return () => {
-        disposed = true;
-        cleanup();
-        bufferObserver.disconnect();
-        visibleObserver.disconnect();
-        nearby.clear();
-        speculative.clear();
+        lifetime.abort();
+        disposeFitted();
     };
 }

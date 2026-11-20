@@ -64,11 +64,6 @@ export function initializeGalleryBatches(root = document) {
 
             const fragment = document.createElement('template');
             fragment.innerHTML = batch.html;
-            // A dynamically parsed <noscript> is treated as ordinary markup:
-            // its fallback <img> becomes a second live image with visible ALT
-            // text and an unwanted request. No-script visitors never use this
-            // transport, so discard only these fallbacks before DOM insertion.
-            fragment.content.querySelectorAll('.artwork-card noscript').forEach((fallback) => fallback.remove());
             const added = [...fragment.content.children];
             list.append(fragment.content);
             root.dispatchEvent(new CustomEvent('gallery:items-appended', { detail: { elements: added } }));

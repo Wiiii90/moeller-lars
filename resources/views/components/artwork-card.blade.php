@@ -1,4 +1,4 @@
-@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => null, 'heroNavigation' => false, 'enableViewer' => null, 'eager' => false, 'priority' => null, 'galleryBuffered' => false, 'allowVideoSound' => false, 'showMediaCredits' => null, 'showMediaCopyright' => null, 'captionLayout' => null, 'galleryIndex' => false, 'galleryShift' => 0, 'galleryGap' => 0, 'heroFitted' => false])
+@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => null, 'heroNavigation' => false, 'enableViewer' => null, 'eager' => false, 'priority' => null, 'allowVideoSound' => false, 'showMediaCredits' => null, 'showMediaCopyright' => null, 'captionLayout' => null, 'galleryIndex' => false, 'galleryShift' => 0, 'galleryGap' => 0, 'heroFitted' => false])
 
 @php
     $viewerItem = app(\App\Domain\Artwork\PublicArtworkViewerItem::class)->forArtwork($artwork, $media, $enableViewer);
@@ -144,13 +144,8 @@
         @else
             <img
                 class="artwork-image artwork-card__image"
-                data-gallery-image-state="{{ $galleryBuffered ? 'deferred' : 'pending' }}"
-                @if ($galleryBuffered)
-                    data-gallery-src="{{ $imageUrl }}"
-                    hidden
-                @else
-                    src="{{ $imageUrl }}"
-                @endif
+                data-gallery-image-state="pending"
+                src="{{ $imageUrl }}"
                 alt="{{ $altText }}"
                 @if ($thumbnailWidth > 0 && $thumbnailHeight > 0)
                     width="{{ $thumbnailWidth }}"
@@ -158,25 +153,8 @@
                 @endif
                 loading="{{ $eager ? 'eager' : 'lazy' }}"
                 decoding="async"
-                fetchpriority="{{ $galleryBuffered ? 'low' : (($priority ?? $eager) ? 'high' : 'auto') }}"
+                fetchpriority="{{ ($priority ?? $eager) ? 'high' : 'auto' }}"
             >
-            @if ($galleryBuffered)
-                {{-- Browser-native fallback without JavaScript; otherwise the
-                     primary image receives its URL near the viewport. --}}
-                <noscript>
-                    <img
-                        class="artwork-image artwork-card__image"
-                        src="{{ $imageUrl }}"
-                        alt="{{ $altText }}"
-                        @if ($thumbnailWidth > 0 && $thumbnailHeight > 0)
-                            width="{{ $thumbnailWidth }}"
-                            height="{{ $thumbnailHeight }}"
-                        @endif
-                        loading="lazy"
-                        decoding="async"
-                    >
-                </noscript>
-            @endif
         @endif
     @if ($viewerActive && ! $galleryVideoPlayer)
         </a>
