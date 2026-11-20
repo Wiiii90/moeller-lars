@@ -2,7 +2,7 @@
     <div class="admin-detail-dialog admin-detail-dialog--feed admin-dashboard__group-details">
         @foreach ($groupEntries as $groupEntry)
             @php
-                $memberBody = trim((string) ($groupEntry['body'] ?? ''));
+                $memberBody = trim((string) ($groupEntry['message'] ?? $groupEntry['body'] ?? ''));
                 $memberTitle = trim((string) ($groupEntry['title'] ?? ''));
                 $memberMessage = $memberBody === $memberTitle ? '' : $memberBody;
                 $memberLink = $groupEntry['link'] ?? null;
@@ -17,6 +17,7 @@
                     <span>{{ $groupEntry['status'] }}</span>
                 </div>
                 <strong>{{ $memberTitle }}</strong>
+                @include('filament.pages.partials.dashboard-feed-changes', ['entry' => $groupEntry])
                 @if ($memberMessage !== '')
                     <p>{{ $memberMessage }}</p>
                 @endif
@@ -30,7 +31,9 @@
 @php
     $body = trim((string) ($entry['body'] ?? ''));
     $title = trim((string) ($entry['title'] ?? ''));
-    $message = $entry['type'] === 'notification' && $body === $title ? '' : $body;
+    $message = $entry['type'] === 'notification'
+        ? trim((string) ($entry['message'] ?? ($body === $title ? '' : $body)))
+        : $body;
     $linkPath = is_string($entry['link'] ?? null) ? parse_url($entry['link'], PHP_URL_PATH) : null;
     $linkNavigatesInAdmin = is_string($linkPath)
         && ($linkPath === '/admin' || str_starts_with($linkPath, '/admin/'));
@@ -79,6 +82,8 @@
             </div>
         @endif
     </dl>
+
+    @include('filament.pages.partials.dashboard-feed-changes', ['entry' => $entry])
 
     @if ($message !== '')
         <div class="admin-detail-dialog__field">

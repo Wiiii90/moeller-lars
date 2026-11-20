@@ -641,9 +641,14 @@ final class DashboardFeed
         if (is_string($action) && AdminActionCatalog::has($action)) {
             $generic = app(AdminActivityPresentation::class)->change($action);
             $catalog = (string) AdminActionCatalog::definition($action)['label'];
-            if ($storedTitle === $generic || $storedTitle === $catalog) {
-                $storedTitle = app(AdminActivityPresentation::class)
-                    ->notificationHeadline($action, $target, $summary);
+            $headline = app(AdminActivityPresentation::class)
+                ->notificationHeadline($action, $target, $summary);
+            $previousDetailedHeadline = count($changes) === 1 && str_ends_with($headline, ' updated')
+                ? substr($headline, 0, -strlen(' updated')).' → '.trim($changes[0]['after'])
+                : null;
+            if ($storedTitle === $generic || $storedTitle === $catalog
+                || ($previousDetailedHeadline !== null && $storedTitle === $previousDetailedHeadline)) {
+                $storedTitle = $headline;
             }
         }
         $title = __($storedTitle);

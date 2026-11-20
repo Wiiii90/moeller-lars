@@ -384,3 +384,36 @@
     white-space: pre-wrap;
 }
 .admin-dashboard__group-detail .admin-detail-dialog__link { display: inline-block; margin-top: .45rem; }
+
+/* Audit-linked notifications expose their field changes once, using the
+ * same detail-dialog surface for a single message and expanded groups. */
+.admin-dashboard__change-context { margin-top: .9rem; }
+.admin-dashboard__change-context > span { font-weight: 650; }
+.admin-dashboard__change-context > p { margin: .3rem 0 0; }
+.admin-dashboard__change-list { display: grid; gap: 0; margin-top: .55rem; }
+.admin-dashboard__change-item {
+    padding-block: .65rem;
+    border-block-start: 1px solid var(--admin-line);
+}
+.admin-dashboard__change-item dt {
+    margin-bottom: .3rem;
+    color: var(--admin-text);
+    font-weight: 650;
+}
+.admin-dashboard__change-values {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .6rem 1.5rem;
+}
+.admin-dashboard__change-values > div { min-width: 0; }
+.admin-dashboard__change-values dt {
+    margin: 0 0 .1rem;
+    color: var(--admin-muted);
+    font-size: var(--admin-font-size-table-meta);
+    font-weight: 600;
+}
+.admin-dashboard__change-values dd {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+.admin-dashboard__change-rest { margin: .4rem 0 0; color: var(--admin-muted); }
