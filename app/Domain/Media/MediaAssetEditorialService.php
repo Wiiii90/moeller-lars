@@ -164,9 +164,9 @@ class MediaAssetEditorialService
     }
 
     /**
-     * Optional draft removal is part of the same reference-deletion database
-     * transaction. This protects the Gallery's "delete file too" action from
-     * deleting its Artwork before Storage-reference cleanup can succeed.
+     * Optional Artwork removal is part of the same reference-deletion database
+     * transaction. This protects the Gallery's "delete file too" action for
+     * draft and working-published Artworks alike.
      */
     public function delete(MediaAsset $asset, ?Artwork $deleteDraftArtwork = null, bool $requireUnreferenced = false): bool
     {
@@ -218,14 +218,14 @@ class MediaAssetEditorialService
                     ->whereKey($deleteDraftArtwork->getKey())
                     ->lockForUpdate()
                     ->firstOrFail();
-                if ((string) $draftToDelete->getAttribute('state') !== 'draft'
+                if (! in_array((string) $draftToDelete->getAttribute('state'), ['draft', 'published'], true)
                     || ! ArtworkMedia::query()
                         ->where('artwork_id', $draftToDelete->getKey())
                         ->where('role', 'primary')
                         ->where('media_asset_id', $assetId)
                         ->exists()) {
                     throw ValidationException::withMessages([
-                        'artwork' => 'The draft or its primary file changed. Reopen Delete before removing it.',
+                        'artwork' => 'The Artwork or its primary file changed. Reopen Delete before removing it.',
                     ]);
                 }
             }

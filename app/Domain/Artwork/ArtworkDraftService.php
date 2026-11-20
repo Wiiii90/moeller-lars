@@ -178,9 +178,12 @@ final class ArtworkDraftService
         DB::transaction(function () use ($artwork, $actor): void {
             /** @var Artwork $fresh */
             $fresh = Artwork::query()->whereKey($artwork->getKey())->lockForUpdate()->firstOrFail();
-            if ((string) $fresh->getAttribute('state') !== 'draft') {
+            // Working Published rows must be deletable directly after
+            // Submit. Committed visibility is removed by the later Site
+            // Commit; immutable publication snapshots remain separate.
+            if (! in_array((string) $fresh->getAttribute('state'), ['draft', 'published'], true)) {
                 throw ValidationException::withMessages([
-                    'artwork' => 'Only an unpublished Artwork draft can be deleted.',
+                    'artwork' => 'This Artwork is not in a deletable working state.',
                 ]);
             }
 

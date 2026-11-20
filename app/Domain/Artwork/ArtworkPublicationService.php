@@ -99,7 +99,7 @@ final class ArtworkPublicationService
 
         $mime = (string) $asset->getAttribute('mime_type');
         if (MediaTypePolicy::isVideo($mime)) {
-            return true;
+            return MediaPreviewVariant::videoPoster($asset) !== null;
         }
         if (! MediaTypePolicy::isImage($mime)) {
             return false;

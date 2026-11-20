@@ -71,7 +71,9 @@ trait GalleryWorkspaceDataProjection
                 'title' => (string) $artwork->getAttribute('title'),
                 'slug' => (string) $artwork->getAttribute('slug'),
                 'state' => (string) $artwork->getAttribute('state'),
-                'state_label' => ucfirst((string) $artwork->getAttribute('state')),
+                'state_label' => $artwork->getAttribute('state') === 'draft'
+                    ? 'Unpublished'
+                    : ucfirst((string) $artwork->getAttribute('state')),
                 'readiness_label' => $this->readinessLabel($artwork, $galleryPublished, $primaries->count(), $primaryAsset, $primary),
                 'is_ready' => $this->isReadyToPublish($artwork, $galleryPublished, $primaries->count(), $primaryAsset, $primary),
                 // The public Preview route accepts viable Working drafts too.

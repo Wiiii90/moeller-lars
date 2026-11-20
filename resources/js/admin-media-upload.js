@@ -209,7 +209,17 @@ async function finishWithProgress(session, state) {
     }
 }
 
+// Exact transferred bytes remain useful when a small local file races
+// through the transfer phase before the first visible progress event.
+function transferBytesLabel(bytes, total) {
+    const unit = total >= 1048576 ? 1048576 : total >= 1024 ? 1024 : 1;
+    const label = unit === 1048576 ? 'MiB' : unit === 1024 ? 'KiB' : 'bytes';
+    const digits = unit === 1 ? 0 : 1;
+    return (Math.min(bytes, total) / unit).toFixed(digits) + ' / ' + (total / unit).toFixed(digits) + ' ' + label;
+}
+
 async function transfer(file, state, fileIndex, total) {
+    state.transferDetail = transferBytesLabel(0, file.size);
     const key = await fileIdentity(file);
     let resumeId = readResume(key);
     let session;
@@ -225,6 +235,7 @@ async function transfer(file, state, fileIndex, total) {
     }
 
     session = await verifyOrRestart(file, session, key, state);
+    state.transferDetail = transferBytesLabel(Number(session.offset || 0), file.size);
     remember(key, session.id);
     let failures = 0;
     while (!session.complete && session.offset < file.size) {
@@ -232,11 +243,14 @@ async function transfer(file, state, fileIndex, total) {
         const next = Math.min(file.size, offset + Number(session.chunk_size));
         state.phase = 'uploading';
         state.progress = Math.max(state.progress, Math.round((fileIndex + offset / file.size) * 800 / total) / 10);
+        state.transferDetail = transferBytesLabel(offset, file.size);
 
         try {
             session = await sendChunk(session.id, offset, file.slice(offset, next), (sent) => {
                 state.progress = Math.max(state.progress, Math.min(80, Math.round((fileIndex + (offset + sent) / file.size) * 800 / total) / 10));
+                state.transferDetail = transferBytesLabel(offset + sent, file.size);
             });
+            state.transferDetail = transferBytesLabel(Number(session.offset || next), file.size);
             failures = 0;
         } catch (error) {
             if (!error?.retryable || ++failures > 3) throw error;
@@ -249,6 +263,7 @@ async function transfer(file, state, fileIndex, total) {
     }
 
     state.phase = 'processing';
+    state.transferDetail = transferBytesLabel(file.size, file.size);
     state.progress = Math.max(state.progress, 80);
     state.processingStep = 'Verifying transferred file';
     state.result = '';
@@ -298,6 +313,7 @@ export async function adminMediaUploader(state, input, wire, context) {
     state.completed = 0;
     state.progress = 0;
     state.processingStep = '';
+    state.transferDetail = '';
     state.result = '';
     state.phase = 'uploading';
     let added = 0;
@@ -320,6 +336,7 @@ export async function adminMediaUploader(state, input, wire, context) {
             let savedToStorage = false;
             state.progress = 0;
             state.processingStep = '';
+            state.transferDetail = '';
             state.phase = 'uploading';
             state.result = '';
             try {

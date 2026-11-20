@@ -143,8 +143,7 @@
                                 :disabled="$moveTargets === [] || ($artwork['state'] === 'published' && ! $hasPublishedMoveTarget)"
                                 label="Move" title="Move to Gallery" />
                             <x-admin.row-action action="delete" wire:click="mountAction('deleteArtwork', { artwork: {{ $artwork['id'] }} })"
-                                :disabled="$artwork['state'] !== 'draft'"
-                                label="Delete" title="{{ $artwork['state'] === 'draft' ? 'Delete' : 'Unpublish before deleting' }}" />
+                                label="Delete" title="Delete Artwork (optionally with its Storage file)" />
                         </x-admin.toolbar>
                     </td>
                     <td class="admin-table__selection admin-table__selection--trailing">

@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaTypePolicy;
+use App\Domain\Media\MediaPreviewVariant;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
@@ -41,8 +42,11 @@ trait GalleryWorkspaceReadinessSupport
         if (! filled($primary?->getAttribute('alt_text_override')) && ! filled($primaryAsset->getAttribute('alt_text'))) {
             return 'ALT text required';
         }
-        if (MediaTypePolicy::isImage($mime) && ! app(ArtworkPublicationService::class)->mediaReady($primaryAsset, $primary?->getAttribute('alt_text_override'))) {
+        if (MediaTypePolicy::isImage($mime) && MediaPreviewVariant::imageThumbnail($primaryAsset) === null) {
             return 'Thumbnail processing required';
+        }
+        if (MediaTypePolicy::isVideo($mime) && MediaPreviewVariant::videoPoster($primaryAsset) === null) {
+            return 'Video poster processing required';
         }
         if (! $galleryPublished) {
             return 'Gallery must be published';

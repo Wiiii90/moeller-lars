@@ -164,8 +164,11 @@ trait GalleryWorkspaceDirectUpload
             // Automatic placement now lives only in the grey placeholder.
             $form['position'] = null;
         }
-        // The queue row, not a disabled form control, owns the media link.
-        $form['primary_media_asset_id'] = $assetId;
+        // The queue identity, not the display-only filename, owns the
+        // primary media link. Old hydrated picker fields are discarded.
+        unset($form['primary_media_asset_id']);
+        $form['staged_media_filename'] = (string) ($selected['filename']
+            ?? MediaAsset::query()->whereKey($assetId)->value('original_filename') ?? '');
         $this->stagedArtworkData = $form;
         $this->stagedArtworkForm->fill($form);
         $this->publishStagedArtworkPreview();
@@ -423,6 +426,7 @@ trait GalleryWorkspaceDirectUpload
         return [
             'media_asset_id' => (int) $asset->getKey(),
             'title' => $this->defaultArtworkTitle((string) $asset->getAttribute('original_filename')),
+            'filename' => (string) $asset->getAttribute('original_filename'),
             'form' => [],
         ];
     }

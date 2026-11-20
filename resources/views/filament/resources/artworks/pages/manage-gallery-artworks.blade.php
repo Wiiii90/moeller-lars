@@ -9,8 +9,6 @@
             in_array((int) $row['id'], $selectedIds, true)
         );
         $selectedHasPublished = $selectedArtworks->contains(static fn (array $row): bool => $row['state'] === 'published');
-        $selectedAllDraft = $selectedArtworks->isNotEmpty()
-            && $selectedArtworks->every(static fn (array $row): bool => $row['state'] === 'draft');
         $selectedCanPublish = $galleryContext['state'] === 'published'
             && $selectedArtworks->contains(static fn (array $row): bool => $row['state'] === 'draft')
             && $selectedArtworks->every(static fn (array $row): bool => $row['is_ready']);
@@ -53,7 +51,7 @@
             />
             <div class="gallery-stage__workspace admin-visual-stage__pane" data-admin-stage-pane="editor" data-admin-stage-slot="1"
                 x-data="{
-                    phase: 'idle', progress: 0, processingStep: '', fileCount: 0, completed: 0, result: '',
+                    phase: 'idle', progress: 0, processingStep: '', transferDetail: '', fileCount: 0, completed: 0, result: '',
                     pendingUploads: [], uploadRunning: false,
                     async uploadFiles(input) {
                         await window.adminMediaUploader(this, input, $wire, 'gallery')
@@ -101,7 +99,7 @@
                     ">Ready for new files</span>
                     <span class="gallery-stage__upload-status-value"
                         x-text="
-                            phase === 'uploading' ? (completed + 1) + ' / ' + fileCount + ' · ' + progress.toFixed(1) + '%'
+                            phase === 'uploading' ? (completed + 1) + ' / ' + fileCount + ' · ' + progress.toFixed(1) + '% · ' + transferDetail
                             : phase === 'processing' ? (completed + 1) + ' / ' + fileCount + ' · ' + progress.toFixed(1) + '%'
                             : phase === 'result' ? 'Review Staged'
                             : @js(count($pendingBatchArtworkMedia)) + ' staged'
@@ -129,7 +127,7 @@
                                 class="admin-gallery-upload__icon" aria-hidden="true" />
                             <strong
                                 x-text="
-                                    phase === 'uploading' ? 'Uploading file ' + (completed + 1) + ' of ' + fileCount + ' · ' + progress.toFixed(1) + '%'
+                                    phase === 'uploading' ? 'Uploading file ' + (completed + 1) + ' of ' + fileCount + ' · ' + transferDetail
                                     : phase === 'processing' ? processingStep + ' · ' + progress.toFixed(1) + '%'
                                     : 'Drop images or videos here, or choose files'
                                 "
@@ -230,15 +228,15 @@
                         <select wire:model.live="statusFilter">
                             <option value="any">{{ __('Any') }}</option>
                             <option value="published">{{ __('Published') }}</option>
-                            <option value="draft">{{ __('Draft') }}</option>
+                            <option value="draft">{{ __('Unpublished') }}</option>
                         </select>
                     </label>
 
                     <label class="admin-data-field">
-                        <span>{{ __('Readiness') }}</span>
-                        <select wire:model.live="readinessFilter">
+                        <span title="Ready to publish requires a published Gallery, a title, a public URL, one available primary image or video, ALT text, and its generated preview. Artwork Date, material, dimensions and description are optional.">{{ __('Publish readiness') }}</span>
+                        <select wire:model.live="readinessFilter" aria-label="Filter by publish readiness">
                             <option value="any">{{ __('Any') }}</option>
-                            <option value="ready">{{ __('Ready') }}</option>
+                            <option value="ready">{{ __('Ready to publish') }}</option>
                             <option value="needs-attention">{{ __('Needs attention') }}</option>
                         </select>
                     </label>
@@ -308,7 +306,7 @@
                                 <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('down')" @disabled(! $selectedCanMoveDown)>{{ __('Move selected down') }}</button>
                                 <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('publishSelectedArtworks')" @disabled(! $selectedCanPublish)>{{ __('Publish selected') }}</button>
                                 <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('unpublishSelectedArtworks')" @disabled(! $selectedHasPublished)>{{ __('Unpublish selected') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('deleteSelectedArtworks')" @disabled(! $selectedAllDraft)>{{ __('Delete selected') }}</button>
+                                <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('deleteSelectedArtworks')">{{ __('Delete selected') }}</button>
                             </div>
                         </div>
                         <span class="admin-selection__count" aria-label="{{ count($selectedArtworkIds) }} selected">{{ count($selectedArtworkIds) }}</span>
@@ -466,8 +464,7 @@
                                         class="gallery-workspace__icon-action"
                                         type="button"
                                         wire:click="mountAction('deleteArtwork', { artwork: {{ $artwork['id'] }} })"
-                                        @disabled($artwork['state'] !== 'draft')
-                                        title="{{ $artwork['state'] === 'draft' ? 'Delete artwork' : 'Unpublish artwork before deleting' }}"
+                                        title="Delete Artwork (optionally with its Storage file)"
                                         aria-label="Delete artwork {{ $artwork['title'] }}"
                                     >
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />

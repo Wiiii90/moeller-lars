@@ -299,7 +299,6 @@ trait GalleryWorkspaceArtworkActions
             ->icon(AdminIcon::Delete->value)
             ->iconButton()
             ->color('danger')
-            ->disabled($published)
             ->extraAttributes(['class' => 'admin-dialog__header-action is-danger'])
             ->action(function () use ($artworkId): void {
                 $this->replaceMountedAction('deleteArtwork', ['artwork' => $artworkId]);
