@@ -6,7 +6,7 @@
 | --- | ---: | --- | --- | --- |
 | Dev Worker 1 | 9 | Active — replaced archived chat; local migration verified, qualification pending | Exhibition date precision/migration, address, map and autosave; Public Exhibitions baseline | [dev-1.md](workers/dev-1.md) |
 | Dev Worker 2 | 24 | Source implemented — Settings, General regional formats and primary Admin displays; migration/browser acceptance pending | Account/security, personal Admin regional Settings and Public General date/number/time/time-zone display; shared header/dialog owners unchanged | [dev-2.md](workers/dev-2.md) |
-| Dev Worker 3 | 25 | Active — Dashboard assignment registered; implementation not started | Admin Dashboard workspace, dashboard-specific content and actions; coordinate shared Admin owners | [dev-3.md](workers/dev-3.md) |
+| Dev Worker 3 | 25 | Source implemented — expanded Dashboard and Activity edit groups; runtime/browser acceptance pending | Dashboard notification group actions, combined viewer and Activity adjacent-edit presentation; individual records/actions preserved | [dev-3.md](workers/dev-3.md) |
 | Dev Worker 4 | 23 | Gallery Stage dropzone centered with custom centrally registered icon; browser acceptance pending | Gallery Artwork table, title editor, selection/ordering, Stage/Settings and Public Artwork/Gallery; coordinate shared controls with owners | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 19 | Source cleanup committed; isolated migration and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom types and Hero Artworks template; preserve Gallery/Exhibitions, retire Home-only editors | [dev-5.md](workers/dev-5.md) |
 
