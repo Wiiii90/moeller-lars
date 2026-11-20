@@ -187,7 +187,7 @@
                         <div class="gallery-stage__editor-actions admin-toolbar"
                             x-show="panel === 'queue'" x-cloak aria-label="Staged Artwork actions">
                             <div class="gallery-stage__action-group">
-                                <button class="admin-action gallery-stage__action-discard" type="button"
+                                <button class="admin-action is-danger gallery-stage__action-discard" type="button"
                                     title="Discard staged file and delete it from Storage" aria-label="Discard staged file from Storage"
                                     wire:click="discardStagedMedia({{ $selectedStagedMediaAssetId }})"
                                     wire:loading.attr="disabled" wire:target="discardStagedMedia,discardAllStagedMedia">

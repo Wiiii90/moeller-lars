@@ -2,7 +2,7 @@
 
 **Branch:** `dev`
 **Lease:** 30 (active; replacement registered 2026-11-21)
-**State:** The native Admin header surface is shared across modal types, and explicit Create/Command/Confirm submissions now occupy the rightmost slot after X. Confirm defaults to a Check glyph (danger styling retained); browser acceptance remains pending.
+**State:** Shared Admin dialog presentation is source-integrated; browser acceptance remains pending. A user-authorized, markup-only Gallery Stage Discard hover consistency correction was committed without taking over Gallery ownership.
 
 ## Assigned ownership and canonical sources
 - Central Filament Action modal lifecycle: `app/Filament/Support/Dialogs/AdminDialog.php`, `resources/js/admin-dialog-geometry.js` and `resources/css/admin/dialog-contract.css`. Preserve native focus, close/Escape, form validation, Create submission, Edit autosave, overlay stacking, scroll lock and nested picker interactions.
@@ -29,6 +29,10 @@
 - Promote the existing subtle full-width header tint/bottom border from Create/Edit's `admin-dialog--header-actions` style to the actual common native Filament modal header owner, covering Confirm/Command and framework-owned Account/Security dialogs. Task-specific header spacing, mouse-drag handle and modal geometry remain unchanged. No feature-local modal changes or second event/state system.
 - Scoped source review: Journal's post/exhibition and batch deletes, Pages, Gallery Artwork and batch, Storage, Dashboard, Activity, Custom Pages, Home Hero source confirmations share `AdminDialog::confirm()`; scheduling/move/Account actions use `command()`. Existing Create and autosaving Edit/Viewer behavior preserved. Product contract `docs/admin/dialogs.md` still describes old X/danger-icon conventions and needs Docs-owned reconciliation when the new behavior is browser accepted.
 - Verification is source-only: reviewed actual factory, layout selectors, action consumers and overlapping `dialog-interactions.css`; browser output, narrow/light/dark positioning, interactive header hitboxes and lifecycle are unverified. No tests, continuous integration, Preview or deployment run.
+
+## Gallery Stage Discard consistency (2026-11-21)
+- One bounded request outside usual dialog ownership: the single staged-file Discard button lacked the existing `is-danger` semantic class; adjacent Discard All already had it and uses the same `admin-action` component and icon. Added `is-danger` at the single-button construction point in `manage-gallery-artworks.blade.php` to reuse the already accepted shared danger hover/focus treatment. Did not change Gallery callbacks, domain mutations, batch actions, common styles or Dev Worker 4's ownership.
+- Verification: compared both neighboring button elements and shared Stage action rules at current `dev`; source-only. Browser hover/focus, disabled state and actual rendering still unverified.
 
 ## Current verification boundary
 - Previous holder reported central source changes and isolated JavaScript simulations/static checks, **not** browser acceptance. Current replacement changed only the centrally mapped Clear glyph as described above.
