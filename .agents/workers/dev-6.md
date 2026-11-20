@@ -1,5 +1,13 @@
 # Dev Worker 6 — Gallery Hero / former Home Hero
 
+## Shared visual picker convergence — 2026-11-21
+
+- The artist's repeated screenshot feedback invalidated the previous Filament-native CSS grid approach. Exhibition's functioning visual picker comes from `MediaAssetSelect::makeId()` → `MediaAssetPicker` → `filament.forms.components.media-asset-picker`, while Dummy Gallery had used a generic Filament `Select` with the same option HTML. Identical option markup did not imply identical layout, pagination, focus or modal behavior.
+- Dummy Gallery now uses the **same `MediaAssetPicker` class/Blade/visual grid** for its combined typed Artwork and Storage sources. Its source callback pages the existing bounded editorial candidate results (30 Artwork + 30 Storage) through the picker protocol. The same live field persists candidate selection and clears the transient pending candidate without a parallel editor. The shared picker Blade honors each field's search/empty/loading labels and resets its displayed choice when the server clears the state.
+- Removed the obsolete native-Filament CSS grid workaround from `media.css` rather than accumulating selectors. Removed the shared search input's orange focus underline; the search field retains its neutral separator. Exhibition retains its existing Storage-specific messages. The central visual-pick dialog-expansion and scroll owner remain unchanged.
+- Source/contract checks only. Actual open/search/scroll/select/reopen browser behavior, especially Create versus autosave Edit, remains unaccepted until the user's local Preview check. No tests, builds, CI or deployment.
+
+
 ## Dummy Gallery visual choice layout — 2026-11-21
 
 - After browser feedback on Add Dummy Gallery, confirmed the visual option HTML uses shared `admin-media-choice` cards in a **native Filament searchable Select**, whereas the shared grid layout in `media.css` applied only to `MediaAssetPicker`. A native full-width option therefore displayed huge images and clipped the list.

@@ -165,6 +165,7 @@
                     this.$el.dispatchEvent(new Event('change', { bubbles: true }))
                 },
             }"
+            x-effect="if (state === null || state === '') selectedLabel = null"
             x-on:keydown.escape="if (isOpen) { $event.stopPropagation(); closePicker(true) }"
             x-on:click.outside="closePicker()"
             {{
@@ -232,8 +233,8 @@
                     class="admin-media-picker__search"
                     type="search"
                     autocomplete="off"
-                    aria-label="{{ __('Search Storage by filename or ALT text') }}"
-                    placeholder="{{ __('Search Storage by filename or ALT text') }}"
+                    aria-label="{{ $getSearchPrompt() }}"
+                    placeholder="{{ $getSearchPrompt() }}"
                     x-on:input.debounce.300ms.stop="setSearch($event.target.value)"
                     x-on:change.stop="$event.stopPropagation()"
                     x-on:keydown.enter.prevent="$event.preventDefault()"
@@ -244,7 +245,7 @@
                     id="{{ $getId() }}-options"
                     class="admin-media-picker__list"
                     role="listbox"
-                    aria-label="{{ __('Storage files') }}"
+                    aria-label="{{ $getLabel() }}"
                     x-on:scroll.passive="if (isNearEnd()) loadMore()"
                 >
                     <template x-for="option in options" :key="option.value">
@@ -261,8 +262,8 @@
                     </template>
                 </div>
 
-                <div class="admin-media-picker__status" x-show="isLoading" x-cloak role="status">{{ __('Loading Storage files…') }}</div>
-                <div class="admin-media-picker__status" x-show="hasLoaded && ! isLoading && ! options.length && ! error" x-cloak>{{ __('No matching files in Storage') }}</div>
+                <div class="admin-media-picker__status" x-show="isLoading" x-cloak role="status">{{ $getSearchingMessage() }}</div>
+                <div class="admin-media-picker__status" x-show="hasLoaded && ! isLoading && ! options.length && ! error" x-cloak>{{ $getNoSearchResultsMessage() }}</div>
                 <button
                     type="button"
                     class="admin-media-picker__status admin-media-picker__retry"

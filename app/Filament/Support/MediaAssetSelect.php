@@ -273,6 +273,7 @@ final class MediaAssetSelect
             ))
             ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
             ->searchPrompt(__('Search Storage by filename or ALT text'))
+            ->searchingMessage(__('Loading Storage files…'))
             ->noSearchResultsMessage(__('No matching files in Storage'))
             ->allowHtml();
     }

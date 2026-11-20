@@ -31,17 +31,20 @@ final class GalleryHeroDummyGalleryDialog
                     }
                 })
                 ->columnSpanFull(),
-            AdminControl::select('pending_candidate', 'Insert existing Artwork')
-                // Reuse the shared visual Select dialog-expansion contract.
-                ->extraFieldWrapperAttributes(['class' => 'admin-media-picker--visual'], merge: true)
+            // Exhibition and Dummy Gallery share the same visual picker renderer.
+            // Only the candidate source and typed Artwork/Storage IDs differ.
+            MediaAssetPicker::make('pending_candidate')
+                ->label('Insert existing Artwork')
                 ->placeholder('Choose Artwork or Storage')
                 ->searchable()
+                ->native(false)
                 ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
-                // Initial options must be available before typing; the
-                // subsequent search uses the same Working/editorial owner.
-                ->options(fn (): array => self::candidateOptions(''))
+                ->searchPrompt('Search Artwork or Storage')
+                ->searchingMessage('Loading Artwork or Storage…')
+                ->noSearchResultsMessage('No matching Artwork or Storage')
+                ->extraAlpineAttributes(['class' => 'admin-media-picker--visual'], merge: true)
+                ->mediaPages(fn (int $offset, ?string $search): array => self::candidatePageOptions($offset, $search ?? ''))
                 ->allowHtml()
-                ->getSearchResultsUsing(self::candidateOptions(...))
                 ->getOptionLabelUsing(self::selectedCandidateLabel(...))
                 ->live()
                 ->dehydrated(false)
@@ -126,6 +129,29 @@ final class GalleryHeroDummyGalleryDialog
         }
 
         return $options;
+    }
+
+    /**
+     * Use the shared paginated visual picker without changing eligible-source
+     * semantics. The Artwork/Storage search remains the canonical bounded
+     * candidate query; pages expose its existing 30+30 result window.
+     *
+     * @return array{options:list<array{value:string,label:string}>,hasMore:bool}
+     */
+    private static function candidatePageOptions(int $offset, string $search): array
+    {
+        $choices = self::candidateOptions($search);
+        $start = max(0, $offset);
+        $page = array_slice($choices, $start, MediaAssetSelect::PAGE_SIZE, true);
+        $options = [];
+        foreach ($page as $value => $label) {
+            $options[] = ['value' => (string) $value, 'label' => $label];
+        }
+
+        return [
+            'options' => $options,
+            'hasMore' => $start + count($page) < count($choices),
+        ];
     }
 
     private static function selectedCandidateLabel(mixed $value): ?string
