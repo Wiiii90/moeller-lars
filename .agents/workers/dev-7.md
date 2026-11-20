@@ -168,6 +168,11 @@
 - Deduplicated the three equivalent Filament option hover/focus/selected CSS blocks into one `:is()` state rule while retaining the original selector specificity and visual treatment. Kept the page-size picker trailing checkmark padding specific to that component; unchanged functionality, structure, field bindings and layout breakpoints.
 - Performed static source checks: seven shared tokens defined once, referenced by their intended consumers, three CSS blocks brace-balanced, and a single Filament option state rule. Browser screenshots, tests, builds, CI and deployments were not run; runtime/visual acceptance remains open.
 
+## Equal dropdown option margins on all four edges (2026-11-20)
+- User reported that the orange hover/selected surface in dark-mode dropdowns had the canonical top/bottom 3px gap but still touched the left and right popup edges. Inspected the shared native Select, searchable Filament Select and pager owners on current dev. Filament options had `margin-inline` but could still retain their full-width row; native ungrouped options lacked inline margins, whereas native grouped ones already had them.
+- In the existing shared CSS owners, constrain Filament option width to the popup width minus both `--admin-select-option-inset` margins, apply that same inset to all native options, and remove the now-duplicated inline margin from the native grouped rule. Matched native vertical popup padding to the same 3px inset token. Pager already uses matching dimensions; no changes required there. No extra renderer, component, JavaScript behavior or page-specific override.
+- Static source checks only. No runtime/browser test, build, CI or deployment executed; visual acceptance remains open.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.

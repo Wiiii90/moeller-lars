@@ -147,7 +147,7 @@ html.fi select option:disabled {
         overflow-y: auto;
         overflow-x: hidden;
         margin-top: .2rem;
-        padding: .2rem 0;
+        padding: var(--admin-select-option-inset) 0;
         border: 1px solid var(--admin-line-strong);
         border-radius: var(--admin-overlay-corner-radius);
         background: var(--admin-control-popup-surface);
@@ -200,9 +200,8 @@ html.fi select option:disabled {
     }
 
     html.fi select:not([multiple]):is(:not([size]), [size="1"]) optgroup > option {
-        /* Exact symmetric hover/selected inset; group heading/divider instead
-         * fill the popup from one side to the other. */
-        margin: 0 var(--admin-select-option-inset);
+        /* Group headings fill the popup; their choices use the shared gutter. */
+        margin-block: 0;
         padding-inline-start: 1rem;
         font-size: var(--admin-control-value-size);
         font-weight: 400;
@@ -211,7 +210,10 @@ html.fi select option:disabled {
     }
 
     html.fi select:not([multiple]):is(:not([size]), [size="1"]) option {
+        box-sizing: border-box;
         display: flex;
+        /* Same inset as the first/last option has to the popup edges. */
+        margin-inline: var(--admin-select-option-inset);
         min-height: var(--admin-select-option-min-height);
         padding: var(--admin-select-option-padding-y) var(--admin-select-option-padding-x);
         align-items: center;
