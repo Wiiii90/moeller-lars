@@ -1,6 +1,7 @@
 @props([
     'viewMode' => 'list',
     'label' => 'View options',
+    'storageKey' => null,
 ])
 
 @php
@@ -12,7 +13,21 @@
 @endphp
 
 <div {{ $attributes->class(['media-workspace__view-options', 'admin-editorial-actions']) }}
-     role="group" aria-label="{{ __($label) }}">
+     role="group" aria-label="{{ __($label) }}"
+     x-init="
+         const key = @js($storageKey)
+         if (key) {
+             try {
+                 const saved = window.sessionStorage.getItem(key)
+                 if (['list', 'grid', 'dense'].includes(saved)) viewMode = saved
+                 $watch('viewMode', next => {
+                     if (['list', 'grid', 'dense'].includes(next)) {
+                         try { window.sessionStorage.setItem(key, next) } catch (_) {}
+                     }
+                 })
+             } catch (_) {}
+         }
+     ">
     @foreach ($modes as $mode)
         <button
             class="admin-action media-workspace__view-option"

@@ -323,7 +323,7 @@
                     </div>
                     <div class="admin-data-control-group gallery-workspace__view-group">
                         <span class="admin-data-control-label">{{ __('View') }}</span>
-                        <x-admin.view-options :view-mode="$viewMode" label="Artwork view" />
+                        <x-admin.view-options :view-mode="$viewMode" label="Artwork view" storage-key="admin-view.gallery" />
                     </div>
                 </x-slot:actions>
 

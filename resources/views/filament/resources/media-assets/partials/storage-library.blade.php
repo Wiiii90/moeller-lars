@@ -97,7 +97,7 @@
         <x-slot:actions>
             <div class="admin-data-control-group media-workspace__view-group">
                 <span class="admin-data-control-label">{{ __('View') }}</span>
-                <x-admin.view-options :view-mode="$viewMode" label="Media view" />
+                <x-admin.view-options :view-mode="$viewMode" label="Media view" storage-key="admin-view.storage" />
             </div>
         </x-slot:actions>
 
