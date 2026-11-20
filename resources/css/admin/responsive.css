@@ -583,13 +583,13 @@
 
 /* ---------- Gallery contact sheet ---------- */
 @container admin-workspace (max-width: 64rem){
-    .admin-gallery-grid:not(.gallery-workspace__list-view){
+    .admin-gallery-grid{
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 }
 
 @container admin-workspace (max-width: 38rem){
-    .admin-gallery-grid:not(.gallery-workspace__list-view){
+    .admin-gallery-grid{
         grid-template-columns: minmax(0, 1fr) !important;
     }
 }

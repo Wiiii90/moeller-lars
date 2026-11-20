@@ -98,6 +98,7 @@ trait GalleryWorkspaceUploadSettings
                 'Manual uses saved positions. Date and Media Added modes continuously order the Gallery. A drag, Move or Position edit switches to Manual and keeps that sequence.',
             ))
             ->options(GalleryPresentation::SORT_OPTIONS)
+            ->placeholder('')
             ->default(GalleryPresentation::SORT_MANUAL)
             ->required(! $stage)
             ->live()
@@ -135,6 +136,7 @@ trait GalleryWorkspaceUploadSettings
                     'Follow Artwork order retains the active Gallery sort. Other placement choices switch an automatically sorted Gallery to Manual on creation. An explicit Artwork Position always wins.',
                 ))
                 ->options(GalleryPresentation::ADD_OPTIONS)
+                ->placeholder('')
                 ->default(GalleryPresentation::ADD_FOLLOW)
                 ->required(! $stage),
             'add_placement', $stage,

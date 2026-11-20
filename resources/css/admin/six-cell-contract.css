@@ -461,11 +461,14 @@
 /* One semantic breakpoint per filter count. Mode is expressed only by the
  * same shared CSS custom properties; popup rendering above is not copied into
  * four separate page-specific rules. */
+/* Crowded action clusters (e.g. Gallery with Views) may adopt the same
+ * established Filters popover at Compact pressure as four-filter workspaces.
+ * This is one presentation owner, not a second popup or filter state. */
 @container admin-workspace (max-width: 76rem) {
-    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 {
+    :is(.admin-data-controls--dashboard-responsive.admin-data-controls--filters-4, .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2.admin-data-controls--filters-compact) {
         grid-template-columns: minmax(10rem, 1fr) max-content max-content !important;
     }
-    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-filter-overflow {
+    :is(.admin-data-controls--dashboard-responsive.admin-data-controls--filters-4, .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2.admin-data-controls--filters-compact) > .admin-filter-overflow {
         --admin-filter-popover-display: grid;
         --admin-filter-popover-position: fixed;
         --admin-filter-popover-reset-display: block;
@@ -478,19 +481,19 @@
         grid-row: 1 !important;
         align-self: end;
     }
-    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-filter-overflow > .admin-filter-overflow__trigger {
+    :is(.admin-data-controls--dashboard-responsive.admin-data-controls--filters-4, .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2.admin-data-controls--filters-compact) > .admin-filter-overflow > .admin-filter-overflow__trigger {
         display: inline-flex !important;
     }
-    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-filter-overflow > .admin-data-controls__filters {
+    :is(.admin-data-controls--dashboard-responsive.admin-data-controls--filters-4, .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2.admin-data-controls--filters-compact) > .admin-filter-overflow > .admin-data-controls__filters {
         display: none !important;
     }
-    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters {
+    :is(.admin-data-controls--dashboard-responsive.admin-data-controls--filters-4, .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2.admin-data-controls--filters-compact) > .admin-filter-overflow[data-open="true"] > .admin-data-controls__filters {
         display: var(--admin-filter-popover-display) !important;
     }
-    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-data-controls__utility {
+    :is(.admin-data-controls--dashboard-responsive.admin-data-controls--filters-4, .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2.admin-data-controls--filters-compact) > .admin-data-controls__utility {
         grid-column: 3 !important;
     }
-    .admin-data-controls--dashboard-responsive.admin-data-controls--filters-4 > .admin-data-controls__utility--has-reset > :first-child {
+    :is(.admin-data-controls--dashboard-responsive.admin-data-controls--filters-4, .admin-data-controls--dashboard-responsive.admin-data-controls--filters-2.admin-data-controls--filters-compact) > .admin-data-controls__utility--has-reset > :first-child {
         display: none !important;
     }
 }

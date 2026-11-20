@@ -611,82 +611,168 @@
     mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 1rem), transparent);
 }
 
-/* Reuse the same Artwork cards, selection, inline editing and actions in
- * both views. The List mode changes layout only, not editorial behavior. */
-.gallery-workspace__view-group .media-workspace__view-option.is-active {
-    color: var(--admin-text);
-    border-color: var(--admin-accent);
-    background: var(--admin-subtle);
+/* Storage-style List and Dense render a real Admin table. The Grid remains
+ * a separate Gallery-specific contact sheet; shared table/header/row/selection
+ * rendering comes from media.css, data-workspace.css and table-contract.css. */
+.gallery-workspace__table-wrap {
+    --admin-data-header-padding: .65rem .5rem;
+    --admin-data-cell-padding: .58rem .5rem;
 }
-.admin-gallery-grid.gallery-workspace__list-view {
-    grid-template-columns: minmax(0, 1fr);
-}
-.gallery-workspace__list-view .admin-gallery-grid__item {
-    grid-template-columns: 7rem minmax(0, 1fr) auto;
-    grid-template-rows: minmax(6rem, auto);
-    min-height: 6rem;
-    align-items: center;
-}
-.gallery-workspace__list-view .admin-gallery-grid__image {
-    grid-column: 1;
-    grid-row: 1;
-    width: 7rem;
-    height: 100%;
-    min-height: 6rem;
-    aspect-ratio: auto;
-}
-.gallery-workspace__list-view .admin-gallery-grid__caption {
-    grid-column: 2;
-    grid-row: 1;
+.gallery-workspace__table {
+    box-sizing: border-box;
+    width: 100%;
     min-width: 0;
-    align-items: center;
-    padding: .5rem .8rem;
-}
-.gallery-workspace__list-view .admin-gallery-grid__actions {
-    grid-column: 3;
-    grid-row: 1;
-    display: flex;
-    align-items: center;
-    gap: .55rem;
-    padding: .4rem .7rem;
-}
-.gallery-workspace__list-view .gallery-workspace__primary-actions {
-    right: auto;
-    left: 3rem;
-    top: .3rem;
-}
-.gallery-workspace__list-view .admin-gallery-grid__sequence {
-    top: .3rem;
-    left: .3rem;
-}
-.gallery-workspace__list-view .admin-gallery-grid__identity {
-    min-width: 0;
-}
-.gallery-workspace__list-view .admin-gallery-grid__identity span,
-.gallery-workspace__list-view .admin-gallery-grid__analytics {
     max-width: 100%;
+    table-layout: fixed;
 }
-@container admin-workspace (max-width: 38rem) {
-    .gallery-workspace__list-view .admin-gallery-grid__item {
-        grid-template-columns: 4.8rem minmax(0, 1fr);
-        grid-template-rows: auto auto;
+.gallery-workspace__col-preview { width: 4.75rem; }
+.gallery-workspace__col-artwork { width: auto; }
+.gallery-workspace__col-analytics { width: 14%; }
+.gallery-workspace__col-status { width: 8rem; }
+.gallery-workspace__col-actions { width: calc(var(--admin-row-actions-width) + .7rem); }
+.gallery-workspace__col-selection { width: var(--admin-table-selection-width); }
+.gallery-workspace__table {
+    --admin-row-actions-width: 29.5rem;
+}
+.gallery-workspace__table-name {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    gap: .35rem;
+}
+.gallery-workspace__table-name > .admin-drag-handle {
+    flex: 0 0 1.4rem;
+    padding: 0;
+    text-align: center;
+}
+.gallery-workspace__table-sequence {
+    display: inline-block;
+    flex: 0 0 1.65rem;
+    text-align: center;
+    color: var(--admin-muted);
+    font-size: var(--admin-font-size-table-compact);
+    font-variant-numeric: tabular-nums;
+}
+.gallery-workspace__table-title {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--admin-text);
+    text-align: left;
+    cursor: pointer;
+}
+.gallery-workspace__table-title strong {
+    display: block;
+    overflow: hidden;
+    color: var(--admin-text);
+    font: inherit;
+    font-size: var(--admin-font-size-table-identity);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.gallery-workspace__table-title:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+.gallery-workspace__table-open-public {
+    display: inline-grid;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex: 0 0 1.5rem;
+    place-items: center;
+    color: var(--admin-muted);
+}
+.gallery-workspace__table-open-public svg {
+    width: .95rem;
+    height: .95rem;
+}
+.gallery-workspace__table-open-public:hover,
+.gallery-workspace__table-open-public:focus-visible {
+    color: var(--admin-text);
+}
+.gallery-workspace__table-analytics {
+    overflow: hidden;
+    font-size: var(--admin-font-size-table-meta);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.gallery-workspace__table-status > small,
+.gallery-workspace__table-public {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    margin-top: .18rem;
+    font-size: var(--admin-font-size-table-meta);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.gallery-workspace__table-public {
+    color: var(--admin-muted);
+    text-decoration: underline;
+    text-underline-offset: .12rem;
+}
+.gallery-workspace__row-actions {
+    --admin-row-actions-width: 29.5rem;
+    --admin-row-actions-columns: 3.65rem 4.75rem 5.5rem 6.8rem 4.15rem 3.65rem;
+    --admin-row-actions-gap: .2rem;
+}
+.gallery-workspace__table-actions .admin-action {
+    min-height: 1.65rem;
+}
+.gallery-workspace__selection-head,
+.gallery-workspace__selection-cell {
+    text-align: center !important;
+}
+.gallery-workspace__selection-head input,
+.gallery-workspace__selection-cell input {
+    display: block;
+    margin-inline: auto;
+}
+.gallery-workspace__table-wrap.is-dense .gallery-workspace__table td {
+    padding: .38rem .5rem;
+}
+.gallery-workspace__table-wrap.is-dense .gallery-workspace__table-identity > small,
+.gallery-workspace__table-wrap.is-dense .gallery-workspace__table-status > small,
+.gallery-workspace__table-wrap.is-dense .gallery-workspace__table-public {
+    display: none;
+}
+
+/* The existing table-content pressure owner hides supportive columns.
+ * Action axes contract together before they would consume Artwork width. */
+@container admin-table (max-width: 76rem) {
+    .gallery-workspace__table {
+        --admin-row-actions-width: 10.9rem;
     }
-    .gallery-workspace__list-view .admin-gallery-grid__image {
-        width: 4.8rem;
-        min-height: 5rem;
+    .gallery-workspace__row-actions {
+        --admin-row-actions-width: 10.9rem;
+        --admin-row-actions-columns: repeat(6, 1.6rem);
+        --admin-row-actions-gap: .2rem;
     }
-    .gallery-workspace__list-view .admin-gallery-grid__caption {
-        padding: .35rem .5rem;
+    .gallery-workspace__row-actions .admin-action {
+        width: 1.6rem !important;
+        min-width: 1.6rem !important;
+        min-height: 1.75rem;
+        padding: 0 !important;
+        justify-content: center !important;
     }
-    .gallery-workspace__list-view .admin-gallery-grid__actions {
-        grid-column: 1 / -1;
-        grid-row: 2;
-        justify-content: space-between;
-        padding: .25rem .45rem;
-        border-top: 1px solid var(--admin-line);
+    .gallery-workspace__row-actions .admin-action__label {
+        display: none !important;
     }
-    .gallery-workspace__list-view .gallery-workspace__primary-actions {
-        left: 1.8rem;
-        gap: 0;
+}
+@container admin-table (max-width: 64rem) {
+    .gallery-workspace__table .admin-responsive-meta:not(.gallery-workspace__table-folded-state) {
+        display: block;
+    }
+}
+@container admin-table (max-width: 54rem) {
+    .gallery-workspace__table .gallery-workspace__table-identity .gallery-workspace__table-folded-state,
+    .gallery-workspace__table-wrap.is-dense .gallery-workspace__table-identity .gallery-workspace__table-folded-state {
+        display: block;
     }
 }

@@ -118,11 +118,10 @@ final class AdminControl
     public static function decorate($field)
     {
         if ($field instanceof Select) {
-            // Required selects may still render Filament's neutral placeholder
-            // before a create value exists, but it is never a selectable state.
-            // Edit dialogs are filled from persisted state, so they cannot fall
-            // back to a selectable "Select an option" branch.
-            $field->selectablePlaceholder(fn (): bool => ! $field->isRequired());
+            // Admin selects never invent a "Select an option" entry. A real
+            // selected value (or a blank optional state) is authoritative.
+            // Only an explicit field-level placeholder() call may opt in.
+            $field->placeholder('')->selectablePlaceholder(false);
             self::bridgeEditStateChange($field);
         } elseif ($field instanceof DateTimePicker && ! $field->isNative()) {
             self::bridgeEditStateChange($field);

@@ -2,7 +2,17 @@
 
 **Lease:** 22
 **Branch:** dev
-**State:** Active — 2026-11-20 shared Gallery/General Live Preview presentation refinement prepared; browser visual acceptance pending.
+**State:** Active — 2026-11-20 Gallery List/Grid/Dense and Select/Filter consistency source revision; browser/runtime verification pending.
+
+## Gallery multi-view table and Select/Filter policy — 2026-11-20
+
+- User explicitly rejected all automatic `Select an option` prompts and requested a durable Admin rule: central `AdminControl` now defaults `Select` fields to an empty nonselectable placeholder. The Gallery Stage/Settings Artwork order and New Artwork placement fields explicitly carry `->placeholder('')` too. Only an explicit future artist request may opt a specific field into placeholder copy.
+- Gallery view selector standardized to List, Grid, Dense in that order, with List as default; session-validated `viewMode` supports all three, matching Storage. View labels and icons reuse the shared `media-workspace__view-options` owner (full labels Wide, icons under the shared 64rem pressure breakpoint). Grid preserves existing Gallery Artwork contact sheet; old fake List-card CSS was removed.
+- List and Dense now use a real `x-admin.table` with canonical `media-workspace__table-wrap` and `admin-table--six-grid` on the actual table, one elastic Artwork identity column, optional thumbnail in List, analytics/status fold under shared table breakpoints, fixed semantic row action slots (Edit, Move Up/Down, Publish/Unpublish, Move to Gallery, Delete), public link, and terminal selection. Dense removes previews and secondary text, reducing row height. Row handlers reuse existing Artwork actions, and the table's selected-all header calls one GalleryWorkspace method scoped to visible IDs; no second state or domain mutation.
+- Gallery toolbar opts into the shared early two-filter popover at <=76rem using the semantic `admin-data-controls--filters-compact` class; same `x-admin.controls` dropdown and Clear action remain. This feature belongs to shared `six-cell-contract.css`, not page-specific popup code.
+- User explicitly requested the two enduring rules; made narrow source-aligned updates to `docs/admin/controls.md` (Select placeholder) and `docs/admin/ui.md` / `docs/admin/responsive.md` (view taxonomy, shared List/Dense vs domain-specific Grid, Gallery pressure).
+- Implementation and source inspection only. No PHP/Vite/browser runtime, CI, migrations or Tests were run. Testing handoff: Gallery List/Dense at Wide/Compact/Narrow/Minimal; header select-all and Livewire selection persistence, text truncation, public link, six actions, drag/reorder gating, modal actions, filter overflow and Clear; select values on Stage and dialog, explicit optional Select state and Storage regression. Docs reconcile any later accepted geometry.
+- Public Gallery/Artwork, Preview engine, Home, upload pipelines and domain persistence untouched.
 
 ## Shared Gallery/General Live Preview visual refinement — 2026-11-20
 

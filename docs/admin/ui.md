@@ -229,6 +229,29 @@ The **[Journal split/fold table contract](tables.md#journals-splitfold-compositi
 
 The **[Admin Dialog contract](dialogs.md#journal-blogexhibitions-edit-aktionen)** owns Journal Create/Edit modal lifecycle and header actions. Blog uses Basics/Text/Gallery sections; the Exhibition editor uses the flat shared responsive schema and the [Exhibition editorial contract](../content/exhibitions.md) governs its specific fields and Gallery media table. Neither a tabular Journal row nor this UI overview defines a separate persistence owner.
 
+## Multi-view data surfaces — List, Grid and Dense
+
+Where an Admin collection offers multiple representations, the canonical
+view-selector order is **List · Grid · Dense**. The shared View toolbar
+shows both icon and name when Wide space permits, and compacts all view
+options to icons together at the established responsive state. The selected
+view persists as normal browser-session presentation state, not a second
+copy of collection data.
+
+**List and Dense are genuine ordinary Admin tables**, sharing the same table
+shell, header, content, semantic columns, actions, terminal selection and
+responsive fold grammar across domains. Dense removes the thumbnail and
+compresses secondary metadata and row height rather than rebuilding the
+collection into faux cards. Grid may be a *domain-specific visual surface*:
+Storage's reusable Media grid and Gallery's larger Artwork contact sheet
+deliberately differ; their shared name does not require matching card shape.
+Neither List nor Dense may be simulated by applying CSS rows to Grid cards.
+
+Filter controls in a dense toolbar continue to use the one canonical
+`x-admin.controls` overflow popover, including its shared Clear action.
+Task-heavy collections may opt into the earlier shared filter-collapse
+threshold; they must not invent a page-specific popup or second filter state.
+
 ## 13. Gallery and Storage are accepted style references
 
 Gallery and Storage are currently browser/product accepted and are the primary style references for the admin where their geometry applies.

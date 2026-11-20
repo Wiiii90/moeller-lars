@@ -481,27 +481,6 @@
     border-bottom: 0;
 }
 
-.admin-storage .media-workspace__view-options {
-    display: grid;
-    width: max-content;
-    min-width: 0;
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
-    gap: .12rem;
-    align-items: center;
-}
-
-.admin-storage .media-workspace__view-option {
-    display: inline-flex !important;
-    width: auto;
-    min-width: 0;
-    height: var(--admin-control-height);
-    padding-inline: .35rem;
-    gap: .3rem;
-    align-items: center;
-    justify-content: center;
-}
-
 /* The trailing Actions + Selection rails follow the shared action contract.
  * Status reserves room for complete labels; Media absorbs the remaining
  * width in both List and Dense modes, without a parallel fixed-width rule. */

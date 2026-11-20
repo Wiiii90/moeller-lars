@@ -90,6 +90,18 @@ change ordinary table row Actions, Selection popup actions or dialog buttons.
 
 Native single-selects and pager selects stay on one native render path. Shared CSS in `resources/css/admin/layouts.css`, `resources/css/admin/data-workspace.css` and `resources/css/admin/task-surfaces.css` owns their trigger, typography and popup theming; Chromium's customizable-select surface is progressive enhancement only. Do not add a JavaScript-generated replacement select, duplicate popup DOM or a second presentation path. Opening a dropdown must never add document height, change the page scrollbar, call window scrolling APIs or reserve layout space for the popup.
 
+## Select placeholder policy — no implicit "Select an option"
+
+All Admin single-select fields must show an actual value from the supported
+option set when a value is available. **Never add an automatic "Select an
+option" placeholder**, including in create/edit dialogs and Stage settings.
+The canonical `AdminControl` / Filament `Select` default is an empty,
+nonselectable placeholder, not a prompt. A field may explicitly opt into
+visible placeholder copy **only when the artist requests it for that field**.
+Optional empty state and real options retain their domain semantics; do not
+introduce an artificial selectable value or alter validation to display a hint.
+This requirement applies equally to Stage and Settings dialogs.
+
 ## Persistence semantics
 
 Persistence must never be driven by a debounce timer. Read-only search is the one deliberate debounce use-case and is defined separately below. Animation, clocks and browser render scheduling are presentation concerns; they are not persistence timers.

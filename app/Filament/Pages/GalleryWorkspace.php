@@ -100,7 +100,7 @@ final class GalleryWorkspace extends Page
     public string $search = '';
 
     #[Session]
-    public string $viewMode = 'grid';
+    public string $viewMode = 'list';
 
     #[Session]
     public string $statusFilter = 'any';
@@ -110,7 +110,7 @@ final class GalleryWorkspace extends Page
 
     public function mount(int|string $gallery): void
     {
-        $this->viewMode = in_array($this->viewMode, ['grid', 'list'], true) ? $this->viewMode : 'grid';
+        $this->viewMode = in_array($this->viewMode, ['list', 'grid', 'dense'], true) ? $this->viewMode : 'list';
         $this->statusFilter = in_array($this->statusFilter, ['any', 'published', 'draft'], true) ? $this->statusFilter : 'any';
         $this->readinessFilter = in_array($this->readinessFilter, ['any', 'ready', 'needs-attention'], true)
             ? $this->readinessFilter
@@ -291,9 +291,22 @@ final class GalleryWorkspace extends Page
 
     public function setViewMode(string $mode): void
     {
-        if (in_array($mode, ['grid', 'list'], true)) {
+        if (in_array($mode, ['list', 'grid', 'dense'], true)) {
             $this->viewMode = $mode;
         }
+    }
+
+    public function toggleVisibleArtworkSelection(): void
+    {
+        $visibleIds = array_map(static fn (array $row): int => (int) $row['id'], $this->artworks);
+        if ($visibleIds === []) {
+            return;
+        }
+        $selected = array_map('intval', $this->selectedArtworkIds);
+        $allSelected = count(array_intersect($visibleIds, $selected)) === count($visibleIds);
+        $this->selectedArtworkIds = $allSelected
+            ? array_values(array_diff($selected, $visibleIds))
+            : array_values(array_unique([...$selected, ...$visibleIds]));
     }
 
     public function updatedSearch(): void

@@ -193,7 +193,7 @@
         </section>
 
         <div class="gallery-workspace__result-surface admin-visual-stage-followup">
-            <x-admin.controls class="admin-data-controls--dashboard-responsive gallery-workspace__controls" aria-label="Gallery controls" metric-grid :filter-count="2" :search-span="2">
+            <x-admin.controls class="admin-data-controls--dashboard-responsive admin-data-controls--filters-compact gallery-workspace__controls" aria-label="Gallery controls" metric-grid :filter-count="2" :search-span="2">
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>{{ __('Search') }}</span>
@@ -259,23 +259,31 @@
                     </div>
                     <div class="admin-data-control-group gallery-workspace__view-group">
                         <span class="admin-data-control-label">{{ __('View') }}</span>
-                        <div class="media-workspace__view-options admin-editorial-actions" role="group" aria-label="Gallery view">
-                            <button class="admin-action media-workspace__view-option {{ $viewMode === 'grid' ? 'is-active' : '' }}"
-                                type="button" wire:click="setViewMode('grid')" aria-label="Gallery" title="Gallery"
-                                aria-pressed="{{ $viewMode === 'grid' ? 'true' : 'false' }}">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::ViewGrid->mini()" class="media-workspace__view-icon" />
-                            </button>
+                        <div class="media-workspace__view-options admin-editorial-actions" role="group" aria-label="Artwork view">
                             <button class="admin-action media-workspace__view-option {{ $viewMode === 'list' ? 'is-active' : '' }}"
                                 type="button" wire:click="setViewMode('list')" aria-label="List" title="List"
                                 aria-pressed="{{ $viewMode === 'list' ? 'true' : 'false' }}">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::ViewList->mini()" class="media-workspace__view-icon" />
+                                <span class="admin-action__label">{{ __('List') }}</span>
+                            </button>
+                            <button class="admin-action media-workspace__view-option {{ $viewMode === 'grid' ? 'is-active' : '' }}"
+                                type="button" wire:click="setViewMode('grid')" aria-label="Grid" title="Grid"
+                                aria-pressed="{{ $viewMode === 'grid' ? 'true' : 'false' }}">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::ViewGrid->mini()" class="media-workspace__view-icon" />
+                                <span class="admin-action__label">{{ __('Grid') }}</span>
+                            </button>
+                            <button class="admin-action media-workspace__view-option {{ $viewMode === 'dense' ? 'is-active' : '' }}"
+                                type="button" wire:click="setViewMode('dense')" aria-label="Dense" title="Dense"
+                                aria-pressed="{{ $viewMode === 'dense' ? 'true' : 'false' }}">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::ViewDense->mini()" class="media-workspace__view-icon" />
+                                <span class="admin-action__label">{{ __('Dense') }}</span>
                             </button>
                         </div>
                     </div>
                 </x-slot:actions>
 
                 <x-slot:selection>
-                    <div class="admin-data-control-group admin-selection admin-selection--free-count" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
+                    <div class="admin-data-control-group admin-selection {{ $viewMode === 'grid' ? 'admin-selection--free-count' : '' }}" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
                         <span class="admin-data-control-label">{{ __('Selection') }}</span>
                         <div class="admin-selection__anchor">
                             <button
@@ -304,11 +312,12 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            @if ($artworks !== [])
+            @if ($artworks !== [] && $viewMode !== 'grid')
+                @include('filament.resources.artworks.partials.gallery-artwork-table')
+            @elseif ($artworks !== [])
                 <section
-                    class="admin-gallery-grid {{ $viewMode === 'list' ? 'gallery-workspace__list-view' : '' }}"
+                    class="admin-gallery-grid"
                     aria-label="Artwork sequence for {{ $galleryContext['name'] }}"
-                    @if ($viewMode === 'list') role="list" @endif
                     @if ($reorderEnabled) wire:sort="sortArtwork" @endif
                 >
                     @foreach ($artworks as $artwork)
@@ -316,7 +325,6 @@
                         <article
                             class="admin-gallery-grid__item gallery-workspace__card {{ $selected ? 'is-selected' : '' }}"
                             wire:key="gallery-artwork-{{ $artwork['id'] }}"
-                            @if ($viewMode === 'list') role="listitem" @endif
                             @if ($reorderEnabled) wire:sort:item="{{ $artwork['id'] }}" @endif
                         >
                             <button

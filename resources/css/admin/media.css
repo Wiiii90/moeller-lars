@@ -601,24 +601,38 @@
 }
 
 /* Media-specific view and interaction polish. */
+/* One shared List / Grid / Dense view-control presentation for Storage
+ * and Gallery. The six-cell toolbar handles Wide labels and Compact icons. */
 .media-workspace__view-options {
-    display: inline-flex;
+    display: grid;
+    width: max-content;
+    min-width: 0;
     min-height: var(--admin-control-height);
-    gap: .18rem;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    gap: .12rem;
     align-items: center;
 }
-
 .media-workspace__view-option {
-    display: grid;
-    width: 2rem;
-    height: 2rem;
-    padding: 0;
-    place-items: center;
+    display: inline-flex;
+    box-sizing: border-box;
+    width: auto;
+    min-width: 0;
+    height: var(--admin-control-height);
+    padding-inline: .35rem;
+    gap: .3rem;
+    align-items: center;
+    justify-content: center;
     border: 1px solid transparent;
     border-radius: .2rem;
     background: transparent;
     color: var(--admin-muted);
     cursor: pointer;
+}
+.media-workspace__view-option.is-active {
+    border-color: var(--admin-accent);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
 }
 
 .media-workspace__view-icon,
