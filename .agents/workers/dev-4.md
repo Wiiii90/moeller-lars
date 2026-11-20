@@ -4,6 +4,13 @@
 **Branch:** dev
 **State:** Active — 2026-11-20 Gallery List/Dense table structure corrected against Exhibitions and Storage; source review complete, browser acceptance pending.
 
+## Targeted Home Hero class resolution fix — 2026-11-20
+
+- Local browser error reported: `Class "App\\Filament\\Pages\\Concerns\\GalleryWorkspace" not found` while loading `/admin/pages/gallery/hero/1`, at `GalleryHeroWorkspaceProjection.php:211`.
+- Cause: `GalleryHeroWorkspaceProjection` is a trait in namespace `App\\Filament\\Pages\\Concerns`, while `GalleryWorkspace` lives in `App\\Filament\\Pages`; the call to `GalleryWorkspace::getUrl()` lacked a class import.
+- Added only `use App\\Filament\\Pages\\GalleryWorkspace;` to the trait, preserving the existing canonical Gallery route and Hero projection logic. This is a bounded runtime repair on Dev Worker 6's Home Hero owner; no independent Home Hero refactor or shared API change.
+- Verified exact class namespace and referenced route signature from current `dev` sources. Local runtime/browser verification is with the artist; no tests, continuous integration, or deployment triggered.
+
 ## Gallery table acceptance correction — 2026-11-20
 
 - User rejected the prior Gallery List/Dense table as nonconforming: unexpected raw-looking Selection checkboxes, Position+Drag inside Artwork, unnecessary public link next to the title, metadata punctuation with middots, unsupported 2nd/3rd Status line, analytics duplication, and Dense prioritizing Analytics instead of Year/Dimensions/Material.

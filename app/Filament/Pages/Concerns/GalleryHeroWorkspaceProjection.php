@@ -12,6 +12,7 @@ use App\Domain\Content\GalleryHeroResolver;
 use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\MediaPreviewVariant;
+use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
