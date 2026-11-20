@@ -2,25 +2,25 @@
 
 **Branch:** `dev`  
 **Lease:** 28 (active)  
-**State:** Native scrolling and middle-button drag accepted by the artist; Help retained. Conflicting modifier-wheel zoom removed. Touch and Help browser acceptance pending.
+**State:** Direct mouse-wheel zoom is source-integrated as a user-requested **trial**, awaiting browser feedback. Previous middle-button navigation was accepted.
 
-## Scope and current decisions
+## Ownership and current decisions
 
-- Shared Admin Live Preview in General, Gallery and its direct consumers. Coordinate with Dev Worker 7's shared device-picker and styling ownership; Gallery selection/focus and General Appearance remain with feature owners.
-- Artist confirmed on 2026-11-20 that native scroll-owned zoom, full edge reachability and middle-button dragging work well. Keep normal mouse wheel for page scrolling, middle-button hold-and-drag/held Space for free movement, and clickable Public links while zoomed. Persistent Pan toggle remains retired.
-- Artist explicitly rejected Ctrl + mouse wheel as a Preview zoom gesture because it conflicts with native browser magnification. No modifier-wheel zoom is registered or documented. Continue to use the existing Zoom In / Zoom Out actions and fitted-percentage reset.
-- The shared Help bulb appears immediately after Open Preview in the Preview toolbar, using the existing `x-admin.help` popover with the central toolbar variant. It describes the currently available mouse and touch controls. Do not create an independent tooltip design.
-- Intended touch model is one-finger normal Public scrolling and taps, with two-finger panning of a magnified Preview. This remains **untested on a real touch device**.
+- Own the shared `x-admin.live-preview` controls and gestures in General and Gallery. Coordinate with Dev Worker 7 on shared device controls; Gallery Focus/selection and General Appearance remain with their respective owners.
+- Artist confirmed that the scroll-owned zoom surface, complete edge reachability, middle-button press/drag and clickable Public menu work better. Preserve that accepted interaction and the existing zoom buttons/percentage reset.
+- **Current trial (2026-11-20):** unmodified wheel inside Live Preview now zooms toward the cursor; hold Shift while using the wheel inside the Public iframe for vertical Public-page scrolling. The same-origin iframe and enclosing preview viewport use a single controller. Ctrl/Command + wheel is deliberately not intercepted, because browser zoom belongs to the browser; no browser-wide listener is added. Outside the Preview the normal wheel behavior is unchanged.
+- At zoomed sizes, the middle button plus drag (or Space plus left drag) pans both axes. No persistent Pan toggle or idle overlay blocks Public links. Touch still uses native one-finger page interaction and a two-finger movement gesture for a zoomed viewport, unverified in a real device.
+- Shared bulb Help remains immediately right of Open Preview, reusing `x-admin.help` and its opt-in toolbar variant; its instructions now reflect this trial. Device picker/rotation and Gallery Focus stay unchanged.
 
-## Source owners and verification
+## Implementation and evidence
 
-- `resources/js/admin-live-preview.js` retains accepted scroll-owned fitting, middle-button and Space gestures, per-iframe pointer listeners, and two-finger touch panning. Modifier-wheel listener/state and zoom interpolation were reverted, restoring the existing toolbar-only `changeZoom(step)`.
-- `resources/views/components/admin/live-preview.blade.php` retains centralized Help after Open Preview; removed the parent modifier-wheel event and the obsolete Ctrl+wheel instruction.
-- `resources/views/components/admin/help.blade.php` / `resources/css/admin/forms.css` retain the shared Help component's optional toolbar sizing; field Help remains the same.
-- Earlier bounded in-memory tests verified basic native zoom/middle-button movement. Actual user browser feedback accepts mouse navigation; Help popover, narrow toolbar and touch are still unverified. No test suite, local preview, build, Continuous Integration, deployment or publication was run for this rollback.
+- `resources/js/admin-live-preview.js`: `zoomWithWheel()` uses actual wheel deltas with bounded smooth multiplicative zoom. It delegates to the existing `fitPreview()` transform/scroll owner and anchors zoom under the pointer. The iframe registers a scoped non-passive wheel listener in `bindFrameShortcuts()` and removes it on refresh/destroy. Browser modifiers are ignored. Shift-wheel scrolls the same-origin Public document rather than zooming.
+- `resources/views/components/admin/live-preview.blade.php`: local viewport wheel handling and updated Help text; no new button or separate popup.
+- A bounded in-memory JavaScript syntax/behavior check passed for ordinary wheel zoom, browser modifier preservation, Shift-wheel Public scrolling, iframe listener registration/removal, percentage reset and untouched touch methods. No application build, full suite, CI, deployment or real browser/touch check was executed.
+- **Product tradeoff for review:** plain wheel no longer scrolls the embedded Public document; Shift-wheel offers that route. Trackpad two-finger wheel-like scrolling may also zoom. The user asked to view and evaluate this behavior rather than freeze it as final acceptance.
 
 ## Next
 
-1. Receive user browser review of Help placement, interaction and accessibility in General and Gallery and check existing zoom buttons/page scrolling remain unchanged.
-2. Verify a real touch device or isolated controlled browser before claiming Touch behavior is supported.
-3. Before any further edit recheck `dev` HEAD, lease 28 and Dev Worker 7's overlapping Preview ownership.
+1. Inspect in the artist's running General and Gallery preview: wheel direction/sensitivity, cursor anchoring, mouse scrolling versus Shift-wheel, links after zoom, middle drag, Help text, narrow layout and standalone browser shortcuts.
+2. Keep or revise the trial based on explicit user browser feedback. Verify touch on a real device before claiming mobile acceptance.
+3. Re-read current `dev` HEAD, roster lease and Dev Worker 7's overlap before further mutations.

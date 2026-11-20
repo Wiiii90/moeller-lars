@@ -98,7 +98,7 @@
             <x-admin.help
                 :toolbar="true"
                 label="Preview controls and gestures"
-                text="Mouse wheel: scroll the page. Hold the middle mouse button and drag, or hold Space and drag, to move a zoomed preview. Use the zoom buttons to change magnification and click the zoom percentage to fit the preview again. Touch: swipe and tap normally; use two fingers to move a zoomed preview."
+                text="Mouse wheel: zoom the preview. Shift + mouse wheel: scroll the public page vertically. Hold the middle mouse button and drag, or hold Space and drag, to move a zoomed preview. The zoom buttons also work; click the percentage to fit again. Touch: swipe and tap normally; use two fingers to move a zoomed preview."
             />
         </div>
     </x-admin.stage-tool-row>
@@ -108,6 +108,7 @@
         x-on:pointerenter="pointerInside = true"
         x-on:pointerleave="pointerInside = false; if (!dragging) cancelSpacePan()"
         x-on:pointerdown.capture="startPan($event)"
+        x-on:wheel.capture="zoomWithWheel($event)"
         x-on:auxclick="if (zoom > minZoom && $event.button === 1) $event.preventDefault()"
         x-on:touchstart="startTouchPan($event)"
         x-on:touchmove="moveTouchPan($event)"

@@ -171,14 +171,72 @@ export function adminLivePreview(element) {
             this.fitPreview()
         },
         changeZoom(step) {
-            const nextZoom = Math.max(this.minZoom, Math.min(this.maxZoom, Math.round((this.zoom + step) * 100) / 100))
-            if (nextZoom === this.zoom) return
-            if (nextZoom === this.minZoom) {
+            this.setZoom(Math.round((this.zoom + step) * 100) / 100)
+        },
+        setZoom(requestedZoom, point = null) {
+            const nextZoom = Math.max(this.minZoom, Math.min(this.maxZoom, requestedZoom))
+            if (! Number.isFinite(nextZoom) || nextZoom === this.zoom) return
+            if (nextZoom <= this.minZoom) {
                 this.resetZoom()
                 return
             }
+
+            const viewport = this.$refs.viewport
+            const surface = this.$refs.surface
+            let anchor = null
+            if (point && viewport && surface) {
+                const oldSurface = surface.getBoundingClientRect()
+                const oldViewport = viewport.getBoundingClientRect()
+                if (oldSurface.width > 0 && oldSurface.height > 0) {
+                    anchor = {
+                        x: Math.max(0, Math.min(1, (point.x - oldSurface.left) / oldSurface.width)),
+                        y: Math.max(0, Math.min(1, (point.y - oldSurface.top) / oldSurface.height)),
+                        screenX: point.x - oldViewport.left - viewport.clientLeft,
+                        screenY: point.y - oldViewport.top - viewport.clientTop,
+                    }
+                }
+            }
+
             this.zoom = nextZoom
             this.fitPreview()
+            if (anchor) {
+                // Scroll the newly sized canvas so the pointed-at part of the
+                // Public page stays at the same place beneath the cursor.
+                viewport.scrollLeft = anchor.x * surface.offsetWidth - anchor.screenX
+                viewport.scrollTop = anchor.y * surface.offsetHeight - anchor.screenY
+            }
+        },
+        wheelPixels(event, delta) {
+            const unit = event.deltaMode === 1 ? 16
+                : (event.deltaMode === 2 ? (this.$refs.viewport?.clientHeight || 800) : 1)
+            return delta * unit
+        },
+        zoomWithWheel(event, inFrame = false) {
+            // This trial deliberately uses the plain wheel for preview zoom.
+            // Browser-reserved modifier gestures still belong to the browser.
+            if (event.ctrlKey || event.metaKey || event.altKey || ! event.cancelable) return
+
+            if (event.shiftKey) {
+                // Keep long Public pages scrollable while plain wheel is zoom:
+                // Shift + wheel scrolls the embedded document vertically.
+                if (! inFrame) return
+                const documentRef = this.$refs.frame?.contentDocument
+                const scrollRoot = documentRef?.scrollingElement
+                const delta = this.wheelPixels(event, event.deltaY || event.deltaX)
+                if (! scrollRoot || ! delta) return
+                event.preventDefault()
+                scrollRoot.scrollTop += delta
+                return
+            }
+            if (! event.deltaY) return
+            event.preventDefault()
+
+            // One ordinary wheel notch should be distinct, while fine
+            // touchpad deltas give incremental zoom without whole-step jumps.
+            const delta = Math.max(-160, Math.min(160, this.wheelPixels(event, event.deltaY)))
+            const nextZoom = this.zoom * Math.exp(-delta * 0.002)
+            const point = this.previewPoint(event, inFrame)
+            this.setZoom(nextZoom, point)
         },
         shortcutTargetIsInteractive(target) {
             return target && typeof target.closest === 'function'
@@ -228,6 +286,7 @@ export function adminLivePreview(element) {
             const up = (event) => this.handleSpaceUp(event)
             const blur = () => this.cancelSpacePan()
             const changed = () => this.scheduleDiagnostics()
+            const frameWheel = (event) => this.zoomWithWheel(event, true)
             const frameDown = (event) => this.startPan(event, true)
             const frameTouchStart = (event) => this.startTouchPan(event, true)
             const frameTouchMove = (event) => this.moveTouchPan(event, true)
@@ -235,6 +294,7 @@ export function adminLivePreview(element) {
             const preventMiddleAutoscroll = (event) => {
                 if (event.button === 1 && this.zoom > this.minZoom) event.preventDefault()
             }
+            documentRef.addEventListener('wheel', frameWheel, { capture: true, passive: false })
             documentRef.addEventListener('pointerdown', frameDown, true)
             documentRef.addEventListener('mousedown', preventMiddleAutoscroll, true)
             documentRef.addEventListener('auxclick', preventMiddleAutoscroll, true)
@@ -256,6 +316,7 @@ export function adminLivePreview(element) {
                 if (this.$refs.frame?.contentDocument === documentRef) this.scheduleDiagnostics()
             }).catch(() => {})
             this.frameShortcuts.push(
+                () => documentRef.removeEventListener('wheel', frameWheel, true),
                 () => documentRef.removeEventListener('pointerdown', frameDown, true),
                 () => documentRef.removeEventListener('mousedown', preventMiddleAutoscroll, true),
                 () => documentRef.removeEventListener('auxclick', preventMiddleAutoscroll, true),
