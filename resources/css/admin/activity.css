@@ -686,3 +686,12 @@ a.activity-calendar__day:focus-visible {
 }
 
 
+
+/* Activity groups reuse Dashboard's table-group control without nesting tables. */
+.activity-group-row .activity-change-cell .admin-dashboard__group-toggle > strong {
+    min-width: 0;
+    flex: 1 1 auto;
+    text-align: left;
+}
+.activity-group-member .activity-change-cell > strong { padding-inline-start: 1.25rem; }
+.activity-group-row .admin-dashboard__group-count { margin-inline-start: auto; }

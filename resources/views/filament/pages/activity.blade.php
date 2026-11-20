@@ -499,9 +499,73 @@
                             </th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @forelse ($activity as $event)
-                            <tr class="{{ in_array((int) $event['id'], $selectedActivityIds, true) ? 'is-selected' : '' }}">
+                    @forelse ($activityGroups as $group)
+                        @php
+                            $members = $group['items'];
+                            $first = $members[0];
+                            $isGroup = count($members) > 1;
+                            $memberIds = array_map(static fn (array $event): int => (int) $event['id'], $members);
+                            $allSelected = count(array_intersect($memberIds, $selectedActivityIds)) === count($memberIds);
+                        @endphp
+                        <tbody wire:key="activity-group-{{ $group['key'] }}" x-data="{ expanded: false }">
+                            @if ($isGroup)
+                                <tr @class(['activity-group-row', 'is-selected' => $allSelected])>
+                                    <td class="activity-change-cell">
+                                        <button class="admin-dashboard__group-toggle" type="button"
+                                            x-on:click="expanded = ! expanded"
+                                            x-bind:aria-expanded="expanded.toString()"
+                                            aria-label="Expand or collapse {{ count($members) }} activity changes in {{ $first['target'] }}">
+                                            <x-filament::icon icon="heroicon-m-chevron-right" class="admin-dashboard__group-chevron" />
+                                            <strong>{{ $first['edit_group_title'] }}</strong>
+                                            <span class="admin-dashboard__group-count">{{ count($members) }}</span>
+                                        </button>
+                                    </td>
+                                    <td class="activity-who-cell activity-col--who admin-table__yield--compact"><strong>{{ $first['actor'] }}</strong></td>
+                                    <td class="activity-when-cell activity-col--when">
+                                        <time title="{{ $first['timestamp'] }}">{{ $first['when'] }}</time>
+                                        <small>{{ $first['timestamp'] }}</small>
+                                    </td>
+                                    <td class="activity-target-cell activity-col--target"><strong>{{ $first['target'] }}</strong></td>
+                                    <td class="activity-area-cell activity-col--area admin-table__yield--minimal"><span>{{ $first['area'] }}</span></td>
+                                    <td class="activity-type-cell activity-col--type admin-table__yield--minimal"><span>{{ $first['type'] }}</span></td>
+                                    <td class="activity-publication-cell activity-col--publication admin-table__yield--compact">
+                                        <span class="admin-status">{{ __('Staged') }}</span>
+                                    </td>
+                                    <td class="admin-table__actions activity-actions-cell">
+                                        <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--two-static activity-row-actions">
+                                            <button class="admin-action" type="button"
+                                                x-on:click="expanded = ! expanded"
+                                                x-bind:aria-expanded="expanded.toString()">
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">{{ __('Details') }}</span>
+                                            </button>
+                                            <button class="admin-action" type="button" disabled aria-label="Undo individual changes after expanding the group">
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">{{ __('Undo') }}</span>
+                                            </button>
+                                        </x-admin.toolbar>
+                                    </td>
+                                    <td class="admin-table__selection admin-table__selection--trailing">
+                                        <input type="checkbox"
+                                            aria-label="Toggle selection for {{ count($members) }} grouped activity events"
+                                            x-data="{}"
+                                            wire:click.prevent='toggleVisibleActivitySelection(@json($memberIds))'
+                                            x-effect="
+                                                const ids = @js($memberIds);
+                                                const selected = $wire.selectedActivityIds.map(Number);
+                                                const count = ids.filter((id) => selected.includes(id)).length;
+                                                $el.checked = count === ids.length;
+                                                $el.indeterminate = count > 0 && count < ids.length;
+                                                $el.setAttribute('aria-checked', $el.indeterminate ? 'mixed' : ($el.checked ? 'true' : 'false'));
+                                            ">
+                                    </td>
+                                </tr>
+                            @endif
+                            @foreach ($members as $event)
+                                <tr
+                                    @class(['activity-group-member' => $isGroup, 'is-selected' => in_array((int) $event['id'], $selectedActivityIds, true)])
+                                    @if ($isGroup) x-show="expanded" x-cloak @endif
+                                >
                                 <td class="activity-change-cell" title="{{ $event['change'] }}{{ $event['details'] ? ': '.$event['details'] : '' }}">
                                     <strong>{{ $event['change'] }}</strong>
                                     <small class="admin-responsive-meta">{{ $event['actor'] }} · {{ ucfirst($event['publication_status']) }}</small>
@@ -559,7 +623,10 @@
                                     >
                                 </td>
                             </tr>
-                        @empty
+                            @endforeach
+                        </tbody>
+                    @empty
+                        <tbody>
                             <tr>
                                 <td class="admin-table__empty-cell" colspan="9">
                                     @if ($activitySourceExists)
@@ -571,8 +638,8 @@
                                     @endif
                                 </td>
                             </tr>
-                        @endforelse
-                    </tbody>
+                        </tbody>
+                    @endforelse
                 </table>
             </x-admin.table>
 
