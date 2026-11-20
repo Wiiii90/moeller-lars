@@ -176,11 +176,11 @@ async function transfer(file, state, fileIndex, total) {
         const offset = Number(session.offset);
         const next = Math.min(file.size, offset + Number(session.chunk_size));
         state.phase = 'uploading';
-        state.progress = Math.round((fileIndex + offset / file.size) * 100 / total);
+        state.progress = Math.max(state.progress, Math.round((fileIndex + offset / file.size) * 1000 / total) / 10);
 
         try {
             session = await sendChunk(session.id, offset, file.slice(offset, next), (sent) => {
-                state.progress = Math.min(100, Math.round((fileIndex + (offset + sent) / file.size) * 100 / total));
+                state.progress = Math.max(state.progress, Math.min(100, Math.round((fileIndex + (offset + sent) / file.size) * 1000 / total) / 10));
             });
             failures = 0;
         } catch (error) {
@@ -194,6 +194,7 @@ async function transfer(file, state, fileIndex, total) {
     }
 
     state.phase = 'processing';
+    state.progress = 100; // Verified byte transfer, not the end of server-side ingest.
     state.result = '';
     if (!session.complete) {
         try {
@@ -224,11 +225,18 @@ async function transfer(file, state, fileIndex, total) {
  * are the canonical post-ingest Storage refresh or Gallery Artwork queue.
  */
 export async function adminMediaUploader(state, input, wire, context) {
-    if (state.phase === 'uploading' || state.phase === 'processing') return;
-    const files = Array.from(input.files || []);
-    if (files.length === 0) return;
+    // Copy File references before clearing the input; each new selection joins
+    // this one queue even while a previous file is still transferring.
+    const selected = Array.from(input.files || []);
+    input.value = '';
+    if (!selected.length) return;
 
-    state.fileCount = files.length;
+    state.pendingUploads ??= [];
+    state.pendingUploads.push(...selected);
+    state.fileCount += selected.length;
+    if (state.uploadRunning) return;
+
+    state.uploadRunning = true;
     state.completed = 0;
     state.progress = 0;
     state.result = '';
@@ -238,17 +246,27 @@ export async function adminMediaUploader(state, input, wire, context) {
     let failed = 0;
     const errors = [];
     let notificationAttempted = false;
+    let batchStarted = context !== 'gallery';
 
     try {
-        if (context === 'gallery') await wire.beginDirectPrimaryMediaBatch();
+        if (context === 'gallery') {
+            await wire.beginDirectPrimaryMediaBatch();
+            batchStarted = true;
+        }
 
-        for (const file of files) {
+        // Serial file ingest owns exactly one active progress indicator. New
+        // selections can extend the queue while the loop is awaiting the server.
+        while (state.pendingUploads.length) {
+            const file = state.pendingUploads.shift();
             let savedToStorage = false;
+            state.progress = 0;
+            state.phase = 'uploading';
+            state.result = '';
             try {
-                const result = await transfer(file, state, state.completed, files.length);
+                const result = await transfer(file, state, 0, 1);
                 savedToStorage = true;
-                // Acknowledgment in the consumer comes before the local resume
-                // token is cleared; a lost response can be recovered on retry.
+                // Gallery receives the file as soon as Storage acknowledges it,
+                // not after all subsequent files finish uploading.
                 if (context === 'gallery') {
                     await wire.queueResumablePrimaryMediaAsset(result.asset_id);
                 }
@@ -263,7 +281,6 @@ export async function adminMediaUploader(state, input, wire, context) {
                 errors.push(file.name + ' — ' + reason);
             }
             state.completed++;
-            state.progress = Math.round(state.completed * 100 / files.length);
         }
 
         state.phase = 'processing';
@@ -278,7 +295,6 @@ export async function adminMediaUploader(state, input, wire, context) {
                     await wire.refreshAfterResumableMediaUpload();
                 } catch {
                     // Upload acceptance precedes the library refresh.
-                    // A stale view is not evidence that the upload failed.
                     refreshWarning = ' The Storage list did not refresh. Reload the page to see the saved files.';
                 }
             }
@@ -288,8 +304,6 @@ export async function adminMediaUploader(state, input, wire, context) {
         }
     } catch (error) {
         if (notificationAttempted) {
-            // A lost response is not evidence that the server did not notify
-            // or save the uploaded originals. Avoid a duplicate failure notice.
             state.result = 'The final upload status could not be confirmed. Check Storage before retrying. '
                 + (error?.message || '');
         } else {
@@ -302,12 +316,28 @@ export async function adminMediaUploader(state, input, wire, context) {
                     state.result = await wire.notifyDirectMediaBatch(added, duplicates, Math.max(1, failed), details);
                 }
             } catch {
-                // When the connection is down, the inline result remains visible.
+                // The inline message remains accessible if the connection is down.
             }
         }
     } finally {
-        input.value = '';
+        state.uploadRunning = false;
         state.phase = 'result';
+        // If the server refused the initial batch, do not recursively retry
+        // the same request. The user can reselect the files after recovery.
+        if (!batchStarted) state.pendingUploads.length = 0;
+        // A user may append files during the final status round-trip. Never
+        // leave those selections stranded: process them in the next batch.
+        if (state.pendingUploads.length) {
+            const pending = state.pendingUploads.splice(0);
+            state.fileCount = 0;
+            state.completed = 0;
+            state.pendingUploads = [];
+            const nextInput = { files: pending, value: '' };
+            await adminMediaUploader(state, nextInput, wire, context);
+        } else {
+            state.fileCount = 0;
+            state.completed = 0;
+        }
     }
 }
 

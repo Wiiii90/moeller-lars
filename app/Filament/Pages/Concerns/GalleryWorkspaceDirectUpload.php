@@ -34,7 +34,7 @@ trait GalleryWorkspaceDirectUpload
     public function beginDirectPrimaryMediaBatch(): void
     {
         $this->rememberStagedArtworkChanges();
-        $this->directPrimaryBatchStartCount = count($this->pendingBatchArtworkMedia);
+        $this->directPrimaryBatchAddedCount = 0;
     }
 
     /**
@@ -53,6 +53,12 @@ trait GalleryWorkspaceDirectUpload
         }
 
         $this->pendingBatchArtworkMedia[] = $this->pendingBatchArtworkRow($asset);
+        $this->directPrimaryBatchAddedCount++;
+        // The first completed upload becomes immediately editable. Later
+        // completions only grow the queue, never steal the user's selection.
+        if ($this->selectedStagedMediaAssetId === null) {
+            $this->selectStagedArtwork($assetId);
+        }
     }
 
     /**
@@ -66,17 +72,14 @@ trait GalleryWorkspaceDirectUpload
     {
         $failed = max(0, min(10000, $failed));
         $duplicates = max(0, min(10000, $duplicates));
-        $rows = $this->pendingBatchArtworkMedia;
-        $added = max(0, count($rows) - $this->directPrimaryBatchStartCount);
-        $this->directPrimaryBatchStartCount = count($rows);
+        $added = $this->directPrimaryBatchAddedCount;
+        $this->directPrimaryBatchAddedCount = 0;
         $summary = app(AdminMediaUploadFeedback::class)->batch(
             $added, $duplicates, $failed, $errors, 'gallery',
         );
 
-        if ($added > 0) {
-            $this->selectStagedArtwork((int) $rows[array_key_last($rows)]['media_asset_id']);
-        }
-
+        // Queue selection is owned by the first completed asset or the
+        // user's explicit navigation, not by the end of a transport batch.
         return ['summary' => $summary, 'added' => $added, 'failed' => $failed, 'duplicates' => $duplicates];
     }
 
@@ -117,12 +120,14 @@ trait GalleryWorkspaceDirectUpload
         }
 
         $current = $this->stagedArtworkPosition();
-        $target = $current + $direction;
-        if ($current === 0 || $target < 1 || $target > count($this->pendingBatchArtworkMedia)) {
+        if ($current === 0) {
             return;
         }
 
-        $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[$target - 1]['media_asset_id']);
+        $total = count($this->pendingBatchArtworkMedia);
+        // Navigation is circular; 0/1 queues remain bounded by the UI.
+        $target = ($current - 1 + $direction + $total) % $total;
+        $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[$target]['media_asset_id']);
     }
 
     public function selectStagedArtwork(int $assetId): void
@@ -310,7 +315,7 @@ trait GalleryWorkspaceDirectUpload
     }
 
     /** The single and batch commands both delegate to the canonical Artwork owners. */
-    private function createStagedArtwork(array $row, array $data, bool $publish = false): void
+    private function createStagedArtwork(array $row, array $data): void
     {
         $assetId = (int) $row['media_asset_id'];
         $asset = MediaAsset::query()->whereKey($assetId)->where('state', 'available')->first();
@@ -320,7 +325,7 @@ trait GalleryWorkspaceDirectUpload
             ]);
         }
 
-        if ($publish && blank($asset->getAttribute('alt_text'))) {
+        if (blank($asset->getAttribute('alt_text'))) {
             throw ValidationException::withMessages([
                 'media' => 'Add descriptive ALT text to this media file in Storage before publishing.',
             ]);
@@ -338,14 +343,12 @@ trait GalleryWorkspaceDirectUpload
 
         $artwork = app(ArtworkDraftService::class)->create($payload, $assetId);
         $artwork = app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
-        if ($publish) {
-            // Publish remains a Working-state mutation. The caller's
-            // transaction rolls back creation if canonical readiness fails.
-            app(ArtworkPublicationService::class)->publish($artwork);
-        }
+        // Publish remains a Working-state mutation. The caller's
+        // transaction rolls back creation if canonical readiness fails.
+        app(ArtworkPublicationService::class)->publish($artwork);
     }
 
-    public function createSelectedStagedArtwork(bool $publish = false): void
+    public function createSelectedStagedArtwork(): void
     {
         $id = $this->selectedStagedMediaAssetId;
         if ($id === null) {
@@ -360,22 +363,19 @@ trait GalleryWorkspaceDirectUpload
         // The compact Stage form reuses the canonical Artwork field controls and rules.
         $state = $this->stagedArtworkForm->getState();
         try {
-            DB::transaction(function () use ($selected, $state, $publish): void {
-                $this->createStagedArtwork($selected, $state, $publish);
+            DB::transaction(function () use ($selected, $state): void {
+                $this->createStagedArtwork($selected, $state);
             });
         } catch (ValidationException $exception) {
             // Failure rolls back Artwork creation, media links and audit.
             // The queued item and its current editorial form remain intact.
-            $this->notifyValidationFailure(
-                $publish ? 'Staged Artwork cannot be published' : 'Staged Artwork not created',
-                $exception,
-            );
+            $this->notifyValidationFailure('Staged Artwork cannot be submitted', $exception);
 
             return;
         }
         $this->forgetCompletedStagedArtworks([$id]);
         app(AdminNotifier::class)->notification(
-            title: $publish ? 'Artwork created and published in Working' : 'Artwork draft created',
+            title: 'Artwork submitted and published in Working',
             status: 'success',
         );
     }
@@ -439,7 +439,125 @@ trait GalleryWorkspaceDirectUpload
         $this->forgetCompletedStagedArtworks(array_map(
             static fn (array $row): int => (int) $row['media_asset_id'], $items,
         ));
-        app(AdminNotifier::class)->notification(title: $count.' Artwork drafts created', status: 'success');
+        app(AdminNotifier::class)->notification(title: $count.' Artworks submitted and published in Working', status: 'success');
+    }
+
+    /** Confirmed bulk deletion reuses the Storage deletion domain for each file. */
+    public function deleteAllStagedMediaAction(): Action
+    {
+        $action = Action::make('deleteAllStagedMedia')
+            ->label('Delete All')
+            ->color('danger')
+            ->fillForm(fn (): array => [
+                'reference_snapshot' => $this->stagedAllMediaDeleteSnapshot(),
+            ])
+            ->schema([Hidden::make('reference_snapshot')])
+            ->modalContent(fn (): View => view(
+                'filament.resources.media-assets.partials.delete-selected-dialog',
+                $this->stagedAllMediaDeleteData(),
+            ))
+            ->action(function (array $data): void {
+                if (! hash_equals(
+                    $this->stagedAllMediaDeleteSnapshot(),
+                    (string) ($data['reference_snapshot'] ?? ''),
+                )) {
+                    throw ValidationException::withMessages([
+                        'media' => 'The staged files or their references changed. Reopen Delete All to review them.',
+                    ]);
+                }
+                $ids = array_map('intval', array_column($this->pendingBatchArtworkMedia, 'media_asset_id'));
+                if ($ids === []) {
+                    return;
+                }
+
+                $deleted = [];
+                $failed = [];
+                $cleanupDelayed = [];
+                foreach ($ids as $id) {
+                    $asset = MediaAsset::query()->whereKey($id)->where('state', 'available')->first();
+                    if (! $asset instanceof MediaAsset) {
+                        $failed[] = 'File '.$id.': no longer available.';
+                        continue;
+                    }
+                    try {
+                        if (app(MediaAssetEditorialService::class)->delete($asset)) {
+                            $deleted[] = $id;
+                        }
+                    } catch (Throwable $exception) {
+                        if ((string) $asset->fresh()?->getAttribute('state') === 'deleted') {
+                            report($exception);
+                            $deleted[] = $id;
+                            $cleanupDelayed[] = $id;
+                            continue;
+                        }
+                        if (! $exception instanceof ValidationException) {
+                            report($exception);
+                        }
+                        $failed[] = (string) $asset->getAttribute('original_filename').': '.
+                            ($exception instanceof ValidationException
+                                ? collect($exception->errors())->flatten()->first()
+                                : 'Storage deletion failed.');
+                    }
+                }
+                if ($deleted !== []) {
+                    $this->forgetCompletedStagedArtworks($deleted);
+                }
+                app(AdminNotifier::class)->notification(
+                    title: count($deleted).' staged files deleted',
+                    body: $failed !== [] || $cleanupDelayed !== []
+                        ? count($failed).' failed. '.count($cleanupDelayed).' physical cleanups pending.'
+                        : null,
+                    status: $failed !== [] || $cleanupDelayed !== [] ? 'warning' : 'success',
+                );
+            });
+
+        return AdminDialog::confirm(
+            $action,
+            'Delete all staged files?',
+            'Delete the original Storage files and their remaining references. This does not affect files already submitted.',
+            'Delete All',
+            danger: true,
+        );
+    }
+
+    /** This snapshot also guards against a new upload arriving while Delete All is open. */
+    private function stagedAllMediaDeleteSnapshot(): string
+    {
+        return hash('sha256', json_encode([
+            'ids' => array_map('intval', array_column($this->pendingBatchArtworkMedia, 'media_asset_id')),
+            'references' => $this->stagedAllMediaDeleteData()['references'],
+        ], JSON_THROW_ON_ERROR));
+    }
+
+    /** @return array{selectedCount:int,referencedFileCount:int,referenceCount:int,references:list<array{filename:string,type:string,label:string}>} */
+    private function stagedAllMediaDeleteData(): array
+    {
+        $ids = array_map('intval', array_column($this->pendingBatchArtworkMedia, 'media_asset_id'));
+        $assets = MediaAsset::query()->whereIn('id', $ids)->where('state', 'available')->get();
+        $catalog = app(MediaReferenceCatalog::class);
+        $referencedFiles = 0;
+        $references = [];
+        foreach ($assets as $asset) {
+            $catalog->loadAssetReferences($asset);
+            $rows = $catalog->references($asset);
+            if ($rows !== []) {
+                $referencedFiles++;
+            }
+            foreach ($rows as $row) {
+                $references[] = [
+                    'filename' => (string) $asset->getAttribute('original_filename'),
+                    'type' => $row['type'],
+                    'label' => $row['label'],
+                ];
+            }
+        }
+
+        return [
+            'selectedCount' => count($ids),
+            'referencedFileCount' => $referencedFiles,
+            'referenceCount' => count($references),
+            'references' => $references,
+        ];
     }
 
     /** Uploaded originals always remain in Storage when staging ends. */

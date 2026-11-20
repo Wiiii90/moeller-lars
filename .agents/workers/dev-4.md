@@ -2,7 +2,16 @@
 
 **Lease:** 23
 **Branch:** dev
-**State:** Active — Stage tabs restored to one row, controls aligned, Stage actions connected to canonical publication and Storage deletion; browser acceptance pending.
+**State:** Active — shared Gallery/Storage upload transport supports queued additions and per-file determinate progress; Stage first-item focus, circular tabs and auto-publishing Submit; runtime/browser acceptance pending.
+
+## Shared Gallery / Storage upload and Stage lifecycle — 2026-11-20
+
+- Changed the existing `resources/js/admin-media-upload.js` (one transport owner) to accept further file selections during uploads in one serial queue. It copies File objects before clearing the input, reports 0.1%-precision verified byte progress for the active file, holds the bar at 100% during server processing (no fake indeterminate animation), and preserves resumable transfer/Storage feedback. Files can be queued while another is processing; Gallery and Storage share behavior.
+- Relocated Gallery upload Alpine state from conditionally removed Upload pane to the persistent Gallery editor root. The first Storage-acknowledged media asset is immediately selected into Stage; subsequent file completions append without interrupting the selected staged form, and batch finish no longer selects the last item. Upload tab displays live byte percentage while another file transfers. A dedicated upload batch added counter remains correct if a user submits/discards files while a later upload is still running.
+- Storage now uses the same central `AdminIcon::UploadDropzone` as Gallery and centered type/copy; both icon sizes reduced from 3.25rem to 2.75rem. Storage file selection stays available while earlier files transfer. Both progress tracks are determinate and accent-colored; Storage/Stage keep existing visual heights and accessibility names.
+- Staged previous/next arrows wrap circularly for queues longer than one; arrows have inset box-hover/focus treatment. Tabbar retains three one-row outer cells with Staged owning a larger share. Footer is **Discard, Delete, Submit | Delete All, Submit All** with separator only for multiple items, compact label hiding at constrained Stage width while retaining accessible names; Submit is no longer a bordered primary button.
+- Both Submit actions always invoke the existing `ArtworkPublicationService::publish` inside their Artwork creation transaction; readiness errors roll back and keep the staged entry. Removed unused optional draft-only path and separate Publish button. Confirmed Delete All shares the existing Storage reference catalog, confirmation dialog and MediaAssetEditorialService deletion owner, checks queue IDs/reference snapshot, and reports partial failures or delayed physical cleanup without silently removing failed items.
+- Source-only checks; no actual Laravel/browser/CI/deployment or tests modified. Acceptance required: multiple uploads in parallel selection while serial processing, first completion immediately opens Stage, user-selected item not stolen by later completion, adding files from Upload while Stage editing, 0.1% byte progression and stationary 100% during processing in BOTH surfaces, resumable interruption and failures, CSS tab fit/arrow hover/circular behavior at narrow Stage widths, Submit ready/unready and rollback (ALT and Gallery publication), Delete All confirmed partial failures, and Storage icon/control centering.
 
 ## Gallery Stage tabbar, controls and submission actions — 2026-11-20
 

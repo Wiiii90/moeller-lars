@@ -122,30 +122,31 @@
             class="media-workspace__dropzone admin-storage__dropzone"
             x-data="{
                 phase: 'idle', progress: 0, fileCount: 0,
-                completed: 0, result: '',
+                completed: 0, result: '', pendingUploads: [], uploadRunning: false,
                 async uploadFiles(input) {
                     await window.adminMediaUploader(this, input, $wire, 'storage')
                 },
             }"
-            x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
+            x-bind:aria-busy="uploadRunning.toString()"
         >
             <input
                 class="media-workspace__file-input"
                 id="storage-upload"
                 type="file"
                 x-on:change="uploadFiles($el)"
-                x-bind:disabled="phase === 'uploading' || phase === 'processing'"
                 accept="{{ implode(',', \App\Domain\Media\MediaTypePolicy::uploadAcceptedMimeTypes()) }}"
                 aria-label="Upload media files"
                 multiple
             >
             <div class="media-workspace__dropzone-copy">
+                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::UploadDropzone->value"
+                    class="media-workspace__dropzone-icon" aria-hidden="true" />
                 <strong
                     x-text="
                         phase === 'uploading'
-                            ? `Uploading file ${completed + 1} of ${fileCount} · ${progress}%`
+                            ? `Uploading file ${completed + 1} of ${fileCount} · ${progress.toFixed(1)}%`
                             : phase === 'processing'
-                                ? `Transfer complete · Checking and processing file ${completed + 1} of ${fileCount}…`
+                                ? `100% transferred · Processing file ${completed + 1} of ${fileCount}…`
                                 : phase === 'result'
                                     ? result
                                     : 'Drop files here or choose from your device'
@@ -156,14 +157,13 @@
             <div
                 class="media-workspace__upload-progress"
                 x-show="phase === 'uploading' || phase === 'processing'"
-                x-bind:class="{ 'is-processing': phase === 'processing' }"
                 x-cloak
                 role="progressbar"
                 aria-label="Media upload status"
                 aria-valuemin="0"
                 aria-valuemax="100"
-                x-bind:aria-valuenow="phase === 'uploading' ? progress : null"
-                x-bind:aria-valuetext="phase === 'processing' ? 'File transfer finished; server processing in progress' : null"
+                x-bind:aria-valuenow="uploadRunning ? progress : null"
+                x-bind:aria-valuetext="phase === 'processing' ? '100% of file bytes transferred; processing on server' : null"
             >
                 <span class="media-workspace__upload-progress-track" aria-hidden="true">
                     <span class="media-workspace__upload-progress-fill" x-bind:style="`width: ${progress}%`"></span>

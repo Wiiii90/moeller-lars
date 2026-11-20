@@ -51,19 +51,26 @@
                 :panes="['editor' => 'Editor', 'preview' => 'Preview']"
                 aria-label="Gallery Stage view"
             />
-            <div class="gallery-stage__workspace admin-visual-stage__pane" data-admin-stage-pane="editor" data-admin-stage-slot="1">
+            <div class="gallery-stage__workspace admin-visual-stage__pane" data-admin-stage-pane="editor" data-admin-stage-slot="1"
+                x-data="{
+                    phase: 'idle', progress: 0, fileCount: 0, completed: 0, result: '',
+                    pendingUploads: [], uploadRunning: false,
+                    async uploadFiles(input) {
+                        await window.adminMediaUploader(this, input, $wire, 'gallery')
+                    },
+                }">
                 <header class="gallery-stage__workspace-header">
                     <h2 class="admin-section__kicker admin-visual-stage__heading">Gallery editor</h2>
                     @php($stagedPosition = $this->stagedArtworkPosition())
                     @php($stagedTotal = count($pendingBatchArtworkMedia))
                     <div class="admin-stage-tabs gallery-stage__workspace-tabs" role="group" aria-label="Gallery editor mode and staged artwork navigation">
                         <button class="admin-action {{ $galleryStagePanel === 'upload' ? 'is-primary' : '' }}" type="button"
-                            wire:click="selectGalleryStagePanel('upload')" aria-pressed="{{ $galleryStagePanel === 'upload' ? 'true' : 'false' }}">Upload</button>
+                            wire:click="selectGalleryStagePanel('upload')" aria-pressed="{{ $galleryStagePanel === 'upload' ? 'true' : 'false' }}">Upload<span x-show="uploadRunning" x-cloak x-text="' · ' + progress.toFixed(1) + '%'" class="gallery-stage__upload-tab-progress"></span></button>
                         <div class="admin-action gallery-stage__queue-control {{ $galleryStagePanel === 'queue' ? 'is-primary' : '' }}"
                             role="group" aria-label="Staged Artwork navigation">
                             <button class="gallery-stage__queue-arrow" type="button"
                                 wire:click="navigateStagedArtwork(-1)"
-                                @disabled($stagedPosition <= 1)
+                                @disabled($stagedTotal <= 1)
                                 aria-label="Previous staged artwork" title="Previous staged artwork">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Previous->mini()" />
                             </button>
@@ -72,7 +79,7 @@
                                 @disabled($stagedTotal === 0)>Staged (<span aria-live="polite" aria-atomic="true">{{ $stagedPosition }}/{{ $stagedTotal }}</span>)</button>
                             <button class="gallery-stage__queue-arrow" type="button"
                                 wire:click="navigateStagedArtwork(1)"
-                                @disabled($stagedPosition === 0 || $stagedPosition >= $stagedTotal)
+                                @disabled($stagedTotal <= 1)
                                 aria-label="Next staged artwork" title="Next staged artwork">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Next->mini()" />
                             </button>
@@ -84,13 +91,7 @@
 
                 @if ($galleryStagePanel === 'upload')
             <div class="gallery-stage__upload"
-                x-data="{
-                    phase: 'idle', progress: 0, fileCount: 0, completed: 0, result: '',
-                    async uploadFiles(input) {
-                        await window.adminMediaUploader(this, input, $wire, 'gallery')
-                    },
-                }"
-                x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()">
+                x-bind:aria-busy="uploadRunning.toString()">
                 <div class="gallery-stage__upload-status" role="status" aria-live="polite" aria-atomic="true">
                     <span x-text="
                         phase === 'uploading' ? 'Uploading to Storage'
@@ -100,19 +101,18 @@
                     ">Ready for new files</span>
                     <span class="gallery-stage__upload-status-value"
                         x-text="
-                            phase === 'uploading' ? (completed + 1) + ' / ' + fileCount
-                            : phase === 'processing' ? fileCount + ' / ' + fileCount
+                            phase === 'uploading' ? (completed + 1) + ' / ' + fileCount + ' · ' + progress.toFixed(1) + '%'
+                            : phase === 'processing' ? (completed + 1) + ' / ' + fileCount + ' · 100% sent'
                             : phase === 'result' ? 'Review Staged'
                             : @js(count($pendingBatchArtworkMedia)) + ' staged'
                         ">{{ count($pendingBatchArtworkMedia) }} staged</span>
                 </div>
                 <div class="admin-gallery-upload__progress"
-                    x-bind:class="{ 'is-processing': phase === 'processing' }"
-                    x-bind:role="phase === 'uploading' || phase === 'processing' ? 'progressbar' : null"
+                    x-bind:role="uploadRunning ? 'progressbar' : null"
                     aria-label="Media upload status"
                     aria-valuemin="0" aria-valuemax="100"
-                    x-bind:aria-valuenow="phase === 'uploading' ? progress : null"
-                    x-bind:aria-valuetext="phase === 'processing' ? 'File transfer completed; media processing in progress' : null">
+                    x-bind:aria-valuenow="uploadRunning ? progress : null"
+                    x-bind:aria-valuetext="phase === 'processing' ? '100% of file bytes transferred; processing on server' : null">
                     <span class="admin-gallery-upload__progress-track" aria-hidden="true">
                         <span class="admin-gallery-upload__progress-fill" x-bind:style="'width: ' + progress + '%'"></span>
                     </span>
@@ -121,7 +121,6 @@
                     <div class="admin-gallery-upload__dropzone">
                         <input class="admin-gallery-upload__input" type="file"
                             x-on:change="uploadFiles($el)"
-                            x-bind:disabled="phase === 'uploading' || phase === 'processing'"
                             accept="{{ implode(',', [...\App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES, ...\App\Domain\Media\MediaTypePolicy::VIDEO_MIME_TYPES]) }}"
                             aria-label="Upload primary images or videos for new artworks"
                             multiple>
@@ -130,8 +129,8 @@
                                 class="admin-gallery-upload__icon" aria-hidden="true" />
                             <strong
                                 x-text="
-                                    phase === 'uploading' ? 'Uploading file ' + (completed + 1) + ' of ' + fileCount + ', ' + progress + '%'
-                                    : phase === 'processing' ? 'Transfer complete: Processing media…'
+                                    phase === 'uploading' ? 'Uploading file ' + (completed + 1) + ' of ' + fileCount + ' · ' + progress.toFixed(1) + '%'
+                                    : phase === 'processing' ? '100% transferred · Processing file ' + (completed + 1) + ' of ' + fileCount + '…'
                                     : 'Drop images or videos here, or choose files'
                                 "
                             >Drop images or videos here, or choose files</strong>
@@ -149,33 +148,36 @@
                             {{ $this->stagedArtworkForm }}
                         </div>
                         <div class="gallery-stage__editor-actions admin-toolbar" aria-label="Staged Artwork actions">
-                            <button class="admin-action is-primary" type="button" wire:click="createSelectedStagedArtwork"
-                                wire:loading.attr="disabled" wire:target="createSelectedStagedArtwork">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
-                                <span>Submit Artwork</span>
-                            </button>
-                            <button class="admin-action" type="button" wire:click="createSelectedStagedArtwork(true)"
-                                wire:loading.attr="disabled" wire:target="createSelectedStagedArtwork">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Publish->mini()" />
-                                <span>Publish Artwork</span>
-                            </button>
-                            @if (count($pendingBatchArtworkMedia) > 1)
-                                <button class="admin-action" type="button" wire:click="createAllStagedArtworks"
-                                    wire:loading.attr="disabled" wire:target="createAllStagedArtworks">
-                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
-                                    <span>Submit All</span>
-                                </button>
-                            @endif
-                            <button class="admin-action" type="button"
+                            <button class="admin-action" type="button" title="Discard from Stage, keep file in Storage" aria-label="Discard staged Artwork"
                                 wire:click="removeStagedArtwork({{ $selectedStagedMediaAssetId }})">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
-                                <span>Discard</span>
+                                <span class="gallery-stage__action-label">Discard</span>
                             </button>
-                            <button class="admin-action is-danger" type="button"
+                            <button class="admin-action is-danger" type="button" title="Delete file from Storage" aria-label="Delete staged file from Storage"
                                 wire:click="mountAction('deleteStagedMedia', { asset: {{ $selectedStagedMediaAssetId }} })">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
-                                <span>Delete</span>
+                                <span class="gallery-stage__action-label">Delete</span>
                             </button>
+                            <button class="admin-action" type="button" title="Submit and publish Artwork in Working" aria-label="Submit and publish staged Artwork"
+                                wire:click="createSelectedStagedArtwork"
+                                wire:loading.attr="disabled" wire:target="createSelectedStagedArtwork,createAllStagedArtworks">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
+                                <span class="gallery-stage__action-label">Submit</span>
+                            </button>
+                            @if (count($pendingBatchArtworkMedia) > 1)
+                                <span class="admin-control-separator gallery-stage__action-separator" aria-hidden="true"></span>
+                                <button class="admin-action is-danger" type="button" title="Delete all staged files from Storage" aria-label="Delete all staged files from Storage"
+                                    wire:click="mountAction('deleteAllStagedMedia')">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
+                                    <span class="gallery-stage__action-label">Delete All</span>
+                                </button>
+                                <button class="admin-action" type="button" title="Submit and publish all staged Artworks" aria-label="Submit and publish all staged Artworks"
+                                    wire:click="createAllStagedArtworks"
+                                    wire:loading.attr="disabled" wire:target="createSelectedStagedArtwork,createAllStagedArtworks">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
+                                    <span class="gallery-stage__action-label">Submit All</span>
+                                </button>
+                            @endif
                         </div>
                     @endif
                 @else

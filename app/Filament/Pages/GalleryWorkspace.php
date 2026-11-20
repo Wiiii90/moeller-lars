@@ -94,8 +94,8 @@ final class GalleryWorkspace extends Page
 
     public ?int $galleryStagePreviewArtworkId = null;
 
-    /** Queue size when the current file-upload run began. */
-    public int $directPrimaryBatchStartCount = 0;
+    /** Successfully staged new assets in the active upload batch. */
+    public int $directPrimaryBatchAddedCount = 0;
 
     /** @var list<array{media_asset_id:int,title:string}> */
     public array $pendingBatchArtworkMedia = [];
