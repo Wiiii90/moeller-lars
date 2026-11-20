@@ -2,13 +2,21 @@
 
 **Lease:** 29
 **Branch:** dev
-**State:** Active — first accepted batch upload selects Staged; redundant preview refresh on tab re-entry removed; browser timing and acceptance pending.
+**State:** Active — Gallery Stage local tab navigation uses retained Upload/Staged/Settings panes and canonical Livewire preview targets; browser acceptance pending.
 
 ## Takeover — 2026-11-20
 
 - New chat explicitly replaces the previous Dev Worker 4 under lease 29 on `dev`.
 - User assigned continued Gallery ownership but did not yet specify a new feature or defect for implementation. Await the next concrete task; do not automatically restart historical tasks.
 - Preserve previous Gallery Stage/media/publication and table contracts. All prior browser/runtime checks listed below remain pending; no application code, tests, deployment or Continuous Integration were changed during takeover.
+
+## Gallery Stage browser-local tabs — 2026-11-21
+
+- Artist authorized structural work to eliminate Livewire round trips for Upload/Staged/Settings display switching and preserve initialized Filament/Alpine surfaces. The canonical `galleryStagePanel` property is now deferred-entangled into Stage-root Alpine, so clicks instantly change the visible pane with `x-show` and never call a server tab method.
+- All three panes are retained in the Livewire DOM; Staged editor/actions are rendered when a selected queued asset actually exists. The Upload Alpine queue remains mounted during Staged/settings work, so running resumable batches survive switches; the staged form and Settings control tree are preserved rather than being repeatedly removed by Blade conditions. The obsolete `selectGalleryStagePanel` server action is deleted.
+- The existing `galleryBackgroundPreviewTarget()` exposes one canonical server-derived Gallery/selected Artwork fallback URL for non-Staged tabs. Local display changes update the existing deferred Livewire preview focus fields and dispatch the established `gallery-preview-updated` event only when the active preview target changes. Stage media selection, server form edits and publishing remain Livewire-owned. The Gallery Stage preview title reacts immediately without a new preview loader.
+- Native tab click itself sends no Livewire request; an iframe navigation can still load a different preview page, and later genuine editing/selection actions remain server requests. Added the preexisting selected Artwork preview evaluation as one shared method for backend and frontend instead of duplicating eligibility decisions.
+- Source reviewed only; browser acceptance needed for upload-through-tab-switch, multi-file first selection, hidden form field persistence, Staged arrows, selected Artwork preview return, autofocusing off/on, mobile focus Stage, and initial page-render cost. No tests, Continuous Integration, deployment, or promotion.
 
 ## Gallery Stage first-upload selection and tab response — 2026-11-21
 

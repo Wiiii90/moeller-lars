@@ -149,22 +149,32 @@ final class GalleryWorkspace extends Page
             ->statePath('stagedArtworkData');
     }
 
-    public function selectGalleryStagePanel(string $panel): void
+    /**
+     * The selected public Artwork (or Gallery) is the non-Staged preview target.
+     * Expose the same canonical result to the local Stage tabs and Livewire.
+     *
+     * @return array{kind:string,artwork_id:?int,url:?string}
+     */
+    public function galleryBackgroundPreviewTarget(): array
     {
-        if (! in_array($panel, ['upload', 'queue', 'settings'], true)
-            || ($panel === 'queue' && $this->pendingBatchArtworkMedia === [])) {
-            return;
+        $ids = array_keys($this->selectedArtworkIdSet());
+        $single = count($ids) === 1 ? (int) $ids[0] : null;
+        foreach ($this->artworkDataset as $artwork) {
+            if ($single !== null && (int) $artwork['id'] === $single
+                && ($artwork['can_preview'] ?? false) === true) {
+                return [
+                    'kind' => 'artwork',
+                    'artwork_id' => $single,
+                    'url' => route('preview.artworks.show', ['slug' => $artwork['slug']]),
+                ];
+            }
         }
 
-        $this->rememberStagedArtworkChanges();
-        $this->galleryStagePanel = $panel;
-        if ($panel === 'queue' && $this->selectedStagedMediaAssetId === null) {
-            $this->selectStagedArtwork((int) $this->pendingBatchArtworkMedia[0]['media_asset_id']);
-
-            return;
-        }
-
-        $this->syncGalleryPreviewFocus();
+        return [
+            'kind' => 'gallery',
+            'artwork_id' => null,
+            'url' => $this->galleryContext['preview_url'] ?? null,
+        ];
     }
 
     /** Stage form changes refresh only a private session-backed Public preview. */
@@ -255,17 +265,12 @@ final class GalleryWorkspace extends Page
             return;
         }
 
-        $ids = array_keys($this->selectedArtworkIdSet());
-        $single = count($ids) === 1 ? (int) $ids[0] : null;
-        $target = $single !== null && collect($this->artworkDataset)->contains(
-            static fn (array $artwork): bool => (int) $artwork['id'] === $single
-                && ($artwork['can_preview'] ?? false) === true,
-        ) ? $single : null;
-        $mode = $target === null ? 'gallery' : 'artwork';
-        $changed = $this->galleryStagePreview !== $mode || $this->galleryStagePreviewArtworkId !== $target;
+        $background = $this->galleryBackgroundPreviewTarget();
+        $changed = $this->galleryStagePreview !== $background['kind']
+            || $this->galleryStagePreviewArtworkId !== $background['artwork_id'];
 
-        $this->galleryStagePreview = $mode;
-        $this->galleryStagePreviewArtworkId = $target;
+        $this->galleryStagePreview = $background['kind'];
+        $this->galleryStagePreviewArtworkId = $background['artwork_id'];
 
         if ($changed || $forceRefresh) {
             $this->dispatch('gallery-preview-updated',

@@ -40,9 +40,45 @@
 
         @php
             $stagePublicUrl = $this->galleryStagePreviewUrl();
+            $backgroundPreview = $this->galleryBackgroundPreviewTarget();
+            $stagedPreviewUrl = route('preview.gallery.staged-artwork', [
+                'gallery' => (int) $galleryContext['id'],
+                'token' => $this->getId(),
+            ]);
         @endphp
         <section class="gallery-workspace__stage admin-visual-stage admin-visual-stage--split admin-focus-stage"
-            aria-label="Gallery editor and interactive preview">
+            aria-label="Gallery editor and interactive preview"
+            data-gallery-background-preview-kind="{{ $backgroundPreview['kind'] }}"
+            data-gallery-background-preview-url="{{ $backgroundPreview['url'] }}"
+            data-gallery-background-preview-artwork-id="{{ $backgroundPreview['artwork_id'] }}"
+            data-gallery-staged-preview-url="{{ $stagedPreviewUrl }}"
+            x-data="{
+                panel: $wire.entangle('galleryStagePanel'),
+                previewKind: $wire.entangle('galleryStagePreview'),
+                previewArtworkId: $wire.entangle('galleryStagePreviewArtworkId'),
+                previewAutoFocus: $wire.entangle('galleryPreviewAutoFocus'),
+                selectPanel(next) {
+                    if (this.panel === next || (next === 'queue' && this.$refs.galleryQueueTab?.disabled)) return
+                    this.panel = next
+                    if (!this.previewAutoFocus) return
+
+                    // Only the visible pane is browser-local; the canonical
+                    // preview targets are resolved by the Gallery workspace.
+                    const background = this.$el.dataset
+                    const kind = next === 'queue' ? 'staged' : background.galleryBackgroundPreviewKind
+                    const artworkId = next === 'queue'
+                        ? null : (Number(background.galleryBackgroundPreviewArtworkId) || null)
+                    if (this.previewKind === kind && this.previewArtworkId === artworkId) return
+
+                    const url = next === 'queue'
+                        ? background.galleryStagedPreviewUrl : background.galleryBackgroundPreviewUrl
+                    this.previewKind = kind
+                    this.previewArtworkId = artworkId
+                    if (url) this.$dispatch('gallery-preview-updated', {
+                        url, title: kind === 'staged' ? 'Interactive staged Artwork preview' : 'Interactive Gallery preview',
+                    })
+                },
+            }">
             <x-admin.stage-switcher
                 storage-key="admin-stage.gallery-merged"
                 default-pane="editor"
@@ -62,9 +98,12 @@
                     @php($stagedPosition = $this->stagedArtworkPosition())
                     @php($stagedTotal = count($pendingBatchArtworkMedia))
                     <div class="admin-stage-tabs gallery-stage__workspace-tabs" role="group" aria-label="Gallery editor mode and staged artwork navigation">
-                        <button class="admin-action {{ $galleryStagePanel === 'upload' ? 'is-primary' : '' }}" type="button"
-                            wire:click="selectGalleryStagePanel('upload')" aria-pressed="{{ $galleryStagePanel === 'upload' ? 'true' : 'false' }}">Upload<span x-show="uploadRunning" x-cloak x-text="'(' + progress.toFixed(1) + '%)'" class="gallery-stage__upload-tab-progress"></span></button>
-                        <div class="admin-action gallery-stage__queue-control {{ $galleryStagePanel === 'queue' ? 'is-primary' : '' }}"
+                        <button class="admin-action" type="button"
+                            x-on:click="selectPanel('upload')"
+                            x-bind:class="{ 'is-primary': panel === 'upload' }"
+                            x-bind:aria-pressed="(panel === 'upload').toString()">Upload<span x-show="uploadRunning" x-cloak x-text="'(' + progress.toFixed(1) + '%)'" class="gallery-stage__upload-tab-progress"></span></button>
+                        <div class="admin-action gallery-stage__queue-control"
+                            x-bind:class="{ 'is-primary': panel === 'queue' }"
                             role="group" aria-label="Staged Artwork navigation">
                             <button class="gallery-stage__queue-arrow" type="button"
                                 wire:click="navigateStagedArtwork(-1)"
@@ -72,8 +111,9 @@
                                 aria-label="Previous staged artwork" title="Previous staged artwork">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Previous->mini()" />
                             </button>
-                            <button class="gallery-stage__queue-tab" type="button"
-                                wire:click="selectGalleryStagePanel('queue')" aria-pressed="{{ $galleryStagePanel === 'queue' ? 'true' : 'false' }}"
+                            <button class="gallery-stage__queue-tab" type="button" x-ref="galleryQueueTab"
+                                x-on:click="selectPanel('queue')"
+                                x-bind:aria-pressed="(panel === 'queue').toString()"
                                 @disabled($stagedTotal === 0)>Staged (<span aria-live="polite" aria-atomic="true">{{ $stagedPosition }}/{{ $stagedTotal }}</span>)</button>
                             <button class="gallery-stage__queue-arrow" type="button"
                                 wire:click="navigateStagedArtwork(1)"
@@ -82,13 +122,14 @@
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Next->mini()" />
                             </button>
                         </div>
-                        <button class="admin-action {{ $galleryStagePanel === 'settings' ? 'is-primary' : '' }}" type="button"
-                            wire:click="selectGalleryStagePanel('settings')" aria-pressed="{{ $galleryStagePanel === 'settings' ? 'true' : 'false' }}">Settings</button>
+                        <button class="admin-action" type="button"
+                            x-on:click="selectPanel('settings')"
+                            x-bind:class="{ 'is-primary': panel === 'settings' }"
+                            x-bind:aria-pressed="(panel === 'settings').toString()">Settings</button>
                     </div>
                 </header>
 
-                @if ($galleryStagePanel === 'upload')
-            <div class="gallery-stage__upload"
+            <div class="gallery-stage__upload" x-show="panel === 'upload'" x-cloak
                 x-bind:aria-busy="uploadRunning.toString()">
                 <div class="gallery-stage__upload-status" role="status" aria-live="polite" aria-atomic="true">
                     <span x-text="
@@ -136,12 +177,13 @@
                     </div>
                 </div>
             </div>
-                @elseif ($galleryStagePanel === 'queue' && $pendingBatchArtworkMedia !== [])
-                    @if ($selectedStagedMediaAssetId !== null)
-                        <div class="gallery-stage__form-scroll" wire:change="syncStagedArtworkPreview" wire:key="gallery-staged-editor-{{ $selectedStagedMediaAssetId }}">
+                @if ($pendingBatchArtworkMedia !== [] && $selectedStagedMediaAssetId !== null)
+                        <div class="gallery-stage__form-scroll" x-show="panel === 'queue'" x-cloak
+                            wire:change="syncStagedArtworkPreview" wire:key="gallery-staged-editor-{{ $selectedStagedMediaAssetId }}">
                             {{ $this->stagedArtworkForm }}
                         </div>
-                        <div class="gallery-stage__editor-actions admin-toolbar" aria-label="Staged Artwork actions">
+                        <div class="gallery-stage__editor-actions admin-toolbar"
+                            x-show="panel === 'queue'" x-cloak aria-label="Staged Artwork actions">
                             <div class="gallery-stage__action-group">
                                 <button class="admin-action gallery-stage__action-discard" type="button"
                                     title="Discard staged file and delete it from Storage" aria-label="Discard staged file from Storage"
@@ -175,17 +217,17 @@
                                 </button>
                             </div>
                         </div>
-                    @endif
-                @else
-                    <div class="gallery-stage__settings" aria-label="Gallery settings">
+                @endif
+                    <div class="gallery-stage__settings" x-show="panel === 'settings'" x-cloak
+                        aria-label="Gallery settings">
                         {{ $this->galleryStageSettingsForm }}
                     </div>
-                @endif
             </div>
 
             <div class="gallery-stage__preview admin-visual-stage__pane" data-admin-stage-pane="preview" data-admin-stage-slot="2">
                 <header class="gallery-stage__preview-header">
-                    <h2 class="admin-section__kicker admin-visual-stage__heading">{{ $galleryStagePreview === 'staged' ? 'Staged Artwork preview' : 'Live preview' }}</h2>
+                    <h2 class="admin-section__kicker admin-visual-stage__heading"
+                        x-text="previewKind === 'staged' ? 'Staged Artwork preview' : 'Live preview'">{{ $galleryStagePreview === 'staged' ? 'Staged Artwork preview' : 'Live preview' }}</h2>
 
                 </header>
 
