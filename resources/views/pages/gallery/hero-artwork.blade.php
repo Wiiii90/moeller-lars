@@ -3,14 +3,14 @@
         $navigableHero = $showNavigation && $heroGroup->count() > 1;
         $imageViewer = app(\App\Domain\Content\PublicImageViewer::class);
     @endphp
-    <div class="home-hero-presentation" data-artwork-viewer-sequence @if ($navigableHero) data-home-hero @endif>
+    <div class="gallery-hero-presentation" data-artwork-viewer-sequence @if ($navigableHero) data-gallery-hero @endif>
         @foreach ($navigableHero ? $heroGroup : [$heroCandidate] as $candidate)
             @php
                 $artwork = $candidate->artwork();
                 $asset = $candidate->mediaAsset();
                 $isCurrent = $candidate->key() === $heroCandidate->key();
             @endphp
-            <div class="home-hero-slide" data-home-hero-slide @if (! $isCurrent) hidden @endif>
+            <div class="gallery-hero-slide" data-gallery-hero-slide @if (! $isCurrent) hidden @endif>
                 @if ($artwork instanceof \App\Models\Artwork)
                     <x-artwork-card
                         :artwork="$artwork"
@@ -43,7 +43,7 @@
                     @endphp
                     <article class="artwork-card" aria-label="{{ $alt }}">
                         <x-artwork-navigation :hero-navigation="$navigableHero" />
-                        <div class="artwork-card__composition artwork-card__composition--home-hero">
+                        <div class="artwork-card__composition artwork-card__composition--gallery-hero">
                         <div class="artwork-card__link artwork-card__link--static">
                             @if ($isVideo)
                                 <video
@@ -68,7 +68,7 @@
                                     loading="{{ $isCurrent ? 'eager' : 'lazy' }}"
                                     decoding="async"
                                     @if ($enableViewer)
-                                        {!! $imageViewer->attributes('home-media-'.$asset->getKey(), $originalUrl, $alt) !!}
+                                        {!! $imageViewer->attributes('gallery-hero-media-'.$asset->getKey(), $originalUrl, $alt) !!}
                                     @endif
                                 >
                             @endif

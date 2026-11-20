@@ -7,8 +7,8 @@ import './admin-dialog-geometry.js';
 import './admin-partial-date.js';
 import { adminLivePreview } from './admin-live-preview.js';
 window.adminLivePreview = adminLivePreview;
-import { adminHomeHeroStage } from './admin-home-stage.js';
-window.adminHomeHeroStage = adminHomeHeroStage;
+import { adminGalleryHeroStage } from './gallery-hero-stage.js';
+window.adminGalleryHeroStage = adminGalleryHeroStage;
 
 let storageRuntimePromise = null;
 let refreshFrame = null;

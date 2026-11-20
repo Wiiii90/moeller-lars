@@ -22,14 +22,14 @@
     $detailUrl = $preview->url(route('artworks.show', $artwork->slug));
     $presentation = \App\Domain\Artwork\GalleryPresentation::class;
     $viewerActive = $enableViewer === null ? $presentation::viewerEnabled($category) : (bool) $enableViewer;
-    // Home keeps its independent viewer policy. Gallery cyclic navigation
-    // never leaks into the Home hero viewer sequence.
+    // Hero keeps its independent viewer policy. Gallery cyclic navigation
+    // never leaks into the Gallery Hero viewer sequence.
     $viewerNavigation = $enableViewer !== null || $presentation::viewerNavigationEnabled($category);
     $viewerCyclic = $enableViewer === null && $presentation::viewerNavigationCyclic($category);
     $detailPageEnabled = $presentation::artworkPagesEnabled($category);
     $configuration = \App\Domain\Artwork\ArtworkInformation::effective($category, $artwork);
     if ($showDetails !== null || $showMediaCredits !== null || $showMediaCopyright !== null) {
-        // Home's explicit controls own Home presentation independently of
+        // Hero's explicit controls own Hero presentation independently of
         // the Gallery-specific selection. Avoid applying two hide policies.
         $configuration['enabled'] = (bool) ($showDetails ?? false)
             || (bool) ($showMediaCredits ?? false)
@@ -40,7 +40,7 @@
             }
         }
     }
-    // Home has its own explicit hero surface policy. Only its presentation
+    // Hero has its own explicit hero surface policy. Only its presentation
     // choices override Gallery defaults; media metadata is still canonical.
     if ($showMediaCredits !== null) {
         $configuration['visible']['credits'] = (bool) $showMediaCredits;
@@ -79,8 +79,8 @@
 
     @if ($galleryIndex || $heroFitted)
         {{-- The shared image-and-caption composition keeps artwork information
-             immediately below its actual media, including on the Home Hero. --}}
-        <div class="artwork-card__composition{{ $isVideo ? ' artwork-card__composition--video' : '' }}{{ $heroFitted ? ' artwork-card__composition--home-hero' : '' }}">
+             immediately below its actual media, including on the Gallery Hero. --}}
+        <div class="artwork-card__composition{{ $isVideo ? ' artwork-card__composition--video' : '' }}{{ $heroFitted ? ' artwork-card__composition--gallery-hero' : '' }}">
     @endif
 
     @if ($viewerActive)

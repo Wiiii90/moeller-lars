@@ -1,13 +1,13 @@
 {{-- Dummy membership uses the same Admin table contract as other editors. --}}
-<x-admin.table class="admin-table--data admin-table--dialog-inset home-dummy-gallery-table" aria-label="Dummy Gallery members">
+<x-admin.table class="admin-table--data admin-table--dialog-inset gallery-hero-dummy-gallery-table" aria-label="Dummy Gallery members">
     <table class="admin-table--six-grid">
         <colgroup>
-            <col class="home-dummy-gallery-table__col-artwork">
-            <col class="home-dummy-gallery-table__col-storage">
+            <col class="gallery-hero-dummy-gallery-table__col-artwork">
+            <col class="gallery-hero-dummy-gallery-table__col-storage">
             <col style="width: 4.2rem">
             <col style="width: 3.5rem">
             <col style="width: 3.5rem">
-            <col class="home-dummy-gallery-table__col-actions">
+            <col class="gallery-hero-dummy-gallery-table__col-actions">
         </colgroup>
         <thead>
             <tr>
@@ -24,11 +24,11 @@
         <tbody>
             @forelse ($members as $member)
                 @php $isStorage = str_starts_with($member['id'], 'media:'); @endphp
-                <tr wire:key="home-dummy-member-{{ $creating ? 'new' : $galleryId }}-{{ $member['id'] }}">
+                <tr wire:key="gallery-hero-dummy-member-{{ $creating ? 'new' : $galleryId }}-{{ $member['id'] }}">
                     <td class="admin-table__identity">
                         @unless ($isStorage)
-                            <div class="home-source-table__candidate-inline">
-                                <span class="home-source-candidate__preview">
+                            <div class="gallery-hero-source-table__candidate-inline">
+                                <span class="gallery-hero-source-candidate__preview">
                                     @if ($member['thumbnail_url'])
                                         <img src="{{ $member['thumbnail_url'] }}" alt="" loading="lazy" decoding="async" draggable="false">
                                     @else
@@ -43,8 +43,8 @@
                     </td>
                     <td class="admin-table__identity">
                         @if ($isStorage)
-                            <div class="home-source-table__candidate-inline">
-                                <span class="home-source-candidate__preview">
+                            <div class="gallery-hero-source-table__candidate-inline">
+                                <span class="gallery-hero-source-candidate__preview">
                                     @if ($member['thumbnail_url'])
                                         <img src="{{ $member['thumbnail_url'] }}" alt="" loading="lazy" decoding="async" draggable="false">
                                     @else

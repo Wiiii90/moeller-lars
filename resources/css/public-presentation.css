@@ -592,14 +592,14 @@ body {
 /* Both fitted public Artwork surfaces use the existing Content bottom
    margin as their ONE external shell gap. Do not also shorten the frame.
    The paper grows naturally when text exceeds the viewport. */
-body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitted) .public-paper-frame {
+body.public-site:has(.site-content--fitted-image, .site-content--gallery-hero-fitted) .public-paper-frame {
     height: auto;
     min-height: 100dvh;
 }
-body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitted) .site-header {
+body.public-site:has(.site-content--fitted-image, .site-content--gallery-hero-fitted) .site-header {
     flex: 0 0 auto;
 }
-#content:is(.site-content--fitted-image, .site-content--home-hero-fitted) {
+#content:is(.site-content--fitted-image, .site-content--gallery-hero-fitted) {
     display: flex;
     min-height: 0;
     flex: 1 1 auto;
@@ -618,7 +618,7 @@ body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitte
 /* Restore the accepted centered image-and-caption composition. The earlier
    flex-end change pushed landscapes down without correcting the Page edge. */
 .site-content--fitted-image .artwork-detail__fitted-group,
-.site-content--home-hero-fitted .artwork-card__composition--home-hero {
+.site-content--gallery-hero-fitted .artwork-card__composition--gallery-hero {
     justify-content: center;
 }
 .site-content--fitted-image .artwork-detail__media,
@@ -881,7 +881,7 @@ body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitte
     margin-block: calc((var(--gallery-artwork-gap) + var(--gallery-gap-jitter, 0rem)) / 2);
 }
 
-/* Unlike the Home Hero and individual Artwork pages, an index card is sized
+/* Unlike the Gallery Hero and individual Artwork pages, an index card is sized
    by the image's intrinsic aspect ratio, constrained by both the Content
    column and a common viewport-height ceiling. No crop or width stretch. */
 .artwork-list .artwork-card__link {
@@ -941,40 +941,40 @@ body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitte
 }
 
 
-/* Home Hero uses the same fitted image calculation and General-owned Page
+/* Gallery Hero uses the same fitted image calculation and General-owned Page
    as individual Artwork pages. A single CSS variable is supplied by the
    existing shared JS fitter for the active slide (not a parallel ratio/
    viewport-height rule). The image and footer belong to one centered track. */
-.site-content--home-hero-fitted > .public-content-reveal,
-.site-content--home-hero-fitted .home-hero-presentation,
-.site-content--home-hero-fitted .home-hero-slide:not([hidden]),
-.site-content--home-hero-fitted .home-hero-slide > .artwork-card {
+.site-content--gallery-hero-fitted > .public-content-reveal,
+.site-content--gallery-hero-fitted .gallery-hero-presentation,
+.site-content--gallery-hero-fitted .gallery-hero-slide:not([hidden]),
+.site-content--gallery-hero-fitted .gallery-hero-slide > .artwork-card {
     display: flex;
     min-width: 0;
     min-height: 0;
     flex: 1 1 auto;
     flex-direction: column;
 }
-.site-content--home-hero-fitted > .public-content-reveal > .public-page-heading {
+.site-content--gallery-hero-fitted > .public-content-reveal > .public-page-heading {
     flex: 0 0 auto;
 }
-.site-content--home-hero-fitted .home-hero-presentation,
-.site-content--home-hero-fitted .home-hero-slide:not([hidden]),
-.site-content--home-hero-fitted .home-hero-slide > .artwork-card {
+.site-content--gallery-hero-fitted .gallery-hero-presentation,
+.site-content--gallery-hero-fitted .gallery-hero-slide:not([hidden]),
+.site-content--gallery-hero-fitted .gallery-hero-slide > .artwork-card {
     width: 100%;
 }
-.site-content--home-hero-fitted .artwork-folio {
+.site-content--gallery-hero-fitted .artwork-folio {
     width: 100%;
     padding-inline: 0;
     flex: 0 0 auto;
 }
-.site-content--home-hero-fitted .artwork-folio__leading > .artwork-folio__step {
+.site-content--gallery-hero-fitted .artwork-folio__leading > .artwork-folio__step {
     justify-content: flex-start;
 }
-.site-content--home-hero-fitted .artwork-folio__trailing > .artwork-folio__step {
+.site-content--gallery-hero-fitted .artwork-folio__trailing > .artwork-folio__step {
     justify-content: flex-end;
 }
-.site-content--home-hero-fitted .artwork-card__composition--home-hero {
+.site-content--gallery-hero-fitted .artwork-card__composition--gallery-hero {
     display: flex;
     width: min(100%, var(--public-fitted-image-width, 100%));
     max-width: 100%;
@@ -984,7 +984,7 @@ body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitte
     flex: 1 1 auto;
     flex-direction: column;
 }
-.site-content--home-hero-fitted .artwork-card__composition--home-hero > :is(
+.site-content--gallery-hero-fitted .artwork-card__composition--gallery-hero > :is(
     .artwork-card__link, .artwork-card__footer, .public-video__controls
 ) {
     width: 100%;
@@ -992,7 +992,7 @@ body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitte
     min-width: 0;
     flex: 0 0 auto;
 }
-.site-content--home-hero-fitted .artwork-card__composition--home-hero :is(
+.site-content--gallery-hero-fitted .artwork-card__composition--gallery-hero :is(
     .artwork-card__image, .artwork-card__video
 ) {
     display: block;
@@ -1003,7 +1003,7 @@ body.public-site:has(.site-content--fitted-image, .site-content--home-hero-fitte
 }
 /* Hidden Hero members are rendered once and remain out of layout and the
  * accessibility tree until the active member changes. */
-[data-home-hero-slide][hidden] {
+[data-gallery-hero-slide][hidden] {
     display: none;
 }
 

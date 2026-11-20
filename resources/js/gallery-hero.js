@@ -9,13 +9,13 @@ export function adjacentHeroIndex(index, direction, length) {
     return (index + direction + length) % length;
 }
 
-export function initializeHomeHero(root = document, transition = (change) => change()) {
-    root.querySelectorAll('[data-home-hero]').forEach((group) => {
-        const slides = Array.from(group.querySelectorAll(':scope > [data-home-hero-slide]'));
+export function initializeGalleryHero(root = document, transition = (change) => change()) {
+    root.querySelectorAll('[data-gallery-hero]').forEach((group) => {
+        const slides = Array.from(group.querySelectorAll(':scope > [data-gallery-hero-slide]'));
         if (slides.length < 2) return;
 
         group.addEventListener('click', (event) => {
-            const button = event.target.closest?.('[data-home-hero-direction]');
+            const button = event.target.closest?.('[data-gallery-hero-direction]');
             if (!button || !group.contains(button)) return;
 
             const direction = button.dataset.homeHeroDirection === 'previous' ? -1
@@ -31,9 +31,9 @@ export function initializeHomeHero(root = document, transition = (change) => cha
                 slides[nextIndex].hidden = false;
                 // The shared fitted-media owner measures the newly active
                 // Hero's native dimensions and caption, not the old slide.
-                group.dispatchEvent(new Event('home-hero-change'));
+                group.dispatchEvent(new Event('gallery-hero-change'));
             });
-            slides[nextIndex].querySelector('[data-home-hero-direction="' +
+            slides[nextIndex].querySelector('[data-gallery-hero-direction="' +
                 button.dataset.homeHeroDirection + '"]')?.focus({ preventScroll: true });
         });
     });

@@ -1,8 +1,8 @@
 /**
- * Client-only Home Hero preview clock. Source membership, ordering and weights
- * come from HomeHeroResolver; this does not write public presentation state.
+ * Client-only Gallery Hero preview clock. Source membership, ordering and weights
+ * come from GalleryHeroResolver; this does not write public presentation state.
  */
-export function adminHomeHeroStage(config = {}) {
+export function adminGalleryHeroStage(config = {}) {
     const rows = (Array.isArray(config.rows) ? config.rows : [])
         .filter((row) => row && row.eligible !== false && typeof row.id === 'string' && /^(artwork|media):[1-9]\d*$/.test(row.id))
         .map((row) => ({

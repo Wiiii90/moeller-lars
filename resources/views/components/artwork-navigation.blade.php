@@ -18,7 +18,7 @@
         <span class="artwork-folio__leading">
             @if ($heroNavigation)
                 <button class="artwork-folio__step" type="button"
-                        data-home-hero-direction="previous"
+                        data-gallery-hero-direction="previous"
                         aria-label="Previous Hero artwork" title="Previous artwork">
                     <x-public-icon name="arrow-left" />
                 </button>
@@ -47,7 +47,7 @@
         <span class="artwork-folio__trailing">
             @if ($heroNavigation)
                 <button class="artwork-folio__step" type="button"
-                        data-home-hero-direction="next"
+                        data-gallery-hero-direction="next"
                         aria-label="Next Hero artwork" title="Next artwork">
                     <x-public-icon name="arrow-right" />
                 </button>

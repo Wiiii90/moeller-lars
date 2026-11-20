@@ -7,7 +7,7 @@ import '../css/rich-text-spacing.css';
 
 import { initializeArtworkViewer } from './artwork-viewer.js';
 import { initializeGalleryImageLoading } from './public-gallery-loading.js';
-import { initializeHomeHero } from './home-hero.js';
+import { initializeGalleryHero } from './gallery-hero.js';
 import { initializePublicMediaPlayback } from './public-media-playback.js';
 import { initializeJournalPresentation } from './journal-presentation.js';
 import { initializeMatomoTracking } from './matomo.js';
@@ -34,7 +34,7 @@ function initializePage() {
     const root = document.body;
     disposers.push(initializeArtworkViewer(root));
     disposers.push(initializeGalleryImageLoading(root));
-    initializeHomeHero(root);
+    initializeGalleryHero(root);
     disposers.push(initializePublicMediaPlayback(root));
     disposers.push(initializeJournalPresentation());
     disposers.push(initializeMatomoTracking(root));

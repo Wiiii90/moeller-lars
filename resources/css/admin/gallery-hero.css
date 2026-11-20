@@ -1,26 +1,16 @@
-/* Home-only Hero presentation. Generic controls/tables/pagers come from shared admin references. */
+/* Gallery Hero presentation. Shared Admin primitives own its controls and tables. */
 
-/* Home toolbars use the shared six-cell contract. Under Construction and
- * Custom have no Visual Stage, so the metric strip's lower rule acts as the
- * stage boundary and owns the same line-to-toolbar breathing room. */
-.home-component-controls {
-    padding-top: var(--admin-section-gap);
-    padding-bottom: var(--admin-section-gap);
+/* Hero source Galleries use the shared table structure and action rails. */
+.gallery-hero-source-table {
+    --gallery-hero-source-actions-width: var(--admin-row-actions-edit-state-delete-width);
+    --admin-row-actions-width: var(--gallery-hero-source-actions-width);
 }
 
-/* Home source galleries remain an ordinary table. The Custom and Under
- * Construction component templates reuse Custom Page's hierarchy geometry,
- * including a permanent editable Component column and flexible Content. */
-.home-source-table {
-    --home-source-actions-width: var(--admin-row-actions-edit-state-delete-width);
-    --admin-row-actions-width: var(--home-source-actions-width);
+.gallery-hero-source-table--gallery-order {
+    --gallery-hero-source-actions-width: var(--admin-row-actions-move-state-delete-width);
 }
 
-.home-source-table--gallery-order {
-    --home-source-actions-width: var(--admin-row-actions-move-state-delete-width);
-}
-
-.home-source-table__action-slot {
+.gallery-hero-source-table__action-slot {
     display: block;
     min-width: 0;
 }
@@ -28,41 +18,41 @@
 /* The first candidate shares the Gallery row. Remaining candidates are
  * ordinary rows: remove ONLY their internal separators and retain the final
  * boundary before the next Gallery. Selection follows the shared table state. */
-.home-source-table__group.is-expanded:has(+ .home-source-table__candidate-row) > td,
-.home-source-table__candidate-row:not(.is-group-end) > td {
+.gallery-hero-source-table__group.is-expanded:has(+ .gallery-hero-source-table__candidate-row) > td,
+.gallery-hero-source-table__candidate-row:not(.is-group-end) > td {
     border-bottom: 0 !important;
 }
 
-.home-source-table__candidate-row.is-group-end:not(:last-child) > td {
+.gallery-hero-source-table__candidate-row.is-group-end:not(:last-child) > td {
     border-bottom: 1px solid var(--admin-line) !important;
 }
 
 /* The actions header, column and stable row rail share one source-mode width. */
-.home-source-table__col-actions {
-    width: var(--home-source-actions-width);
+.gallery-hero-source-table__col-actions {
+    width: var(--gallery-hero-source-actions-width);
 }
-.home-source-table .admin-table__actions .admin-row-actions-heading {
-    width: var(--home-source-actions-width);
+.gallery-hero-source-table .admin-table__actions .admin-row-actions-heading {
+    width: var(--gallery-hero-source-actions-width);
     margin-inline-start: 0;
     padding-inline-start: .25rem;
 }
 @container admin-table (max-width: 64rem) {
-    .home-source-table--gallery-order table {
-        --home-source-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
+    .gallery-hero-source-table--gallery-order table {
+        --gallery-hero-source-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
     }
 }
 @container admin-table (max-width: 38rem) {
-    .home-source-table:not(.home-source-table--gallery-order) table {
-        --home-source-actions-width: var(--admin-row-actions-edit-state-delete-compact-width);
+    .gallery-hero-source-table:not(.gallery-hero-source-table--gallery-order) table {
+        --gallery-hero-source-actions-width: var(--admin-row-actions-edit-state-delete-compact-width);
     }
 }
 
-.home-source-table__gallery-link {
+.gallery-hero-source-table__gallery-link {
     color: inherit;
     text-decoration: none;
 }
 
-.home-source-table__gallery-link--button {
+.gallery-hero-source-table__gallery-link--button {
     padding: 0;
     border: 0;
     background: none;
@@ -71,19 +61,17 @@
     cursor: pointer;
 }
 
-.home-source-table__gallery-link:is(:hover, :focus-visible) {
+.gallery-hero-source-table__gallery-link:is(:hover, :focus-visible) {
     color: var(--admin-accent-strong);
     text-decoration: underline;
 }
 
-/* Home component and nested-child sequences now use the same canonical
- * five-action rails as Custom Page, including publication state. */
-.home-hero-surface {
+.gallery-hero-hero-surface {
     min-width: 0;
     align-items: stretch;
 }
 
-.home-hero-surface__visual {
+.gallery-hero-hero-surface__visual {
     position: relative;
     display: grid;
     min-width: 0;
@@ -93,7 +81,7 @@
     background: var(--admin-subtle);
 }
 
-.home-hero-surface__visual img {
+.gallery-hero-hero-surface__visual img {
     display: block;
     width: 100%;
     height: 100%;
@@ -101,7 +89,7 @@
     object-position: center;
 }
 
-.home-hero-surface__visual-actions {
+.gallery-hero-hero-surface__visual-actions {
     position: absolute;
     z-index: 6;
     top: .7rem;
@@ -111,17 +99,17 @@
     align-items: center;
 }
 
-.home-hero-surface__visual > span,
-.home-hero-rail__empty {
+.gallery-hero-hero-surface__visual > span,
+.gallery-hero-hero-rail__empty {
     color: var(--admin-faint);
     font-size: .66rem;
     letter-spacing: .08em;
     text-transform: uppercase;
 }
 
-.home-hero-rail {
+.gallery-hero-hero-rail {
     /* Heading and every row share one fixed Chance/Actions axis. */
-    --home-hero-candidate-tracks: 1.9rem 1.75rem 3.7rem minmax(0, 1fr) 5.5rem 7.25rem;
+    --gallery-hero-hero-candidate-tracks: 1.9rem 1.75rem 3.7rem minmax(0, 1fr) 5.5rem 7.25rem;
     display: flex;
     min-width: 0;
     flex-direction: column;
@@ -131,7 +119,7 @@
     background: var(--admin-surface);
 }
 
-.home-hero-rail__summary {
+.gallery-hero-hero-rail__summary {
     display: grid;
     gap: .45rem;
     padding: 0 .65rem .5rem;
@@ -140,28 +128,28 @@
 
 /* Quick editors are native admin-data-field controls; Home owns only their
  * column allocation, not separate label, input or select styling. */
-.home-hero-stage-settings {
+.gallery-hero-hero-stage-settings {
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.65fr) minmax(0, 1.6fr) minmax(0, .9fr);
     gap: .4rem;
     min-width: 0;
 }
 
-.home-hero-stage-candidates {
+.gallery-hero-hero-stage-candidates {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 3.1rem;
     gap: .25rem;
     min-width: 0;
 }
 
-.home-hero-stage-settings .admin-data-field select,
-.home-hero-stage-settings .admin-data-field input {
+.gallery-hero-hero-stage-settings .admin-data-field select,
+.gallery-hero-hero-stage-settings .admin-data-field input {
     min-width: 0;
     width: 100%;
     max-width: 100%;
 }
 
-.home-hero-rail__simulation {
+.gallery-hero-hero-rail__simulation {
     display: flex;
     gap: .35rem;
     min-width: 0;
@@ -173,19 +161,19 @@
     white-space: nowrap;
 }
 
-.home-hero-rail__simulation > span {
+.gallery-hero-hero-rail__simulation > span {
     min-width: 0;
     flex: 0 1 auto;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.home-hero-rail__simulation > .home-hero-rail__simulation-separator {
+.gallery-hero-hero-rail__simulation > .gallery-hero-hero-rail__simulation-separator {
     flex: 0 0 auto;
     overflow: visible;
 }
 
-.home-hero-rail__rows {
+.gallery-hero-hero-rail__rows {
     box-sizing: border-box;
     min-height: 0;
     flex: 1 1 auto;
@@ -195,22 +183,22 @@
     scrollbar-width: none;
 }
 
-.home-hero-rail__rows::-webkit-scrollbar {
+.gallery-hero-hero-rail__rows::-webkit-scrollbar {
     display: none;
     width: 0;
     height: 0;
 }
 
-.home-hero-rail__empty {
+.gallery-hero-hero-rail__empty {
     display: grid;
     min-height: 0;
     flex: 1 1 auto;
     place-items: center;
 }
 
-.home-hero-candidate {
+.gallery-hero-hero-candidate {
     display: grid;
-    grid-template-columns: var(--home-hero-candidate-tracks);
+    grid-template-columns: var(--gallery-hero-hero-candidate-tracks);
     gap: .3rem;
     min-width: 0;
     padding: .42rem .4rem;
@@ -218,29 +206,29 @@
     border-bottom: 1px solid var(--admin-line);
 }
 
-.home-hero-candidate__position {
+.gallery-hero-hero-candidate__position {
     min-width: 0;
 }
 
-.home-hero-candidate__position .admin-position {
+.gallery-hero-hero-candidate__position .admin-position {
     min-width: 1.6rem;
     min-height: 1.6rem;
     padding-inline: .2rem;
 }
 
-.home-hero-candidate__drag-spacer {
+.gallery-hero-hero-candidate__drag-spacer {
     width: 1.75rem;
 }
 
-.home-hero-candidate.is-current {
+.gallery-hero-hero-candidate.is-current {
     background: var(--admin-subtle);
 }
 
-.home-hero-candidate.is-unavailable {
+.gallery-hero-hero-candidate.is-unavailable {
     opacity: .58;
 }
 
-.home-hero-candidate__visual {
+.gallery-hero-hero-candidate__visual {
     display: grid;
     width: 3.7rem;
     height: 3rem;
@@ -249,45 +237,45 @@
     background: var(--admin-subtle);
 }
 
-.home-hero-candidate__visual img {
+.gallery-hero-hero-candidate__visual img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
 }
 
-.home-hero-candidate__visual span {
+.gallery-hero-hero-candidate__visual span {
     color: var(--admin-faint);
     font-size: .62rem;
 }
 
-.home-hero-candidate__meta {
+.gallery-hero-hero-candidate__meta {
     display: grid;
     min-width: 0;
     gap: .08rem;
 }
 
-.home-hero-candidate__meta strong,
-.home-hero-candidate__meta span,
-.home-hero-candidate__meta small {
+.gallery-hero-hero-candidate__meta strong,
+.gallery-hero-hero-candidate__meta span,
+.gallery-hero-hero-candidate__meta small {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.home-hero-candidate__meta strong {
+.gallery-hero-hero-candidate__meta strong {
     color: var(--admin-text);
     font-size: .71rem;
     font-weight: 600;
 }
 
-.home-hero-candidate__meta span,
-.home-hero-candidate__meta small {
+.gallery-hero-hero-candidate__meta span,
+.gallery-hero-hero-candidate__meta small {
     color: var(--admin-muted);
     font-size: .62rem;
 }
 
-.home-hero-weight {
+.gallery-hero-hero-weight {
     display: flex;
     grid-column: 5;
     min-width: 0;
@@ -296,12 +284,12 @@
     color: var(--admin-muted);
 }
 
-.home-hero-weight__inactive {
+.gallery-hero-hero-weight__inactive {
     display: block;
     text-align: center;
 }
 
-.home-hero-candidate__actions {
+.gallery-hero-hero-candidate__actions {
     display: flex;
     grid-column: 6;
     flex-wrap: nowrap;
@@ -310,7 +298,7 @@
     min-width: 0;
 }
 
-.home-hero-candidate__actions .admin-action {
+.gallery-hero-hero-candidate__actions .admin-action {
     display: inline-flex;
     box-sizing: border-box;
     width: 1.7rem;
@@ -321,18 +309,18 @@
     justify-content: center;
 }
 
-.home-hero-candidate__actions .admin-action__label {
+.gallery-hero-hero-candidate__actions .admin-action__label {
     display: none;
 }
 
-.home-hero-rail__exclusions-title {
+.gallery-hero-hero-rail__exclusions-title {
     padding: .6rem .5rem .3rem;
     color: var(--admin-muted);
     font-size: .62rem;
     font-weight: 700;
 }
 
-.home-hero-surface__issue {
+.gallery-hero-hero-surface__issue {
     margin: .55rem .75rem;
     color: var(--admin-muted);
     font-size: .68rem;
@@ -341,41 +329,41 @@
 
 /* One thumbnail frame is reused by the folded strip and the table rows.
  * Keep images small and consistently rectangular, without cropping art. */
-.home-source-table,
-.home-dummy-gallery-table {
-    --home-source-thumb-width: 2.55rem;
-    --home-source-thumb-height: 2rem;
+.gallery-hero-source-table,
+.gallery-hero-dummy-gallery-table {
+    --gallery-hero-source-thumb-width: 2.55rem;
+    --gallery-hero-source-thumb-height: 2rem;
 }
 
 /* Dummy Gallery membership rows reuse the source thumbnail frame and
  * single-line identity, without the retired manual-order controls. */
-.home-dummy-gallery-table {
-    --home-source-thumb-height: 1.9rem;
+.gallery-hero-dummy-gallery-table {
+    --gallery-hero-source-thumb-height: 1.9rem;
     --admin-row-actions-two-static-width: calc(
         var(--admin-row-action-slot-state-width) + var(--admin-row-action-slot-delete-width) + .25rem
     );
 }
 
-.home-dummy-gallery-table__col-actions {
+.gallery-hero-dummy-gallery-table__col-actions {
     width: calc(var(--admin-row-actions-two-static-width) + .5rem);
 }
 
-.home-dummy-gallery-table__col-artwork,
-.home-dummy-gallery-table__col-storage {
+.gallery-hero-dummy-gallery-table__col-artwork,
+.gallery-hero-dummy-gallery-table__col-storage {
     width: auto;
 }
 
 @container admin-table (max-width: 38rem) {
-    .home-dummy-gallery-table__col-actions {
+    .gallery-hero-dummy-gallery-table__col-actions {
         width: calc(2 * 1.35rem + .45rem + .5rem);
     }
 }
 
-.home-dummy-gallery-table .home-source-table__candidate-inline {
-    grid-template-columns: var(--home-source-thumb-width) minmax(0, 1fr);
+.gallery-hero-dummy-gallery-table .gallery-hero-source-table__candidate-inline {
+    grid-template-columns: var(--gallery-hero-source-thumb-width) minmax(0, 1fr);
 }
 
-.home-source-candidates__toggle {
+.gallery-hero-source-candidates__toggle {
     display: flex;
     box-sizing: border-box;
     width: fit-content;
@@ -390,13 +378,13 @@
 }
 
 /* Deliberately no hover paint, border or chevron: only keyboard focus is marked. */
-.home-source-candidates__toggle:focus-visible,
-.home-source-table__candidate-image-toggle:focus-visible {
+.gallery-hero-source-candidates__toggle:focus-visible,
+.gallery-hero-source-table__candidate-image-toggle:focus-visible {
     outline: 2px solid var(--admin-accent);
     outline-offset: 2px;
 }
 
-.home-source-candidates {
+.gallery-hero-source-candidates {
     display: flex;
     min-width: 0;
     max-width: 100%;
@@ -409,33 +397,33 @@
     user-select: none;
 }
 
-.home-source-candidates::-webkit-scrollbar {
+.gallery-hero-source-candidates::-webkit-scrollbar {
     display: none;
     width: 0;
     height: 0;
 }
 
-.home-source-candidates.is-dragging {
+.gallery-hero-source-candidates.is-dragging {
     cursor: grabbing;
 }
 
-.home-source-table__candidates {
+.gallery-hero-source-table__candidates {
     min-width: 0;
     overflow: hidden;
 }
 
-.home-source-candidate {
+.gallery-hero-source-candidate {
     display: block;
-    width: var(--home-source-thumb-width);
-    height: var(--home-source-thumb-height);
-    flex: 0 0 var(--home-source-thumb-width);
+    width: var(--gallery-hero-source-thumb-width);
+    height: var(--gallery-hero-source-thumb-height);
+    flex: 0 0 var(--gallery-hero-source-thumb-width);
 }
 
-.home-source-candidate__preview {
+.gallery-hero-source-candidate__preview {
     display: grid;
     box-sizing: border-box;
-    width: var(--home-source-thumb-width);
-    height: var(--home-source-thumb-height);
+    width: var(--gallery-hero-source-thumb-width);
+    height: var(--gallery-hero-source-thumb-height);
     min-width: 0;
     padding: 0;
     place-items: center;
@@ -446,35 +434,35 @@
     color: inherit;
 }
 
-.home-source-candidate__preview img {
+.gallery-hero-source-candidate__preview img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
 }
 
-.home-source-candidate__preview > span,
-.home-source-candidates__empty {
+.gallery-hero-source-candidate__preview > span,
+.gallery-hero-source-candidates__empty {
     color: var(--admin-faint);
     font-size: var(--admin-font-size-table-meta);
 }
 
-.home-source-table__candidate-image-toggle {
+.gallery-hero-source-table__candidate-image-toggle {
     cursor: pointer;
 }
 
 /* Candidate details stay in their original Gallery / Candidates / Actions /
  * Selection table tracks. The first candidate is already in the Gallery row,
  * and remaining candidates have no extra headings, dividers or larger media. */
-.home-source-table__candidate-inline {
+.gallery-hero-source-table__candidate-inline {
     display: grid;
     min-width: 0;
-    grid-template-columns: var(--home-source-thumb-width) minmax(0, 1fr) auto;
+    grid-template-columns: var(--gallery-hero-source-thumb-width) minmax(0, 1fr) auto;
     gap: .4rem;
     align-items: center;
 }
 
-.home-source-table__candidate-meta {
+.gallery-hero-source-table__candidate-meta {
     display: grid;
     min-width: 0;
     gap: .1rem;
@@ -483,8 +471,8 @@
     line-height: 1.2;
 }
 
-.home-source-table__candidate-meta strong,
-.home-source-table__candidate-meta small {
+.gallery-hero-source-table__candidate-meta strong,
+.gallery-hero-source-table__candidate-meta small {
     display: block;
     min-width: 0;
     overflow: hidden;
@@ -492,17 +480,17 @@
     white-space: nowrap;
 }
 
-.home-source-table__candidate-meta strong {
+.gallery-hero-source-table__candidate-meta strong {
     color: var(--admin-text);
     font-size: var(--admin-font-size-table-identity);
 }
 
-.home-source-table__candidate-meta small {
+.gallery-hero-source-table__candidate-meta small {
     color: var(--admin-muted);
     font-size: var(--admin-font-size-table-meta);
 }
 
-.home-source-table__candidate-chance {
+.gallery-hero-source-table__candidate-chance {
     min-width: 0;
     color: var(--admin-muted);
     font-variant-numeric: tabular-nums;
@@ -511,7 +499,7 @@
 /* Gallery rows always inherit the central table cell padding. Expanding
  * candidates may compact only the additional candidate rows, never the
  * first Gallery row: its title and actions must not jump vertically. */
-.home-source-table .home-source-table__candidate-row > td {
+.gallery-hero-source-table .gallery-hero-source-table__candidate-row > td {
     padding-top: .36rem;
     padding-bottom: .36rem;
 }
@@ -520,7 +508,7 @@
  * collapsed Gallery actions; compact labels follow the shared breakpoints. */
 
 @container admin-table (max-width: 38rem) {
-    .home-source-table__candidate-inline {
+    .gallery-hero-source-table__candidate-inline {
         gap: .25rem;
     }
 }

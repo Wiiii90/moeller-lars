@@ -143,9 +143,9 @@ function initializeArtworkDetailImage(root) {
 /* Home switches among already-present slides. Fit only the active member
    using exactly the same General content/viewport/metadata calculation as
    an individual Artwork. No inline style attributes or extra style owners. */
-function initializeHomeHeroFitting(root) {
-    const page = root.querySelector?.('#content.site-content--home-hero-fitted');
-    const group = page?.querySelector('.home-hero-presentation');
+function initializeGalleryHeroFitting(root) {
+    const page = root.querySelector?.('#content.site-content--gallery-hero-fitted');
+    const group = page?.querySelector('.gallery-hero-presentation');
     const fitStyle = fittedStyleRule();
     if (!page || !group || !fitStyle) return () => {};
 
@@ -153,10 +153,10 @@ function initializeHomeHeroFitting(root) {
     let frameRequest = 0;
     const fit = () => {
         if (lifetime.signal.aborted) return;
-        const active = [...group.querySelectorAll(':scope > [data-home-hero-slide]')]
+        const active = [...group.querySelectorAll(':scope > [data-gallery-hero-slide]')]
             .find((slide) => !slide.hidden);
         const owner = active?.querySelector('.artwork-card');
-        const media = owner?.querySelector('.artwork-card__composition--home-hero :is(.artwork-card__image, .artwork-card__video)');
+        const media = owner?.querySelector('.artwork-card__composition--gallery-hero :is(.artwork-card__image, .artwork-card__video)');
         if (!owner || !media) {
             fitStyle.removeProperty('--public-fitted-image-width');
             return;
@@ -187,7 +187,7 @@ function initializeHomeHeroFitting(root) {
 
     fit();
     window.addEventListener('resize', schedule, { passive: true, signal: lifetime.signal });
-    group.addEventListener('home-hero-change', schedule, { signal: lifetime.signal });
+    group.addEventListener('gallery-hero-change', schedule, { signal: lifetime.signal });
     group.addEventListener('load', schedule, { capture: true, signal: lifetime.signal });
     group.addEventListener('loadedmetadata', schedule, { capture: true, signal: lifetime.signal });
     // A media-width change can wrap long captions into additional lines.
@@ -210,10 +210,10 @@ function initializeHomeHeroFitting(root) {
 
 export function initializeGalleryImageLoading(root = document) {
     const disposeDetail = initializeArtworkDetailImage(root);
-    const disposeHome = initializeHomeHeroFitting(root);
+    const disposeGalleryHero = initializeGalleryHeroFitting(root);
     const disposeFitted = () => {
         disposeDetail();
-        disposeHome();
+        disposeGalleryHero();
     };
     const images = Array.from(root.querySelectorAll('.artwork-card__image'));
     if (images.length === 0) return disposeFitted;

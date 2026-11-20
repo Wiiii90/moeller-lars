@@ -1,8 +1,8 @@
 {{-- One candidate presentation for the Gallery's first row and all expanded rows. --}}
-<div class="home-source-table__candidate-inline">
+<div class="gallery-hero-source-table__candidate-inline">
     <button
         type="button"
-        class="home-source-candidate__preview home-source-table__candidate-image-toggle"
+        class="gallery-hero-source-candidate__preview gallery-hero-source-table__candidate-image-toggle"
         wire:click="toggleSourceExpansion({{ $groupId }})"
         aria-label="Collapse candidates in {{ $gallery['name'] }}"
     >
@@ -12,7 +12,7 @@
             <span>—</span>
         @endif
     </button>
-    <div class="home-source-table__candidate-meta">
+    <div class="gallery-hero-source-table__candidate-meta">
         @if ($candidate)
             <strong title="{{ $candidate['title'] }}">{{ $candidate['title'] }}</strong>
             <small title="{{ ($candidate['disabled'] ?? false) ? __('Disabled') : ($candidate['sequence_label'] ?? '') }}">{{ implode(', ', array_filter([$candidate['gallery'], $candidate['date']])) ?: '—' }}</small>
@@ -20,7 +20,7 @@
             <small>{{ __('No sourced candidates') }}</small>
         @endif
     </div>
-    <div class="home-source-table__candidate-chance">
+    <div class="gallery-hero-source-table__candidate-chance">
         @if ($candidate && $heroDisplayStrategy === 'random' && ($candidate['eligible'] ?? false))
             <x-admin.inline-percentage
                 :value="$candidate['percentage']"
