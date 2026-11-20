@@ -1,6 +1,6 @@
 # Dev workstream — branch-local coordination
 
-**Next lease token:** 28
+**Next lease token:** 29
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
@@ -15,6 +15,7 @@
 | Dev Worker 8 | 15 | Active — shared Create dialog Plus entry, circled-Check Submit and rightmost commit action source-integrated; browser acceptance pending | Central Admin create/edit dialog semantics, native Filament action rail, date controls and media picker; no deployment | [dev-8.md](workers/dev-8.md) |
 
 
+| Dev Worker 9 | 28 | Active — initial assignment registered; awaiting concrete controls requirements and bounded source review | Admin Live Preview interaction and control enhancements; coordinate shared General/Gallery Preview changes with Dev Worker 7; no unrelated General Appearance work | [dev-9.md](workers/dev-9.md) |
 | Dev Worker 10 | 26 | Active — rights-processing Validation readiness and completion | Media rights preparation/delivery pipeline, queue-worker integration requirements, current Validation activation evidence and safe rollout handoff; no deployments or artist-data changes without explicit approval | [dev-10.md](workers/dev-10.md) |
 
 | Dev Worker 11 | 27 | Active — initial Public keyboard issue user-accepted; ready for further issues | Bounded public-page layout, rendering and interactions consistent with CMS settings/publication; coordinate with existing feature owners | [dev-11.md](workers/dev-11.md) |
