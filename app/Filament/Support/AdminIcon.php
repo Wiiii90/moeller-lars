@@ -28,6 +28,7 @@ enum AdminIcon: string
     case PreviewPan = 'heroicon-o-hand-raised';
     case Commit = 'heroicon-o-check-circle';
     case DialogSubmit = 'heroicon-o-check';
+    case SubmitAll = 'admin-submit-all';
     case Artwork = 'heroicon-o-paint-brush';
     case BlogPost = 'heroicon-o-document';
     case Exhibition = 'heroicon-o-calendar';

@@ -162,27 +162,15 @@
     height: 0;
 }
 
-.gallery-stage__form-panel {
-    display: flex;
-    box-sizing: border-box;
-    flex: 1 1 auto;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-    margin-top: var(--admin-stage-header-gap);
-    border: 1px solid var(--admin-line-strong);
-    border-radius: .2rem;
-    background: var(--admin-surface);
-}
-
 .gallery-stage__form-scroll {
     flex: 1 1 auto;
+    min-width: 0;
     min-height: 0;
+    margin-top: var(--admin-stage-header-gap);
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: none;
-    padding: .6rem .65rem 1.5rem;
+    padding: .45rem .1rem 1.5rem;
 }
 
 .gallery-stage__editor-actions {
@@ -226,6 +214,10 @@
     border-radius: .2rem;
     background: transparent;
     white-space: nowrap;
+}
+
+.gallery-stage__editor-actions .gallery-stage__action-discard {
+    color: var(--admin-text);
 }
 
 .gallery-stage__editor-actions .admin-action svg {

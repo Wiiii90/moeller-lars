@@ -172,21 +172,7 @@ trait GalleryWorkspaceDirectUpload
         $this->publishStagedArtworkPreview();
     }
 
-    public function removeStagedArtwork(int $assetId): void
-    {
-        if ($this->selectedStagedMediaAssetId !== $assetId) {
-            return;
-        }
-
-        $this->forgetStagedMediaAsset($assetId);
-        app(AdminNotifier::class)->notification(
-            title: 'Media discarded from Stage',
-            body: 'The original file remains available in Storage.',
-            status: 'success',
-        );
-    }
-
-    /** Remove one queue entry without conflating Discard and Storage deletion. */
+    /** Forget the queue row only after the canonical Storage deletion succeeds. */
     private function forgetStagedMediaAsset(int $assetId): void
     {
         $selectedIndex = max(0, $this->stagedArtworkPosition() - 1);
@@ -209,11 +195,11 @@ trait GalleryWorkspaceDirectUpload
         }
     }
 
-    /** Stage Delete is the same confirmed, reference-aware Storage mutation. */
-    public function deleteStagedMediaAction(): Action
+    /** Stage Discard delegates to the confirmed, reference-aware Storage deletion. */
+    public function discardStagedMediaAction(): Action
     {
-        $action = Action::make('deleteStagedMedia')
-            ->label('Delete')
+        $action = Action::make('discardStagedMedia')
+            ->label('Discard')
             ->color('danger')
             ->fillForm(fn (array $arguments): array => [
                 'reference_snapshot' => $this->stagedMediaReferenceSnapshot($this->stagedMediaAssetForAction($arguments)),
@@ -231,7 +217,7 @@ trait GalleryWorkspaceDirectUpload
                     (string) ($data['reference_snapshot'] ?? ''),
                 )) {
                     throw ValidationException::withMessages([
-                        'media' => 'This file or its content references changed. Reopen Delete to review the current references.',
+                        'media' => 'This file or its content references changed. Reopen Discard to review the current references.',
                     ]);
                 }
 
@@ -244,7 +230,7 @@ trait GalleryWorkspaceDirectUpload
                         report($exception);
                         $this->forgetStagedMediaAsset($id);
                         app(AdminNotifier::class)->notification(
-                            title: 'File deleted; cleanup incomplete',
+                            title: 'File discarded; cleanup incomplete',
                             body: 'Storage references were removed. Physical file cleanup needs attention.',
                             status: 'danger',
                         );
@@ -252,7 +238,7 @@ trait GalleryWorkspaceDirectUpload
                         return;
                     }
                     if ($exception instanceof ValidationException) {
-                        $this->notifyValidationFailure('File was not deleted', $exception);
+                        $this->notifyValidationFailure('File was not discarded', $exception);
 
                         return;
                     }
@@ -263,7 +249,7 @@ trait GalleryWorkspaceDirectUpload
                 if ($deleted) {
                     $this->forgetStagedMediaAsset($id);
                     app(AdminNotifier::class)->notification(
-                        title: 'Media deleted from Storage',
+                        title: 'Staged media discarded from Storage',
                         status: 'success',
                     );
                 }
@@ -271,9 +257,9 @@ trait GalleryWorkspaceDirectUpload
 
         return AdminDialog::confirm(
             $action,
-            'Delete file?',
-            'Delete this Storage file and any remaining content references.',
-            'Delete',
+            'Discard staged file?',
+            'Discard this file from Stage and permanently delete it from Storage, including any remaining content references.',
+            'Discard',
             danger: true,
         );
     }
@@ -285,7 +271,7 @@ trait GalleryWorkspaceDirectUpload
         if (! is_numeric($id) || (int) $id !== $this->selectedStagedMediaAssetId
             || $this->stagedArtworkPosition() === 0) {
             throw ValidationException::withMessages([
-                'media' => 'The selected Staged Artwork changed. Reopen Delete for the current file.',
+                'media' => 'The selected Staged Artwork changed. Reopen Discard for the current file.',
             ]);
         }
 
@@ -442,11 +428,11 @@ trait GalleryWorkspaceDirectUpload
         app(AdminNotifier::class)->notification(title: $count.' Artworks submitted and published in Working', status: 'success');
     }
 
-    /** Confirmed bulk deletion reuses the Storage deletion domain for each file. */
-    public function deleteAllStagedMediaAction(): Action
+    /** Bulk Discard deletes each staged original via the canonical Storage owner. */
+    public function discardAllStagedMediaAction(): Action
     {
-        $action = Action::make('deleteAllStagedMedia')
-            ->label('Delete All')
+        $action = Action::make('discardAllStagedMedia')
+            ->label('Discard All')
             ->color('danger')
             ->fillForm(fn (): array => [
                 'reference_snapshot' => $this->stagedAllMediaDeleteSnapshot(),
@@ -462,7 +448,7 @@ trait GalleryWorkspaceDirectUpload
                     (string) ($data['reference_snapshot'] ?? ''),
                 )) {
                     throw ValidationException::withMessages([
-                        'media' => 'The staged files or their references changed. Reopen Delete All to review them.',
+                        'media' => 'The staged files or their references changed. Reopen Discard All to review them.',
                     ]);
                 }
                 $ids = array_map('intval', array_column($this->pendingBatchArtworkMedia, 'media_asset_id'));
@@ -503,7 +489,7 @@ trait GalleryWorkspaceDirectUpload
                     $this->forgetCompletedStagedArtworks($deleted);
                 }
                 app(AdminNotifier::class)->notification(
-                    title: count($deleted).' staged files deleted',
+                    title: count($deleted).' staged files discarded from Storage',
                     body: $failed !== [] || $cleanupDelayed !== []
                         ? count($failed).' failed. '.count($cleanupDelayed).' physical cleanups pending.'
                         : null,
@@ -513,9 +499,9 @@ trait GalleryWorkspaceDirectUpload
 
         return AdminDialog::confirm(
             $action,
-            'Delete all staged files?',
-            'Delete the original Storage files and their remaining references. This does not affect files already submitted.',
-            'Delete All',
+            'Discard all staged files?',
+            'Discard all queued files and permanently delete their originals from Storage, including any remaining references. Artworks already submitted are unaffected.',
+            'Discard All',
             danger: true,
         );
     }
@@ -560,7 +546,7 @@ trait GalleryWorkspaceDirectUpload
         ];
     }
 
-    /** Uploaded originals always remain in Storage when staging ends. */
+    /** Remove completed queue rows after submission or confirmed Storage discard. */
     private function forgetCompletedStagedArtworks(array $assetIds): void
     {
         $selectedIndex = max(0, $this->stagedArtworkPosition() - 1);

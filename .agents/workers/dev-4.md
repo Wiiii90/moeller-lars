@@ -2,7 +2,15 @@
 
 **Lease:** 23
 **Branch:** dev
-**State:** Active — staged Artwork form panel, action button groups and Add Artwork/Stage field order updated; runtime/browser acceptance pending.
+**State:** Active — Gallery Stage Discard/Delete semantics unified, unframed scroll form restored, green Submit semantics and multi-check Submit All icon centralized; runtime/browser acceptance pending.
+
+## Gallery Stage discard/submit refinement — 2026-11-20
+
+- Replaced the five Stage buttons with four controls: neutral **Discard** and green **Submit** left, danger **Discard All** and green **Submit All** right. Removed the separate Delete/Delete All buttons and the obsolete Stage-only discard-that-kept-the-original behavior. Both Discard actions now invoke the previous confirmed Storage deletion paths through `MediaAssetEditorialService::delete()` with reference-snapshot guards; the dialog explicitly identifies permanent Storage deletion and reference cleanup. Existing successful/failed/partial cleanup behavior and queue selection are preserved.
+- The Stage-only bordered form panel and its unnecessary wrapper are removed. The existing internal `.gallery-stage__form-scroll` once again owns the full available space directly, with invisible scrollbar and accepted lower scroll fade; the Stage action rail remains separate and boxed as previously requested.
+- `admin-action.is-success` is a semantic central counterpart to `admin-action.is-danger`: green text and matching bordered green hover/focus surface; both Submit and Submit All use it. The single Discard is neutral admin text (including dark mode), Discard All retains central red destructive hover style.
+- A dedicated two-checkmark `admin-submit-all` SVG has been placed under the existing `resources/svg/admin` icon registry and exposed via `AdminIcon::SubmitAll`. There is no second icon mechanism and no handwritten SVG in Gallery Blade.
+- Source contracts verified; no browser/Laravel runtime, tests, CI, deployment or database migration. Confirm four actions at queue sizes 1 and 2+, red/green/neutral hover and focus, confirmed Discard/Discard All deletion of Storage originals and references, Submit All icon, scroll fade visibility and borderless form across viewport widths.
 
 ## Gallery staged form panel and actions — 2026-11-20
 

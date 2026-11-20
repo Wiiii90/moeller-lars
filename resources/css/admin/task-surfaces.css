@@ -122,6 +122,18 @@
     color: var(--admin-danger);
 }
 
+/* The semantic positive action mirrors the established danger grammar. */
+.admin-action.is-success {
+    color: var(--admin-success);
+}
+
+.admin-action.is-success:hover,
+.admin-action.is-success:focus-visible {
+    border-color: color-mix(in srgb, var(--admin-success) 42%, transparent);
+    background: color-mix(in srgb, var(--admin-success) 8%, transparent);
+    color: var(--admin-success);
+}
+
 .admin-action--state {
     min-width: 7.75rem;
 }
