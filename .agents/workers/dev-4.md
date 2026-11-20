@@ -2,7 +2,16 @@
 
 **Lease:** 22
 **Branch:** dev
-**State:** Active — 2026-11-20 two-column Gallery Settings and persistent Add Artwork placement prepared on dev; runtime/browser/migration acceptance pending.
+**State:** Active — 2026-11-20 compact Gallery Settings and Gallery/List view source implementation prepared; browser/runtime acceptance pending.
+
+## Gallery Stage refinement and Gallery/List view — 2026-11-20
+
+- Current user scope: eliminate Stage required indicator and rename to "New Artwork placement"; swap Settings columns below the two top selects (Individual Artwork Pages above Media modal viewer on left, Artwork information on right). Compact header/inner checkbox sizes and labels, visually distinguish headers from options, and add a separately operable collapse triangle without changing enabled/disabled form state.
+- Implementation: reused canonical `AdminPanelControl` with optional `collapsible` argument so other consumers remain unchanged. Gallery-only disclosure Blade button controls local Alpine visibility and accessibility; compact sizing is owned in `resources/css/admin/gallery.css`. Stage Settings scrolls within its fixed height, fading the bottom edge instead of adding a false border.
+- Gallery toolbar now offers existing Storage ViewGrid and ViewList icons, with grid still the default; `GalleryWorkspace::viewMode` is Livewire session state with validated mode change. One canonical Artwork card template renders either contact sheet or compact list rows, preserving edits, selection, publish, preview, ordering, movement, and deletion without a second action implementation. `responsive.css` excludes list mode from the default 2-column/1-column contact-sheet rules.
+- Artwork analytics summary is now a single ellipsized line with its full value in native `title` hover, preventing inconsistent card heights.
+- Source-only through connected GitHub, no local PHP/Vite runtime, browser test, automated suite, database migration, deployment, or CI. Acceptance still required: collapsible semantics/field state, CSS geometry and scroll fade on narrow/full Stage, grid/list row affordances and sorting/selection, all long analytics strings; Code owner and affected adjacent UI reviewed. Upload/dropzone UX remains deferred per user.
+- No Home Hero, General, published Gallery layout, or shared dialog behavior changes intended.
 
 ## Current Gallery Settings and creation policy — 2026-11-20
 

@@ -266,11 +266,16 @@
 
 .admin-gallery-grid__analytics {
     display: block;
+    min-width: 0;
+    width: 100%;
     margin-top: .38rem;
+    overflow: hidden;
     color: var(--admin-faint);
     font-size: .68rem;
     font-variant-numeric: tabular-nums;
     line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .admin-gallery-grid__state {
@@ -523,3 +528,165 @@
 }
 
 
+/* Gallery Settings owns a compact two-level control hierarchy. The main
+ * enable-checkbox stays distinct from small option checkboxes; the disclosure
+ * triangle is a presentation control and never changes persisted values. */
+.gallery-stage__settings .admin-option-panel {
+    padding: .32rem .4rem;
+}
+.gallery-stage__settings .admin-option-panel :is(.fi-sc, .fi-sc-grid) {
+    row-gap: .24rem;
+    column-gap: .35rem;
+}
+.gallery-stage__settings .admin-option-panel__header,
+.gallery-stage__settings .admin-option-panel__header :is(.fi-sc, .fi-sc-grid) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+}
+.gallery-stage__settings .admin-option-panel__switch {
+    min-width: 0;
+}
+.gallery-stage__settings .admin-option-panel__switch .fi-fo-field-label:has(> .fi-checkbox-input) {
+    min-height: 1.55rem !important;
+    gap: .35rem !important;
+}
+.gallery-stage__settings .admin-option-panel__switch .fi-fo-field-label > .fi-checkbox-input {
+    width: .84rem !important;
+    height: .84rem !important;
+    border-radius: .17rem !important;
+}
+.gallery-stage__settings .admin-option-panel__switch .fi-fo-field-label-content {
+    font-size: .69rem;
+    letter-spacing: .035em;
+}
+.gallery-stage__settings .admin-option-panel__body {
+    margin-top: .15rem;
+    padding-top: .28rem;
+}
+.gallery-stage__settings .admin-option-panel__body :is(.fi-sc, .fi-sc-grid) {
+    row-gap: .12rem;
+    column-gap: .28rem;
+}
+.gallery-stage__settings .admin-option-panel__body .fi-fo-field-label:has(> .fi-checkbox-input) {
+    min-height: 1.38rem !important;
+    gap: .28rem !important;
+}
+.gallery-stage__settings .admin-option-panel__body .fi-fo-field-label > .fi-checkbox-input {
+    width: .72rem !important;
+    height: .72rem !important;
+    border-radius: .12rem !important;
+}
+.gallery-stage__settings .admin-option-panel__body .fi-fo-field-label-content {
+    font-size: .61rem;
+    line-height: 1.15;
+}
+.gallery-stage__panel-disclosure {
+    display: inline-grid;
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--admin-muted);
+    cursor: pointer;
+}
+.gallery-stage__panel-disclosure:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: -2px;
+}
+.gallery-stage__panel-chevron {
+    display: inline-block;
+    font-size: .8rem;
+    transition: transform .14s ease;
+}
+.gallery-stage__panel-chevron.is-collapsed {
+    transform: rotate(-90deg);
+}
+/* Fading the scroll boundary makes a partially visible panel intentional.
+ * No false bottom panel border or extra divider is introduced. */
+.gallery-stage__settings {
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 1rem), transparent);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 1rem), transparent);
+}
+
+/* Reuse the same Artwork cards, selection, inline editing and actions in
+ * both views. The List mode changes layout only, not editorial behavior. */
+.gallery-workspace__view-group .media-workspace__view-option.is-active {
+    color: var(--admin-text);
+    border-color: var(--admin-accent);
+    background: var(--admin-subtle);
+}
+.admin-gallery-grid.gallery-workspace__list-view {
+    grid-template-columns: minmax(0, 1fr);
+}
+.gallery-workspace__list-view .admin-gallery-grid__item {
+    grid-template-columns: 7rem minmax(0, 1fr) auto;
+    grid-template-rows: minmax(6rem, auto);
+    min-height: 6rem;
+    align-items: center;
+}
+.gallery-workspace__list-view .admin-gallery-grid__image {
+    grid-column: 1;
+    grid-row: 1;
+    width: 7rem;
+    height: 100%;
+    min-height: 6rem;
+    aspect-ratio: auto;
+}
+.gallery-workspace__list-view .admin-gallery-grid__caption {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    align-items: center;
+    padding: .5rem .8rem;
+}
+.gallery-workspace__list-view .admin-gallery-grid__actions {
+    grid-column: 3;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .4rem .7rem;
+}
+.gallery-workspace__list-view .gallery-workspace__primary-actions {
+    right: auto;
+    left: 3rem;
+    top: .3rem;
+}
+.gallery-workspace__list-view .admin-gallery-grid__sequence {
+    top: .3rem;
+    left: .3rem;
+}
+.gallery-workspace__list-view .admin-gallery-grid__identity {
+    min-width: 0;
+}
+.gallery-workspace__list-view .admin-gallery-grid__identity span,
+.gallery-workspace__list-view .admin-gallery-grid__analytics {
+    max-width: 100%;
+}
+@container admin-workspace (max-width: 38rem) {
+    .gallery-workspace__list-view .admin-gallery-grid__item {
+        grid-template-columns: 4.8rem minmax(0, 1fr);
+        grid-template-rows: auto auto;
+    }
+    .gallery-workspace__list-view .admin-gallery-grid__image {
+        width: 4.8rem;
+        min-height: 5rem;
+    }
+    .gallery-workspace__list-view .admin-gallery-grid__caption {
+        padding: .35rem .5rem;
+    }
+    .gallery-workspace__list-view .admin-gallery-grid__actions {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-content: space-between;
+        padding: .25rem .45rem;
+        border-top: 1px solid var(--admin-line);
+    }
+    .gallery-workspace__list-view .gallery-workspace__primary-actions {
+        left: 1.8rem;
+        gap: 0;
+    }
+}

@@ -4,6 +4,7 @@ namespace App\Filament\Support\Controls;
 
 use Closure;
 use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\View;
 
 /**
  * One reusable enable-and-configure panel for Filament schemas, shared by
@@ -12,7 +13,7 @@ use Filament\Schemas\Components\Group;
 final class AdminPanelControl
 {
     /** @param list<mixed> $fields */
-    public static function make(string $title, string $enabledField, array $fields, ?Closure $onUpdated = null): Group
+    public static function make(string $title, string $enabledField, array $fields, ?Closure $onUpdated = null, bool $collapsible = false): Group
     {
         $toggle = AdminControl::checkbox($enabledField, $title)
             ->live()
@@ -21,16 +22,28 @@ final class AdminPanelControl
             $toggle->afterStateUpdated($onUpdated);
         }
 
-        return Group::make([
-            $toggle->columnSpanFull(),
-            Group::make($fields)
-                ->visible(fn (callable $get): bool => (bool) $get($enabledField))
-                ->extraAttributes(['class' => 'admin-option-panel__body'])
-                ->columns(['default' => 2])
-                ->columnSpanFull(),
-        ])
+        // A disclosure controls presentation only. Enabling/disabling the
+        // option remains exclusively owned by its checkbox and save callback.
+        $header = $collapsible
+            ? Group::make([
+                $toggle,
+                View::make('filament.resources.artworks.partials.gallery-panel-disclosure'),
+            ])->columns(['default' => 2])->extraAttributes(['class' => 'admin-option-panel__header'])
+            : $toggle->columnSpanFull();
+
+        $body = Group::make($fields)
+            ->visible(fn (callable $get): bool => (bool) $get($enabledField))
+            ->extraAttributes($collapsible
+                ? ['class' => 'admin-option-panel__body', 'x-show' => 'expanded', 'x-cloak' => true]
+                : ['class' => 'admin-option-panel__body'])
+            ->columns(['default' => 2])
+            ->columnSpanFull();
+
+        return Group::make([$header, $body])
             ->columns(1)
-            ->extraAttributes(['class' => 'admin-option-panel'])
+            ->extraAttributes($collapsible
+                ? ['class' => 'admin-option-panel admin-option-panel--collapsible', 'x-data' => '{ expanded: true }']
+                : ['class' => 'admin-option-panel'])
             ->columnSpanFull();
     }
 }

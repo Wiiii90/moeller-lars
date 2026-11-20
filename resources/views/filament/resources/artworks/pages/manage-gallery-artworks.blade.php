@@ -257,6 +257,21 @@
                             @endif
                         </div>
                     </div>
+                    <div class="admin-data-control-group gallery-workspace__view-group">
+                        <span class="admin-data-control-label">{{ __('View') }}</span>
+                        <div class="media-workspace__view-options admin-editorial-actions" role="group" aria-label="Gallery view">
+                            <button class="admin-action media-workspace__view-option {{ $viewMode === 'grid' ? 'is-active' : '' }}"
+                                type="button" wire:click="setViewMode('grid')" aria-label="Gallery" title="Gallery"
+                                aria-pressed="{{ $viewMode === 'grid' ? 'true' : 'false' }}">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::ViewGrid->mini()" class="media-workspace__view-icon" />
+                            </button>
+                            <button class="admin-action media-workspace__view-option {{ $viewMode === 'list' ? 'is-active' : '' }}"
+                                type="button" wire:click="setViewMode('list')" aria-label="List" title="List"
+                                aria-pressed="{{ $viewMode === 'list' ? 'true' : 'false' }}">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::ViewList->mini()" class="media-workspace__view-icon" />
+                            </button>
+                        </div>
+                    </div>
                 </x-slot:actions>
 
                 <x-slot:selection>
@@ -291,8 +306,9 @@
 
             @if ($artworks !== [])
                 <section
-                    class="admin-gallery-grid"
+                    class="admin-gallery-grid {{ $viewMode === 'list' ? 'gallery-workspace__list-view' : '' }}"
                     aria-label="Artwork sequence for {{ $galleryContext['name'] }}"
+                    @if ($viewMode === 'list') role="list" @endif
                     @if ($reorderEnabled) wire:sort="sortArtwork" @endif
                 >
                     @foreach ($artworks as $artwork)
@@ -300,6 +316,7 @@
                         <article
                             class="admin-gallery-grid__item gallery-workspace__card {{ $selected ? 'is-selected' : '' }}"
                             wire:key="gallery-artwork-{{ $artwork['id'] }}"
+                            @if ($viewMode === 'list') role="listitem" @endif
                             @if ($reorderEnabled) wire:sort:item="{{ $artwork['id'] }}" @endif
                         >
                             <button
@@ -437,13 +454,10 @@
                                         @if ($artwork['dimensions']){{ $artwork['year'] ? ' · ' : '' }}{{ $artwork['dimensions'] }}@endif
                                         @if ($artwork['medium']){{ ($artwork['year'] || $artwork['dimensions']) ? ' · ' : '' }}{{ $artwork['medium'] }}@endif
                                     </span>
-                                    <small class="admin-gallery-grid__analytics">
-                                        @if ($artwork['analytics']['available'])
-                                            30d · {{ number_format($artwork['analytics']['views']) }} views · {{ number_format($artwork['analytics']['opens']) }} opens · {{ number_format($artwork['analytics']['zooms']) }} zooms · {{ $artwork['analytics']['attention'] }} attention
-                                        @else
-                                            30d analytics unavailable
-                                        @endif
-                                    </small>
+                                    @php($analyticsSummary = $artwork['analytics']['available']
+                                        ? '30d · '.number_format($artwork['analytics']['views']).' views · '.number_format($artwork['analytics']['opens']).' opens · '.number_format($artwork['analytics']['zooms']).' zooms · '.$artwork['analytics']['attention'].' attention'
+                                        : '30d analytics unavailable')
+                                    <small class="admin-gallery-grid__analytics" title="{{ $analyticsSummary }}">{{ $analyticsSummary }}</small>
                                 </div>
                                 <span class="admin-gallery-grid__state {{ $artwork['state'] === 'published' ? 'is-published' : '' }}">
                                     {{ $artwork['state_label'] }}

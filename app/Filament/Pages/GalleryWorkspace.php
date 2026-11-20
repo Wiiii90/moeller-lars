@@ -100,6 +100,9 @@ final class GalleryWorkspace extends Page
     public string $search = '';
 
     #[Session]
+    public string $viewMode = 'grid';
+
+    #[Session]
     public string $statusFilter = 'any';
 
     #[Session]
@@ -107,6 +110,7 @@ final class GalleryWorkspace extends Page
 
     public function mount(int|string $gallery): void
     {
+        $this->viewMode = in_array($this->viewMode, ['grid', 'list'], true) ? $this->viewMode : 'grid';
         $this->statusFilter = in_array($this->statusFilter, ['any', 'published', 'draft'], true) ? $this->statusFilter : 'any';
         $this->readinessFilter = in_array($this->readinessFilter, ['any', 'ready', 'needs-attention'], true)
             ? $this->readinessFilter
@@ -283,6 +287,13 @@ final class GalleryWorkspace extends Page
         $name = $this->galleryContext['name'] ?? null;
 
         return is_string($name) && trim($name) !== '' ? trim($name) : __('Gallery artworks');
+    }
+
+    public function setViewMode(string $mode): void
+    {
+        if (in_array($mode, ['grid', 'list'], true)) {
+            $this->viewMode = $mode;
+        }
     }
 
     public function updatedSearch(): void
