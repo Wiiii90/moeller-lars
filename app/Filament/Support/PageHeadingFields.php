@@ -32,7 +32,6 @@ final class PageHeadingFields
             collapsible: true,
             bodyColumns: ['default' => 1, 'md' => 2],
             unlinedFields: true,
-            inlineFieldLabels: true,
         );
     }
 
@@ -41,12 +40,14 @@ final class PageHeadingFields
     {
         return [
             AdminControl::text('content_heading_override')
+                ->inlineLabel()
                 ->label('Heading text')
                 ->placeholder('Use page name')
                 ->maxLength(160)
                 ->live(onBlur: true)
                 ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_override', $state, $successTitle)),
             AdminControl::select('content_heading_alignment')
+                ->inlineLabel()
                 ->label('Alignment')
                 ->options(SitePageHeading::ALIGNMENTS)
                 ->default('left')
@@ -54,6 +55,7 @@ final class PageHeadingFields
                 ->live()
                 ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_alignment', $state, $successTitle)),
             AdminControl::select('content_heading_divider')
+                ->inlineLabel()
                 ->label('Divider')
                 ->options(SitePageHeading::DIVIDERS)
                 ->default('none')

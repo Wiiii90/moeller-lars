@@ -800,17 +800,15 @@
     row-gap: .4rem;
     column-gap: .65rem;
 }
-/* The Group's immediate Filament grid owns the two header tracks. Matching
- * its actual container (not all nested grids) makes the right disclosure
- * mirror the leading checkbox instead of drifting into a half-width column. */
-.admin-option-panel__header,
-.admin-option-panel__header > :is(.fi-sc, .fi-sc-grid) {
-    display: grid;
+/* Filament owns the Header Group's layout. The disclosure is anchored to
+ * the panel edge rather than centered in Filament's second equal grid cell. */
+.admin-option-panel__header {
+    position: relative;
     width: 100%;
-    grid-template-columns: minmax(0, 1fr) 1.9rem;
     min-height: 2rem;
-    column-gap: .55rem;
-    row-gap: 0;
+    padding-inline-end: 1.5rem;
+}
+.admin-option-panel__header > :is(.fi-sc, .fi-sc-grid) {
     align-items: center;
 }
 .admin-option-panel__switch {
@@ -849,24 +847,28 @@
 }
 
 .admin-option-panel__disclosure {
+    position: absolute;
+    inset-inline-end: 0;
+    top: 50%;
+    transform: translateY(-50%);
     box-sizing: border-box;
     display: flex;
     width: 1.9rem;
     height: 1.9rem;
     padding: 0;
     align-items: center;
-    justify-content: flex-end;
-    justify-self: end;
-    align-self: center;
+    justify-content: center;
     border: 0;
-    border-radius: .2rem;
-    background: transparent;
+    border-radius: 0;
+    background: transparent !important;
+    box-shadow: none !important;
     color: var(--admin-muted);
     cursor: pointer;
 }
 .admin-option-panel__disclosure:hover {
-    background: var(--admin-subtle);
+    background: transparent !important;
     color: var(--admin-text);
+    box-shadow: none !important;
 }
 .admin-option-panel__disclosure:focus-visible {
     outline: 2px solid var(--admin-accent);
@@ -881,35 +883,15 @@
 .admin-option-panel__chevron.is-collapsed {
     transform: rotate(-90deg);
 }
-/* Compact, framed option panels can put each label and its native
- * input/select on one line. Filament still owns the accessible label, state,
- * validation, and input behavior; no replacement markup is introduced. */
-.admin-option-panel--inline-labels .admin-option-panel__body :is(
-    .admin-control-field.fi-fo-field-wrp,
-    .admin-control-field > .fi-fo-field-wrp
-) {
-    display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
-    gap: .4rem;
-    min-height: var(--admin-control-height);
-    align-items: center;
-}
-.admin-option-panel--inline-labels .admin-option-panel__body :is(
-    .fi-fo-field-wrp-label,
-    .fi-fo-field-label,
-    .fi-fo-field-label-content
-) {
-    min-width: 0;
-    white-space: nowrap;
-}
-.admin-option-panel--inline-labels .admin-option-panel__body :is(
-    .fi-fo-field-wrp-content-ctn,
-    .fi-input-wrp
-) {
-    min-width: 0;
-}
-.admin-option-panel--inline-labels .admin-option-panel__body .fi-fo-field-wrp-label {
-    margin-block: 0;
+/* Filament 5 owns inline label placement via Field::inlineLabel().
+ * In this compact framed panel, the actual inline wrapper's two tracks use
+ * their content width rather than Filament's generic one-third label column. */
+@media (min-width: 640px) {
+    .admin-option-panel--unlined-fields .admin-option-panel__body .fi-fo-field-wrp.admin-control-field > .grid {
+        grid-template-columns: max-content minmax(0, 1fr) !important;
+        column-gap: .5rem !important;
+        align-items: center !important;
+    }
 }
 
 /* Opt-in style for an already framed panel: the parent contour supplies the
