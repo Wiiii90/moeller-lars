@@ -174,34 +174,9 @@ function initializeNavigationWindow(surface, restoredWindows) {
         if (!cycling) return;
         render(advanceNavigationWindow(widths, visible, availableWidth, direction));
     };
-    // Main and child navigation share the same arrow-key contract and cyclic
-    // window. Focus follows visible controls, never hidden items or the page.
-    const focusableItems = () => Array.from(rail.querySelectorAll(
-        '[data-navigation-item]:not([hidden]) > .site-navigation__primary > :is(a, button)',
-    ));
-    const onArrowKey = (event) => {
-        if (event.defaultPrevented || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
-            return;
-        }
-        const focused = document.activeElement;
-        if (!(focused instanceof HTMLElement) || !rail.contains(focused)) return;
-
-        const controls = focusableItems();
-        const current = controls.indexOf(focused);
-        if (current === -1) return;
-
-        event.preventDefault();
-        const direction = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1;
-        const nextItem = controls[current + direction];
-        if (nextItem) {
-            nextItem.focus({ preventScroll: true });
-        } else if (cycling) {
-            shift(direction);
-            const updated = focusableItems();
-            (direction === 1 ? updated[updated.length - 1] : updated[0])?.focus({ preventScroll: true });
-        }
-    };
-    rail.addEventListener('keydown', onArrowKey);
+    // Navigation is a landmark of native links and buttons, not a menubar.
+    // Keep browser arrow-key scrolling intact. Tab/Shift+Tab reach visible
+    // links and the cyclic window buttons; Enter/Space activate those buttons.
     previous.addEventListener('click', () => shift(-1));
     next.addEventListener('click', () => shift(1));
 
@@ -234,7 +209,6 @@ function initializeNavigationWindow(surface, restoredWindows) {
         },
         key: surfaceKey,
         destroy: () => {
-            rail.removeEventListener('keydown', onArrowKey);
             resizeObserver?.disconnect();
             if (!resizeObserver) window.removeEventListener('resize', refresh);
         },
@@ -308,12 +282,8 @@ function initializeNavigationLevels(container, mainSurface, main, restoredWindow
             event.preventDefault();
             showChildren(entry, true);
         });
-        parentLink.addEventListener('keydown', (event) => {
-            if (event.key !== 'ArrowDown') return;
-            event.preventDefault();
-            showChildren(entry);
-            submenu.querySelector('.site-navigation__item:not([hidden]) a')?.focus({ preventScroll: true });
-        });
+        // Enter/Space invoke the native link/button click handler above.
+        // ArrowDown remains available for page scrolling, not a hidden submenu shortcut.
 
         // The existing underline's CSS animation is the single countdown
         // clock. Its completion opens the same child level as an immediate
