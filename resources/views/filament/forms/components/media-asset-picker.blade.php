@@ -198,7 +198,9 @@
                         x-show="! selectedLabel"
                         x-cloak
                     >{{ $getPlaceholder() ?: __('Choose from Storage') }}</span>
-                    <x-filament::icon icon="heroicon-m-chevron-up-down" class="admin-media-picker__chevron" />
+                    @unless ($disabled)
+                        <x-filament::icon icon="heroicon-m-chevron-up-down" class="admin-media-picker__chevron" />
+                    @endunless
                 </button>
 
                 @if ($canSelectPlaceholder())

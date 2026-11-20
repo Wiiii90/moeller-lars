@@ -59,21 +59,24 @@
                     <div class="admin-stage-tabs gallery-stage__workspace-tabs" role="group" aria-label="Gallery editor mode and staged artwork navigation">
                         <button class="admin-action {{ $galleryStagePanel === 'upload' ? 'is-primary' : '' }}" type="button"
                             wire:click="selectGalleryStagePanel('upload')" aria-pressed="{{ $galleryStagePanel === 'upload' ? 'true' : 'false' }}">Upload</button>
-                        <button class="admin-action gallery-stage__queue-arrow" type="button"
-                            wire:click="navigateStagedArtwork(-1)"
-                            @disabled($stagedPosition <= 1)
-                            aria-label="Previous staged artwork" title="Previous staged artwork">
-                            <x-filament::icon icon="heroicon-m-chevron-left" />
-                        </button>
-                        <button class="admin-action gallery-stage__queue-tab {{ $galleryStagePanel === 'queue' ? 'is-primary' : '' }}" type="button"
-                            wire:click="selectGalleryStagePanel('queue')" aria-pressed="{{ $galleryStagePanel === 'queue' ? 'true' : 'false' }}"
-                            @disabled($stagedTotal === 0)>Staged (<span aria-live="polite" aria-atomic="true">{{ $stagedPosition }}/{{ $stagedTotal }}</span>)</button>
-                        <button class="admin-action gallery-stage__queue-arrow" type="button"
-                            wire:click="navigateStagedArtwork(1)"
-                            @disabled($stagedPosition === 0 || $stagedPosition >= $stagedTotal)
-                            aria-label="Next staged artwork" title="Next staged artwork">
-                            <x-filament::icon icon="heroicon-m-chevron-right" />
-                        </button>
+                        <div class="admin-action gallery-stage__queue-control {{ $galleryStagePanel === 'queue' ? 'is-primary' : '' }}"
+                            role="group" aria-label="Staged Artwork navigation">
+                            <button class="gallery-stage__queue-arrow" type="button"
+                                wire:click="navigateStagedArtwork(-1)"
+                                @disabled($stagedPosition <= 1)
+                                aria-label="Previous staged artwork" title="Previous staged artwork">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Previous->mini()" />
+                            </button>
+                            <button class="gallery-stage__queue-tab" type="button"
+                                wire:click="selectGalleryStagePanel('queue')" aria-pressed="{{ $galleryStagePanel === 'queue' ? 'true' : 'false' }}"
+                                @disabled($stagedTotal === 0)>Staged (<span aria-live="polite" aria-atomic="true">{{ $stagedPosition }}/{{ $stagedTotal }}</span>)</button>
+                            <button class="gallery-stage__queue-arrow" type="button"
+                                wire:click="navigateStagedArtwork(1)"
+                                @disabled($stagedPosition === 0 || $stagedPosition >= $stagedTotal)
+                                aria-label="Next staged artwork" title="Next staged artwork">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Next->mini()" />
+                            </button>
+                        </div>
                         <button class="admin-action {{ $galleryStagePanel === 'settings' ? 'is-primary' : '' }}" type="button"
                             wire:click="selectGalleryStagePanel('settings')" aria-pressed="{{ $galleryStagePanel === 'settings' ? 'true' : 'false' }}">Settings</button>
                     </div>
@@ -147,13 +150,32 @@
                         </div>
                         <div class="gallery-stage__editor-actions admin-toolbar" aria-label="Staged Artwork actions">
                             <button class="admin-action is-primary" type="button" wire:click="createSelectedStagedArtwork"
-                                wire:loading.attr="disabled" wire:target="createSelectedStagedArtwork">Create artwork</button>
+                                wire:loading.attr="disabled" wire:target="createSelectedStagedArtwork">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
+                                <span>Submit Artwork</span>
+                            </button>
+                            <button class="admin-action" type="button" wire:click="createSelectedStagedArtwork(true)"
+                                wire:loading.attr="disabled" wire:target="createSelectedStagedArtwork">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Publish->mini()" />
+                                <span>Publish Artwork</span>
+                            </button>
                             @if (count($pendingBatchArtworkMedia) > 1)
                                 <button class="admin-action" type="button" wire:click="createAllStagedArtworks"
-                                    wire:loading.attr="disabled" wire:target="createAllStagedArtworks">Create all drafts</button>
+                                    wire:loading.attr="disabled" wire:target="createAllStagedArtworks">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
+                                    <span>Submit All</span>
+                                </button>
                             @endif
                             <button class="admin-action" type="button"
-                                wire:click="removeStagedArtwork({{ $selectedStagedMediaAssetId }})">Remove from Stage</button>
+                                wire:click="removeStagedArtwork({{ $selectedStagedMediaAssetId }})">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
+                                <span>Discard</span>
+                            </button>
+                            <button class="admin-action is-danger" type="button"
+                                wire:click="mountAction('deleteStagedMedia', { asset: {{ $selectedStagedMediaAssetId }} })">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
+                                <span>Delete</span>
+                            </button>
                         </div>
                     @endif
                 @else

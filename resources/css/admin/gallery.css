@@ -75,22 +75,49 @@
 .gallery-stage__workspace-tabs {
     --admin-stage-tabs-columns: 3;
     display: grid;
-    /* Three main tabs remain, with bounded previous/next actions beside Staged. */
-    grid-template-columns: minmax(0, 1fr) 1.75rem minmax(5.5rem, 1.2fr) 1.75rem minmax(0, 1fr);
+    /* The shared Stage owns exactly three outer tab cells. */
 }
 
-.gallery-stage__workspace-tabs > .gallery-stage__queue-tab {
-    padding-inline: .2rem;
-    font-variant-numeric: tabular-nums;
-}
-
-.gallery-stage__workspace-tabs > .gallery-stage__queue-arrow {
+.admin-stage-tabs.gallery-stage__workspace-tabs > .gallery-stage__queue-control {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: 1.2rem minmax(0, 1fr) 1.2rem;
+    gap: 0;
     padding: 0;
 }
 
+.gallery-stage__queue-control > button {
+    display: inline-flex;
+    min-width: 0;
+    min-height: 2rem;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.gallery-stage__queue-control > button:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: -2px;
+}
+
+.gallery-stage__queue-control > button:disabled {
+    opacity: .38;
+    cursor: default;
+}
+
+.gallery-stage__queue-tab {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
 .gallery-stage__queue-arrow svg {
-    width: 1rem;
-    height: 1rem;
+    width: .9rem;
+    height: .9rem;
 }
 
 .gallery-stage__settings {
@@ -115,16 +142,28 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
     scrollbar-width: none;
-    padding-inline: .1rem;
+    padding: .45rem .1rem 1.5rem;
 }
 
 .gallery-stage__editor-actions {
     flex: 0 0 auto;
     flex-wrap: wrap;
-    gap: .2rem;
-    padding-top: .45rem;
-    border-top: 1px solid var(--admin-line);
+    justify-content: flex-start;
+    gap: .15rem;
+    padding-block: .35rem 0;
+}
+
+.gallery-stage__editor-actions .admin-action {
+    gap: .3rem;
+    white-space: nowrap;
+}
+
+.gallery-stage__editor-actions .admin-action svg {
+    width: .95rem;
+    height: .95rem;
+    flex: 0 0 auto;
 }
 
 .gallery-stage__live-preview {
@@ -568,7 +607,7 @@
 }
 /* Fading the scroll boundary makes a partially visible panel intentional.
  * No false bottom panel border or extra divider is introduced. */
-.gallery-stage__settings {
+:is(.gallery-stage__settings, .gallery-stage__form-scroll) {
     -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 1rem), transparent);
     mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 1rem), transparent);
 }

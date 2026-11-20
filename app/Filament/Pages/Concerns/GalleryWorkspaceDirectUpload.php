@@ -5,14 +5,22 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminMediaUploadFeedback;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
+use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Artwork\ArtworkSort;
 use App\Models\ArtworkCategory;
 use App\Domain\Media\MediaTypePolicy;
+use App\Domain\Media\MediaAssetEditorialService;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\MediaReferenceCatalog;
 use App\Models\Artwork;
 use App\Models\MediaAsset;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Hidden;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 trait GalleryWorkspaceDirectUpload
 {
@@ -161,6 +169,21 @@ trait GalleryWorkspaceDirectUpload
 
     public function removeStagedArtwork(int $assetId): void
     {
+        if ($this->selectedStagedMediaAssetId !== $assetId) {
+            return;
+        }
+
+        $this->forgetStagedMediaAsset($assetId);
+        app(AdminNotifier::class)->notification(
+            title: 'Media discarded from Stage',
+            body: 'The original file remains available in Storage.',
+            status: 'success',
+        );
+    }
+
+    /** Remove one queue entry without conflating Discard and Storage deletion. */
+    private function forgetStagedMediaAsset(int $assetId): void
+    {
         $selectedIndex = max(0, $this->stagedArtworkPosition() - 1);
         $this->rememberStagedArtworkChanges();
         $this->pendingBatchArtworkMedia = array_values(array_filter(
@@ -179,22 +202,127 @@ trait GalleryWorkspaceDirectUpload
                 $this->syncGalleryPreviewFocus();
             }
         }
+    }
 
-        app(AdminNotifier::class)->notification(
-            title: 'Media removed from Stage',
-            body: 'The uploaded file remains available in Storage.',
-            status: 'success',
+    /** Stage Delete is the same confirmed, reference-aware Storage mutation. */
+    public function deleteStagedMediaAction(): Action
+    {
+        $action = Action::make('deleteStagedMedia')
+            ->label('Delete')
+            ->color('danger')
+            ->fillForm(fn (array $arguments): array => [
+                'reference_snapshot' => $this->stagedMediaReferenceSnapshot($this->stagedMediaAssetForAction($arguments)),
+            ])
+            ->schema([Hidden::make('reference_snapshot')])
+            ->modalContent(fn (array $arguments): View => view(
+                'filament.resources.media-assets.partials.delete-dialog',
+                ['references' => $this->stagedMediaReferences($this->stagedMediaAssetForAction($arguments))],
+            ))
+            ->action(function (array $data, array $arguments): void {
+                $asset = $this->stagedMediaAssetForAction($arguments);
+                $id = (int) $asset->getKey();
+                if (! hash_equals(
+                    $this->stagedMediaReferenceSnapshot($asset),
+                    (string) ($data['reference_snapshot'] ?? ''),
+                )) {
+                    throw ValidationException::withMessages([
+                        'media' => 'This file or its content references changed. Reopen Delete to review the current references.',
+                    ]);
+                }
+
+                try {
+                    $deleted = app(MediaAssetEditorialService::class)->delete($asset);
+                } catch (Throwable $exception) {
+                    if ((string) $asset->fresh()?->getAttribute('state') === 'deleted') {
+                        // The logical deletion committed, but physical cleanup
+                        // may require the existing durable cleanup retry.
+                        report($exception);
+                        $this->forgetStagedMediaAsset($id);
+                        app(AdminNotifier::class)->notification(
+                            title: 'File deleted; cleanup incomplete',
+                            body: 'Storage references were removed. Physical file cleanup needs attention.',
+                            status: 'danger',
+                        );
+
+                        return;
+                    }
+                    if ($exception instanceof ValidationException) {
+                        $this->notifyValidationFailure('File was not deleted', $exception);
+
+                        return;
+                    }
+
+                    throw $exception;
+                }
+
+                if ($deleted) {
+                    $this->forgetStagedMediaAsset($id);
+                    app(AdminNotifier::class)->notification(
+                        title: 'Media deleted from Storage',
+                        status: 'success',
+                    );
+                }
+            });
+
+        return AdminDialog::confirm(
+            $action,
+            'Delete file?',
+            'Delete this Storage file and any remaining content references.',
+            'Delete',
+            danger: true,
         );
     }
 
+    /** @param array<string, mixed> $arguments */
+    private function stagedMediaAssetForAction(array $arguments): MediaAsset
+    {
+        $id = $arguments['asset'] ?? null;
+        if (! is_numeric($id) || (int) $id !== $this->selectedStagedMediaAssetId
+            || $this->stagedArtworkPosition() === 0) {
+            throw ValidationException::withMessages([
+                'media' => 'The selected Staged Artwork changed. Reopen Delete for the current file.',
+            ]);
+        }
+
+        /** @var MediaAsset|null $asset */
+        $asset = MediaAsset::query()->whereKey((int) $id)->where('state', 'available')->first();
+        if (! $asset instanceof MediaAsset) {
+            throw ValidationException::withMessages([
+                'media' => 'The media file is no longer available in Storage.',
+            ]);
+        }
+
+        return $asset;
+    }
+
+    private function stagedMediaReferenceSnapshot(MediaAsset $asset): string
+    {
+        return hash('sha256', json_encode($this->stagedMediaReferences($asset), JSON_THROW_ON_ERROR));
+    }
+
+    /** @return list<array{type:string,label:string,url:?string}> */
+    private function stagedMediaReferences(MediaAsset $asset): array
+    {
+        $catalog = app(MediaReferenceCatalog::class);
+        $catalog->loadAssetReferences($asset);
+
+        return $catalog->references($asset);
+    }
+
     /** The single and batch commands both delegate to the canonical Artwork owners. */
-    private function createStagedArtwork(array $row, array $data): void
+    private function createStagedArtwork(array $row, array $data, bool $publish = false): void
     {
         $assetId = (int) $row['media_asset_id'];
         $asset = MediaAsset::query()->whereKey($assetId)->where('state', 'available')->first();
         if (! $asset instanceof MediaAsset || ! $this->isGalleryPrimaryVisual($asset)) {
             throw ValidationException::withMessages([
                 'stagedArtworkData.primary_media_asset_id' => 'The uploaded Media File is no longer available.',
+            ]);
+        }
+
+        if ($publish && blank($asset->getAttribute('alt_text'))) {
+            throw ValidationException::withMessages([
+                'media' => 'Add descriptive ALT text to this media file in Storage before publishing.',
             ]);
         }
 
@@ -209,10 +337,15 @@ trait GalleryWorkspaceDirectUpload
         unset($payload['position_explicit']);
 
         $artwork = app(ArtworkDraftService::class)->create($payload, $assetId);
-        app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
+        $artwork = app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
+        if ($publish) {
+            // Publish remains a Working-state mutation. The caller's
+            // transaction rolls back creation if canonical readiness fails.
+            app(ArtworkPublicationService::class)->publish($artwork);
+        }
     }
 
-    public function createSelectedStagedArtwork(): void
+    public function createSelectedStagedArtwork(bool $publish = false): void
     {
         $id = $this->selectedStagedMediaAssetId;
         if ($id === null) {
@@ -227,19 +360,22 @@ trait GalleryWorkspaceDirectUpload
         // The compact Stage form reuses the canonical Artwork field controls and rules.
         $state = $this->stagedArtworkForm->getState();
         try {
-            DB::transaction(function () use ($selected, $state): void {
-                $this->createStagedArtwork($selected, $state);
+            DB::transaction(function () use ($selected, $state, $publish): void {
+                $this->createStagedArtwork($selected, $state, $publish);
             });
         } catch (ValidationException $exception) {
             // Failure rolls back Artwork creation, media links and audit.
             // The queued item and its current editorial form remain intact.
-            $this->notifyValidationFailure('Staged Artwork not created', $exception);
+            $this->notifyValidationFailure(
+                $publish ? 'Staged Artwork cannot be published' : 'Staged Artwork not created',
+                $exception,
+            );
 
             return;
         }
         $this->forgetCompletedStagedArtworks([$id]);
         app(AdminNotifier::class)->notification(
-            title: 'Artwork draft created',
+            title: $publish ? 'Artwork created and published in Working' : 'Artwork draft created',
             status: 'success',
         );
     }

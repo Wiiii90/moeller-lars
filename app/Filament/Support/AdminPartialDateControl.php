@@ -3,6 +3,7 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\RegionalFormats;
+use App\Filament\Support\Controls\AdminControl;
 use Filament\Forms\Components\ViewField;
 use Illuminate\Support\HtmlString;
 
@@ -22,7 +23,9 @@ final class AdminPartialDateControl
             .AdminHelp::make($accessibleLabel.' help', $help)->toHtml().'</span>',
         );
 
-        return ViewField::make($name)
+        // ViewField does not participate in the global Form Field registrations.
+        // Apply the exact same shared label, spacing and wrapper as TextInput.
+        return AdminControl::decorate(ViewField::make($name))
             ->label($shownLabel)
             ->view('filament.forms.components.admin-partial-date-control')
             ->viewData([

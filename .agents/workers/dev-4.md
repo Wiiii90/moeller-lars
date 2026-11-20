@@ -2,7 +2,15 @@
 
 **Lease:** 23
 **Branch:** dev
-**State:** Active — Gallery Stage dropzone content centered with centrally registered custom upload icon; browser acceptance pending.
+**State:** Active — Stage tabs restored to one row, controls aligned, Stage actions connected to canonical publication and Storage deletion; browser acceptance pending.
+
+## Gallery Stage tabbar, controls and submission actions — 2026-11-20
+
+- User browser screenshot demonstrated that a previous five-child Stage tab grid wrapped into two rows (three canonical columns). Returned to **three** outer cells: Upload, one grouped Staged control containing previous / `Staged (current/total)` / next, and Settings. Nested buttons are siblings inside one visual Stage group (not nested buttons), preserving individual keyboard actions and disabled boundaries. Uses central `AdminIcon::Previous/Next` and shared selected Admin Stage grammar.
+- Fixed the actual shared field inconsistency: `AdminPartialDateControl` uses `ViewField`, which does not receive global AdminControl registration; explicitly apply the existing canonical AdminControl wrapper there so Artwork Date matches Title, Material, Position and other Admin fields. A disabled shared MediaAssetPicker no longer advertises a fake dropdown chevron. The Gallery Stage artwork schema and Add Artwork dialog behavior remain intact.
+- Reused Gallery Settings' accepted bottom scroll-fade mask for the Stage form without introducing a second scroll owner. Removed the footer separator; added compact icon+label actions using the canonical AdminIcon enum: **Submit Artwork** creates a draft, **Publish Artwork** creates and invokes the existing `ArtworkPublicationService::publish()` in one atomic transaction, **Submit All** retains batch draft creation, **Discard** forgets only this Stage queue entry (original stays in Storage), and **Delete** opens the existing shared Storage-reference confirmation dialog and calls `MediaAssetEditorialService::delete()`. A content-reference snapshot guards the confirmed deletion against changed references; logical delete after physical-cleanup exceptions is correctly reported.
+- Publish requires the canonical published Gallery, a viable media rendition and media ALT text. The Stage does not invent accessibility metadata; when ALT is missing, users edit the file metadata in Storage first. Unsuccessful Publish rolls back Artwork creation and preserves the staged entry; Published refers to Working and still needs website Commit to appear publicly.
+- Source-contract check only. No PHP/Laravel, browser run, migrations, automated test edits, Continuous Integration or deployment. Acceptance: Stage navigation at 0/1/many counts and narrow widths, button focus/disabled states, Date label/control alignment, disabled Media File chevron, scroll fade with no footer border, long/short dimension layouts, draft Submit, publish ready/unready with rollback and empty ALT, Discard preserving original, confirmed Delete with/without references and file cleanup failure.
 
 ## Gallery Stage upload dropzone presentation — 2026-11-20
 
