@@ -12,7 +12,7 @@
 
 | Dev Worker 6 | 16 | Active — targeted source corrections committed; local Preview/browser acceptance outstanding | Home Hero: Dummy Galleries, candidate ranking/selection, Stage/Settings, public resolver, shared Create dialog; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 18 | Source-corrected — stable Preview device picker width and canonical optgroup styling; browser acceptance pending | General Appearance and shared Gallery/General Preview; Gallery Preview focus consumer | [dev-7.md](workers/dev-7.md) |
-| Dev Worker 8 | 15 | Active — shared Create dialog Plus entry, circled-Check Submit and rightmost commit action source-integrated; browser acceptance pending | Central Admin create/edit dialog semantics, native Filament action rail, date controls and media picker; no deployment | [dev-8.md](workers/dev-8.md) |
+| Dev Worker 8 | 15 | Active — shared Create dialog Plus entry, plain Check Submit and rightmost commit action source-integrated; browser acceptance pending | Central Admin create/edit dialog semantics, native Filament action rail, date controls and media picker; no deployment | [dev-8.md](workers/dev-8.md) |
 
 
 | Dev Worker 9 | 28 | Active — initial assignment registered; awaiting concrete controls requirements and bounded source review | Admin Live Preview interaction and control enhancements; coordinate shared General/Gallery Preview changes with Dev Worker 7; no unrelated General Appearance work | [dev-9.md](workers/dev-9.md) |

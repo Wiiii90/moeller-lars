@@ -19,14 +19,14 @@ final class AdminDialog
         ?Closure $onClear = null,
     ): Action {
         // Every new-object editor uses one visual contract: a Plus opener
-        // and an outlined circled Check for the explicit commit action.
+        // and a plain Check inside the shared circular header button.
         // No field is persisted when Filament's native X closes this modal.
         return self::committedTask(
             $action->icon(AdminIcon::Add->value)->iconPosition(IconPosition::Before),
             AdminDialogType::Create,
             $submitLabel,
             $size,
-            AdminIcon::Commit,
+            AdminIcon::DialogSubmit,
             $onClear,
         );
     }
