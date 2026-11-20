@@ -7,6 +7,7 @@
     $kind = $viewerItem['kind'];
     $mime = $viewerItem['mime'];
     $isVideo = $kind === 'video';
+    $galleryVideoPlayer = $galleryIndex && $isVideo;
     $thumbnail = $isVideo ? null : $media->thumbnailVariant($artwork);
     $imageUrl = $thumbnail ? $media->variantUrl($thumbnail) : null;
     $posterVariant = $isVideo
@@ -74,7 +75,22 @@
 @endif
 
 <article class="artwork-card{{ $galleryIndex ? ' artwork-card--gallery-index artwork-card--gallery-shift-'.(max(-2, min(2, (int) $galleryShift)) + 2).' artwork-card--gallery-gap-'.max(0, min(4, (int) $galleryGap)) : '' }}{{ $galleryMediaAspect !== null ? ' artwork-card--gallery-dimensioned' : '' }}"
-    @if ($galleryMediaAspect !== null) data-gallery-artwork="{{ (int) $artwork->getKey() }}" @endif>
+    @if ($galleryMediaAspect !== null) data-gallery-artwork="{{ (int) $artwork->getKey() }}" @endif
+    @if ($galleryVideoPlayer && $viewerActive)
+        {{-- The Gallery video itself is interactive media, never a Viewer
+             trigger. Keep its canonical Viewer item on the card instead. --}}
+        data-artwork-viewer-item
+        data-viewer-key="{{ $viewerItem['key'] }}"
+        data-viewer-analytics-key="{{ $viewerItem['analyticsKey'] }}"
+        data-viewer-kind="{{ $viewerItem['kind'] }}"
+        data-viewer-mime="{{ $viewerItem['mime'] }}"
+        data-viewer-src="{{ $viewerItem['src'] }}"
+        data-viewer-alt="{{ $viewerItem['alt'] }}"
+        data-viewer-title="{{ $viewerItem['title'] }}"
+        data-viewer-page="{{ $viewerItem['page'] ?? '' }}"
+        data-viewer-navigation="{{ $viewerNavigation ? '1' : '0' }}"
+        data-viewer-cyclic="{{ $viewerCyclic ? '1' : '0' }}"
+    @endif>
     <x-artwork-navigation
         :category="$category"
         :show-gallery-link="$showCategoryLink"
@@ -87,7 +103,7 @@
         <div class="artwork-card__composition{{ $isVideo ? ' artwork-card__composition--video' : '' }}{{ $heroFitted ? ' artwork-card__composition--gallery-hero' : '' }}">
     @endif
 
-    @if ($viewerActive)
+    @if ($viewerActive && ! $galleryVideoPlayer)
         <a
             class="artwork-card__link"
             href="{{ $detailPageEnabled ? $detailUrl : $originalUrl }}"
@@ -121,6 +137,7 @@
                 muted
                 loop
                 playsinline
+                @if ($galleryVideoPlayer) controls @endif
                 data-public-loop-video
                 preload="{{ $heroNavigation && ! $eager ? 'none' : 'metadata' }}"
             ></video>
@@ -161,18 +178,28 @@
                 </noscript>
             @endif
         @endif
-    @if ($viewerActive)
+    @if ($viewerActive && ! $galleryVideoPlayer)
         </a>
     @else
         </div>
     @endif
 
-    @if ($isVideo && $allowVideoSound)
+    @if (($isVideo && $allowVideoSound) || ($galleryVideoPlayer && $viewerActive))
         <div class="public-video__controls">
-            <button type="button" class="public-video__sound" data-public-video-sound-toggle aria-label="Enable video sound" aria-pressed="false" title="Enable video sound">
-                <span data-public-video-icon-muted><x-public-icon name="volume-muted" /></span>
-                <span data-public-video-icon-playing hidden><x-public-icon name="volume-on" /></span>
-            </button>
+            @if ($isVideo && $allowVideoSound)
+                <button type="button" class="public-video__sound public-video__action" data-public-video-sound-toggle aria-label="Enable video sound" aria-pressed="false" title="Enable video sound">
+                    <span data-public-video-icon-muted><x-public-icon name="volume-muted" /></span>
+                    <span data-public-video-icon-playing hidden><x-public-icon name="volume-on" /></span>
+                </button>
+            @endif
+            @if ($galleryVideoPlayer && $viewerActive)
+                {{-- A separate control preserves access to the cyclic Viewer
+                     without intercepting native video playback/seek actions. --}}
+                <button type="button" class="public-video__action" data-artwork-viewer-trigger
+                    data-viewer-key="{{ $viewerItem['key'] }}"
+                    aria-label="Open {{ $artwork->title }} in media viewer"
+                    title="Open in media viewer"><x-public-icon name="maximize" /></button>
+            @endif
         </div>
     @endif
 

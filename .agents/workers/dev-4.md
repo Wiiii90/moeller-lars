@@ -2,13 +2,20 @@
 
 **Lease:** 29
 **Branch:** dev
-**State:** Active — Public Gallery video playback/sizing and fullscreen fitting source-integrated; runtime/browser acceptance pending.
+**State:** Active — Public Gallery native inline player and separate modal Viewer trigger source-integrated; runtime/browser acceptance pending.
 
 ## Takeover — 2026-11-20
 
 - New chat explicitly replaces the previous Dev Worker 4 under lease 29 on `dev`.
 - User assigned continued Gallery ownership but did not yet specify a new feature or defect for implementation. Await the next concrete task; do not automatically restart historical tasks.
 - Preserve previous Gallery Stage/media/publication and table contracts. All prior browser/runtime checks listed below remain pending; no application code, tests, deployment or Continuous Integration were changed during takeover.
+
+## Gallery inline video controls and independent Viewer trigger — 2026-11-20
+
+- Artist verified that the previous video size/playback commit still left Gallery videos unstartable through direct interaction. Root cause in the canonical Artwork card: the video was nested inside a full-area Viewer anchor and lacked native controls; its play/seek interactions were routed to the modal.
+- Gallery-index videos now render as standalone interactive native players with `controls`, while the existing muted/visibility-aware autoplay policy remains. The canonical Viewer item remains once on the Gallery card; a separate accessible icon control (within the existing Public video action family) opens the same cyclic Viewer without intercepting media controls.
+- Other Artwork cards (Home Hero), detail pages, still images and the Gallery's dynamic Viewer sequence retain their existing source contract. The shared Public icon and existing video action styling own the new trigger. No second playback or Viewer implementation.
+- Source verified only; live browser acceptance pending for mouse/touch player controls, autoplay allowed/blocked, media seeking, image/video navigation and later server-loaded Gallery batches. No tests, CI, deployment or publication.
 
 ## Public Gallery video display and fullscreen fitting — 2026-11-20
 
