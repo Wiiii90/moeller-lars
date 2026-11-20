@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Analytics\ArtistReportingService;
+use App\Domain\Artwork\ArtworkDate;
 use App\Domain\Artwork\GalleryPresentation;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Content\SiteSectionType;
@@ -87,6 +88,7 @@ trait GalleryWorkspaceDataProjection
                         $primaryAsset, $primary?->getAttribute('alt_text_override'),
                     ),
                 'year' => $artwork->getAttribute('year'),
+                'date' => ArtworkDate::display($artwork),
                 'medium' => $artwork->getAttribute('medium'),
                 'dimensions' => $artwork->getAttribute('dimensions'),
                 'primary_kind' => $kind,
@@ -166,6 +168,7 @@ trait GalleryWorkspaceDataProjection
                     $artwork['title'] ?? null,
                     $artwork['medium'] ?? null,
                     $artwork['year'] ?? null,
+                    $artwork['date'] ?? null,
                     $artwork['dimensions'] ?? null,
                 ], static fn (mixed $value): bool => $value !== null && $value !== '')));
 

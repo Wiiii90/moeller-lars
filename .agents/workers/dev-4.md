@@ -2,7 +2,14 @@
 
 **Lease:** 23
 **Branch:** dev
-**State:** Active — Gallery List/Dense table refinement implemented in source on 2026-11-20; browser acceptance and local runtime verification pending.
+**State:** Active — Gallery List/Dense projection and CSS regression reconciled with parallel Preview changes; runtime/browser acceptance pending.
+
+## Latest incident and correction — 2026-11-20
+
+- Reported error: `Undefined array key "date"` in Gallery List view. The concurrent Gallery Preview/focus commit lost `date` from `GalleryWorkspaceDataProjection` and restored obsolete Gallery table CSS while retaining the newer Blade consumer. This was a render projection regression, not a database migration.
+- On the latest shared dev tree, restored `ArtworkDate::display()` and formatted date search in the canonical projection and restored only the Gallery table CSS section from the previously accepted List/Dense source; kept the other worker's `can_preview`, Preview/focus behavior and Gallery Preview/Stage CSS.
+- Amended the existing Dev role skill to require explicit producer-to-consumer field checks and overlapping CSS-section reconciliation before a commit. Source contract checked; PHP/Laravel runtime, browser, suites, Continuous Integration and deployment not executed.
+- Independent acceptance needed: load both Gallery views with partial and complete Artwork dates and evaluate actions, compact table layouts and auto Preview focus.
 
 ## Current Gallery table assignment
 
