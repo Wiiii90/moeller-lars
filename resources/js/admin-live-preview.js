@@ -18,7 +18,6 @@ export function adminLivePreview(element) {
         zoom: 1,
         minZoom: 1,
         maxZoom: 3,
-        wheelDelta: 0,
         spacePan: false,
         dragging: false,
         pointerId: null,
@@ -97,7 +96,6 @@ export function adminLivePreview(element) {
             this.zoom = this.minZoom
             this.spacePan = false
             this.touchPanStart = null
-            this.wheelDelta = 0
             this.$nextTick(() => this.scheduleFit())
         },
         rotateViewport() {
@@ -170,63 +168,17 @@ export function adminLivePreview(element) {
             this.touchPanStart = null
             this.zoom = this.minZoom
             this.spacePan = false
-            this.wheelDelta = 0
             this.fitPreview()
         },
-        changeZoom(step, anchor = null) {
-            const viewport = this.$refs.viewport
-            const surface = this.$refs.surface
+        changeZoom(step) {
             const nextZoom = Math.max(this.minZoom, Math.min(this.maxZoom, Math.round((this.zoom + step) * 100) / 100))
             if (nextZoom === this.zoom) return
             if (nextZoom === this.minZoom) {
                 this.resetZoom()
                 return
             }
-
-            // Keep the content under the pointer stable for modifier-wheel
-            // zoom. Toolbar buttons retain their established center anchor.
-            let focus = null
-            if (anchor && viewport && surface) {
-                const frame = surface.getBoundingClientRect()
-                const bounds = viewport.getBoundingClientRect()
-                if (frame.width > 0 && frame.height > 0) {
-                    focus = {
-                        x: Math.max(0, Math.min(1, (anchor.x - frame.left) / frame.width)),
-                        y: Math.max(0, Math.min(1, (anchor.y - frame.top) / frame.height)),
-                        offsetX: anchor.x - bounds.left - viewport.clientLeft,
-                        offsetY: anchor.y - bounds.top - viewport.clientTop,
-                    }
-                }
-            }
-
             this.zoom = nextZoom
             this.fitPreview()
-            if (focus) {
-                viewport.scrollLeft = surface.offsetWidth * focus.x - focus.offsetX
-                viewport.scrollTop = surface.offsetHeight * focus.y - focus.offsetY
-            }
-        },
-        zoomWithWheel(event, inFrame = false) {
-            // Unmodified wheel input is reserved for the actual Public page.
-            // Only the modifier changes the preview's magnification, including
-            // when the wheel event originates inside the same-origin iframe.
-            if (! event.ctrlKey && ! event.metaKey) return
-            if (event.cancelable) event.preventDefault()
-            if (! event.deltaY) return
-
-            const viewport = this.$refs.viewport
-            if (! viewport) return
-            const multiplier = event.deltaMode === 1 ? 16
-                : (event.deltaMode === 2 ? viewport.clientHeight : 1)
-            const delta = event.deltaY * multiplier
-            if (Math.sign(delta) !== Math.sign(this.wheelDelta)) this.wheelDelta = 0
-            this.wheelDelta += delta
-            const steps = Math.min(2, Math.floor(Math.abs(this.wheelDelta) / 90))
-            if (! steps) return
-
-            this.wheelDelta -= Math.sign(delta) * steps * 90
-            const point = this.previewPoint(event, inFrame)
-            this.changeZoom(-Math.sign(delta) * steps * 0.25, point)
         },
         shortcutTargetIsInteractive(target) {
             return target && typeof target.closest === 'function'
@@ -276,7 +228,6 @@ export function adminLivePreview(element) {
             const up = (event) => this.handleSpaceUp(event)
             const blur = () => this.cancelSpacePan()
             const changed = () => this.scheduleDiagnostics()
-            const frameWheel = (event) => this.zoomWithWheel(event, true)
             const frameDown = (event) => this.startPan(event, true)
             const frameTouchStart = (event) => this.startTouchPan(event, true)
             const frameTouchMove = (event) => this.moveTouchPan(event, true)
@@ -284,7 +235,6 @@ export function adminLivePreview(element) {
             const preventMiddleAutoscroll = (event) => {
                 if (event.button === 1 && this.zoom > this.minZoom) event.preventDefault()
             }
-            documentRef.addEventListener('wheel', frameWheel, { passive: false, capture: true })
             documentRef.addEventListener('pointerdown', frameDown, true)
             documentRef.addEventListener('mousedown', preventMiddleAutoscroll, true)
             documentRef.addEventListener('auxclick', preventMiddleAutoscroll, true)
@@ -306,7 +256,6 @@ export function adminLivePreview(element) {
                 if (this.$refs.frame?.contentDocument === documentRef) this.scheduleDiagnostics()
             }).catch(() => {})
             this.frameShortcuts.push(
-                () => documentRef.removeEventListener('wheel', frameWheel, true),
                 () => documentRef.removeEventListener('pointerdown', frameDown, true),
                 () => documentRef.removeEventListener('mousedown', preventMiddleAutoscroll, true),
                 () => documentRef.removeEventListener('auxclick', preventMiddleAutoscroll, true),
@@ -464,7 +413,6 @@ export function adminLivePreview(element) {
             this.currentUrl = url.toString()
             this.cancelPanGesture()
             this.touchPanStart = null
-            this.wheelDelta = 0
             this.unbindFrameShortcuts()
             this.horizontalOverflow = false
             frame.src = this.currentUrl

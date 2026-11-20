@@ -12,7 +12,7 @@
 | Dev Worker 8 | 15 | Active — Add actions across search/toolbars and shared Add-row now use canonical plain Plus; browser review pending | Central Admin Create dialog controls, shared icon grammar and media picker; no deployment | [dev-8.md](workers/dev-8.md) |
 
 
-| Dev Worker 9 | 28 | Interactive zoom accepted; shared Help and Ctrl/Command-wheel zoom source-integrated, browser review pending | Shared General/Gallery Live Preview gestures, zoom and toolbar Help; preserve Dev Worker 7's device controls and shared style ownership | [dev-9.md](workers/dev-9.md) |
+| Dev Worker 9 | 28 | Artist accepted mouse navigation; shared Help retained and conflicting modifier-wheel zoom removed; touch/browser Help review pending | Shared General/Gallery Live Preview gestures, zoom buttons and toolbar Help; preserve Dev Worker 7's device controls | [dev-9.md](workers/dev-9.md) |
 | Dev Worker 10 | 26 | Active — rights-processing Validation readiness and completion | Media rights preparation/delivery pipeline, queue-worker integration requirements, current Validation activation evidence and safe rollout handoff; no deployments or artist-data changes without explicit approval | [dev-10.md](workers/dev-10.md) |
 
 | Dev Worker 11 | 27 | Active — Public Gallery image priority/prefetch correction committed; browser latency review pending | Public page presentation and staged Gallery media fetching; preserve Gallery Artwork and viewer owners, coordinate with Dev Worker 4 | [dev-11.md](workers/dev-11.md) |
