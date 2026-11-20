@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\MediaAssets\Pages;
 
+use App\Domain\Content\RegionalFormats;
+
 use App\Domain\Admin\AdminMediaUploadFeedback;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Media\MediaAssetEditorialService;
@@ -1087,15 +1089,15 @@ final class ListMediaAssets extends Page
             return $bytes.' B';
         }
         if ($bytes < 1024 * 1024) {
-            return number_format($bytes / 1024, 1).' KB';
+            return RegionalFormats::adminNumber($bytes / 1024, 1).' KB';
         }
         if ($bytes < 1024 * 1024 * 1024) {
-            return number_format($bytes / (1024 * 1024), 1).' MB';
+            return RegionalFormats::adminNumber($bytes / (1024 * 1024), 1).' MB';
         }
         if ($bytes < 1024 * 1024 * 1024 * 1024) {
-            return number_format($bytes / (1024 * 1024 * 1024), 2).' GB';
+            return RegionalFormats::adminNumber($bytes / (1024 * 1024 * 1024), 2).' GB';
         }
 
-        return number_format($bytes / (1024 * 1024 * 1024 * 1024), 2).' TB';
+        return RegionalFormats::adminNumber($bytes / (1024 * 1024 * 1024 * 1024), 2).' TB';
     }
 }

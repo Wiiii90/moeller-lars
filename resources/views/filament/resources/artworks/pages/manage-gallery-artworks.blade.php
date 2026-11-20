@@ -117,7 +117,7 @@
                                 "
                             >Drop images or videos here, or choose files</strong>
                             <span x-show="phase === 'idle'">
-                                JPEG, PNG, WebP (max {{ number_format(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} megapixels); MP4 and WebM. Interrupted transfers can be resumed by selecting the same file.
+                                JPEG, PNG, WebP (max {{ \App\Domain\Content\RegionalFormats::adminNumber(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} megapixels); MP4 and WebM. Interrupted transfers can be resumed by selecting the same file.
                             </span>
                             <span x-show="phase === 'result'" x-text="result" x-cloak></span>
                         </div>
@@ -373,7 +373,7 @@
                                     ])))
                                     <span title="{{ $artworkMeta }}">{{ $artworkMeta }}</span>
                                     @php($analyticsSummary = $artwork['analytics']['available']
-                                        ? '30d: '.number_format($artwork['analytics']['views']).' views, '.number_format($artwork['analytics']['opens']).' opens, '.number_format($artwork['analytics']['zooms']).' zooms, '.$artwork['analytics']['attention'].' attention'
+                                        ? '30d: '.\App\Domain\Content\RegionalFormats::adminNumber($artwork['analytics']['views']).' views, '.\App\Domain\Content\RegionalFormats::adminNumber($artwork['analytics']['opens']).' opens, '.\App\Domain\Content\RegionalFormats::adminNumber($artwork['analytics']['zooms']).' zooms, '.$artwork['analytics']['attention'].' attention'
                                         : '30d: analytics unavailable')
                                     <small class="admin-gallery-grid__analytics" title="{{ $analyticsSummary }}">{{ $analyticsSummary }}</small>
                                 </div>

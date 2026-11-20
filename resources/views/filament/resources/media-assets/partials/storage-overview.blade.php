@@ -41,9 +41,9 @@
 @endphp
 
 <x-admin.metrics :columns="6" class="storage-status-metrics admin-metrics--six-state" aria-label="Storage statistics">
-    <x-admin.metric class="storage-metric storage-metric--files" label="Files" :value="number_format($libraryFiles)">{{ __('Available') }}</x-admin.metric>
-    <x-admin.metric class="storage-metric storage-metric--images" label="Images" :value="number_format($libraryImages)">{{ __('Available images') }}</x-admin.metric>
-    <x-admin.metric class="storage-metric storage-metric--unreferenced" label="Unreferenced" :value="number_format($libraryUnreferenced)">{{ __('No canonical consumer') }}</x-admin.metric>
+    <x-admin.metric class="storage-metric storage-metric--files" label="Files" :value="\App\Domain\Content\RegionalFormats::adminNumber($libraryFiles)">{{ __('Available') }}</x-admin.metric>
+    <x-admin.metric class="storage-metric storage-metric--images" label="Images" :value="\App\Domain\Content\RegionalFormats::adminNumber($libraryImages)">{{ __('Available images') }}</x-admin.metric>
+    <x-admin.metric class="storage-metric storage-metric--unreferenced" label="Unreferenced" :value="\App\Domain\Content\RegionalFormats::adminNumber($libraryUnreferenced)">{{ __('No canonical consumer') }}</x-admin.metric>
     <x-admin.metric class="storage-metric storage-metric--used" label="Original storage" :value="$capacity['authoritative'] ?? '—'">{{ __('Counts against allowance') }}</x-admin.metric>
     <x-admin.metric class="storage-metric storage-metric--generated" label="Generated" :value="$capacity['generated'] ?? '—'">{{ __('Rebuildable derivatives') }}</x-admin.metric>
     <x-admin.metric class="storage-metric storage-metric--remaining" label="Remaining" :value="$capacity['remaining'] ?? '—'">{{ $capacity['remaining_detail'] ?? 'Storage allowance' }}</x-admin.metric>
@@ -250,14 +250,14 @@
             @if (($storageAttention['unreferenced_files'] ?? 0) > 0)
                 <div class="admin-storage__attention-row">
                     <span>{{ __('Unused storage') }}</span>
-                    <strong>{{ $storageAttention['unreferenced_display_bytes'] }} · {{ number_format($storageAttention['unreferenced_files']) }} {{ ($storageAttention['unreferenced_files'] ?? 0) === 1 ? 'file' : 'files' }}</strong>
+                    <strong>{{ $storageAttention['unreferenced_display_bytes'] }} · {{ \App\Domain\Content\RegionalFormats::adminNumber($storageAttention['unreferenced_files']) }} {{ ($storageAttention['unreferenced_files'] ?? 0) === 1 ? 'file' : 'files' }}</strong>
                 </div>
             @endif
 
             @if (($storageAttention['uncatalogued_files'] ?? 0) > 0)
                 <div class="admin-storage__attention-row is-warning">
                     <span>{{ __('Uncatalogued storage') }}</span>
-                    <strong>{{ $storageAttention['uncatalogued_display_bytes'] }} · {{ number_format($storageAttention['uncatalogued_files']) }} {{ ($storageAttention['uncatalogued_files'] ?? 0) === 1 ? 'file' : 'files' }}</strong>
+                    <strong>{{ $storageAttention['uncatalogued_display_bytes'] }} · {{ \App\Domain\Content\RegionalFormats::adminNumber($storageAttention['uncatalogued_files']) }} {{ ($storageAttention['uncatalogued_files'] ?? 0) === 1 ? 'file' : 'files' }}</strong>
                 </div>
             @endif
 

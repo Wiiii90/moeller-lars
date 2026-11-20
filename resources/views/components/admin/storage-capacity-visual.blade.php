@@ -57,12 +57,12 @@
     {{ $attributes->class(['admin-storage-capacity']) }}
     data-admin-viz="storage-capacity"
     role="img"
-    aria-label="@if ($configured && $measurementAvailable && $capacityPercent !== null) {{ number_format($capacityPercent, 1) }} percent of {{ $capacity['allowance'] ?? 'the site storage allowance' }} is used @elseif ($measurementAvailable) Site storage measured without a configured allowance @else Storage measurement unavailable @endif"
+    aria-label="@if ($configured && $measurementAvailable && $capacityPercent !== null) {{ \App\Domain\Content\RegionalFormats::adminNumber($capacityPercent, 1) }} percent of {{ $capacity['allowance'] ?? 'the site storage allowance' }} is used @elseif ($measurementAvailable) Site storage measured without a configured allowance @else Storage measurement unavailable @endif"
 >
     <div class="admin-storage-capacity__surface" data-admin-viz-surface wire:ignore></div>
     <div class="admin-storage-capacity__inspector" data-admin-viz-inspector aria-hidden="true">
         <strong data-admin-viz-inspector-title>{{ $siteUsed }}</strong>
-        <span data-admin-viz-inspector-meta>@if ($capacityPercent !== null) {{ number_format($capacityPercent, 1) }}% used, {{ $capacity['remaining'] ?? '—' }} free @endif</span>
+        <span data-admin-viz-inspector-meta>@if ($capacityPercent !== null) {{ \App\Domain\Content\RegionalFormats::adminNumber($capacityPercent, 1) }}% used, {{ $capacity['remaining'] ?? '—' }} free @endif</span>
     </div>
     <script type="application/json" data-admin-viz-config>@json($vizConfig)</script>
 </div>

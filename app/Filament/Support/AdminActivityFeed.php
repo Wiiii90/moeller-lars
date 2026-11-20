@@ -5,6 +5,7 @@ namespace App\Filament\Support;
 use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Admin\AdminActionReceiptService;
 use App\Domain\Admin\AdminActivityPresentation;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\Activity;
 use App\Filament\Pages\GalleryWorkspace;
@@ -241,7 +242,7 @@ final class AdminActivityFeed
                     'message' => is_string($message) && trim($message) !== '' ? trim($message) : null,
                     'change_count' => (int) $checkpoint->getAttribute('change_count'),
                     'when' => $publishedAt->diffForHumans(),
-                    'timestamp' => $publishedAt->format('Y-m-d H:i'),
+                    'timestamp' => RegionalFormats::adminDateTime($publishedAt),
                     'actor' => $adminUser?->getAttribute('name') ?? 'Admin',
                 ];
             })
@@ -536,22 +537,22 @@ final class AdminActivityFeed
                 'url' => $this->targetUrl($entityType, $entityId, isset($labels[$entityType][$entityId])),
                 'actor' => $adminUser?->getAttribute('name') ?? 'Admin',
                 'when' => $occurredAt->diffForHumans(),
-                'timestamp' => $occurredAt->format('Y-m-d H:i'),
+                'timestamp' => RegionalFormats::adminDateTime($occurredAt),
                 'metadata' => $metadata,
                 'change_summary' => $changeSummary,
                 'ordering_projection' => $orderingProjectionState instanceof AdminActivityOrderingProjection
                     ? [
                         ...$orderingPresentation,
                         'is_identity' => $orderingProjectionState->isIdentity(),
-                        'started_at' => $orderingProjectionState->getAttribute('started_at')?->format('Y-m-d H:i'),
-                        'ended_at' => $orderingProjectionState->getAttribute('ended_at')?->format('Y-m-d H:i'),
+                        'started_at' => $orderingProjectionState->getAttribute('started_at') ? RegionalFormats::adminDateTime($orderingProjectionState->getAttribute('started_at')) : null,
+                        'ended_at' => $orderingProjectionState->getAttribute('ended_at') ? RegionalFormats::adminDateTime($orderingProjectionState->getAttribute('ended_at')) : null,
                     ]
                     : null,
                 'publication_status' => $checkpoint !== null ? 'committed' : 'staged',
                 'checkpoint_id' => $checkpoint?->getKey(),
                 'checkpoint_short_hash' => $checkpoint instanceof PublicationCheckpoint ? $checkpoint->shortHash() : null,
                 'checkpoint_message' => $checkpoint?->getAttribute('message'),
-                'checkpoint_at' => $checkpoint?->getAttribute('published_at')?->format('Y-m-d H:i'),
+                'checkpoint_at' => $checkpoint?->getAttribute('published_at') ? RegionalFormats::adminDateTime($checkpoint->getAttribute('published_at')) : null,
                 'undo' => $undo,
             ];
         }

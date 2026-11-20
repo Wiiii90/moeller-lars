@@ -65,7 +65,7 @@
                 @if (is_string($hourUrl) && $hourUrl !== '')
                     <a
                         href="{{ $hourUrl }}" wire:navigate
-                        aria-label="Filter {{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00, {{ number_format($bucket['count']) }} changes"
+                        aria-label="Filter {{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00, {{ \App\Domain\Content\RegionalFormats::adminNumber($bucket['count']) }} changes"
                     >
                         <line
                             class="{{ $tickClass }}"
@@ -76,7 +76,7 @@
                             transform="rotate({{ $bucket['hour'] * 15 }} 160 160)"
                             opacity="{{ number_format($activityOpacity, 3, '.', '') }}"
                         >
-                            <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 — {{ number_format($bucket['count']) }} changes</title>
+                            <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 — {{ \App\Domain\Content\RegionalFormats::adminNumber($bucket['count']) }} changes</title>
                         </line>
                     </a>
                 @else
@@ -89,7 +89,7 @@
                         transform="rotate({{ $bucket['hour'] * 15 }} 160 160)"
                         opacity="{{ number_format($activityOpacity, 3, '.', '') }}"
                     >
-                        <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 — {{ number_format($bucket['count']) }} changes</title>
+                        <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 — {{ \App\Domain\Content\RegionalFormats::adminNumber($bucket['count']) }} changes</title>
                     </line>
                 @endif
             @endforeach
