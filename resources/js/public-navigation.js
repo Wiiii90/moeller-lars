@@ -282,8 +282,8 @@ function initializeNavigationLevels(container, mainSurface, main, restoredWindow
             event.preventDefault();
             showChildren(entry, true);
         });
-        // Enter/Space invoke the native link/button click handler above.
-        // ArrowDown remains available for page scrolling, not a hidden submenu shortcut.
+        // Enter opens a parent link; Enter/Space activate a parent button.
+        // ArrowDown remains native page scrolling, not a submenu shortcut.
 
         // The existing underline's CSS animation is the single countdown
         // clock. Its completion opens the same child level as an immediate
