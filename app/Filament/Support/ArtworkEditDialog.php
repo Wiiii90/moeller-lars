@@ -94,6 +94,40 @@ final class ArtworkEditDialog
             );
         }
 
+        // Reuse the canonical Media picker in both views; only the field
+        // placement differs. A staged upload has a fixed, read-only file.
+        $primaryMedia = MediaAssetSelect::makeId(
+            'primary_media_asset_id',
+            'Media file',
+            allowedMimeTypes: self::primaryMimeTypes(),
+        )
+            ->placeholder(__('No primary media'))
+            ->nullable()
+            ->disabled($primaryReadOnly)
+            ->selectablePlaceholder(! $primaryReadOnly)
+            ->extraFieldWrapperAttributes($primaryReadOnly ? [
+                'title' => $creating
+                    ? 'This Media File belongs to the selected Gallery Stage item.'
+                    : 'Unpublish this Artwork before changing or removing its primary Media File.',
+            ] : [], merge: true)
+            ->live()
+            ->afterStateUpdated(static function (mixed $state, callable $set, callable $get) use ($onPrimaryMediaChanged, $creating, $onCreateOrderSourceChanged): void {
+                // One Media-file selection owns the Artwork association.
+                // On Edit, persist only this mutation, independent of the modal form.
+                if ($onPrimaryMediaChanged instanceof Closure) {
+                    $onPrimaryMediaChanged(filled($state) ? (int) $state : null);
+                }
+                $set('primary_alt_text', null);
+                if ($creating && $onCreateOrderSourceChanged instanceof Closure) {
+                    $onCreateOrderSourceChanged($get, $set);
+                }
+            })
+            ->columnSpanFull();
+
+        $position = $positionCount !== null
+            ? $this->positionControl($positionCount, $positionEditable, $onPositionChanged)
+            : null;
+
         return [
             // The Stage uses two immediate columns within its own editor pane;
             // ordinary Add/Edit Artwork retains its existing responsive schema.
@@ -118,33 +152,7 @@ final class ArtworkEditDialog
                             ->preload()
                             ->columnSpanFull(),
                     ] : []),
-                    MediaAssetSelect::makeId(
-                        'primary_media_asset_id',
-                        'Media file',
-                        allowedMimeTypes: self::primaryMimeTypes(),
-                    )
-                        ->placeholder(__('No primary media'))
-                        ->nullable()
-                        ->disabled($primaryReadOnly)
-                        ->selectablePlaceholder(! $primaryReadOnly)
-                        ->extraFieldWrapperAttributes($primaryReadOnly ? [
-                            'title' => $creating
-                                ? 'This Media File belongs to the selected Gallery Stage item.'
-                                : 'Unpublish this Artwork before changing or removing its primary Media File.',
-                        ] : [], merge: true)
-                        ->live()
-                        ->afterStateUpdated(static function (mixed $state, callable $set, callable $get) use ($onPrimaryMediaChanged, $creating, $onCreateOrderSourceChanged): void {
-                            // One Media-file selection owns the Artwork association.
-                            // On Edit, persist only this mutation, independent of the modal form.
-                            if ($onPrimaryMediaChanged instanceof Closure) {
-                                $onPrimaryMediaChanged(filled($state) ? (int) $state : null);
-                            }
-                            $set('primary_alt_text', null);
-                            if ($creating && $onCreateOrderSourceChanged instanceof Closure) {
-                                $onCreateOrderSourceChanged($get, $set);
-                            }
-                        })
-                        ->columnSpanFull(),
+                    ...($compact ? [] : [$primaryMedia]),
                     ...($compact ? [] : [
                         TextInput::make('primary_alt_text')
                             ->label('ALT text override')
@@ -154,12 +162,14 @@ final class ArtworkEditDialog
                         $dateControl,
                     ]),
 
-                    $material,
-                    ...($positionCount !== null ? [
-                        $this->positionControl($positionCount, $positionEditable, $onPositionChanged),
-                    ] : []),
+                    // Creating, including Stage, presents Position before Material.
+                    // Existing Edit dialogs retain their established order.
+                    ...($creating && $position !== null
+                        ? [$position, $material]
+                        : [$material, ...($position !== null ? [$position] : [])]),
 
                     AdminDimensionsControl::make(),
+                    ...($compact ? [$primaryMedia] : []),
 
                     ...($compact ? [] : AdminRichText::schema('description', 'Description', 10000)),
 

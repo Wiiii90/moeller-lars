@@ -144,28 +144,31 @@
             </div>
                 @elseif ($galleryStagePanel === 'queue' && $pendingBatchArtworkMedia !== [])
                     @if ($selectedStagedMediaAssetId !== null)
-                        <div class="gallery-stage__form-scroll" wire:change="syncStagedArtworkPreview" wire:key="gallery-staged-editor-{{ $selectedStagedMediaAssetId }}">
-                            {{ $this->stagedArtworkForm }}
+                        <div class="gallery-stage__form-panel" aria-label="Staged Artwork form">
+                            <div class="gallery-stage__form-scroll" wire:change="syncStagedArtworkPreview" wire:key="gallery-staged-editor-{{ $selectedStagedMediaAssetId }}">
+                                {{ $this->stagedArtworkForm }}
+                            </div>
                         </div>
                         <div class="gallery-stage__editor-actions admin-toolbar" aria-label="Staged Artwork actions">
-                            <button class="admin-action" type="button" title="Discard from Stage, keep file in Storage" aria-label="Discard staged Artwork"
-                                wire:click="removeStagedArtwork({{ $selectedStagedMediaAssetId }})">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
-                                <span class="gallery-stage__action-label">Discard</span>
-                            </button>
-                            <button class="admin-action is-danger" type="button" title="Delete file from Storage" aria-label="Delete staged file from Storage"
-                                wire:click="mountAction('deleteStagedMedia', { asset: {{ $selectedStagedMediaAssetId }} })">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
-                                <span class="gallery-stage__action-label">Delete</span>
-                            </button>
-                            <button class="admin-action" type="button" title="Submit and publish Artwork in Working" aria-label="Submit and publish staged Artwork"
-                                wire:click="createSelectedStagedArtwork"
-                                wire:loading.attr="disabled" wire:target="createSelectedStagedArtwork,createAllStagedArtworks">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
-                                <span class="gallery-stage__action-label">Submit</span>
-                            </button>
-                            @if (count($pendingBatchArtworkMedia) > 1)
-                                <span class="admin-control-separator gallery-stage__action-separator" aria-hidden="true"></span>
+                            <div class="gallery-stage__action-group">
+                                <button class="admin-action" type="button" title="Discard from Stage, keep file in Storage" aria-label="Discard staged Artwork"
+                                    wire:click="removeStagedArtwork({{ $selectedStagedMediaAssetId }})">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
+                                    <span class="gallery-stage__action-label">Discard</span>
+                                </button>
+                                <button class="admin-action is-danger" type="button" title="Delete file from Storage" aria-label="Delete staged file from Storage"
+                                    wire:click="mountAction('deleteStagedMedia', { asset: {{ $selectedStagedMediaAssetId }} })">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
+                                    <span class="gallery-stage__action-label">Delete</span>
+                                </button>
+                                <button class="admin-action" type="button" title="Submit and publish Artwork in Working" aria-label="Submit and publish staged Artwork"
+                                    wire:click="createSelectedStagedArtwork"
+                                    wire:loading.attr="disabled" wire:target="createSelectedStagedArtwork,createAllStagedArtworks">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
+                                    <span class="gallery-stage__action-label">Submit</span>
+                                </button>
+                            </div>
+                            <div class="gallery-stage__action-group gallery-stage__action-group--batch">
                                 <button class="admin-action is-danger" type="button" title="Delete all staged files from Storage" aria-label="Delete all staged files from Storage"
                                     wire:click="mountAction('deleteAllStagedMedia')">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
@@ -177,7 +180,7 @@
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
                                     <span class="gallery-stage__action-label">Submit All</span>
                                 </button>
-                            @endif
+                            </div>
                         </div>
                     @endif
                 @else

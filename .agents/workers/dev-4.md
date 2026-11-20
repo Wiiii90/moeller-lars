@@ -2,7 +2,14 @@
 
 **Lease:** 23
 **Branch:** dev
-**State:** Active — shared Gallery/Storage upload transport supports queued additions and per-file determinate progress; Stage first-item focus, circular tabs and auto-publishing Submit; runtime/browser acceptance pending.
+**State:** Active — staged Artwork form panel, action button groups and Add Artwork/Stage field order updated; runtime/browser acceptance pending.
+
+## Gallery staged form panel and actions — 2026-11-20
+
+- All five Stage actions are displayed whenever at least one Artwork is staged. Two separate flex groups keep **Discard**, **Delete** and **Submit** on the left; **Delete All** and **Submit All** align to the right. Every action uses the canonical `admin-action` control with an explicit thin border, including the two destructive actions. Removed the obsolete conditional count guard and separator, retaining existing confirmation, publishing, and storage deletion services. At very narrow widths, labels yield to named icon controls as previously established.
+- The Stage Artwork form now sits inside a **form-only bordered panel**, independent of the action footer. Its interior is the unchanged scroll owner with hidden native scrollbar and the existing bottom scroll-fade mask, so the panel perimeter remains visible even when content extends beyond its viewport.
+- In `ArtworkEditDialog::schema()`, reuses exactly one canonical `MediaAssetSelect` instance. When `$compact` (Stage), the read-only Media File moves after Dimensions and remains the final field. Non-compact Add and Edit retain the existing Media File location. For `$creating` forms with a Position control (Stage and Add Artwork), the row is **Position / Material**; existing Edit forms preserve their field order. No changes to domain operations, persistence, tests or other dialogs.
+- Source contract verified; no Laravel runtime, compiled CSS or browser run performed. Acceptance: both Staged action groups at queue sizes 1 and 2+, right alignment and boxed button hover at wide/narrow pane widths, existing Delete All single-item confirmation, form-only border with fading overflow and no visible native scrollbar, Position/Material ordering in Stage/Add, Media File last only in Stage and fixed to queue asset.
 
 ## Shared Gallery / Storage upload and Stage lifecycle — 2026-11-20
 
