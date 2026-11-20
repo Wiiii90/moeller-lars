@@ -253,7 +253,10 @@
             </div>
         </section>
 
-        <div class="gallery-workspace__result-surface admin-visual-stage-followup">
+        <div class="gallery-workspace__result-surface admin-visual-stage-followup admin-view-switcher"
+            data-admin-view-mode="{{ $viewMode }}"
+            x-data="{ viewMode: $wire.entangle('viewMode') }"
+            x-bind:data-admin-view-mode="viewMode">
             <x-admin.controls class="admin-data-controls--dashboard-responsive admin-data-controls--filters-compact gallery-workspace__controls" aria-label="Gallery controls" metric-grid :filter-count="2" :search-span="2">
                 <x-slot:search>
                     <label class="admin-data-field">
@@ -325,7 +328,9 @@
                 </x-slot:actions>
 
                 <x-slot:selection>
-                    <div class="admin-data-control-group admin-selection {{ $viewMode === 'grid' ? 'admin-selection--free-count' : '' }}" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
+                    <div class="admin-data-control-group admin-selection"
+                        x-bind:class="{ 'admin-selection--free-count': viewMode === 'grid' }"
+                        x-data="{ open: false }" x-on:keydown.escape.window="open = false">
                         <span class="admin-data-control-label">{{ __('Selection') }}</span>
                         <div class="admin-selection__anchor">
                             <button
@@ -354,11 +359,11 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            @if ($artworks !== [] && $viewMode !== 'grid')
+            @if ($artworks !== [])
                 @include('filament.resources.artworks.partials.gallery-artwork-table')
-            @elseif ($artworks !== [])
                 <section
                     class="admin-gallery-grid"
+                    data-admin-view-panel="grid"
                     aria-label="Artwork sequence for {{ $galleryContext['name'] }}"
                     @if ($reorderEnabled) wire:sort="sortArtwork" @endif
                 >
@@ -387,19 +392,6 @@
                             </button>
 
                             <div class="gallery-workspace__primary-actions" aria-label="Primary actions for {{ $artwork['title'] }}">
-                                @if ($artwork['public_url'])
-                                    <a
-                                        class="gallery-workspace__icon-action gallery-workspace__primary-action"
-                                        href="{{ $artwork['public_url'] }}"
-                                        target="_blank"
-                                        rel="noopener"
-                                        draggable="false"
-                                        title="View public artwork"
-                                        aria-label="View {{ $artwork['title'] }} on the public site"
-                                    >
-                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::OpenPublic->mini()" />
-                                    </a>
-                                @endif
                                 @if ($artwork['state'] === 'published')
                                     <button
                                         class="gallery-workspace__icon-action gallery-workspace__primary-action"

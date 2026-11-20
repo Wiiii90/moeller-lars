@@ -686,10 +686,10 @@
     min-width: 0;
     max-width: 100%;
     table-layout: fixed;
-    --admin-row-actions-width: var(--admin-row-actions-seven-artwork-width);
+    --admin-row-actions-width: var(--admin-row-actions-six-static-width);
 }
 .gallery-workspace__table-wrap.is-dense .gallery-workspace__table {
-    --admin-row-actions-width: var(--admin-row-actions-seven-artwork-compact-width);
+    --admin-row-actions-width: var(--admin-row-actions-six-static-compact-width);
 }
 .gallery-workspace__table col.gallery-workspace__col-media { width: 4.75rem; }
 .gallery-workspace__table col.gallery-workspace__col-artwork { width: auto; }
@@ -788,7 +788,7 @@
 }
 @container admin-table (max-width: 70rem) {
     .gallery-workspace__table {
-        --admin-row-actions-width: var(--admin-row-actions-seven-artwork-compact-width);
+        --admin-row-actions-width: var(--admin-row-actions-six-static-compact-width);
     }
 }
 @container admin-table (max-width: 64rem) {
@@ -826,7 +826,7 @@
 }
 @container admin-table (max-width: 32rem) {
     .gallery-workspace__table {
-        --admin-row-actions-width: var(--admin-row-actions-seven-artwork-minimal-width);
+        --admin-row-actions-width: var(--admin-row-actions-six-static-compact-width);
     }
 }
 @container admin-table (max-width: 26rem) {

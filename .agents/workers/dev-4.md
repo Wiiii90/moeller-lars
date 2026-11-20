@@ -2,13 +2,21 @@
 
 **Lease:** 29
 **Branch:** dev
-**State:** Active — Gallery Stage local tab navigation uses retained Upload/Staged/Settings panes and canonical Livewire preview targets; browser acceptance pending.
+**State:** Active — Gallery and Storage List/Grid/Dense local view switching source-prepared, plus Gallery Public action removal; browser verification pending.
 
 ## Takeover — 2026-11-20
 
 - New chat explicitly replaces the previous Dev Worker 4 under lease 29 on `dev`.
 - User assigned continued Gallery ownership but did not yet specify a new feature or defect for implementation. Await the next concrete task; do not automatically restart historical tasks.
 - Preserve previous Gallery Stage/media/publication and table contracts. All prior browser/runtime checks listed below remain pending; no application code, tests, deployment or Continuous Integration were changed during takeover.
+
+## Gallery/Storage List, Grid and Dense view switching — 2026-11-21
+
+- Artist requested instant shared view switching with distinct Gallery and Storage card/grid content and the original List/Dense column contracts, and removal of `Public` buttons from Gallery row actions plus the Gallery Grid's Public overlay button.
+- The shared Admin view-options control now changes the existing Livewire-entangled `viewMode` locally without invoking `setViewMode`. Gallery and Storage each bind one view root and retain only two genuinely different renderers (Grid card markup and one table). The List/Dense table uses per-mode column visibility to keep its original metadata and density, with central view-specific CSS. Hidden view images retain the same source/element for browser caching; no duplicate table rendering, alternate data projection, extra timers or new endpoint.
+- Both obsolete page-specific server view-change methods are deleted. The existing `#[Session]` Livewire preference is synchronized on the next real server action, not sent on pure view switches. Existing actions, selection, sorting, filtering and Storage pagination remain server-owned.
+- Gallery List and Dense no longer have the `Public` row action. Gallery Grid's extra Public icon above the artwork thumbnail is removed; publication toggle and drag/sort remain to avoid removing real editorial functionality. Reuse the existing six-action rail and remove its superseded seven-action CSS and width variables.
+- Source review only. Browser profiling required for visible responsiveness, same-image caching and actual network transfers, 50/100-file Storage rendering costs, remembered view mode across sessions, both Grid and table edits/selections/sorts, and narrow responsive table geometry. No tests, Continuous Integration, deployment or release.
 
 ## Gallery Stage browser-local tabs — 2026-11-21
 

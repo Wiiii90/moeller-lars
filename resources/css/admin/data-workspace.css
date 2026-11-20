@@ -511,3 +511,14 @@
 
 
 
+
+/* Preserve distinct Gallery/Storage Grid renderers while List and Dense
+ * share a table. Existing images and controls stay mounted between switches. */
+.admin-view-switcher[data-admin-view-mode="grid"] [data-admin-view-panel="table"],
+.admin-view-switcher:not([data-admin-view-mode="grid"]) [data-admin-view-panel="grid"] {
+    display: none !important;
+}
+.admin-view-switcher[data-admin-view-mode="dense"] .admin-view-list-only,
+.admin-view-switcher:not([data-admin-view-mode="dense"]) .admin-view-dense-only {
+    display: none !important;
+}

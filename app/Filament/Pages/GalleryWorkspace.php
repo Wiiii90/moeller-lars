@@ -320,13 +320,6 @@ final class GalleryWorkspace extends Page
         return is_string($name) && trim($name) !== '' ? trim($name) : __('Gallery artworks');
     }
 
-    public function setViewMode(string $mode): void
-    {
-        if (in_array($mode, ['list', 'grid', 'dense'], true)) {
-            $this->viewMode = $mode;
-        }
-    }
-
     /** Toggle one visible Artwork using the same explicit row-selection action as Journals. */
     public function toggleArtworkSelection(int $artworkId): void
     {

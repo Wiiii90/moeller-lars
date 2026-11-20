@@ -15,9 +15,11 @@
      role="group" aria-label="{{ __($label) }}">
     @foreach ($modes as $mode)
         <button
-            class="admin-action media-workspace__view-option {{ $viewMode === $mode['value'] ? 'is-active' : '' }}"
+            class="admin-action media-workspace__view-option"
             type="button"
-            wire:click="setViewMode('{{ $mode['value'] }}')"
+            x-on:click="viewMode = @js($mode['value'])"
+            x-bind:class="{ 'is-active': viewMode === @js($mode['value']) }"
+            x-bind:aria-pressed="(viewMode === @js($mode['value'])).toString()"
             aria-label="{{ __($mode['label']) }}"
             title="{{ __($mode['label']) }}"
             aria-pressed="{{ $viewMode === $mode['value'] ? 'true' : 'false' }}"

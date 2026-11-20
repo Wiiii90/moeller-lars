@@ -1,4 +1,8 @@
-<section class="media-workspace__library admin-visual-stage-followup" aria-label="Media library">
+<section class="media-workspace__library admin-visual-stage-followup admin-view-switcher"
+    aria-label="Media library"
+    data-admin-view-mode="{{ $viewMode }}"
+    x-data="{ viewMode: $wire.entangle('viewMode') }"
+    x-bind:data-admin-view-mode="viewMode">
     @php
         $selectableAssetIds = collect($assets)
             ->filter(static fn (array $asset): bool => ($asset['selectable'] ?? false) === true)
@@ -138,8 +142,7 @@
     </x-admin.controls>
 
     @if ($assets !== [])
-        @if ($viewMode === 'grid')
-            <section class="media-workspace__grid" aria-label="Media assets grid">
+            <section class="media-workspace__grid" data-admin-view-panel="grid" aria-label="Media assets grid">
                 @foreach ($assets as $asset)
                     @php($selected = in_array($asset['id'], $selectedAssets, true))
                     @php($displayFilename = pathinfo($asset['filename'], PATHINFO_FILENAME))
@@ -231,13 +234,11 @@
                     </article>
                 @endforeach
             </section>
-        @else
-            <x-admin.table class="media-workspace__table-wrap {{ $viewMode === 'dense' ? 'is-dense' : '' }}">
+            <x-admin.table class="media-workspace__table-wrap" data-admin-view-panel="table"
+                x-bind:class="{ 'is-dense': viewMode === 'dense' }">
                 <table class="media-workspace__table">
                     <colgroup>
-                        @if ($viewMode === 'list')
-                            <col class="media-workspace__col-preview">
-                        @endif
+                        <col class="media-workspace__col-preview admin-view-list-only">
                         <col class="media-workspace__col-media">
                         <col class="media-workspace__col-type admin-table__yield--minimal">
                         <col class="media-workspace__col-size admin-table__yield--narrow">
@@ -248,9 +249,7 @@
                     </colgroup>
                     <thead>
                         <tr>
-                            @if ($viewMode === 'list')
-                                <th scope="col" class="media-workspace__thumb-head">{{ __('Preview') }}</th>
-                            @endif
+                            <th scope="col" class="media-workspace__thumb-head admin-view-list-only">{{ __('Preview') }}</th>
                             <th scope="col" class="media-workspace__media-head">{{ __('Media') }}</th>
                             <th scope="col" class="media-workspace__type-head admin-table__yield--minimal">{{ __('Type') }}</th>
                             <th scope="col" class="media-workspace__size-head admin-table__yield--narrow">{{ __('Size') }}</th>
@@ -281,8 +280,7 @@
                             @php($selected = in_array($asset['id'], $selectedAssets, true))
                             @php($displayFilename = pathinfo($asset['filename'], PATHINFO_FILENAME))
                             <tr class="{{ $selected ? 'is-selected' : '' }}" wire:key="media-row-{{ $asset['id'] }}">
-                                @if ($viewMode === 'list')
-                                    <td class="media-workspace__thumb">
+                                    <td class="media-workspace__thumb admin-view-list-only">
                                         <button
                                             type="button"
                                             wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })"
@@ -298,7 +296,6 @@
                                             @endif
                                         </button>
                                     </td>
-                                @endif
                                 <td class="media-workspace__identity media-workspace__media-cell">
                                     <button
                                         class="media-workspace__filename-button"
@@ -379,7 +376,6 @@
                     </tbody>
                 </table>
             </x-admin.table>
-        @endif
     @elseif ($libraryHasRecords)
         <x-admin.empty-state title="No matching files">
             <p>{{ __('Adjust the search or filters.') }}</p>

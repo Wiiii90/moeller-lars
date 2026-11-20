@@ -189,16 +189,6 @@ final class ListMediaAssets extends Page
         $this->refreshStorageOverviewAfterMutation();
     }
 
-    public function setViewMode(string $mode): void
-    {
-        if (! in_array($mode, self::VIEW_MODES, true)) {
-            return;
-        }
-
-        $this->normalizeSelection();
-        $this->viewMode = $mode;
-    }
-
     public function toggleAssetSelection(int $assetId): void
     {
         $this->normalizeSelection();
