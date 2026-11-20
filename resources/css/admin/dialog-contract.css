@@ -44,11 +44,11 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     inset: 0 !important;
     box-sizing: border-box;
     min-height: 0 !important;
-    /* Filament's 1fr/auto/3fr tracks center an auto-height window by its
-     * current height. A conditional field changes that height, moving the
-     * dialog. Keep Filament's native row 2, but anchor its top in the shared
-     * admin content frame; the last track absorbs remaining space. */
-    grid-template-rows: 0 auto minmax(0, 1fr) !important;
+    /* Center Filament's native second-row window inside the usable Main
+     * frame, below the topbar and inside its own viewport insets. Equal
+     * flexible tracks share remaining space above and below compact forms.
+     * A tall dialog consumes the available height and scrolls internally. */
+    grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr) !important;
     overflow: hidden !important;
     overscroll-behavior: contain;
     padding-block: calc(var(--admin-dialog-layer-block-start) + 1rem) 1rem !important;
