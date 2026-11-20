@@ -13,6 +13,22 @@
     @class(['admin-help', 'admin-help--toolbar' => $toolbar])
     x-data="{
         open: false,
+        lastPointerType: null,
+        toolbar: @js($toolbar),
+        toggleFromTrigger(event) {
+            if (this.open) this.hide();
+            else this.show();
+
+            // A mouse click closing a toolbar tooltip must not leave its
+            // button focused. Otherwise a later modifier key may activate
+            // :focus-visible after the tooltip is gone. Keyboard dismissal
+            // retains focus and its accessible focus indicator.
+            if (this.toolbar && this.lastPointerType === 'mouse'
+                && event.detail > 0 && ! this.open) {
+                event.currentTarget.blur();
+            }
+            this.lastPointerType = null;
+        },
         show() {
             const panel = this.$refs.panel;
             if (! panel || panel.matches(':popover-open')) return;
@@ -62,7 +78,8 @@
         aria-describedby="{{ $tooltipId }}"
         aria-controls="{{ $tooltipId }}"
         x-bind:aria-expanded="open.toString()"
-        x-on:click.stop="open ? hide() : show()"
+        x-on:pointerdown="lastPointerType = $event.pointerType"
+        x-on:click.stop="toggleFromTrigger($event)"
     >
         <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M9 18h6M10 22h4M8.4 14.4A6 6 0 1 1 15.6 14.4C14.6 15.2 14 16 14 17h-4c0-1-.6-1.8-1.6-2.6Z" />

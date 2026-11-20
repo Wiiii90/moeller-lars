@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 28 (active)  
-**State:** Artist accepted page navigation and reported a conflicting redundant Space-drag shortcut. Space gesture removed from shared Live Preview source; browser review pending.
+**State:** Shared Help toolbar mouse-dismissal now clears residual button focus without disabling keyboard focus; real-browser review pending.
 
 ## Ownership and current decisions
 
@@ -55,3 +55,12 @@
 - `resources/css/admin/live-preview.css` updates the existing pan-layer comment; geometry, device controls, zoom input, and touch behavior are unchanged.
 - Isolated JavaScript parse/gesture simulation: Space/left-pointer input ignored, middle-button drag scrolls the actual Public document beyond the initially visible device area, iframe keyboard listeners absent, wheel listener and gesture cleanup preserved.
 - Full build, browser test, touch test, suite, CI and deployment were **not run**. Review in General/Gallery with keyboard Space, middle-button drag at fitted and enlarged sizes, native wheel scroll, Shift-wheel zoom and Public navigation clicks.
+
+
+## 2026-11-21: Mouse-dismissal focus cleanup for shared toolbar Help
+
+- Artist reports that hovering the bulb, clicking it to close the tooltip, then pressing Shift activates a persistent visible rectangular outline around the now-closed Help button.
+- Root cause: the shared `x-admin.help` trigger retains native button focus after the pointer-triggered close. Pressing a keyboard modifier can activate the browser's `:focus-visible` heuristic. The normal Help focus outline and shared Preview toolbar focus border are desirable **for keyboard-driven focus**, but should not linger after dismissal by mouse.
+- `resources/views/components/admin/help.blade.php`: use one centralized opt-in `toolbar` flag already carried by the canonical Help component. Track the input pointer type on the trigger; after a real **mouse** click that closes the popover, blur that closed trigger so a later Shift key cannot reveal residual focus. A keyboard-triggered click (`detail === 0`), touch click, and all non-toolbar Help controls retain their existing focus behavior. Mouse click to reopen does not blur and remains operable.
+- Do **not** change `Shift + wheel` zoom, general `:focus-visible` styling, or shared Stage toolbar CSS. No duplicated Preview-local tooltip logic.
+- In-memory Alpine object parsing and behavior simulation passed for toolbar mouse-close/mouse-open, keyboard-close, touch-close and ordinary field Help. Browser reproduction on actual Chromium/Firefox and keyboard accessibility acceptance remain pending; no suite, build, Continuous Integration or deployment was run.

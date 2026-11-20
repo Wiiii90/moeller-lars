@@ -12,7 +12,7 @@
 | Dev Worker 8 | 15 | Active — Add actions across search/toolbars and shared Add-row now use canonical plain Plus; browser review pending | Central Admin Create dialog controls, shared icon grammar and media picker; no deployment | [dev-8.md](workers/dev-8.md) |
 
 
-| Dev Worker 9 | 28 | Space-drag removed centrally; middle-button-only pan and native Space restored; browser review pending | General/Gallery Preview interaction, zoom and Help; preserve Dev Worker 7 device controls and Gallery Focus | [dev-9.md](workers/dev-9.md) |
+| Dev Worker 9 | 28 | Shared toolbar Help mouse-focus release source-corrected; keyboard focus preserved, browser review pending | General/Gallery Live Preview controls and tooltip focus behavior; preserve Dev Worker 7 device controls and Gallery Focus | [dev-9.md](workers/dev-9.md) |
 | Dev Worker 10 | 26 | Active — rights-processing Validation readiness and completion | Media rights preparation/delivery pipeline, queue-worker integration requirements, current Validation activation evidence and safe rollout handoff; no deployments or artist-data changes without explicit approval | [dev-10.md](workers/dev-10.md) |
 
 | Dev Worker 11 | 27 | Active — progressive Gallery placeholder and loading indicator source-fixed; browser acceptance pending | Progressive Public Gallery server batches, image loading UI and viewer sequence; coordinate with Dev Worker 4 | [dev-11.md](workers/dev-11.md) |
