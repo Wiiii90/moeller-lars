@@ -24,10 +24,21 @@
     @endif
     <x-admin.stage-tool-row label="Live preview controls">
         <div class="admin-stage-tool-group admin-live-preview__device-profile" role="group" aria-label="Device preview">
-            <select class="admin-form-control admin-live-preview__width-select" x-model="selectedProfile"
-                x-on:change="selectProfile($event.target.value)"
-                aria-label="Device and viewport resolution"
-                x-bind:title="viewportSize().join(' × ') + ' layout pixels'">
+            {{-- The canonical native Select remains the only device chooser.
+                 Its icon-sized presentation matches the shared Stage tabs. --}}
+            <label class="admin-action admin-live-preview__device-trigger">
+                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceDesktop->mini()"
+                    x-show="previewDevice === 'desktop'" x-cloak aria-hidden="true" />
+                <x-filament::icon icon="heroicon-o-device-tablet"
+                    x-show="previewDevice === 'tablet'" x-cloak aria-hidden="true" />
+                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceMobile->mini()"
+                    x-show="previewDevice === 'mobile'" x-cloak aria-hidden="true" />
+                <x-filament::icon icon="heroicon-m-chevron-down"
+                    class="admin-live-preview__device-caret" aria-hidden="true" />
+                <select class="admin-form-control admin-live-preview__width-select" x-model="selectedProfile"
+                    x-on:change="selectProfile($event.target.value)"
+                    x-bind:aria-label="'Device and viewport resolution: ' + selectedProfileLabel()"
+                    x-bind:title="selectedProfileLabel()">
                 @foreach (['desktop' => 'Computers', 'tablet' => 'Tablets', 'mobile' => 'Phones'] as $category => $label)
                     <optgroup label="{{ $label }}">
                         @foreach (\App\Domain\Content\PreviewDeviceProfiles::all() as $id => $profile)
@@ -37,7 +48,8 @@
                         @endforeach
                     </optgroup>
                 @endforeach
-            </select>
+                </select>
+            </label>
             <button class="admin-action admin-stage-tool-icon" type="button"
                 x-on:click="rotateViewport()"
                 x-bind:disabled="selectedProfile === 'current-window'"
@@ -46,10 +58,6 @@
                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" />
             </button>
         </div>
-        <span class="admin-live-preview__issue" x-show="horizontalOverflow" x-cloak
-            title="The page is wider than the selected device width" aria-label="Horizontal page overflow" role="status">
-            <x-filament::icon icon="heroicon-o-exclamation-circle" />
-        </span>
         <div class="admin-stage-tool-group admin-live-preview__zoom-group" role="group" aria-label="Preview zoom">
             <button class="admin-action admin-stage-tool-icon" type="button"
                 x-on:click="changeZoom(-0.25)" x-bind:disabled="zoom <= minZoom"
@@ -93,6 +101,10 @@
     <div x-ref="viewport" class="admin-live-preview__viewport" tabindex="0"
         x-on:pointerenter="pointerInside = true"
         x-on:pointerleave="pointerInside = false; cancelSpacePan()">
+        <span class="admin-live-preview__issue" x-show="horizontalOverflow" x-cloak
+            title="The page is wider than the selected device width" aria-label="Horizontal page overflow" role="status">
+            <x-filament::icon icon="heroicon-o-exclamation-circle" />
+        </span>
         <div x-ref="surface" wire:ignore.self class="admin-live-preview__surface">
             <div x-ref="page" wire:ignore.self class="admin-live-preview__page"
                 x-bind:class="{

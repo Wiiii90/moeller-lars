@@ -17,23 +17,27 @@
     grid-template-rows: auto minmax(0, 1fr);
 }
 .admin-live-preview__title { min-width: 0; line-height: 1.2; }
-/* Gallery and General use one toolbar grammar. Three deliberate groups:
- * a native Admin Select + rotate, a compact zoom cluster, and preview actions.
- * All controls keep their real handlers; only hitboxes and alignment change. */
+/* Shared Gallery/General Preview: one row with equal elastic end tracks,
+ * a centered zoom cluster and the exact baseline of the Stage-tab controls.
+ * The real grouped native Select occupies one icon-sized tab trigger. */
 .admin-live-preview .admin-stage-tool-row {
-    --admin-live-preview-tool-size: 1.875rem;
-    display: flex;
+    --admin-live-preview-tool-size: 2rem;
+    --admin-live-preview-zoom-label-width: 3rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
     min-width: 0;
-    min-height: 2.65rem;
-    flex-wrap: nowrap;
+    min-height: calc(var(--admin-control-height) + .35rem);
+    column-gap: .2rem;
     align-items: center;
-    justify-content: flex-start;
-    gap: .65rem;
-    padding: .28rem 0 .4rem;
+    padding: 0 0 .35rem;
 }
 .admin-live-preview .admin-stage-tool-group {
+    display: flex;
+    width: max-content;
     min-width: 0;
-    gap: .16rem;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: .125rem;
     align-items: center;
 }
 .admin-live-preview .admin-stage-tool-icon {
@@ -63,76 +67,70 @@
     color: var(--admin-text);
 }
 .admin-live-preview__device-profile {
-    display: flex;
-    width: min(100%, 14rem);
-    flex: 0 1 14rem;
-    min-width: 0;
-    gap: .3rem !important;
-    align-items: center;
+    justify-self: start;
 }
-.admin-live-preview__width-select {
+.admin-live-preview__device-trigger {
     box-sizing: border-box;
-    display: block;
-    width: 100%;
-    min-width: 0;
-    height: 2rem;
-    min-height: 2rem;
-    flex: 1 1 auto;
-    padding: 0 .45rem;
-    font-size: .72rem;
-    line-height: 1.2;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    position: relative;
+    display: grid;
+    width: var(--admin-live-preview-tool-size);
+    height: var(--admin-live-preview-tool-size);
+    min-width: var(--admin-live-preview-tool-size);
+    flex: 0 0 var(--admin-live-preview-tool-size);
+    padding: 0;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: .2rem;
+    background: transparent;
+    color: var(--admin-text);
+    cursor: pointer;
 }
-.admin-live-preview__width-select:focus-visible {
-    border-bottom-color: var(--admin-accent) !important;
-    outline: 2px solid var(--admin-accent);
-    outline-offset: 1px;
+.admin-live-preview__device-trigger > svg:not(.admin-live-preview__device-caret) {
+    width: 1rem;
+    height: 1rem;
+}
+.admin-live-preview__device-caret {
+    position: absolute;
+    right: .02rem;
+    bottom: .03rem;
+    width: .45rem;
+    height: .45rem;
+    pointer-events: none;
+}
+.admin-live-preview__device-trigger:hover,
+.admin-live-preview__device-trigger:focus-within {
+    border-color: var(--admin-accent);
+    background: var(--admin-subtle);
+    outline: none;
+}
+.admin-live-preview__device-trigger > .admin-live-preview__width-select {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    appearance: none;
+    cursor: pointer;
 }
 .admin-live-preview__zoom-group {
-    display: flex;
-    min-height: 2rem;
-    flex: 0 0 auto;
-    gap: 0 !important;
-    align-items: center;
-    padding-inline: .12rem;
-    border: 1px solid var(--admin-line);
-    border-radius: .2rem;
+    justify-self: center;
 }
 .admin-live-preview__actions-group {
-    display: flex;
-    flex: 0 0 auto;
-    gap: .12rem !important;
-    align-items: center;
-    padding-inline-start: .55rem;
-    border-inline-start: 1px solid var(--admin-line);
+    justify-self: end;
 }
-@container admin-live-preview (max-width: 28rem) {
-    /* Under genuine content pressure keep every operation visible in two
-     * evenly aligned rows, instead of crowding icons or hiding the zoom readout. */
+/* The panel can become narrower than a tablet Preview; shrink actual hit
+ * tracks instead of wrapping or deleting functionality. */
+@container admin-live-preview (max-width: 19rem) {
     .admin-live-preview .admin-stage-tool-row {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        grid-template-rows: 2rem 2rem;
-        gap: .2rem .3rem;
+        --admin-live-preview-tool-size: 1.5rem;
+        --admin-live-preview-zoom-label-width: 2.5rem;
+        column-gap: .1rem;
     }
-    .admin-live-preview__device-profile {
-        grid-column: 1 / -1;
-        grid-row: 1;
-        width: min(100%, 14rem);
-        max-width: 100%;
-        justify-self: start;
-    }
-    .admin-live-preview__zoom-group {
-        grid-column: 1;
-        grid-row: 2;
-        justify-self: start;
-    }
-    .admin-live-preview__actions-group {
-        grid-column: 2;
-        grid-row: 2;
-        justify-self: end;
-    }
+    .admin-live-preview .admin-stage-tool-group { gap: 0; }
 }
 .admin-live-preview__viewport {
     box-sizing: border-box;
@@ -191,13 +189,17 @@
      * nevertheless an independent CSS responsive container. */
     container: staged-preview / inline-size;
 }
-/* Surface genuine responsive overflow only as a small toolbar indicator. */
+/* The overflow diagnostic must not displace toolbar actions. */
 .admin-live-preview__issue {
+    position: absolute;
+    z-index: 4;
+    top: .3rem;
+    right: .3rem;
     display: inline-grid;
-    width: 1.15rem;
-    height: 1.5rem;
-    flex: 0 0 1.15rem;
+    width: 1.4rem;
+    height: 1.4rem;
     place-items: center;
+    background: var(--admin-surface);
     color: var(--admin-muted);
     cursor: help;
 }
@@ -217,11 +219,11 @@
 }
 .admin-live-preview__zoom-value {
     display: grid;
-    width: 3rem;
-    height: 1.875rem;
-    min-width: 3rem;
+    width: var(--admin-live-preview-zoom-label-width);
+    height: var(--admin-live-preview-tool-size);
+    min-width: var(--admin-live-preview-zoom-label-width);
     padding: 0;
-    flex: 0 0 3rem;
+    flex: 0 0 var(--admin-live-preview-zoom-label-width);
     place-items: center;
     border: 1px solid transparent;
     border-radius: .15rem;

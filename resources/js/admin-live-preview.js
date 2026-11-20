@@ -106,6 +106,9 @@ export function adminLivePreview(element) {
             this.saveDevicePreference()
             this.changeViewport()
         },
+        selectedProfileLabel() {
+            return profiles[this.selectedProfile]?.label ?? 'Current window'
+        },
         viewportSize() {
             const profile = profiles[this.selectedProfile] ?? profiles['current-window']
             if (profile.width === null || profile.height === null) {

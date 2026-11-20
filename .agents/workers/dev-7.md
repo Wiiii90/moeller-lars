@@ -118,6 +118,12 @@
 - Updated the focused General Feature regression to assert exact choices, default, rejection of the retired value, persistence and Title independence. Removed the German translation key for the retired option. No CSS or navigation engine changes are required.
 - This is source-only: migration execution, tests, browser acceptance, build, CI and deployment were not performed.
 
+## Shared Live Preview Toolbar correction (2026-11-20)
+- Artist screenshot showed the shared Gallery/General Preview toolbar wrapped to two rows, a 14rem-wide profile selector detached from the Stage-tab baseline, drifting zoom and right-side actions, and an unwanted actions separator. The shared `x-admin.live-preview` template and its central stylesheet/Alpine controller are the sole owners; Gallery and General retain their existing consumers.
+- Redesigned the toolbar as one three-column grid with equal flexible end tracks: left grouped native device-profile Select as a tab-style device icon with small caret and adjacent Rotate button; centered Zoom Out / 100% / Zoom In; right Pan and Open Interactive Preview. The actual native select and profile optgroups remain, with complete tooltip and accessible selected-profile label; no custom select/dropdown implementation or second profile state.
+- Removed the two-row container breakpoint and actions separator. Aligned the bottom rule/padding and button height with shared Stage tabs. At narrow component widths, the actual control and zoom label widths compact rather than wrapping; the conditional page-overflow warning is now an overlay inside the viewport instead of a toolbar-width consumer.
+- Retained all original device, rotation, zoom, pan, preview navigation, session preference and iframe-fit behavior. In-browser geometry, narrow Gallery/General Preview and keyboard/native dropdown operation remain **unverified**. No tests, build, CI or deployment were executed.
+
 ## Verification and open gates
 - Reviewed published GitHub source and commit file lists. **No test execution, no local/browser session, no CI and no deploy.** Correctness in a real browser remains unverified.
 - In the next authorized browser pass, exercise Show/Hide, Responsive Size, Menu divider and tab switching while confirming that Preview remains visible and refreshed and the Site icon picker searches, scrolls, escapes clipping and closes correctly.

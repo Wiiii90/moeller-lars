@@ -9,7 +9,7 @@
 | Dev Worker 5 | 19 | Source cleanup committed; isolated migration and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom types and Hero Artworks template; preserve Gallery/Exhibitions, retire Home-only editors | [dev-5.md](workers/dev-5.md) |
 
 | Dev Worker 6 | 16 | Active — targeted source corrections committed; local Preview/browser acceptance outstanding | Home Hero: Dummy Galleries, candidate ranking/selection, Stage/Settings, public resolver, shared Create dialog; no tests/deployment | [dev-6.md](workers/dev-6.md) |
-| Dev Worker 7 | 18 | Source-updated — Menu Automatic retired, three explicit choices; corrective migration/browser acceptance pending | Appearance Global/Title/Menu/Page/Legal, preview geometry/persistence, Regional Formats hints | [dev-7.md](workers/dev-7.md) |
+| Dev Worker 7 | 18 | Source-updated — shared General/Gallery one-row Live Preview toolbar; browser acceptance pending | General Appearance and shared Gallery/General preview toolbar, presentation geometry/persistence | [dev-7.md](workers/dev-7.md) |
 | Dev Worker 8 | 15 | Active — central Admin dialog drag/resize source implemented; browser acceptance pending | Shared modal geometry, draggable header, resize grip, viewport constraints, native Filament lifecycle; Media Select remains paginated | [dev-8.md](workers/dev-8.md) |
 
 | Dev Worker 9 | 21 | Active — submenu hover countdown committed; browser acceptance pending | Public cyclic inline navigation including timed underline and child Back; shared General/Pages remain with current owners | [dev-9.md](workers/dev-9.md) |
