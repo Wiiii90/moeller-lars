@@ -1,8 +1,9 @@
-// Only the first Gallery images expose src in initial HTML. Later images
-// keep their canonical URLs in data-gallery-src until close to the viewport.
-// Native loading=lazy remains the fallback without IntersectionObserver.
+// The first Gallery images expose src in initial HTML. Defer subsequent URLs
+// until close to the viewport, prioritizing the topmost Artwork when candidates
+// are equally close. Native lazy loading remains the observer-free fallback.
 export const GALLERY_PREFETCH_LIMIT = 2;
-export const GALLERY_PREFETCH_MARGIN = '960px 0px';
+const GALLERY_PREFETCH_MIN_PX = 960;
+export const GALLERY_PREFETCH_MARGIN = `${GALLERY_PREFETCH_MIN_PX}px 0px`;
 
 export function galleryImageDistance(image, viewportHeight) {
     const bounds = image.getBoundingClientRect();
@@ -66,12 +67,15 @@ function revealDecodedImage(image, key, signal) {
     };
     if (image.naturalWidth <= 0 || typeof image.decode !== 'function') {
         done();
-        return;
+        return null;
     }
     try {
-        image.decode().then(done, done);
+        // Callers can keep a speculative request's budget occupied until
+        // the actual image is ready to paint, not merely until bytes arrive.
+        return image.decode().then(done, done);
     } catch {
         done();
+        return null;
     }
 }
 
@@ -220,20 +224,32 @@ export function initializeGalleryImageLoading(root = document) {
 
     const lifetime = new AbortController();
     const allImages = new Set(images);
+    const documentOrder = new Map(images.map((image, index) => [image, index]));
     let releaseBuffered = () => {};
+    const decoded = (image) => {
+        const completion = revealDecodedImage(image, 'galleryImageState', lifetime.signal);
+        if (completion) {
+            void completion.then(() => releaseBuffered(image));
+        } else {
+            releaseBuffered(image);
+        }
+    };
     const settled = (event) => {
         if (lifetime.signal.aborted || !allImages.has(event.target)) return;
         const image = event.target;
-        if (event.type === 'error') image.dataset.galleryImageState = 'error';
-        else revealDecodedImage(image, 'galleryImageState', lifetime.signal);
-        releaseBuffered(image);
+        if (event.type === 'error') {
+            image.dataset.galleryImageState = 'error';
+            releaseBuffered(image);
+        } else {
+            decoded(image);
+        }
     };
     root.addEventListener('load', settled, { capture: true, signal: lifetime.signal });
     root.addEventListener('error', settled, { capture: true, signal: lifetime.signal });
 
     for (const image of images) {
         if (image.src && !image.dataset.gallerySrc && image.complete) {
-            revealDecodedImage(image, 'galleryImageState', lifetime.signal);
+            decoded(image);
         }
     }
 
@@ -300,21 +316,24 @@ export function initializeGalleryImageLoading(root = document) {
         image.src = image.dataset.gallerySrc;
         delete image.dataset.gallerySrc;
 
-        if (image.complete) {
-            revealDecodedImage(image, 'galleryImageState', lifetime.signal);
-            finish(image);
-        }
+        if (image.complete) decoded(image);
     };
 
     const pump = () => {
         while (!disposed && speculative.size < GALLERY_PREFETCH_LIMIT && nearby.size > 0) {
             const viewportHeight = globalThis.window?.innerHeight || 800;
             const image = [...nearby].sort((a, b) =>
-                galleryImageDistance(a, viewportHeight) - galleryImageDistance(b, viewportHeight))[0];
+                galleryImageDistance(a, viewportHeight) - galleryImageDistance(b, viewportHeight)
+                    || documentOrder.get(a) - documentOrder.get(b))[0];
             request(image);
         }
     };
 
+    // Keep the next viewport plus a modest runway warm at large screen sizes,
+    // without fetching the complete Gallery or changing the DOM/viewer order.
+    // On smaller screens the original 960px minimum remains in effect.
+    const viewportHeight = globalThis.window?.innerHeight || 800;
+    const lookahead = Math.max(GALLERY_PREFETCH_MIN_PX, Math.ceil(viewportHeight * 1.2));
     const bufferObserver = new IntersectionObserver((entries) => {
         if (disposed) return;
         for (const entry of entries) {
@@ -323,12 +342,15 @@ export function initializeGalleryImageLoading(root = document) {
             else nearby.delete(entry.target);
         }
         pump();
-    }, { rootMargin: GALLERY_PREFETCH_MARGIN });
+    }, { rootMargin: `${lookahead}px 0px` });
 
     const visibleObserver = new IntersectionObserver((entries) => {
         if (disposed) return;
-        for (const entry of entries) {
-            if (entry.isIntersecting) request(entry.target, true);
+        // Intersection callbacks need not be delivered in visual order. When
+        // several Artwork cards enter together, start their URLs top-first.
+        for (const entry of entries.filter((candidate) => candidate.isIntersecting)
+            .sort((a, b) => documentOrder.get(a.target) - documentOrder.get(b.target))) {
+            request(entry.target, true);
         }
         // Scrolled-to images bypass the speculative budget; freed slots
         // remain available to buffer the next unseen artwork.
