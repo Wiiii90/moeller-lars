@@ -220,7 +220,8 @@ export function initializeGalleryImageLoading(root = document) {
         disposeGalleryHero();
     };
     const images = Array.from(root.querySelectorAll('.artwork-card__image'));
-    if (images.length === 0) return disposeFitted;
+    const streamedGallery = root.querySelector('[data-gallery-infinite]');
+    if (images.length === 0 && !streamedGallery) return disposeFitted;
 
     const lifetime = new AbortController();
     const allImages = new Set(images);
@@ -258,7 +259,7 @@ export function initializeGalleryImageLoading(root = document) {
         disposeFitted();
     };
     const deferred = images.filter(image => image.dataset.gallerySrc);
-    if (deferred.length === 0) return cleanup;
+    if (deferred.length === 0 && !streamedGallery) return cleanup;
 
     // HTML keeps gated images hidden for the no-JS <noscript> fallback.
     // Reveal before observing: intrinsic width/height reserve layout space.
@@ -268,13 +269,23 @@ export function initializeGalleryImageLoading(root = document) {
     }
 
     if (typeof globalThis.IntersectionObserver !== 'function') {
-        // Degrade to native lazy loading, rather than leaving blank images.
-        for (const image of deferred) {
+        // Degrade to native lazy loading, including appended server batches.
+        const attachNative = (image) => {
+            allImages.add(image);
+            if (!image.dataset.gallerySrc) return;
+            image.hidden = false;
+            image.loading = 'lazy';
             image.src = image.dataset.gallerySrc;
             delete image.dataset.gallerySrc;
             image.dataset.galleryImageState = 'pending';
-            if (image.complete) revealDecodedImage(image, 'galleryImageState', lifetime.signal);
-        }
+            if (image.complete) decoded(image);
+        };
+        deferred.forEach(attachNative);
+        root.addEventListener('gallery:items-appended', (event) => {
+            event.detail.elements.forEach((element) => {
+                element.querySelectorAll('.artwork-card__image').forEach(attachNative);
+            });
+        }, { signal: lifetime.signal });
         return cleanup;
     }
 
@@ -367,6 +378,26 @@ export function initializeGalleryImageLoading(root = document) {
         bufferObserver.observe(image);
         visibleObserver.observe(image);
     }
+
+    // Register newly appended server-rendered cards with this same image
+    // lifecycle. Do not initialize a second set of observers on each batch.
+    root.addEventListener('gallery:items-appended', (event) => {
+        for (const element of event.detail.elements) {
+            for (const image of element.querySelectorAll('.artwork-card__image')) {
+                allImages.add(image);
+                documentOrder.set(image, documentOrder.size);
+                if (!image.dataset.gallerySrc) {
+                    if (image.complete) decoded(image);
+                    continue;
+                }
+                owned.add(image);
+                image.hidden = false;
+                image.dataset.galleryImageState = 'deferred';
+                bufferObserver.observe(image);
+                visibleObserver.observe(image);
+            }
+        }
+    }, { signal: lifetime.signal });
 
     return () => {
         disposed = true;

@@ -5,22 +5,14 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath(app(\App\Routing\SiteNodeRoute::class)->path($section)))
 
 @section('content')
-    @php
-        $divider = \App\Domain\Artwork\GalleryPresentation::divider($category);
-        $galleryOffsets = \App\Domain\Artwork\GalleryPresentation::indexCardOffsets($artworks, $category);
-        $galleryGaps = \App\Domain\Artwork\GalleryPresentation::indexCardGapSteps($artworks, $category);
-    @endphp
     <x-public.page-heading :section="$section" />
-    <div class="artwork-list{{ $divider !== 'none' ? ' artwork-list--divided' : '' }}" data-artwork-viewer-sequence data-gallery-image-buffer>
-        @foreach ($artworks as $artwork)
-            <x-artwork-card :artwork="$artwork" :media="$media" :eager="$loop->index < 2" :priority="$loop->first" :gallery-buffered="$loop->index >= 2"
-                :gallery-index="true" :gallery-shift="$galleryOffsets[(int) $artwork->getKey()] ?? 0"
-                :gallery-gap="$galleryGaps[(int) $artwork->getKey()] ?? 0" />
-            @if ($divider !== 'none' && ! $loop->last)
-                {{-- Same canonical stroke as Custom Page / Home dividers.
-                     Exactly one separator between adjacent visible artworks. --}}
-                <div class="custom-page__divider custom-page__divider--{{ $divider }} artwork-list__divider artwork-list__divider--gap-{{ $galleryGaps[(int) $artwork->getKey()] ?? 0 }}" aria-hidden="true"></div>
-            @endif
-        @endforeach
+    <div class="artwork-list{{ $divider !== 'none' ? ' artwork-list--divided' : '' }}"
+        data-artwork-viewer-sequence data-gallery-image-buffer data-gallery-infinite
+        data-gallery-viewer-manifest="{{ request()->fullUrlWithQuery(['gallery_viewer' => '1']) }}">
+        @include('pages.artworks.partials.batch')
     </div>
+    @if ($hasMore)
+        <a class="gallery-load-more" data-gallery-load-more
+            href="{{ request()->fullUrlWithQuery(['gallery_page' => $page + 1]) }}">Load more artworks</a>
+    @endif
 @endsection

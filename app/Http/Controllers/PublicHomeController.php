@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\Content\SitePreviewContext;
 use App\Models\SiteSection;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 
 final class PublicHomeController extends Controller
@@ -14,7 +15,7 @@ final class PublicHomeController extends Controller
         private readonly SitePreviewContext $preview,
     ) {}
 
-    public function show(): View|RedirectResponse
+    public function show(): View|RedirectResponse|JsonResponse
     {
         $query = SiteSection::query()->where('is_home', true);
         $this->preview->constrainSectionQuery($query);

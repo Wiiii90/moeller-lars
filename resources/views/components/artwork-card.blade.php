@@ -1,10 +1,11 @@
 @props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => null, 'heroNavigation' => false, 'enableViewer' => null, 'eager' => false, 'priority' => null, 'galleryBuffered' => false, 'allowVideoSound' => false, 'showMediaCredits' => null, 'showMediaCopyright' => null, 'captionLayout' => null, 'galleryIndex' => false, 'galleryShift' => 0, 'galleryGap' => 0, 'heroFitted' => false])
 
 @php
-    $originalUrl = $media->originalUrl($artwork);
-    $altText = $media->altText($artwork);
-    $kind = $media->kind($artwork);
-    $mime = $media->mimeType($artwork);
+    $viewerItem = app(\App\Domain\Artwork\PublicArtworkViewerItem::class)->forArtwork($artwork, $media, $enableViewer);
+    $originalUrl = $viewerItem['src'];
+    $altText = $viewerItem['alt'];
+    $kind = $viewerItem['kind'];
+    $mime = $viewerItem['mime'];
     $isVideo = $kind === 'video';
     $thumbnail = $isVideo ? null : $media->thumbnailVariant($artwork);
     $imageUrl = $thumbnail ? $media->variantUrl($thumbnail) : null;
@@ -24,8 +25,8 @@
     $viewerActive = $enableViewer === null ? $presentation::viewerEnabled($category) : (bool) $enableViewer;
     // Hero keeps its independent viewer policy. Gallery cyclic navigation
     // never leaks into the Gallery Hero viewer sequence.
-    $viewerNavigation = $enableViewer !== null || $presentation::viewerNavigationEnabled($category);
-    $viewerCyclic = $enableViewer === null && $presentation::viewerNavigationCyclic($category);
+    $viewerNavigation = $viewerItem['navigation'];
+    $viewerCyclic = $viewerItem['cyclic'];
     $detailPageEnabled = $presentation::artworkPagesEnabled($category);
     $configuration = \App\Domain\Artwork\ArtworkInformation::effective($category, $artwork);
     if ($showDetails !== null || $showMediaCredits !== null || $showMediaCopyright !== null) {
@@ -89,14 +90,14 @@
             href="{{ $detailPageEnabled ? $detailUrl : $originalUrl }}"
             data-artwork-viewer-item
             data-artwork-viewer-trigger
-            data-viewer-key="{{ $artwork->slug }}"
-            data-viewer-analytics-key="{{ $artwork->analytics_key }}"
-            data-viewer-kind="{{ $kind }}"
-            data-viewer-mime="{{ $mime }}"
-            data-viewer-src="{{ $originalUrl }}"
-            data-viewer-alt="{{ $altText }}"
-            data-viewer-title="{{ $artwork->title }}"
-            data-viewer-page="{{ $detailPageEnabled ? $detailUrl : '' }}"
+            data-viewer-key="{{ $viewerItem['key'] }}"
+            data-viewer-analytics-key="{{ $viewerItem['analyticsKey'] }}"
+            data-viewer-kind="{{ $viewerItem['kind'] }}"
+            data-viewer-mime="{{ $viewerItem['mime'] }}"
+            data-viewer-src="{{ $viewerItem['src'] }}"
+            data-viewer-alt="{{ $viewerItem['alt'] }}"
+            data-viewer-title="{{ $viewerItem['title'] }}"
+            data-viewer-page="{{ $viewerItem['page'] ?? '' }}"
             data-viewer-navigation="{{ $viewerNavigation ? '1' : '0' }}"
             data-viewer-cyclic="{{ $viewerCyclic ? '1' : '0' }}"
             aria-label="Open {{ $artwork->title }} in media viewer"

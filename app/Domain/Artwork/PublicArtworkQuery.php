@@ -16,17 +16,58 @@ class PublicArtworkQuery
 {
     public function __construct(private readonly SitePreviewContext $preview) {}
 
+    /** Six complete Artwork cards per request; only those rows load media relationships. */
+    public const GALLERY_BATCH_SIZE = 6;
+
     /** @return Collection<int, Artwork> */
     public function category(string $slug, ?\App\Models\SiteSection $section = null): Collection
     {
-        /** @var ArtworkCategory|null $gallery */
-        $gallery = ArtworkCategory::query()->where('slug', $slug)->first();
-        if (! $gallery instanceof ArtworkCategory) {
-            return new Collection;
-        }
+        $query = $this->categoryQuery($slug, $section);
+        if ($query === null) return new Collection;
 
         /** @var Collection<int, Artwork> $artworks */
-        $artworks = GalleryPresentation::orderArtworks($this->publicQuery()
+        $artworks = $query->get();
+        $this->assertUniquePositions($artworks);
+
+        return $artworks;
+    }
+
+    /**
+     * Keep only compact identity/position data for deterministic Gallery
+     * composition; expensive media relationships are loaded per batch.
+     *
+     * @return array{artworks:Collection<int, Artwork>, outline:Collection<int, Artwork>, hasMore:bool}
+     */
+    public function categoryBatch(string $slug, ?\App\Models\SiteSection $section = null, int $page = 1): array
+    {
+        $query = $this->categoryQuery($slug, $section);
+        if ($query === null) {
+            return ['artworks' => new Collection, 'outline' => new Collection, 'hasMore' => false];
+        }
+
+        /** @var Collection<int, Artwork> $outline */
+        $outline = (clone $query)->withoutEagerLoads()->get(['artworks.id', 'artworks.position']);
+        $this->assertUniquePositions($outline);
+
+        /** @var Collection<int, Artwork> $rows */
+        $rows = (clone $query)->offset((max(1, $page) - 1) * self::GALLERY_BATCH_SIZE)
+            ->limit(self::GALLERY_BATCH_SIZE + 1)->get();
+
+        return [
+            'artworks' => $rows->take(self::GALLERY_BATCH_SIZE)->values(),
+            'outline' => $outline,
+            'hasMore' => $rows->count() > self::GALLERY_BATCH_SIZE,
+        ];
+    }
+
+    /** @return Builder<Artwork>|null */
+    private function categoryQuery(string $slug, ?\App\Models\SiteSection $section): ?Builder
+    {
+        /** @var ArtworkCategory|null $gallery */
+        $gallery = ArtworkCategory::query()->where('slug', $slug)->first();
+        if (! $gallery instanceof ArtworkCategory) return null;
+
+        return GalleryPresentation::orderArtworks($this->publicQuery()
             ->whereHas('category.siteSection', function (Builder $query) use ($slug, $section): void {
                 if ($section instanceof \App\Models\SiteSection) {
                     $query->whereKey($section->getKey());
@@ -36,9 +77,12 @@ class PublicArtworkQuery
                 if (! $this->preview->active()) {
                     $query->where('state', 'published');
                 }
-            }), $gallery)
-            ->get();
+            }), $gallery);
+    }
 
+    /** @param Collection<int, Artwork> $artworks */
+    private function assertUniquePositions(Collection $artworks): void
+    {
         $positions = $artworks
             ->map(static fn (Artwork $artwork): int => (int) $artwork->getAttribute('position'))
             ->all();
@@ -46,8 +90,6 @@ class PublicArtworkQuery
         if (count($positions) !== count(array_unique($positions))) {
             throw new LogicException('Visible artwork positions must be unique within a Gallery.');
         }
-
-        return $artworks;
     }
 
     /** @return Collection<int, Artwork> */

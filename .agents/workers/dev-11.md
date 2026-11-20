@@ -1,6 +1,6 @@
 # Dev Worker 11 — public-site presentation and CMS-consistent small fixes
 
-**Working branch:** `dev` | **Lease:** 27 | **State:** Active — Public Gallery image prefetch correction source-implemented; browser and latency acceptance pending.
+**Working branch:** `dev` | **Lease:** 27 | **State:** Active — real server-batched Public Gallery implementation pending runtime/browser acceptance.
 **User assignment:** Handle a continuing sequence of small, user-reported issues on the public-facing pages of the artist homepage. Resolve each coherently through the existing content management system (CMS) architecture rather than making isolated presentation patches. No specific defect was assigned in the activation request.
 
 ## Scope and owner boundaries
@@ -29,7 +29,15 @@
 - This is real delayed image-file requesting, **not server-side pagination**; all Artwork HTML still arrives initially. Independent image response/variant regeneration delays can still leave a blank region and cannot be proven resolved without network timings on actual Preview. No media-delivery, thumbnail regeneration, publication or rights changes attempted.
 - Source-only review, no runtime/browser/network timing checks, tests edited, Continuous Integration or deployment. Testing should check simultaneous observer entry ordering, asynchronous decoded images delaying speculative release, rapid scroll, first image priority, broken files, cached images, no-JavaScript mode, video cards, responsive resize and Livewire route disposal.
 
+## True incremental Public Gallery rendering — 2026-11-20
+- User explicitly rejected further lazy-loading-only revisions and requested true incremental server-side Artwork retrieval and scroll append. This is an authorized new direction, superseding the previous decision not to paginate Gallery HTML.
+- Initial Gallery route now renders six complete canonical Artwork cards rather than the entire collection. Later batches are requested on the same protected live/preview/valid-Home route and appended using a single scroll sentinel with a native next-page link for fallback. Six-row queries eager-load media only for displayed Artworks; a separate lightweight ordered identity/position outline preserves existing side offsets, gap jitter and unique-position enforcement across boundaries.
+- `PublicArtworkQuery::categoryBatch` reuses the exact existing publication/media eligibility and GalleryPresentation ordering; `PublicArtworkController::categoryForSection` owns the batch response and on-demand complete Artwork Viewer metadata. The existing card component renders initial and subsequent rows through one Blade partial; nonce-protected card-specific CSS is transferred to the current public document nonce when appended, not relaxed through CSP exceptions.
+- `public-gallery-batches.js` owns only server-fragment transport, `public-gallery-loading.js` continues to own image requests/decode, and `public-media-playback.js` registers subsequently appended video cards. The shared Artwork Viewer opens the clicked item immediately and fetches the complete sequence only on first use, preserving navigation across not-yet-rendered Gallery cards without loading all media on the initial page.
+- No separate Gallery renderer, visual thumbnail grid, parallel media URL scheme, publication bypass, stage/Storage implementation or admin editor changes. Working/Committed and preview gate remain on their original controller path. The six-card fallback links allow progress when script is disabled or a request fails.
+- Production source only, no Laravel/database/runtime browser tests, request-waterfall measurements, CI, deploy or test-source edits. Required acceptance: initial 6 markup, follow-up six cards, final page, no duplicates/separator gaps, all Gallery order modes, initial and scroll-loaded image/video, nonce enforcement, Gallery under Home and Preview, viewer full sequence including cyclic/disabled cases, keyboard focus and no-JS fallback, SPA disposal/errors.
+
 ## Next actions
-1. Obtain user browser feedback and network response waterfall for first/next Gallery images on the current built dev preview; distinguish image priority/decode from slow or regenerated thumbnails.
-2. If real document HTML/variant response timing proves source-side paging is needed, design it with Dev Worker 4 and preserve the canonical Viewer sequence and publication state rather than introducing a parallel image renderer.
-3. Address further scoped Public defects and coordinate separately with Admin owners on a broader keyboard accessibility pass.
+1. Obtain current-dev real browser acceptance for six-card Gallery batches, scroll append, Gallery opening as Home, full Viewer navigation and Preview rights/security boundaries.
+2. Handoff to Testing the targeted Gallery/Viewer/video/scroll/no-JavaScript/response-failure scenarios. Investigate only genuine reproduced follow-up defects in the canonical owners.
+3. Coordinate any further cross-feature Gallery work with Dev Worker 4; remain registered for Public fixes.

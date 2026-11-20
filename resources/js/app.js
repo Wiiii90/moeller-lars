@@ -7,6 +7,7 @@ import '../css/rich-text-spacing.css';
 
 import { initializeArtworkViewer } from './artwork-viewer.js';
 import { initializeGalleryImageLoading } from './public-gallery-loading.js';
+import { initializeGalleryBatches } from './public-gallery-batches.js';
 import { initializeGalleryHero } from './gallery-hero.js';
 import { initializePublicMediaPlayback } from './public-media-playback.js';
 import { initializeJournalPresentation } from './journal-presentation.js';
@@ -40,6 +41,7 @@ function initializePage() {
     disposers.push(initializeMatomoTracking(root));
     disposers.push(initializePublicHeader());
     disposers.push(initializePublicNavigation());
+    disposers.push(initializeGalleryBatches(root));
     revealLinkedLegalSection();
 }
 

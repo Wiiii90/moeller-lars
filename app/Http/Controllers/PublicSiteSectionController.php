@@ -20,6 +20,7 @@ use App\Models\Redirect;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
@@ -35,7 +36,7 @@ final class PublicSiteSectionController extends Controller
         private readonly SiteNodeRoute $siteNodeRoute,
     ) {}
 
-    public function show(string $section): View|RedirectResponse
+    public function show(string $section): View|RedirectResponse|JsonResponse
     {
         $query = SiteSection::query()->where('slug', $section);
         $this->preview->constrainSectionQuery($query);
@@ -60,7 +61,7 @@ final class PublicSiteSectionController extends Controller
         return $this->renderSection($siteSection);
     }
 
-    public function renderSection(SiteSection $section): View|RedirectResponse
+    public function renderSection(SiteSection $section): View|RedirectResponse|JsonResponse
     {
         return match ($section->nodeType()) {
             SiteSectionType::Gallery => $section->galleryTemplate() === \App\Domain\Content\GalleryTemplate::HeroArtworks

@@ -155,6 +155,9 @@ export function initializeArtworkViewer(root = document) {
 
     let items = [];
     let index = 0;
+    let manifestPending = false;
+    let manifestVersion = 0;
+    const manifestCache = new Map();
     let state = { scale: 1, x: 0, y: 0 };
     let trigger = null;
     let expectedSrc = '';
@@ -324,6 +327,18 @@ export function initializeArtworkViewer(root = document) {
         synchronizeVideoControls();
     };
 
+    const updateSequenceControls = () => {
+        const item = currentItem();
+        if (!item) return;
+        previous.hidden = !item.navigation;
+        next.hidden = !item.navigation;
+        previous.disabled = manifestPending || !item.navigation
+            || adjacentIndex(index, -1, items.length, item.cyclic) === null;
+        next.disabled = manifestPending || !item.navigation
+            || adjacentIndex(index, 1, items.length, item.cyclic) === null;
+        preserveControlFocus();
+    };
+
     const showItem = (nextIndex) => {
         const item = items[nextIndex];
         if (!item) {
@@ -336,11 +351,7 @@ export function initializeArtworkViewer(root = document) {
         dragStart = null;
         pinchStart = null;
         title.textContent = item.title;
-        previous.hidden = !item.navigation;
-        next.hidden = !item.navigation;
-        previous.disabled = !item.navigation || adjacentIndex(index, -1, items.length, item.cyclic) === null;
-        next.disabled = !item.navigation || adjacentIndex(index, 1, items.length, item.cyclic) === null;
-        preserveControlFocus();
+        updateSequenceControls();
         pageLink.hidden = !item.page;
         if (item.page) pageLink.href = item.page;
         else pageLink.removeAttribute('href');
@@ -379,6 +390,9 @@ export function initializeArtworkViewer(root = document) {
         }
         trigger = source;
         items = normalized;
+        const version = ++manifestVersion;
+        const manifestUrl = sequence.dataset.galleryViewerManifest;
+        manifestPending = Boolean(manifestUrl);
         zoomTracked.clear();
         resetAttention();
         preferredVolume = 1;
@@ -388,6 +402,56 @@ export function initializeArtworkViewer(root = document) {
         if (normalized[start].analyticsKey) trackMatomoEvent('Artwork', 'artwork_open', normalized[start].analyticsKey, null, root);
         dialog.showModal();
         close.focus();
+
+        if (manifestUrl) {
+            // The Gallery's server batches deliberately omit future cards.
+            // Obtain their lightweight canonical Viewer metadata only on
+            // demand, without fetching thumbnails or appending offscreen DOM.
+            if (!manifestCache.has(manifestUrl)) {
+                const promise = fetch(manifestUrl, {
+                    headers: { 'Accept': 'application/json', 'X-Gallery-Viewer': '1' },
+                    credentials: 'same-origin',
+                    signal: lifetime.signal,
+                }).then((response) => {
+                    if (!response.ok) throw new Error('Gallery Viewer sequence request failed');
+                    return response.json();
+                }).then((payload) => {
+                    if (!Array.isArray(payload.items)) throw new Error('Invalid Gallery Viewer sequence');
+                    const rows = payload.items;
+                    if (!rows.every((item) => item && typeof item.key === 'string'
+                        && typeof item.src === 'string' && item.src
+                        && typeof item.alt === 'string' && typeof item.title === 'string'
+                        && item.title && typeof item.analyticsKey === 'string' && item.analyticsKey)) {
+                        throw new Error('Incomplete Gallery Viewer sequence');
+                    }
+                    return rows.map((item) => ({
+                        ...item, kind: normalizeViewerKind(item.kind),
+                        page: item.page || null, navigation: item.navigation !== false,
+                        cyclic: item.cyclic === true,
+                    }));
+                }).catch((error) => {
+                    manifestCache.delete(manifestUrl);
+                    throw error;
+                });
+                manifestCache.set(manifestUrl, promise);
+            }
+            void manifestCache.get(manifestUrl).then((allItems) => {
+                if (lifetime.signal.aborted || version !== manifestVersion || !dialog.open) return;
+                const key = currentItem()?.key;
+                const newIndex = allItems.findIndex((item) => item.key === key);
+                if (newIndex < 0) throw new Error('Visible Artwork is missing from Viewer sequence');
+                items = allItems;
+                index = newIndex;
+                manifestPending = false;
+                updateSequenceControls();
+            }).catch(() => {
+                if (lifetime.signal.aborted || version !== manifestVersion || !dialog.open) return;
+                // Keep the current Artwork usable if the optional sequence
+                // request fails. The existing visible-item fallback is intact.
+                manifestPending = false;
+                updateSequenceControls();
+            });
+        }
         return true;
     };
 
@@ -623,6 +687,8 @@ export function initializeArtworkViewer(root = document) {
     }, { signal: lifetime.signal });
 
     dialog.addEventListener('close', () => {
+        manifestVersion += 1;
+        manifestPending = false;
         flushAttention();
         clearMedia();
         videoControls.hidden = true;

@@ -15,6 +15,6 @@
 | Dev Worker 9 | 28 | Artist accepted mouse navigation; shared Help retained and conflicting modifier-wheel zoom removed; touch/browser Help review pending | Shared General/Gallery Live Preview gestures, zoom buttons and toolbar Help; preserve Dev Worker 7's device controls | [dev-9.md](workers/dev-9.md) |
 | Dev Worker 10 | 26 | Active — rights-processing Validation readiness and completion | Media rights preparation/delivery pipeline, queue-worker integration requirements, current Validation activation evidence and safe rollout handoff; no deployments or artist-data changes without explicit approval | [dev-10.md](workers/dev-10.md) |
 
-| Dev Worker 11 | 27 | Active — Public Gallery image priority/prefetch correction committed; browser latency review pending | Public page presentation and staged Gallery media fetching; preserve Gallery Artwork and viewer owners, coordinate with Dev Worker 4 | [dev-11.md](workers/dev-11.md) |
+| Dev Worker 11 | 27 | Active — true Public Gallery server batching source-prepared; browser acceptance pending | Progressive Public Gallery server batches, scroll append, viewer full sequence; coordinate with Dev Worker 4 | [dev-11.md](workers/dev-11.md) |
 
 Only activated Dev workers receive a row and their own `.agents/workers/dev-N.md` record. This roster belongs exclusively to `dev` and must never receive Docs, Testing or Refactor worker entries. Follow the [shared worker protocol](README.md) for atomic registration, takeover and lease updates.

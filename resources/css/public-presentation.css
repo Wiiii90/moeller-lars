@@ -749,6 +749,26 @@ body.public-site:has(.site-content--fitted-image, .site-content--gallery-hero-fi
     margin-inline: auto;
 }
 
+/* A progressive Gallery keeps a real next-page link for no-script and
+   network-failure fallback; JavaScript observes the same element for scroll
+   loading rather than introducing a second pagination control. */
+.gallery-load-more {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin: 1.75rem auto 0;
+    padding: .7rem 1rem;
+    color: var(--public-index-ink);
+    font-family: var(--public-index-typeface);
+    font-size: .9rem;
+    text-align: center;
+    text-underline-offset: .2em;
+}
+.gallery-load-more:focus-visible {
+    outline: 1px dotted currentColor;
+    outline-offset: .15rem;
+}
+
 .artwork-card,
 .artwork-detail,
 .exhibitions-page {

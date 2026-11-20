@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Artwork\GalleryPresentation;
+use App\Domain\Artwork\PublicArtworkViewerItem;
 use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SitePreviewContext;
@@ -14,6 +15,7 @@ use App\Models\ArtworkCategory;
 use App\Models\Redirect;
 use App\Models\SiteSection;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 
 class PublicArtworkController extends Controller
@@ -21,11 +23,12 @@ class PublicArtworkController extends Controller
     public function __construct(
         private readonly PublicArtworkQuery $artworks,
         private readonly PublicMedia $media,
+        private readonly PublicArtworkViewerItem $viewerItem,
         private readonly SafeRichTextRenderer $richText,
         private readonly SitePreviewContext $preview,
     ) {}
 
-    public function category(string $category): View|RedirectResponse
+    public function category(string $category): View|RedirectResponse|JsonResponse
     {
         $sectionQuery = SiteSection::query()
             ->where('type', SiteSectionType::Gallery->value)
@@ -56,7 +59,7 @@ class PublicArtworkController extends Controller
     }
 
     /** A Standard may be the protected Home page at / rather than a slug route. */
-    public function categoryForSection(SiteSection $section): View
+    public function categoryForSection(SiteSection $section): View|JsonResponse
     {
         abort_unless(
             $section->nodeType() === SiteSectionType::Gallery
@@ -69,12 +72,53 @@ class PublicArtworkController extends Controller
         $categoryRecord = $section->getRelation('artworkCategory');
         abort_unless($categoryRecord !== null, 404);
 
-        return view('pages.artworks.index', [
+        $slug = (string) $categoryRecord->getAttribute('slug');
+        if (request()->query('gallery_viewer') === '1'
+            && request()->header('X-Gallery-Viewer') === '1') {
+            // Complete Viewer navigation is requested only when an Artwork is
+            // opened, never during the Gallery's initial lightweight response.
+            $items = $this->artworks->category($slug, $section)
+                ->map(fn ($artwork): array => $this->viewerItem->forArtwork($artwork, $this->media))
+                ->values()->all();
+
+            return response()->json(['items' => $items])->header('Cache-Control', 'private, no-store');
+        }
+
+        $requestedPage = request()->query('gallery_page', '1');
+        abort_unless(is_scalar($requestedPage)
+            && preg_match('/^[1-9][0-9]{0,4}$/', (string) $requestedPage) === 1, 404);
+        $page = (int) $requestedPage;
+
+        $batch = $this->artworks->categoryBatch($slug, $section, $page);
+        $divider = GalleryPresentation::divider($categoryRecord);
+        $presentation = [
             'category' => $categoryRecord,
             'section' => $section,
-            'artworks' => $this->artworks->category((string) $categoryRecord->getAttribute('slug'), $section),
+            'artworks' => $batch['artworks'],
+            'outline' => $batch['outline'],
+            'hasMore' => $batch['hasMore'],
+            'page' => $page,
             'media' => $this->media,
-        ]);
+            'divider' => $divider,
+            'galleryOffsets' => GalleryPresentation::indexCardOffsets($batch['outline'], $categoryRecord),
+            'galleryGaps' => GalleryPresentation::indexCardGapSteps($batch['outline'], $categoryRecord),
+        ];
+
+        if (request()->header('X-Gallery-Chunk') === '1') {
+            // Reuse precisely the same Artwork cards and nonce-protected
+            // component styles as the full Gallery. The browser attaches
+            // styles using the currently displayed document's style nonce.
+            $html = view('pages.artworks.partials.batch', $presentation)->render();
+            $styles = app('view')->yieldPushContent('public-component-styles');
+
+            return response()->json([
+                'html' => $html,
+                'styles' => $styles,
+                'nextPage' => $batch['hasMore'] ? $page + 1 : null,
+            ])->header('Cache-Control', 'private, no-store');
+        }
+
+        return view('pages.artworks.index', $presentation);
     }
 
     public function show(string $slug): View|RedirectResponse
