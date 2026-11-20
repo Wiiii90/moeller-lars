@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 28 (active)  
-**State:** Direct mouse-wheel zoom works in the artist's browser; shared Help shortened in source, rendered-view freshness to be checked.
+**State:** Cursor-anchored wheel zoom source-corrected after artist feedback; real-browser review pending.
 
 ## Ownership and current decisions
 
@@ -26,3 +26,12 @@
 1. Inspect in the artist's running General and Gallery preview: wheel direction/sensitivity, cursor anchoring, mouse scrolling versus Shift-wheel, links after zoom, middle drag, Help text, narrow layout and standalone browser shortcuts.
 2. Keep or revise the trial based on explicit user browser feedback. Verify touch on a real device before claiming mobile acceptance.
 3. Re-read current `dev` HEAD, roster lease and Dev Worker 7's overlap before further mutations.
+
+## 2026-11-20: Pointer-anchored zoom correction
+
+- Artist reports that wheel zoom tends toward the top-left instead of enlarging the region underneath the cursor, despite accepting the direct-wheel interaction overall.
+- `resources/js/admin-live-preview.js`: resolve iframe-local coordinates from its actual rendered rectangle and native client size rather than guessing at composite CSS scale. The Admin Stage may have an ancestor transform, so convert window-screen pixels into Preview scroll-layout pixels before computing the anchor.
+- Apply anchor scrolling together with the fitted surface transform in one synchronous layout pass; avoid temporary center-based repositioning. Continue to clamp through native overflow scrolling, preserve middle-button and Space drag, normal Public link interaction, touch gestures, device controls and the concise Help.
+- **Verification:** JavaScript parsing succeeded. Isolated geometry simulation with an enclosing 0.8 CSS scale, 1200x900 iframe and 400x300 Preview preserved the same cursor location across seven consecutive wheel zooms (100% to 300%) and repeat fit recalculations with less than 0.001 CSS pixel drift. This is not browser validation.
+- **Open:** Verify zoom toward paintings and menu locations in the actual General and Gallery Live Preview, including an already-shifted viewport and viewport resizing. No application build, suite, CI, deployment or production action performed.
+

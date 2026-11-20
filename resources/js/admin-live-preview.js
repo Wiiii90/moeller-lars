@@ -120,7 +120,7 @@ export function adminLivePreview(element) {
         zoomPercent() {
             return `${Math.round(this.zoom * 100)}%`
         },
-        fitPreview() {
+        fitPreview(anchor = null) {
             const viewport = this.$refs.viewport
             const surface = this.$refs.surface
             const page = this.$refs.page
@@ -159,8 +159,15 @@ export function adminLivePreview(element) {
             frame.style.transformOrigin = 'top left'
             frame.style.transform = `scale(${scale * this.zoom})`
 
-            viewport.scrollLeft = renderedWidth > width ? centerX * renderedWidth - width / 2 : 0
-            viewport.scrollTop = renderedHeight > height ? centerY * renderedHeight - height / 2 : 0
+            // Apply a requested pointer anchor in this same layout pass.
+            // Re-centering first and correcting a second time can cause the
+            // scaled iframe to visibly jump away from the cursor.
+            viewport.scrollLeft = anchor
+                ? anchor.x * renderedWidth - anchor.screenX
+                : (renderedWidth > width ? centerX * renderedWidth - width / 2 : 0)
+            viewport.scrollTop = anchor
+                ? anchor.y * renderedHeight - anchor.screenY
+                : (renderedHeight > height ? centerY * renderedHeight - height / 2 : 0)
             this.scheduleDiagnostics()
         },
         resetZoom() {
@@ -187,24 +194,25 @@ export function adminLivePreview(element) {
             if (point && viewport && surface) {
                 const oldSurface = surface.getBoundingClientRect()
                 const oldViewport = viewport.getBoundingClientRect()
-                if (oldSurface.width > 0 && oldSurface.height > 0) {
+                if (oldSurface.width > 0 && oldSurface.height > 0
+                    && oldViewport.width > 0 && oldViewport.height > 0) {
+                    // getBoundingClientRect() uses actual screen pixels,
+                    // including transforms on the enclosing Admin Stage.
+                    // Scroll positions use layout CSS pixels; convert between
+                    // the coordinate systems before selecting the zoom target.
+                    const horizontalScale = viewport.clientWidth / oldViewport.width
+                    const verticalScale = viewport.clientHeight / oldViewport.height
                     anchor = {
                         x: Math.max(0, Math.min(1, (point.x - oldSurface.left) / oldSurface.width)),
                         y: Math.max(0, Math.min(1, (point.y - oldSurface.top) / oldSurface.height)),
-                        screenX: point.x - oldViewport.left - viewport.clientLeft,
-                        screenY: point.y - oldViewport.top - viewport.clientTop,
+                        screenX: (point.x - oldViewport.left) * horizontalScale - viewport.clientLeft,
+                        screenY: (point.y - oldViewport.top) * verticalScale - viewport.clientTop,
                     }
                 }
             }
 
             this.zoom = nextZoom
-            this.fitPreview()
-            if (anchor) {
-                // Scroll the newly sized canvas so the pointed-at part of the
-                // Public page stays at the same place beneath the cursor.
-                viewport.scrollLeft = anchor.x * surface.offsetWidth - anchor.screenX
-                viewport.scrollTop = anchor.y * surface.offsetHeight - anchor.screenY
-            }
+            this.fitPreview(anchor)
         },
         wheelPixels(event, delta) {
             const unit = event.deltaMode === 1 ? 16
@@ -334,11 +342,17 @@ export function adminLivePreview(element) {
         },
         previewPoint(event, inFrame) {
             if (! inFrame) return { x: event.clientX, y: event.clientY }
-            const rect = this.$refs.frame?.getBoundingClientRect()
-            const scale = this.fitScale * this.zoom
+            const frame = this.$refs.frame
+            const rect = frame?.getBoundingClientRect()
+            if (! rect || ! frame.clientWidth || ! frame.clientHeight) {
+                return { x: event.clientX, y: event.clientY }
+            }
+            // Pointer coordinates inside the iframe are unscaled CSS pixels.
+            // Its rendered rect also includes ancestor transforms, which the
+            // previous fitScale*zoom approximation did not account for.
             return {
-                x: (rect?.left ?? 0) + event.clientX * scale,
-                y: (rect?.top ?? 0) + event.clientY * scale,
+                x: rect.left + event.clientX * (rect.width / frame.clientWidth),
+                y: rect.top + event.clientY * (rect.height / frame.clientHeight),
             }
         },
         startPan(event, inFrame = false) {
