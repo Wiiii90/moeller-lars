@@ -45,6 +45,42 @@
     white-space: nowrap;
 }
 
+/* Expanded notifications use the same table columns and ordinary row actions. */
+.admin-dashboard__group-toggle {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.admin-dashboard__group-toggle:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: .15rem;
+}
+.admin-dashboard__group-toggle .admin-dashboard__feed-title { flex: 1 1 auto; }
+.admin-dashboard__group-chevron {
+    width: .85rem;
+    height: .85rem;
+    flex: 0 0 auto;
+    color: var(--admin-muted);
+    transition: transform 140ms ease;
+}
+.admin-dashboard__group-toggle[aria-expanded="true"] .admin-dashboard__group-chevron { transform: rotate(90deg); }
+.admin-dashboard__group-count {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    color: var(--admin-muted);
+    font-size: var(--admin-font-size-table-meta);
+}
+.admin-dashboard__feed-row--group-member .admin-dashboard__feed-title { padding-inline-start: 1.25rem; }
+
 .admin-dashboard__feed-table .admin-data-sender strong,
 .admin-dashboard__feed-table .admin-data-sender small { display: block; }
 

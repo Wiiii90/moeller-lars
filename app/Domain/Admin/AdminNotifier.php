@@ -54,7 +54,7 @@ final class AdminNotifier
                     $this->recordAndSurface(
                         recipientId: $recipientId,
                         sourceId: 'activity:'.$auditEventId,
-                        title: (string) $message['change'],
+                        title: (string) ($message['headline'] ?? $message['change']),
                         body: $message['details'] ?? null,
                         status: 'success',
                         context: [

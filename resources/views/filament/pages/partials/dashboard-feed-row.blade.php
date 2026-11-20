@@ -3,6 +3,7 @@
     $mutable = is_int($item['contact_id'] ?? null) || is_int($item['notification_id'] ?? null);
     $read = str_starts_with((string) $item['status'], 'Read');
     $selected = in_array((string) $item['key'], $selectedFeedKeys, true);
+    $groupMember = $groupMember ?? false;
 @endphp
 
 <tr
@@ -12,8 +13,10 @@
         'is-selected' => $selected,
         'is-pinned' => $pinned,
         'is-unread' => ! $read,
+        'admin-dashboard__feed-row--group-member' => $groupMember,
     ])
     wire:key="dashboard-feed-{{ $item['key'] }}"
+    @if ($groupMember) x-show="expanded" x-cloak @endif
     @if ($pinned) wire:sort:item="{{ $item['key'] }}" @endif
 >
     <td class="admin-table__position">

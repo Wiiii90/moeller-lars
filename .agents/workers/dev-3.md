@@ -2,13 +2,12 @@
 
 - **Branch:** `dev`
 - **Lease:** 25
-- **Assignment:** Own the artist Admin Dashboard workspace and its Dashboard-specific presentation, data display and actions; reuse established shared Admin components.
-- **Current status:** Registered on 2026-11-20 at the user's request. No Dashboard implementation task, product changes or verification have been performed.
-- **Working contract:** Read branch-local `AGENTS.md`, `.agents/skills/dev/SKILL.md`, `.agents/README.md` and the Dev roster before registration; follow their architecture, quality, ownership and verification requirements.
-- **Coordination boundary:** Account/profile settings belong to Dev Worker 2; Gallery to 4; Home to 5/6; General/Preview to 7; shared dialogs to 8; Public navigation to 9. Changes in common Admin controls, notifications, Activity, Analytics or responsive styles require coordination with current owners. Do not absorb those features as independent Dashboard scope.
-- **Relevant context:** The existing Dashboard is part of the Admin foundation tracked by issue #51. Issue #87 concerns optional adaptive Dashboard quick actions; registration alone does not authorize its implementation.
-- **Verification:** Registration only. No application code, tests, browser review, Continuous Integration or deployment involved.
+- **Assignment:** Readable Dashboard Notifications and consecutive-edit grouping.
+- **Current state:** Canonical source implementation authored: concise field/target notification headlines from existing Activity snapshot evidence, legacy generic headline projection where Audit evidence remains, and collapsible adjacent same-entity/same-field successful edit groups.
+- **Behavior:** Every action keeps its own persisted Notification, read/unread, pin, delete, selection, and retention. Group headers select underlying entries; pinned messages remain independent. Unrelated feed entries interrupt grouping. No new persistence or duplicate Activity path.
+- **Boundaries:** Dashboard/Notification presentation only. Other feature workers retain Gallery, Home, General, dialogs, and Public.
+- **Verification:** Source verified, with browser, isolated PHP/database and Test-owner acceptance outstanding. No tests, migrations, Continuous Integration or deployment executed.
 
 ## Next
 
-Await a concrete Dashboard task from the user. Before implementation, recheck this worker's current roster lease and `dev` HEAD, inspect the current Dashboard entrypoint and direct consumers, and make only the requested scoped changes.
+Recheck lease and `dev` before further writes. Browser-check wide/compact/narrow geometry, expand/collapse, keyboard, group selection, repeated toggles, unrelated interruptions, mixed read/pin/delete, filters, pagination and retention. Testing owner should add coverage on `testing`.

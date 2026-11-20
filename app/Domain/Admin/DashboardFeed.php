@@ -200,6 +200,7 @@ final class DashboardFeed
         [$page, $pages, $offset] = $this->pageState($total, $page, $perPage);
 
         $items = $this->orderedNotifications($query)
+            ->with('auditEvent')
             ->offset($offset)
             ->limit($perPage)
             ->get()
@@ -260,6 +261,7 @@ final class DashboardFeed
 
         $contacts = ContactMessage::query()->whereIn('id', $contactIds)->get()->keyBy('id');
         $notifications = AdminNotification::query()
+            ->with('auditEvent')
             ->where('user_id', $this->userId() ?? 0)
             ->whereIn('id', $notificationIds)
             ->get()
@@ -602,16 +604,72 @@ final class DashboardFeed
         ];
     }
 
+    /**
+     * Read-only adjacent grouping; no Notification or Activity row is changed.
+     *
+     * @param  list<array<string,mixed>>  $items
+     * @return list<array{key:string,items:list<array<string,mixed>>}>
+     */
+    public function groupConsecutiveNotifications(array $items): array
+    {
+        $groups = [];
+        foreach ($items as $item) {
+            $groupKey = $item['notification_group_key'] ?? null;
+            $last = count($groups) - 1;
+            $previous = $last >= 0 ? end($groups[$last]['items']) : null;
+            $gap = is_array($previous)
+                ? (int) ($previous['sort_timestamp'] ?? 0) - (int) ($item['sort_timestamp'] ?? 0)
+                : -1;
+            if (is_string($groupKey) && $groupKey !== ''
+                && is_array($previous) && ($previous['notification_group_key'] ?? null) === $groupKey
+                && $gap >= 0 && $gap <= 15 * 60) {
+                $groups[$last]['items'][] = $item;
+
+                continue;
+            }
+            $groups[] = ['key' => (string) $item['key'], 'items' => [$item]];
+        }
+
+        return $groups;
+    }
+
     /** @return array<string, mixed> */
     private function projectNotification(AdminNotification $notification): array
     {
+        $audit = $notification->getRelationValue('auditEvent');
+        $action = $audit?->getAttribute('action');
+        $auditMetadata = $audit?->getAttribute('metadata');
+        $auditMetadata = is_array($auditMetadata) ? $auditMetadata : [];
+        $summary = is_array($auditMetadata['change_summary'] ?? null) ? $auditMetadata['change_summary'] : null;
+        $target = is_string($auditMetadata['target_label'] ?? null) ? $auditMetadata['target_label'] : '';
         $createdAt = $notification->getAttribute('created_at');
         $receivedAt = $createdAt instanceof CarbonInterface ? $createdAt : now();
         $body = trim((string) ($notification->getAttribute('body') ?? ''));
         $status = (string) $notification->getAttribute('status');
         $readAt = $notification->getAttribute('read_at');
-        $title = __((string) $notification->getAttribute('title'));
+        $storedTitle = (string) $notification->getAttribute('title');
+        // Improve historical generic inbox titles without rewriting stored records.
+        if (is_string($action) && AdminActionCatalog::has($action)) {
+            $generic = app(AdminActivityPresentation::class)->change($action);
+            $catalog = (string) AdminActionCatalog::definition($action)['label'];
+            if ($storedTitle === $generic || $storedTitle === $catalog) {
+                $storedTitle = app(AdminActivityPresentation::class)
+                    ->notificationHeadline($action, $target, $summary);
+            }
+        }
+        $title = __($storedTitle);
         $body = $body !== '' ? __($body) : '';
+        $groupKey = null;
+        if ($status === 'success' && is_string($action) && str_ends_with($action, '.updated')
+            && is_array($summary) && ($summary['count'] ?? null) === 1
+            && is_string($summary['items'][0]['field'] ?? null)
+            && ($summary['items'][0]['field'] ?? '') !== '') {
+            $entityType = $audit?->getAttribute('entity_type');
+            $entityId = (int) ($audit?->getAttribute('entity_id') ?? 0);
+            if (is_string($entityType) && $entityId > 0) {
+                $groupKey = implode(':', [$action, $entityType, $entityId, $summary['items'][0]['field']]);
+            }
+        }
         $actionUrl = trim((string) ($notification->getAttribute('action_url') ?? ''));
         $actionLabel = trim((string) ($notification->getAttribute('action_label') ?? ''));
         if ($actionLabel !== '') {
@@ -625,6 +683,7 @@ final class DashboardFeed
             'notification_id' => (int) $notification->getKey(),
             'notification_status' => $status,
             'notification_type' => (string) $notification->getAttribute('type'),
+            'notification_group_key' => $groupKey,
             'entity_type' => $notification->getAttribute('entity_type'),
             'entity_id' => $notification->getAttribute('entity_id'),
             'audit_event_id' => $notification->getAttribute('audit_event_id'),

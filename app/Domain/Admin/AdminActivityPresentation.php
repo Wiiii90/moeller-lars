@@ -41,6 +41,59 @@ final class AdminActivityPresentation
         ];
     }
 
+    /**
+     * The short Notification headline draws on the same change evidence as
+     * Activity Details; Activity's action-level Change is left untouched.
+     *
+     * @param  array{count:int,truncated:bool,items:list<array{field:string,label:string,before:string,after:string}>}|null  $summary
+     */
+    public function notificationHeadline(string $actionKey, string $target, ?array $summary = null): string
+    {
+        $definition = AdminActionCatalog::definition($actionKey);
+        $kind = explode('.', $actionKey, 2)[0];
+        $subject = match ($kind) {
+            'artwork_category' => 'Gallery',
+            'artwork' => 'Artwork',
+            'site_section' => 'Page',
+            'exhibition' => 'Exhibition',
+            'blog_post' => 'Blog post',
+            'media' => 'Media',
+            'journal_setting' => 'Journal settings',
+            'blog_setting' => 'Blog settings',
+            'public_content_setting' => 'Website settings',
+            default => trim((string) $definition['area']),
+        };
+        $target = trim($target);
+        if ($target !== '') {
+            $subject .= ' “'.Str::limit($target, 48, '…').'”';
+        }
+
+        if (! str_ends_with($actionKey, '.updated')) {
+            return $target === ''
+                ? $this->change($actionKey)
+                : Str::ucfirst(trim((string) $definition['label'])).' — “'.Str::limit($target, 48, '…').'”';
+        }
+
+        $items = is_array($summary['items'] ?? null) ? $summary['items'] : [];
+        $count = is_array($summary) ? max(0, (int) ($summary['count'] ?? 0)) : 0;
+        if ($count === 1 && isset($items[0])) {
+            $field = trim((string) ($items[0]['label'] ?? 'Setting'));
+            $after = trim((string) ($items[0]['after'] ?? ''));
+            if ($after !== '' && mb_strlen($after) <= 28 && ! str_contains($after, "\n")) {
+                return $subject.': '.$field.' → '.$after;
+            }
+
+            return $subject.': '.$field.' changed';
+        }
+
+        if ($count > 1 && isset($items[0])) {
+            return $subject.': '.trim((string) ($items[0]['label'] ?? 'Setting'))
+                .' +'.($count - 1).' more change'.($count === 2 ? '' : 's');
+        }
+
+        return $target === '' ? $this->change($actionKey) : 'Edited '.$subject;
+    }
+
     public function change(string $actionKey): string
     {
         $definition = AdminActionCatalog::definition($actionKey);

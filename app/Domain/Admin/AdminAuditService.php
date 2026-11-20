@@ -180,6 +180,11 @@ class AdminAuditService
                 $targetLabel ?? '',
                 $summary,
             );
+            $presentation['headline'] = $this->activityPresentation->notificationHeadline(
+                $action,
+                $targetLabel ?? '',
+                $summary,
+            );
             $this->notificationContext->push((int) $event->getKey(), $presentation);
         }
 

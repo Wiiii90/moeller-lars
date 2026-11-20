@@ -11,7 +11,7 @@ final class AdminActivityNotificationContext
     private const MAX_MESSAGES = 9;
 
     /**
-     * @param  array{change:string,details:?string}  $presentation
+     * @param  array{change:string,details:?string,headline?:string}  $presentation
      */
     public function push(int $auditEventId, array $presentation): void
     {
@@ -28,6 +28,7 @@ final class AdminActivityNotificationContext
         $messages[] = [
             'audit_event_id' => $auditEventId,
             'change' => trim($presentation['change']),
+            'headline' => trim((string) ($presentation['headline'] ?? $presentation['change'])),
             'details' => is_string($presentation['details'] ?? null)
                 ? trim((string) $presentation['details'])
                 : null,
@@ -48,7 +49,7 @@ final class AdminActivityNotificationContext
     /**
      * Return only messages whose append-only Audit event is still present.
      *
-     * @return list<array{audit_event_id:int,change:string,details:?string}>
+     * @return list<array{audit_event_id:int,change:string,headline:string,details:?string}>
      */
     public function consumeRecorded(): array
     {

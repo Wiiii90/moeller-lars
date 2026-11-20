@@ -233,17 +233,29 @@ final class Dashboard extends Page
 
     public function toggleSelectAll(): void
     {
-        $visibleKeys = $this->currentSelectableFeedKeys();
-        if ($visibleKeys === []) {
-            $this->selectedFeedKeys = [];
+        $this->toggleFeedSelectionKeys($this->currentSelectableFeedKeys());
+    }
 
+    /** @param list<string> $keys */
+    public function toggleNotificationGroupSelection(array $keys): void
+    {
+        $this->toggleFeedSelectionKeys(array_values(array_intersect(
+            $this->currentSelectableFeedKeys(),
+            $keys,
+        )));
+    }
+
+    /** @param list<string> $keys */
+    private function toggleFeedSelectionKeys(array $keys): void
+    {
+        if ($keys === []) {
             return;
         }
 
-        $selectedVisible = array_values(array_intersect($visibleKeys, $this->selectedFeedKeys));
-        $this->selectedFeedKeys = count($selectedVisible) === count($visibleKeys)
-            ? array_values(array_diff($this->selectedFeedKeys, $visibleKeys))
-            : array_values(array_unique([...$this->selectedFeedKeys, ...$visibleKeys]));
+        $selected = array_intersect($keys, $this->selectedFeedKeys);
+        $this->selectedFeedKeys = count($selected) === count($keys)
+            ? array_values(array_diff($this->selectedFeedKeys, $keys))
+            : array_values(array_unique([...$this->selectedFeedKeys, ...$keys]));
     }
 
     public function bulkMarkRead(): void
@@ -447,10 +459,15 @@ final class Dashboard extends Page
 
         $this->feedPage = $pagination['page'];
         $this->feedPageSize = $pagination['per_page'];
-
+        $items = $this->feedViewItems($pagination);
+        $regular = array_values(array_filter(
+            $items,
+            static fn (array $item): bool => ! ($item['pinned'] ?? false),
+        ));
         return [
             ...$overview,
-            'feed' => $this->feedViewItems($pagination),
+            'feed' => $items,
+            'regularFeedGroups' => app(DashboardFeed::class)->groupConsecutiveNotifications($regular),
             'feedTypes' => DashboardFeed::types(),
             'feedPagination' => $pagination,
             'notificationFilters' => self::NOTIFICATION_FILTERS,

@@ -131,11 +131,70 @@
                 </tbody>
             @endif
 
-            <tbody class="admin-dashboard__regular-feed">
-                @foreach ($regularFeed as $item)
-                    @include('filament.pages.partials.dashboard-feed-row', ['item' => $item, 'pinned' => false])
-                @endforeach
-            </tbody>
+            @foreach ($regularFeedGroups as $group)
+                @php
+                    $members = $group['items'];
+                    $first = $members[0];
+                    $memberKeys = array_column($members, 'key');
+                    $groupUnread = collect($members)->contains(fn (array $member): bool => str_starts_with((string) $member['status'], 'Unread'));
+                    $groupSelected = count(array_intersect($memberKeys, $selectedFeedKeys)) === count($memberKeys);
+                @endphp
+                @if (count($members) === 1)
+                    <tbody class="admin-dashboard__regular-feed" wire:key="dashboard-feed-section-{{ $group['key'] }}">
+                        @include('filament.pages.partials.dashboard-feed-row', ['item' => $first, 'pinned' => false])
+                    </tbody>
+                @else
+                    <tbody class="admin-dashboard__regular-feed admin-dashboard__feed-group"
+                        wire:key="dashboard-feed-group-{{ $group['key'] }}"
+                        x-data="{ expanded: false }">
+                        <tr @class([
+                            'admin-data-row', 'admin-dashboard__feed-row', 'admin-dashboard__feed-row--group',
+                            'is-unread' => $groupUnread, 'is-selected' => $groupSelected,
+                        ])>
+                            <td class="admin-table__position"><span class="admin-position">{{ $first['feed_position'] }}</span></td>
+                            <td class="admin-table__drag"></td>
+                            <td class="admin-data-nowrap admin-dashboard__col-type">{{ $first['type_label'] }}</td>
+                            <td class="admin-data-nowrap admin-dashboard__col-date"><time datetime="{{ $first['date'] }}">{{ $first['date_display'] }}</time></td>
+                            <td class="admin-data-nowrap admin-dashboard__col-time">{{ $first['time_display'] }}</td>
+                            <td class="admin-data-title admin-dashboard__col-title">
+                                <button class="admin-dashboard__group-toggle" type="button"
+                                    x-on:click="expanded = ! expanded"
+                                    x-bind:aria-expanded="expanded.toString()"
+                                    aria-label="{{ count($members) }} changes. Expand or collapse {{ $first['title'] }}">
+                                    <x-filament::icon icon="heroicon-m-chevron-right" class="admin-dashboard__group-chevron" />
+                                    <span class="admin-dashboard__feed-title">{{ $first['title'] }}</span>
+                                    <span class="admin-dashboard__group-count">{{ count($members) }} {{ __('changes') }}</span>
+                                </button>
+                                <small class="admin-dashboard__feed-meta">
+                                    <span>{{ $first['type_label'] }}</span>
+                                    <time datetime="{{ $first['date'] }}">{{ $first['date_display'] }}</time>
+                                    <span>{{ $first['time_display'] }}</span>
+                                </small>
+                            </td>
+                            <td class="admin-data-sender admin-dashboard__col-sender"><strong>{{ __('System') }}</strong></td>
+                            <td class="admin-table__actions"></td>
+                            <td class="admin-table__selection admin-table__selection--trailing">
+                                <input type="checkbox"
+                                    aria-label="Select all {{ count($members) }} grouped notifications"
+                                    data-group-keys='@json($memberKeys)'
+                                    x-data="{}"
+                                    x-effect="
+                                        const keys = JSON.parse($el.dataset.groupKeys);
+                                        const selected = $wire.selectedFeedKeys;
+                                        const count = keys.filter((key) => selected.includes(key)).length;
+                                        $el.checked = keys.length > 0 && count === keys.length;
+                                        $el.indeterminate = count > 0 && count < keys.length;
+                                        $el.setAttribute('aria-checked', $el.indeterminate ? 'mixed' : ($el.checked ? 'true' : 'false'));
+                                    "
+                                    x-on:click.prevent="$wire.toggleNotificationGroupSelection(JSON.parse($el.dataset.groupKeys))">
+                            </td>
+                        </tr>
+                        @foreach ($members as $item)
+                            @include('filament.pages.partials.dashboard-feed-row', ['item' => $item, 'pinned' => false, 'groupMember' => true])
+                        @endforeach
+                    </tbody>
+                @endif
+            @endforeach
         </table>
 
         @if ($feed === [])
