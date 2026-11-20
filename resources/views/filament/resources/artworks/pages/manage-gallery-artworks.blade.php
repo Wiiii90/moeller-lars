@@ -63,7 +63,7 @@
                     @php($stagedTotal = count($pendingBatchArtworkMedia))
                     <div class="admin-stage-tabs gallery-stage__workspace-tabs" role="group" aria-label="Gallery editor mode and staged artwork navigation">
                         <button class="admin-action {{ $galleryStagePanel === 'upload' ? 'is-primary' : '' }}" type="button"
-                            wire:click="selectGalleryStagePanel('upload')" aria-pressed="{{ $galleryStagePanel === 'upload' ? 'true' : 'false' }}">Upload<span x-show="uploadRunning" x-cloak x-text="' · ' + progress.toFixed(1) + '%'" class="gallery-stage__upload-tab-progress"></span></button>
+                            wire:click="selectGalleryStagePanel('upload')" aria-pressed="{{ $galleryStagePanel === 'upload' ? 'true' : 'false' }}">Upload<span x-show="uploadRunning" x-cloak x-text="'(' + progress.toFixed(1) + '%)'" class="gallery-stage__upload-tab-progress"></span></button>
                         <div class="admin-action gallery-stage__queue-control {{ $galleryStagePanel === 'queue' ? 'is-primary' : '' }}"
                             role="group" aria-label="Staged Artwork navigation">
                             <button class="gallery-stage__queue-arrow" type="button"
@@ -99,8 +99,8 @@
                     ">Ready for new files</span>
                     <span class="gallery-stage__upload-status-value"
                         x-text="
-                            phase === 'uploading' ? (completed + 1) + ' / ' + fileCount + ' · ' + progress.toFixed(1) + '% · ' + transferDetail
-                            : phase === 'processing' ? (completed + 1) + ' / ' + fileCount + ' · ' + progress.toFixed(1) + '%'
+                            phase === 'uploading' ? (completed + 1) + ' / ' + fileCount + ' (' + progress.toFixed(1) + '%) ' + transferDetail
+                            : phase === 'processing' ? (completed + 1) + ' / ' + fileCount + ' (' + progress.toFixed(1) + '%)'
                             : phase === 'result' ? 'Review Staged'
                             : @js(count($pendingBatchArtworkMedia)) + ' staged'
                         ">{{ count($pendingBatchArtworkMedia) }} staged</span>
@@ -110,7 +110,7 @@
                     aria-label="Media upload status"
                     aria-valuemin="0" aria-valuemax="100"
                     x-bind:aria-valuenow="uploadRunning ? progress : null"
-                    x-bind:aria-valuetext="phase === 'processing' ? processingStep + ' · ' + progress.toFixed(1) + '% complete' : null">
+                    x-bind:aria-valuetext="phase === 'processing' ? processingStep + ' (' + progress.toFixed(1) + '%)' : null">
                     <span class="admin-gallery-upload__progress-track" aria-hidden="true">
                         <span class="admin-gallery-upload__progress-fill" x-bind:style="'width: ' + progress + '%'"></span>
                     </span>
@@ -125,13 +125,9 @@
                         <div class="admin-gallery-upload__copy">
                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::UploadDropzone->value"
                                 class="admin-gallery-upload__icon" aria-hidden="true" />
-                            <strong
-                                x-text="
-                                    phase === 'uploading' ? 'Uploading file ' + (completed + 1) + ' of ' + fileCount + ' · ' + transferDetail
-                                    : phase === 'processing' ? processingStep + ' · ' + progress.toFixed(1) + '%'
-                                    : 'Drop images or videos here, or choose files'
-                                "
-                            >Drop images or videos here, or choose files</strong>
+                            <strong>Drop images or videos here, or choose files</strong>
+                            <span x-show="uploadRunning" x-cloak
+                                x-text="'Batch progress (' + progress.toFixed(1) + '%)'"></span>
                             <span x-show="phase === 'idle'">
                                 JPEG, PNG, WebP (max {{ \App\Domain\Content\RegionalFormats::adminNumber(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} megapixels); MP4 and WebM. Interrupted transfers can be resumed by selecting the same file.
                             </span>

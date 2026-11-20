@@ -2,13 +2,19 @@
 
 **Lease:** 29
 **Branch:** dev
-**State:** Active — Public Gallery native inline video player retained; Gallery-specific Viewer action retired by artist request, runtime/browser acceptance pending.
+**State:** Active — Gallery Stage upload progress copy standardized; runtime/browser acceptance pending.
 
 ## Takeover — 2026-11-20
 
 - New chat explicitly replaces the previous Dev Worker 4 under lease 29 on `dev`.
 - User assigned continued Gallery ownership but did not yet specify a new feature or defect for implementation. Await the next concrete task; do not automatically restart historical tasks.
 - Preserve previous Gallery Stage/media/publication and table contracts. All prior browser/runtime checks listed below remain pending; no application code, tests, deployment or Continuous Integration were changed during takeover.
+
+## Gallery Stage upload progress display — 2026-11-20
+
+- The artist requested parentheses around every displayed Stage-upload percentage and removal of middle-dot separators. Updated the Upload tab, active upload status row and accessible progress description to use `(N.N%)` while retaining the shared canonical upload progress calculations.
+- The dropzone no longer duplicates the phase-specific count, transfer bytes and server processing status shown above the progress bar. Its persistent label instead explains file selection; while uploading, a compact `Batch progress (N.N%)` supplies a second percentage in the panel, in addition to the Upload tab.
+- Resumable transfer, progress bar, queue, result and file selection behavior remain unchanged. Source review only, browser acceptance pending. No test files, Continuous Integration, deployment or release.
 
 ## Gallery video Viewer-button removal — 2026-11-20
 
