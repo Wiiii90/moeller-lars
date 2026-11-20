@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Content\RegionalFormats;
+
 use App\Domain\Content\PublicLegalContent;
 use App\Domain\Content\SiteSectionType;
 use App\Models\CustomPageSetting;
@@ -212,7 +214,7 @@ trait CustomPageWorkspacePresentationHelpers
         }
         $value = (float) $metric['value'];
 
-        return number_format($value, $value === floor($value) ? 0 : 1);
+        return RegionalFormats::adminNumber($value, $value === floor($value) ? 0 : 1);
     }
 
     private function section(): SiteSection

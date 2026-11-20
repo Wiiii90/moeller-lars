@@ -222,11 +222,11 @@
 
                     <div class="activity-publication__staged">
                         <span>{{ __('Pending changes') }}</span>
-                        <strong>{{ number_format($publicationContext['staged']) }}</strong>
+                        <strong>{{ \App\Domain\Content\RegionalFormats::adminNumber($publicationContext['staged']) }}</strong>
                         <small>
                             Working state compared with the current live snapshot
                             @if ($publicationContext['current_activities'] > 0)
-                                · {{ number_format($publicationContext['current_activities']) }} current activities
+                                · {{ \App\Domain\Content\RegionalFormats::adminNumber($publicationContext['current_activities']) }} current activities
                             @endif
                         </small>
                     </div>
@@ -238,13 +238,13 @@
                                 <article>
                                     <div>
                                         <strong>{{ $group['area'] }}</strong>
-                                        <span>{{ number_format($group['count']) }}</span>
+                                        <span>{{ \App\Domain\Content\RegionalFormats::adminNumber($group['count']) }}</span>
                                     </div>
                                     <small>{{ $group['entity'] }}</small>
                                 </article>
                             @endforeach
                             @if ($hiddenPublicationGroups > 0)
-                                <small>+ {{ number_format($hiddenPublicationGroups) }} more group{{ $hiddenPublicationGroups === 1 ? '' : 's' }}</small>
+                                <small>+ {{ \App\Domain\Content\RegionalFormats::adminNumber($hiddenPublicationGroups) }} more group{{ $hiddenPublicationGroups === 1 ? '' : 's' }}</small>
                             @endif
                         </div>
                     @endif
@@ -261,7 +261,7 @@
                         <div class="activity-publication__latest">
                             <span>{{ __('Current live version') }}</span>
                             <strong>{{ $liveCommit['short_hash'] ?? '#'.$liveCommit['id'] }} · {{ $liveCommit['when'] }}</strong>
-                            <small>{{ number_format($liveCommit['change_count']) }} changes · {{ $liveCommit['timestamp'] }}</small>
+                            <small>{{ \App\Domain\Content\RegionalFormats::adminNumber($liveCommit['change_count']) }} changes · {{ $liveCommit['timestamp'] }}</small>
                             <p title="{{ $liveCommit['message'] ?? 'No commit message' }}">{{ $liveCommit['message'] ?? 'No commit message' }}</p>
                         </div>
                     @else
@@ -658,7 +658,7 @@
                                     <span class="admin-status {{ $commit['restorable'] ? 'is-published' : '' }}">
                                         {{ $commit['restorable'] ? 'Restorable' : ($commit['legacy'] ? 'Metadata only' : 'Schema changed') }}
                                     </span>
-                                    <small>{{ number_format($commit['change_count']) }} changes · {{ number_format($commit['activity_count']) }} activities</small>
+                                    <small>{{ \App\Domain\Content\RegionalFormats::adminNumber($commit['change_count']) }} changes · {{ \App\Domain\Content\RegionalFormats::adminNumber($commit['activity_count']) }} activities</small>
                                 </td>
                                 <td class="admin-table__actions activity-actions-cell">
                                     <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--three-static activity-row-actions">

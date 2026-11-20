@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Content\RegionalFormats;
+
 use App\Domain\Analytics\AnalyticsReportAvailability;
 use App\Domain\Analytics\ArtworkAttentionReport;
 use App\Domain\Analytics\MatomoReportingClient;
@@ -439,7 +441,7 @@ final class Analytics extends Page
             $rankLabel = '—';
             if ($visits !== null) {
                 $rank++;
-                $rankLabel = number_format($rank);
+                $rankLabel = RegionalFormats::adminNumber($rank);
             }
 
             $share = null;
@@ -925,7 +927,7 @@ final class Analytics extends Page
 
         $visitorSplit = $visits !== null && $returning !== null
             ? [
-                'value' => number_format(max(0, $visits - $returning)).' / '.number_format($returning),
+                'value' => RegionalFormats::adminNumber(max(0, $visits - $returning)).' / '.RegionalFormats::adminNumber($returning),
                 'detail' => 'visits in selected period',
             ]
             : [
@@ -954,28 +956,28 @@ final class Analytics extends Page
                 'value' => $sourceAvailable ? ($topSource['label'] ?? 'No data') : '—',
                 'detail' => ! $sourceAvailable
                     ? 'Referrer report unavailable'
-                    : (isset($topSource['nb_visits']) ? number_format((int) $topSource['nb_visits']).' visits' : 'No referrer data'),
+                    : (isset($topSource['nb_visits']) ? RegionalFormats::adminNumber((int) $topSource['nb_visits']).' visits' : 'No referrer data'),
             ],
             [
                 'label' => 'Leading country',
                 'value' => $countryAvailable ? ($topCountry['label'] ?? 'No data') : '—',
                 'detail' => ! $countryAvailable
                     ? 'Country report unavailable'
-                    : (isset($topCountry['nb_visits']) ? number_format((int) $topCountry['nb_visits']).' visits' : 'No geography data'),
+                    : (isset($topCountry['nb_visits']) ? RegionalFormats::adminNumber((int) $topCountry['nb_visits']).' visits' : 'No geography data'),
             ],
             [
                 'label' => 'Most viewed content',
                 'value' => $contentAvailable ? ($topContent['label'] ?? 'No data') : '—',
                 'detail' => ! $contentAvailable
                     ? 'Content report unavailable'
-                    : (isset($topContent['nb_hits']) ? number_format((int) $topContent['nb_hits']).' views/actions' : 'No content data'),
+                    : (isset($topContent['nb_hits']) ? RegionalFormats::adminNumber((int) $topContent['nb_hits']).' views/actions' : 'No content data'),
             ],
             [
                 'label' => 'AI referrals',
                 'value' => $aiAvailable ? ($topAi['label'] ?? 'None detected') : '—',
                 'detail' => ! $aiAvailable
                     ? 'AI-assistant report unavailable'
-                    : (isset($topAi['nb_visits']) ? number_format((int) $topAi['nb_visits']).' visits' : 'No AI-assistant referrals in range'),
+                    : (isset($topAi['nb_visits']) ? RegionalFormats::adminNumber((int) $topAi['nb_visits']).' visits' : 'No AI-assistant referrals in range'),
             ],
         ];
     }
@@ -1004,22 +1006,22 @@ final class Analytics extends Page
     private function formatMetric(string $key, float $value): string
     {
         return match ($key) {
-            'nb_visits', 'nb_uniq_visitors', 'nb_actions' => number_format((int) round($value)),
-            'nb_actions_per_visit' => number_format($value, 1),
+            'nb_visits', 'nb_uniq_visitors', 'nb_actions' => RegionalFormats::adminNumber((int) round($value)),
+            'nb_actions_per_visit' => RegionalFormats::adminNumber($value, 1),
             'avg_time_on_site' => $this->formatDuration((int) round($value)),
-            'bounce_rate' => number_format($value, 1).'%',
+            'bounce_rate' => RegionalFormats::adminNumber($value, 1).'%',
             default => (string) $value,
         };
     }
 
     private function formatNullableInteger(mixed $value): string
     {
-        return is_numeric($value) ? number_format((int) round((float) $value)) : '—';
+        return is_numeric($value) ? RegionalFormats::adminNumber((int) round((float) $value)) : '—';
     }
 
     private function formatNullablePercentage(mixed $value): string
     {
-        return is_numeric($value) ? number_format((float) $value, 1).'%' : '—';
+        return is_numeric($value) ? RegionalFormats::adminNumber((float) $value, 1).'%' : '—';
     }
 
     private function formatNullableDuration(mixed $value): string

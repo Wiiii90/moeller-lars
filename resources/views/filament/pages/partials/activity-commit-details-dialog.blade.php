@@ -21,7 +21,7 @@
 
     <div class="admin-detail-dialog__field">
         <span>{{ __('Publication') }}</span>
-        <p>{{ $commit['actor'] }} · {{ number_format($commit['change_count']) }} change{{ $commit['change_count'] === 1 ? '' : 's' }} · {{ number_format($commit['activity_count']) }} activit{{ $commit['activity_count'] === 1 ? 'y' : 'ies' }}</p>
+        <p>{{ $commit['actor'] }} · {{ \App\Domain\Content\RegionalFormats::adminNumber($commit['change_count']) }} change{{ $commit['change_count'] === 1 ? '' : 's' }} · {{ \App\Domain\Content\RegionalFormats::adminNumber($commit['activity_count']) }} activit{{ $commit['activity_count'] === 1 ? 'y' : 'ies' }}</p>
     </div>
 
     <div class="admin-detail-dialog__field">
@@ -66,7 +66,7 @@
                         <small>
                             {{ $activity['actor'] }} · {{ $activity['timestamp'] }}
                             @if (($activity['ordering_projection']['event_count'] ?? 1) > 1)
-                                · {{ number_format($activity['ordering_projection']['event_count']) }} reorder operations
+                                · {{ \App\Domain\Content\RegionalFormats::adminNumber($activity['ordering_projection']['event_count']) }} reorder operations
                             @endif
                         </small>
                     </article>

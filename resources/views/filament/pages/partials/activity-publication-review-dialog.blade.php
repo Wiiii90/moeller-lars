@@ -8,7 +8,7 @@
     <dl class="admin-detail-dialog__meta">
         <div>
             <dt>{{ __('Pending changes') }}</dt>
-            <dd>{{ number_format($summary['total']) }}</dd>
+            <dd>{{ \App\Domain\Content\RegionalFormats::adminNumber($summary['total']) }}</dd>
         </div>
         <div>
             <dt>{{ __('Preflight') }}</dt>
@@ -24,7 +24,7 @@
                     <article>
                         <div>
                             <strong>{{ $group['area'] }}</strong>
-                            <span>{{ number_format($group['count']) }}</span>
+                            <span>{{ \App\Domain\Content\RegionalFormats::adminNumber($group['count']) }}</span>
                         </div>
                         <small>{{ $group['entity'] }}</small>
                     </article>
@@ -56,7 +56,7 @@
                 @endforeach
             </div>
             @if ($details['truncated'])
-                <p class="admin-detail-dialog__context">Only the first {{ number_format(count($details['rows'])) }} changed records are shown.</p>
+                <p class="admin-detail-dialog__context">Only the first {{ \App\Domain\Content\RegionalFormats::adminNumber(count($details['rows'])) }} changed records are shown.</p>
             @endif
         </div>
     @endif

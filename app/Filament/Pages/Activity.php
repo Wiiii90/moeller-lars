@@ -329,8 +329,8 @@ final class Activity extends Page
 
         app(AdminNotifier::class)->notification(
             title: $undone > 0 ? 'Selected changes undone' : 'Undo unavailable',
-            body: number_format($undone).' change'.($undone === 1 ? '' : 's').' undone'
-                .($skipped > 0 ? ' · '.number_format($skipped).' skipped because Undo was unavailable.' : '.'),
+            body: RegionalFormats::adminNumber($undone).' change'.($undone === 1 ? '' : 's').' undone'
+                .($skipped > 0 ? ' · '.RegionalFormats::adminNumber($skipped).' skipped because Undo was unavailable.' : '.'),
             status: $undone > 0 ? 'success' : 'warning',
         );
     }
@@ -427,7 +427,7 @@ final class Activity extends Page
         app(AdminNotifier::class)->notification(
             title: $changed > 0 ? 'Staged changes reset' : 'Nothing staged',
             body: $changed > 0
-                ? number_format($changed).' working row'.($changed === 1 ? '' : 's').' restored from the current live version.'
+                ? RegionalFormats::adminNumber($changed).' working row'.($changed === 1 ? '' : 's').' restored from the current live version.'
                 : 'The working state already matches the current live version.',
             status: $changed > 0 ? 'success' : 'info',
         );
@@ -454,7 +454,7 @@ final class Activity extends Page
         $this->refreshWorkspaceSnapshot();
         app(AdminNotifier::class)->notification(
             title: 'Version restored to working state',
-            body: $checkpoint->shortHash().' is now staged with '.number_format($staged).' pending change'.($staged === 1 ? '' : 's').'.',
+            body: $checkpoint->shortHash().' is now staged with '.RegionalFormats::adminNumber($staged).' pending change'.($staged === 1 ? '' : 's').'.',
             status: 'success',
         );
     }
@@ -475,7 +475,7 @@ final class Activity extends Page
         $this->refreshWorkspaceSnapshot();
         app(AdminNotifier::class)->notification(
             title: 'Commit revert staged',
-            body: $result['reverted']->shortHash().' will be reversed by publishing the parent state '.$result['checkpoint']->shortHash().'. '.number_format($staged).' change'.($staged === 1 ? '' : 's').' staged.',
+            body: $result['reverted']->shortHash().' will be reversed by publishing the parent state '.$result['checkpoint']->shortHash().'. '.RegionalFormats::adminNumber($staged).' change'.($staged === 1 ? '' : 's').' staged.',
             status: 'success',
         );
     }
@@ -836,11 +836,11 @@ final class Activity extends Page
         };
 
         $workspaceMetrics = [
-            ['label' => 'Changes', 'value' => number_format($overview['total']), 'description' => 'Matching activity events'],
-            ['label' => 'Commits', 'value' => number_format((int) ($commitSummary->aggregate ?? 0)), 'description' => 'Matching published versions'],
-            ['label' => 'Committed changes', 'value' => number_format((int) ($commitSummary->changed_rows ?? 0)), 'description' => 'Rows in matching commits'],
-            ['label' => 'Active days', 'value' => number_format($overview['active_days']), 'description' => 'Days with matching activity'],
-            ['label' => 'Pending', 'value' => number_format((int) $publicationContext['staged']), 'description' => 'Working changes not LIVE yet'],
+            ['label' => 'Changes', 'value' => RegionalFormats::adminNumber($overview['total']), 'description' => 'Matching activity events'],
+            ['label' => 'Commits', 'value' => RegionalFormats::adminNumber((int) ($commitSummary->aggregate ?? 0)), 'description' => 'Matching published versions'],
+            ['label' => 'Committed changes', 'value' => RegionalFormats::adminNumber((int) ($commitSummary->changed_rows ?? 0)), 'description' => 'Rows in matching commits'],
+            ['label' => 'Active days', 'value' => RegionalFormats::adminNumber($overview['active_days']), 'description' => 'Days with matching activity'],
+            ['label' => 'Pending', 'value' => RegionalFormats::adminNumber((int) $publicationContext['staged']), 'description' => 'Working changes not LIVE yet'],
             ['label' => 'Latest', 'value' => $latestAt?->diffForHumans() ?? '—', 'description' => $latestAt instanceof CarbonInterface ? RegionalFormats::adminDateTime($latestAt) : 'No matching activity'],
         ];
 

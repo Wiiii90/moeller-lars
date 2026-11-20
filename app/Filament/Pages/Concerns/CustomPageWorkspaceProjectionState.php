@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Content\RegionalFormats;
+
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SocialLinks;
@@ -167,9 +169,9 @@ trait CustomPageWorkspaceProjectionState
         $this->retainVisibleSelections();
 
         $this->metrics = [
-            ['label' => 'Components', 'value' => number_format(count($blocks) + $childComponentCount), 'description' => 'Page sequence'],
-            ['label' => 'Entries', 'value' => number_format($listEntryCount), 'description' => 'List entries'],
-            ['label' => 'Images', 'value' => number_format($counts['image']), 'description' => 'Image components'],
+            ['label' => 'Components', 'value' => RegionalFormats::adminNumber(count($blocks) + $childComponentCount), 'description' => 'Page sequence'],
+            ['label' => 'Entries', 'value' => RegionalFormats::adminNumber($listEntryCount), 'description' => 'List entries'],
+            ['label' => 'Images', 'value' => RegionalFormats::adminNumber($counts['image']), 'description' => 'Image components'],
             ['label' => 'Visits', 'value' => $this->metricValue($this->analytics['page']['visits'] ?? null), 'description' => 'This page · 30d'],
             ['label' => 'Views', 'value' => $this->metricValue($this->analytics['page']['views'] ?? null), 'description' => 'This page · 30d'],
             ['label' => 'Contact messages', 'value' => $this->metricValue($this->analytics['contact_messages'] ?? null), 'description' => 'Site-wide · 30d'],

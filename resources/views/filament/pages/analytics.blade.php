@@ -57,12 +57,12 @@
             $rankLabel = '—';
             if ($visits !== null) {
                 $rank++;
-                $rankLabel = number_format($rank);
+                $rankLabel = \App\Domain\Content\RegionalFormats::adminNumber($rank);
             }
 
             $countryPresentation[$label] = [
-                'visits' => $visits === null ? '—' : number_format((int) round($visits)),
-                'share' => $share === null ? '—' : number_format($share, 1).'%',
+                'visits' => $visits === null ? '—' : \App\Domain\Content\RegionalFormats::adminNumber((int) round($visits)),
+                'share' => $share === null ? '—' : \App\Domain\Content\RegionalFormats::adminNumber($share, 1).'%',
                 'rank' => $rankLabel,
                 'flag_url' => $flagUrl,
                 'code' => $code,
@@ -86,13 +86,13 @@
                 'label' => 'Leading country',
                 'value' => $initialCountry === null
                     ? '—'
-                    : $initialCountry.($leadingShare === null ? '' : ' ('.number_format($leadingShare, 1).'%)'),
+                    : $initialCountry.($leadingShare === null ? '' : ' ('.\App\Domain\Content\RegionalFormats::adminNumber($leadingShare, 1).'%)'),
             ],
             [
                 'label' => 'Visits outside leader',
                 'value' => $outsideLeaderVisits === null
                     ? '—'
-                    : number_format((int) round($outsideLeaderVisits)).($outsideLeaderShare === null ? '' : ' ('.number_format($outsideLeaderShare, 1).'%)'),
+                    : \App\Domain\Content\RegionalFormats::adminNumber((int) round($outsideLeaderVisits)).($outsideLeaderShare === null ? '' : ' ('.\App\Domain\Content\RegionalFormats::adminNumber($outsideLeaderShare, 1).'%)'),
             ],
         ];
         $stageMessage = match (true) {

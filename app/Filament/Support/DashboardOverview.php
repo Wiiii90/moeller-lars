@@ -2,6 +2,8 @@
 
 namespace App\Filament\Support;
 
+use App\Domain\Content\RegionalFormats;
+
 use App\Domain\Analytics\AnalyticsReportAvailability;
 use App\Domain\Analytics\AnalyticsWorldMap;
 use App\Domain\Analytics\MatomoReportingClient;
@@ -36,10 +38,10 @@ final class DashboardOverview
         $metrics = [
             ['label' => 'Visits', 'value' => $analytics['visits_display'], 'detail' => 'Last 30 days'],
             ['label' => 'Unique visitors', 'value' => $analytics['visitors_display'], 'detail' => 'Last 30 days'],
-            ['label' => 'Published artworks', 'value' => number_format($publishedArtworks), 'detail' => 'Public now'],
-            ['label' => 'Published pages', 'value' => number_format($publishedPages), 'detail' => 'Navigation groups excluded'],
+            ['label' => 'Published artworks', 'value' => RegionalFormats::adminNumber($publishedArtworks), 'detail' => 'Public now'],
+            ['label' => 'Published pages', 'value' => RegionalFormats::adminNumber($publishedPages), 'detail' => 'Navigation groups excluded'],
             ['label' => 'Storage used', 'value' => $storage['percent'] === null ? '—' : $storage['percent'].'%', 'detail' => $storage['metric_detail']],
-            ['label' => 'Recent changes', 'value' => number_format($activity['recent_changes']), 'detail' => 'Last 30 days'],
+            ['label' => 'Recent changes', 'value' => RegionalFormats::adminNumber($activity['recent_changes']), 'detail' => 'Last 30 days'],
         ];
 
         return compact('analytics', 'storage', 'activity', 'metrics');
@@ -83,8 +85,8 @@ final class DashboardOverview
             },
             'message' => $message ?? ($reportingAvailable ? null : 'Analytics data is currently unavailable.'),
             'range' => 'Last 30 days',
-            'visits_display' => $visits === null ? '—' : number_format((int) round($visits)),
-            'visitors_display' => $visitors === null ? '—' : number_format((int) round($visitors)),
+            'visits_display' => $visits === null ? '—' : RegionalFormats::adminNumber((int) round($visits)),
+            'visitors_display' => $visitors === null ? '—' : RegionalFormats::adminNumber((int) round($visitors)),
             'visits_delta' => $visitsDelta === null ? null : sprintf('%+.1f%%', $visitsDelta),
             'country_state' => $countryState,
             'map_points' => $countryState === 'available'

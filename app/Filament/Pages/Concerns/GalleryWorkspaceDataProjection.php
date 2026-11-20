@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Content\RegionalFormats;
+
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Artwork\ArtworkDate;
 use App\Domain\Artwork\GalleryPresentation;
@@ -235,11 +237,11 @@ trait GalleryWorkspaceDataProjection
         $attentionSeconds = $rowsState === 'unavailable' ? null : array_sum(array_map(static fn (array $row): float => (float) ($row['attention_seconds'] ?? 0), $rows));
 
         return [
-            ['label' => 'Artworks', 'value' => number_format($this->unfilteredArtworkCount), 'description' => 'In this Gallery'],
-            ['label' => 'Published', 'value' => number_format($this->publishedCount), 'description' => 'Working state, commit to go live'],
+            ['label' => 'Artworks', 'value' => RegionalFormats::adminNumber($this->unfilteredArtworkCount), 'description' => 'In this Gallery'],
+            ['label' => 'Published', 'value' => RegionalFormats::adminNumber($this->publishedCount), 'description' => 'Working state, commit to go live'],
             ['label' => 'Visits', 'value' => $this->metricValue($analytics['page']['visits'] ?? null), 'description' => 'Gallery, 30d'],
             ['label' => 'Views', 'value' => $this->metricValue($analytics['page']['views'] ?? null), 'description' => 'Gallery, 30d'],
-            ['label' => 'Artwork opens', 'value' => $opens === null ? '—' : number_format($opens), 'description' => 'Viewer opens, 30d'],
+            ['label' => 'Artwork opens', 'value' => $opens === null ? '—' : RegionalFormats::adminNumber($opens), 'description' => 'Viewer opens, 30d'],
             ['label' => 'Attention', 'value' => $attentionSeconds === null ? '—' : $this->formatSeconds($attentionSeconds), 'description' => 'Tracked artwork time, 30d'],
         ];
     }
@@ -250,7 +252,7 @@ trait GalleryWorkspaceDataProjection
             return '—';
         }
 
-        return number_format((float) $metric['value'], ((float) $metric['value']) === floor((float) $metric['value']) ? 0 : 1);
+        return RegionalFormats::adminNumber((float) $metric['value'], ((float) $metric['value']) === floor((float) $metric['value']) ? 0 : 1);
     }
 
     private function formatSeconds(float $seconds): string
