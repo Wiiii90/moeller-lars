@@ -133,7 +133,7 @@ final class AccountMenuAction
 
     public static function settingsAction(): Action
     {
-        return AdminDialog::command(
+        return AdminDialog::edit(
             Action::make('changeAdminSettings')
                 ->label(fn (): string => __('Settings'))
                 ->icon(AdminIcon::Settings->value)
@@ -153,7 +153,6 @@ final class AccountMenuAction
                     Select::make('admin_language')
                         ->label(__('Language'))
                         ->options(['en' => 'English', 'de' => 'Deutsch'])
-                        ->required()
                         ->in(['en', 'de'])
                         ->columnSpanFull(),
                     View::make('filament.schemas.components.admin-section-heading')
@@ -163,24 +162,20 @@ final class AccountMenuAction
                         Select::make('admin_region')
                             ->label(__('Dates'))
                             ->options(RegionalFormats::OPTIONS)
-                            ->required()
-                            ->in(array_keys(RegionalFormats::OPTIONS)),
+                                ->in(array_keys(RegionalFormats::OPTIONS)),
                         Select::make('admin_number_format')
                             ->label(__('Numbers'))
                             ->options(RegionalFormats::NUMBER_OPTIONS)
-                            ->required()
-                            ->in(array_keys(RegionalFormats::NUMBER_OPTIONS)),
+                                ->in(array_keys(RegionalFormats::NUMBER_OPTIONS)),
                         Select::make('admin_time_format')
                             ->label(__('Time'))
                             ->options(fn (): array => array_map(static fn (string $value): string => __($value), RegionalFormats::TIME_OPTIONS))
-                            ->required()
-                            ->in(array_keys(RegionalFormats::TIME_OPTIONS)),
+                                ->in(array_keys(RegionalFormats::TIME_OPTIONS)),
                         Select::make('admin_time_zone')
                             ->label(__('Time zone'))
                             ->options(RegionalFormats::timeZoneOptions())
                             ->searchable()
-                            ->required()
-                            ->in(array_keys(RegionalFormats::timeZoneOptions())),
+                                ->in(array_keys(RegionalFormats::timeZoneOptions())),
                     ])
                         ->columns(2)
                         ->columnSpanFull(),
@@ -192,17 +187,21 @@ final class AccountMenuAction
                         return;
                     }
 
+                    $languageChanged = $user->isDirty('admin_language');
                     $user->save();
+
                     app(AdminNotifier::class)->notification(
                         title: __('Settings updated'),
                         status: 'success',
                     );
 
-                    // Reload the rendered tree under the new preferences.
-                    app()->setLocale((string) $user->getAttribute('admin_language'));
-                    $livewire->redirect(request()->header('Referer') ?: url('/admin'), navigate: false);
+                    if ($languageChanged) {
+                        // Locale is rendered into the existing Filament/Livewire
+                        // tree. Only a language change needs a complete reload.
+                        app()->setLocale((string) $user->getAttribute('admin_language'));
+                        $livewire->redirect(request()->header('Referer') ?: url('/admin'), navigate: false);
+                    }
                 }),
-            fn (): string => __('Save settings'),
             AdminDialogSize::Default,
         );
     }

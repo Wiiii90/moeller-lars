@@ -647,28 +647,24 @@ final class General extends Page
                             ->label(self::regionalDatesLabel())
                             ->options(RegionalFormats::OPTIONS)
                             ->native()
-                            ->required()
                             ->live()
                             ->afterStateUpdated(self::persist('regional_format')),
                         Select::make('number_format')
                             ->label(self::regionalNumbersLabel())
                             ->options(RegionalFormats::NUMBER_OPTIONS)
                             ->native()
-                            ->required()
                             ->live()
                             ->afterStateUpdated(self::persist('number_format')),
                         Select::make('time_format')
                             ->label(self::regionalTimeLabel())
                             ->options(fn (): array => array_map(static fn (string $value): string => __($value), RegionalFormats::TIME_OPTIONS))
                             ->native()
-                            ->required()
                             ->live()
                             ->afterStateUpdated(self::persist('time_format')),
                         Select::make('time_zone')
                             ->label(self::regionalTimeZoneLabel())
                             ->options(RegionalFormats::timeZoneOptions())
                             ->searchable()
-                            ->required()
                             ->live()
                             ->afterStateUpdated(self::persist('time_zone')),
                     ])
