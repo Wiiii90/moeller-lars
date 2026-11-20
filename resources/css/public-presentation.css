@@ -2414,10 +2414,9 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
 .public-video__controls {
     display: flex;
     justify-content: flex-end;
-    gap: .35rem;
     margin-top: .35rem;
 }
-.public-video__action {
+.public-video__sound {
     display: grid;
     place-items: center;
     width: 2rem;
@@ -2429,11 +2428,11 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
     color: var(--public-ink);
     cursor: pointer;
 }
-.public-video__action .public-icon {
+.public-video__sound .public-icon {
     width: 1rem;
     height: 1rem;
 }
-.public-video__action:focus-visible {
+.public-video__sound:focus-visible {
     outline: 2px solid currentColor;
     outline-offset: 2px;
 }

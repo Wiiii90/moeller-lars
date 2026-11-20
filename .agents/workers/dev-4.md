@@ -2,13 +2,20 @@
 
 **Lease:** 29
 **Branch:** dev
-**State:** Active — Public Gallery native inline player and separate modal Viewer trigger source-integrated; runtime/browser acceptance pending.
+**State:** Active — Public Gallery native inline video player retained; Gallery-specific Viewer action retired by artist request, runtime/browser acceptance pending.
 
 ## Takeover — 2026-11-20
 
 - New chat explicitly replaces the previous Dev Worker 4 under lease 29 on `dev`.
 - User assigned continued Gallery ownership but did not yet specify a new feature or defect for implementation. Await the next concrete task; do not automatically restart historical tasks.
 - Preserve previous Gallery Stage/media/publication and table contracts. All prior browser/runtime checks listed below remain pending; no application code, tests, deployment or Continuous Integration were changed during takeover.
+
+## Gallery video Viewer-button removal — 2026-11-20
+
+- Artist explicitly rejected the additional Gallery video fullscreen/Viewer button beneath videos. Removed it altogether along with its unused shared icon and button styling, retaining native `video controls` and Gallery's canonical Viewer item metadata for image-to-video navigation within the modal.
+- The Gallery video itself still is not a Viewer trigger. Existing image Viewer navigation and server-provided full Gallery sequence remain available; the optional independent sound toggle is unaffected where enabled by its owner.
+- The reported lack of immediate autoplay was not diagnosed in a browser in this task. Existing visible, muted, looped, reduced-motion-aware, browser-policy-governed autoplay remains unchanged. No new playback branch or workaround.
+- Source-only verification; no runtime/browser test, CI, deploy, or release.
 
 ## Gallery inline video controls and independent Viewer trigger — 2026-11-20
 

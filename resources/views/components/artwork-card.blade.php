@@ -184,22 +184,12 @@
         </div>
     @endif
 
-    @if (($isVideo && $allowVideoSound) || ($galleryVideoPlayer && $viewerActive))
+    @if ($isVideo && $allowVideoSound)
         <div class="public-video__controls">
-            @if ($isVideo && $allowVideoSound)
-                <button type="button" class="public-video__sound public-video__action" data-public-video-sound-toggle aria-label="Enable video sound" aria-pressed="false" title="Enable video sound">
-                    <span data-public-video-icon-muted><x-public-icon name="volume-muted" /></span>
-                    <span data-public-video-icon-playing hidden><x-public-icon name="volume-on" /></span>
-                </button>
-            @endif
-            @if ($galleryVideoPlayer && $viewerActive)
-                {{-- A separate control preserves access to the cyclic Viewer
-                     without intercepting native video playback/seek actions. --}}
-                <button type="button" class="public-video__action" data-artwork-viewer-trigger
-                    data-viewer-key="{{ $viewerItem['key'] }}"
-                    aria-label="Open {{ $artwork->title }} in media viewer"
-                    title="Open in media viewer"><x-public-icon name="maximize" /></button>
-            @endif
+            <button type="button" class="public-video__sound" data-public-video-sound-toggle aria-label="Enable video sound" aria-pressed="false" title="Enable video sound">
+                <span data-public-video-icon-muted><x-public-icon name="volume-muted" /></span>
+                <span data-public-video-icon-playing hidden><x-public-icon name="volume-on" /></span>
+            </button>
         </div>
     @endif
 
