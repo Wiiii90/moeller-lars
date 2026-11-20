@@ -51,6 +51,9 @@ final class ExhibitionEditorialService
             if ($this->hasStructuredMediaInput($data)) {
                 $this->media->syncStructuredMedia($entry, $data);
             }
+            if ($this->media->reconcileCarouselPresentation($entry)) {
+                $entry->save();
+            }
 
             $this->audit->record($actor, 'exhibition.created', 'exhibition', $entry->getKey(), [
                 'site_section_id' => $sectionId,
@@ -101,6 +104,7 @@ final class ExhibitionEditorialService
             $mediaChanged = $this->hasStructuredMediaInput($data)
                 ? $this->media->syncStructuredMedia($fresh, $data)
                 : false;
+            $this->media->reconcileCarouselPresentation($fresh);
 
             if ($fresh->getAttribute('state') === 'published') {
                 $this->assertPublicReady($fresh);

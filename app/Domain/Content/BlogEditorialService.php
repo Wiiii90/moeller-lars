@@ -71,6 +71,7 @@ final class BlogEditorialService
             $mediaChanged = $this->hasStructuredMediaInput($data)
                 ? $this->media->syncStructuredMedia($fresh, $data)
                 : false;
+            $this->media->reconcileCarouselPresentation($fresh);
             $this->prepareLifecycle($fresh);
             $rowChanged = $fresh->isDirty();
             if ($rowChanged) {
@@ -188,6 +189,9 @@ final class BlogEditorialService
         $post->save();
         if ($this->hasStructuredMediaInput($editorData)) {
             $this->media->syncStructuredMedia($post, $editorData);
+        }
+        if ($this->media->reconcileCarouselPresentation($post)) {
+            $post->save();
         }
         if (in_array((string) $post->getAttribute('state'), ['published', 'scheduled'], true)) {
             $this->media->assertPublicReady($post);

@@ -170,21 +170,22 @@ final class JournalEntryEditorSchema
         ]);
     }
 
-    /** Disable selecting Carousel until three actual media rows exist.
-     * A previously saved Carousel is still editable when media are removed;
-     * the Public renderer then safely falls back to Slideshow. */
     private static function carouselOptionDisabled(string $value, Get $get): bool
     {
-        if ($value !== 'carousel' || $get('gallery_presentation') === 'carousel') {
-            return false;
-        }
+        return $value === 'carousel' && ! self::hasCarouselMedia($get('gallery_images'));
+    }
 
-        $rows = $get('gallery_images');
-        if (! is_array($rows)) {
-            return true;
-        }
+    private static function hasCarouselMedia(mixed $rows): bool
+    {
+        return is_array($rows)
+            && count(array_filter($rows, static fn (mixed $row): bool => is_array($row) && filled($row['media_asset_id'] ?? null))) >= 3;
+    }
 
-        return count(array_filter($rows, static fn (mixed $row): bool => is_array($row) && filled($row['media_asset_id'] ?? null))) < 3;
+    private static function reconcileCarouselEditor(mixed $rows, Get $get, Set $set): void
+    {
+        if ($get('gallery_presentation') === 'carousel' && ! self::hasCarouselMedia($rows)) {
+            $set('gallery_presentation', 'slideshow');
+        }
     }
 
     private static function exhibitionGalleryFields(): array
@@ -278,6 +279,10 @@ final class JournalEntryEditorSchema
 
     private static function galleryImages(bool $table = false): Repeater
     {
+        $onMediaChanged = static function (mixed $state, Get $get, Set $set): void {
+            self::reconcileCarouselEditor($state, $get, $set);
+        };
+
         if (! $table) {
             return Repeater::make('gallery_images')
                 ->label(__('Gallery media'))
@@ -292,6 +297,8 @@ final class JournalEntryEditorSchema
                 ->addActionLabel(__('Add media'))
                 ->reorderableWithButtons()
                 ->reorderableWithDragAndDrop(false)
+                ->afterStateUpdated($onMediaChanged)
+                ->live()
                 ->columnSpanFull();
         }
 
@@ -343,6 +350,8 @@ final class JournalEntryEditorSchema
             ->moveDownAction(fn (Action $action): Action => $action->after(
                 static fn (Component $livewire) => $livewire->dispatch('admin-edit-list-updated'),
             ))
+            ->afterStateUpdated($onMediaChanged)
+            ->live()
             ->columnSpanFull();
     }
 

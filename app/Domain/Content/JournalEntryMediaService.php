@@ -65,6 +65,23 @@ final class JournalEntryMediaService
         return $changed;
     }
 
+    /**
+     * A Carousel needs at least three persisted gallery entries. The common
+     * media owner reconciles the presentation after edits and asset removal;
+     * callers save the changed entry inside their existing transaction.
+     */
+    public function reconcileCarouselPresentation(BlogPost|Exhibition $entry): bool
+    {
+        if ($entry->getAttribute('gallery_presentation') !== 'carousel'
+            || $entry->mediaUsages()->where('role', JournalEntryMedia::ROLE_GALLERY)->count() >= 3) {
+            return false;
+        }
+
+        $entry->setAttribute('gallery_presentation', 'slideshow');
+
+        return true;
+    }
+
     public function assertPublicReady(BlogPost|Exhibition $entry): void
     {
         $entry->loadMissing('mediaUsages.mediaAsset.variants');
@@ -408,6 +425,10 @@ final class JournalEntryMediaService
                 $usage->setAttribute('position', $index + 1);
                 $usage->save();
             }
+        }
+
+        if ($this->reconcileCarouselPresentation($entry)) {
+            $entry->save();
         }
     }
 

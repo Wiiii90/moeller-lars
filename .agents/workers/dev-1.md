@@ -4,6 +4,14 @@
 
 **Scope:** Exhibition Add/Edit, canonical partial dates and conversion, address/map controls, autosave and the accepted Public Exhibitions presentation. Media integrity belongs to Dev Worker 2; Gallery/Artwork belongs to Dev Worker 4.
 
+## Carousel state after reducing media below three (2026-11-20)
+
+- Artist reproduced a real Exhibition editor bug: select Carousel with five or more media, delete down to two, save successfully, reopen; Carousel is grey only after manually changing to Slideshow. Root cause: the earlier Select option guard exempted the currently selected Carousel, while editorial services validated the name but not its minimum gallery count.
+- Repair in the existing shared `JournalEntryMediaService`: `reconcileCarouselPresentation()` counts actual persisted gallery references and changes Carousel to Slideshow below three; Exhibition and Blog create/update call it after syncing media inside their existing transactional writes, and media asset deletion calls it from `normalizeGallery()`. No new service, data field or migration.
+- Repair in the shared Journal editor: remove the already-selected Carousel exception. Both Gallery repeaters share a live `afterStateUpdated` hook that updates the selected presentation to Slideshow as soon as their populated media count drops below three; the selectable Carousel option also checks the same count. This preserves user-visible consistency while the domain service guards all writes.
+- Legacy persisted invalid choices are repaired by the next canonical edit and the existing public Slideshow fallback remains for historical read-only states.
+- **Evidence:** source-level review only. Browser validation is pending for the actual add/delete/save/reopen editor flow, direct media deletion, Blog and Exhibition, and older invalid records. No test suite, CI, migration, preview or deploy executed.
+
 ## Stable Slideshow arrow fit and three/five-slot Carousel (2026-11-19)
 
 - The artist approved the prior proposal: in portrait-only Slideshow sets, center the fixed side arrows closer by sizing the shared gallery stage from the widest media in that set; never jump on navigation. Carousel needs at least three real media, shows center plus one on either side for 3/4, and can show two neighbors per side with five or more media if the Page content is wide enough. Preserve the existing plain navigation arrow positions and hit rails.
@@ -109,4 +117,4 @@
 
 ## Next
 
-Have the artist review stable aspect-fitted Slideshow arrows and three/five-item Carousel, including disabled Carousel selection below three media, video and 48rem/72rem responsive thresholds, in local preview; hand browser regression scenarios to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
+Verify the Gallery Repeater automatic Carousel-to-Slideshow switch when deleting below three media and domain persistence on save/reopen, including legacy invalid Exhibition and Blog entries, then hand editor and public regression cases to Testing. Preserve the earlier date, restoration and map acceptance gates. Before each write, reread the fresh `dev` head and confirm lease 9.
