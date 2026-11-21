@@ -93,15 +93,21 @@ trait JournalWorkspaceStage
         ]);
     }
 
-    public function rememberNewJournalDraft(): void
+    public function rememberNewJournalDraft(bool $refreshPreview = true): void
     {
         $form = $this->journalNewForm->getRawState();
         if (! is_array($form)) {
             return;
         }
+        $saved = session()->get($this->stagedJournalSessionKey(), []);
+        if (is_array($saved) && ($saved['new'] ?? null) === $form) {
+            return;
+        }
         $this->newJournalFormData = $form;
         $this->persistStagedJournalDrafts();
-        $this->publishStagedJournalPreview();
+        if ($refreshPreview) {
+            $this->publishStagedJournalPreview();
+        }
     }
 
     private function stagedDraftIndex(?string $key): ?int
@@ -127,7 +133,7 @@ trait JournalWorkspaceStage
 
     public function createStagedJournalDraft(): void
     {
-        $this->rememberNewJournalDraft();
+        $this->rememberNewJournalDraft(false);
         $key = Str::random(12);
         $form = $this->newJournalFormData;
         $this->journalNewForm->fill($this->defaultJournalDraft());
@@ -148,14 +154,13 @@ trait JournalWorkspaceStage
             return;
         }
         if ($this->journalStagePanel === 'new') {
-            $this->rememberNewJournalDraft();
+            $this->rememberNewJournalDraft(false);
         } else {
-            $this->rememberStagedJournalDraft();
+            $this->rememberStagedJournalDraft(false);
         }
         $this->journalStagePanel = $panel;
         $this->persistStagedJournalDrafts();
         $this->publishStagedJournalPreview();
-        $this->refreshJournalPreview();
     }
 
     public function navigateStagedJournalDraft(int $direction): void
@@ -163,7 +168,7 @@ trait JournalWorkspaceStage
         if ($this->stagedJournalDrafts === []) {
             return;
         }
-        $this->rememberStagedJournalDraft();
+        $this->rememberStagedJournalDraft(false);
         $count = count($this->stagedJournalDrafts);
         $current = $this->stagedDraftIndex($this->selectedStagedJournalDraftKey) ?? 0;
         $next = ($current + ($direction < 0 ? -1 : 1) + $count) % $count;
@@ -196,7 +201,7 @@ trait JournalWorkspaceStage
     }
 
     /** Persist the current Stage form, including rich text and media ordering. */
-    public function rememberStagedJournalDraft(): void
+    public function rememberStagedJournalDraft(bool $refreshPreview = true): void
     {
         $index = $this->stagedDraftIndex($this->selectedStagedJournalDraftKey);
         if ($index === null) {
@@ -209,7 +214,9 @@ trait JournalWorkspaceStage
 
         $this->stagedJournalDrafts[$index]['form'] = $form;
         $this->persistStagedJournalDrafts();
-        $this->publishStagedJournalPreview();
+        if ($refreshPreview) {
+            $this->publishStagedJournalPreview();
+        }
     }
 
     /** A single protected snapshot is shared by New and Staged modes. */
@@ -223,6 +230,7 @@ trait JournalWorkspaceStage
         };
         if (! is_array($form)) {
             session()->forget('journal.stage.preview.'.$this->getId());
+            $this->refreshJournalPreview();
 
             return;
         }
@@ -251,7 +259,6 @@ trait JournalWorkspaceStage
         }
         $this->persistStagedJournalDrafts();
         $this->publishStagedJournalPreview();
-        $this->refreshJournalPreview();
     }
 
     public function discardAllStagedJournalDrafts(): void
@@ -265,7 +272,6 @@ trait JournalWorkspaceStage
         $this->journalStagePanel = 'new';
         $this->persistStagedJournalDrafts();
         $this->publishStagedJournalPreview();
-        $this->refreshJournalPreview();
     }
 
     public function submitStagedJournalDraft(): void
@@ -280,7 +286,7 @@ trait JournalWorkspaceStage
 
     private function submitStagedJournalDrafts(bool $all): void
     {
-        $this->rememberStagedJournalDraft();
+        $this->rememberStagedJournalDraft(false);
         $index = $this->stagedDraftIndex($this->selectedStagedJournalDraftKey);
         if ($index === null) {
             return;
@@ -328,7 +334,6 @@ trait JournalWorkspaceStage
         $this->persistStagedJournalDrafts();
         $this->publishStagedJournalPreview();
         $this->reloadEntries();
-        $this->refreshJournalPreview();
         app(AdminNotifier::class)->notification(
             title: count($selected) === 1 ? 'Journal entry submitted' : count($selected).' Journal entries submitted',
             status: 'success',
