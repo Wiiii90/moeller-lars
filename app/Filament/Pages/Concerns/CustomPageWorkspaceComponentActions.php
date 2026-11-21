@@ -245,7 +245,6 @@ trait CustomPageWorkspaceComponentActions
                 'publication_state' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::CUSTOM_PAGE)
                     ? 'published' : 'unpublished',
                 'image_decorative' => false,
-                'variant' => 'thin',
                 'media_asset_id' => null,
             ])
             ->schema($this->componentEditorSchema())

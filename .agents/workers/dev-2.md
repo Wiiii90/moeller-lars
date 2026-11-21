@@ -4,7 +4,7 @@
 - **Lease:** 35
 - **State:** Active — component consolidation and canonical recursive Grid source integrated. Local migration execution, PHP/runtime/browser acceptance outstanding.
 - **Scope:** Custom Page content editor, canonical structured layout, Public Custom Page renderer. Coordinate shared Stage/preview with Dev Worker 1; Pages, navigation and protected Home identity with Dev Worker 5.
-- **Recent source integration:** through `8be7ef1746984f0bed192fd16d74c060d70272d8`.
+- **Recent source integration:** through `b5ce45962b0c001864833d3709844e09a7453975`, with final source/readback reconciliation still required on fresh `dev` before test handoff.
 
 ## User decisions
 - Ordinary lists and CV data use the shared Rich Text editor, not a separate List component.
@@ -21,7 +21,11 @@
 - `7b81fd1f`: Convert decorative Image/Video child trees to nested local Grids with their original media and authored content. Retire the old nested Image-specific editor, sorting, serialization, removal and Public float; migrate Divider components into layout border structures. Keep working/committed publication and historical checkpoint restore conversion. Migration: `2026_11_21_160000_canonicalize_custom_page_layouts.php`.
 - `3856bb65`: Preserve recursively projected nested Grid content across the shared Blade renderer's recursive includes.
 - `d0bacb73`: Remove residual Divider editor/conversion options and fix the invalid `editingType` named argument in the canonical Edit action.
-- `8be7ef17`: Make deletion of an occupied Grid fail with a concrete error and disable the corresponding single-Grid Delete controls. Keep a unified source-level deletion predicate through domain, projection, hydration and Admin actions. Delete the speculative unused List conversion from the historical canonicalizer.
+- `8be7ef17`: Protect occupied Grids from accidental deletion; keep the same predicate across domain, projection, hydration and Admin actions. Delete the obsolete speculative List translator.
+- `03a0e67d`: Make multi-selection Delete match the domain's atomic deletion set: a Grid and all its selected unpublished children can be removed together, but a Grid retaining content remains protected.
+- `7c6536a1`: Remove duplicate Grid-area member projection; keep centrally managed Legal Disclaimer read-only in the Stage.
+- `b5ce4596`: Preserve `layout_area_id` and `layout_divider_before` through component type conversion, including nested Grids; retire the media-child-only conversion flag.
+- Remove the defunct `variant` default from the Custom Page Add-component form after standalone Divider retirement.
 - The reusable Grid supports optional equal/65%-35% two-column layouts and row-major stacking in narrow containers; the existing Stage exposes content editing and placement into addressable areas.
 
 ## Architecture and data compatibility
@@ -34,7 +38,9 @@
 ## Verification / acceptance
 - GitHub commit/ref updates and current file readback verified in source.
 - Targeted source bracket-structure scans of 14 PHP files and matching Blade conditional/loop counts completed. These are not `php -l`, a runtime test, or proof of correctness.
-- **Not run:** application migrations, local containers, PHP unit/integration tests, automated Browser tests, validation deploy, Continuous Integration or server changes. No permission to perform CI/deploy.
+- **Not executed:** database migrations on the persistent Windows development checkout, PHP unit/integration tests, browser review, validation deploy, Continuous Integration or server changes. The repository source is available through the connected GitHub tools; the Windows checkout and its application/database runtime are not mounted in this worker environment.
+- **Known Testing-branch follow-up:** `tests/Unit/Content/HistoricalCustomPageBlockCanonicalizerTest.php` still invokes removed List API; `tests/Integration/Content/CustomPageComponentsTest.php` still models retired List/Divider/Image-child behavior. Testing owns their redesign, not an application-code compatibility shim. Both are source-inspected, not executed.
+- **Source contracts reviewed:** stage members match projected editable types; single and bulk Grid delete availability matches canonical remaining-member validation; type conversions preserve area and separator ownership; old List translation and List migration are absent. These source checks are not browser acceptance.
 - **Testing acceptance required:** migration against representative Working and Committed content, legacy checkpoint restore, multi-level Grid Public rendering, responsive 1/2/3/4-column variations, Stage add/edit/reorder/selection, Media deletion and publication, Settings dialog, Image/Video MIME validation.
 
 ## User correction — no old standalone List records
