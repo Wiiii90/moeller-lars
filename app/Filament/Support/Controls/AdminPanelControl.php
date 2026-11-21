@@ -3,6 +3,7 @@
 namespace App\Filament\Support\Controls;
 
 use Closure;
+use Filament\Forms\Components\Checkbox;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\View;
 
@@ -18,7 +19,7 @@ final class AdminPanelControl
      *  presentation variants. The original Filament fields keep their own
      *  state, labels, validation, and event handling.
      */
-    public static function make(string $title, string $enabledField, array $fields, ?Closure $onUpdated = null, bool $collapsible = false, array $bodyColumns = ['default' => 2], bool $unlinedFields = false, bool $compactRows = false): Group
+    public static function make(string $title, string $enabledField, array $fields, ?Closure $onUpdated = null, bool $collapsible = false, array $bodyColumns = ['default' => 2], bool $unlinedFields = false, bool $compactRows = false, bool $dense = false): Group
     {
         $toggle = AdminControl::checkbox($enabledField, $title)
             ->live()
@@ -47,13 +48,42 @@ final class AdminPanelControl
         $classes = 'admin-option-panel'
             .($collapsible ? ' admin-option-panel--collapsible' : '')
             .($unlinedFields ? ' admin-option-panel--unlined-fields' : '')
-            .($compactRows ? ' admin-option-panel--compact-rows' : '');
+            .($compactRows ? ' admin-option-panel--compact-rows' : '')
+            .($dense ? ' admin-option-panel--dense' : '');
 
         return Group::make([$header, $body])
             ->columns(1)
             ->extraAttributes($collapsible
                 ? ['class' => $classes, 'x-data' => '{ expanded: true }']
                 : ['class' => $classes])
+            ->columnSpanFull();
+    }
+    /**
+     * One reusable presentation of dependent checkbox options. Checkbox
+     * callbacks remain the only owners of disabled state and persistence.
+     * Nested trees and multiple dependents use the same connector structure.
+     *
+     * @param list<Checkbox|Group> $dependents
+     */
+    public static function dependencyTree(Checkbox $required, array $dependents): Group
+    {
+        $branches = array_map(
+            static fn (Checkbox|Group $dependent): Group => Group::make([$dependent])
+                ->columns(1)
+                ->extraAttributes(['class' => 'admin-option-panel__dependency-branch'])
+                ->columnSpanFull(),
+            $dependents,
+        );
+
+        return Group::make([
+            $required,
+            Group::make($branches)
+                ->columns(1)
+                ->extraAttributes(['class' => 'admin-option-panel__dependency-branches'])
+                ->columnSpanFull(),
+        ])
+            ->columns(1)
+            ->extraAttributes(['class' => 'admin-option-panel__dependency-tree'])
             ->columnSpanFull();
     }
 }

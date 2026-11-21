@@ -2,11 +2,11 @@
 
 **Lease:** 31
 **Branch:** dev
-**State:** Active — replacement chat explicitly took over on 2026-11-21. Source handoff read; no new Gallery implementation requested. Existing changes await artist/browser acceptance.
+**State:** Active — responsive Gallery Stage and centrally owned panel dependency presentation prepared on 2026-11-21; source work requires artist/browser acceptance.
 
 ## Current assignment and ownership
 
-- The artist explicitly assigned this chat **Dev Worker 4** and requested complete onboarding, not resumption of an old feature task. Preserve Gallery/Artwork editorial ownership: Gallery Stage (Upload/Staged/Settings), Artwork tables, List/Grid/Dense actions, Gallery settings, Stage selection/order and Gallery-specific Public behavior. Work directly on `dev`, with lease verification before every write.
+- The artist assigned this chat **Dev Worker 4** and subsequently requested responsive Gallery Stage and Settings improvements. Preserve Gallery/Artwork editorial ownership: Gallery Stage (Upload/Staged/Settings), Artwork tables, List/Grid/Dense actions, Gallery settings, Stage selection/order and Gallery-specific Public behavior. Work directly on `dev`, with lease verification before every write.
 - Coordination boundaries: Dev Worker 6 owns Gallery Hero; Dev Worker 11 owns Public Gallery batching/loading/captions; Dev Worker 8 owns shared dialogs and table empty states; Dev Worker 9 owns shared Live Preview navigation; Dev Worker 7 owns General/shared dropdowns. Coordinate any touched shared owner, and do not change their accepted behavior without scope approval.
 - **Last identified in-scope implementation:** `637fc5982c6795742e5a4a7d2d9a7303c937fa88` (Stage title suggestion, Upload copy, List action rail). Other workers have subsequently advanced `dev`; re-read its exact head and current source before starting new work. This registration commit changes only branch-local worker state.
 
@@ -20,6 +20,13 @@
 - **Video:** Gallery videos have their own inline controls and an independent existing Viewer trigger rather than treating playback as a link. Shared Viewer fits video to metadata and viewport. The usable poster is required for publication readiness. Browser autoplay remains governed by visibility, mute, reduced-motion and browser policy; no visual/browser acceptance claimed here.
 - **Preserved layout:** Public Artwork detail Expanded layout centers its naturally proportioned fitted image-plus-info group. No Gallery work may casually replace the shared Gallery form schema, Public Viewer, Gallery Hero or cross-feature controls.
 
+## Current responsive Gallery Stage and Settings change — 2026-11-21
+
+- At the <=64rem Admin workspace threshold already used by General, Gallery displays only the editor Stage pane and retains its inner Upload/Staged/Settings tabs; the obsolete Gallery-only Editor/Preview focused switcher and CSS are removed. At wider widths, the genuine Public Preview is unchanged.
+- Canonical `AdminPanelControl` now reserves only the narrow disclosure track rather than splitting its header in half, keeps toggle titles on one line, and owns the former Gallery-specific dense Stage styling through an opt-in variant. The labels are `Activate Artwork Pages`, `Show Artwork Information` and `Activate Modal Viewer`.
+- The central `AdminPanelControl::dependencyTree` presents a parent checkbox plus one or more subordinates with joined upward connectors, supporting nested Groups; Gallery applies it to Navigation/Cyclic in both Artwork Pages and Modal Viewer. The form's existing disabled and persistence callbacks remain authoritative. On narrow Stage form widths, the two panel columns span a full row; primary selects remain adjacent.
+- **Evidence:** GitHub source-only changes, no executable local PHP/Filament runtime or browser review. Check tablet/mobile and desktop breakpoint, header single-line without overflow, Cyclic visually and functionally disabled until Navigation enabled, checkbox autosave/reopen, initial Stage/Preview layout, and both Stage and Settings dialog rendering. Shared panel consumers must preserve accepted behavior.
+
 ## Verification and outstanding acceptance
 
 - The prior chat used connected GitHub source inspection and guarded commits; it **did not** run local Laravel, PHP, actual media ingestion, browser review, tests, deployment, Continuous Integration or a database migration as part of the Gallery changes. Do not represent source-reviewed behavior as browser-accepted.
@@ -29,4 +36,4 @@
 
 ## Next
 
-Await the artist's next specific Gallery/Artwork assignment. Before any work, verify lease 31, fresh `dev` head and current owner/consumers. Do not automatically restart historical tasks or sign out.
+Obtain artist/browser feedback on responsive editor-only Stage and the new dependency panel geometry. Before every follow-up write, verify lease 31 and the fresh `dev` HEAD.

@@ -801,8 +801,8 @@
     row-gap: .4rem;
     column-gap: .65rem;
 }
-/* Filament owns the Header Group's layout. The disclosure is anchored to
- * the panel edge rather than centered in Filament's second equal grid cell. */
+/* The disclosure requires only a narrow track. The default equal Filament
+ * columns incorrectly halve the width available to checkbox titles. */
 .admin-option-panel__header {
     position: relative;
     width: 100%;
@@ -810,6 +810,7 @@
     padding-inline-end: 1.5rem;
 }
 .admin-option-panel__header > :is(.fi-sc, .fi-sc-grid) {
+    grid-template-columns: minmax(0, 1fr) 1.9rem !important;
     align-items: center;
 }
 .admin-option-panel__switch {
@@ -832,6 +833,7 @@
 .admin-option-panel__switch .fi-fo-field-label-content {
     align-self: center;
     line-height: 1.2 !important;
+    white-space: nowrap;
 }
 .admin-option-panel__body {
     min-width: 0;
@@ -845,6 +847,100 @@
 }
 .admin-option-panel__body .admin-control-field {
     min-width: 0;
+}
+
+/* Explicit dense variant for narrow Stage settings. The panel's own
+ * component owns its inner typography, spacing and checkbox geometry. */
+.admin-option-panel--dense {
+    padding: .32rem .4rem;
+}
+.admin-option-panel--dense :is(.fi-sc, .fi-sc-grid) {
+    row-gap: .24rem;
+    column-gap: .35rem;
+}
+.admin-option-panel--dense .admin-option-panel__switch .fi-fo-field-label:has(> .fi-checkbox-input) {
+    min-height: 1.55rem !important;
+    gap: .35rem !important;
+}
+.admin-option-panel--dense .admin-option-panel__switch .fi-fo-field-label > .fi-checkbox-input {
+    width: .84rem !important;
+    height: .84rem !important;
+    border-radius: .17rem !important;
+}
+.admin-option-panel--dense .admin-option-panel__switch .fi-fo-field-label-content {
+    font-size: .69rem;
+    letter-spacing: .035em;
+}
+.admin-option-panel--dense .admin-option-panel__body {
+    margin-top: .15rem;
+    padding-top: .28rem;
+}
+.admin-option-panel--dense .admin-option-panel__body :is(.fi-sc, .fi-sc-grid) {
+    row-gap: .12rem;
+    column-gap: .28rem;
+}
+.admin-option-panel--dense .admin-option-panel__body .fi-fo-field-label:has(> .fi-checkbox-input) {
+    min-height: 1.38rem !important;
+    gap: .28rem !important;
+}
+.admin-option-panel--dense .admin-option-panel__body .fi-fo-field-label > .fi-checkbox-input {
+    width: .72rem !important;
+    height: .72rem !important;
+    border-radius: .12rem !important;
+}
+.admin-option-panel--dense .admin-option-panel__body .fi-fo-field-label-content {
+    font-size: .61rem;
+    line-height: 1.15;
+}
+
+/* Opt-in checkbox dependency tree. One upward edge joins any number of
+ * subordinate options to their required parent. The form fields, not the
+ * tree decoration, own disabled state, validation and persistence. */
+.admin-option-panel__dependency-tree,
+.admin-option-panel__dependency-branches,
+.admin-option-panel__dependency-branch {
+    min-width: 0;
+}
+.admin-option-panel__dependency-branches {
+    position: relative;
+    margin-inline-start: .35rem;
+    padding-inline-start: 1rem;
+}
+.admin-option-panel__dependency-branches::before {
+    position: absolute;
+    inset-inline-start: 0;
+    top: -.5rem;
+    bottom: .65rem;
+    border-inline-start: 1px solid var(--admin-muted);
+    opacity: .6;
+    content: "";
+    pointer-events: none;
+}
+.admin-option-panel__dependency-branches::after {
+    position: absolute;
+    inset-inline-start: -.19rem;
+    top: -.9rem;
+    color: var(--admin-muted);
+    font-size: .75rem;
+    line-height: 1;
+    content: "↑";
+    pointer-events: none;
+}
+.admin-option-panel__dependency-branch {
+    position: relative;
+}
+.admin-option-panel__dependency-branch::before {
+    position: absolute;
+    inset-inline-start: -1rem;
+    top: .65rem;
+    width: .85rem;
+    border-top: 1px solid var(--admin-muted);
+    opacity: .6;
+    content: "";
+    pointer-events: none;
+}
+.admin-option-panel__dependency-branch:has(.fi-checkbox-input:disabled) .fi-fo-field-label {
+    opacity: .42;
 }
 
 .admin-option-panel__disclosure {

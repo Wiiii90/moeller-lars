@@ -46,7 +46,7 @@
                 'token' => $this->getId(),
             ]);
         @endphp
-        <section class="gallery-workspace__stage admin-visual-stage admin-visual-stage--split admin-focus-stage"
+        <section class="gallery-workspace__stage admin-visual-stage admin-visual-stage--split"
             x-ref="galleryStageRoot"
             aria-label="Gallery editor and interactive preview"
             data-gallery-background-preview-kind="{{ $backgroundPreview['kind'] }}"
@@ -81,13 +81,7 @@
                     })
                 },
             }">
-            <x-admin.stage-switcher
-                storage-key="admin-stage.gallery-merged"
-                default-pane="editor"
-                :panes="['editor' => 'Editor', 'preview' => 'Preview']"
-                aria-label="Gallery Stage view"
-            />
-            <div class="gallery-stage__workspace admin-visual-stage__pane" data-admin-stage-pane="editor" data-admin-stage-slot="1"
+            <div class="gallery-stage__workspace admin-visual-stage__pane"
                 x-data="{
                     phase: 'idle', progress: 0, processingStep: '', transferDetail: '', fileCount: 0, completed: 0, result: '',
                     pendingUploads: [], uploadRunning: false,
@@ -224,7 +218,7 @@
                     </div>
             </div>
 
-            <div class="gallery-stage__preview admin-visual-stage__pane" data-admin-stage-pane="preview" data-admin-stage-slot="2">
+            <div class="gallery-stage__preview admin-visual-stage__pane">
                 <header class="gallery-stage__preview-header">
                     <h2 class="admin-section__kicker admin-visual-stage__heading"
                         x-text="previewKind === 'staged' ? 'Staged Artwork preview' : 'Live preview'">{{ $galleryStagePreview === 'staged' ? 'Staged Artwork preview' : 'Live preview' }}</h2>

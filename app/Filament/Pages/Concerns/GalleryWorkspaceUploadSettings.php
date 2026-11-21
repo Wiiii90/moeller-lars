@@ -142,14 +142,19 @@ trait GalleryWorkspaceUploadSettings
             'add_placement', $stage,
         );
 
-        // Keep each panel's two-per-row controls inside the assigned column.
+        // The two selector fields keep their shared row. On narrow screens,
+        // each settings panel receives a full-width row instead of clipping
+        // its header in one half of an already narrow Stage.
+        $panelSpan = $stage ? ['default' => 2, 'xl' => 1] : 1;
         $fields[] = Grid::make(['default' => 1])
             ->schema([
                 $this->galleryDetailPagesPanel($stage),
                 $this->galleryViewerPanel($stage),
-            ]);
+            ])
+            ->columnSpan($panelSpan);
         $fields[] = Grid::make(['default' => 1])
-            ->schema([$this->galleryInformationPanel($stage)]);
+            ->schema([$this->galleryInformationPanel($stage)])
+            ->columnSpan($panelSpan);
         if (! $stage) {
             $fields[] = AdminControl::select('artwork_divider', 'Between Artworks')
                 ->options(GalleryPresentation::DIVIDER_OPTIONS)
@@ -175,9 +180,10 @@ trait GalleryWorkspaceUploadSettings
         }
 
         return AdminPanelControl::make(
-            'Artwork information', 'info_enabled', $fields,
+            'Show Artwork Information', 'info_enabled', $fields,
             $stage ? $update : null,
             collapsible: true,
+            dense: $stage,
         );
     }
 
@@ -205,10 +211,9 @@ trait GalleryWorkspaceUploadSettings
             ));
         }
 
-        return AdminPanelControl::make('Media modal viewer', 'media_viewer_enabled', [
-            $navigation,
-            $cyclic,
-        ], $stage ? fn (mixed $state) => $this->updateGalleryStageSetting('media_viewer_enabled', $state) : null, collapsible: true);
+        return AdminPanelControl::make('Activate Modal Viewer', 'media_viewer_enabled', [
+            AdminPanelControl::dependencyTree($navigation, [$cyclic]),
+        ], $stage ? fn (mixed $state) => $this->updateGalleryStageSetting('media_viewer_enabled', $state) : null, collapsible: true, dense: $stage);
     }
 
     private function galleryDetailPagesPanel(bool $stage): \Filament\Schemas\Components\Group
@@ -235,10 +240,9 @@ trait GalleryWorkspaceUploadSettings
             });
         }
 
-        return AdminPanelControl::make('Individual Artwork Pages', 'artwork_pages_enabled', [
-            $navigation,
-            $cyclic,
-        ], $stage ? fn (mixed $state) => $this->updateGalleryStageSetting('artwork_pages_enabled', $state) : null, collapsible: true);
+        return AdminPanelControl::make('Activate Artwork Pages', 'artwork_pages_enabled', [
+            AdminPanelControl::dependencyTree($navigation, [$cyclic]),
+        ], $stage ? fn (mixed $state) => $this->updateGalleryStageSetting('artwork_pages_enabled', $state) : null, collapsible: true, dense: $stage);
     }
 
     /** @param array<string,mixed> $data */

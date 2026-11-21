@@ -1,7 +1,6 @@
 
-/* Gallery mirrors General's responsive preview split while reusing the
- * shared Live Preview and Stage divider. Left: Upload / Staged / Settings;
- * right: real Public preview. The Stage height stays centrally owned. */
+/* Gallery uses shared Stage geometry: editor and real Public preview when
+ * space permits, editor-only like General at narrow workspace widths. */
 .gallery-workspace__stage {
     --admin-stage-divider-axis: 50%;
     display: grid;
@@ -232,21 +231,6 @@
     flex: 1 1 auto;
     min-height: 0;
     margin-top: var(--admin-stage-header-gap);
-}
-
-@media (max-width: 63.99rem) {
-    @container admin-workspace (max-width: 38rem) {
-        .gallery-workspace__stage > :is(.gallery-stage__workspace, .gallery-stage__preview) {
-            padding-inline: 0;
-        }
-        /* The shared focused Stage selects one complete editor/preview pane. */
-        .gallery-workspace__stage.admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="1"][aria-pressed="true"])
-            .gallery-stage__workspace[data-admin-stage-pane][data-admin-stage-slot="1"],
-        .gallery-workspace__stage.admin-focus-stage:has(> .admin-stage-switcher > [data-admin-stage-slot="2"][aria-pressed="true"])
-            .gallery-stage__preview[data-admin-stage-pane][data-admin-stage-slot="2"] {
-            display: flex !important;
-        }
-    }
 }
 
 /* Gallery workspace-specific contact sheet, interaction and control presentation. */
@@ -620,53 +604,6 @@
 }
 
 
-/* Gallery Settings owns a compact two-level control hierarchy. The main
- * enable-checkbox stays distinct from small option checkboxes; the disclosure
- * triangle is a presentation control and never changes persisted values. */
-.gallery-stage__settings .admin-option-panel {
-    padding: .32rem .4rem;
-}
-.gallery-stage__settings .admin-option-panel :is(.fi-sc, .fi-sc-grid) {
-    row-gap: .24rem;
-    column-gap: .35rem;
-}
-.gallery-stage__settings .admin-option-panel__switch {
-    min-width: 0;
-}
-.gallery-stage__settings .admin-option-panel__switch .fi-fo-field-label:has(> .fi-checkbox-input) {
-    min-height: 1.55rem !important;
-    gap: .35rem !important;
-}
-.gallery-stage__settings .admin-option-panel__switch .fi-fo-field-label > .fi-checkbox-input {
-    width: .84rem !important;
-    height: .84rem !important;
-    border-radius: .17rem !important;
-}
-.gallery-stage__settings .admin-option-panel__switch .fi-fo-field-label-content {
-    font-size: .69rem;
-    letter-spacing: .035em;
-}
-.gallery-stage__settings .admin-option-panel__body {
-    margin-top: .15rem;
-    padding-top: .28rem;
-}
-.gallery-stage__settings .admin-option-panel__body :is(.fi-sc, .fi-sc-grid) {
-    row-gap: .12rem;
-    column-gap: .28rem;
-}
-.gallery-stage__settings .admin-option-panel__body .fi-fo-field-label:has(> .fi-checkbox-input) {
-    min-height: 1.38rem !important;
-    gap: .28rem !important;
-}
-.gallery-stage__settings .admin-option-panel__body .fi-fo-field-label > .fi-checkbox-input {
-    width: .72rem !important;
-    height: .72rem !important;
-    border-radius: .12rem !important;
-}
-.gallery-stage__settings .admin-option-panel__body .fi-fo-field-label-content {
-    font-size: .61rem;
-    line-height: 1.15;
-}
 /* Fading the scroll boundary makes a partially visible panel intentional.
  * No false bottom panel border or extra divider is introduced. */
 :is(.gallery-stage__settings, .gallery-stage__form-scroll) {
