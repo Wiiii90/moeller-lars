@@ -26,6 +26,7 @@ final class EditorialComponentConversion
             'image' => ['type' => 'image', 'published' => $published, 'media_asset_id' => null, 'image_decorative' => false],
             'video' => ['type' => 'video', 'published' => $published, 'media_asset_id' => null, 'image_decorative' => false],
             'text' => ['type' => 'text', 'published' => $published, 'title' => $title, 'body' => null],
+            'grid' => CustomPageSetting::gridBlock($published),
             'divider' => ['type' => 'divider', 'published' => $published, 'variant' => 'thin'],
             'contact' => [
                 'type' => 'contact',

@@ -10,6 +10,7 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\CustomPageSetting;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -207,12 +208,69 @@ trait CustomPageWorkspaceComponentActions
         }
     }
 
+    /**
+     * One canonical Grid-area border edit. Area membership is stored in the
+     * page component document; this does not introduce another Page record.
+     */
+    public function editGridAreaAction(): Action
+    {
+        $action = Action::make('editGridArea')
+            ->label('Area separator')
+            ->fillForm(function (array $arguments): array {
+                $index = filter_var($arguments['gridIndex'] ?? null, FILTER_VALIDATE_INT);
+                $grid = $index !== false ? $this->componentAt((int) $index, 'grid') : null;
+                $areaId = $arguments['areaId'] ?? null;
+                $areaIndex = is_array($grid) && is_string($areaId)
+                    ? array_search($areaId, array_column($grid['areas'], 'id'), true)
+                    : false;
+                if ($areaIndex === false) {
+                    throw ValidationException::withMessages(['border' => 'This Grid area changed. Reopen its settings.']);
+                }
+                $this->editingComponentOriginal = $grid;
+
+                return ['border' => $grid['areas'][$areaIndex]['border'] ?? 'none'];
+            })
+            ->schema([
+                Select::make('border')->label('Area separator')
+                    ->options(['none' => 'None', ...self::DIVIDER_LABELS])
+                    ->required(),
+            ])
+            ->modalHeading(__('Area separator'))
+            ->action(function (array $data, array $arguments): void {
+                $index = filter_var($arguments['gridIndex'] ?? null, FILTER_VALIDATE_INT);
+                $grid = $index !== false ? $this->componentAt((int) $index, 'grid') : null;
+                $areaId = $arguments['areaId'] ?? null;
+                $areaIndex = is_array($grid) && is_string($areaId)
+                    ? array_search($areaId, array_column($grid['areas'], 'id'), true)
+                    : false;
+                if ($areaIndex === false || ! in_array($data['border'] ?? null, ['none', ...CustomPageSetting::DIVIDER_VARIANTS], true)) {
+                    throw ValidationException::withMessages(['border' => 'Choose a supported area separator.']);
+                }
+                if (($grid['areas'][$areaIndex]['border'] ?? 'none') === $data['border']) {
+                    return;
+                }
+                $grid['areas'][$areaIndex]['border'] = $data['border'];
+                $changed = app(CustomPageEditorialService::class)->updateBlock(
+                    $this->settings(), (int) $index, 'grid', $grid, $this->editingComponentOriginal,
+                );
+                if ($changed) {
+                    $this->clearSelections();
+                    $this->reloadWorkspace();
+                    app(AdminNotifier::class)->notification(title: 'Grid area updated', status: 'success');
+                }
+            });
+
+        return AdminDialog::command($action, 'Apply changes', AdminDialogSize::Small);
+    }
+
     public function addComponentAction(): Action
     {
         $action = Action::make('addComponent')
             ->label('Add component')
-            ->fillForm(fn (): array => [
-                'type' => 'text',
+            ->fillForm(fn (array $arguments): array => [
+                'type' => ($arguments['initialType'] ?? null) === 'grid' ? 'grid' : 'text',
+                'layout_area_id' => is_string($arguments['layoutAreaId'] ?? null) ? $arguments['layoutAreaId'] : null,
+                'layout_divider_before' => 'none',
                 'publication_state' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::CUSTOM_PAGE)
                     ? 'published' : 'unpublished',
                 'image_decorative' => false,
@@ -318,6 +376,7 @@ trait CustomPageWorkspaceComponentActions
             })
             ->schema(fn (array $arguments): array => $this->componentEditorSchema(
                 editingType: $this->imageChildTarget($arguments)[2],
+                insideImage: true,
                 onTypeChange: function (mixed $state) use ($arguments): void {
                     [, , $type] = $this->imageChildTarget($arguments);
                     if (! is_string($state) || $state === $type) {

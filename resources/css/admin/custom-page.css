@@ -1,5 +1,75 @@
 /* Custom Page hierarchy and component presentation. Generic controls/actions live in shared admin modules. */
 
+.custom-page-layout-stage {
+    display: grid;
+    gap: .65rem;
+    width: 100%;
+    min-width: 0;
+    margin-block-start: .65rem;
+}
+.custom-page-layout-stage__header {
+    display: flex;
+    gap: .5rem;
+    justify-content: space-between;
+    align-items: center;
+    margin-block-end: .35rem;
+    font-size: .72rem;
+}
+.custom-page-layout-stage__cells {
+    display: grid;
+    grid-template-columns: repeat(var(--stage-grid-columns, 2), minmax(0, 1fr));
+    gap: .25rem;
+}
+.custom-page-layout-stage__cells--columns-1 { --stage-grid-columns: 1; }
+.custom-page-layout-stage__cells--columns-2 { --stage-grid-columns: 2; }
+.custom-page-layout-stage__cells--columns-3 { --stage-grid-columns: 3; }
+.custom-page-layout-stage__cells--columns-4 { --stage-grid-columns: 4; }
+.custom-page-layout-stage__cell {
+    display: grid;
+    gap: .15rem;
+    align-content: start;
+    width: 100%;
+    min-width: 0;
+    min-height: 3.3rem;
+    padding: .4rem .45rem;
+    border: 1px solid var(--admin-line);
+    border-radius: .15rem;
+    text-align: start;
+    background: transparent;
+}
+.custom-page-layout-stage__cell:hover,
+.custom-page-layout-stage__cell:focus-within {
+    border-color: var(--admin-muted);
+    background: var(--admin-surface-subtle, transparent);
+}
+.custom-page-layout-stage__add {
+    display: grid;
+    gap: .15rem;
+    width: 100%;
+    min-width: 0;
+    text-align: start;
+    background: transparent;
+}
+.custom-page-layout-stage__border {
+    justify-self: start;
+    min-height: auto;
+    padding: .12rem .2rem;
+    font-size: .65rem;
+}
+.custom-page-layout-stage__cell strong {
+    font-size: .7rem;
+    font-weight: 550;
+}
+.custom-page-layout-stage__cell span {
+    font-size: .67rem;
+    color: var(--admin-muted);
+    overflow-wrap: anywhere;
+}
+@container (max-width: 28rem) {
+    .custom-page-layout-stage__cells { grid-template-columns: minmax(0, 1fr); }
+}
+
+
 .fi-page:has(.custom-page-workspace) .fi-header {
     display: none;
 }

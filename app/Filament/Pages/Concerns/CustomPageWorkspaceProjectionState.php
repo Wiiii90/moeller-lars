@@ -176,12 +176,21 @@ trait CustomPageWorkspaceProjectionState
                 }
             }
 
+            $content = $this->componentContent($settings, $block, $imageName);
+            $areaId = $block['layout_area_id'] ?? null;
+            $areaOptions = $this->gridAreaOptions();
+            if (is_string($areaId) && isset($areaOptions[$areaId])) {
+                $content['secondary'] = trim(implode(' · ', array_filter([
+                    $content['secondary'], $areaOptions[$areaId],
+                ], static fn (string $value): bool => $value !== '')));
+            }
+
             $projected[] = [
                 'index' => $index,
                 'position' => $index + 1,
                 'type' => $type,
                 'type_label' => self::COMPONENT_LABELS[$type] ?? 'Component',
-                'content' => $this->componentContent($settings, $block, $imageName),
+                'content' => $content,
                 'status' => $published ? 'Published' : 'Unpublished',
                 'published' => $published,
                 'target' => $index.':'.$type,

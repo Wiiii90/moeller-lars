@@ -53,7 +53,7 @@ trait CustomPageWorkspaceSecondaryForms
         }
         $published = ($data['publication_state'] ?? 'published') === 'published';
 
-        return match ($type) {
+        $payload = match ($type) {
             'image', 'video' => [
                 'type' => $type,
                 'published' => $published,
@@ -64,6 +64,13 @@ trait CustomPageWorkspaceSecondaryForms
                 ...$this->imageScalePayload($data, $existing),
                 ...$this->imageChildrenPayload($data, $existing),
             ],
+            'grid' => CustomPageSetting::gridBlock(
+                $published,
+                (int) ($data['columns'] ?? 2),
+                (int) ($data['rows'] ?? 1),
+                (string) ($data['gap'] ?? 'medium'),
+                $existing,
+            ),
             'text' => [
                 'type' => 'text',
                 'published' => $published,
@@ -78,6 +85,17 @@ trait CustomPageWorkspaceSecondaryForms
             'contact' => $this->contactComponentPayload($data, $published, $existing),
             'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
         };
+
+        if ($type !== 'grid' && is_string($data['layout_area_id'] ?? null)
+            && $data['layout_area_id'] !== '') {
+            $payload['layout_area_id'] = $data['layout_area_id'];
+        }
+        if (is_string($data['layout_divider_before'] ?? null)
+            && $data['layout_divider_before'] !== 'none') {
+            $payload['layout_divider_before'] = $data['layout_divider_before'];
+        }
+
+        return $payload;
     }
 
     /** Image settings never rewrite children. Child edits go through their

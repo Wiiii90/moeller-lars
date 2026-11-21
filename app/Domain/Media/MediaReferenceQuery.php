@@ -75,8 +75,23 @@ final class MediaReferenceQuery
     public function componentMediaIds(array $components, bool $publishedOnly = false): array
     {
         $ids = [];
+        $parentVisibility = [];
+        foreach ($components as $component) {
+            if (! is_array($component) || ($component['type'] ?? null) !== 'grid') {
+                continue;
+            }
+            foreach ($component['areas'] ?? [] as $area) {
+                if (is_array($area) && is_string($area['id'] ?? null)) {
+                    $parentVisibility[$area['id']] = CustomPageSetting::componentPublished($component);
+                }
+            }
+        }
         foreach ($components as $component) {
             if (! is_array($component) || ($publishedOnly && ! CustomPageSetting::componentPublished($component))) {
+                continue;
+            }
+            $areaId = $component['layout_area_id'] ?? null;
+            if ($publishedOnly && $areaId !== null && ! ($parentVisibility[$areaId] ?? false)) {
                 continue;
             }
 

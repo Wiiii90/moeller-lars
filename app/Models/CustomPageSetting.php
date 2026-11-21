@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 #[Fillable(['blocks'])]
 #[Guarded(['id', 'site_section_id'])]
@@ -21,6 +22,7 @@ final class CustomPageSetting extends Model
         'image',
         'video',
         'text',
+        'grid',
         'divider',
         'contact',
         'legal_disclaimer',
@@ -28,6 +30,8 @@ final class CustomPageSetting extends Model
 
     /** Media kinds share the same canonical asset lifecycle. */
     public const MEDIA_COMPONENT_TYPES = ['image', 'video'];
+
+    public const GRID_GAPS = ['none', 'small', 'medium', 'large'];
 
     /** One shared allowlist for media children in persistence, editing and sorting. */
     public const IMAGE_CHILD_TYPES = ['text', 'divider', 'contact', 'legal_disclaimer'];
@@ -84,6 +88,85 @@ final class CustomPageSetting extends Model
         $blocks = $this->getAttribute('blocks');
 
         return is_array($blocks) && array_is_list($blocks) ? $blocks : [];
+    }
+
+    /**
+     * Project stored content into grid areas without duplicating data ownership.
+     * Each projected block retains its root index for the existing Preview anchors.
+     *
+     * @param list<array<string, mixed>> $blocks
+     * @return list<array<string, mixed>>
+     */
+    public static function layoutProjection(array $blocks): array
+    {
+        $areas = [];
+        foreach ($blocks as $block) {
+            if (($block['type'] ?? null) !== 'grid') {
+                continue;
+            }
+            foreach ($block['areas'] ?? [] as $area) {
+                if (is_array($area) && is_string($area['id'] ?? null)) {
+                    $areas[$area['id']] = [];
+                }
+            }
+        }
+
+        $roots = [];
+        foreach ($blocks as $index => $block) {
+            if (! is_array($block)) {
+                continue;
+            }
+            $block['_root_index'] ??= $index;
+            $areaId = $block['layout_area_id'] ?? null;
+            if (($block['type'] ?? null) !== 'grid'
+                && is_string($areaId) && array_key_exists($areaId, $areas)) {
+                $areas[$areaId][] = $block;
+            } else {
+                $roots[] = $block;
+            }
+        }
+
+        return array_map(static function (array $block) use ($areas): array {
+            if (($block['type'] ?? null) === 'grid') {
+                $block['areas'] = array_map(static fn (array $area): array => [
+                    ...$area,
+                    'blocks' => $areas[$area['id']] ?? [],
+                ], $block['areas']);
+            }
+
+            return $block;
+        }, $roots);
+    }
+
+    /**
+     * Author new grid cells in the existing component document. Resizing
+     * reuses every surviving stable cell ID; deleting a referenced cell is
+     * rejected by document validation.
+     *
+     * @param array<string, mixed>|null $existing
+     * @return array<string, mixed>
+     */
+    public static function gridBlock(bool $published, int $columns = 2, int $rows = 1, string $gap = 'medium', ?array $existing = null): array
+    {
+        if ($columns < 1 || $columns > 4 || $rows < 1 || $rows > 12 || ! in_array($gap, self::GRID_GAPS, true)) {
+            throw ValidationException::withMessages(['columns' => 'Choose one to four columns and one to twelve rows.']);
+        }
+
+        $count = $columns * $rows;
+        $areas = array_slice(is_array($existing['areas'] ?? null) ? $existing['areas'] : [], 0, $count);
+        while (count($areas) < $count) {
+            $areas[] = ['id' => (string) Str::uuid(), 'border' => 'none'];
+        }
+
+        return [
+            'type' => 'grid',
+            'published' => $published,
+            'id' => $existing['id'] ?? (string) Str::uuid(),
+            'columns' => $columns,
+            'rows' => $rows,
+            'gap' => $gap,
+            'areas' => $areas,
+        ];
     }
 
     /** A missing or malformed historical value must never break public layout. */
@@ -169,7 +252,7 @@ final class CustomPageSetting extends Model
             }
 
             $published = self::componentPublished($block);
-            $normalized[] = match ($type) {
+            $canonical = match ($type) {
                 'image', 'video' => [
                     'type' => $type,
                     'published' => $published,
@@ -179,6 +262,15 @@ final class CustomPageSetting extends Model
                     ...($type === 'video' && ! self::videoControls($block) ? ['video_controls_enabled' => false] : []),
                     ...$this->normalizedImageScale($block),
                     ...$this->normalizedImageChildren($block),
+                ],
+                'grid' => [
+                    'type' => 'grid',
+                    'published' => $published,
+                    'id' => $block['id'] ?? null,
+                    'columns' => $block['columns'] ?? 2,
+                    'rows' => $block['rows'] ?? 1,
+                    'gap' => $block['gap'] ?? 'medium',
+                    'areas' => $this->normalizedGridAreas($block),
                 ],
                 'text' => [
                     'type' => 'text',
@@ -199,9 +291,63 @@ final class CustomPageSetting extends Model
                 ],
                 'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
             };
+            if (array_key_exists('layout_area_id', $block) && $block['layout_area_id'] !== null) {
+                $canonical['layout_area_id'] = $block['layout_area_id'];
+            }
+            if (array_key_exists('layout_divider_before', $block) && $block['layout_divider_before'] !== null) {
+                $canonical['layout_divider_before'] = $block['layout_divider_before'];
+            }
+            $normalized[] = $canonical;
         }
 
         return $normalized;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function normalizedGridAreas(array $grid): array
+    {
+        $areas = $grid['areas'] ?? [];
+        if (! is_array($areas) || ! array_is_list($areas)) {
+            throw ValidationException::withMessages(['blocks' => 'Grid areas must be an ordered list.']);
+        }
+
+        return array_map(static function (mixed $area): array {
+            if (! is_array($area)) {
+                throw ValidationException::withMessages(['blocks' => 'Grid cells must be structured data.']);
+            }
+
+            return ['id' => $area['id'] ?? null, 'border' => $area['border'] ?? 'none'];
+        }, $areas);
+    }
+
+    private function validateGridComponent(array $block): void
+    {
+        $id = $block['id'] ?? null;
+        $columns = $block['columns'] ?? null;
+        $rows = $block['rows'] ?? null;
+        $gap = $block['gap'] ?? null;
+        if (! is_string($id) || ! preg_match('/^[a-z0-9-]{8,64}$/i', $id)
+            || ! is_int($columns) || $columns < 1 || $columns > 4
+            || ! is_int($rows) || $rows < 1 || $rows > 12
+            || ! in_array($gap, self::GRID_GAPS, true)) {
+            throw ValidationException::withMessages(['blocks' => 'Grid configuration is invalid.']);
+        }
+
+        $areas = $block['areas'] ?? null;
+        if (! is_array($areas) || ! array_is_list($areas) || count($areas) !== $columns * $rows) {
+            throw ValidationException::withMessages(['blocks' => 'Grid areas must match the number of columns and rows.']);
+        }
+        $seen = [];
+        foreach ($areas as $area) {
+            $areaId = is_array($area) ? ($area['id'] ?? null) : null;
+            $border = is_array($area) ? ($area['border'] ?? null) : null;
+            if (! is_string($areaId) || ! preg_match('/^[a-z0-9-]{8,64}$/i', $areaId)
+                || isset($seen[$areaId])
+                || ! in_array($border, ['none', ...self::DIVIDER_VARIANTS], true)) {
+                throw ValidationException::withMessages(['blocks' => 'Grid area identity or border is invalid.']);
+            }
+            $seen[$areaId] = true;
+        }
     }
 
     private function validatedImageAlignment(array $block): string
@@ -265,6 +411,23 @@ final class CustomPageSetting extends Model
         }
 
         $legalDisclaimerCount = 0;
+        $gridAreas = [];
+        $areaVisibility = [];
+        foreach ($blocks as $gridBlock) {
+            if (! is_array($gridBlock) || ($gridBlock['type'] ?? null) !== 'grid') {
+                continue;
+            }
+            $this->validateGridComponent($gridBlock);
+            foreach ($gridBlock['areas'] as $area) {
+                $areaId = $area['id'];
+                if (isset($gridAreas[$areaId])) {
+                    throw ValidationException::withMessages(['blocks' => 'Grid area IDs must be unique.']);
+                }
+                $gridAreas[$areaId] = true;
+                $areaVisibility[$areaId] = self::componentPublished($gridBlock);
+            }
+        }
+
         foreach ($blocks as $blockIndex => $block) {
             if (! is_array($block)) {
                 throw ValidationException::withMessages(['blocks' => 'Each page component must be structured data.']);
@@ -278,8 +441,21 @@ final class CustomPageSetting extends Model
                 throw ValidationException::withMessages(['blocks' => 'Component publication state must be boolean.']);
             }
 
-            $public = $requirePublicMedia && self::componentPublished($block);
+            $areaId = $block['layout_area_id'] ?? null;
+            if ($areaId !== null && (! is_string($areaId) || ! isset($gridAreas[$areaId]) || $type === 'grid')) {
+                throw ValidationException::withMessages(['blocks' => 'Choose a valid Grid area for this component.']);
+            }
+            $divider = $block['layout_divider_before'] ?? 'none';
+            if (! is_string($divider) || ! in_array($divider, ['none', ...self::DIVIDER_VARIANTS], true)) {
+                throw ValidationException::withMessages(['blocks' => 'Choose a supported layout separator.']);
+            }
 
+            $public = $requirePublicMedia && self::componentPublished($block)
+                && ($areaId === null || ($areaVisibility[$areaId] ?? false));
+
+            if ($type === 'grid') {
+                continue;
+            }
             if (in_array($type, self::MEDIA_COMPONENT_TYPES, true)) {
                 $this->validateMediaComponent($block, $public);
                 $children = $block['children'] ?? [];

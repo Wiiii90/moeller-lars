@@ -29,6 +29,19 @@ trait CustomPageWorkspacePresentationHelpers
 
             return ['primary' => $title !== '' ? $title : $body, 'secondary' => $title !== '' ? $body : '', 'meta' => ''];
         }
+        if ($type === 'grid') {
+            $columns = (int) ($block['columns'] ?? 2);
+            $rows = (int) ($block['rows'] ?? 1);
+            $areaIds = array_column($block['areas'] ?? [], 'id');
+            $placed = collect($settings->components())->filter(static fn (array $item): bool =>
+                in_array($item['layout_area_id'] ?? null, $areaIds, true))->count();
+
+            return [
+                'primary' => $columns.' columns × '.$rows.' rows',
+                'secondary' => $placed.' '.($placed === 1 ? 'component' : 'components').' placed',
+                'meta' => '',
+            ];
+        }
         if ($type === 'divider') {
             $variant = is_string($block['variant'] ?? null) ? $block['variant'] : 'thin';
 
@@ -138,6 +151,41 @@ trait CustomPageWorkspacePresentationHelpers
         }
 
         return implode(' ', array_filter($parts, static fn (mixed $part): bool => is_string($part) && trim($part) !== ''));
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function layoutStageGrids(): array
+    {
+        $blocks = $this->settings()->components();
+        $grids = [];
+        foreach ($blocks as $index => $grid) {
+            if (($grid['type'] ?? null) !== 'grid') {
+                continue;
+            }
+            $columns = (int) $grid['columns'];
+            $areas = [];
+            foreach ($grid['areas'] as $areaIndex => $area) {
+                $members = array_values(array_filter($blocks, static fn (array $block): bool =>
+                    ($block['layout_area_id'] ?? null) === ($area['id'] ?? null)));
+                $labels = array_map(static function (array $member): string {
+                    $type = (string) ($member['type'] ?? '');
+                    $title = is_string($member['title'] ?? null) ? trim($member['title']) : '';
+
+                    return $title !== '' ? $title : (self::COMPONENT_LABELS[$type] ?? 'Component');
+                }, $members);
+                $areas[] = [
+                    'id' => $area['id'],
+                    'row' => intdiv($areaIndex, $columns) + 1,
+                    'column' => ($areaIndex % $columns) + 1,
+                    'border' => $area['border'] ?? 'none',
+                    'summary' => $labels === [] ? 'Empty' : implode(' · ', $labels),
+                ];
+            }
+            $grids[] = ['index' => $index, 'columns' => $columns,
+                'rows' => (int) $grid['rows'], 'areas' => $areas];
+        }
+
+        return $grids;
     }
 
     /** @return array<int,string> */

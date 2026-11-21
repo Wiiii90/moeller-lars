@@ -1,5 +1,6 @@
 .custom-page {
     --custom-page-component-gap: 1.15rem;
+    container-type: inline-size;
     display: flow-root;
     /* General's Page width and Content padding own the available width.
        The narrower Artwork track must not halve entire Custom Pages. */
@@ -33,6 +34,33 @@
 .custom-page__component {
     min-width: 0;
 }
+
+/* Layout is structural: the same Grid and areas work in Public and Preview.
+   Area content stays in the original Custom Page document, not a new Page. */
+.custom-page__grid {
+    display: grid;
+    grid-template-columns: repeat(var(--custom-page-grid-columns, 2), minmax(0, 1fr));
+    align-items: start;
+    min-width: 0;
+    gap: var(--custom-page-grid-gap, 1rem);
+}
+.custom-page__grid--columns-1 { --custom-page-grid-columns: 1; }
+.custom-page__grid--columns-2 { --custom-page-grid-columns: 2; }
+.custom-page__grid--columns-3 { --custom-page-grid-columns: 3; }
+.custom-page__grid--columns-4 { --custom-page-grid-columns: 4; }
+.custom-page__grid--gap-none { --custom-page-grid-gap: 0; }
+.custom-page__grid--gap-small { --custom-page-grid-gap: .5rem; }
+.custom-page__grid--gap-medium { --custom-page-grid-gap: 1.25rem; }
+.custom-page__grid--gap-large { --custom-page-grid-gap: 2rem; }
+.custom-page__grid-area { min-width: 0; }
+.custom-page__grid-area--border-thin { border-block-start: 1px solid rgba(111, 98, 83, .45); padding-block-start: .6rem; }
+.custom-page__grid-area--border-subtle { border-block-start: 1px solid rgba(111, 98, 83, .23); padding-block-start: .6rem; }
+.custom-page__grid-area--border-strong { border-block-start: 2px solid rgba(82, 70, 56, .7); padding-block-start: .6rem; }
+.custom-page__grid-area--border-dotted { border-block-start: 2px dotted rgba(93, 78, 62, .55); padding-block-start: .6rem; }
+@container (max-width: 42rem) {
+    .custom-page__grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 
 .custom-page__copy {
     min-width: 0;

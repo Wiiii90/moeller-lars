@@ -58,6 +58,19 @@ trait CustomPageWorkspaceForms
                 ->schema([
                     $typeField,
                     $statusField,
+                    ...(! $insideImage ? [
+                        Select::make('layout_area_id')
+                            ->label('Grid area')
+                            ->placeholder('Full width')
+                            ->options(fn (): array => $this->gridAreaOptions())
+                            ->nullable()
+                            ->visible(fn (Get $get): bool => $get('type') !== 'grid'),
+                        Select::make('layout_divider_before')
+                            ->label('Separator above')
+                            ->options(['none' => 'None', ...self::DIVIDER_LABELS])
+                            ->default('none')
+                            ->required(),
+                    ] : []),
                     ...($allowParentSelection && $onTypeChange !== null && in_array($editingType, CustomPageSetting::IMAGE_CHILD_TYPES, true)
                         && $editingType !== 'text'
                         ? [$this->componentParentField($editingType)]
@@ -92,6 +105,17 @@ trait CustomPageWorkspaceForms
                 ...($type === 'video' ? [
                     Toggle::make('video_controls_enabled')->label('Show video playback controls')->default(true),
                 ] : []),
+            ],
+            'grid' => [
+                Select::make('columns')->label('Columns')->options([
+                    1 => '1', 2 => '2', 3 => '3', 4 => '4',
+                ])->default(2)->required(),
+                Select::make('rows')->label('Rows')->options(array_combine(
+                    range(1, 12), array_map('strval', range(1, 12)),
+                ))->default(1)->required(),
+                Select::make('gap')->label('Gap')->options([
+                    'none' => 'None', 'small' => 'Small', 'medium' => 'Medium', 'large' => 'Large',
+                ])->default('medium')->required(),
             ],
             'text' => [
                 ...(! $isNew && $allowParentSelection
@@ -177,6 +201,30 @@ trait CustomPageWorkspaceForms
         )
             ->disabled(fn (Get $get): bool => $editingType === 'contact' && (bool) $get('contact_form_enabled'))
             ->columnSpanFull();
+    }
+
+    /** @return array<string, string> */
+    private function gridAreaOptions(): array
+    {
+        $options = [];
+        $gridNumber = 0;
+        foreach ($this->settings()->components() as $block) {
+            if (($block['type'] ?? null) !== 'grid') {
+                continue;
+            }
+            $gridNumber++;
+            $columns = (int) ($block['columns'] ?? 2);
+            foreach ($block['areas'] ?? [] as $index => $area) {
+                if (! is_array($area) || ! is_string($area['id'] ?? null)) {
+                    continue;
+                }
+                $row = intdiv($index, $columns) + 1;
+                $column = ($index % $columns) + 1;
+                $options[$area['id']] = 'Grid '.$gridNumber.' · Row '.$row.' / Column '.$column;
+            }
+        }
+
+        return $options;
     }
 
     /** @return list<array<string,mixed>> */

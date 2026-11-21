@@ -50,12 +50,18 @@
                 <x-admin.stage-tool-row label="Editor actions">
                     <div class="admin-stage-tool-group">
                         <button class="admin-action admin-action--with-icon" type="button"
+                            wire:click="mountAction('addComponent', { initialType: 'grid' })">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
+                            <span class="admin-action__label">{{ __('Add Grid') }}</span>
+                        </button>
+                        <button class="admin-action admin-action--with-icon" type="button"
                             wire:click="activateSelectedComponent" @disabled(! $canActivateSelected)>
                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
                             <span class="admin-action__label">{{ __('Activate') }}</span>
                         </button>
                     </div>
                 </x-admin.stage-tool-row>
+                @include('filament.pages.partials.custom-page-layout-stage')
             </div>
             <div class="admin-visual-stage__pane admin-visual-stage__preview-pane">
                 <h2 class="admin-section__kicker admin-visual-stage__heading">{{ __('Live preview') }}</h2>

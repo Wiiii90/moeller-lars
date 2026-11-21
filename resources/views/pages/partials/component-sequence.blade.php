@@ -4,12 +4,33 @@
         $homeImageViewerEnabled = (bool) (($isHome ?? false) && ($enableImageViewer ?? false));
     @endphp
     <div class="custom-page{{ $isHome ? ' home-components' : '' }}{{ $isEmbedded ? ' custom-page--embedded' : '' }}" @unless($isEmbedded)aria-label="{{ $label }}"@endunless @if ($homeImageViewerEnabled && ! $isEmbedded) data-artwork-viewer-sequence @endif>
-        @foreach ($blocks as $blockIndex => $block)
+        @foreach (\App\Models\CustomPageSetting::layoutProjection($blocks) as $blockIndex => $block)
             @php
+                $blockIndex = $block['_root_index'] ?? $blockIndex;
                 $type = is_array($block) ? ($block['type'] ?? null) : null;
                 $componentPublished = is_array($block) ? \App\Models\CustomPageSetting::componentPublished($block) : false;
             @endphp
             @continue(! $isPreview && ! $componentPublished)
+
+            @if ($type === 'grid')
+                <section id="custom-page-component-{{ $imageBlockPrefix }}-{{ $blockIndex }}"
+                    class="custom-page__component custom-page__grid custom-page__grid--columns-{{ $block['columns'] }} custom-page__grid--gap-{{ $block['gap'] }}"
+                    aria-label="Grid">
+                    @foreach ($block['areas'] as $areaIndex => $area)
+                        <div class="custom-page__grid-area custom-page__grid-area--border-{{ $area['border'] }}"
+                            data-layout-area="{{ $area['id'] }}">
+                            @if (($area['blocks'] ?? []) !== [])
+                                @include('pages.partials.component-sequence', [
+                                    'blocks' => $area['blocks'],
+                                    'label' => $label,
+                                    'isEmbedded' => true,
+                                    'imageBlockPrefix' => $imageBlockPrefix,
+                                ])
+                            @endif
+                        </div>
+                    @endforeach
+                </section>
+            @endif
 
             @if (in_array($type, \App\Models\CustomPageSetting::MEDIA_COMPONENT_TYPES, true))
                 @php
