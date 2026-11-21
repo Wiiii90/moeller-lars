@@ -14,7 +14,7 @@ final class EditorialComponentConversion
     /** @param array<string,mixed> $block
      * @return array<string,mixed>
      */
-    public static function convert(array $block, string $targetType, bool $insideImage = false): array
+    public static function convert(array $block, string $targetType): array
     {
         self::assertType($targetType);
 
@@ -22,7 +22,7 @@ final class EditorialComponentConversion
             && is_string($block['title'] ?? null) ? $block['title'] : null;
         $published = CustomPageSetting::componentPublished($block);
 
-        return match ($targetType) {
+        $converted = match ($targetType) {
             'image' => ['type' => 'image', 'published' => $published, 'media_asset_id' => null, 'image_decorative' => false],
             'video' => ['type' => 'video', 'published' => $published, 'media_asset_id' => null, 'image_decorative' => false],
             'text' => ['type' => 'text', 'published' => $published, 'title' => $title, 'body' => null],
@@ -34,11 +34,22 @@ final class EditorialComponentConversion
                 'children' => [
                     ['type' => 'public_email', 'published' => true],
                     ['type' => 'social_links', 'published' => true, 'social_platforms' => array_keys(SocialLinks::options())],
-                    ...(! $insideImage ? [['type' => 'contact_form', 'published' => true, 'form_state' => 'enabled', 'status_text' => null]] : []),
+                    ['type' => 'contact_form', 'published' => true, 'form_state' => 'enabled', 'status_text' => null],
                 ],
             ],
             'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
         };
+
+        // Layout belongs to the containing Page, not the content type.
+        // Conversion may discard type-specific fields but never reparent a
+        // component or silently remove its separator.
+        foreach (['layout_area_id', 'layout_divider_before'] as $key) {
+            if (array_key_exists($key, $block)) {
+                $converted[$key] = $block[$key];
+            }
+        }
+
+        return $converted;
     }
 
     /** @param array<string,mixed> $block */
