@@ -136,9 +136,16 @@ trait GalleryHeroWorkspaceProjection
 
         if ($this->disabledAutoHeroIds !== []) {
             $disabled = $publicArtworks->heroCandidatesByIds($this->disabledAutoHeroIds);
-            $this->excludedHeroRows = $disabled
-                ->map(function (Artwork $artwork): array {
-                    $row = $this->candidateRow(GalleryHeroCandidate::fromArtwork($artwork));
+            $stored = app(GalleryHeroConfigurationService::class)
+                ->configuration($settings)['hero_artwork_overrides'];
+            $candidates = $disabled->map(static fn (Artwork $artwork): GalleryHeroCandidate =>
+                GalleryHeroCandidate::fromArtwork(
+                    $artwork, (int) $artwork->getAttribute('artwork_category_id'),
+                )
+            );
+            $this->excludedHeroRows = $resolver->applyHeroArtworkOverrides($candidates, $stored)
+                ->map(function (GalleryHeroCandidate $candidate): array {
+                    $row = $this->candidateRow($candidate);
                     $row['eligible'] = false;
                     $row['disabled'] = true;
                     $row['is_manual'] = false;
@@ -199,24 +206,34 @@ trait GalleryHeroWorkspaceProjection
     {
         $artwork = $candidate->artwork();
         $asset = $candidate->mediaAsset();
+        $heroAsset = $candidate->heroMediaAsset;
         $gallery = $candidate->gallery();
-        $asset?->loadMissing('variants');
-        $preview = $asset instanceof MediaAsset ? MediaPreviewVariant::preview($asset) : null;
+        ($heroAsset ?? $asset)?->loadMissing('variants');
+        $preview = ($heroAsset ?? $asset) instanceof MediaAsset
+            ? MediaPreviewVariant::preview($heroAsset ?? $asset) : null;
+        $date = $candidate->heroOverrides;
+        $dateParts = array_key_exists('date', $date) ? ArtworkDate::normalize($date['date']) : null;
 
         return [
             'id' => $candidate->key(),
             'visual_key' => $candidate->visualKey(),
             'title' => $candidate->title(),
-            'year' => $artwork?->getAttribute('year') ?? $candidate->year,
-            'date' => $artwork instanceof Artwork
-                ? ArtworkDate::display($artwork, RegionalFormats::adminRegion())
-                : ArtworkDate::displayParts($candidate->year, $candidate->month, $candidate->day, RegionalFormats::adminRegion()),
+            'year' => $dateParts === null
+                ? ($artwork?->getAttribute('year') ?? $candidate->year)
+                : $dateParts['year'],
+            'date' => $dateParts !== null
+                ? ArtworkDate::displayParts($dateParts['year'], $dateParts['month'], $dateParts['day'], RegionalFormats::adminRegion())
+                : ($artwork instanceof Artwork
+                    ? ArtworkDate::display($artwork, RegionalFormats::adminRegion())
+                    : ArtworkDate::displayParts($candidate->year, $candidate->month, $candidate->day, RegionalFormats::adminRegion())),
             'gallery' => $candidate->sourceName
                 ?? ($gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : null),
             'gallery_id' => $candidate->sourceId ?? $gallery?->getKey(),
-            'thumbnail_url' => $artwork instanceof Artwork
-                ? ArtworkResource::thumbnailUrl($artwork)
-                : ($preview ? route('admin.media.variant', $preview) : null),
+            'thumbnail_url' => $heroAsset instanceof MediaAsset
+                ? ($preview ? route('admin.media.variant', $preview) : null)
+                : ($artwork instanceof Artwork
+                    ? ArtworkResource::thumbnailUrl($artwork)
+                    : ($preview ? route('admin.media.variant', $preview) : null)),
             'gallery_url' => $gallery instanceof ArtworkCategory
                 ? GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()])
                 : null,

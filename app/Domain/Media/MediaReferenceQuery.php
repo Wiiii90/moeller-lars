@@ -196,14 +196,23 @@ final class MediaReferenceQuery
             $group = app(\App\Domain\Content\GalleryHeroResolver::class)->resolve($settings)['group'];
 
             return $group
-                ->filter(static fn (\App\Domain\Content\GalleryHeroCandidate $candidate): bool => $candidate->kind === 'media')
-                ->map(static fn (\App\Domain\Content\GalleryHeroCandidate $candidate): int => (int) $candidate->record->getKey())
-                ->unique()->values()->all();
+                ->map(static function (\App\Domain\Content\GalleryHeroCandidate $candidate): ?int {
+                    if ($candidate->heroMediaAsset instanceof MediaAsset) {
+                        return (int) $candidate->heroMediaAsset->getKey();
+                    }
+
+                    return $candidate->kind === 'media' ? (int) $candidate->record->getKey() : null;
+                })
+                ->filter()->unique()->values()->all();
         }
 
-        $galleries = app(\App\Domain\Content\GalleryHeroConfigurationService::class)
-            ->configuration($settings)['dummy_galleries'];
-        $ids = [];
+        $config = app(\App\Domain\Content\GalleryHeroConfigurationService::class)
+            ->configuration($settings);
+        $galleries = $config['dummy_galleries'];
+        $ids = array_values(array_filter(array_map(
+            static fn (array $fields): ?int => $fields['media_asset_id'] ?? null,
+            array_values($config['hero_artwork_overrides']),
+        )));
         foreach ($galleries as $gallery) {
             foreach ($gallery['members'] as $member) {
                 if (isset($member['media_asset_id'])) {

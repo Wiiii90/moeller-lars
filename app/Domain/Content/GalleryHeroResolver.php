@@ -104,7 +104,7 @@ final class GalleryHeroResolver
             foreach ($regular as $artwork) {
                 $sourceId = (int) $artwork->getAttribute('artwork_category_id');
                 $pools[$sourceId] ??= new Collection;
-                $pools[$sourceId]->push(GalleryHeroCandidate::fromArtwork($artwork));
+                $pools[$sourceId]->push(GalleryHeroCandidate::fromArtwork($artwork, $sourceId));
                 $names[$sourceId] = (string) ($artwork->getRelationValue('category')?->getAttribute('name') ?? '');
             }
         }
@@ -157,9 +157,55 @@ final class GalleryHeroResolver
             ->take($perGallery ? GalleryHeroConfigurationService::MAX_GROUP_SIZE : $amount)
             ->values();
 
+        // Applied after ranking so Hero-specific display changes never
+        // rewrite the source Gallery order or candidate eligibility.
+        $group = $this->applyHeroArtworkOverrides($group, $configuration['hero_artwork_overrides']);
+
         return [$group, $this->configuration->sourcedGroupWeights(
             $group, $configuration['sourced_weights'],
         )];
+    }
+
+    /**
+     * One effective Hero candidate projection for public, Stage and dialog
+     * source rows. Safe replacement media are loaded once per collection.
+     *
+     * @param Collection<int,GalleryHeroCandidate> $group
+     * @param array<string,array<string,mixed>> $stored
+     * @return Collection<int,GalleryHeroCandidate>
+     */
+    public function applyHeroArtworkOverrides(Collection $group, array $stored): Collection
+    {
+        $mediaIds = $group->map(static function (GalleryHeroCandidate $candidate) use ($stored): ?int {
+            if (! $candidate->artwork() || $candidate->sourceId === null) {
+                return null;
+            }
+            $entry = $stored[GalleryHeroConfigurationService::heroArtworkOverrideKey(
+                $candidate->sourceId, (int) $candidate->record->getKey(),
+            )] ?? [];
+
+            return $entry['media_asset_id'] ?? null;
+        })->filter()->unique()->values()->all();
+        $replacementMedia = MediaAsset::query()->whereKey($mediaIds)
+            ->where('state', 'available')->with('variants')->get()
+            ->filter(static fn (MediaAsset $asset): bool => GalleryHeroCandidate::mediaIsEligible($asset))
+            ->keyBy('id');
+        return $group->map(static function (GalleryHeroCandidate $candidate) use ($stored, $replacementMedia): GalleryHeroCandidate {
+            if (! $candidate->artwork() || $candidate->sourceId === null) {
+                return $candidate;
+            }
+            $entry = $stored[GalleryHeroConfigurationService::heroArtworkOverrideKey(
+                $candidate->sourceId, (int) $candidate->record->getKey(),
+            )] ?? [];
+            if ($entry === []) {
+                return $candidate;
+            }
+
+            return $candidate->withHeroOverrides(
+                $entry, isset($entry['media_asset_id']) ? $replacementMedia->get($entry['media_asset_id']) : null,
+            );
+        })->values();
+
     }
 
     /** Read all stored Dummy members for the Hero editor, including inactive ones. */

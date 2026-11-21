@@ -7,7 +7,7 @@
     @if (str_starts_with($candidate['id'], 'artwork:'))
         <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
             label="Edit"
-            wire:click="mountAction('editHeroArtwork', { artwork: {{ (int) substr($candidate['id'], 8) }} })" />
+            wire:click="mountAction('editHeroArtwork', { gallery: {{ $groupId }}, artwork: {{ (int) substr($candidate['id'], 8) }} })" />
     @else
         <span class="gallery-hero-source-table__action-slot" aria-hidden="true"></span>
     @endif

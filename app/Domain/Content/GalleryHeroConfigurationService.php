@@ -17,6 +17,7 @@ use Illuminate\Validation\ValidationException;
 final class GalleryHeroConfigurationService
 {
     use GalleryHeroDummyGalleryMembership;
+    use GalleryHeroArtworkOverrides;
 
     public const DEFAULT_GROUP_SIZE = 12;
 
@@ -89,6 +90,7 @@ final class GalleryHeroConfigurationService
             'enabled_gallery_ids' => $this->readEnabledGalleryIds($artwork['enabled_gallery_ids'] ?? []),
             ...$profile,
             'dummy_galleries' => $this->readDummyGalleries($artwork),
+            'hero_artwork_overrides' => $this->readHeroArtworkOverrides($artwork['hero_artwork_overrides'] ?? []),
             'show_details' => (bool) ($artwork['show_details'] ?? true),
             'show_gallery_link' => (bool) ($artwork['show_gallery_link'] ?? false),
             'show_navigation' => (bool) ($artwork['show_navigation'] ?? false),
@@ -298,6 +300,9 @@ final class GalleryHeroConfigurationService
             $dummyGalleries = array_key_exists('dummy_galleries', $input)
                 ? $this->validatedDummyGalleries($input['dummy_galleries'])
                 : $this->readDummyGalleries($artworkBefore);
+            $heroOverrides = array_key_exists('hero_artwork_overrides', $input)
+                ? $this->validatedHeroArtworkOverrides($input['hero_artwork_overrides'])
+                : $this->readHeroArtworkOverrides($artworkBefore['hero_artwork_overrides'] ?? []);
             $rotationInterval = $this->requestedRotationInterval($input, $profile['rotation_interval']);
             $rotationStartedAt = $profile['rotation_started_at'];
 
@@ -349,7 +354,32 @@ final class GalleryHeroConfigurationService
                 array_column($current['dummy_galleries'], 'id'),
                 array_column($dummyGalleries, 'id'),
             ));
+            if ($dummyGalleriesChanged) {
+                $currentDummyKeys = [];
+                foreach ($dummyGalleries as $source) {
+                    foreach ($source['members'] as $member) {
+                        if (isset($member['artwork_id'])) {
+                            $currentDummyKeys[self::heroArtworkOverrideKey(
+                                (int) $source['id'], (int) $member['artwork_id'],
+                            )] = true;
+                        }
+                    }
+                }
+                foreach (array_keys($heroOverrides) as $identity) {
+                    if ((int) explode('|', $identity, 2)[0] < 0
+                        && ! isset($currentDummyKeys[$identity])) {
+                        unset($heroOverrides[$identity]);
+                    }
+                }
+            }
+
             if ($deletedSources !== []) {
+                foreach (array_keys($heroOverrides) as $identity) {
+                    $sourceId = (int) explode('|', $identity, 2)[0];
+                    if (in_array($sourceId, $deletedSources, true)) {
+                        unset($heroOverrides[$identity]);
+                    }
+                }
                 foreach ($profiles as &$sourceProfile) {
                     $sourceProfile['source_order'] = array_values(array_filter(
                         $sourceProfile['source_order'],
@@ -370,6 +400,7 @@ final class GalleryHeroConfigurationService
             $artwork['group_source'] = $groupSource;
             $artwork['source_profiles'] = $profiles;
             $artwork['dummy_galleries'] = $dummyGalleries;
+            $artwork['hero_artwork_overrides'] = $heroOverrides;
             unset(
                 $artwork['manual_group'], $artwork['sourced_weights'],
                 $artwork['manual_group_enabled'], $artwork['disabled_auto_artwork_ids'],

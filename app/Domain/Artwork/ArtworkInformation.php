@@ -10,7 +10,8 @@ use Illuminate\Validation\ValidationException;
 /**
  * Canonical Artwork metadata visibility and display. Gallery and individual
  * Artwork have one fixed layout; Home Hero has its own explicit layout option.
- * Values are always sourced from Artwork and MediaAsset.
+ * Gallery values come from Artwork and MediaAsset; Hero may supply a separate
+ * non-persistent display overlay without changing either source record.
  */
 final class ArtworkInformation
 {
@@ -185,7 +186,7 @@ final class ArtworkInformation
     /**
      * @return list<array{left:list<array{field:string,text:string}>,center:list<array{field:string,text:string}>,right:list<array{field:string,text:string}>}>
      */
-    public static function rows(Artwork $artwork, ?MediaAsset $asset = null, ?array $configuration = null): array
+    public static function rows(Artwork $artwork, ?MediaAsset $asset = null, ?array $configuration = null, array $heroOverrides = []): array
     {
         $gallery = $artwork->getRelationValue('category');
         if (! $gallery instanceof ArtworkCategory) {
@@ -200,11 +201,20 @@ final class ArtworkInformation
             $primary = $artwork->artworkMedia()->where('role', 'primary')->with('mediaAsset')->first();
             $asset = $primary?->getRelationValue('mediaAsset');
         }
+        $date = array_key_exists('date', $heroOverrides)
+            ? ArtworkDate::normalize($heroOverrides['date'])
+            : null;
         $values = [
-            'title' => trim((string) $artwork->getAttribute('title')),
-            'date' => ArtworkDate::display($artwork) ?? '',
-            'dimensions' => ArtworkDimensions::display($artwork->getAttribute('dimensions')) ?? '',
-            'material' => html_entity_decode(trim((string) ($artwork->getAttribute('medium') ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            'title' => trim((string) ($heroOverrides['title'] ?? $artwork->getAttribute('title'))),
+            'date' => $date === null
+                ? (ArtworkDate::display($artwork) ?? '')
+                : (ArtworkDate::displayParts($date['year'], $date['month'], $date['day']) ?? ''),
+            'dimensions' => array_key_exists('dimensions', $heroOverrides)
+                ? (ArtworkDimensions::display($heroOverrides['dimensions']) ?? '')
+                : (ArtworkDimensions::display($artwork->getAttribute('dimensions')) ?? ''),
+            'material' => html_entity_decode(trim((string) ($heroOverrides['medium'] ?? (
+                array_key_exists('medium', $heroOverrides) ? '' : $artwork->getAttribute('medium')
+            ))), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
             'credits' => $asset instanceof MediaAsset ? trim((string) ($asset->getAttribute('credit') ?? '')) : '',
             'copyright' => $asset instanceof MediaAsset ? trim((string) ($asset->effectiveCopyrightNotice() ?? '')) : '',
         ];

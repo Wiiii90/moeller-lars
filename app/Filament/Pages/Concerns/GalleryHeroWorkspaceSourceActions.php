@@ -19,6 +19,7 @@ use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\GalleryHeroSettingsDialog;
 use App\Filament\Support\GalleryHeroDummyGalleryDialog;
 use App\Filament\Support\ArtworkEditDialog;
+use App\Filament\Support\GalleryHeroArtworkDialog;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Controls\AdminControl;
 use App\Models\Artwork;
@@ -76,36 +77,67 @@ trait GalleryHeroWorkspaceSourceActions
     }
 
     /**
-     * The source-table Edit button edits the Artwork candidate, never follows
-     * the Gallery link (which already lives on the Gallery title). Use the
-     * canonical Artwork dialog and editorial service; Home owns only refresh.
+     * Edit this source's Hero version, never the original Artwork or Gallery.
+     * The normal ArtworkEditDialog is deliberately not used for persistence.
      */
     public function editHeroArtworkAction(): Action
     {
-        $dialog = app(ArtworkEditDialog::class);
+        $dialog = app(GalleryHeroArtworkDialog::class);
+        $service = app(GalleryHeroConfigurationService::class);
 
         return AdminDialog::edit(
             Action::make('editHeroArtwork')
-                ->label('Edit Artwork')
-                ->modalHeading('Edit Artwork')
-                ->fillForm(fn (array $arguments): array => $dialog->fill($this->heroArtworkForAction($arguments)))
-                ->schema(fn (array $arguments): array => $dialog->schema(
-                    autosave: true,
-                    primaryReadOnly: $this->heroArtworkForAction($arguments)->getAttribute('state') === 'published',
-                    onPrimaryMediaChanged: function (?int $assetId) use ($dialog, $arguments): void {
-                        if (! $dialog->changePrimaryMedia($this->heroArtworkForAction($arguments), $assetId)) {
-                            return;
-                        }
+                ->label('Edit')
+                ->modalHeading('Edit Hero Artwork')
+                ->fillForm(function (array $arguments) use ($dialog, $service): array {
+                    $sourceId = (int) ($arguments['gallery'] ?? 0);
+                    $artwork = $this->heroArtworkForAction($arguments);
+                    $sourceName = $sourceId < 0
+                        ? (string) $this->dummyGallery($sourceId)['name']
+                        : (string) $artwork->getRelation('category')->getAttribute('name');
+
+                    return $dialog->fill(
+                        $artwork, $sourceName,
+                        $service->heroArtworkOverridesFor($this->settings(), $sourceId, (int) $artwork->getKey()),
+                    );
+                })
+                ->schema(fn (): array => $dialog->schema())
+                ->extraModalFooterActions(function (array $arguments) use ($service): array {
+                    $sourceId = (int) ($arguments['gallery'] ?? 0);
+                    $artworkId = (int) ($arguments['artwork'] ?? 0);
+                    $overrides = $service->heroArtworkOverridesFor($this->settings(), $sourceId, $artworkId);
+
+                    return [
+                        AdminDialog::headerAction(
+                            'dialogRestoreHeroOriginal',
+                            AdminRowAction::Restore,
+                            function () use ($sourceId, $artworkId, $service): void {
+                                $changed = $service->resetHeroArtworkOverrides($this->settings(), $sourceId, $artworkId);
+                                if ($changed) {
+                                    $this->reloadWorkspace();
+                                    app(AdminNotifier::class)->notification(
+                                        title: 'Hero Artwork overrides cleared', status: 'success',
+                                    );
+                                }
+                                $this->replaceMountedAction('editHeroArtwork', [
+                                    'gallery' => $sourceId, 'artwork' => $artworkId,
+                                ]);
+                            },
+                        )->label('Restore original')->disabled($overrides === []),
+                    ];
+                })
+                ->action(function (array $arguments, array $data) use ($service): void {
+                    $sourceId = (int) ($arguments['gallery'] ?? 0);
+                    $artwork = $this->heroArtworkForAction($arguments);
+                    $changed = $service->saveHeroArtworkOverrides(
+                        $this->settings(), $sourceId, (int) $artwork->getKey(), $data,
+                    );
+                    if ($changed) {
                         $this->reloadWorkspace();
-                        app(AdminNotifier::class)->notification(title: 'Artwork primary media saved', status: 'success');
-                    },
-                ))
-                ->action(function (array $arguments, array $data) use ($dialog): void {
-                    if (! $dialog->save($this->heroArtworkForAction($arguments), $data, savePrimaryMedia: false)) {
-                        return;
+                        app(AdminNotifier::class)->notification(
+                            title: 'Hero Artwork version saved', status: 'success',
+                        );
                     }
-                    $this->reloadWorkspace();
-                    app(AdminNotifier::class)->notification(title: 'Artwork saved', status: 'success');
                 }),
             AdminDialogSize::Large,
         );
@@ -113,15 +145,15 @@ trait GalleryHeroWorkspaceSourceActions
 
     private function heroArtworkForAction(array $arguments): Artwork
     {
-        $id = (int) ($arguments['artwork'] ?? 0);
-        if ($id <= 0) {
-            throw ValidationException::withMessages(['artwork' => 'Choose an existing Artwork.']);
+        $sourceId = (int) ($arguments['gallery'] ?? 0);
+        $artworkId = (int) ($arguments['artwork'] ?? 0);
+        if ($sourceId === 0 || $artworkId < 1) {
+            throw ValidationException::withMessages(['artwork' => 'Choose a Hero source Artwork.']);
         }
 
-        /** @var Artwork $artwork */
-        $artwork = Artwork::query()->with('category')->findOrFail($id);
-
-        return $artwork;
+        return app(GalleryHeroConfigurationService::class)->sourceArtworkForHero(
+            $this->settings(), $sourceId, $artworkId,
+        );
     }
 
     /** Edit only this Hero page's regular Gallery source, never Gallery metadata. */
@@ -299,9 +331,16 @@ trait GalleryHeroWorkspaceSourceActions
         $gallery = $creating
             ? ['id' => 0, 'name' => 'New Dummy Gallery', 'members' => $this->draftDummyMembers]
             : $this->dummyGallery($galleryId);
-        $available = app(GalleryHeroResolver::class)->dummyCandidates(
+        $resolver = app(GalleryHeroResolver::class);
+        $available = $resolver->dummyCandidates(
             $gallery['members'], (int) $gallery['id'], (string) $gallery['name'],
-        )->keyBy(static fn (GalleryHeroCandidate $candidate): string => $candidate->key());
+        );
+        if (! $creating) {
+            $stored = app(GalleryHeroConfigurationService::class)
+                ->configuration($this->settings())['hero_artwork_overrides'];
+            $available = $resolver->applyHeroArtworkOverrides($available, $stored);
+        }
+        $available = $available->keyBy(static fn (GalleryHeroCandidate $candidate): string => $candidate->key());
         $rows = [];
         foreach ($gallery['members'] as $member) {
             $key = GalleryHeroConfigurationService::memberKey($member);
@@ -314,9 +353,11 @@ trait GalleryHeroWorkspaceSourceActions
             $row['year'] = $artwork?->getAttribute('year') ?? ($member['year'] ?? null);
             $row['month'] = $artwork?->getAttribute('month') ?? ($member['month'] ?? null);
             $row['day'] = $artwork?->getAttribute('day') ?? ($member['day'] ?? null);
-            $row['date'] = ArtworkDate::displayParts(
-                $row['year'], $row['month'], $row['day'], RegionalFormats::adminRegion(),
-            );
+            if (! $artwork instanceof Artwork) {
+                $row['date'] = ArtworkDate::displayParts(
+                    $row['year'], $row['month'], $row['day'], RegionalFormats::adminRegion(),
+                );
+            }
             $row['disabled'] = ! ($member['enabled'] ?? true);
             $rows[] = $row;
         }

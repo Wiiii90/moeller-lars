@@ -17,6 +17,8 @@
                     <x-artwork-card
                         :artwork="$artwork"
                         :media="$media"
+                        :hero-overrides="$candidate->heroOverrides"
+                        :hero-media-asset="$candidate->heroMediaAsset"
                         :hero-fitted="true"
                         :show-details="$showDetails"
                         :show-media-credits="$showMediaCredits"

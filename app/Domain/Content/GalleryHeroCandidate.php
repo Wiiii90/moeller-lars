@@ -24,6 +24,9 @@ final readonly class GalleryHeroCandidate
         public ?int $year = null,
         public ?int $month = null,
         public ?int $day = null,
+        /** @var array<string,mixed> Hero-only metadata and visual overrides */
+        public array $heroOverrides = [],
+        public ?MediaAsset $heroMediaAsset = null,
     ) {}
 
     public static function fromArtwork(Artwork $artwork, ?int $sourceId = null, ?string $sourceName = null): self
@@ -67,6 +70,16 @@ final readonly class GalleryHeroCandidate
             && MediaPreviewVariant::imageThumbnail($asset) instanceof MediaVariant;
     }
 
+    /** @param array<string,mixed> $overrides */
+    public function withHeroOverrides(array $overrides, ?MediaAsset $media = null): self
+    {
+        return new self(
+            $this->kind, $this->record, $this->sourceId, $this->sourceName,
+            $this->titleOverride, $this->year, $this->month, $this->day,
+            $overrides, $media,
+        );
+    }
+
     public function key(): string
     {
         return $this->kind.':'.$this->record->getKey();
@@ -75,6 +88,9 @@ final readonly class GalleryHeroCandidate
     /** A displayed image may be referenced both by Artwork and direct Storage. */
     public function visualKey(): string
     {
+        if ($this->heroMediaAsset instanceof MediaAsset) {
+            return 'media:'.$this->heroMediaAsset->getKey();
+        }
         if ($this->record instanceof MediaAsset) {
             return 'media:'.$this->record->getKey();
         }
@@ -101,7 +117,7 @@ final readonly class GalleryHeroCandidate
 
     public function title(): string
     {
-        return $this->titleOverride ?? ($this->artwork() instanceof Artwork
+        return ($this->heroOverrides['title'] ?? null) ?? $this->titleOverride ?? ($this->artwork() instanceof Artwork
             ? (string) $this->record->getAttribute('title')
             : (string) $this->record->getAttribute('original_filename'));
     }
