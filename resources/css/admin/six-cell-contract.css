@@ -400,7 +400,9 @@
     grid-auto-flow: row !important;
     grid-auto-rows: max-content;
     align-content: start;
-    width: 100%;
+    /* Match the measurement width before the first visible frame. A fixed
+     * popover must never inherit its parent toolbar's 100% width. */
+    width: min(320px, calc(100vw - 16px));
     max-width: calc(100vw - 1rem);
     padding: .8rem;
     gap: .7rem;

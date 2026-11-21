@@ -1,5 +1,13 @@
 # Dev Worker 6 — Gallery Hero / former Home Hero
 
+## Shared Filters popover first-frame geometry — 2026-11-21
+
+- The user reported a recurring first-open enlargement then collapse in toolbar Filters, notably Activity, and requested a centralized fix for all affected Search/Toolbar rows.
+- Root owner is `resources/views/components/admin/controls.blade.php`, used by the Activity, Storage, Gallery, Pages, Journal, Custom Page and Analytics toolbars. Under the shared responsive container query, `data-open=true` previously displayed the fixed popup at `width:100%` before the next Alpine tick calculated its 320px width and viewport position. Reopening could briefly reuse a stale inline position because Escape, scroll and click-away only changed `open`.
+- Fixed the owner: initial positioned-pending state remains invisible but measurable; shared `six-cell-contract.css` now gives the measurement pass the same capped width as the final popup; open, close and responsive reconciliation use one lifecycle and clear stale geometry. No page-specific overrides, extra timer, alternate filters or duplicated popover.
+- Existing scroll/resize/keyboard/field state remain unchanged. Source reviewed against shared toolbar consumers. Browser verification of first-open/close/reopen at the responsive transitions remains pending; no tests, builds, Continuous Integration or deployments were triggered.
+
+
 ## Shared picker: genuine paged sources — 2026-11-21
 
 - The previous Dummy Gallery callback incorrectly loaded only 30 editorial Artworks and 30 Storage assets, then sliced those 60 rows locally. This exhausted the apparent picker pagination even when more candidates existed. The renderer and its Livewire `MediaAssetPicker::mediaPages` transport already support real incremental loading and remain unchanged.

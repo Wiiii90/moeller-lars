@@ -35,7 +35,26 @@
             x-data="{
                 open: false,
                 panelStyle: '',
+                openPanel() {
+                    // Keep the fixed panel invisible until its measured
+                    // position has been applied. Never paint an unpositioned
+                    // full-width popover for one frame.
+                    this.panelStyle = ''
+                    this.open = true
+                    this.$nextTick(() => {
+                        if (this.open) this.positionPanel()
+                    })
+                },
+                closePanel() {
+                    this.open = false
+                    this.panelStyle = ''
+                },
+                togglePanel() {
+                    if (this.open) this.closePanel()
+                    else this.openPanel()
+                },
                 positionPanel() {
+                    if (! this.open) return
                     const trigger = this.$refs.trigger
                     if (! trigger) return
 
@@ -66,9 +85,9 @@
                     const availableHeight = openBelow ? below : above
 
                     if (openBelow) {
-                        this.panelStyle = `left:${left}px;top:${rect.bottom + panelGap}px;bottom:auto;width:${panelWidth}px;max-height:${availableHeight}px;`
+                        this.panelStyle = `left:${left}px;top:${rect.bottom + panelGap}px;bottom:auto;width:${panelWidth}px;max-height:${availableHeight}px;visibility:visible;`
                     } else {
-                        this.panelStyle = `left:${left}px;top:auto;bottom:${viewportHeight - rect.top + panelGap}px;width:${panelWidth}px;max-height:${availableHeight}px;`
+                        this.panelStyle = `left:${left}px;top:auto;bottom:${viewportHeight - rect.top + panelGap}px;width:${panelWidth}px;max-height:${availableHeight}px;visibility:visible;`
                     }
                 },
                 syncPanelToLayout() {
@@ -76,24 +95,25 @@
                     // The CSS container, not JS width thresholds, determines
                     // whether Filters is a popover. Close on return to inline.
                     if (getComputedStyle(this.$refs.trigger).display === 'none') {
-                        this.open = false
-                        this.panelStyle = ''
+                        this.closePanel()
                         return
                     }
-                    this.$nextTick(() => this.positionPanel())
+                    this.$nextTick(() => {
+                        if (this.open) this.positionPanel()
+                    })
                 },
             }"
             x-bind:data-open="open ? 'true' : 'false'"
-            x-on:keydown.escape.window="open = false"
+            x-on:keydown.escape.window="closePanel()"
             x-on:resize.window="syncPanelToLayout()"
-            x-on:scroll.window="open = false"
-            x-on:click.outside="open = false"
+            x-on:scroll.window="closePanel()"
+            x-on:click.outside="closePanel()"
         >
             <button
                 class="admin-action admin-action--with-icon admin-filter-overflow__trigger"
                 type="button"
                 x-ref="trigger"
-                x-on:click="open = ! open; if (open) $nextTick(() => positionPanel()); else panelStyle = ''"
+                x-on:click="togglePanel()"
                 x-bind:aria-expanded="open.toString()"
                 aria-haspopup="true"
                 aria-label="{{ __('Filters') }}"
@@ -107,7 +127,7 @@
                 role="group"
                 aria-label="{{ __('Filters') }}"
                 x-ref="panel"
-                x-bind:style="panelStyle"
+                x-bind:style="open && !panelStyle ? 'visibility:hidden;' : panelStyle"
             >
                 {{ $filters }}
 
