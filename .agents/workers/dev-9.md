@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 28 (active)  
-**State:** Mac trackpad Option + primary-button drag source-integrated; user Mac browser acceptance pending.
+**State:** Shared View Options Alpine syntax corrected; Gallery selection-driven Preview path reviewed, actual browser acceptance pending.
 
 ## Ownership and current decisions
 
@@ -102,3 +102,12 @@
 - Shared `resources/views/components/admin/live-preview.blade.php`: adds capture-phase click/dragstart coordination to the canonical Preview viewport, and concise Help text for Mac trackpad, Shift-wheel zoom, mouse drag and touch. The iframe receives matching centralized listeners via the controller; no Preview-specific Alt wheel handler or toolbar-only workaround.
 - Native two-finger trackpad scrolling emits normal wheel events and therefore scrolls the Public page. Shift + wheel/trackpad scroll remains the chosen Preview zoom gesture. On touchscreens, native one-finger taps/scroll and existing two-touch movement are unchanged. These are distinct input types, not new hardware emulation.
 - Validation: JavaScript parsing and isolated gesture simulations passed for no-modifier left click, Command + Option left click, Option click without drag, movement threshold, actual Option pan at fitted zoom, continuation from an enlarged outer scroll boundary to the Public page, unchanged middle-button pan, pointer-generated click suppression and keyboard-click preservation, plus frame click handler binding and teardown. **No actual Mac hardware/Safari/Firefox/Chromium acceptance, full suite, build, Continuous Integration or deployment.**
+
+
+## 2026-11-21: Gallery View Options Alpine parse error and selection Preview review
+
+- User reports `Unexpected token 'if'` in the Gallery List View Options `x-init`, with rendered source `const key = 'admin-view.gallery'         if (key)`, and also that selecting an Artwork fails to change Live Preview although Auto-focus is enabled. Separate preloaded-asset warning is not a confirmed causative factor.
+- Root cause for the parse error: canonical `resources/views/components/admin/view-options.blade.php` had no statement delimiter immediately following `@js($storageKey)`. Blade can collapse that directive's trailing whitespace/newline into a single line. Fixed the shared template with an explicit semicolon; Gallery and any other consumer of View Options use the same owner. In-memory JavaScript parsing of the generated expression succeeded for both a string storage key and a null key; no full browser runtime has run.
+- Traced direct Gallery selection: List/Dense checkbox calls `GalleryWorkspace::toggleArtworkSelection`, which changes `selectedArtworkIds` and calls `syncGalleryPreviewFocus`. The canonical PHP owner dispatches `gallery-preview-updated` for a **changed** valid preview target; the common `x-admin.live-preview` listens for it and updates the same iframe. This pipeline was already wired and is not modified as part of the syntax fix.
+- Important accepted Gallery behavior is in `docs/admin/responsive.md`: Auto-focus shows individual Artwork Working preview only if **exactly one** selected row is previewable. Zero/multiple selected rows or an unavailable route show Gallery. Active staged queue/selection has precedence. The `can_preview` producer requires Artwork Pages enabled, an available slug, one viable primary with usable media/ALT, and non-archived state; unpublished Working drafts can qualify. These limitations can independently make the Preview appear unchanged. Do not bypass them and generate a 404 route or duplicate focus logic in JavaScript without a product decision.
+- Browser review pending after the shared View Options syntax fix: check that console parse error disappears, select one previewable Artwork in List/Dense/Grid with Auto-focus active and Upload/Settings panel selected; check actual iframe navigation and returning to Gallery on multi-select or deselect. If one eligible selection still does not change Preview, this remains a separate unresolved runtime issue; no build, suite, CI, deployment or data changes occurred.

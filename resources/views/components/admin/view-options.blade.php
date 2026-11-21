@@ -15,7 +15,7 @@
 <div {{ $attributes->class(['media-workspace__view-options', 'admin-editorial-actions']) }}
      role="group" aria-label="{{ __($label) }}"
      x-init="
-         const key = @js($storageKey)
+         const key = @js($storageKey);
          if (key) {
              try {
                  const saved = window.sessionStorage.getItem(key)
