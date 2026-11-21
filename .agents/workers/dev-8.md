@@ -2,7 +2,7 @@
 
 **Branch:** `dev`
 **Lease:** 30 (active; replacement registered 2026-11-21)
-**State:** Shared Admin dialog presentation is source-integrated; browser acceptance remains pending. A user-authorized, markup-only Gallery Stage Discard hover consistency correction was committed without taking over Gallery ownership.
+**State:** Shared Admin dialogs and compact empty-table/list components are source-integrated on dev; final browser acceptance, tests and deployment remain pending.
 
 ## Assigned ownership and canonical sources
 - Central Filament Action modal lifecycle: `app/Filament/Support/Dialogs/AdminDialog.php`, `resources/js/admin-dialog-geometry.js` and `resources/css/admin/dialog-contract.css`. Preserve native focus, close/Escape, form validation, Create submission, Edit autosave, overlay stacking, scroll lock and nested picker interactions.
@@ -33,6 +33,12 @@
 ## Gallery Stage Discard consistency (2026-11-21)
 - One bounded request outside usual dialog ownership: the single staged-file Discard button lacked the existing `is-danger` semantic class; adjacent Discard All already had it and uses the same `admin-action` component and icon. Added `is-danger` at the single-button construction point in `manage-gallery-artworks.blade.php` to reuse the already accepted shared danger hover/focus treatment. Did not change Gallery callbacks, domain mutations, batch actions, common styles or Dev Worker 4's ownership.
 - Verification: compared both neighboring button elements and shared Stage action rules at current `dev`; source-only. Browser hover/focus, disabled state and actual rendering still unverified.
+
+## Central empty table/list presentation (2026-11-21)
+- User screenshots showed the oversized Dashboard feed “No matching feed entries” + iconless Clear and the large “No Dummy Gallery members” row. Reused existing `x-admin.empty-state`, `x-admin.clear-filters`, `x-admin.pager` and `AdminIcon::Clear` (custom eraser). The existing minimal empty-state variant now emits nonheading paragraph text with one compact, centered, muted italic style plus inline optional actions. Shared `data-workspace.css` no longer forces 5.2rem blank table rows; table borders/add-row boundaries remain the canonical ones. Nonminimal rich states are preserved where still used.
+- Direct consumer inventory and updates: Dashboard feed, Activity/Commits, Journal, Pages, Analytics detail, Custom Page component hierarchy, Gallery artworks, Gallery Hero source and dummy-members lists, Material Presets, General social profiles and Storage library empty views. Real no-data state labels are “Empty”; filtered-empty labels are “No matches”. Analytics' unavailable state is intentionally unchanged because it represents missing data availability, not an empty result.
+- The canonical Clear component now accepts an optional label, so “Clear filters” and “Clear search” both display the central eraser without page-local icon markup or an extra component. Existing Livewire reset methods and Activity reset URL with native navigation are preserved. The central pager omits all 0-of-0 controls while preserving nonempty ranges/page-size behavior; the empty Storage state now relies on the already-present Add Media File row rather than redundant helper copy.
+- Source verification: fetched changed direct consumers on current dev and checked all reviewed empty-state labels, actions and absence of stale 5.2rem layouts. No local PHP/Blade runtime, browser screenshot, keyboard/responsive/color-mode acceptance, CI/test suite, build or deployment available/run. Recommended browser review: zero rows vs filtered zero rows, clear action icon/link, zero→nonzero pager transitions and Add row alignment in wide/narrow and light/dark states.
 
 ## Current verification boundary
 - Previous holder reported central source changes and isolated JavaScript simulations/static checks, **not** browser acceptance. Current replacement changed only the centrally mapped Clear glyph as described above.

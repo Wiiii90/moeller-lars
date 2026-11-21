@@ -9,7 +9,7 @@
 
 | Dev Worker 6 | 16 | Active — Gallery Hero Random anti-repeat and conditional chance implemented; runtime/browser acceptance pending | Gallery Hero Random draw, per-visitor recent image, Stage next chances, eligibility; coordinate Gallery ownership with Dev Worker 4; no tests/deployment | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 18 | Shared dropdown CSS tokens consolidated across native/Filament/pager; browser acceptance pending | General Appearance, shared Admin Selects and Gallery/General Preview | [dev-7.md](workers/dev-7.md) |
-| Dev Worker 8 | 30 | Unified Submit/X ordering for Create/Command/Confirm and all modal title surfaces source-committed; browser review pending | Shared Admin dialogs, header geometry/icons, date controls and media picker; coordinate shared primitives; no deployment | [dev-8.md](workers/dev-8.md) |
+| Dev Worker 8 | 30 | Central minimal Admin table/list empty states and Clear filters eraser committed; source checked, browser acceptance pending | Shared Admin dialogs, common empty-state/pager/filter controls; coordinated direct Gallery/Pages consumers; no deployment | [dev-8.md](workers/dev-8.md) |
 
 
 | Dev Worker 9 | 28 | Custom mouse-origin focus overrides removed by user decision; native browser focus for Settings and Help retained | General/Gallery Live Preview controls and shared Help; preserve Dev Worker 7 device controls and Gallery Focus | [dev-9.md](workers/dev-9.md) |
