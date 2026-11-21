@@ -1,4 +1,4 @@
-/* One interactive, responsive Public preview for Gallery and General.
+/* One interactive, responsive Public preview for General, Gallery and Journal.
  * The iframe lays out at the selected CSS viewport dimensions; the shared
  * Stage component scales only the displayed result. */
 .admin-live-preview {

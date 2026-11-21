@@ -43,7 +43,34 @@
             @endforeach
         </x-admin.metrics>
 
-        <x-admin.section class="journal-workspace__entries" aria-label="{{ $isBlog ? 'Blog entries' : 'Exhibition entries' }}">
+        <section class="admin-visual-stage admin-visual-stage--split admin-visual-stage--editor-preview"
+            aria-label="Journal editor and live public preview">
+            <div class="admin-visual-stage__pane admin-visual-stage__editor-pane">
+                <h2 class="admin-section__kicker admin-visual-stage__heading">{{ __('Editor') }}</h2>
+            </div>
+            <div class="admin-visual-stage__pane admin-visual-stage__preview-pane">
+                <h2 class="admin-section__kicker admin-visual-stage__heading">{{ __('Live preview') }}</h2>
+                <x-admin.live-preview
+                    :heading="false"
+                    :url="$this->journalStagePreviewUrl()"
+                    :frame-title="$this->journalStagePreviewTitle()"
+                    wire:key="journal-live-preview"
+                >
+                    <x-slot:focusAction>
+                        <button class="admin-action admin-stage-tool-icon {{ $journalPreviewAutoFocus ? 'is-primary' : '' }}"
+                            type="button"
+                            wire:click="toggleJournalPreviewAutoFocus"
+                            aria-label="Auto-focus preview to selection"
+                            aria-pressed="{{ $journalPreviewAutoFocus ? 'true' : 'false' }}"
+                            title="{{ $journalPreviewAutoFocus ? 'Auto-focus selection on' : 'Auto-focus selection off' }}">
+                            <x-filament::icon icon="heroicon-m-cursor-arrow-rays" />
+                        </button>
+                    </x-slot:focusAction>
+                </x-admin.live-preview>
+            </div>
+        </section>
+
+        <x-admin.section class="journal-workspace__entries admin-visual-stage-followup" aria-label="{{ $isBlog ? 'Blog entries' : 'Exhibition entries' }}">
             <x-admin.controls class="admin-data-controls--dashboard-responsive" aria-label="{{ $isBlog ? 'Blog controls' : 'Exhibition controls' }}" metric-grid :filter-count="$isBlog ? 1 : 2" :search-span="$isBlog ? 3 : 2">
                 <x-slot:search>
                     <label class="admin-data-field">

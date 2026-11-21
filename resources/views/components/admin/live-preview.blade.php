@@ -13,7 +13,7 @@
     data-preview-url="{{ $url }}"
     x-data="adminLivePreview($el)"
     @if ($refreshOnAppearance) x-on:general-appearance-updated.window="refreshPreview()" @endif
-    x-on:gallery-preview-updated.window="refreshPreview($event.detail); scheduleFit()"
+    x-on:admin-live-preview-updated.window="refreshPreview($event.detail); scheduleFit()"
     x-on:resize.window="scheduleFit()"
 >
     @if ($heading)

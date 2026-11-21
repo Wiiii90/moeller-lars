@@ -1,34 +1,5 @@
 
-/* Gallery uses shared Stage geometry: editor and real Public preview when
- * space permits, editor-only like General at narrow workspace widths. */
-.gallery-workspace__stage {
-    --admin-stage-divider-axis: 50%;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0;
-}
-.gallery-workspace__stage:has(.admin-live-preview[data-preview-device="mobile"]) {
-    --admin-stage-divider-axis: 66.666667%;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-}
-
-.gallery-stage__workspace,
-.gallery-stage__preview {
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-    min-width: 0;
-    min-height: 0;
-    padding-block: var(--admin-stage-divider-inset);
-}
-.gallery-stage__workspace {
-    grid-column: 1;
-    padding-right: var(--admin-stage-pane-space);
-}
-.gallery-stage__preview {
-    grid-column: 2;
-    padding-left: var(--admin-stage-pane-space);
-}
+/* Gallery owns only its editor/upload internals. The shared Stage owns the split and pane geometry. */
 .gallery-stage__upload {
     display: flex;
     flex: 1 1 auto;
@@ -225,12 +196,6 @@
     width: .95rem;
     height: .95rem;
     flex: 0 0 auto;
-}
-
-.gallery-stage__live-preview {
-    flex: 1 1 auto;
-    min-height: 0;
-    margin-top: var(--admin-stage-header-gap);
 }
 
 /* Gallery workspace-specific contact sheet, interaction and control presentation. */

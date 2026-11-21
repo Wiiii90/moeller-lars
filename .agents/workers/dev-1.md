@@ -1,11 +1,12 @@
-# Dev Worker 1 — Exhibitions
+# Dev Worker 1 — Journal
 
 - **Working branch:** `dev`
 - **Lease:** 34
-- **Status:** Active; registered for Exhibitions, awaiting the first specific implementation request.
-- **Assigned scope:** Journal Exhibitions template, exhibition-specific administration and presentation, and their direct consumers as explicitly requested. The user's current request is to establish an Exhibitions Dev worker; no feature change has yet been assigned.
-- **Coordination boundary:** Dev Worker 5 currently owns the shared Pages and Journal type/template cutover. Reconcile the latest source and coordinate before changing a shared Page/Journal owner; do not change unrelated Pages behavior.
-- **Current source evidence:** Dev roster at checked registration parent `990e1b4e6da08ca7463b3f25019ce2d680f8e8c0`; no active Exhibitions worker listed before registration.
-- **Completed:** Read branch-local `AGENTS.md`, Dev method and worker protocol; verified the active roster and the free slot; registered on `dev`.
-- **Verification:** Registration commit and published roster/record to be verified after ref update. No source, runtime or browser testing performed.
-- **Next:** Receive the user's Exhibitions task, recheck lease and current `dev` head, inspect the narrow existing owner and direct consumers, then implement and verify within the accepted scope.
+- **Status:** Active; common Journal Stage and focused Live Preview source-integrated, runtime/browser acceptance pending.
+- **Assignment:** All Journal templates (Blog and Exhibitions). Provide a shared Stage and live Public Preview, with Exhibition-specific open/focus behavior. The artist will define the left-side Editor controls in the next iteration.
+- **Accepted Stage design:** Same central height/divider and device Preview as Gallery/General. Left pane is only the heading `Editor`, with no Stage tabs or new editing controls. Right pane shows the reusable interactive Live Preview with default-on Auto-focus. The existing toolbar and Journal Settings/Add/Edit actions remain authoritative; no separate editor, setting persistence, or staging data model is created.
+- **Scope ownership:** `JournalWorkspace`, Journal workspace Blade, Public Exhibition deep-link focus, and shared Stage/preview primitives. Dev Worker 5 owns shared Pages/Journal template type architecture; Dev Worker 4 owns Gallery. Changes to their consumers are strictly limited to reusing the central Stage and unified preview event, preserving existing functionality.
+- **Source baseline:** Registration parent `18e4ef09547cdeefb2959d50ab8fcc8cb1aeb74a`.
+- **Implemented:** One direct Gallery/Journal two-pane Stage geometry owner in shared CSS with responsive editor-only Narrow/Minimal. A single existing Public iframe preview reused in Blog/Exhibitions; Blog selection targets a private post URL, Exhibition selection targets a stable public hash and automatically opens its native disclosure. Selected-count actions, auto-focus toggle and mutation refresh remain on the Journal owner. Existing toolbar functionality is preserved.
+- **Verification:** Static source/target checks only; no local application runtime, full build, rendered browser or end-to-end tests executed. Not yet artist-accepted.
+- **Next:** Review the published scoped diff and run local syntax/browser verification when an isolated runtime is available. Check Wide/Compact/Narrow/Minimal, unpublished posts/exhibitions, selection and deselection, auto-focus off/on, public hash navigation and closed/open disclosure, successful settings/actions, and regression in Gallery. Then design the Journal Editor with the artist without preemptively inventing forms or staging state.

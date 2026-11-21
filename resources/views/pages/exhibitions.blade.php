@@ -30,7 +30,7 @@
                 $hasFeature = $hasCover || $hasFacts || $hasActions || $hasDescription;
                 $hasDetails = $hasFeature || $gallery->isNotEmpty();
             @endphp
-            <article class="exhibition-entry" @if ($exhibition->image_viewer_enabled) data-artwork-viewer-sequence @endif data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
+            <article id="exhibition-{{ $exhibition->getKey() }}" class="exhibition-entry" @if ($exhibition->image_viewer_enabled) data-artwork-viewer-sequence @endif data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
                 @if ($hasDetails)
                     <details class="exhibition-entry__disclosure">
                         <summary class="exhibition-entry__summary">

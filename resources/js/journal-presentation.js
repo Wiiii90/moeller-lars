@@ -302,8 +302,30 @@ function initializeExhibitionVideoPreview(button) {
     };
 }
 
+// An Exhibition permalink is a stable public anchor. When preview selection
+// changes, open the existing native disclosure before focusing its location.
+function initializeExhibitionAnchorFocus() {
+    const focus = () => {
+        const match = /^#exhibition-(\d+)$/.exec(window.location.hash);
+        if (!match) return;
+        const entry = document.getElementById('exhibition-' + match[1]);
+        if (!entry?.classList.contains('exhibition-entry')) return;
+        const disclosure = entry.querySelector(':scope > details.exhibition-entry__disclosure');
+        if (disclosure) disclosure.open = true;
+        requestAnimationFrame(() => {
+            if (entry.isConnected && window.location.hash === match[0]) {
+                entry.scrollIntoView({ block: 'start', behavior: 'auto' });
+            }
+        });
+    };
+    window.addEventListener('hashchange', focus);
+    focus();
+    return () => window.removeEventListener('hashchange', focus);
+}
+
 export function initializeJournalPresentation() {
     const disposers = [
+        initializeExhibitionAnchorFocus(),
         ...Array.from(document.querySelectorAll('[data-journal-slideshow], [data-journal-carousel]'))
             .map(initializeSteppedGallery),
         ...Array.from(document.querySelectorAll('[data-exhibition-map-open]'))

@@ -1,4 +1,4 @@
-// Shared Gallery/General Preview: actual responsive layout viewports, with
+// Shared General/Gallery/Journal Preview: actual responsive layout viewports, with
 // browser-local device preference and a single interactive Public frame.
 export function adminLivePreview(element) {
     const profiles = JSON.parse(element.dataset.previewProfiles || '{}')

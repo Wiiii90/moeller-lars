@@ -214,7 +214,7 @@ final class GalleryWorkspace extends Page
             'form' => is_array($this->stagedArtworkData) ? $this->stagedArtworkData : [],
         ]);
         if ($this->galleryPreviewAutoFocus && $this->galleryStagePanel === 'queue') {
-            $this->dispatch('gallery-preview-updated',
+            $this->dispatch('admin-live-preview-updated',
                 url: $this->galleryStagePreviewUrl(),
                 title: $this->galleryStagePreviewTitle(),
             );
@@ -256,7 +256,7 @@ final class GalleryWorkspace extends Page
                 $forceRefresh = true;
             }
             if ($forceRefresh) {
-                $this->dispatch('gallery-preview-updated',
+                $this->dispatch('admin-live-preview-updated',
                     url: $this->galleryStagePreviewUrl(), title: $this->galleryStagePreviewTitle());
             }
 
@@ -285,7 +285,7 @@ final class GalleryWorkspace extends Page
         $this->galleryStagePreviewArtworkId = $background['artwork_id'];
 
         if ($changed || $forceRefresh) {
-            $this->dispatch('gallery-preview-updated',
+            $this->dispatch('admin-live-preview-updated',
                 url: $this->galleryStagePreviewUrl(), title: $this->galleryStagePreviewTitle());
         }
     }

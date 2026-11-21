@@ -105,6 +105,11 @@ final class JournalWorkspace extends Page
 
     public array $selectedExhibitionIds = [];
 
+    /** The shared Journal Stage follows the most recently selected visible entry. */
+    public bool $journalPreviewAutoFocus = true;
+
+    public ?int $journalPreviewFocusedEntryId = null;
+
     public int $page = 1;
 
     #[Session]
@@ -210,6 +215,7 @@ final class JournalWorkspace extends Page
         }
         $post = $this->post((int) $id);
         if (app(JournalEntryOrderService::class)->moveToPosition($post, $position)) {
+            $this->refreshJournalPreview();
             app(AdminNotifier::class)->notification(
                 title: 'Journal order updated',
                 status: 'success',
@@ -225,6 +231,7 @@ final class JournalWorkspace extends Page
         }
         $entry = $this->exhibition((int) $id);
         if (app(JournalEntryOrderService::class)->moveToPosition($entry, $position)) {
+            $this->refreshJournalPreview();
             app(AdminNotifier::class)->notification(
                 title: 'Exhibition order updated',
                 status: 'success',
@@ -273,11 +280,13 @@ final class JournalWorkspace extends Page
     public function togglePostSelection(int $id): void
     {
         $this->selectedPostIds = $this->toggleSelection($this->selectedPostIds, $id);
+        $this->syncJournalPreviewFocus(in_array($id, $this->selectedPostIds, true) ? $id : null);
     }
 
     public function toggleExhibitionSelection(int $id): void
     {
         $this->selectedExhibitionIds = $this->toggleSelection($this->selectedExhibitionIds, $id);
+        $this->syncJournalPreviewFocus(in_array($id, $this->selectedExhibitionIds, true) ? $id : null);
     }
 
     public function toggleVisibleSelection(): void
@@ -285,16 +294,90 @@ final class JournalWorkspace extends Page
         if ($this->journalTemplate() === JournalTemplate::Blog) {
             $visible = collect($this->posts)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
             $this->selectedPostIds = $this->toggledVisibleSelection($this->selectedPostIds, $visible);
+            $this->syncJournalPreviewFocus();
 
             return;
         }
         $visible = collect($this->exhibitions)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
         $this->selectedExhibitionIds = $this->toggledVisibleSelection($this->selectedExhibitionIds, $visible);
+        $this->syncJournalPreviewFocus();
+    }
+
+    public function toggleJournalPreviewAutoFocus(): void
+    {
+        $this->journalPreviewAutoFocus = ! $this->journalPreviewAutoFocus;
+        if ($this->journalPreviewAutoFocus) {
+            $this->syncJournalPreviewFocus(forceRefresh: true);
+        }
+    }
+
+    public function journalStagePreviewUrl(): ?string
+    {
+        if ($this->journalPreviewAutoFocus && $this->journalPreviewFocusedEntryId !== null) {
+            $rows = $this->journalTemplate() === JournalTemplate::Blog ? $this->posts : $this->exhibitions;
+            foreach ($rows as $row) {
+                if ((int) $row['id'] === $this->journalPreviewFocusedEntryId
+                    && is_string($row['preview_url'] ?? null)) {
+                    return $row['preview_url'];
+                }
+            }
+        }
+
+        return $this->journalPreviewUrl;
+    }
+
+    public function journalStagePreviewTitle(): string
+    {
+        if ($this->journalPreviewAutoFocus && $this->journalPreviewFocusedEntryId !== null) {
+            return $this->journalTemplate() === JournalTemplate::Blog
+                ? 'Interactive Blog post preview'
+                : 'Interactive Exhibition preview';
+        }
+
+        return 'Interactive Journal preview';
+    }
+
+    /** Selection does not alter a manually navigated preview while Auto-focus is off. */
+    private function syncJournalPreviewFocus(?int $preferred = null, bool $forceRefresh = false): void
+    {
+        $isBlog = $this->journalTemplate() === JournalTemplate::Blog;
+        $selected = $isBlog ? $this->selectedPostIds : $this->selectedExhibitionIds;
+        $rows = $isBlog ? $this->posts : $this->exhibitions;
+        $previewable = array_values(array_map(
+            static fn (array $row): int => (int) $row['id'],
+            array_filter($rows, static fn (array $row): bool =>
+                in_array((int) $row['id'], $selected, true)
+                && is_string($row['preview_url'] ?? null)
+            ),
+        ));
+        $next = $preferred !== null && in_array($preferred, $previewable, true)
+            ? $preferred
+            : (in_array($this->journalPreviewFocusedEntryId, $previewable, true)
+                ? $this->journalPreviewFocusedEntryId
+                : ($previewable[0] ?? null));
+        $changed = $this->journalPreviewFocusedEntryId !== $next;
+        $this->journalPreviewFocusedEntryId = $next;
+
+        if ($this->journalPreviewAutoFocus && ($changed || $forceRefresh)) {
+            $this->refreshJournalPreview();
+        }
+    }
+
+    private function refreshJournalPreview(): void
+    {
+        if ($this->journalPreviewAutoFocus) {
+            $this->dispatch('admin-live-preview-updated',
+                url: $this->journalStagePreviewUrl(), title: $this->journalStagePreviewTitle());
+        } else {
+            // Preserve the Public URL selected manually inside the iframe.
+            $this->dispatch('admin-live-preview-updated');
+        }
     }
 
     public function movePost(int $id, string $direction): void
     {
         if (app(BlogEditorialService::class)->move($this->post($id), $direction)) {
+            $this->refreshJournalPreview();
             app(AdminNotifier::class)->notification(
                 title: 'Journal order updated',
                 status: 'success',
@@ -306,6 +389,7 @@ final class JournalWorkspace extends Page
     public function moveExhibition(int $id, string $direction): void
     {
         if (app(ExhibitionEditorialService::class)->move($this->exhibition($id), $direction)) {
+            $this->refreshJournalPreview();
             app(AdminNotifier::class)->notification(
                 title: 'Exhibition order updated',
                 status: 'success',
@@ -363,6 +447,9 @@ final class JournalWorkspace extends Page
             [$ok, $failed] = $this->runEntryBatch($records, fn (BlogPost $post): bool => app(BlogEditorialService::class)->move($post, $direction));
             $this->notifyBatch('posts reordered', $ok, $failed);
             $this->loadPosts(false);
+            if ($ok > 0) {
+                $this->refreshJournalPreview();
+            }
 
             return;
         }
@@ -373,6 +460,9 @@ final class JournalWorkspace extends Page
         [$ok, $failed] = $this->runEntryBatch($records, fn (Exhibition $entry): bool => app(ExhibitionEditorialService::class)->move($entry, $direction));
         $this->notifyBatch('exhibitions reordered', $ok, $failed);
         $this->loadExhibitions(false);
+        if ($ok > 0) {
+            $this->refreshJournalPreview();
+        }
     }
 
     public function publishSelectedPosts(): void
@@ -484,6 +574,7 @@ final class JournalWorkspace extends Page
                     $this->timingFilter = 'any';
                     $this->selectedPostIds = [];
                     $this->selectedExhibitionIds = [];
+                    $this->journalPreviewFocusedEntryId = null;
                     $this->page = 1;
                 }
                 $this->loadJournalContext($updated);
@@ -494,6 +585,7 @@ final class JournalWorkspace extends Page
                         ?? app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::JOURNAL)),
                 );
                 if ($before !== $updated->only(['template', 'title', 'navigation_label', 'slug']) || $publishChanged) {
+                    $this->refreshJournalPreview();
                     $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Journal settings saved',
@@ -527,6 +619,7 @@ final class JournalWorkspace extends Page
                     return;
                 }
                 $this->loadPosts();
+                $this->refreshJournalPreview();
                 app(AdminNotifier::class)->notification(
                     title: $autoPublish ? 'Post published' : 'Post draft created',
                     status: 'success',
@@ -566,6 +659,7 @@ final class JournalWorkspace extends Page
                 $changed = $before !== $this->journalEntryMutationState($updated);
                 $this->loadPosts(false);
                 if ($changed) {
+                    $this->refreshJournalPreview();
                     $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Post saved',
@@ -626,6 +720,7 @@ final class JournalWorkspace extends Page
                     return;
                 }
                 $this->loadExhibitions();
+                $this->refreshJournalPreview();
                 app(AdminNotifier::class)->notification(
                     title: $autoPublish ? 'Exhibition published' : 'Exhibition created',
                     status: 'success',
@@ -652,6 +747,7 @@ final class JournalWorkspace extends Page
         $this->entryEditorOriginal['record']['updated_at'] = $saved['updated_at'];
 
         $this->loadExhibitions(false);
+        $this->refreshJournalPreview();
         app(AdminNotifier::class)->notification(
             title: __('Exhibition visibility updated'),
             status: 'success',
@@ -694,6 +790,7 @@ final class JournalWorkspace extends Page
                 $changed = $before !== $this->journalEntryMutationState($updated);
                 $this->loadExhibitions(false);
                 if ($changed) {
+                    $this->refreshJournalPreview();
                     $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Exhibition saved',
@@ -839,6 +936,7 @@ final class JournalWorkspace extends Page
 
                     return;
                 }
+                $this->syncJournalPreviewFocus(forceRefresh: true);
                 app(AdminNotifier::class)->notification(
                     title: ucfirst($type).' deleted',
                     status: 'success',
@@ -862,6 +960,9 @@ final class JournalWorkspace extends Page
                 $this->selectedPostIds = [];
                 $this->notifyBatch('posts deleted', $ok, $failed);
                 $this->loadPosts();
+                if ($ok > 0) {
+                    $this->syncJournalPreviewFocus(forceRefresh: true);
+                }
             });
 
         return AdminDialog::confirm(
@@ -881,6 +982,9 @@ final class JournalWorkspace extends Page
                 $this->selectedExhibitionIds = [];
                 $this->notifyBatch('exhibitions deleted', $ok, $failed);
                 $this->loadExhibitions();
+                if ($ok > 0) {
+                    $this->syncJournalPreviewFocus(forceRefresh: true);
+                }
             });
 
         return AdminDialog::confirm(
@@ -932,7 +1036,8 @@ final class JournalWorkspace extends Page
         $records = $query->orderBy('position')->orderBy('id')->forPage($this->page, $this->pageSize)->get();
         $now = now();
         $count = $canonicalIds->count();
-        $this->posts = $records->map(function (BlogPost $post) use ($ranks, $count, $now): array {
+        $isHome = $this->section()->isHome();
+        $this->posts = $records->map(function (BlogPost $post) use ($ranks, $count, $now, $isHome): array {
             $state = (string) $post->getAttribute('state');
             $published = $post->getAttribute('published_at');
             $scheduled = $post->getAttribute('scheduled_at');
@@ -948,6 +1053,9 @@ final class JournalWorkspace extends Page
                 'excerpt' => $this->postTableExcerpt($post),
                 'publication' => $publication, 'state' => $state, 'thumbnail_url' => $this->coverThumbnailUrl($post),
                 'public_url' => $this->journalPublicUrl !== null && $this->postIsPublic($post, $now) ? route('journal.show', ['section' => $this->journalSlug, 'slug' => $post->getAttribute('slug')]) : null,
+                'preview_url' => $state === 'archived' ? null : ($isHome
+                    ? route('preview.home.journal.show', ['slug' => $post->getAttribute('slug')])
+                    : route('preview.journal.show', ['section' => $this->journalSlug, 'slug' => $post->getAttribute('slug')])),
                 'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count,
                 'can_delete' => ! in_array($state, ['published', 'scheduled'], true),
                 'delete_help' => in_array($state, ['published', 'scheduled'], true) ? 'Unpublish or cancel schedule before deleting' : null,
@@ -1019,6 +1127,8 @@ final class JournalWorkspace extends Page
                 'date_range' => $dateRange,
                 'thumbnail_url' => $this->coverThumbnailUrl($entry),
                 'public_url' => $this->journalPublicUrl !== null && $internalState === 'published' ? $this->journalPublicUrl : null,
+                'preview_url' => $internalState === 'archived' || $this->journalPreviewUrl === null
+                    ? null : $this->journalPreviewUrl.'#exhibition-'.$entry->getKey(),
                 'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count, 'can_delete' => $internalState !== 'published',
                 'delete_help' => $internalState === 'published' ? 'Unpublish this exhibition before deleting' : null,
             ];
@@ -1177,6 +1287,7 @@ final class JournalWorkspace extends Page
                 ($updated instanceof BlogPost || $updated instanceof Exhibition)
                 && $before !== $this->journalEntryMutationState($updated)
             ) {
+                $this->refreshJournalPreview();
                 app(AdminNotifier::class)->notification(
                     title: $successTitle,
                     status: 'success',
@@ -1194,6 +1305,9 @@ final class JournalWorkspace extends Page
         $this->selectedPostIds = [];
         $this->notifyBatch($label, $ok, $failed);
         $this->loadPosts();
+        if ($ok > 0) {
+            $this->refreshJournalPreview();
+        }
     }
 
     private function runEntryBatch(iterable $records, callable $action): array

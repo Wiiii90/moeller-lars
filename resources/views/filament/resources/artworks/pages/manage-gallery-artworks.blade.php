@@ -46,7 +46,7 @@
                 'token' => $this->getId(),
             ]);
         @endphp
-        <section class="gallery-workspace__stage admin-visual-stage admin-visual-stage--split"
+        <section class="gallery-workspace__stage admin-visual-stage admin-visual-stage--split admin-visual-stage--editor-preview"
             x-ref="galleryStageRoot"
             aria-label="Gallery editor and interactive preview"
             data-gallery-background-preview-kind="{{ $backgroundPreview['kind'] }}"
@@ -97,13 +97,13 @@
                         ? background.galleryStagedPreviewUrl : background.galleryBackgroundPreviewUrl
                     this.previewKind = kind
                     this.previewArtworkId = artworkId
-                    if (url) this.$dispatch('gallery-preview-updated', {
+                    if (url) this.$dispatch('admin-live-preview-updated', {
                         url, title: kind === 'staged' ? 'Interactive staged Artwork preview'
                             : (kind === 'artwork' ? 'Interactive Artwork preview' : 'Interactive Gallery preview'),
                     })
                 },
             }">
-            <div class="gallery-stage__workspace admin-visual-stage__pane"
+            <div class="gallery-stage__workspace admin-visual-stage__pane admin-visual-stage__editor-pane"
                 x-data="{
                     phase: 'idle', progress: 0, processingStep: '', transferDetail: '', fileCount: 0, completed: 0, result: '',
                     pendingUploads: [], uploadRunning: false,
@@ -240,7 +240,7 @@
                     </div>
             </div>
 
-            <div class="gallery-stage__preview admin-visual-stage__pane">
+            <div class="gallery-stage__preview admin-visual-stage__pane admin-visual-stage__preview-pane">
                 <header class="gallery-stage__preview-header">
                     <h2 class="admin-section__kicker admin-visual-stage__heading"
                         x-text="previewKind === 'staged' ? 'Staged Artwork preview' : 'Live preview'">{{ $galleryStagePreview === 'staged' ? 'Staged Artwork preview' : 'Live preview' }}</h2>

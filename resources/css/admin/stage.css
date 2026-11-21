@@ -22,6 +22,43 @@
     margin-top: var(--admin-section-space);
 }
 
+/* Gallery and Journal use one direct two-pane Stage frame. General retains its
+ * schema-specific panel wrappers while sharing the same divider and preview. */
+.admin-visual-stage--editor-preview {
+    --admin-stage-divider-axis: 50%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+}
+.admin-visual-stage--editor-preview:has(.admin-live-preview[data-preview-device="mobile"]) {
+    --admin-stage-divider-axis: 66.666667%;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+.admin-visual-stage--editor-preview > :is(
+    .admin-visual-stage__editor-pane,
+    .admin-visual-stage__preview-pane
+) {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 0;
+    padding-block: var(--admin-stage-divider-inset);
+}
+.admin-visual-stage--editor-preview > .admin-visual-stage__editor-pane {
+    grid-column: 1;
+    padding-right: var(--admin-stage-pane-space);
+}
+.admin-visual-stage--editor-preview > .admin-visual-stage__preview-pane {
+    grid-column: 2;
+    padding-left: var(--admin-stage-pane-space);
+}
+.admin-visual-stage__preview-pane > .admin-live-preview {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-top: var(--admin-stage-header-gap);
+}
+
 /* Stage form scrollports remain clipped and scrollable even with an open
  * Select. Filament's .fi-fixed-positioning-context opts its own searchable
  * dropdown into Floating UI's viewport-fixed positioning; the native Select

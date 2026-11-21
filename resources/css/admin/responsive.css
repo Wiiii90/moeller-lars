@@ -429,25 +429,24 @@
         display: none !important;
     }
 
-    /* Gallery follows General's editor-only narrow composition. The
-     * inner Upload/Staged/Settings tabs remain the only Stage navigation. */
-    .gallery-workspace__stage{
-        display: grid !important;
+    /* One editor-only Narrow/Minimal state for direct Gallery and Journal
+     * Stage pairs. The toolbar still owns every editorial action. */
+    .admin-visual-stage--editor-preview{
         grid-template-columns: minmax(0, 1fr) !important;
         grid-template-rows: minmax(0, 1fr) !important;
     }
-    .gallery-workspace__stage::after{
+    .admin-visual-stage--editor-preview::after{
         display: none !important;
         content: none !important;
     }
-    .gallery-workspace__stage > .gallery-stage__workspace{
+    .admin-visual-stage--editor-preview > .admin-visual-stage__editor-pane{
         grid-column: 1 !important;
         grid-row: 1 !important;
         width: 100% !important;
         height: 100% !important;
         padding-inline: 0 !important;
     }
-    .gallery-workspace__stage > .gallery-stage__preview{
+    .admin-visual-stage--editor-preview > .admin-visual-stage__preview-pane{
         display: none !important;
     }
 

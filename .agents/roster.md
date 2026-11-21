@@ -4,7 +4,7 @@
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
-| Dev Worker 1 | 34 | Active — Exhibitions workstream registered, awaiting initial feature task | Journal Exhibitions template/editor and directly associated behavior; coordinate shared Page/Journal type ownership with Dev Worker 5 | [dev-1.md](workers/dev-1.md) |
+| Dev Worker 1 | 34 | Active — common Journal Stage/preview for Blog and Exhibitions source-integrated; runtime/browser acceptance pending | Journal workspace and Blog/Exhibitions Stage, preview and selection focus; coordinate Page/Journal shared ownership with Dev Worker 5 and Gallery stage primitives with Dev Worker 4 | [dev-1.md](workers/dev-1.md) |
 | Dev Worker 4 | 31 | Active — Gallery Editor tabs and Gallery/Storage View persist consistently; Dashboard compact Overview restore source-ready, browser acceptance pending | Gallery Artwork table, title editor, selection/ordering, Stage/Settings and Public Artwork/Gallery; coordinate shared controls with owners | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 33 | Active — replacement chat continues the Pages type/template cutover; source-integrated, runtime and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom Page types and Hero Artworks template; Pages Settings, nested Page hierarchy and Heading controls | [dev-5.md](workers/dev-5.md) |
 
