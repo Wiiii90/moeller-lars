@@ -1,43 +1,42 @@
 # Dev Worker 2 — Custom Pages
 
-- **Branch:** `dev`
+- **Working branch:** `dev`
 - **Lease:** 35
-- **State:** Active — canonical layout design and component consolidation planning; no application code changes yet.
-- **Owned scope:** Custom Page composition, component editor and Public Custom Page content. Coordinate shared Stage/preview with Dev Worker 1 and page types/navigation/Home conversion with Dev Worker 5.
-- **Latest source baseline inspected:** `7b7d5d2d930762051c54bd483e73f62ae92a68fc`.
+- **State:** Active — component consolidation and canonical recursive Grid source integrated. Local migration execution, PHP/runtime/browser acceptance outstanding.
+- **Scope:** Custom Page content editor, canonical structured layout, Public Custom Page renderer. Coordinate shared Stage/preview with Dev Worker 1; Pages, navigation and protected Home identity with Dev Worker 5.
+- **Recent source integration:** through `d0bacb732d33e9e5f3ddc32c02d862ac23aca44b`.
 
-## User direction (2026-11-21)
-- Custom Page should compose local instances of existing page-template capabilities (Gallery, Hero Artworks, Blog, Exhibitions), not automatically reference Gallery or other Page records. No subordinate SiteSection/Navigation Node per embedded instance.
-- Design a genuinely responsive, visually understandable row/grid/column/area layout, including a two-column CV + portrait / legal + contact example. Reuse the shared Stage when Dev Worker 1 completes it; do not create a parallel preview owner.
-- Consolidate redundant components first. User confirmed all real authored lists use Rich Text, not the standalone List component, so retire standalone List instead of inventing a structured-list replacement. Preserve actual content, publication records and media references; migration requires safety checks.
-- Keep an optional, understated Public footer with Contact and Legal accessible as a separately tracked follow-up, not a Custom Page-only feature.
+## User decisions
+- Ordinary lists and CV data use the shared Rich Text editor, not a separate List component.
+- Page-template capabilities should eventually be embedded as **page-local configurations/content** inside Custom Pages, not as implicit references to other Pages or hidden Gallery subpages.
+- Layout uses one `CustomPageSetting.blocks` canonical document with responsive row-major Grids/areas, shared content components, central public renderer and Stage preview. No parallel layouts datastore.
+- Decorative media and separate Divider should not be separate layout composition mechanisms.
+- An optional, understated Public footer supporting Contact and Legal remains a **global Public follow-up**, not an implicit Custom Pages-only component.
 
-## Verified source findings
-- Canonical persisted Custom Page content is the ordered `CustomPageSetting.blocks` JSON, owned by `CustomPageSetting` normalization/validation and `CustomPageEditorialService` transactional mutations/audit; Admin `CustomPageWorkspace` presents a positional hierarchy, and Public uses `pages/partials/component-sequence.blade.php`.
-- Source supports an independent `list` type, but the user confirms real authored lists use Rich Text. Do not preserve the unused type for speculative List workflows. `image.children` contains nested content; `divider` is a separate content block today.
-- `HomePresentationSetting` is retired in the current source; protected Home can be Custom Page via `SiteSection`. Avoid resurrecting Home-only copies of component pipelines.
-- Both `public` and `committed` schemas contain `custom_page_settings`; retained historical publication snapshots and restores require deliberate schema canonicalization. The existing `HistoricalCustomPageBlockCanonicalizer` is a boundary-only precedent.
-- The current editor targets positions/types rather than persistent component identity. A new composition model should make each node and area stable and concurrency-safe before implementing drag targets.
+## Completed implementation on dev
+- `ed78ebd3`, `637c3eec`: Remove obsolete `PublicContentSetting::navigationNestingEnabled()` from Custom Page Settings, save and Navigation parent options; use `SiteSection::canContainSitePages()`.
+- `a4ac971b`: Split Image and Video editor/component types while sharing canonical Media storage, validation, public rendering, cleanup, media references, and checkpoint conversion. Migration: `2026_11_21_140000_split_custom_page_image_video_types.php`.
+- `637eebf3`: Remove standalone List from canonical runtime, editor, media references and Public renderer, delete the obsolete `ComponentListEditor`, convert unexpected legacy List records into editable Rich Text/content at migration and historical restore boundaries. Migration: `2026_11_21_150000_retire_custom_page_list_components.php`.
+- `d78fd526`: Establish Grid structure and area placement in the single content document, with stable Grid/area IDs; one to four columns, one to twelve rows, responsive Public CSS, column/row editing, Stage area/member actions and per-area separators. Maintain the shared Stage and existing Public renderer, not an independent preview or page hierarchy.
+- `7b81fd1f`: Convert decorative Image/Video child trees to nested local Grids with their original media and authored content. Retire the old nested Image-specific editor, sorting, serialization, removal and Public float; migrate Divider components into layout border structures. Keep working/committed publication and historical checkpoint restore conversion. Migration: `2026_11_21_160000_canonicalize_custom_page_layouts.php`.
+- `3856bb65`: Preserve recursively projected nested Grid content across the shared Blade renderer's recursive includes.
+- `d0bacb73`: Remove residual Divider editor/conversion options and fix the now-invalid `editingType` named argument in the canonical Edit action.
+- The reusable Grid supports optional equal/65%-35% two-column layouts and row-major stacking in narrow containers; the existing Stage exposes content editing and placement into addressable areas.
 
-## Proposed architectural target — NOT YET IMPLEMENTED OR USER-ACCEPTED
-- Keep one authoritative persisted composition inside `CustomPageSetting.blocks`. Do not add a second `layout` column, a mirror of `blocks`, or a separate Page subclass.
-- Two node families only: **layout** nodes (stack/grid with responsive tracks, gaps, borders, and nested addressable areas) and **content** nodes (Rich Text, Media, Contact, central Legal, future local Template instance). Rows are ordered grid/stack layouts; columns and areas are layout properties/slots, not standalone page records.
-- Stable persisted node/area IDs, single ordered document, no simultaneous index-based and ID-based edit protocols in current runtime. Author source order for accessible narrow stacking; container-based responsive behavior and the same Public renderer/preview projection.
-- Rich Text handles headings and lists. Retire standalone List without adding another list type; check Working, Committed and historical snapshot restore for unexpected persisted List payloads and fail safely rather than silently discarding data. Dividers transition to layout borders; image wrapping and nested content need deliberate migration. Image and Video share the Media owner.
-- A Template instance is page-local configuration and content, rendered by the corresponding reusable template/presentation owner; never a hidden gallery Page or implicit reference to unrelated pages. No new template renderers merely for embedded use.
-- One complete cutover should convert editable Working and Committed records and reconcile immutable historical snapshot restore through the established boundary. Do not introduce new schema alongside active legacy schema merely as a scaffold.
+## Architecture and data compatibility
+- Source owner: `CustomPageSetting` for schema and publication checks, `CustomPageEditorialService` for audited mutation, shared `component-sequence.blade.php` for Public and Stage presentation.
+- Grid content stays as individually authored source blocks with `layout_area_id`, never cloned into Grid `areas[]` at persistence. `layoutProjection()` supplies nested render-time children only.
+- `HistoricalCustomPageBlockCanonicalizer` is used **only at migration/restore boundaries**, with deterministic historical Grid/area IDs. Retired Image children and Divider records are not accepted as active editable content.
+- Old List, decorative media Child and Divider payloads receive conversions, not silent deletion. Both `public` and `committed` schemas have a migration step, and historical checkpoints are translated on restore.
+- Grid placement cycles and missing areas are validation errors. The existing positional component action targets remain; stable persisted identifiers currently apply to Grid and areas, not all content components.
 
-## Implemented source on dev (2026-11-21)
-- `ed78ebd3`: Removed the retired `PublicContentSetting::navigationNestingEnabled()` guard in Custom Page Settings field display and save. Parent choice is always available to ordinary pages.
-- `637c3eec`: Removed the same retired guard from Custom Page parent options. Options now follow `SiteSection::canContainSitePages()`, excluding the protected Home page.
-- `a4ac971b`: Separated the previously combined Image/Video Custom Page type into `image` and `video` using the same canonical Media owner. Updated type-specific editor selection, validation, state persistence, public renderer, media references/deletion, row projection and Stage focus. Forward migration retypes legacy video-bearing Image blocks in Working and Committed; historical checkpoint restores retype at the canonicalization boundary.
-- Source readback confirms all three commits in `dev`; no local execution, database migration or browser acceptance is claimed. No tests/Continuous Integration/deploy requested or run.
-- **Pending:** User-confirmed redundant List retirement, canonical rows/grids/columns/areas layout migration and editor, future local page-template component compositions. Shared Stage belongs to Dev Worker 1. Optional Public footer with Contact/Legal remains a separate follow-up.
+## Verification / acceptance
+- GitHub commit/ref updates and current file readback verified in source.
+- Targeted source bracket-structure scans of 14 PHP files and matching Blade conditional/loop counts completed. These are not `php -l`, a runtime test, or proof of correctness.
+- **Not run:** application migrations, local containers, PHP unit/integration tests, automated Browser tests, validation deploy, Continuous Integration or server changes. No permission to perform CI/deploy.
+- **Testing acceptance required:** migration against representative Working and Committed content, legacy checkpoint restore, multi-level Grid Public rendering, responsive 1/2/3/4-column variations, Stage add/edit/reorder/selection, Media deletion and publication, Settings dialog, Image/Video MIME validation.
 
-## Verification and blocker
-- Source-reviewed implementation commits exist; no executed migration, build, database tests, browser check, Validation deployment or production change.
-- **Architectural gate:** User confirmation eliminates an assumed standalone List-data dependency; do not delay consolidation for hypothetical List records. Actual Rich Text, image wrapping and Divider appearance still need a safe conversion to the new layout structure. Handle unexpected legacy payloads explicitly.
-- Stage owned by Dev Worker 1 is not yet ready for this worker's implementation.
-
-## Next
-Finalize the canonical layout design and start clean standalone List retirement after current persisted-data safety review. After agreement, implement a bounded end-to-end migration and consolidation against current `dev`: same content owner, editor actions, Public renderer, retained publication semantics and relevant direct consumers, removing superseded paths within the same cutover. Do not implement a speculative second component runtime.
+## Future work not silently included in this feature slice
+- Embed real Gallery/Hero/Journal/Exhibitions presentation template instances as local content configurations, without creating hidden SiteSection records or referencing unrelated Pages.
+- A global optional understated footer with Contact/Legal variants.
+- Upgrade content action targeting from positional indexes to stable component identity after dedicated concurrency design and acceptance.
