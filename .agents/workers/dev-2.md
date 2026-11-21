@@ -27,8 +27,15 @@
 - A Template instance is page-local configuration and content, rendered by the corresponding reusable template/presentation owner; never a hidden gallery Page or implicit reference to unrelated pages. No new template renderers merely for embedded use.
 - One complete cutover should convert editable Working and Committed records and reconcile immutable historical snapshot restore through the established boundary. Do not introduce new schema alongside active legacy schema merely as a scaffold.
 
+## Implemented source on dev (2026-11-21)
+- `ed78ebd3`: Removed the retired `PublicContentSetting::navigationNestingEnabled()` guard in Custom Page Settings field display and save. Parent choice is always available to ordinary pages.
+- `637c3eec`: Removed the same retired guard from Custom Page parent options. Options now follow `SiteSection::canContainSitePages()`, excluding the protected Home page.
+- `a4ac971b`: Separated the previously combined Image/Video Custom Page type into `image` and `video` using the same canonical Media owner. Updated type-specific editor selection, validation, state persistence, public renderer, media references/deletion, row projection and Stage focus. Forward migration retypes legacy video-bearing Image blocks in Working and Committed; historical checkpoint restores retype at the canonicalization boundary.
+- Source readback confirms all three commits in `dev`; no local execution, database migration or browser acceptance is claimed. No tests/Continuous Integration/deploy requested or run.
+- **Pending:** User-confirmed redundant List retirement, canonical rows/grids/columns/areas layout migration and editor, future local page-template component compositions. Shared Stage belongs to Dev Worker 1. Optional Public footer with Contact/Legal remains a separate follow-up.
+
 ## Verification and blocker
-- Source review only; no migration, build, database tests, browser check, validation deployment or application diff.
+- Source-reviewed implementation commits exist; no executed migration, build, database tests, browser check, Validation deployment or production change.
 - **Architectural gate:** User confirmation eliminates an assumed standalone List-data dependency; do not delay consolidation for hypothetical List records. Actual Rich Text, image wrapping and Divider appearance still need a safe conversion to the new layout structure. Handle unexpected legacy payloads explicitly.
 - Stage owned by Dev Worker 1 is not yet ready for this worker's implementation.
 
