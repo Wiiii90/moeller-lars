@@ -163,16 +163,13 @@ trait CustomPageWorkspacePresentationHelpers
     /** @return array<int,string> */
     private function parentOptions(): array
     {
-        if (! PublicContentSetting::navigationNestingEnabled()) {
-            return [];
-        }
-
         return SiteSection::query()
             ->whereNull('parent_id')
             ->whereKeyNot($this->sectionId)
             ->orderBy('position')
             ->orderBy('id')
             ->get()
+            ->filter(static fn (SiteSection $section): bool => $section->canContainSitePages())
             ->mapWithKeys(static fn (SiteSection $section): array => [
                 (int) $section->getKey() => (string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title')),
             ])
