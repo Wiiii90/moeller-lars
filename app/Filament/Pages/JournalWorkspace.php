@@ -996,10 +996,10 @@ final class JournalWorkspace extends Page
                 'id' => (int) $post->getKey(), 'rank' => $rank, 'title' => (string) $post->getAttribute('title'),
                 'excerpt' => $this->postTableExcerpt($post),
                 'publication' => $publication, 'state' => $state, 'thumbnail_url' => $this->coverThumbnailUrl($post),
-                'public_url' => $this->journalPublicUrl !== null && $this->postIsPublic($post, $now) ? route('journal.show', ['section' => $this->journalSlug, 'slug' => $post->getAttribute('slug')]) : null,
+                'public_url' => $this->journalPublicUrl !== null && $this->postIsPublic($post, $now) ? route('journal.show', ['section' => $this->journalSlug, 'slug' => $post->getKey()]) : null,
                 'preview_url' => $state === 'archived' ? null : ($isHome
-                    ? route('preview.home.journal.show', ['slug' => $post->getAttribute('slug')])
-                    : route('preview.journal.show', ['section' => $this->journalSlug, 'slug' => $post->getAttribute('slug')])),
+                    ? route('preview.home.journal.show', ['slug' => $post->getKey()])
+                    : route('preview.journal.show', ['section' => $this->journalSlug, 'slug' => $post->getKey()])),
                 'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count,
                 'can_delete' => ! in_array($state, ['published', 'scheduled'], true),
                 'delete_help' => in_array($state, ['published', 'scheduled'], true) ? 'Unpublish or cancel schedule before deleting' : null,
@@ -1012,8 +1012,7 @@ final class JournalWorkspace extends Page
     {
         $excerpt = trim((string) ($post->getAttribute('excerpt') ?? ''));
         $body = trim((string) ($post->getAttribute('body') ?? ''));
-        $source = $excerpt !== '' ? $excerpt : strip_tags($body);
-        $source = trim(preg_replace('/\\s+/u', ' ', html_entity_decode($source, ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? $source);
+        $source = \App\Domain\Content\RichTextDocument::plainText($excerpt !== '' ? $excerpt : $body);
 
         return $source !== '' ? Str::limit($source, 140) : null;
     }

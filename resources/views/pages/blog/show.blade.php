@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @section('title', $post->title.' · Lars Möller')
-@section('meta_description', $post->excerpt ?: $post->title)
-@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath(($section->isHome() ? '/journal-entries' : $siteNodeRoute->path($section)).'/'.$post->slug))
+@section('meta_description', \App\Domain\Content\RichTextDocument::plainText((string) ($post->excerpt ?: $post->title)))
+@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath(($section->isHome() ? '/journal-entries' : $siteNodeRoute->path($section)).'/'.$post->getKey()))
 
 @section('content')
     @php

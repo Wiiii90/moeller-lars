@@ -22,7 +22,6 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
-use Illuminate\Support\Str;
 use Livewire\Component;
 
 final class JournalEntryEditorSchema
@@ -69,7 +68,6 @@ final class JournalEntryEditorSchema
     {
         $schema = [
             self::title(),
-            self::slug($template === JournalTemplate::Blog ? 220 : 180),
         ];
 
         if ($template === JournalTemplate::Blog) {
@@ -243,24 +241,7 @@ final class JournalEntryEditorSchema
 
     private static function title(): TextInput
     {
-        return TextInput::make('title')
-            ->required()
-            ->maxLength(240)
-            ->live(onBlur: true)
-            ->afterStateUpdated(function (?string $state, Set $set, Get $get): void {
-                if (blank($get('slug')) && filled($state)) {
-                    $set('slug', Str::slug($state));
-                }
-            });
-    }
-
-    private static function slug(int $max): TextInput
-    {
-        return TextInput::make('slug')
-            ->label(__('Public URL slug'))
-            ->required()
-            ->maxLength($max)
-            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/');
+        return TextInput::make('title')->required()->maxLength(240)->live(onBlur: true);
     }
 
     private static function textSection(string $name): mixed

@@ -15,8 +15,8 @@
             @php
                 $postUrl = $preview->url(
                     $section->isHome()
-                        ? route('home.journal.show', ['slug' => $post->slug])
-                        : route('journal.show', ['section' => $section->slug, 'slug' => $post->slug])
+                        ? route('home.journal.show', ['slug' => $post->getKey()])
+                        : route('journal.show', ['section' => $section->slug, 'slug' => $post->getKey()])
                 );
                 $cover = $post->mediaUsages->firstWhere('role', \App\Models\JournalEntryMedia::ROLE_COVER);
                 $hasCover = $cover instanceof \App\Models\JournalEntryMedia;

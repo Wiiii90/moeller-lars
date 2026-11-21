@@ -73,7 +73,7 @@ final class PublicSiteSectionController extends Controller
         };
     }
 
-    public function homeJournalEntry(string $slug): View
+    public function homeJournalEntry(string $slug): View|RedirectResponse
     {
         $query = SiteSection::query()
             ->where('is_home', true)
@@ -82,9 +82,12 @@ final class PublicSiteSectionController extends Controller
         $this->preview->constrainSectionQuery($query);
         $journal = $query->first();
         abort_unless($journal instanceof SiteSection, 404);
-        $post = $this->blogPostsQuery($journal)->where('slug', $slug)
-            ->with('mediaUsages.mediaAsset.variants')->first();
-        abort_unless($post instanceof BlogPost, 404);
+        $post = $this->findJournalPost($journal, $slug);
+        if ($slug !== (string) $post->getKey()) {
+            return redirect()->route($this->preview->active() ? 'preview.home.journal.show' : 'home.journal.show', [
+                'slug' => $post->getKey(),
+            ], 301);
+        }
 
         return view('pages.blog.show', [
             'section' => $journal, 'post' => $post,
@@ -93,19 +96,38 @@ final class PublicSiteSectionController extends Controller
         ]);
     }
 
-    public function journalEntry(string $section, string $slug): View
+    public function journalEntry(string $section, string $slug): View|RedirectResponse
     {
         $sectionQuery = SiteSection::query()->where('type', SiteSectionType::Journal->value)->where('template', JournalTemplate::Blog->value)->where('slug', $section);
         $this->preview->constrainSectionQuery($sectionQuery);
         $journal = $sectionQuery->first();
         abort_unless($journal instanceof SiteSection, 404);
-        $post = $this->blogPostsQuery($journal)->where('slug', $slug)->with('mediaUsages.mediaAsset.variants')->first();
-        abort_unless($post instanceof BlogPost, 404);
+        $post = $this->findJournalPost($journal, $slug);
+        if ($slug !== (string) $post->getKey()) {
+            return redirect()->route($this->preview->active() ? 'preview.journal.show' : 'journal.show', [
+                'section' => $section, 'slug' => $post->getKey(),
+            ], 301);
+        }
 
         return view('pages.blog.show', [
             'section' => $journal, 'post' => $post, 'richText' => $this->richText, 'media' => $this->media,
             'journalMedia' => $this->journalMedia, 'siteNodeRoute' => $this->siteNodeRoute,
         ]);
+    }
+
+    /** Numeric entry IDs are canonical; retained legacy Blog slugs redirect. */
+    private function findJournalPost(SiteSection $journal, string $identifier): BlogPost
+    {
+        $post = ctype_digit($identifier)
+            ? $this->blogPostsQuery($journal)->whereKey((int) $identifier)
+                ->with('mediaUsages.mediaAsset.variants')->first()
+            : null;
+
+        $post ??= $this->blogPostsQuery($journal)->where('slug', $identifier)
+            ->with('mediaUsages.mediaAsset.variants')->first();
+        abort_unless($post instanceof BlogPost, 404);
+
+        return $post;
     }
 
     private function customPage(SiteSection $section): View

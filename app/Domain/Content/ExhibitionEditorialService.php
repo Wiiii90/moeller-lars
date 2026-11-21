@@ -298,18 +298,12 @@ final class ExhibitionEditorialService
     private function validatedEditorialData(array $data, ?Exhibition $entry): array
     {
         $allowed = [
-            'site_section_id', 'slug', 'title', 'description', 'starts_on', 'ends_on', 'vernissage_at', 'show_vernissage',
+            'site_section_id', 'title', 'description', 'starts_on', 'ends_on', 'vernissage_at', 'show_vernissage',
             'organizer', 'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url', 'gallery_enabled', 'gallery_presentation', 'image_viewer_enabled', 'map_enabled',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
-        $slugRule = Rule::unique('exhibitions', 'slug');
-        if ($entry instanceof Exhibition) {
-            $slugRule->ignore($entry->getKey());
-        }
-
         $payload = Validator::make($payload, [
             'site_section_id' => ['required', 'integer', 'min:1'],
-            'slug' => ['required', 'string', 'max:180', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slugRule],
             'title' => ['required', 'string', 'max:240'],
             'description' => ['nullable', 'string'],
             'starts_on' => ['nullable', 'string'],

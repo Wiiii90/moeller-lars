@@ -59,10 +59,6 @@ final class BlogEditorialService
         return DB::transaction(function () use ($post, $data, $validated, $actor): BlogPost {
             /** @var BlogPost $fresh */
             $fresh = BlogPost::query()->whereKey($post->getKey())->lockForUpdate()->firstOrFail();
-            if (($fresh->getAttribute('published_at') !== null || $fresh->getAttribute('scheduled_at') !== null)
-                && $validated['slug'] !== $fresh->getAttribute('slug')) {
-                throw ValidationException::withMessages(['slug' => 'A post slug cannot change after publication or scheduling.']);
-            }
             if ((int) $validated['site_section_id'] !== (int) $fresh->getAttribute('site_section_id')) {
                 throw ValidationException::withMessages(['site_section_id' => 'Move posts between Journals through an explicit editorial workflow.']);
             }
@@ -258,7 +254,7 @@ final class BlogEditorialService
 
     private function validate(array $data, ?int $ignoreId = null): array
     {
-        foreach (['site_section_id', 'title', 'slug', 'state', 'position'] as $required) {
+        foreach (['site_section_id', 'title', 'state', 'position'] as $required) {
             if (! array_key_exists($required, $data)) {
                 throw ValidationException::withMessages([$required => 'Required Blog Journal form data is missing.']);
             }
@@ -267,17 +263,6 @@ final class BlogEditorialService
         $title = is_string($data['title']) ? trim($data['title']) : '';
         if ($title === '' || mb_strlen($title) > 240) {
             throw ValidationException::withMessages(['title' => 'The blog title is invalid.']);
-        }
-        $slug = is_string($data['slug']) ? trim($data['slug']) : '';
-        if ($slug === '' || mb_strlen($slug) > 220 || ! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) {
-            throw ValidationException::withMessages(['slug' => 'The blog slug is invalid.']);
-        }
-        $slugQuery = BlogPost::query()->where('slug', $slug);
-        if ($ignoreId !== null) {
-            $slugQuery->whereKeyNot($ignoreId);
-        }
-        if ($slugQuery->exists()) {
-            throw ValidationException::withMessages(['slug' => 'The blog slug is already in use.']);
         }
         $state = $data['state'];
         if (! is_string($state) || ! in_array($state, ['draft', 'scheduled', 'published', 'unpublished', 'archived'], true)) {
@@ -310,7 +295,6 @@ final class BlogEditorialService
         return [
             'site_section_id' => $sectionId,
             'title' => $title,
-            'slug' => $slug,
             'body' => is_string($body) && trim($body) !== '' ? trim($body) : null,
             'state' => $state,
             'position' => (int) $position,

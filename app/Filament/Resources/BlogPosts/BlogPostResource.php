@@ -46,7 +46,9 @@ final class BlogPostResource extends Resource
             throw new LogicException('Blog posts must belong to a Blog Journal.');
         }
 
-        return route('journal.show', ['section' => $section->getAttribute('slug'), 'slug' => $post->getAttribute('slug')]);
+        return $section->isHome()
+            ? route('home.journal.show', ['slug' => $post->getKey()])
+            : route('journal.show', ['section' => $section->getAttribute('slug'), 'slug' => $post->getKey()]);
     }
 
     public static function getPages(): array
