@@ -113,7 +113,25 @@ The persisted `menu_type` is validated by `PublicAppearance::menuType()`. Its so
 
 Navigation is generated from the canonical Site Node tree and persisted order/publication status, not hard-coded page arrays, legacy category assumptions or a separate menu-visibility toggle. Published nodes appear automatically; unpublished nodes remain publicly unavailable. Published children of an unpublished parent are promoted to public root navigation entries. The configured Skip Home routing option remains an explicit exception.
 
-Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. An icon-only Back control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level; the parent name remains in its accessible label but is not printed beside the arrow. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. Items align left at natural widths without overflow; overflowing windows distribute across the rail. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
+Main and child navigation use **one visible row** in the common public shell: entering a parent switches the rail to that parent's child-level navigation rather than expanding an additional row. An icon-only Back control with a distinct corner-up-left SVG icon and a fine separator leads back to the main level; the parent name remains in its accessible label but is not printed beside the arrow. The separate left/right chevrons are reserved for cyclic whole-item navigation. If the parent has its own public URL, its page is the first item inside the child level; navigation-only parents do not invent a page. The active parent or active child branch is rendered in its correct level by Blade on initial response, with no opening/closing animation or transition timer. The central menu rail retains the configured content/artwork width and its chevrons remain in outer padding. Every level uses one shared cyclic window algorithm: display only complete Site Node items, show no arrows when all fit, otherwise evict opposite-side items and refill remaining space. At natural width, menu entries retain their Site Node order and align to the independently configured Menu alignment (Left, Center or Right); cyclic overflow still uses the same whole-item window and distributes the visible items within its available rail. Alignment is presentation-only and never reverses link order. Visible windows survive ordinary internal page navigations via the destination-scoped session handoff, including the previous main window while browsing children; only a real width change may refit it. Selecting a page does not move its window. Child browsing uses the same selected, hover, keyboard and focus rules as main navigation; Escape or the explicit parent return action brings back the main level. No global outside-click dismissal, duplicated DOM menus, polling or separate child-selection algorithm is introduced. Overwide single items may wrap their own text. Public icons use explicit inline SVG paths instead of platform-dependent glyphs.
+
+**Menu alignment** is a separate General → Appearance → Menu setting with
+exactly three persisted choices: **Left**, **Center** and **Right** (default
+**Right**). It is independent of Title position and title text alignment:
+Inside-title Left/Right, Above, Below and hidden-title compositions may all
+use any Menu alignment without implicitly changing one another. The main
+and child levels inherit the same reading-axis choice. At Right, the child
+Back action appears after the divider at the right edge and its icon mirrors;
+at Left the Back action precedes the divider at the left edge. Center places
+the child action, divider and links together on the central axis. Authored
+site-node order and the separate cyclic previous/next arrows are unchanged.
+`menu_alignment` belongs to the existing Working/Committed Public settings
+and `PublicAppearance` validation; the earlier `auto` value is retired.
+Existing `auto` data is converted once by
+`2026_11_19_020000_retire_automatic_menu_alignment.php` to its former visible
+left/right alignment, and the database default becomes Right. Check this
+migration on isolated data before a real cutover; no migration execution or
+browser acceptance was established by Dev Worker 7.
 
 ### Navigation-only groups and hover
 
@@ -157,7 +175,7 @@ route-seeded contours, clipped edge pieces or separate renderer remain. Their ba
 dimensions and scroll behavior without relying on the other surface's width,
 divider setting or connectedness. The Menu's underlay is offset toward the
 top-left, rather than trailing below its sticky edge into the moving Content.
-The Menu rear sheet reaches precisely to the Menu's lower edge, although
+The shared Backing offset is a restrained `.22rem`; its rear color follows the corresponding validated Menu/Page surface with a subtle brightness reduction rather than using a fixed beige layer. The Menu rear sheet reaches precisely to the Menu's lower edge, although
 its top is offset upward: the full-width sticky Header masks the overlapping
 top of the Content underlay, and stopping the Menu underlay one offset early
 would leave a false gap in a connected paper view. The extension ends at the
@@ -176,6 +194,18 @@ choices.
 The artist title uses one shared, HTML-escaped plain-text value (default `Lars Möller`) for its visible label, home anchor and accessibility text. Hiding it removes its reserved Menu column/row. An unset title color inherits contextual ink.
 
 **Title Position** offers **Inside menu** (`inside`), **Above menu** (`above`) and **Below menu** (`below`). Inside uses two physical Menu regions: **Left** places the artist title to the left of navigation; **Right** reverses their order, with the title to the right of navigation. Center is not offered for Inside. Above is a permanent first row within the Menu paper; Below remains a content-sized row outside it. Above/Below retain all three desktop alignments. If an Inside title cannot share one row with navigation, it stacks above. At viewports of 40rem or narrower, Inside always stacks and follows Responsive alignment (Left/Center/Right); a fit-driven stack on wider screens still follows desktop Alignment. One public-header initializer measures actual Menu width on resize and font load without adding timers, scrolling containers or parallel positioning code. Working and Committed settings with the retired exterior position are migrated once to Inside; immutable older checkpoints remain readable via the canonical position normalizer.
+
+An Inside title uses its **intrinsic text width**, not a hard-coded one-third
+share of the menu. A fixed `1.5rem` gap separates the title and the
+available navigation region, and the existing fit decision stacks the title
+when its width plus that gap and a `15rem` minimum navigation region
+cannot coexist inside the configured content inset. The compact
+`40rem` viewport rule still stacks unconditionally. The public stylesheet
+and `public-header.js` measure the same shared gap, avoiding a
+stack/unstack feedback loop. The title's reading edge and cyclic-arrow
+tracks use the same `--public-content-inset` as the page. The cyclic
+arrow tracks may occupy the outer padding gutter without shifting the title
+or the actual first/last links.
 
 The base Title size is 16–64px. Optional responsive reduction uses an independently editable 12–64px minimum (default 18px) and CSS `clamp(min(minimum, base), 5.4vw, base)`; without reduction the base size is retained and long text may wrap.
 
@@ -830,3 +860,17 @@ The target does not preserve insecure HTTP behavior, blanket legacy query dispat
 ## Acceptance
 
 Public acceptance requires durable publication/routing/data verification, media integrity, viewer interaction checks, isolated Validation, representative browser comparison and explicit editorial/artist review before Production cutover.
+
+**Open General presentation review:** On an isolated migrated Working/Committed
+fixture, compare Menu Left/Center/Right against Inside Left/Right title,
+Above/Below/hidden title, long labels, cyclic overflow and nested Back
+placement at Wide and Narrow widths. Check Backing on connected/separate
+Menu/Page, transparent Page, gradient colors, sticky scrolling, Gallery
+and expanded Artwork. Confirm that changing Title or Menu values in General
+persists and survives reload without visually snapping the Select back to a
+stale value; an earlier report about Frame Style and Transparent Page was
+not reproduced or resolved by source inspection alone. Browser/visual
+acceptance and migration execution are separate gates, not inherited from
+authored but unexecuted regression tests. The next **user-assigned General
+Appearance development owner** owns source follow-up; the Testing workstream
+owns isolated test execution when authorized.

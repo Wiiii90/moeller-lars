@@ -170,17 +170,34 @@ Title/visible Text, Position/Lettering, Alignment/Responsive alignment,
 Color/Size and Responsive size/Minimum size. **Menu** places Menu to page and
 Divider color in one row; its background selector reads **Menu background**.
 **Page** owns Content width, Content padding and **Page background**.
-The heading of Live Preview occupies its own Stage heading row; below it,
-the `x-admin.stage-tool-row` shared primitive places all controls flush
-right with the same underlining and full-control-height separator strokes as
-the Appearance tabs and the inline unit fields. Device icons (Desktop/Phone),
-the existing special Zoom Out/percentage/Zoom In group, Pan and Open preview
-retain their original behavior, disabled/selected states, tooltips and
-accessible labels. The redundant device-dimensions text is removed from
-the toolbar, not from the preview's internal device width/height dataset.
-The old General-specific icon and separator styling has been deleted;
-`primitives.css` and `stage.css` own the common look. Preview content
-begins after the same toolbar-to-content spacing as the Appearance pane.
+The Gallery and General editors use **one** `x-admin.live-preview` component
+and `admin-live-preview.js` state owner; only its outer Stage composition
+differs. Its toolbar stays on one line: a compact device-icon Select and
+Rotate at the left, fitted percentage with Zoom Out/Zoom In at the center,
+and the consumer's actions at the right. The Gallery supplies a Focus
+toggle through the shared optional action slot; Open preview and the common
+Help action remain at the right edge. Direct Preview navigation, device
+profiles, logical frame size, zoom and pan gestures must not be duplicated
+in a Gallery-only or General-only toolbar. The grouped native device Select
+uses `PreviewDeviceProfiles`, preserves the active Desktop/Tablet/Phone
+icon, opens a readable full-label popup and never overlays an invisible
+intercepting input. The toolbar has one shared bottom rule aligned with the
+Appearance/Gallery tabs, no action separator and no second row at narrower
+preview widths. The Preview viewport no longer adds a second decorative
+screen/frame/shadow panel around its actual public iframe.
+
+**Gallery Preview focus** is consumer-owned by `GalleryWorkspace` rather
+than a second shared iframe. With automatic following enabled, exactly one
+selected and previewable Artwork shows its individual Working preview;
+zero/multiple selections or an unavailable individual Artwork route show
+the Gallery. In the staged queue, the selected staged Artwork takes
+priority and edited media/form data refresh its existing session-backed
+preview. The Gallery Focus action disables or re-enables selection-driven
+switching without erasing a still-valid pinned view. Removed Gallery
+Previous/Next stepping is not a second route-switching mechanism to restore.
+The user only described future **General** automatic region-focused zoom
+when switching Global/Title/Menu/Page; it was **not implemented** and must
+not be reported as current behavior.
 
 No duplicate forms, special responsive tabs, or independent CSS buttons are
 introduced. All actual Appearance changes still use the existing autosave
@@ -188,4 +205,17 @@ methods and explicit `general-appearance-updated` iframe refresh event.
 Local tab switches and Stage expansion do not reload the preview.
 
 Browser review must continuously resize through transition regions, not only check named device presets.
+
+**Unverified follow-up, not completed acceptance:** The next user-assigned
+General Appearance development owner should reproduce the reported
+cross-tab Select snapback after persistence (especially Frame Style and
+Transparent Page), compare embedded and standalone /preview, check the
+device popup and tab-border alignment across narrow Gallery/General panes,
+and verify the shared gestures and open-in-new-tab action. The existing
+Gallery ownership may review single/multiple Artwork selection, disabled
+focus, staged uploads and Preview fallback in its own separately assigned
+work; no new assignment is created by this note. The Testing workstream
+must review the authored regressions and execute them only under its
+isolated test authorization. A source review alone is not a completed
+browser, migration or publication gate.
 

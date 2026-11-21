@@ -8,7 +8,6 @@
 | Dev Worker 5 | 19 | Source cleanup committed; isolated migration and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom types and Hero Artworks template; preserve Gallery/Exhibitions, retire Home-only editors | [dev-5.md](workers/dev-5.md) |
 
 | Dev Worker 6 | 32 | Active — replacement chat registered; prior Hero/Random/Dummy Gallery/Filters source changes awaiting browser and user acceptance; awaiting a specific new task | Gallery → Hero Artworks and directly affected shared controls; coordinate broader Gallery changes with Dev Worker 4 | [dev-6.md](workers/dev-6.md) |
-| Dev Worker 7 | 18 | Shared dropdown CSS tokens consolidated across native/Filament/pager; browser acceptance pending | General Appearance, shared Admin Selects and Gallery/General Preview | [dev-7.md](workers/dev-7.md) |
 | Dev Worker 8 | 30 | Fixed repeated Create Clear: nested Filament action now unmounts normally without closing parent; source verified, browser acceptance pending | Shared Admin dialogs, common empty-state/pager/filter controls; no deployment | [dev-8.md](workers/dev-8.md) |
 
 

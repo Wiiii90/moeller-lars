@@ -88,7 +88,39 @@ change ordinary table row Actions, Selection popup actions or dialog buttons.
 - Storage View-specific hover/active fills are obsolete; its native
   `aria-pressed` state participates in the shared toolbar grammar.
 
-Native single-selects and pager selects stay on one native render path. Shared CSS in `resources/css/admin/layouts.css`, `resources/css/admin/data-workspace.css` and `resources/css/admin/task-surfaces.css` owns their trigger, typography and popup theming; Chromium's customizable-select surface is progressive enhancement only. Do not add a JavaScript-generated replacement select, duplicate popup DOM or a second presentation path. Opening a dropdown must never add document height, change the page scrollbar, call window scrolling APIs or reserve layout space for the popup.
+**One Select design, distinct interaction owners:** Ordinary native single-selects
+use the shared Admin picker rules in `resources/css/admin/layouts.css`.
+They apply under the entire `html.fi` Filament Admin, including
+portal-mounted Create/Edit and Account Settings dialogs outside
+`.admin-workspace`. Chromium's `appearance: base-select` popup is
+progressive enhancement; unsupported browsers keep their operating-system
+picker, not a custom replacement. Searchable Filament Selects retain
+Filament's option/search/focus lifecycle and use the common
+`.fi-select-input-dropdown` appearance in
+`resources/css/admin/controls.css`. The small page-size chooser retains
+its existing listbox behavior in `resources/css/admin/data-workspace.css`.
+`MediaAssetSelect` is intentionally specialized. These are not
+interchangeable DOM renderers, but share one visual language; do not
+introduce another dropdown abstraction or replace a native field with an
+action menu just to match its color.
+
+The existing Admin control token owner defines
+`--admin-select-option-inset`, option row padding/minimum height,
+selected/hover surface, group label background and group padding once.
+Native and searchable options, including the page-size choice, have the
+same `.1875rem` horizontal hover inset at both popup edges and a
+consistent top/bottom breathing gap. A grouped `optgroup` keeps its
+full-width heading and separator flush, while options are symmetrically
+inset and the gaps around each group's first/last item are balanced.
+The device chooser in `x-admin.live-preview` remains a **real** grouped
+native Select with decorative, non-intercepting device icons; its popup
+keeps a stable `18rem` width subject to the viewport limit. Never hide
+the actual option picker behind an invisible interception layer, set its
+intrinsic option font size to zero or produce a second generated popup.
+Opening a dropdown must never add document height, change the page
+scrollbar, call window scrolling APIs or reserve layout space for the
+popup. Source review alone does not verify the open menu in every
+supported browser.
 
 ## Select placeholder policy — no implicit "Select an option"
 
