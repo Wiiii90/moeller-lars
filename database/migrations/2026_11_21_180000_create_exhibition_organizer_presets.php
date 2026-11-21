@@ -50,6 +50,44 @@ return new class extends Migration
                 'updated_at' => now(),
             ]);
         }
+
+        // Import only explicitly authored venue names. Exact address variants
+        // stay separate: no inferred venue labels, forced country or geocodes.
+        $venueSeen = [];
+        $positions = [];
+        $organizerIds = DB::table('exhibition_organizer_presets')->pluck('id', 'name')->all();
+        foreach (DB::table('exhibitions')
+            ->select('organizer', 'venue', 'location_text', 'postal_code', 'city', 'country')
+            ->whereNotNull('organizer')->whereNotNull('venue')
+            ->orderBy('id')->cursor() as $row) {
+            $organizer = trim((string) $row->organizer);
+            $venue = trim((string) $row->venue);
+            $organizerId = $organizerIds[$organizer] ?? null;
+            if ($venue === '' || ! is_numeric($organizerId)) {
+                continue;
+            }
+            $values = [
+                'name' => $venue,
+                'street' => is_string($row->location_text) && trim($row->location_text) !== '' ? trim($row->location_text) : null,
+                'postal_code' => is_string($row->postal_code) && trim($row->postal_code) !== '' ? trim($row->postal_code) : null,
+                'city' => is_string($row->city) && trim($row->city) !== '' ? trim($row->city) : null,
+                'country' => is_string($row->country) && trim($row->country) !== '' ? trim($row->country) : null,
+            ];
+            $signature = json_encode([(int) $organizerId, ...array_values($values)], JSON_UNESCAPED_UNICODE);
+            if (isset($venueSeen[$signature])) {
+                continue;
+            }
+            $venueSeen[$signature] = true;
+            $position = $positions[(int) $organizerId] ?? 0;
+            DB::table('exhibition_venue_presets')->insert([
+                'organizer_preset_id' => (int) $organizerId,
+                ...$values,
+                'position' => $position,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $positions[(int) $organizerId] = $position + 1;
+        }
     }
 
     public function down(): void
