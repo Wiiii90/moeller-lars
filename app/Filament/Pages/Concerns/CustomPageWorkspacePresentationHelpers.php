@@ -118,32 +118,25 @@ trait CustomPageWorkspacePresentationHelpers
             $columns = (int) $grid['columns'];
             $areas = [];
             foreach ($grid['areas'] as $areaIndex => $area) {
-                $members = array_values(array_filter($blocks, static fn (array $block): bool =>
-                    ($block['layout_area_id'] ?? null) === ($area['id'] ?? null)));
                 $memberRows = [];
                 foreach ($blocks as $memberIndex => $member) {
                     if (! is_array($member) || ($member['layout_area_id'] ?? null) !== ($area['id'] ?? null)) {
                         continue;
                     }
                     $title = is_string($member['title'] ?? null) ? trim($member['title']) : '';
+                    $type = (string) ($member['type'] ?? '');
                     $memberRows[] = [
                         'index' => $memberIndex,
-                        'type' => (string) ($member['type'] ?? ''),
-                        'label' => $title !== '' ? $title : (self::COMPONENT_LABELS[$member['type']] ?? 'Component'),
+                        'type' => $type,
+                        'label' => $title !== '' ? $title : (self::COMPONENT_LABELS[$type] ?? 'Component'),
+                        'editable' => $type !== 'legal_disclaimer',
                     ];
                 }
-                $labels = array_map(static function (array $member): string {
-                    $type = (string) ($member['type'] ?? '');
-                    $title = is_string($member['title'] ?? null) ? trim($member['title']) : '';
-
-                    return $title !== '' ? $title : (self::COMPONENT_LABELS[$type] ?? 'Component');
-                }, $members);
                 $areas[] = [
                     'id' => $area['id'],
                     'row' => intdiv($areaIndex, $columns) + 1,
                     'column' => ($areaIndex % $columns) + 1,
                     'border' => $area['border'] ?? 'none',
-                    'summary' => $labels === [] ? 'Empty' : implode(' · ', $labels),
                     'members' => $memberRows,
                 ];
             }

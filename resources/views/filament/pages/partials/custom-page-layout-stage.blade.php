@@ -21,7 +21,8 @@
                         @foreach ($area['members'] as $member)
                             <button class="custom-page-layout-stage__member" type="button"
                                 wire:click="mountAction('editComponent', { componentIndex: {{ $member['index'] }}, componentType: '{{ $member['type'] }}' })"
-                                title="Edit {{ $member['label'] }}">
+                                title="{{ $member['editable'] ? 'Edit' : 'Read-only' }} {{ $member['label'] }}"
+                                @disabled(! $member['editable'])>
                                 {{ $member['label'] }}
                             </button>
                         @endforeach
