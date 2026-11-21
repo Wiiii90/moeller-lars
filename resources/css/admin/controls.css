@@ -1042,13 +1042,22 @@
     min-height: var(--admin-control-height);
     align-items: center;
 }
-/* Compact panels use the ordinary Filament Select trigger. Its own
- * value and chevron share a center axis without browser-native text offsets. */
-.admin-option-panel--compact-rows .admin-option-panel__body .fi-select-input-btn {
-    display: flex;
-    width: 100%;
+/* Compact rows use the same native Admin Select as all other plain
+ * single-value pickers. Align the value text within the trigger's content box;
+ * the canonical base-select picker/checkmark/caret remain in layouts.css. */
+.admin-option-panel--compact-rows .admin-option-panel__body .fi-fo-field :is(
+    input.fi-input,
+    select.fi-select-input
+) {
+    box-sizing: border-box;
+    height: var(--admin-control-height);
     min-height: var(--admin-control-height) !important;
-    align-items: center;
+    padding-block: 0 !important;
+    padding-inline-start: .65rem !important;
+    line-height: normal !important;
+}
+.admin-option-panel--compact-rows .admin-option-panel__body select.fi-select-input {
+    align-content: center;
 }
 
 /* Opt-in style for an already framed panel: the parent contour supplies the

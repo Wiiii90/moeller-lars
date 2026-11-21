@@ -95,6 +95,21 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     scrollbar-gutter: auto;
 }
 
+/* Simple Admin selects already use the browser's top-layer ::picker(select).
+ * A searchable Filament Select keeps its own option list in the field DOM;
+ * while that list is open, restore visible overflow at the shared dialog
+ * boundaries so the list can extend outside a short modal. The viewport
+ * container still bounds the layer; when closed, normal modal scrolling
+ * resumes. Do not duplicate or teleport the Filament dropdown. */
+.fi-modal:not(.fi-modal-click-through):has(.fi-select-input-btn[aria-expanded="true"])
+    > .fi-modal-window-ctn > .fi-modal-window {
+    overflow: visible !important;
+}
+.fi-modal:not(.fi-modal-click-through):has(.fi-select-input-btn[aria-expanded="true"])
+    > .fi-modal-window-ctn > .fi-modal-window .fi-modal-content {
+    overflow: visible !important;
+}
+
 /* Shared dialog motion. The window closes toward the native X in the
  * top-right corner while the overlay lingers slightly longer. */
 .fi-modal-window.admin-task-dialog {

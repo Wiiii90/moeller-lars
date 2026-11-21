@@ -50,14 +50,14 @@ final class PageHeadingFields
                 ->label('Alignment')
                 ->options(SitePageHeading::ALIGNMENTS)
                 ->default('left')
-                ->native(false)
+                ->native()
                 ->live()
                 ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_alignment', $state, $successTitle)),
             AdminControl::select('content_heading_divider')
                 ->label('Divider')
                 ->options(SitePageHeading::DIVIDERS)
                 ->default('none')
-                ->native(false)
+                ->native()
                 ->live()
                 ->afterStateUpdated(fn ($livewire, mixed $state) => self::persist($livewire, $persist, 'content_heading_divider', $state, $successTitle)),
         ];
