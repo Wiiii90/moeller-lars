@@ -407,32 +407,31 @@
     align-self: center;
 }
 
-/* One square split-toggle for every Filament Boolean Toggle, including
- * direct Toggle::make() fields. The two chambers share the same frame;
- * the selected half fills its chamber edge to edge without nested outlines.
- * Filament retains switch semantics, state and lifecycle. */
+/* One compact two-chamber toggle across Admin schemas. Filament continues
+ * to own the switch state, keyboard input and save events. A quiet surface
+ * delineates the inactive chamber; the full-width plate moves flush between
+ * halves. No overlapping borders, inset frame or page-specific variants. */
 button.admin-split-toggle.fi-toggle {
     box-sizing: border-box;
     display: inline-flex;
-    inline-size: 2.625rem;
-    block-size: 1.375rem;
+    inline-size: 1.75rem;
+    block-size: .875rem;
     padding: 0;
     align-items: stretch;
-    border: 1px solid var(--admin-line-strong);
+    overflow: hidden;
+    border: 0;
     border-radius: 0;
-    background: var(--admin-control-popover-surface);
+    background: color-mix(in srgb, var(--admin-muted) 12%, var(--admin-control-popover-surface));
     box-shadow: none;
-    transition: border-color .15s ease;
 }
 
 button.admin-split-toggle.fi-toggle::after {
     position: absolute;
     z-index: 1;
-    top: 0;
-    bottom: 0;
-    left: calc(50% - .5px);
-    width: 1px;
-    background: var(--admin-line-strong);
+    inset-block: 0;
+    inset-inline-start: calc(50% - .5px);
+    inline-size: 1px;
+    background: var(--admin-control-popover-surface);
     content: "";
     pointer-events: none;
 }
@@ -440,19 +439,29 @@ button.admin-split-toggle.fi-toggle::after {
 button.admin-split-toggle.fi-toggle > :first-child {
     box-sizing: border-box;
     display: block;
+    flex: 0 0 50%;
     inline-size: 50%;
     block-size: 100%;
     border-radius: 0;
-    background: color-mix(in srgb, var(--admin-muted) 55%, var(--admin-control-popover-surface));
+    background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--admin-muted) 44%, var(--admin-control-popover-surface)),
+        color-mix(in srgb, var(--admin-muted) 32%, var(--admin-control-popover-surface))
+    );
     box-shadow: none;
     transform: none;
     translate: 0 0;
-    transition: translate .16s ease, background-color .16s ease;
+    transition: translate .15s ease, background-color .15s ease;
 }
 
 button.admin-split-toggle.fi-toggle.fi-toggle-on > :first-child {
     translate: 100% 0;
-    background: var(--admin-accent);
+    background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--admin-accent) 83%, white),
+        var(--admin-accent) 52%,
+        color-mix(in srgb, var(--admin-accent) 88%, black)
+    );
 }
 
 button.admin-split-toggle.fi-toggle.fi-toggle-off > :first-child {
@@ -463,18 +472,17 @@ button.admin-split-toggle.fi-toggle .fi-icon {
     color: var(--admin-control-popover-surface);
 }
 
-button.admin-split-toggle.fi-toggle:hover:not(:disabled) {
-    border-color: var(--admin-text);
+button.admin-split-toggle.fi-toggle:hover:not(:disabled) > :first-child {
+    filter: brightness(1.08);
 }
 
 button.admin-split-toggle.fi-toggle:focus-visible {
     outline: 2px solid var(--admin-control-border-focus);
-    outline-offset: 2px;
+    outline-offset: 3px;
     box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    button.admin-split-toggle.fi-toggle,
     button.admin-split-toggle.fi-toggle > :first-child {
         transition: none;
     }
