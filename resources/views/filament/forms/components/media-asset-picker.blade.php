@@ -251,7 +251,7 @@
                     <template x-for="option in options" :key="option.value">
                         <button
                             type="button"
-                            class="fi-select-input-option admin-media-picker__option"
+                            class="admin-media-picker__option"
                             role="option"
                             :aria-selected="String(state ?? '') === option.value"
                             :class="{ 'fi-selected': String(state ?? '') === option.value }"

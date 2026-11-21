@@ -978,12 +978,17 @@
 
 .admin-media-picker__option {
     display: block;
-    width: 100%;
-    padding: .3rem .45rem;
+    box-sizing: border-box;
+    width: calc(100% - var(--admin-select-option-inset) - var(--admin-select-option-inset));
+    min-height: var(--admin-select-option-min-height);
+    margin-inline: var(--admin-select-option-inset);
+    padding: var(--admin-select-option-padding-y) var(--admin-select-option-padding-x);
     border: 0;
     border-radius: 0;
     color: var(--admin-text);
     background: var(--admin-control-popover-surface);
+    font-size: var(--admin-control-value-size);
+    line-height: 1.2;
     cursor: pointer;
     text-align: left;
 }
@@ -999,8 +1004,11 @@
 }
 
 .admin-media-picker--visual .admin-media-picker__option {
+    width: 100%;
     min-width: 0;
-    padding: 0;
+    margin-inline: 0;
+    /* Keep the accepted vertical breathing room, equally on every side. */
+    padding: var(--admin-select-option-padding-y);
 }
 
 .admin-media-picker__option:is(:hover, :focus-visible, .fi-selected) {

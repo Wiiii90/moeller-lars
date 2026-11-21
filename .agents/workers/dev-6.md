@@ -2,7 +2,7 @@
 
 **Working branch:** `dev`
 **Current holder:** Dev Worker 6, lease 32; replacement chat activated on 2026-11-21.
-**Current state:** Registered and oriented; waiting for the user's next concrete task or browser feedback. Prior changes are source-committed, not browser- or user-accepted. No new feature implementation, deployment, Continuous Integration, server action or runtime test has been authorized by this identity assignment.
+**Current state:** Visual Media Asset picker inset correction implemented in source (see below); browser/user acceptance outstanding. Earlier Hero/Random/Dummy Gallery/Filters source changes likewise await acceptance. No runtime, browser, Continuous Integration or deployment was executed in this chat.
 
 ## Scope and accepted design
 
@@ -21,10 +21,16 @@
 
 These are inherited implementation facts, not evidence of current live browser behavior. Isolated previous-chat checks exercised Random transitions, pagination boundaries and the popup controller; **no application/browser execution was performed**.
 
-## Outstanding acceptance, only when requested or when user supplies feedback
+## Current source fix — shared visual media picker
+
+- The shared `MediaAssetPicker` option markup had inherited `fi-select-input-option` styling, including forced horizontal padding and extra margins from the ordinary Filament Select controls. The template now uses its own `admin-media-picker__option` class exclusively.
+- `resources/css/admin/media.css` owns the option's standard field spacing and visual-card variant. Visual tiles use the same inset on every side (the previously accepted vertical value), while nonvisual picker options retain the shared Select tokens for their existing sizing.
+- Direct consumers include Exhibition cover media and Gallery Hero Dummy Gallery pickers. No shared Filament Select styling or picker state/transport changed; browser geometry and selection/reopen remain unverified.
+
+## Outstanding browser acceptance (when user can review)
 
 1. Hero page opens without the prior render exception; inspect existing Dummy Gallery 1, Disable/enable/remove persistence and reload.
-2. Dummy Gallery Create/Edit picker: consistent image tiles against Exhibition, scroll and dialog growth, search, clear/reselect, pagination beyond 30 entries, editorial eligibility, save/reopen.
+2. Exhibition cover media and Dummy Gallery Create/Edit visual pickers: equal compact top/left/right option insets, unchanged search row, hover/selection, scroll and dialog growth, search, clear/reselect, pagination beyond 30 entries, eligibility, save/reopen. Also check a nonvisual MediaAssetPicker consumer if present.
 3. Random: distinct-media counts 1/2/3+, duplicate references, zero weights, editable/current versus **Next** odds, option enablement and separate visitor/Preview histories.
 4. Shared Filters popup: first open without flash at Activity, then directly affected users (Storage, Gallery, Pages, Journal, Custom Page, Analytics), across responsive widths, close/reopen, Escape, click-away, scroll, resize and Livewire update.
 5. Treat only reproducible regressions as fix tasks; source-only review cannot establish browser acceptance.
@@ -35,4 +41,4 @@ These are inherited implementation facts, not evidence of current live browser b
 - Once product behavior is user-accepted, route Gallery Hero and Dummy Gallery durable semantics to Docs. Shared popup/picker lessons belong to the existing canonical Admin control owners.
 - Testing/Docs integration, deployment, migration, release and protected-branch promotion remain out of scope without explicit direction.
 
-**Next:** Await a concrete user-directed task or fresh browser feedback. Before any new write, verify lease 32 against the branch-local roster, retrieve current `dev` HEAD and reconcile overlapping commits.
+**Next:** Ask the user to visually verify the compact equal-sided tile inset in the updated media picker and report any residual gap. Address only confirmed regressions. Before another write, check lease 32, fresh `dev` HEAD and overlapping source changes.
