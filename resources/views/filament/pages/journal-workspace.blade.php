@@ -32,7 +32,6 @@
                         'Scheduled' => 'scheduled',
                         'Draft' => 'draft',
                         'Unpublished' => 'unpublished',
-                        'Archived' => 'archived',
                         'Current' => 'current',
                         'Upcoming' => 'upcoming',
                         'Interactions · 30d' => 'interactions',
@@ -164,7 +163,6 @@
                                 <option value="scheduled">{{ __('Scheduled') }}</option>
                                 <option value="published">{{ __('Published') }}</option>
                                 <option value="unpublished">{{ __('Unpublished') }}</option>
-                                <option value="archived">{{ __('Archived') }}</option>
                             @else
                                 <option value="published">{{ __('Published') }}</option>
                                 <option value="unpublished">{{ __('Unpublished') }}</option>
@@ -246,7 +244,6 @@
                                 @if ($isBlog)
                                     <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedPosts" x-on:click="open = false" @disabled(! $selectedCapabilities['publish'])>{{ __('Publish selected') }}</button>
                                     <button class="admin-action" type="button" role="menuitem" wire:click="unpublishSelectedPosts" x-on:click="open = false" @disabled(! $selectedCapabilities['unpublish'])>{{ __('Unpublish selected') }}</button>
-                                    <button class="admin-action" type="button" role="menuitem" wire:click="archiveSelectedPosts" x-on:click="open = false" @disabled(! $selectedCapabilities['archive'])>{{ __('Archive selected') }}</button>
                                     <button class="admin-action" type="button" role="menuitem" wire:click="restoreSelectedPosts" x-on:click="open = false" @disabled(! $selectedCapabilities['restore'])>{{ __('Restore selected to draft') }}</button>
                                 @endif
                                 <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('{{ $isBlog ? 'deleteSelectedPosts' : 'deleteSelectedExhibitions' }}')" x-on:click="open = false" @disabled(! $selectedCapabilities['delete'])>{{ __('Delete selected') }}</button>
@@ -428,13 +425,6 @@
                                                     :action="\App\Filament\Support\AdminRowAction::Restore"
                                                     wire:click="restorePostDraft({{ $entry['id'] }})"
                                                 />
-                                            @elseif (in_array($entry['state'], ['draft', 'unpublished', 'published'], true))
-                                                <x-admin.row-action
-                                                    :action="\App\Filament\Support\AdminRowAction::Archive"
-                                                    wire:click="archivePost({{ $entry['id'] }})"
-                                                />
-                                            @else
-                                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Archive" disabled />
                                             @endif
 
                                             <x-admin.row-action

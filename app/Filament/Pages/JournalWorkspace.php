@@ -162,7 +162,7 @@ final class JournalWorkspace extends Page
     public function updatedStatusFilter(): void
     {
         $allowed = $this->journalTemplate() === JournalTemplate::Blog
-            ? ['any', 'draft', 'scheduled', 'published', 'unpublished', 'archived']
+            ? ['any', 'draft', 'scheduled', 'published', 'unpublished']
             : ['any', 'published', 'unpublished'];
         if (! in_array($this->statusFilter, $allowed, true)) {
             $this->statusFilter = 'any';
@@ -437,12 +437,6 @@ final class JournalWorkspace extends Page
         $this->runEntryAction('Post unpublished', $post, fn (BlogPost $target) => app(BlogEditorialService::class)->unpublish($target));
     }
 
-    public function archivePost(int $id): void
-    {
-        $post = $this->post($id);
-        $this->runEntryAction('Post archived', $post, fn (BlogPost $target) => app(BlogEditorialService::class)->archive($target));
-    }
-
     public function restorePostDraft(int $id): void
     {
         $post = $this->post($id);
@@ -499,18 +493,6 @@ final class JournalWorkspace extends Page
                 return false;
             }
             app(BlogEditorialService::class)->publish($post);
-
-            return true;
-        });
-    }
-
-    public function archiveSelectedPosts(): void
-    {
-        $this->runPostBatch('posts archived', function (BlogPost $post): bool {
-            if ((string) $post->getAttribute('state') === 'archived') {
-                return false;
-            }
-            app(BlogEditorialService::class)->archive($post);
 
             return true;
         });
@@ -915,19 +897,17 @@ final class JournalWorkspace extends Page
             $this->replaceMountedAction('schedulePost', [...$target, 'returnToEditor' => true]);
         })->disabled(! in_array($state, ['draft', 'unpublished'], true));
 
-        $archived = $state === 'archived';
-        $actions[] = AdminDialog::headerAction(
-            'dialogArchivePost',
-            $archived ? AdminRowAction::Restore : AdminRowAction::Archive,
-            function () use ($archived, $id, $editAction, $target): void {
-                if ($archived) {
+        // Older archived records remain recoverable; no new Archive action.
+        if ($state === 'archived') {
+            $actions[] = AdminDialog::headerAction(
+                'dialogRestorePost',
+                AdminRowAction::Restore,
+                function () use ($id, $editAction, $target): void {
                     $this->restorePostDraft($id);
-                } else {
-                    $this->archivePost($id);
-                }
-                $this->replaceMountedAction($editAction, $target);
-            },
-        )->disabled($state === 'scheduled');
+                    $this->replaceMountedAction($editAction, $target);
+                },
+            );
+        }
 
         $actions[] = AdminDialog::headerAction('dialogDeletePost', AdminRowAction::Delete, function () use ($target): void {
             $this->replaceMountedAction('deletePost', $target);
@@ -1176,7 +1156,7 @@ final class JournalWorkspace extends Page
             ['label' => 'Scheduled', 'value' => $records->where('state', 'scheduled')->count(), 'description' => 'Queued posts'],
             ['label' => 'Draft', 'value' => $records->where('state', 'draft')->count(), 'description' => 'Work in progress'],
             ['label' => 'Unpublished', 'value' => $records->where('state', 'unpublished')->count(), 'description' => 'Offline posts'],
-            ['label' => 'Archived', 'value' => $records->where('state', 'archived')->count(), 'description' => 'Retained posts'],
+            ['label' => 'Total', 'value' => $records->count(), 'description' => 'All posts'],
         ];
     }
 
@@ -1435,7 +1415,7 @@ final class JournalWorkspace extends Page
         );
     }
 
-    /** @return array{publish:bool,unpublish:bool,archive:bool,restore:bool,delete:bool} */
+    /** @return array{publish:bool,unpublish:bool,restore:bool,delete:bool} */
     public function selectedEntryCapabilities(): array
     {
         $isBlog = $this->journalTemplate() === JournalTemplate::Blog;
@@ -1447,7 +1427,6 @@ final class JournalWorkspace extends Page
             'publish' => $isBlog && $states->contains(static fn (string $state): bool => in_array($state, ['draft', 'scheduled', 'unpublished'], true)
             ),
             'unpublish' => $isBlog && $states->contains('published'),
-            'archive' => $isBlog && $states->contains(static fn (string $state): bool => $state !== 'archived'),
             'restore' => $isBlog && $states->contains(static fn (string $state): bool => in_array($state, ['scheduled', 'unpublished', 'archived'], true)
             ),
             'delete' => $states->contains(static fn (string $state): bool => $isBlog ? ! in_array($state, ['published', 'scheduled'], true) : $state !== 'published'
