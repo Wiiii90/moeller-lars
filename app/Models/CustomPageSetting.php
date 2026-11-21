@@ -205,17 +205,41 @@ final class CustomPageSetting extends Model
         return ($block['published'] ?? true) === true;
     }
 
-    /** Unpublished content can be deleted; occupied Grid areas are validated atomically. */
-    public static function canDeleteComponent(array $component): bool
+    /**
+     * A Grid cannot be removed while it still owns page components.
+     * Supply the remaining component sequence for an exact deletion check.
+     *
+     * @param list<array<string, mixed>> $remaining
+     */
+    public static function canDeleteComponent(array $component, array $remaining = []): bool
     {
-        return ! self::componentPublished($component);
+        if (self::componentPublished($component)) {
+            return false;
+        }
+        if (($component['type'] ?? null) !== 'grid') {
+            return true;
+        }
+
+        $areaIds = array_column($component['areas'] ?? [], 'id');
+        foreach ($remaining as $other) {
+            if (is_array($other) && in_array($other['layout_area_id'] ?? null, $areaIds, true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** Reused by Home and Custom Page mutation owners, including bulk actions. */
-    public static function assertComponentDeletable(array $component): void
+    public static function assertComponentDeletable(array $component, array $remaining = []): void
     {
         if (self::componentPublished($component)) {
             throw ValidationException::withMessages(['component' => 'Unpublish the component before deleting it.']);
+        }
+        if (! self::canDeleteComponent($component, $remaining)) {
+            throw ValidationException::withMessages([
+                'component' => 'Move or delete the components inside this Grid before deleting the Grid.',
+            ]);
         }
     }
 

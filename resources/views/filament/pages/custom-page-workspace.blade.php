@@ -31,7 +31,7 @@
             $canUnpublishSelected = $selectedParents->contains(static fn (array $component): bool => ($component['published'] ?? false) === true);
             $canDeleteSelected = $selectedItemCount > 0
                 && $selectedParents->count() === $selectedItemCount
-                && $selectedParents->every(static fn (array $component): bool => \App\Models\CustomPageSetting::canDeleteComponent($component));
+                && $selectedParents->every(static fn (array $component): bool => $component['can_delete']);
             $canActivateSelected = $selectedItemCount === 1
                 && $selectedParents->count() === 1
                 && $selectedParents->first()['editable'];

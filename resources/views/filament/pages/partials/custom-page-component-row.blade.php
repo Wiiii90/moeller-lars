@@ -50,7 +50,7 @@
             :action="$row['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
             wire:click="setComponentPublished({{ $index }}, '{{ $type }}', {{ $row['published'] ? 'false' : 'true' }})" />
         <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Delete"
-            :disabled="! \App\Models\CustomPageSetting::canDeleteComponent($row)"
+            :disabled="! $row['can_delete']"
             wire:click="mountAction('deleteComponent', {{ $args }})" />
     </div>
     <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select {{ $label }}">

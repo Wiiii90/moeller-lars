@@ -22,14 +22,6 @@ final class HistoricalCustomPageBlockCanonicalizer
                 continue;
             }
 
-            if (($block['type'] ?? null) === 'list') {
-                foreach (self::convertListToRichText($block) as $converted) {
-                    $normalized[] = $converted;
-                }
-
-                continue;
-            }
-
             $identity = $path.'.'.$blockIndex;
 
             if (($block['type'] ?? null) === 'divider') {
@@ -118,87 +110,6 @@ final class HistoricalCustomPageBlockCanonicalizer
     private static function stableId(string $kind, string $path): string
     {
         return $kind.'-'.substr(hash('sha256', $path), 0, 24);
-    }
-
-    /**
-     * A legacy List is not an editor type. Keep every authored field, media
-     * reference and entry publication choice as ordinary editable components.
-     *
-     * @param array<string, mixed> $block
-     * @return list<array<string, mixed>>
-     */
-    private static function convertListToRichText(array $block): array
-    {
-        $result = [];
-        $published = ($block['published'] ?? true) === true;
-
-        if (is_numeric($block['media_asset_id'] ?? null)) {
-            $result[] = [
-                'type' => 'image',
-                'published' => $published,
-                'media_asset_id' => (int) $block['media_asset_id'],
-                'image_decorative' => false,
-            ];
-        }
-
-        $heading = is_string($block['title'] ?? null) ? trim($block['title']) : '';
-        if ($heading !== '') {
-            $result[] = ['type' => 'text', 'published' => $published, 'title' => $heading, 'body' => null];
-        }
-
-        $items = $block['items'] ?? [];
-        if (! is_array($items) || ! array_is_list($items)) {
-            throw new \UnexpectedValueException('Legacy List entries must be ordered before canonicalization.');
-        }
-
-        foreach ($items as $item) {
-            if (! is_array($item)) {
-                throw new \UnexpectedValueException('A legacy List entry is not structured data.');
-            }
-
-            $itemPublished = $published && ($item['published'] ?? $item['visible'] ?? true) === true;
-            $itemTitle = is_string($item['title'] ?? null) ? trim($item['title']) : '';
-
-            $context = is_string($item['context'] ?? null) ? trim($item['context']) : '';
-            if ($context === '') {
-                $context = implode(' · ', array_filter(
-                    array_map(static fn (string $key): string => is_string($item[$key] ?? null)
-                        ? trim($item[$key]) : '', ['date', 'meta', 'location']),
-                    static fn (string $value): bool => $value !== '',
-                ));
-            }
-
-            $body = is_string($item['body'] ?? null) ? trim($item['body']) : '';
-            if ($body === '<p></p>') {
-                $body = '';
-            }
-            // Rich Text JSON and legacy Markdown must remain byte-for-byte valid.
-            // Keep context and optional URL separate instead of concatenating
-            // them with a potentially visual Rich Text document.
-            if ($itemTitle !== '' || $body !== '') {
-                $result[] = [
-                    'type' => 'text', 'published' => $itemPublished,
-                    'title' => $itemTitle !== '' ? $itemTitle : null,
-                    'body' => $body !== '' ? $body : null,
-                ];
-            }
-            if ($context !== '') {
-                $result[] = ['type' => 'text', 'published' => $itemPublished, 'title' => null, 'body' => $context];
-            }
-
-            $url = is_string($item['url'] ?? null) ? trim($item['url']) : '';
-            if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL)
-                && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
-                $result[] = [
-                    'type' => 'text',
-                    'published' => $itemPublished,
-                    'title' => null,
-                    'body' => '[More information]('.str_replace(['(', ')'], ['%28', '%29'], $url).')',
-                ];
-            }
-        }
-
-        return $result;
     }
 
     /** @param array<string, mixed> $block

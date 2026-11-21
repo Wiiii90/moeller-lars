@@ -458,7 +458,7 @@ trait CustomPageWorkspaceComponentActions
         );
         $actions[] = AdminDialog::headerAction('dialogDeleteComponent', AdminRowAction::Delete, function () use ($target): void {
             $this->replaceMountedAction('deleteComponent', $target);
-        })->disabled(! CustomPageSetting::canDeleteComponent($block));
+        })->disabled(! CustomPageSetting::canDeleteComponent($block, $this->settings()->components()));
 
         return $actions;
     }

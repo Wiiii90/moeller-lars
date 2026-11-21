@@ -178,6 +178,7 @@ trait CustomPageWorkspaceProjectionState
                 'published' => $published,
                 'target' => $index.':'.$type,
                 'editable' => $type !== 'legal_disclaimer',
+                'can_delete' => CustomPageSetting::canDeleteComponent($block, $blocks),
             ];
         }
 

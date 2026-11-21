@@ -62,7 +62,8 @@ trait CustomPageWorkspaceLifecycle
             if (! is_array($component)
                 || ! isset($component['target'], $component['content'], $component['index'], $component['type'])
                 || ! array_key_exists('can_move_up', $component)
-                || ! array_key_exists('can_move_down', $component)) {
+                || ! array_key_exists('can_move_down', $component)
+                || ! array_key_exists('can_delete', $component)) {
                 return false;
             }
         }

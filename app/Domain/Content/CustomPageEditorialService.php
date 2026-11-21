@@ -175,8 +175,13 @@ final class CustomPageEditorialService
             if ($indices === []) {
                 return false;
             }
+            $selected = array_fill_keys($indices, true);
+            $remaining = array_values(array_filter(
+                $blocks, static fn (int $index): bool => ! isset($selected[$index]),
+                ARRAY_FILTER_USE_KEY,
+            ));
             foreach ($indices as $index) {
-                CustomPageSetting::assertComponentDeletable($blocks[$index]);
+                CustomPageSetting::assertComponentDeletable($blocks[$index], $remaining);
             }
             rsort($indices);
             foreach ($indices as $index) {
