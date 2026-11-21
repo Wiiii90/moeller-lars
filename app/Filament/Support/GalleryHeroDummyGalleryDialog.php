@@ -4,7 +4,6 @@ namespace App\Filament\Support;
 
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Content\GalleryHeroCandidate;
-use App\Domain\Content\RegionalFormats;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Pages\GalleryHeroWorkspace;
@@ -81,7 +80,6 @@ final class GalleryHeroDummyGalleryDialog
                         ? $livewire->dummyEditorMembers($galleryId, $creating) : [],
                     'galleryId' => $galleryId,
                     'creating' => $creating,
-                    'adminRegion' => RegionalFormats::adminRegion(),
                 ])
                 ->columnSpanFull(),
         ];

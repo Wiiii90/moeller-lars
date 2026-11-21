@@ -38,15 +38,7 @@
                         </div>
                     </td>
                     <td class="gallery-hero-dummy-gallery-table__date">
-                        @if ($isStorage)
-                            <x-admin.partial-date-picker
-                                :accessible-label="'Date for '.$member['title']"
-                                x-data="adminPartialDateControl(@js($member['date_value']), @js($adminRegion))"
-                                x-on:change.stop="$wire.{{ $creating ? 'updateDraftDummyMember' : 'updateDummyMember' }}({{ $creating ? '0' : $galleryId }}, @js($member['id']), 'date', value)"
-                            />
-                        @else
-                            <span class="admin-muted">{{ $member['date'] ?? '—' }}</span>
-                        @endif
+                        <span class="admin-muted">{{ $member['date'] ?? '—' }}</span>
                     </td>
                     <td class="admin-table__actions">
                         <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--two-static">

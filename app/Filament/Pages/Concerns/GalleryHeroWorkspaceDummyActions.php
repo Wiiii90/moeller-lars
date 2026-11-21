@@ -96,18 +96,6 @@ trait GalleryHeroWorkspaceDummyActions
                         $this->reloadWorkspace();
                         app(AdminNotifier::class)->notification(title: 'Artwork primary media saved', status: 'success');
                     },
-                    onInformationChanged: function () use ($dialog, $arguments): void {
-                        // Native Repeater movement does not emit the ordinary
-                        // Admin Edit change event. Persist via the same owner.
-                        $state = $this->getMountedActionSchema()->getRawState();
-                        if (! is_array($state) || ! $dialog->save(
-                            $this->heroArtworkForAction($arguments), $state, savePrimaryMedia: false,
-                        )) {
-                            return;
-                        }
-                        $this->reloadWorkspace();
-                        app(AdminNotifier::class)->notification(title: 'Artwork information saved', status: 'success');
-                    },
                 ))
                 ->action(function (array $arguments, array $data) use ($dialog): void {
                     if (! $dialog->save($this->heroArtworkForAction($arguments), $data, savePrimaryMedia: false)) {
@@ -215,7 +203,6 @@ trait GalleryHeroWorkspaceDummyActions
             $row['year'] = $artwork?->getAttribute('year') ?? ($member['year'] ?? null);
             $row['month'] = $artwork?->getAttribute('month') ?? ($member['month'] ?? null);
             $row['day'] = $artwork?->getAttribute('day') ?? ($member['day'] ?? null);
-            $row['date_value'] = ArtworkDate::fromParts($row['year'], $row['month'], $row['day']);
             $row['date'] = ArtworkDate::displayParts(
                 $row['year'], $row['month'], $row['day'], RegionalFormats::adminRegion(),
             );
@@ -278,12 +265,10 @@ trait GalleryHeroWorkspaceDummyActions
 
     public function updateDraftDummyMember(int $unused, string $key, string $field, mixed $value): void
     {
-        if (! in_array($field, ['title', 'date'], true)) {
+        if ($field !== 'title') {
             throw ValidationException::withMessages(['candidate' => 'Unknown Dummy Gallery field.']);
         }
-        $changes = $field === 'date'
-            ? ArtworkDate::normalize($value)
-            : ['title' => $value === '' ? null : $value];
+        $changes = ['title' => $value === '' ? null : $value];
 
         foreach ($this->draftDummyMembers as &$member) {
             if (GalleryHeroConfigurationService::memberKey($member) === $key && isset($member['media_asset_id'])) {
@@ -299,12 +284,10 @@ trait GalleryHeroWorkspaceDummyActions
 
     public function updateDummyMember(int $galleryId, string $key, string $field, mixed $value): void
     {
-        if (! in_array($field, ['title', 'date'], true)) {
+        if ($field !== 'title') {
             throw ValidationException::withMessages(['candidate' => 'Unknown Dummy Gallery field.']);
         }
-        $changes = $field === 'date'
-            ? ArtworkDate::normalize($value)
-            : ['title' => $value === '' ? null : $value];
+        $changes = ['title' => $value === '' ? null : $value];
 
         $changed = app(GalleryHeroConfigurationService::class)->updateDummyMember(
             $this->settings(), $galleryId, $key, $changes,

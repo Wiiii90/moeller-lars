@@ -11,22 +11,15 @@ final class ArtworkDate
 {
     public static function fromArtwork(Artwork $artwork): ?string
     {
-        return self::fromParts(
-            $artwork->getAttribute('year'),
-            $artwork->getAttribute('month'),
-            $artwork->getAttribute('day'),
-        );
-    }
-
-    /** One stored precision value, without inventing a missing month or day. */
-    public static function fromParts(mixed $year, mixed $month, mixed $day): ?string
-    {
+        $year = $artwork->getAttribute('year');
         if ($year === null) {
             return null;
         }
+        $month = $artwork->getAttribute('month');
         if ($month === null) {
             return sprintf('%04d', (int) $year);
         }
+        $day = $artwork->getAttribute('day');
 
         return $day === null
             ? sprintf('%04d-%02d', (int) $year, (int) $month)

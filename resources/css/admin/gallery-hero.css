@@ -386,11 +386,6 @@
     font-variant-numeric: tabular-nums;
 }
 
-.gallery-hero-dummy-gallery-table .admin-partial-date__trigger {
-    min-height: var(--admin-control-height);
-    white-space: nowrap;
-}
-
 @container admin-table (max-width: 24rem) {
     .gallery-hero-dummy-gallery-table__col-date {
         width: 8.25rem;
