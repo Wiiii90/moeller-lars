@@ -179,8 +179,7 @@
                                         @if ($isManual)
 
                                             <x-admin.row-action
-                                                :action="$row['disabled'] ? \App\Filament\Support\AdminRowAction::Publish : \App\Filament\Support\AdminRowAction::Unpublish"
-                                                :label="$row['disabled'] ? 'Enable' : 'Disable'"
+                                                :action="\App\Filament\Support\AdminRowAction::Unpublish" label="Disable"
                                                 wire:click="toggleDummyMember({{ $row['dummy_gallery_id'] }}, '{{ $row['id'] }}')" />
                                             <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Delete" label="Remove"
                                                 wire:click="removeDummyMember({{ $row['dummy_gallery_id'] }}, '{{ $row['id'] }}')" />
