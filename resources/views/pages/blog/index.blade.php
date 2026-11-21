@@ -11,7 +11,7 @@
     @endphp
     <x-public.page-heading :section="$section" />
     <section class="blog-page" aria-label="Blog posts">
-        @forelse ($posts as $post)
+        @foreach ($posts as $post)
             @php
                 $postUrl = $preview->url(
                     $section->isHome()
@@ -52,8 +52,6 @@
                     <a class="blog-entry__read-more" href="{{ $postUrl }}">Read more <x-public-icon name="arrow-right" /></a>
                 </div>
             </article>
-        @empty
-            <p class="blog-page__empty">No posts yet.</p>
-        @endforelse
+        @endforeach
     </section>
 @endsection

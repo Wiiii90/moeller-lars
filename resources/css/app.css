@@ -46,15 +46,16 @@ img {
     max-width: 100%;
 }
 
-/* The Public paper follows the intrinsic height of Header + Content.
- * Only the body fills the viewport with the configured background. Letting
- * this frame grow to 100dvh extended the paper surface far below the last
- * artwork on short pages. Sticky remains document-owned. */
+/* The single Public paper frame fills at least one viewport. Header stays
+ * content-sized while the Page paper receives any remaining height. Longer
+ * content grows naturally; the document remains the only scroll owner. */
 body.public-site .public-paper-frame {
     position: relative;
     display: flex;
     flex: 0 0 auto;
     min-width: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
     flex-direction: column;
 }
 
@@ -62,6 +63,7 @@ body.public-site .site-header {
     position: sticky;
     top: 0;
     z-index: 40;
+    flex: 0 0 auto;
 }
 
 .public-preview-badge {

@@ -555,25 +555,15 @@ html.public-preview--embedded {
     outline-offset: .45rem;
 }
 
-/* The Content sheet follows real content height and width on every route. */
+/* Every Public Page sheet, empty or populated, fills the available frame
+ * beneath the intrinsic Menu. The lower shell gap remains outside the sheet,
+ * while long content still determines its natural height. */
 #content {
     position: relative;
+    flex: 1 0 auto;
     min-height: var(--public-short-page-min-height);
     margin-block: 0 var(--public-shell-gap);
     background: var(--public-content-background);
-}
-
-/* Only genuinely empty section pages without a configured heading fill the
- * remaining viewport. Match rendered element children, not whitespace text:
- * unpublished or absent entries produce no elements. Home components are
- * explicitly excluded and retain the normal content-driven height. */
-#content:not(:has(> .public-content-reveal > .public-page-heading)):has(
-    > .public-content-reveal > .artwork-list:not(:has(> *)),
-    > .public-content-reveal > .exhibitions-page:not(:has(> *)),
-    > .public-content-reveal > .blog-page:not(:has(> *)),
-    > .public-content-reveal > .custom-page:not(.home-components):not(:has(> *))
-) {
-    flex: 1 0 auto;
 }
 
 /* Transparent Page has no physical sheet and receives no backing. */
@@ -597,16 +587,8 @@ html.public-preview--embedded {
     height: auto;
 }
 
-/* Both fitted public Artwork surfaces use the existing Content bottom
-   margin as their ONE external shell gap. Do not also shorten the frame.
-   The paper grows naturally when text exceeds the viewport. */
-body.public-site:has(.site-content--fitted-image, .site-content--gallery-hero-fitted) .public-paper-frame {
-    height: auto;
-    min-height: 100dvh;
-}
-body.public-site:has(.site-content--fitted-image, .site-content--gallery-hero-fitted) .site-header {
-    flex: 0 0 auto;
-}
+/* Fitted image compositions retain their own internal flex layout. The
+ * shared Public frame now owns viewport filling and the external sheet gap. */
 #content:is(.site-content--fitted-image, .site-content--gallery-hero-fitted) {
     display: flex;
     min-height: 0;
@@ -1523,11 +1505,6 @@ body.public-site:has(.site-content--fitted-image, .site-content--gallery-hero-fi
 .blog-entry__cover:focus-visible {
     outline: 1px dotted currentColor;
     outline-offset: 4px;
-}
-
-.blog-page__empty {
-    margin: 1rem 0;
-    color: #71685f;
 }
 
 /* A text-only spread has no counterfeit image. The margin, not another
