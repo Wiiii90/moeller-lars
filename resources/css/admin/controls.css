@@ -407,6 +407,78 @@
     align-self: center;
 }
 
+/* The one Admin Boolean switch design. Filament 5.7's real switch button
+ * owns keyboard, aria-checked, Alpine state and persistence. Its existing
+ * thumb moves between two square halves; no parallel control is created.
+ * This styles every Filament Toggle, including direct Toggle::make() fields. */
+html.fi button.fi-toggle[role="switch"] {
+    box-sizing: border-box;
+    display: inline-flex;
+    inline-size: 2.625rem;
+    block-size: 1.375rem;
+    padding: 2px;
+    align-items: stretch;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: 0;
+    background: var(--admin-control-popover-surface);
+    box-shadow: none;
+    transition: border-color .14s ease;
+}
+
+html.fi button.fi-toggle[role="switch"]::after {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(50% - .5px);
+    width: 1px;
+    background: var(--admin-line-strong);
+    content: "";
+    pointer-events: none;
+}
+
+html.fi button.fi-toggle[role="switch"] > :first-child {
+    box-sizing: border-box;
+    display: block;
+    width: 50%;
+    height: 100%;
+    border-radius: 0;
+    background: color-mix(in srgb, var(--admin-text) 45%, var(--admin-control-popover-surface));
+    box-shadow: none;
+    transform: none;
+    translate: 0 0;
+    transition: translate .16s ease, background-color .16s ease;
+}
+
+html.fi button.fi-toggle[role="switch"].fi-toggle-on > :first-child {
+    background: var(--admin-accent);
+    translate: 100% 0;
+}
+
+html.fi button.fi-toggle[role="switch"].fi-toggle-off > :first-child {
+    translate: 0 0;
+}
+
+html.fi button.fi-toggle[role="switch"] .fi-icon {
+    color: var(--admin-control-popover-surface);
+}
+
+html.fi button.fi-toggle[role="switch"]:hover:not(:disabled) {
+    border-color: var(--admin-text);
+}
+
+html.fi button.fi-toggle[role="switch"]:focus-visible {
+    outline: 2px solid var(--admin-control-border-focus);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.fi button.fi-toggle[role="switch"],
+    html.fi button.fi-toggle[role="switch"] > :first-child {
+        transition: none;
+    }
+}
+
 .admin-control-field .fi-fo-field-label:has(> :is(.fi-checkbox-input, .fi-toggle)) .fi-fo-field-label-content {
     align-self: center;
     line-height: 1.2;
@@ -811,7 +883,7 @@
     column-gap: .65rem;
 }
 /* The disclosure requires only a narrow track. The default equal Filament
- * columns incorrectly halve the width available to checkbox titles. */
+ * columns incorrectly halve the width available to toggle titles. */
 .admin-option-panel__header {
     position: relative;
     width: 100%;
@@ -827,17 +899,13 @@
     min-height: 0;
     align-self: center;
 }
-.admin-option-panel__switch .fi-fo-field-label:has(> .fi-checkbox-input) {
+.admin-option-panel__switch .fi-fo-field-label:has(> .fi-toggle) {
     min-height: 2rem !important;
     display: grid !important;
     grid-template-columns: max-content minmax(0, 1fr);
     align-items: center !important;
     gap: .5rem !important;
     margin-block: 0 !important;
-}
-.admin-option-panel__switch .fi-fo-field-label > .fi-checkbox-input {
-    align-self: center;
-    margin: 0 !important;
 }
 .admin-option-panel__switch .fi-fo-field-label-content {
     align-self: center;
@@ -849,6 +917,11 @@
     margin-top: .3rem;
     border-top: 1px solid var(--admin-line);
     padding-top: .45rem;
+}
+/* Keep configuration visible when off, but unavailable until enabled.
+ * The disclosure remains independently operable in either state. */
+.admin-option-panel:has(.admin-option-panel__switch .fi-toggle[aria-checked="false"]) .admin-option-panel__body {
+    opacity: .5;
 }
 .admin-option-panel__body :is(.fi-sc, .fi-sc-grid) {
     row-gap: .3rem;
@@ -867,14 +940,9 @@
     row-gap: .24rem;
     column-gap: .35rem;
 }
-.admin-option-panel--dense .admin-option-panel__switch .fi-fo-field-label:has(> .fi-checkbox-input) {
+.admin-option-panel--dense .admin-option-panel__switch .fi-fo-field-label:has(> .fi-toggle) {
     min-height: 1.55rem !important;
     gap: .35rem !important;
-}
-.admin-option-panel--dense .admin-option-panel__switch .fi-fo-field-label > .fi-checkbox-input {
-    width: .84rem !important;
-    height: .84rem !important;
-    border-radius: .17rem !important;
 }
 .admin-option-panel--dense .admin-option-panel__switch .fi-fo-field-label-content {
     font-size: .73rem;

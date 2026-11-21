@@ -4,6 +4,7 @@ namespace App\Filament\Support\Controls;
 
 use Closure;
 use Filament\Forms\Components\Checkbox;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\View;
 
@@ -21,7 +22,8 @@ final class AdminPanelControl
      */
     public static function make(string $title, string $enabledField, array $fields, ?Closure $onUpdated = null, bool $collapsible = false, array $bodyColumns = ['default' => 2], bool $unlinedFields = false, bool $compactRows = false, bool $dense = false): Group
     {
-        $toggle = AdminControl::checkbox($enabledField, $title)
+        $toggle = AdminControl::toggle($enabledField, $title)
+            ->inline()
             ->live()
             ->extraFieldWrapperAttributes(['class' => 'admin-option-panel__switch'], merge: true);
         if ($onUpdated instanceof Closure) {
@@ -29,7 +31,7 @@ final class AdminPanelControl
         }
 
         // A disclosure controls presentation only. Enabling/disabling the
-        // option remains exclusively owned by its checkbox and save callback.
+        // option remains exclusively owned by its switch and save callback.
         $header = $collapsible
             ? Group::make([
                 $toggle,
@@ -38,7 +40,7 @@ final class AdminPanelControl
             : $toggle->columnSpanFull();
 
         $body = Group::make($fields)
-            ->visible(fn (callable $get): bool => (bool) $get($enabledField))
+            ->disabled(fn (Get $get): bool => ! (bool) $get($enabledField))
             ->extraAttributes($collapsible
                 ? ['class' => 'admin-option-panel__body', 'x-show' => 'expanded', 'x-cloak' => true]
                 : ['class' => 'admin-option-panel__body'])
