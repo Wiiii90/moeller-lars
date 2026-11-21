@@ -9,9 +9,12 @@ use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Pages\JournalWorkspace;
 use App\Filament\Support\Controls\AdminControl;
 use App\Models\Exhibition;
+use App\Models\ExhibitionOrganizerPreset;
+use App\Models\ExhibitionVenuePreset;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
@@ -54,9 +57,13 @@ final class JournalEntryEditorSchema
         if ($template === JournalTemplate::Exhibitions) {
             $fields[] = self::dateFields()[0];
             $fields[] = Grid::make()->columns(['default' => 1, 'sm' => 2])->schema([
-                AdminControl::text('organizer', 'Organizer')->maxLength(240),
+                self::organizerSelect(),
                 AdminControl::text('venue', 'Venue')->maxLength(240),
+                self::venuePresetSelect()->columnSpanFull(),
             ])->columnSpanFull();
+            foreach (['location_text', 'postal_code', 'city', 'country'] as $field) {
+                $fields[] = Hidden::make($field);
+            }
             $fields[] = AdminForm::section(__('Description'))
                 ->schema(AdminRichText::schema('description', __('Text'), 50000, allowEmbeddedMedia: true, pageAutosave: true))
                 ->collapsible()->collapsed()->columnSpanFull();
@@ -161,6 +168,7 @@ final class JournalEntryEditorSchema
                     self::publicLocationField('venue', 'Venue', 240, $exhibition),
                 ])
                 ->columnSpanFull(),
+            self::venuePresetSelect()->columnSpanFull(),
             self::publicLocationField('external_url', 'Exhibition website', 2048, $exhibition)->url()->columnSpanFull(),
             Grid::make()
                 // Four fields are one composite address row at every breakpoint.
@@ -383,12 +391,59 @@ final class JournalEntryEditorSchema
             ->columnSpanFull();
     }
 
-    private static function publicLocationField(string $name, string $label, int $max, ?Exhibition $exhibition): TextInput
+    /** Organizer names remain exact canonical text in Exhibition snapshots. */
+    private static function organizerSelect(): Select
     {
-        $field = TextInput::make($name)
-            ->label(__($label))
-            ->maxLength($max)
-            ->nullable();
+        return AdminControl::select('organizer', 'Organizer')
+            ->options(fn (): array => ExhibitionOrganizerPreset::query()
+                ->orderBy('position')->orderBy('id')->pluck('name', 'name')->all())
+            ->getOptionLabelUsing(static fn (mixed $value): ?string =>
+                is_string($value) && trim($value) !== '' ? $value : null)
+            ->searchable()->preload()->native(false)->nullable()->live()
+            ->afterStateUpdated(static function (Set $set): void {
+                $set('venue_preset_id', null);
+            });
+    }
+
+    /** Choosing a known venue fills editable exhibition-specific address fields. */
+    private static function venuePresetSelect(): Select
+    {
+        return AdminControl::select('venue_preset_id', 'Saved venue')
+            ->options(static function (Get $get): array {
+                $organizer = trim((string) $get('organizer'));
+                $preset = ExhibitionOrganizerPreset::query()->where('name', $organizer)->first();
+                if (! $preset instanceof ExhibitionOrganizerPreset) {
+                    return [];
+                }
+
+                return ExhibitionVenuePreset::query()->where('organizer_preset_id', $preset->getKey())
+                    ->orderBy('position')->orderBy('id')->pluck('name', 'id')->all();
+            })
+            ->searchable()->preload()->native(false)
+            ->nullable()->dehydrated(false)
+            ->afterStateUpdated(static function (mixed $state, Set $set): void {
+                $id = filter_var($state, FILTER_VALIDATE_INT);
+                if ($id === false || $id <= 0) {
+                    return;
+                }
+                $venue = ExhibitionVenuePreset::query()->with('organizer')->find($id);
+                if (! $venue instanceof ExhibitionVenuePreset) {
+                    return;
+                }
+                $set('organizer', (string) $venue->organizer?->getAttribute('name'));
+                $set('venue', (string) $venue->getAttribute('name'));
+                $set('location_text', $venue->getAttribute('street'));
+                $set('postal_code', $venue->getAttribute('postal_code'));
+                $set('city', $venue->getAttribute('city'));
+                $set('country', $venue->getAttribute('country'));
+            });
+    }
+
+    private static function publicLocationField(string $name, string $label, int $max, ?Exhibition $exhibition): TextInput|Select
+    {
+        $field = $name === 'organizer'
+            ? self::organizerSelect()
+            : TextInput::make($name)->label(__($label))->maxLength($max)->nullable();
 
         if (! $exhibition instanceof Exhibition) {
             return $field;

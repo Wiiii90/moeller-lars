@@ -19,6 +19,7 @@ use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Pages\Concerns\JournalWorkspaceStage;
+use App\Filament\Pages\Concerns\JournalWorkspaceOrganizers;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
@@ -51,6 +52,7 @@ use Throwable;
 final class JournalWorkspace extends Page
 {
     use JournalWorkspaceStage;
+    use JournalWorkspaceOrganizers;
 
     #[Locked]
     public array $journalSettingsOriginal = [];
