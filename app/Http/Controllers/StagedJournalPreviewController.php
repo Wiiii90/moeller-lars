@@ -52,7 +52,8 @@ final class StagedJournalPreviewController extends Controller
                 'state' => 'draft',
                 'body' => $this->richSource($form['body'] ?? null),
                 'excerpt' => $this->richSource($form['excerpt'] ?? null, false),
-                'published_at' => now(),
+                // A staged draft has no public publication date yet.
+                'published_at' => null,
                 'gallery_presentation' => $form['gallery_presentation'] ?? 'sequence',
                 'image_viewer_enabled' => (bool) ($form['image_viewer_enabled'] ?? false),
             ]);
