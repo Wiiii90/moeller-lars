@@ -5,7 +5,7 @@
                 <span>Component</span>
                 <span>Content</span>
                 <span class="custom-page-component-sequence__actions-heading admin-row-actions-heading">Actions</span>
-                <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select all visible components and entries">
+                <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select all visible components">
                     <input
                         type="checkbox"
                         wire:change="selectAllVisible($event.target.checked)"
@@ -39,36 +39,10 @@
                             @if ($reorderEnabled) wire:sort:item="{{ $pageComponent['target'] }}" @endif
                         >
                             @include('filament.pages.partials.custom-page-component-row', [
-                                'row' => $pageComponent, 'isChild' => false,
+                                'row' => $pageComponent,
                                 'reorderEnabled' => $reorderEnabled, 'componentTypeOptions' => $componentTypeOptions,
                             ])
 
-                            @if ($pageComponent['accepts_children'] || $pageComponent['children'] !== [])
-                                <div class="custom-page-component__children admin-hierarchy__children"
-                                    role="rowgroup" aria-label="Components inside image"
-                                >
-                                    <div class="admin-hierarchy__children-rows"
-                                        @if ($reorderEnabled && $pageComponent['accepts_children'])
-                                            wire:sort="sortImageChild"
-                                            wire:sort:group="custom-components"
-                                            wire:sort:group-id="{{ $pageComponent['index'] }}"
-                                        @endif
-                                    >
-                                        @foreach ($pageComponent['children'] as $child)
-                                            <div class="custom-page-component__child-group"
-                                                wire:key="image-child-{{ $pageComponent['target'] }}-{{ $child['target'] }}"
-                                                @if ($reorderEnabled) wire:sort:item="{{ $child['target'] }}" @endif
-                                            >
-                                                @include('filament.pages.partials.custom-page-component-row', [
-                                                    'row' => $child, 'isChild' => true,
-                                                    'reorderEnabled' => $reorderEnabled,
-                                                    'componentTypeOptions' => $componentTypeOptions,
-                                                ])
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endif
                         </article>
                     @endforeach
                 </div>

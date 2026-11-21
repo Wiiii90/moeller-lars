@@ -23,7 +23,6 @@ final class CustomPageSetting extends Model
         'video',
         'text',
         'grid',
-        'divider',
         'contact',
         'legal_disclaimer',
     ];
@@ -34,9 +33,6 @@ final class CustomPageSetting extends Model
     public const GRID_GAPS = ['none', 'small', 'medium', 'large'];
 
     public const GRID_COLUMN_LAYOUTS = ['equal', 'left-wide', 'right-wide'];
-
-    /** One shared allowlist for media children in persistence, editing and sorting. */
-    public const IMAGE_CHILD_TYPES = ['text', 'divider', 'contact', 'legal_disclaimer'];
 
     public const IMAGE_ALIGNMENTS = ['left', 'center', 'right'];
 
@@ -120,24 +116,26 @@ final class CustomPageSetting extends Model
             }
             $block['_root_index'] ??= $index;
             $areaId = $block['layout_area_id'] ?? null;
-            if (($block['type'] ?? null) !== 'grid'
-                && is_string($areaId) && array_key_exists($areaId, $areas)) {
+            if (is_string($areaId) && array_key_exists($areaId, $areas)) {
                 $areas[$areaId][] = $block;
             } else {
                 $roots[] = $block;
             }
         }
 
-        return array_map(static function (array $block) use ($areas): array {
-            if (($block['type'] ?? null) === 'grid') {
-                $block['areas'] = array_map(static fn (array $area): array => [
-                    ...$area,
-                    'blocks' => $areas[$area['id']] ?? [],
-                ], $block['areas']);
+        $expand = static function (array $block) use (&$expand, $areas): array {
+            if (($block['type'] ?? null) !== 'grid') {
+                return $block;
             }
+            $block['areas'] = array_map(static fn (array $area): array => [
+                ...$area,
+                'blocks' => array_map($expand, $areas[$area['id']] ?? []),
+            ], $block['areas']);
 
             return $block;
-        }, $roots);
+        };
+
+        return array_map($expand, $roots);
     }
 
     /**
@@ -202,13 +200,10 @@ final class CustomPageSetting extends Model
         return ($block['published'] ?? true) === true;
     }
 
-    /** A published component or structural Image parent cannot be deleted. */
+    /** Unpublished content can be deleted; occupied Grid areas are validated atomically. */
     public static function canDeleteComponent(array $component): bool
     {
-        return ! self::componentPublished($component)
-            && (! in_array($component['type'] ?? null, self::MEDIA_COMPONENT_TYPES, true)
-                || ! is_array($component['children'] ?? null)
-                || $component['children'] === []);
+        return ! self::componentPublished($component);
     }
 
     /** Reused by Home and Custom Page mutation owners, including bulk actions. */
@@ -216,9 +211,6 @@ final class CustomPageSetting extends Model
     {
         if (self::componentPublished($component)) {
             throw ValidationException::withMessages(['component' => 'Unpublish the component before deleting it.']);
-        }
-        if (! self::canDeleteComponent($component)) {
-            throw ValidationException::withMessages(['component' => 'Remove or move the Image children before deleting their parent.']);
         }
     }
 
@@ -266,7 +258,6 @@ final class CustomPageSetting extends Model
                     ...($this->validatedImageAlignment($block) !== 'left' ? ['image_alignment' => $this->validatedImageAlignment($block)] : []),
                     ...($type === 'video' && ! self::videoControls($block) ? ['video_controls_enabled' => false] : []),
                     ...$this->normalizedImageScale($block),
-                    ...$this->normalizedImageChildren($block),
                 ],
                 'grid' => [
                     'type' => 'grid',
@@ -283,11 +274,6 @@ final class CustomPageSetting extends Model
                     'published' => $published,
                     'title' => $this->nullableTrimmedString($block['title'] ?? null),
                     'body' => $block['body'] ?? null,
-                ],
-                'divider' => [
-                    'type' => 'divider',
-                    'published' => $published,
-                    'variant' => in_array($block['variant'] ?? null, self::DIVIDER_VARIANTS, true) ? $block['variant'] : 'thin',
                 ],
                 'contact' => [
                     'type' => 'contact',
@@ -371,23 +357,6 @@ final class CustomPageSetting extends Model
         return $alignment;
     }
 
-    /** Normalize the optional single nesting level using the exact same
-     * component schemas as top-level prose components. */
-    private function normalizedImageChildren(array $image): array
-    {
-        if (! array_key_exists('children', $image)) {
-            return [];
-        }
-        $children = $image['children'];
-        if (! is_array($children) || ! array_is_list($children)) {
-            throw ValidationException::withMessages(['blocks' => 'Image children must be ordered components.']);
-        }
-        $nested = new self;
-        $nested->setAttribute('blocks', $children);
-
-        return ['children' => $nested->normalizedBlocks()];
-    }
-
     /**
      * Keep the historical 100% size implicit so an unchanged legacy image
      * remains a no-op when its component editor is opened and submitted.
@@ -423,21 +392,54 @@ final class CustomPageSetting extends Model
 
         $legalDisclaimerCount = 0;
         $gridAreas = [];
-        $areaVisibility = [];
+        $gridOwners = [];
+        $gridBlocks = [];
         foreach ($blocks as $gridBlock) {
             if (! is_array($gridBlock) || ($gridBlock['type'] ?? null) !== 'grid') {
                 continue;
             }
             $this->validateGridComponent($gridBlock);
+            if (isset($gridBlocks[$gridBlock['id']])) {
+                throw ValidationException::withMessages(['blocks' => 'Grid IDs must be unique across the page.']);
+            }
+            $gridBlocks[$gridBlock['id']] = $gridBlock;
             foreach ($gridBlock['areas'] as $area) {
                 $areaId = $area['id'];
                 if (isset($gridAreas[$areaId])) {
                     throw ValidationException::withMessages(['blocks' => 'Grid area IDs must be unique.']);
                 }
                 $gridAreas[$areaId] = true;
-                $areaVisibility[$areaId] = self::componentPublished($gridBlock);
+                $gridOwners[$areaId] = $gridBlock['id'];
             }
         }
+
+        // Parent chains must be finite, even if a cycle is unpublished.
+        foreach ($gridBlocks as $gridId => $gridBlock) {
+            $seen = [$gridId => true];
+            $parent = $gridBlock['layout_area_id'] ?? null;
+            while (is_string($parent) && isset($gridOwners[$parent])) {
+                $ownerId = $gridOwners[$parent];
+                if (isset($seen[$ownerId])) {
+                    throw ValidationException::withMessages(['blocks' => 'Grid layouts cannot contain themselves.']);
+                }
+                $seen[$ownerId] = true;
+                $parent = $gridBlocks[$ownerId]['layout_area_id'] ?? null;
+            }
+        }
+
+        $areaVisible = static function (string $areaId) use ($gridOwners, $gridBlocks): bool {
+            $ownerId = $gridOwners[$areaId] ?? null;
+            while (is_string($ownerId) && isset($gridBlocks[$ownerId])) {
+                $grid = $gridBlocks[$ownerId];
+                if (! self::componentPublished($grid)) {
+                    return false;
+                }
+                $parentId = $grid['layout_area_id'] ?? null;
+                $ownerId = is_string($parentId) ? ($gridOwners[$parentId] ?? null) : null;
+            }
+
+            return true;
+        };
 
         foreach ($blocks as $blockIndex => $block) {
             if (! is_array($block)) {
@@ -453,7 +455,7 @@ final class CustomPageSetting extends Model
             }
 
             $areaId = $block['layout_area_id'] ?? null;
-            if ($areaId !== null && (! is_string($areaId) || ! isset($gridAreas[$areaId]) || $type === 'grid')) {
+            if ($areaId !== null && (! is_string($areaId) || ! isset($gridAreas[$areaId]))) {
                 throw ValidationException::withMessages(['blocks' => 'Choose a valid Grid area for this component.']);
             }
             $divider = $block['layout_divider_before'] ?? 'none';
@@ -462,40 +464,16 @@ final class CustomPageSetting extends Model
             }
 
             $public = $requirePublicMedia && self::componentPublished($block)
-                && ($areaId === null || ($areaVisibility[$areaId] ?? false));
+                && ($areaId === null || $areaVisible($areaId));
 
             if ($type === 'grid') {
                 continue;
             }
             if (in_array($type, self::MEDIA_COMPONENT_TYPES, true)) {
+                if (array_key_exists('children', $block)) {
+                    throw ValidationException::withMessages(['blocks' => 'Move older media children into Grid areas before editing this page.']);
+                }
                 $this->validateMediaComponent($block, $public);
-                $children = $block['children'] ?? [];
-                if (! is_array($children) || ! array_is_list($children)) {
-                    throw ValidationException::withMessages(['blocks' => 'Image children must be ordered components.']);
-                }
-                if ($children !== [] && ! ($block['image_decorative'] ?? false)) {
-                    throw ValidationException::withMessages(['blocks' => 'Only decorative Images can contain text children.']);
-                }
-                foreach ($children as $child) {
-                    $childType = is_array($child) ? ($child['type'] ?? null) : null;
-                    if (! in_array($childType, self::IMAGE_CHILD_TYPES, true)) {
-                        throw ValidationException::withMessages(['blocks' => 'Images may only contain Rich Text, Divider, Contact details or Legal Disclaimer.']);
-                    }
-                    if ($childType === 'contact') {
-                        foreach ($child['children'] ?? [] as $contactChild) {
-                            if (is_array($contactChild) && ($contactChild['type'] ?? null) === 'contact_form'
-                                && self::contactChildPublished($contactChild)) {
-                                throw ValidationException::withMessages(['blocks' => 'Contact Form must remain outside an image.']);
-                            }
-                        }
-                    }
-                    if ($childType === 'legal_disclaimer') {
-                        $legalDisclaimerCount++;
-                    }
-                }
-                $nested = new self;
-                $nested->setAttribute('blocks', $children);
-                $nested->validateBlocks($public);
             }
             if ($type === 'text') {
                 $title = $block['title'] ?? null;
@@ -503,12 +481,6 @@ final class CustomPageSetting extends Model
                     throw ValidationException::withMessages(['blocks' => 'Text component headings must be short text.']);
                 }
                 $this->validateRichText($block['body'] ?? null, 'blocks.'.$blockIndex.'.body', $public);
-            }
-            if ($type === 'divider') {
-                $variant = $block['variant'] ?? 'thin';
-                if (! is_string($variant) || ! in_array($variant, self::DIVIDER_VARIANTS, true)) {
-                    throw ValidationException::withMessages(['blocks' => 'Divider style is invalid.']);
-                }
             }
             if ($type === 'contact') {
                 $title = $block['title'] ?? null;

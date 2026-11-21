@@ -66,8 +66,8 @@ final class MediaReferenceQuery
 
     /**
      * One canonical reader for direct media and Rich Text references across
-     * Custom Page and Home components, including decorative Image children.
-     * Public delivery applies publication flags to precisely the same tree.
+     * Custom Page and Home components. Grid areas are layout ownership,
+     * not duplicate source content or separate publication records.
      *
      * @param  list<mixed>  $components
      * @return list<int>
@@ -75,23 +75,39 @@ final class MediaReferenceQuery
     public function componentMediaIds(array $components, bool $publishedOnly = false): array
     {
         $ids = [];
-        $parentVisibility = [];
+        $ownerByArea = [];
+        $grids = [];
         foreach ($components as $component) {
             if (! is_array($component) || ($component['type'] ?? null) !== 'grid') {
                 continue;
             }
+            $grids[$component['id']] = $component;
             foreach ($component['areas'] ?? [] as $area) {
                 if (is_array($area) && is_string($area['id'] ?? null)) {
-                    $parentVisibility[$area['id']] = CustomPageSetting::componentPublished($component);
+                    $ownerByArea[$area['id']] = $component['id'];
                 }
             }
         }
+        $visibleArea = static function (string $areaId) use ($ownerByArea, $grids): bool {
+            $seen = [];
+            $ownerId = $ownerByArea[$areaId] ?? null;
+            while (is_string($ownerId) && isset($grids[$ownerId])) {
+                if (isset($seen[$ownerId]) || ! CustomPageSetting::componentPublished($grids[$ownerId])) {
+                    return false;
+                }
+                $seen[$ownerId] = true;
+                $parent = $grids[$ownerId]['layout_area_id'] ?? null;
+                $ownerId = is_string($parent) ? ($ownerByArea[$parent] ?? null) : null;
+            }
+
+            return true;
+        };
         foreach ($components as $component) {
             if (! is_array($component) || ($publishedOnly && ! CustomPageSetting::componentPublished($component))) {
                 continue;
             }
             $areaId = $component['layout_area_id'] ?? null;
-            if ($publishedOnly && $areaId !== null && ! ($parentVisibility[$areaId] ?? false)) {
+            if ($publishedOnly && is_string($areaId) && ! $visibleArea($areaId)) {
                 continue;
             }
 
@@ -107,9 +123,6 @@ final class MediaReferenceQuery
                 $ids = array_merge($ids, RichTextMediaReference::ids($component['body']));
             }
 
-            if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) && is_array($component['children'] ?? null)) {
-                $ids = array_merge($ids, $this->componentMediaIds($component['children'], $publishedOnly));
-            }
         }
 
         return array_values(array_unique($ids));

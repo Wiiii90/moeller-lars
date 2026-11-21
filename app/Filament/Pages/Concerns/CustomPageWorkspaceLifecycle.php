@@ -60,31 +60,10 @@ trait CustomPageWorkspaceLifecycle
     {
         foreach ($components as $component) {
             if (! is_array($component)
-                || ! isset(
-                    $component['target'], $component['content'],
-                    $component['index'], $component['type'],
-                )
-                || ! array_key_exists('accepts_children', $component)
+                || ! isset($component['target'], $component['content'], $component['index'], $component['type'])
                 || ! array_key_exists('can_move_up', $component)
-                || ! array_key_exists('can_move_down', $component)
-                || ! is_array($component['children'] ?? null)) {
+                || ! array_key_exists('can_move_down', $component)) {
                 return false;
-            }
-
-            foreach ($component['children'] as $child) {
-                if (! is_array($child)
-                    || ! isset(
-                        $child['target'],
-                        $child['index'],
-                        $child['image_index'],
-                        $child['position'],
-                        $child['content'],
-                        $child['type'],
-                    )
-                    || ! array_key_exists('can_move_up', $child)
-                    || ! array_key_exists('can_move_down', $child)) {
-                    return false;
-                }
             }
         }
 
@@ -172,17 +151,6 @@ trait CustomPageWorkspaceLifecycle
             return;
         }
 
-        if (isset($target['child_index'])) {
-            $this->imageChildAt($index, $target['child_index'], $type);
-            $this->mountAction('editImageChildInstant', [
-                'imageIndex' => $index,
-                'childIndex' => $target['child_index'],
-                'componentType' => $type,
-            ]);
-
-            return;
-        }
-
         $this->componentAt($index, $type);
         $this->mountAction('editComponent', [
             'componentIndex' => $index,
@@ -199,10 +167,7 @@ trait CustomPageWorkspaceLifecycle
             return;
         }
 
-        $this->selectedComponentTargets = collect($this->components)
-            ->flatMap(static fn (array $row): array => [
-                $row['target'], ...array_column($row['children'] ?? [], 'target'),
-            ])
+        $this->selectedComponentTargets = collect($this->components)->pluck('target')
             ->filter(static fn (mixed $target): bool => is_string($target))
             ->values()
             ->all();

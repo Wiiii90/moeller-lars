@@ -55,13 +55,6 @@
                 @endphp
 
                 @if ($asset !== null && ($variant !== null || $isVideo))
-                    @php
-                        $imageChildren = $decorative && is_array($block['children'] ?? null) && $block['children'] !== []
-                            ? $block['children'] : [];
-                    @endphp
-                    @if ($imageChildren !== [])
-                        <div class="custom-page__image-group">
-                    @endif
                     {{-- Livewire retains head styles across navigation and history.
                          Bind each nonce-authorized rule to its scale, not a page-local
                          block index that can identify a different image after a swap. --}}
@@ -74,7 +67,7 @@
                             </style>
                         @endpush
                     @endif
-                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image custom-page__image--scale-{{ $imageScalePercent }} custom-page__image--align-{{ $imageAlignment }}{{ $imageChildren !== [] ? ' custom-page__image--wrapped' : '' }}">
+                    <figure id="custom-page-image-{{ $blockIndex }}" class="custom-page__component custom-page__media custom-page__image custom-page__image--scale-{{ $imageScalePercent }} custom-page__image--align-{{ $imageAlignment }}">
                         @if ($isVideo)
                             <video src="{{ $media->originalUrlForAsset($asset) }}"
                                 @if ($posterUrl) poster="{{ $posterUrl }}" @endif
@@ -88,15 +81,6 @@
                             <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async" @if ($homeImageViewerEnabled && ! $decorative) {!! $imageViewer->attributes('home-image-'.$imageBlockPrefix.'-'.$blockIndex, $media->originalUrlForAsset($asset), $imageAlt) !!} @endif>
                         @endif
                     </figure>
-                    @if ($imageChildren !== [])
-                        @include('pages.partials.component-sequence', [
-                            'blocks' => $imageChildren,
-                            'label' => $label,
-                            'isEmbedded' => true,
-                            'imageBlockPrefix' => $imageBlockPrefix.'-'.$blockIndex,
-                        ])
-                        </div>
-                    @endif
                 @endif
             @endif
 
@@ -111,16 +95,6 @@
                         @endif
                     </div>
                 </section>
-            @endif
-
-            @if ($type === 'divider')
-                @php
-                    $dividerVariant = is_string($block['variant'] ?? null)
-                        && in_array($block['variant'], \App\Models\CustomPageSetting::DIVIDER_VARIANTS, true)
-                            ? $block['variant']
-                            : 'thin';
-                @endphp
-                <div id="custom-page-component-{{ $imageBlockPrefix }}-{{ $blockIndex }}" class="custom-page__divider custom-page__divider--{{ $dividerVariant }}" aria-hidden="true"></div>
             @endif
 
             @if ($type === 'contact')

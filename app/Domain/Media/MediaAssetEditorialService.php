@@ -408,8 +408,8 @@ class MediaAssetEditorialService
     /**
      * Canonical inverse of MediaReferenceQuery::componentMediaIds(). Leave
      * unrelated nested editorial content intact. Only a leaf Custom Page
-     * Image can be removed automatically; Image children require explicit
-     * editorial action rather than silently destroying their text.
+     * Media components can be removed without discarding unrelated Rich Text
+     * or Grid areas; content ownership remains in CustomPageSetting.
      *
      * @param  array<string,mixed>  $component
      * @return array<string,mixed>|null
@@ -421,34 +421,11 @@ class MediaAssetEditorialService
         if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)
             && is_numeric($component['media_asset_id'] ?? null)
             && (int) $component['media_asset_id'] === $assetId) {
-            if (! empty($component['children'])) {
-                throw ValidationException::withMessages([
-                    'media' => 'This image contains other content. Move or remove its child components before deleting the image from Storage.',
-                ]);
-            }
-
             return null;
         }
 
         if ($type === 'text') {
             $component['body'] = $this->removeRichTextReference($component['body'] ?? null, $assetId);
-        }
-
-        if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) && is_array($component['children'] ?? null)) {
-            foreach ($component['children'] as $index => $child) {
-                if (! is_array($child)) {
-                    continue;
-                }
-                $updated = $this->withoutMediaReference($child, $assetId);
-                if ($updated === null) {
-                    // Image children may not be images by schema; fail closed
-                    // if malformed persisted data would require discarding one.
-                    throw ValidationException::withMessages([
-                        'media' => 'The nested image content could not be safely updated. Remove its media reference in the editor first.',
-                    ]);
-                }
-                $component['children'][$index] = $updated;
-            }
         }
 
         return $component;

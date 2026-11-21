@@ -42,11 +42,6 @@ trait CustomPageWorkspacePresentationHelpers
                 'meta' => '',
             ];
         }
-        if ($type === 'divider') {
-            $variant = is_string($block['variant'] ?? null) ? $block['variant'] : 'thin';
-
-            return ['primary' => self::DIVIDER_LABELS[$variant] ?? self::DIVIDER_LABELS['thin'], 'secondary' => '', 'meta' => ''];
-        }
         if ($type === 'contact') {
             $enabled = [];
             foreach ($settings->contactChildren($block) as $child) {
@@ -74,39 +69,6 @@ trait CustomPageWorkspacePresentationHelpers
         return ['primary' => '', 'secondary' => '', 'meta' => ''];
     }
 
-    /** Each Image child is projected as a normal component row with its
-     * own identity and complete actions, not a summary inside the Image. */
-    private function imageChildSummaries(CustomPageSetting $settings, array $image, int $imageIndex): array
-    {
-        $children = $image['children'] ?? [];
-        $summaries = [];
-        foreach ($children as $childIndex => $child) {
-            if (! is_array($child)) {
-                continue;
-            }
-            $type = (string) ($child['type'] ?? '');
-            if (! in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
-                continue;
-            }
-            $published = CustomPageSetting::componentPublished($child);
-            $summaries[] = [
-                'image_index' => $imageIndex,
-                'index' => $childIndex,
-                'position' => ($imageIndex + 1).'.'.($childIndex + 1),
-                'type' => $type,
-                'type_label' => self::COMPONENT_LABELS[$type],
-                'content' => $this->componentContent($settings, $child, null),
-                'published' => $published,
-                'editable' => $type !== 'legal_disclaimer',
-                'can_move_up' => $childIndex > 0,
-                'can_move_down' => $childIndex < count($children) - 1,
-                'target' => $imageIndex.'.'.$childIndex.':'.$type,
-            ];
-        }
-
-        return $summaries;
-    }
-
     private function contentExcerpt(mixed $value, int $limit = 170): string
     {
         if (! is_string($value)) {
@@ -128,19 +90,10 @@ trait CustomPageWorkspacePresentationHelpers
         if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)) {
             $parts[] = $imageName;
         }
-        if ($type === 'image') {
-            foreach ($block['children'] ?? [] as $child) {
-                if (! is_array($child)) {
-                    continue;
-                }
-                $parts[] = $this->componentParentSearchText($settings, $child, null);
-            }
-        } elseif ($type === 'text') {
+        if ($type === 'text') {
             $parts[] = $block['title'] ?? null;
             $parts[] = $block['body'] ?? null;
-        } elseif ($type === 'divider') {
-            $variant = is_string($block['variant'] ?? null) ? $block['variant'] : 'thin';
-            $parts[] = self::DIVIDER_LABELS[$variant] ?? $variant;
+
         } elseif ($type === 'contact') {
             $parts[] = implode(' ', array_map(
                 static fn (array $child): string => self::CONTACT_CHILD_LABELS[(string) ($child['type'] ?? '')] ?? '',
@@ -235,9 +188,7 @@ trait CustomPageWorkspacePresentationHelpers
 
     private function retainVisibleSelections(): void
     {
-        $visible = collect($this->components)->flatMap(static fn (array $row): array => [
-            $row['target'], ...array_column($row['children'] ?? [], 'target'),
-        ])->all();
+        $visible = array_column($this->components, 'target');
         $this->selectedComponentTargets = array_values(array_intersect($this->selectedComponentTargets, $visible));
     }
 

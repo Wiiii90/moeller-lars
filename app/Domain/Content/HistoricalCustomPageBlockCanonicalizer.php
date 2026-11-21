@@ -8,14 +8,14 @@ namespace App\Domain\Content;
  */
 final class HistoricalCustomPageBlockCanonicalizer
 {
-    public static function canonicalize(mixed $blocks, ?callable $isVideoMedia = null): mixed
+    public static function canonicalize(mixed $blocks, ?callable $isVideoMedia = null, string $path = 'root'): mixed
     {
         if (! is_array($blocks) || ! array_is_list($blocks)) {
             return $blocks;
         }
 
         $normalized = [];
-        foreach ($blocks as $block) {
+        foreach ($blocks as $blockIndex => $block) {
             if (! is_array($block)) {
                 $normalized[] = $block;
 
@@ -30,6 +30,28 @@ final class HistoricalCustomPageBlockCanonicalizer
                 continue;
             }
 
+            $identity = $path.'.'.$blockIndex;
+
+            if (($block['type'] ?? null) === 'divider') {
+                $gridId = self::stableId('divider-grid', $identity);
+                $areaId = self::stableId('divider-area', $identity);
+                $grid = [
+                    'type' => 'grid',
+                    'published' => ($block['published'] ?? true) === true,
+                    'id' => $gridId,
+                    'columns' => 1,
+                    'rows' => 1,
+                    'gap' => 'none',
+                    'areas' => [['id' => $areaId, 'border' => $block['variant'] ?? 'thin']],
+                ];
+                if (is_string($block['layout_area_id'] ?? null)) {
+                    $grid['layout_area_id'] = $block['layout_area_id'];
+                }
+                $normalized[] = $grid;
+
+                continue;
+            }
+
             if (($block['type'] ?? null) === 'image'
                 && is_numeric($block['media_asset_id'] ?? null)
                 && $isVideoMedia !== null
@@ -38,8 +60,45 @@ final class HistoricalCustomPageBlockCanonicalizer
             }
 
             if (in_array($block['type'] ?? null, ['image', 'video'], true)
-                && is_array($block['children'] ?? null)) {
-                $block['children'] = self::canonicalize($block['children'], $isVideoMedia);
+                && is_array($block['children'] ?? null) && $block['children'] !== []) {
+                $children = self::canonicalize($block['children'], $isVideoMedia, $identity.'.children');
+                $mediaRight = ($block['image_alignment'] ?? 'left') === 'right';
+                $imageArea = self::stableId('media-image', $identity);
+                $copyArea = self::stableId('media-copy', $identity);
+                $grid = [
+                    'type' => 'grid',
+                    'published' => ($block['published'] ?? true) === true,
+                    'id' => self::stableId('media-grid', $identity),
+                    'columns' => 2,
+                    'column_layout' => $mediaRight ? 'left-wide' : 'right-wide',
+                    'rows' => 1,
+                    'gap' => 'medium',
+                    'areas' => [
+                        ['id' => $mediaRight ? $copyArea : $imageArea, 'border' => 'none'],
+                        ['id' => $mediaRight ? $imageArea : $copyArea, 'border' => 'none'],
+                    ],
+                ];
+                if (is_string($block['layout_area_id'] ?? null)) {
+                    $grid['layout_area_id'] = $block['layout_area_id'];
+                }
+                if (isset($block['layout_divider_before'])) {
+                    $grid['layout_divider_before'] = $block['layout_divider_before'];
+                    unset($block['layout_divider_before']);
+                }
+                unset($block['children'], $block['layout_area_id']);
+                $block['layout_area_id'] = $imageArea;
+                $normalized[] = $grid;
+                $normalized[] = $block;
+                foreach ($children as $child) {
+                    $child['layout_area_id'] = $copyArea;
+                    $normalized[] = $child;
+                }
+
+                continue;
+            }
+            // Empty historical children do not become a separate layout.
+            if (in_array($block['type'] ?? null, ['image', 'video'], true)) {
+                unset($block['children']);
             }
 
             if (($block['type'] ?? null) === 'contact') {
@@ -50,6 +109,15 @@ final class HistoricalCustomPageBlockCanonicalizer
         }
 
         return $normalized;
+    }
+
+    /**
+     * Stable IDs must survive repeat migration and checkpoint restore for the
+     * same historical page. Paths distinguish multiple identical components.
+     */
+    private static function stableId(string $kind, string $path): string
+    {
+        return $kind.'-'.substr(hash('sha256', $path), 0, 24);
     }
 
     /**

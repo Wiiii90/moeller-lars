@@ -23,9 +23,7 @@
                 && $page === 1
                 && $total <= $pageSize;
             $selectedItemCount = count($selectedComponentTargets);
-            $selectedParents = collect($components)->flatMap(static fn (array $component): array => [
-                $component, ...($component['children'] ?? []),
-            ])->filter(static fn (array $component): bool =>
+            $selectedParents = collect($components)->filter(static fn (array $component): bool =>
                 in_array($component['target'] ?? null, $selectedComponentTargets, true)
             )->values();
             $canMoveSelected = $selectedItemCount > 0 && $reorderEnabled;
@@ -37,8 +35,7 @@
             $canActivateSelected = $selectedItemCount === 1
                 && $selectedParents->count() === 1
                 && $selectedParents->first()['editable'];
-            $visibleSelectableCount = count($components) + collect($components)
-                ->sum(static fn (array $component): int => count($component['children'] ?? []));
+            $visibleSelectableCount = count($components);
             $resultStart = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
             $resultEnd = $total === 0 ? 0 : min($total, $page * $pageSize);
         @endphp

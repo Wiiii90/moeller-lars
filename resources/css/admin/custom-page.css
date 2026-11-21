@@ -113,9 +113,7 @@
 
 .custom-page-component-sequence__header > span:not(:first-child),
 .custom-page-component__type,
-.custom-page-child-row__kind,
-.custom-page-component__content,
-.custom-page-child-row__content {
+.custom-page-component__content {
     padding-left: .65rem;
 }
 
@@ -127,38 +125,8 @@
     min-width: 0;
 }
 
-.custom-page-component__actions,
-.custom-page-child-row__actions {
+.custom-page-component__actions {
     min-width: 0;
-}
-
-.custom-page-child-row__kind {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--admin-muted);
-    font-size: .7rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.custom-page-child-row.admin-hierarchy__row.is-child .admin-hierarchy__content {
-    padding-left: .65rem;
-}
-
-.custom-page-child-row.is-parent-unpublished { opacity: .58; }
-.custom-page-child-row.is-parent-unpublished:focus-within,
-.custom-page-child-row.is-parent-unpublished:hover { opacity: .78; }
-
-.admin-hierarchy__content .custom-page-child-row__date {
-    display: inline;
-    color: var(--admin-muted);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-
-.custom-page-component__children-empty {
-    color: var(--admin-faint);
-    font-size: .7rem;
 }
 
 .custom-page-component-add-row {
@@ -193,43 +161,4 @@
     text-overflow: ellipsis;
 }
 
-/* A child uses the exact same six-column component row as its parent.
-   Indentation is conveyed by the shared hierarchy position/connector,
-   not by reducing the row to an arbitrary inline label. */
-.custom-page-component__children {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    padding: 0;
-}
-.custom-page-component__children .admin-hierarchy__children-rows {
-    width: 100%;
-    min-width: 0;
-}
-.custom-page-component__child-group {
-    width: 100%;
-    min-width: 0;
-}
-.custom-page-child-row {
-    width: 100%;
-    min-width: 0;
-    grid-template-columns: var(--admin-hierarchy-columns);
-    border-top: 1px solid var(--admin-line);
-}
-.custom-page-child-row .admin-hierarchy__position-cell {
-    font-variant-numeric: tabular-nums;
-}
-.custom-page-child-row .custom-page-component__content {
-    min-width: 0;
-}
-.custom-page-child-row .custom-page-component__actions {
-    min-width: 0;
-}
-
-/* The native child sort group needs a hit area even before an Image has
-   children. It is a quiet blank insertion gap, not a new UI control. */
-.custom-page-component__children .admin-hierarchy__children-rows:empty {
-    min-height: 1.75rem;
-}
-.custom-page-component { position: relative; }
-/* Shared action, drag and selection primitives style both levels. */
+/* Shared action, drag and selection primitives style the component table. */

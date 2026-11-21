@@ -62,7 +62,6 @@ trait CustomPageWorkspaceSecondaryForms
                 ...$this->imageAlignmentPayload($data, $existing),
                 ...($type === 'video' ? $this->videoControlsPayload($data, $existing) : []),
                 ...$this->imageScalePayload($data, $existing),
-                ...$this->imageChildrenPayload($data, $existing),
             ],
             'grid' => CustomPageSetting::gridBlock(
                 $published,
@@ -87,7 +86,7 @@ trait CustomPageWorkspaceSecondaryForms
             'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
         };
 
-        if ($type !== 'grid' && is_string($data['layout_area_id'] ?? null)
+        if (is_string($data['layout_area_id'] ?? null)
             && $data['layout_area_id'] !== '') {
             $payload['layout_area_id'] = $data['layout_area_id'];
         }
@@ -97,15 +96,6 @@ trait CustomPageWorkspaceSecondaryForms
         }
 
         return $payload;
-    }
-
-    /** Image settings never rewrite children. Child edits go through their
-     * own component Actions and the canonical content service. */
-    private function imageChildrenPayload(array $data, ?array $existing): array
-    {
-        $children = $existing['children'] ?? [];
-
-        return $children === [] ? [] : ['children' => $children];
     }
 
     /** Left is implicit to preserve the historical image representation. */

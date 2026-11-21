@@ -15,16 +15,11 @@
 .public-content-reveal:has(> .custom-page:not(.custom-page--embedded)) > .public-page-heading {
     width: 100%;
 }
-/* Nested text deliberately participates in the parent's float formatting
-   context. No flow-root/grid wrapper may isolate it beside the image. */
+/* Embedded grid areas use the same responsive content container. */
 .custom-page--embedded {
     display: block;
     width: auto;
     margin: 0;
-}
-.custom-page__image-group {
-    display: flow-root;
-    min-width: 0;
 }
 /* One editorial vertical rhythm at every component nesting level. Space
    belongs BETWEEN blocks; dividers don't own one-sided extra padding. */
@@ -69,7 +64,7 @@
     min-width: 0;
 }
 
-/* A single editorial heading scale for Text, List, Contact and Legal.
+/* A single editorial heading scale for Rich Text, Contact and Legal.
    The public page heading is one larger rank in the same family. */
 .custom-page__copy > h3,
 .custom-page__copy > h2,
@@ -93,35 +88,13 @@
 .custom-page__image {
     width: min(100%, var(--custom-page-image-width, 28rem));
 }
-/* Alignment is independent of whether Image is decorative. Standalone
-   images use an auto margin; grouped Images float to the selected side. */
+/* Image alignment affects its own cell rather than positioning sibling copy. */
 .custom-page__image--align-right {
     margin-left: auto;
 }
 .custom-page__image--align-center {
     margin-inline: auto;
 }
-/* Native float, not a manufactured second column or breakpoint.
-   Lines flow around the image until there is not enough room, then continue
-   beneath it. The parent's formatting context ends the effect explicitly. */
-.custom-page__image--wrapped {
-    float: left;
-    width: min(42%, var(--custom-page-image-width, 28rem));
-    /* The Image group owns its float height; the next component gets the
-       shared sibling gap. A bottom float margin double-counted that gap. */
-    margin: 0 clamp(.8rem, 3vw, 1.6rem) 0 0;
-    padding: 0;
-}
-.custom-page__image--wrapped.custom-page__image--align-right {
-    float: right;
-    margin: 0 0 0 clamp(.8rem, 3vw, 1.6rem);
-}
-.custom-page__image--wrapped.custom-page__image--align-center {
-    float: none;
-    width: min(100%, var(--custom-page-image-width, 28rem));
-    margin-inline: auto;
-}
-
 .custom-page__media :is(img, video) {
     display: block;
     width: 100%;
@@ -130,8 +103,7 @@
     outline-offset: -1px;
 }
 
-/* Shared drawn dividers: the same four authored choices belong to Custom
-   Page components and optional public page headings. Single strokes only,
+/* Drawn layout separators and optional public page headings. Single strokes only,
    square-ended and neutral; no generic <hr> or decorative bar surface. */
 .custom-page__divider {
     position: relative;
@@ -140,12 +112,6 @@
     border: 0;
     background: none;
 }
-/* A nested Divider participates beside either float without drawing a rule
-   underneath the Image. On very narrow widths it naturally moves below. */
-.custom-page__image-group .custom-page--embedded > .custom-page__divider {
-    display: flow-root;
-}
-
 .custom-page__divider::before {
     position: absolute;
     top: 50%;
@@ -200,70 +166,6 @@
                 repeat-x 0 center / .57rem 2px;
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 86%, transparent);
     mask-image: linear-gradient(90deg, transparent, #000 9%, #000 86%, transparent);
-}
-
-.custom-page__list {
-    display: block;
-}
-.custom-page__list-item {
-    display: block;
-    margin: 0 0 .48rem;
-    min-width: 0;
-}
-.custom-page__list-item:last-child {
-    margin-bottom: 0;
-}
-/* Grid is local to EACH record: the two cells share a row even beside a
-   floated Image. The context wraps inside its own right-hand column; it
-   cannot drop below the entire left-hand description as flex used to do. */
-.custom-page__list-line {
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-    column-gap: clamp(.45rem, 1.5vw, .85rem);
-    min-width: 0;
-    align-items: start;
-}
-.custom-page__list-line strong {
-    grid-column: 1;
-    min-width: 0;
-    font: inherit;
-    font-weight: 500;
-    overflow-wrap: anywhere;
-}
-.custom-page__list-line strong:only-child {
-    grid-column: 1 / -1;
-}
-.custom-page__list-item > .rich-text {
-    color: inherit;
-    font: inherit;
-}
-.custom-page__context {
-    grid-column: 2;
-    min-width: 0;
-    color: var(--public-muted);
-    font: inherit;
-    font-size: .82rem;
-    line-height: 1.45;
-    text-align: right;
-    overflow-wrap: normal;
-    overflow-wrap: anywhere;
-}
-
-/* CV and biographies use the common List and Image components above.
-   The retired cv-entry widget has no public renderer. */
-
-.custom-page__list-layout--with-media {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(8rem, 12rem);
-    gap: clamp(1rem, 3vw, 1.65rem);
-    align-items: start;
-}
-.custom-page__list-media {
-    display: block;
-    width: 100%;
-    height: auto;
-    outline: 1px solid rgba(50, 47, 44, .14);
-    outline-offset: -1px;
 }
 
 .custom-page__contact .contact-section {
@@ -418,17 +320,6 @@
     display: inline-block;
     margin-top: .35rem;
     color: var(--public-muted);
-}
-
-/* The optional List's own second image never shares an Image child tree;
-   this is a normal full-width List. */
-@media (max-width: 42rem) {
-    .custom-page__list-layout--with-media {
-        grid-template-columns: 1fr;
-    }
-    .custom-page__list-media {
-        width: min(100%, 12rem);
-    }
 }
 
 .custom-page__media video {

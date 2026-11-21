@@ -105,32 +105,9 @@ trait CustomPageWorkspaceComponentActions
         if ($targets === []) {
             return;
         }
-        $parents = array_values(array_filter($targets, static fn (array $t): bool => ! isset($t['child_index'])));
-        $children = array_values(array_filter($targets, static fn (array $t): bool => isset($t['child_index'])));
-        usort($children, static fn (array $a, array $b): int => $direction === 'up'
-            ? [$a['index'], $a['child_index']] <=> [$b['index'], $b['child_index']]
-            : [$b['index'], $b['child_index']] <=> [$a['index'], $a['child_index']]);
-        $changed = DB::transaction(function () use ($parents, $children, $direction): bool {
-            $editor = app(CustomPageEditorialService::class);
-            $changed = false;
-            // Child locators retain their original Image index until after
-            // sibling reordering. Move any selected top-level parents LAST.
-            foreach ($children as $t) {
-                $index = $t['child_index'];
-                $position = $index + ($direction === 'up' ? -1 : 1);
-                $blocks = $this->settings()->fresh()->components();
-                $siblings = $blocks[$t['index']]['children'] ?? [];
-                if ($position < 0 || $position >= count($siblings)) {
-                    continue;
-                }
-                $changed = $editor->sortImageChild($this->settings(), $t['index'], $index, $position) || $changed;
-            }
-            if ($parents !== []) {
-                $changed = $editor->moveSelectedBlocks($this->settings(), $parents, $direction) || $changed;
-            }
-
-            return $changed;
-        });
+        $changed = app(CustomPageEditorialService::class)->moveSelectedBlocks(
+            $this->settings(), $targets, $direction,
+        );
         $count = count($targets);
         $this->clearSelections();
         $this->reloadWorkspace();
@@ -181,20 +158,14 @@ trait CustomPageWorkspaceComponentActions
         $changed = DB::transaction(function () use ($targets, $published): bool {
             $changed = false;
             foreach ($targets as $target) {
-                $childIndex = $target['child_index'] ?? null;
-                $block = $childIndex === null
-                    ? $this->componentAt($target['index'], $target['type'])
-                    : $this->imageChildAt($target['index'], $childIndex, $target['type']);
+                $block = $this->componentAt($target['index'], $target['type']);
                 if (CustomPageSetting::componentPublished($block) === $published) {
                     continue;
                 }
                 $block['published'] = $published;
-                $editor = app(CustomPageEditorialService::class);
-                $changed = ($childIndex === null
-                    ? $editor->updateBlock($this->settings(), $target['index'], $target['type'], $block)
-                    : $editor->updateImageChild($this->settings(), $target['index'], $childIndex, $target['type'], $block)
-                ) || $changed;
-            }
+                $changed = app(CustomPageEditorialService::class)->updateBlock(
+                    $this->settings(), $target['index'], $target['type'], $block,
+                ) || $changed;            }
 
             return $changed;
         });
@@ -293,251 +264,6 @@ trait CustomPageWorkspaceComponentActions
         return AdminDialog::create($action, 'Add component', AdminDialogSize::Large);
     }
 
-    /** Explicit nesting is the only hierarchy-changing drag/drop operation.
-     * Standard wire:sort never changes parentage. */
-    public function nestComponent(int $sourceIndex, string $type, int $imageIndex): void
-    {
-        if (! $this->componentReorderEnabled()) {
-            return;
-        }
-        try {
-            $changed = app(CustomPageEditorialService::class)->nestBlock(
-                $this->settings(), $sourceIndex, $type, $imageIndex,
-            );
-            if ($changed) {
-                app(AdminNotifier::class)->notification(title: 'Component moved into image', status: 'success');
-            }
-        } catch (ValidationException $exception) {
-            app(AdminNotifier::class)->notification(title: 'Cannot nest component', status: 'warning');
-        }
-        $this->clearSelections();
-        $this->reloadWorkspace();
-    }
-
-    public function moveImageChild(int $fromImage, int $childIndex, int $toImage): void
-    {
-        if (! $this->componentReorderEnabled()) {
-            return;
-        }
-        try {
-            $changed = app(CustomPageEditorialService::class)->moveImageChild(
-                $this->settings(), $fromImage, $childIndex, $toImage,
-            );
-            $this->clearSelections();
-            $this->reloadWorkspace();
-            if ($changed) {
-                app(AdminNotifier::class)->notification(title: 'Image child moved', status: 'success');
-            }
-        } catch (ValidationException $exception) {
-            app(AdminNotifier::class)->notification(
-                title: 'Image child unchanged',
-                body: collect($exception->errors())->flatten()->first() ?? 'The selected parent is not allowed.',
-                status: 'warning',
-            );
-            $this->reloadWorkspace();
-        }
-    }
-
-    public function unnestImageChild(int $imageIndex, int $childIndex): void
-    {
-        $changed = app(CustomPageEditorialService::class)->unnestImageChild(
-            $this->settings(), $imageIndex, $childIndex,
-        );
-        $this->clearSelections();
-        $this->reloadWorkspace();
-        if ($changed) {
-            app(AdminNotifier::class)->notification(title: 'Component moved to page level', status: 'success');
-        }
-    }
-
-    public function sortImageChild(string $target, int $position, int|string|null $groupId = null): void
-    {
-        $this->placeSortedComponent($target, $position, $groupId);
-    }
-
-    /** Media child editors share the autosaving root component lifecycle. */
-    public function editImageChildInstantAction(): Action
-    {
-        return $this->imageChildEditingAction('editImageChildInstant');
-    }
-
-    private function imageChildEditingAction(string $actionName): Action
-    {
-        $action = Action::make($actionName)
-            ->label('Edit')
-            ->fillForm(function (array $arguments): array {
-                [$image, $child, $type] = $this->imageChildTarget($arguments);
-                $this->editingComponentOriginal = $this->imageChildAt($image, $child, $type);
-
-                return [
-                    ...$this->componentEditorData($this->editingComponentOriginal),
-                    'parent_image_index' => (string) $image,
-                ];
-            })
-            ->schema(fn (array $arguments): array => $this->componentEditorSchema(
-                editingType: $this->imageChildTarget($arguments)[2],
-                insideImage: true,
-                onTypeChange: function (mixed $state) use ($arguments): void {
-                    [, , $type] = $this->imageChildTarget($arguments);
-                    if (! is_string($state) || $state === $type) {
-                        return;
-                    }
-                    $this->replaceMountedAction('changeImageChildType', [
-                        ...$arguments, 'targetType' => $state,
-                    ]);
-                },
-                onContactChange: function (string $key, mixed $value) use ($arguments): void {
-                    [$image, $child, $type] = $this->imageChildTarget($arguments);
-                    if ($type === 'contact') {
-                        $this->persistContactEditorField($image, $child, $key, $value);
-                    }
-                },
-            ))
-            ->modalHeading(__('Edit component'))
-            ->extraModalFooterActions(function (array $arguments) use ($actionName): array {
-                [$image, $child, $type] = $this->imageChildTarget($arguments);
-                $blocks = $this->mediaParentAt($image)['children'] ?? [];
-                $args = ['imageIndex' => $image, 'childIndex' => $child, 'componentType' => $type];
-                $actions = [];
-                foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $dir => $role) {
-                    $canMove = $this->componentReorderEnabled() && ($dir === 'up' ? $child > 0 : $child < count($blocks) - 1);
-                    $actions[] = AdminDialog::headerAction(
-                        'childMove'.ucfirst($dir), $role,
-                        function () use ($image, $child, $type, $dir, $actionName): void {
-                            $this->moveImageChildSibling($image, $child, $type, $dir);
-                            $this->replaceMountedAction($actionName, [
-                                'imageIndex' => $image,
-                                'childIndex' => $child + ($dir === 'up' ? -1 : 1),
-                                'componentType' => $type,
-                            ]);
-                        },
-                    )->disabled(! $canMove);
-                }
-                $published = CustomPageSetting::componentPublished($blocks[$child]);
-                $actions[] = AdminDialog::headerAction(
-                    'childPublish', $published ? AdminRowAction::Unpublish : AdminRowAction::Publish,
-                    function () use ($image, $child, $type, $published, $args, $actionName): void {
-                        $this->setImageChildPublished($image, $child, $type, ! $published);
-                        $this->replaceMountedAction($actionName, $args);
-                    },
-                );
-                $actions[] = AdminDialog::headerAction('childDelete', AdminRowAction::Delete,
-                    fn () => $this->replaceMountedAction('deleteImageChild', $args))
-                    ->disabled(! CustomPageSetting::canDeleteComponent($blocks[$child]));
-
-                return $actions;
-            })
-            ->action(function (array $data, array $arguments): void {
-                [$image, $child, $type] = $this->imageChildTarget($arguments);
-                if (($data['type'] ?? null) !== $type) {
-                    return;
-                }
-                try {
-                    $existing = $this->imageChildAt($image, $child, $type);
-                    $updated = $this->componentPayload($data, $existing);
-                    $parentValue = array_key_exists('parent_image_index', $data) ? $data['parent_image_index'] : (string) $image;
-                    $newParent = ($parentValue === null || $parentValue === '') ? null
-                        : filter_var($parentValue, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-                    if ($newParent === false) {
-                        throw ValidationException::withMessages(['parent_image_index' => 'Choose a decorative Image.']);
-                    }
-                    $changed = DB::transaction(function () use ($image, $child, $type, $updated, $newParent): bool {
-                        $editor = app(CustomPageEditorialService::class);
-                        $saved = $editor->updateImageChild($this->settings(), $image, $child, $type, $updated, $this->editingComponentOriginal);
-                        if ($newParent === null) {
-                            return $editor->unnestImageChild($this->settings(), $image, $child) || $saved;
-                        }
-                        if ($newParent !== $image) {
-                            return $editor->moveImageChild($this->settings(), $image, $child, $newParent) || $saved;
-                        }
-
-                        return $saved;
-                    });
-                } catch (ValidationException $exception) {
-                    $this->throwComponentEditValidation($exception);
-                }
-                $this->clearSelections();
-                $this->reloadWorkspace();
-                if ($changed) {
-                    app(AdminNotifier::class)->notification(title: 'Component saved', status: 'success');
-                }
-            });
-
-        return AdminDialog::edit($action, AdminDialogSize::Large);
-    }
-
-    public function setImageChildPublished(int $image, int $child, string $type, bool $published): void
-    {
-        $block = $this->imageChildAt($image, $child, $type);
-        $block['published'] = $published;
-        $changed = app(CustomPageEditorialService::class)->updateImageChild(
-            $this->settings(), $image, $child, $type, $block,
-        );
-        $this->loadComponentProjection();
-        if ($changed) {
-            app(AdminNotifier::class)->notification(
-                title: $published ? 'Component published' : 'Component unpublished', status: 'success',
-            );
-        }
-    }
-
-    public function moveImageChildSibling(int $image, int $child, string $type, string $direction): void
-    {
-        if (! $this->componentReorderEnabled()) {
-            return;
-        }
-        $changed = app(CustomPageEditorialService::class)->moveImageChildByDirection(
-            $this->settings(), $image, $child, $type, $direction,
-        );
-        $this->clearSelections();
-        $this->reloadWorkspace();
-        if ($changed) {
-            app(AdminNotifier::class)->notification(title: 'Component order updated', status: 'success');
-        }
-    }
-
-    public function deleteImageChildAction(): Action
-    {
-        $action = Action::make('deleteImageChild')
-            ->label('Delete')
-            ->color('danger')
-            ->action(function (array $arguments): void {
-                [$image, $child, $type] = $this->imageChildTarget($arguments);
-                app(CustomPageEditorialService::class)->deleteImageChild(
-                    $this->settings(), $image, $child, $type,
-                );
-                $this->clearSelections();
-                $this->reloadWorkspace();
-                app(AdminNotifier::class)->notification(title: 'Component deleted', status: 'success');
-            });
-
-        return AdminDialog::confirm($action, 'Delete component?', submitLabel: 'Delete', danger: true);
-    }
-
-    public function changeImageChildTypeAction(): Action
-    {
-        $action = Action::make('changeImageChildType')
-            ->label('Change component type')
-            ->action(function (array $arguments): void {
-                [$image, $child, $type] = $this->imageChildTarget($arguments);
-                $target = $this->actionTargetComponentType($arguments);
-                $changed = app(CustomPageEditorialService::class)->convertImageChild(
-                    $this->settings(), $image, $child, $type, $target,
-                );
-                $this->clearSelections();
-                $this->reloadWorkspace();
-                if ($changed) {
-                    app(AdminNotifier::class)->notification(title: 'Component type updated', status: 'success');
-                }
-            });
-
-        return AdminDialog::confirm(
-            $action, 'Change type?',
-            'Changing a component type can remove content that cannot be carried over.',
-            'Change type',
-        );
-    }
-
     public function editComponentAction(): Action
     {
         return $this->componentEditingAction('editComponent');
@@ -569,7 +295,7 @@ trait CustomPageWorkspaceComponentActions
                 onContactChange: function (string $key, mixed $value) use ($arguments): void {
                     [$index, $type] = $this->actionComponentTarget($arguments);
                     if ($type === 'contact') {
-                        $this->persistContactEditorField($index, null, $key, $value);
+                        $this->persistContactEditorField($index, $key, $value);
                     }
                 },
                 onImageChange: function (mixed $state) use ($arguments): void {
@@ -618,34 +344,7 @@ trait CustomPageWorkspaceComponentActions
                 }
 
                 try {
-                    $parentValue = ! in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) ? ($data['parent_image_index'] ?? null) : null;
                     $payload = $this->componentPayload($data, $existing);
-                    if ($parentValue !== null && $parentValue !== '') {
-                        $imageIndex = filter_var($parentValue, FILTER_VALIDATE_INT, [
-                            'options' => ['min_range' => 0],
-                        ]);
-                        if ($imageIndex === false) {
-                            throw ValidationException::withMessages(['parent_image_index' => 'Choose a decorative Image parent.']);
-                        }
-                        $changed = app(CustomPageEditorialService::class)->updateAndNestBlock(
-                            $this->settings(), $index, $type, $payload, $imageIndex, $this->editingComponentOriginal,
-                        );
-                        $this->clearSelections();
-                        $this->reloadWorkspace();
-                        if ($changed) {
-                            app(AdminNotifier::class)->notification(
-                                title: 'Component moved into image', status: 'success',
-                            );
-                            $newIndex = $index < $imageIndex ? $imageIndex - 1 : $imageIndex;
-                            $this->replaceMountedAction('editImageChild', [
-                                'imageIndex' => $newIndex,
-                                'childIndex' => count($this->settings()->components()[$newIndex]['children']) - 1,
-                                'componentType' => $type,
-                            ]);
-                        }
-
-                        return;
-                    }
                     $changed = app(CustomPageEditorialService::class)->updateBlock(
                         $this->settings(), $index, $type, $payload, $this->editingComponentOriginal,
                     );
@@ -673,11 +372,9 @@ trait CustomPageWorkspaceComponentActions
      * editorial mutation. Sibling settings are rebuilt from the current
      * persisted block, never overwritten by a stale modal snapshot.
      */
-    private function persistContactEditorField(int $index, ?int $childIndex, string $key, mixed $value): void
+    private function persistContactEditorField(int $index, string $key, mixed $value): void
     {
-        $existing = $childIndex === null
-            ? $this->componentAt($index, 'contact')
-            : $this->imageChildAt($index, $childIndex, 'contact');
+        $existing = $this->componentAt($index, 'contact');
         $data = $this->componentEditorData($existing);
         if (str_starts_with($key, 'contact_social_selected.')) {
             $platform = substr($key, strlen('contact_social_selected.'));
@@ -699,15 +396,13 @@ trait CustomPageWorkspaceComponentActions
                 $data, CustomPageSetting::componentPublished($existing), $existing,
             );
             $editor = app(CustomPageEditorialService::class);
-            $changed = $childIndex === null
-                ? $editor->updateBlock($this->settings(), $index, 'contact', $payload, $this->editingComponentOriginal)
-                : $editor->updateImageChild($this->settings(), $index, $childIndex, 'contact', $payload, $this->editingComponentOriginal);
+            $changed = $editor->updateBlock(
+                $this->settings(), $index, 'contact', $payload, $this->editingComponentOriginal,
+            );
         } catch (ValidationException $exception) {
             $this->throwComponentEditValidation($exception);
         }
-        $this->editingComponentOriginal = $childIndex === null
-            ? $this->componentAt($index, 'contact')
-            : $this->imageChildAt($index, $childIndex, 'contact');
+        $this->editingComponentOriginal = $this->componentAt($index, 'contact');
         if (! $changed) {
             return;
         }
@@ -840,22 +535,10 @@ trait CustomPageWorkspaceComponentActions
                 if ($parents === []) {
                     return;
                 }
-                DB::transaction(function () use ($parents): void {
-                    $editor = app(CustomPageEditorialService::class);
-                    $topLevel = array_values(array_filter($parents, static fn (array $t): bool => ! isset($t['child_index'])));
-                    $nested = array_values(array_filter($parents, static fn (array $t): bool => isset($t['child_index'])));
-                    usort($nested, static fn (array $a, array $b): int => [$b['index'], $b['child_index']] <=> [$a['index'], $a['child_index']]);
-                    $selectedParentIndices = array_column($topLevel, 'index');
-                    foreach ($nested as $t) {
-                        if (in_array($t['index'], $selectedParentIndices, true)) {
-                            continue;
-                        }
-                        $editor->deleteImageChild($this->settings(), $t['index'], $t['child_index'], $t['type']);
-                    }
-                    if ($topLevel !== []) {
-                        $editor->deleteBlocks($this->settings(), $topLevel);
-                    }
-                });
+                $changed = app(CustomPageEditorialService::class)->deleteBlocks($this->settings(), $parents);
+                if (! $changed) {
+                    return;
+                }
                 $count = count($parents);
                 $this->clearSelections();
                 $this->reloadWorkspace();

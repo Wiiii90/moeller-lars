@@ -67,28 +67,21 @@ trait CustomPageWorkspaceProjectionState
 
         // Targets are checked against the current rendered table projection
         // before they become Public document anchors.
-        if (! preg_match('/^(\\d+)(?:\\.(\\d+))?:[a-z_]+$/', $this->customPreviewFocusedTarget, $matches)) {
+        if (! preg_match('/^(\\d+):[a-z_]+$/', $this->customPreviewFocusedTarget, $matches)) {
             return $this->previewUrl;
         }
 
-        // Preserve the existing Public image anchor; all other component
-        // roots share the same positional hash grammar, including Image children.
-        $hasChild = ($matches[2] ?? '') !== '';
-        $anchor = (in_array($matches[3], CustomPageSetting::MEDIA_COMPONENT_TYPES, true) && ! $hasChild)
+        $type = explode(':', $this->customPreviewFocusedTarget, 2)[1];
+        $anchor = in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)
             ? 'custom-page-image-'.$matches[1]
-            : 'custom-page-component-page-'.$matches[1]
-                .($hasChild ? '-'.$matches[2] : '');
+            : 'custom-page-component-page-'.$matches[1];
 
         return $this->previewUrl.'#'.$anchor;
     }
 
     private function syncCustomPreviewFocus(bool $forceRefresh = false): void
     {
-        $validTargets = collect($this->components)
-            ->flatMap(static fn (array $row): array => [
-                $row['target'], ...array_column($row['children'] ?? [], 'target'),
-            ])
-            ->all();
+        $validTargets = array_column($this->components, 'target');
         $selected = array_values(array_intersect($this->selectedComponentTargets, $validTargets));
         // Multiple selected components show the complete Custom Page,
         // never an arbitrary last-selected component.
@@ -143,8 +136,6 @@ trait CustomPageWorkspaceProjectionState
             ->all();
 
         $counts = array_fill_keys(array_keys(self::COMPONENT_LABELS), 0);
-        $richTextChildCount = 0;
-        $childComponentCount = 0;
         $projected = [];
         $needle = mb_strtolower(trim($this->componentSearch));
 
@@ -152,14 +143,6 @@ trait CustomPageWorkspaceProjectionState
             $type = is_string($block['type'] ?? null) ? $block['type'] : '';
             if (isset($counts[$type])) {
                 $counts[$type]++;
-            }
-            if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)) {
-                $childComponentCount += count($block['children'] ?? []);
-                foreach ($block['children'] ?? [] as $child) {
-                    if (is_array($child) && ($child['type'] ?? null) === 'text') {
-                        $richTextChildCount++;
-                    }
-                }
             }
             if ($this->componentType !== 'any' && $type !== $this->componentType) {
                 continue;
@@ -195,12 +178,6 @@ trait CustomPageWorkspaceProjectionState
                 'published' => $published,
                 'target' => $index.':'.$type,
                 'editable' => $type !== 'legal_disclaimer',
-                'children' => in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) ? $this->imageChildSummaries($settings, $block, $index) : [],
-                'accepts_children' => in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) && ($block['image_decorative'] ?? false) === true,
-                'can_nest' => in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)
-                    && ($type !== 'contact' || ! collect($settings->contactChildren($block))
-                        ->contains(fn (array $item): bool => ($item['type'] ?? null) === 'contact_form'
-                            && CustomPageSetting::contactChildPublished($item))),
             ];
         }
 
@@ -219,8 +196,8 @@ trait CustomPageWorkspaceProjectionState
         $this->syncCustomPreviewFocus(forceRefresh: true);
 
         $this->metrics = [
-            ['label' => 'Components', 'value' => RegionalFormats::adminNumber(count($blocks) + $childComponentCount), 'description' => 'Page sequence'],
-            ['label' => 'Rich Text', 'value' => RegionalFormats::adminNumber($counts['text'] + $richTextChildCount), 'description' => 'Text components'],
+            ['label' => 'Components', 'value' => RegionalFormats::adminNumber(count($blocks)), 'description' => 'Page sequence'],
+            ['label' => 'Rich Text', 'value' => RegionalFormats::adminNumber($counts['text']), 'description' => 'Text components'],
             ['label' => 'Media', 'value' => RegionalFormats::adminNumber($counts['image'] + $counts['video']), 'description' => 'Image and video components'],
             ['label' => 'Visits', 'value' => $this->metricValue($this->analytics['page']['visits'] ?? null), 'description' => 'This page · 30d'],
             ['label' => 'Views', 'value' => $this->metricValue($this->analytics['page']['views'] ?? null), 'description' => 'This page · 30d'],
