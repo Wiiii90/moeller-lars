@@ -10,7 +10,6 @@ use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
 use App\Models\Exhibition;
 use App\Models\JournalSetting;
-use App\Models\PublicContentSetting;
 use App\Models\Redirect;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
@@ -475,16 +474,13 @@ final class SiteSectionEditorialService
         if ($parentSectionId === null) {
             return null;
         }
-        if (! PublicContentSetting::navigationNestingEnabled()) {
-            throw ValidationException::withMessages(['parent_id' => 'Enable nested pages in Pages settings before choosing a navigation parent.']);
-        }
         if ($parentSectionId === (int) $section->getKey()) {
             throw ValidationException::withMessages(['parent_id' => 'A page cannot be its own parent.']);
         }
 
         /** @var SiteSection|null $parent */
         $parent = SiteSection::query()->whereKey($parentSectionId)->lockForUpdate()->first();
-        if (! $parent instanceof SiteSection || $parent->getAttribute('parent_id') !== null) {
+        if (! $parent instanceof SiteSection || ! $parent->canContainSitePages()) {
             throw ValidationException::withMessages(['parent_id' => 'The parent must be a top-level page.']);
         }
 
