@@ -114,7 +114,7 @@
                 @empty
                     <tr>
                         <td class="admin-table__empty-cell" colspan="5">
-                            <x-admin.empty-state title="No social media profiles configured" minimal />
+                            <x-admin.empty-state title="Empty" minimal />
                         </td>
                     </tr>
                 @endforelse

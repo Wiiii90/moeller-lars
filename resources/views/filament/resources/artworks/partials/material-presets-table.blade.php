@@ -43,7 +43,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="admin-table__empty-cell"><x-admin.empty-state title="No materials yet" minimal /></td></tr>
+                    <tr><td colspan="4" class="admin-table__empty-cell"><x-admin.empty-state title="Empty" minimal /></td></tr>
                 @endforelse
             </tbody>
             <tbody x-show="adding" x-cloak>

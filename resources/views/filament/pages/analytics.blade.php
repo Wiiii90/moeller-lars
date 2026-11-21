@@ -106,9 +106,6 @@
         $detailLayout = $this->detailTableLayout();
         $detailReportOptions = $this->detailReportOptions();
         $detailReportLabel = $detailReportOptions[$detailReport] ?? 'Analytics';
-        $detailEmptyTitle = trim($search) !== ''
-            ? 'No matching '.$detailReportLabel.' rows'
-            : ($detailTable['state'] === 'unavailable' ? $detailReportLabel.' unavailable' : 'No '.$detailReportLabel.' data');
     @endphp
 
     <x-admin.workspace title="Analytics" class="analytics-dashboard">
@@ -328,10 +325,10 @@
                             @empty
                                 <tr>
                                     <td class="admin-table__empty-cell" colspan="12">
-                                        <x-admin.empty-state :title="$detailEmptyTitle" minimal>
+                                        <x-admin.empty-state :title="trim($search) !== '' ? 'No matches' : 'Empty'" minimal>
                                             @if (trim($search) !== '')
                                                 <x-slot:actions>
-                                                    <button class="admin-action" type="button" wire:click="$set('search', '')">{{ __('Clear search') }}</button>
+                                                    <x-admin.clear-filters wire:click="$set('search', '')" label="Clear search" />
                                                 </x-slot:actions>
                                             @endif
                                         </x-admin.empty-state>

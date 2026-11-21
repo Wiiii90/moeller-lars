@@ -380,7 +380,7 @@
         <x-admin.empty-state title="No matching files">
             <p>{{ __('Adjust the search or filters.') }}</p>
             <x-slot:actions>
-                <button class="admin-action" type="button" wire:click="resetFilters">{{ __('Clear filters') }}</button>
+                <x-admin.clear-filters label="Clear filters" wire:click="resetFilters" />
             </x-slot:actions>
         </x-admin.empty-state>
     @else

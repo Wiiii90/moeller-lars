@@ -17,11 +17,11 @@
             </div>
 
             @if ($components === [] && $unfilteredComponentCount === 0)
-                <x-admin.empty-state title="No components" :minimal="true" />
+                <x-admin.empty-state title="Empty" :minimal="true" />
             @elseif ($components === [])
-                <x-admin.empty-state title="No matching components" :minimal="true">
+                <x-admin.empty-state title="No matches" :minimal="true">
                     <x-slot:actions>
-                        <button class="admin-action" type="button" wire:click="resetComponentFilters">Clear filters</button>
+                        <x-admin.clear-filters label="Clear filters" wire:click="resetComponentFilters" />
                     </x-slot:actions>
                 </x-admin.empty-state>
             @else
