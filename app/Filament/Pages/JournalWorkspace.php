@@ -328,7 +328,8 @@ final class JournalWorkspace extends Page
 
     public function journalStagePreviewUrl(): ?string
     {
-        if ($this->journalStagePanel === 'staged' && $this->selectedStagedJournalDraftKey !== null) {
+        if ($this->journalStagePanel === 'new'
+            || ($this->journalStagePanel === 'staged' && $this->selectedStagedJournalDraftKey !== null)) {
             return route('preview.journal.staged-entry', ['section' => $this->sectionId, 'token' => $this->getId()]);
         }
         if ($this->journalPreviewAutoFocus && $this->journalPreviewFocusedEntryId !== null) {
@@ -346,9 +347,10 @@ final class JournalWorkspace extends Page
 
     public function journalStagePreviewTitle(): string
     {
-        if ($this->journalStagePanel === 'staged' && $this->selectedStagedJournalDraftKey !== null) {
+        if ($this->journalStagePanel === 'new'
+            || ($this->journalStagePanel === 'staged' && $this->selectedStagedJournalDraftKey !== null)) {
             return $this->journalTemplate() === JournalTemplate::Blog
-                ? 'Interactive staged Blog preview' : 'Interactive staged Exhibition preview';
+                ? 'Interactive Blog draft preview' : 'Interactive Exhibition draft preview';
         }
         if ($this->journalPreviewAutoFocus && $this->journalPreviewFocusedEntryId !== null) {
             return $this->journalTemplate() === JournalTemplate::Blog

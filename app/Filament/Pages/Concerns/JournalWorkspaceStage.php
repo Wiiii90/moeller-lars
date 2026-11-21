@@ -24,7 +24,25 @@ trait JournalWorkspaceStage
     /** @var array<string,mixed> */
     public array $stagedJournalFormData = [];
 
+    /** @var array<string,mixed> */
+    public array $newJournalFormData = [];
+
     public string $journalStagePanel = 'new';
+
+    public function journalNewForm(Schema $schema): Schema
+    {
+        return JournalEntryEditorSchema::staged($schema, $this->journalTemplate())
+            ->statePath('newJournalFormData');
+    }
+
+    private function defaultJournalDraft(): array
+    {
+        return [
+            ...app(JournalSettingsService::class)->editorDefaults($this->section()),
+            'title' => '',
+            'stage_publication_mode' => 'publish',
+        ];
+    }
 
     public function journalStagedForm(Schema $schema): Schema
     {
@@ -40,41 +58,50 @@ trait JournalWorkspaceStage
     private function restoreStagedJournalDrafts(): void
     {
         $saved = session()->get($this->stagedJournalSessionKey(), []);
-        if (! is_array($saved) || ($saved['template'] ?? null) !== $this->template) {
-            return;
-        }
+        $saved = is_array($saved) && ($saved['template'] ?? null) === $this->template ? $saved : [];
+
+        $new = $saved['new'] ?? [];
+        $this->journalNewForm->fill(is_array($new) && $new !== [] ? $new : $this->defaultJournalDraft());
+
         $items = $saved['items'] ?? [];
-        if (! is_array($items)) {
-            return;
-        }
-        $this->stagedJournalDrafts = array_values(array_filter($items, static fn (mixed $row): bool =>
-            is_array($row) && is_string($row['key'] ?? null) && is_array($row['form'] ?? null)
-        ));
-        if ($this->stagedJournalDrafts === []) {
-            return;
-        }
+        $this->stagedJournalDrafts = is_array($items) ? array_values(array_filter($items,
+            static fn (mixed $row): bool => is_array($row)
+                && is_string($row['key'] ?? null) && is_array($row['form'] ?? null),
+        )) : [];
 
         $preferred = $saved['selected'] ?? null;
         $this->selectedStagedJournalDraftKey = is_string($preferred) && $this->stagedDraftIndex($preferred) !== null
-            ? $preferred : $this->stagedJournalDrafts[0]['key'];
-        $this->journalStagePanel = 'staged';
-        $this->fillSelectedStagedJournalDraft();
+            ? $preferred : ($this->stagedJournalDrafts[0]['key'] ?? null);
+        $panel = (string) ($saved['panel'] ?? ($this->selectedStagedJournalDraftKey !== null ? 'staged' : 'new'));
+        $this->journalStagePanel = $panel === 'settings' || $panel === 'new'
+            ? $panel : ($this->selectedStagedJournalDraftKey === null ? 'new' : 'staged');
+
+        if ($this->selectedStagedJournalDraftKey !== null) {
+            $this->fillSelectedStagedJournalDraft();
+        }
         $this->publishStagedJournalPreview();
     }
 
     private function persistStagedJournalDrafts(): void
     {
-        if ($this->stagedJournalDrafts === []) {
-            session()->forget($this->stagedJournalSessionKey());
-
-            return;
-        }
-
         session()->put($this->stagedJournalSessionKey(), [
             'template' => $this->template,
             'selected' => $this->selectedStagedJournalDraftKey,
+            'panel' => $this->journalStagePanel,
             'items' => $this->stagedJournalDrafts,
+            'new' => $this->newJournalFormData,
         ]);
+    }
+
+    public function rememberNewJournalDraft(): void
+    {
+        $form = $this->journalNewForm->getRawState();
+        if (! is_array($form)) {
+            return;
+        }
+        $this->newJournalFormData = $form;
+        $this->persistStagedJournalDrafts();
+        $this->publishStagedJournalPreview();
     }
 
     private function stagedDraftIndex(?string $key): ?int
@@ -100,13 +127,10 @@ trait JournalWorkspaceStage
 
     public function createStagedJournalDraft(): void
     {
-        $this->rememberStagedJournalDraft();
+        $this->rememberNewJournalDraft();
         $key = Str::random(12);
-        $form = [
-            ...app(JournalSettingsService::class)->editorDefaults($this->section()),
-            'title' => '',
-            'stage_publication_mode' => 'publish',
-        ];
+        $form = $this->newJournalFormData;
+        $this->journalNewForm->fill($this->defaultJournalDraft());
         $this->stagedJournalDrafts[] = ['key' => $key, 'form' => $form];
         $this->selectedStagedJournalDraftKey = $key;
         $this->journalStagePanel = 'staged';
@@ -123,8 +147,14 @@ trait JournalWorkspaceStage
         if ($panel === 'staged' && $this->stagedJournalDrafts === []) {
             return;
         }
-        $this->rememberStagedJournalDraft();
+        if ($this->journalStagePanel === 'new') {
+            $this->rememberNewJournalDraft();
+        } else {
+            $this->rememberStagedJournalDraft();
+        }
         $this->journalStagePanel = $panel;
+        $this->persistStagedJournalDrafts();
+        $this->publishStagedJournalPreview();
         $this->refreshJournalPreview();
     }
 
@@ -182,11 +212,16 @@ trait JournalWorkspaceStage
         $this->publishStagedJournalPreview();
     }
 
-    /** Only the authenticated Live Preview can resolve this browser-session snapshot. */
+    /** A single protected snapshot is shared by New and Staged modes. */
     private function publishStagedJournalPreview(): void
     {
         $index = $this->stagedDraftIndex($this->selectedStagedJournalDraftKey);
-        if ($index === null) {
+        $form = match ($this->journalStagePanel) {
+            'new' => $this->newJournalFormData,
+            'staged' => $index !== null ? $this->stagedJournalDrafts[$index]['form'] : null,
+            default => null,
+        };
+        if (! is_array($form)) {
             session()->forget('journal.stage.preview.'.$this->getId());
 
             return;
@@ -194,11 +229,9 @@ trait JournalWorkspaceStage
         session()->put('journal.stage.preview.'.$this->getId(), [
             'section_id' => $this->sectionId,
             'template' => $this->template,
-            'form' => $this->stagedJournalDrafts[$index]['form'],
+            'form' => $form,
         ]);
-        if ($this->journalStagePanel === 'staged') {
-            $this->refreshJournalPreview();
-        }
+        $this->refreshJournalPreview();
     }
 
     public function discardStagedJournalDraft(): void

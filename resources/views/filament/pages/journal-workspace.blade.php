@@ -74,11 +74,19 @@
                 </header>
 
                 @if ($journalStagePanel === 'new')
-                    <div class="gallery-stage__form-scroll admin-visual-stage__field-scroll">
-                        <button class="admin-action admin-action--with-icon" type="button" wire:click="createStagedJournalDraft">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
-                            <span class="admin-action__label">New {{ $entryLabelSingular }}</span>
-                        </button>
+                    <div class="gallery-stage__form-scroll admin-visual-stage__field-scroll fi-fixed-positioning-context"
+                        wire:change="rememberNewJournalDraft"
+                        x-on:artist-rich-editor-commit="$wire.rememberNewJournalDraft()">
+                        {{ $this->journalNewForm }}
+                    </div>
+                    <div class="gallery-stage__editor-actions admin-toolbar" aria-label="New Journal entry actions">
+                        <div class="gallery-stage__action-group">
+                            <button class="admin-action is-primary" type="button" wire:click="createStagedJournalDraft"
+                                wire:loading.attr="disabled" wire:target="createStagedJournalDraft">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" />
+                                <span class="gallery-stage__action-label">Stage {{ $entryLabelSingular }}</span>
+                            </button>
+                        </div>
                     </div>
                 @elseif ($journalStagePanel === 'staged' && $selectedStagedJournalDraftKey !== null)
                     <div class="gallery-stage__form-scroll admin-visual-stage__field-scroll fi-fixed-positioning-context"
