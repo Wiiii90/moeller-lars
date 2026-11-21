@@ -117,14 +117,6 @@
     overflow: visible;
 }
 
-/* Home uses the shared half-and-half divider aligned with the central three-metric axis. */
-.gallery-hero-surface {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 0 !important;
-    overflow: visible;
-}
-
 /* All Stage divider strokes are owned here. The split variant lets General
  * choose its desktop/mobile metric-aligned axis without drawing a second line. */
 :is(
@@ -174,7 +166,7 @@
  * not use this first-pane inset because their visuals must reach the exact 2/3
  * axis. */
 :is(
-    .admin-visual-stage--rail:not(.analytics-visual-stage):not(.gallery-hero-surface)
+    .admin-visual-stage--rail:not(.analytics-visual-stage)
 ) > :first-child {
     grid-column: 1 / span 2;
     min-width: 0;
@@ -182,7 +174,7 @@
 }
 
 :is(
-    .admin-visual-stage--rail:not(.analytics-visual-stage):not(.gallery-hero-surface)
+    .admin-visual-stage--rail:not(.analytics-visual-stage)
 ) > :last-child {
     grid-column: 3;
     min-width: 0;
@@ -190,7 +182,7 @@
     border-left: 0 !important;
 }
 
-/* Analytics reaches the 2/3 metric axis; Home uses the shared split Stage axis. */
+/* Analytics reaches the 2/3 metric axis. */
 .analytics-visual-stage > .analytics-world {
     box-sizing: border-box;
     grid-column: 1 / span 2;
@@ -203,32 +195,6 @@
 .analytics-visual-stage > .analytics-stage-rail {
     grid-column: 3;
     min-width: 0;
-}
-
-.gallery-hero-surface > .gallery-hero-surface__visual {
-    box-sizing: border-box;
-    grid-column: 1;
-    width: 100%;
-    min-width: 0;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-.gallery-hero-surface > .gallery-hero-rail {
-    box-sizing: border-box;
-    grid-column: 2;
-    min-width: 0;
-    padding-left: var(--admin-stage-pane-space) !important;
-}
-
-.gallery-hero-surface__visual {
-    overflow: hidden;
-}
-
-.gallery-hero-surface__visual img {
-    display: block;
-    width: 100%;
-    height: 100%;
 }
 
 .analytics-visual-stage > .analytics-world {
@@ -256,18 +222,16 @@
     grid-column: 3;
 }
 
-/* Analytics and Home own content, not divider geometry. */
+/* Analytics owns content, not divider geometry. */
 .analytics-stage-rail,
 .gallery-hero-rail {
     border-left: 0 !important;
 }
 
-.gallery-hero-surface__visual,
 .gallery-hero-rail {
     border: 0 !important;
 }
 
-.gallery-hero-surface__visual img,
 .gallery-hero-candidate__visual img {
     object-fit: contain;
 }
@@ -685,25 +649,4 @@
     }
 }
 
-/* Home's primary narrow Stage is the candidate editor, not the simulation
- * image. Keep the shared fixed Stage height and the single row scroll owner. */
-@container admin-workspace (max-width: 48rem) {
-    .gallery-hero-surface {
-        grid-template-columns: minmax(0, 1fr) !important;
-        grid-template-rows: minmax(0, 1fr);
-    }
-    .gallery-hero-surface::after {
-        display: none;
-        content: none;
-    }
-    .gallery-hero-surface > .gallery-hero-surface__visual {
-        display: none !important;
-    }
-    .gallery-hero-surface > .gallery-hero-rail {
-        grid-column: 1;
-        grid-row: 1;
-        height: 100%;
-        min-height: 0;
-        padding-left: 0 !important;
-    }
-}
+

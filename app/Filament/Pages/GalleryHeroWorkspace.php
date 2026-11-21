@@ -124,7 +124,7 @@ final class GalleryHeroWorkspace extends Page
         $this->settingsId = (int) $settings->getKey();
         $this->pageTitle = (string) $page->getAttribute('title');
         $this->previewUrl = app(SitePreviewContext::class)->previewUrlFor($page) ?? '';
-        $this->reloadWorkspace();
+        $this->reloadWorkspace(false);
     }
 
     public function loadHeroAnalytics(): void

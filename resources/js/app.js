@@ -35,7 +35,7 @@ function initializePage() {
     const root = document.body;
     disposers.push(initializeArtworkViewer(root));
     disposers.push(initializeGalleryImageLoading(root));
-    initializeGalleryHero(root);
+    disposers.push(initializeGalleryHero(root));
     disposers.push(initializePublicMediaPlayback(root));
     disposers.push(initializeJournalPresentation());
     disposers.push(initializeMatomoTracking(root));

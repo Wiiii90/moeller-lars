@@ -1,11 +1,10 @@
-# Dev Worker 3 — Hero Artwork template/page
+# Dev Worker 3 — Hero Artwork Stage and page preview
 
-- **Working branch:** `dev`
-- **Lease:** 36
-- **State:** Active, registered; awaiting a concrete implementation request.
-- **Assignment:** Primarily the Hero Artwork template and its page. The first user instruction does not yet specify an implementation change.
-- **Scope/coordination:** Own the requested Hero Artwork template/page slice and its direct consumers. Dev Worker 5 currently owns Pages type/template integration, including Hero Artworks, while Dev Worker 6 owns Hero Artworks source actions and Stage. Coordinate overlapping code ownership, avoid duplicate paths and preserve accepted behavior.
-- **Registration baseline:** `65616f28df9380a2a742e2044446f96416989837`
-- **Accepted behavior/evidence:** No new feature change or browser acceptance established in this chat.
-- **Verification:** Registration only; no application test or browser/runtime check run.
-- **Next:** Await the first specific Hero Artwork template/page task; before implementation, inspect current source and feature contracts and recheck the lease, branch head and overlapping owners.
+- **Branch:** `dev`; **lease:** 36 (active).
+- **Assignment:** Replace the former left-hand isolated Hero thumbnail with the existing full Public Live Preview on the right. Preserve the Hero candidate/configuration rail on the left. Reuse the common split Stage (half for desktop/tablet preview, one third for phone preview; editor-only at the shared narrow breakpoint).
+- **Source state:** Hero Stage source changes prepared against checked `dev@9218e339b4cdeb0a91e751330e230103d32455b9`; not browser-accepted. The candidate thumbnail now selects the active simulated member. The existing random (10-second) and sequential simulation uses one Stage state and selects the corresponding already-resolved slide in authenticated Public Preview. Public regular presentation and eligibility stay unchanged; no additional rendering pipeline or persistence shape. Successful settings/candidate mutations refresh the existing preview iframe through its existing event.
+- **Owners:** Stage view `resources/views/filament/pages/gallery-hero-workspace.blade.php`, simulator `resources/js/gallery-hero-stage.js`, Admin projection and shared Stage styling. Authenticated preview-only rendering support in `resources/views/pages/gallery/hero-artwork.blade.php` and the existing `resources/js/gallery-hero.js` owner; Public page appearance remains unchanged. Standard app page lifecycle now disposes Hero event handlers.
+- **Coordination:** Dev Worker 5 owns Pages type/template, and Dev Worker 6 owns Hero source membership, source actions and overlapping Stage functionality. This task changes the Hero Stage layout and preview link only, not those editorial services.
+- **Verification:** Source and branch ownership inspected. No local runtime, browser, data-changing tests, Continuous Integration, Validation or production work has been executed in this connector-only environment.
+- **Unresolved gate:** Review the live Admin Hero page in the browser at wide and narrow widths, including Desktop vs Phone preview ratio, random changes each 10 seconds, clicked candidate choice, Sequential and Top Only, image/video and Dummy candidates, preview after Settings/Enable/Disable and no stale frame, and Public route unaffected.
+- **Next:** Reconcile actual user browser feedback and correct any verified interaction/layout issue in the current owner; hand test coverage to Testing, not dev.

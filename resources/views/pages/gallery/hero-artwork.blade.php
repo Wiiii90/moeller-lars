@@ -1,16 +1,18 @@
 @if ($heroCandidate)
     @php
         $navigableHero = $showNavigation && $heroGroup->count() > 1;
+        $previewSimulation = app(\App\Domain\Content\SitePreviewContext::class)->active();
+        $renderGroup = $navigableHero || ($previewSimulation && $heroGroup->count() > 1);
         $imageViewer = app(\App\Domain\Content\PublicImageViewer::class);
     @endphp
-    <div class="gallery-hero-presentation" data-artwork-viewer-sequence @if ($navigableHero) data-gallery-hero @endif>
-        @foreach ($navigableHero ? $heroGroup : [$heroCandidate] as $candidate)
+    <div class="gallery-hero-presentation" data-artwork-viewer-sequence @if ($renderGroup) data-gallery-hero @endif @if ($previewSimulation) data-gallery-hero-preview @endif>
+        @foreach ($renderGroup ? $heroGroup : [$heroCandidate] as $candidate)
             @php
                 $artwork = $candidate->artwork();
                 $asset = $candidate->mediaAsset();
                 $isCurrent = $candidate->key() === $heroCandidate->key();
             @endphp
-            <div class="gallery-hero-slide" data-gallery-hero-slide @if (! $isCurrent) hidden @endif>
+            <div class="gallery-hero-slide" data-gallery-hero-slide data-gallery-hero-candidate="{{ $candidate->key() }}" @if (! $isCurrent) hidden @endif>
                 @if ($artwork instanceof \App\Models\Artwork)
                     <x-artwork-card
                         :artwork="$artwork"

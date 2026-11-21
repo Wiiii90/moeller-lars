@@ -66,7 +66,22 @@ export function adminGalleryHeroStage(config = {}) {
             const candidate = distribution.find((row) => row.id === id);
             return (total > 0 ? (candidate?.weight ?? 0) * 100 / total : 0).toFixed(2) + '%';
         },
+        syncPreview() {
+            if (!this.activeId) return;
+            const frame = this.$el.querySelector('.admin-visual-stage__preview-pane iframe.admin-live-preview__frame');
+            frame?.contentWindow?.postMessage({
+                type: 'gallery-hero-preview-select',
+                candidateKey: this.activeId,
+            }, window.location.origin);
+        },
+        selectCandidate(id) {
+            const index = this.rows.findIndex((row) => row.id === id);
+            if (index < 0) return;
+            if (index === this.activeIndex) this.syncPreview();
+            else this.activeIndex = index;
+        },
         init() {
+            this.$watch('activeIndex', () => this.syncPreview());
             if (this.rows.length === 0 || this.strategy === 'ordered'
                 || (this.strategy === 'random' && !this.randomAvailable)) return;
             this.timer = window.setInterval(

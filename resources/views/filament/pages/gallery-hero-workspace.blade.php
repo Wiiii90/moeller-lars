@@ -30,7 +30,7 @@
                 ]));
             @endphp
             <div
-                class="gallery-hero-surface admin-visual-stage admin-visual-stage--split"
+                class="gallery-hero-surface admin-visual-stage admin-visual-stage--split admin-visual-stage--editor-preview"
                 aria-label="Hero Artwork"
                 wire:key="gallery-hero-stage-{{ $simulationKey }}"
                 x-data="adminGalleryHeroStage({
@@ -44,38 +44,9 @@
                     sampledAt: @js($simulationAt->toIso8601String()),
                 })"
             >
-                <div class="gallery-hero-surface__visual admin-visual-stage__pane">
-                    <div class="gallery-hero-surface__visual-actions" aria-label="Actions for simulated Hero Artwork" x-show="activeId !== null" x-cloak>
-                        <button class="admin-icon-action admin-icon-action--surface" type="button"
-                            x-show="active?.is_manual" x-on:click="$wire.toggleDummyMember(active?.dummy_gallery_id, activeId)"
-                            title="Disable current Dummy Gallery member" aria-label="Disable current Dummy Gallery member">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" />
-                        </button>
-                        <button class="admin-icon-action admin-icon-action--surface" type="button"
-                            x-show="active?.is_automatic" x-on:click="$wire.setAutomaticHeroCandidateEnabled(Number(activeId.split(':')[1]), false)"
-                            title="Disable current automatic candidate" aria-label="Disable current automatic candidate">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" />
-                        </button>
-                        <button class="admin-icon-action admin-icon-action--surface is-danger" type="button"
-                            x-show="active?.is_manual" x-on:click="$wire.removeDummyMember(active?.dummy_gallery_id, activeId)"
-                            title="Remove current Dummy Gallery member" aria-label="Remove current Dummy Gallery member">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
-                        </button>
-                    </div>
-                    <img
-                        @if ($currentArtwork && $currentArtwork['thumbnail_url']) src="{{ $currentArtwork['thumbnail_url'] }}" @endif
-                        x-show="Boolean(active?.thumbnail_url)"
-                        x-bind:src="active?.thumbnail_url || null"
-                        alt=""
-                        loading="eager"
-                        decoding="async"
-                    >
-                    <span x-show="!active?.thumbnail_url">{{ __('No Hero Artwork preview') }}</span>
-                </div>
-
-                <div class="gallery-hero-rail admin-visual-stage__pane" aria-label="Hero group">
+                <div class="gallery-hero-rail admin-visual-stage__pane admin-visual-stage__editor-pane" aria-label="Hero group">
                     <header class="gallery-hero-rail__summary">
-                        <h2 class="admin-section__kicker gallery-hero-rail__title">{{ __('Hero Artwork') }}</h2>
+                        <h2 class="admin-section__kicker admin-visual-stage__heading gallery-hero-rail__title">{{ __('Hero Artwork') }}</h2>
                         <div class="gallery-hero-rail__simulation" aria-live="off">
                             <span>{{ __('Preview:') }}
                                 <span x-text="simulatedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })">{{ $simulationAt->format('j M Y') }}</span>
@@ -144,13 +115,16 @@
                                 >
                                     <span class="gallery-hero-candidate__position"><span class="admin-position">{{ $index + 1 }}</span></span>
 
-                                    <div class="gallery-hero-candidate__visual">
+                                    <button type="button" class="gallery-hero-candidate__visual"
+                                        x-on:click="selectCandidate(@js($row['id']))"
+                                        x-bind:aria-pressed="(activeId === @js($row['id'])).toString()"
+                                        aria-label="Show {{ $row['title'] }} in live preview">
                                         @if ($row['thumbnail_url'])
                                             <img src="{{ $row['thumbnail_url'] }}" alt="" loading="lazy" decoding="async" draggable="false">
                                         @else
                                             <span>—</span>
                                         @endif
-                                    </div>
+                                    </button>
 
                                     <div class="gallery-hero-candidate__meta">
                                         <strong title="{{ $row['title'] }}">{{ $row['title'] }}</strong>
@@ -225,6 +199,12 @@
                     @if ($selectionIssue)
                         <p class="gallery-hero-surface__issue">{{ $selectionIssue }}</p>
                     @endif
+                </div>
+                <div class="admin-visual-stage__pane admin-visual-stage__preview-pane"
+                    x-on:load.capture="if ($event.target.matches('iframe.admin-live-preview__frame')) syncPreview()">
+                    <h2 class="admin-section__kicker admin-visual-stage__heading">{{ __('Live preview') }}</h2>
+                    <x-admin.live-preview :heading="false" :url="$previewUrl"
+                        frame-title="Hero Artwork public page" wire:key="gallery-hero-live-preview" />
                 </div>
             </div>
 

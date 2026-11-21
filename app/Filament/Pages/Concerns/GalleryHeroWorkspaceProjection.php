@@ -38,7 +38,7 @@ use Livewire\Attributes\Session;
 
 trait GalleryHeroWorkspaceProjection
 {
-    private function reloadWorkspace(): void
+    private function reloadWorkspace(bool $refreshPreview = true): void
     {
         $settings = $this->settings();
         $hero = app(GalleryHeroConfigurationService::class)->configuration($settings);
@@ -68,6 +68,9 @@ trait GalleryHeroWorkspaceProjection
         $this->nextRotationAt = null;
         $this->loadArtworkWorkspace($settings);
         $this->refreshMetrics();
+        if ($refreshPreview) {
+            $this->dispatch('admin-live-preview-updated', url: $this->previewUrl);
+        }
     }
 
     private function loadArtworkWorkspace(GalleryHeroSetting $settings): void
