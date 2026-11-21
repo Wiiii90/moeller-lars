@@ -25,10 +25,11 @@
         storageKey: @js($storageKey),
         rememberedState: @js($rememberedState),
         init() {
-            try {
-                const stored = window.sessionStorage.getItem(this.storageKey)
-                if (this.allowedPanes.includes(stored)) this.activePane = stored
-            } catch (_) {}
+            window.adminRememberedTabs.connectAlpine(this, {
+                property: 'activePane',
+                key: this.storageKey,
+                allowed: this.allowedPanes,
+            })
 
             @if ($externalState !== null)
                 {{ $externalState }} = this.activePane
@@ -39,21 +40,10 @@
                 const current = this[name]
                 if (typeof current !== 'string' && typeof current !== 'boolean') continue
 
-                const key = this.storageKey + '.' + name
-
-                try {
-                    const stored = window.sessionStorage.getItem(key)
-                    if (stored !== null) {
-                        const restored = typeof current === 'boolean' ? stored === 'true' : stored
-                        if (permitted.includes(restored)) this[name] = restored
-                    }
-                } catch (_) {}
-
-                this.$watch(name, value => {
-                    if (!permitted.includes(value)) return
-                    try {
-                        window.sessionStorage.setItem(key, String(value))
-                    } catch (_) {}
+                window.adminRememberedTabs.connectAlpine(this, {
+                    property: name,
+                    key: this.storageKey + '.' + name,
+                    allowed: permitted,
                 })
             }
         },
@@ -64,10 +54,6 @@
             @if ($externalState !== null)
                 {{ $externalState }} = pane
             @endif
-
-            try {
-                window.sessionStorage.setItem(this.storageKey, pane)
-            } catch (_) {}
         },
     }"
 >

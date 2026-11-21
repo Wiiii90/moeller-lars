@@ -30,21 +30,14 @@
             class="admin-dashboard__overview admin-visual-stage admin-visual-stage--triptych"
             aria-label="Storage, Activity and Analytics overview"
             x-data="{
-                panelKey: 'admin-stage.dashboard.overview',
                 init() {
-                    try {
-                        const saved = window.sessionStorage.getItem(this.panelKey)
-                        if (!['storage', 'activity', 'analytics'].includes(saved)) return
-                        const radio = this.$el.querySelector('[name=dashboard-overview-panel][value=' + saved + ']')
-                        if (radio) radio.checked = true
-                    } catch (_) {}
-                },
-                rememberPanel(event) {
-                    if (!event.target.matches('.admin-dashboard__overview-panel-toggle')) return
-                    try { window.sessionStorage.setItem(this.panelKey, event.target.value) } catch (_) {}
+                    window.adminRememberedTabs.connectRadio(
+                        this.$el,
+                        'admin-stage.dashboard.overview',
+                        'dashboard-overview-panel',
+                    )
                 },
             }"
-            x-on:change="rememberPanel($event)"
         >
             <input class="admin-dashboard__overview-panel-toggle" type="radio" name="dashboard-overview-panel" id="dashboard-overview-storage" value="storage" checked>
             <input class="admin-dashboard__overview-panel-toggle" type="radio" name="dashboard-overview-panel" id="dashboard-overview-activity" value="activity">

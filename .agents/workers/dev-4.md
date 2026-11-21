@@ -2,7 +2,7 @@
 
 **Lease:** 31
 **Branch:** dev
-**State:** Active — Gallery Editor tab and Gallery/Storage View selections now restore consistently; Dashboard compact Overview selection also saved, source review complete but browser acceptance pending.
+**State:** Active — consolidated formerly duplicated Admin tab preference persistence into one canonical runtime owner; source commit awaiting browser acceptance.
 
 ## Current assignment and ownership
 
@@ -59,6 +59,14 @@
 - **Other reviewed tabbars:** Activity's Activity/Commits View is already URL-backed with browser history, and its Stage switcher uses the shared sessionStorage component. Storage uses the canonical `#[Session]` View binding. Dashboard's narrow Storage/Activity/Analytics radio Stage tabs had no persistence; its existing radio inputs now remember their selected panel in sessionStorage, with no parallel structural component or CSS. No changes to Gallery Hero source actions, Pages, other editors or live upload state.
 - **Verification:** Source-only checks and exact diff; no mounted local runtime/Playwright, no tests/Continuous Integration/deploy. Browser cases: Gallery List/Grid/Dense and Storage after click, refresh and reentry, Gallery tab switching with/without Staged rows and after successful upload/last submit/discard, dashboard compact overview restoration, Activity URL behavior. Confirm no console syntax errors and no first-frame view switching; slower network/quick reload remains a known asynchronous edge for Livewire server view preference.
 
+## Latest fix — retire duplicated tab persistence (2026-11-21)
+
+- **Trigger:** The artist explicitly rejected the last change for copying the same browser-session tab restoration into the Gallery Editor and Dashboard even though the common `x-admin.stage-switcher` already had that logic.
+- **One owner:** `resources/js/admin-remembered-tabs.js`, imported once through the existing persisted `admin-viz.js` bundle, now owns `sessionStorage` read/write, valid-option checks, invalid-value cleanup, Alpine property watching and native radio-tab binding. It is **not** a second persistence system: it replaces the three former inline handlers. It does not persist upload files, staged media or other domain state.
+- **Consumers:** The existing `x-admin.stage-switcher` delegates remembered panes and its optional extra `rememberedState` values to `connectAlpine`, retaining the same external state updates and active button behavior. Gallery Editor delegates its existing `panel` to `connectAlpine`, validating that the saved Staged tab is currently available and calling its existing `selectPanel` for preview side effects. Dashboard retains the same three CSS radio inputs and delegates their memory to `connectRadio`. All three inline `window.sessionStorage` readers/writers are removed. No new UI, tab component, parallel Gallery queue, DB model or compatibility shim.
+- **Other state owners intentionally unchanged:** Gallery/Storage List/Grid/Dense remain on their existing Livewire `#[Session]` + `.live` control, Activity's view remains URL-backed, and Staged file/field restoration remains in the authenticated server-side Gallery queue. This is semantic ownership, not multiple writers to the same preference.
+- **Acceptance/risks:** Source-only verification, not live browser acceptance. Review Activity Stage switcher, Gallery refresh after Upload/Staged/Settings (with and without a queue), automatic tab switches after Submit/Discard/upload, Dashboard radio tabs on narrow screens, and Gallery/Storage views after navigation. Check quick navigation, unavailable browser storage, and a saved Staged tab after the last queued file is removed. No tests/CI/deploy run.
+
 ## Verification and outstanding acceptance
 
 - The prior chat used connected GitHub source inspection and guarded commits; it **did not** run local Laravel, PHP, actual media ingestion, browser review, tests, deployment, Continuous Integration or a database migration as part of the Gallery changes. Do not represent source-reviewed behavior as browser-accepted.
@@ -68,4 +76,4 @@
 
 ## Next
 
-Review browser acceptance of Gallery/Storage View persistence, per-Gallery editor tab restore, and Dashboard compact overview state, plus previously implemented Staged queue/discard and media preview. Keep changes narrow, verify registered Dev Worker 4 lease 31 and fresh `dev` head before writes, and hand exact regression scenarios to Testing after acceptance.
+Verify the single remembered-tabs runtime with existing Gallery, Dashboard and Activity tabbars in a real browser (including invalid Staged selection), alongside Gallery/Storage server-backed View modes. Hand targeted regression scenarios to Testing. Verify Dev Worker 4 lease 31 and the newest `dev` head before new edits.

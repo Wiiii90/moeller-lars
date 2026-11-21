@@ -57,21 +57,15 @@
                 panel: $wire.entangle('galleryStagePanel'),
                 panelStorageKey: @js('admin-gallery.editor.'.(int) $galleryContext['id']),
                 init() {
-                    const allowed = ['upload', 'queue', 'settings']
-                    try {
-                        const saved = window.sessionStorage.getItem(this.panelStorageKey)
-                        if (saved === 'queue' && this.$root.querySelector('[data-gallery-stage-queue-tab]')?.disabled) {
-                            window.sessionStorage.removeItem(this.panelStorageKey)
-                        } else if (allowed.includes(saved)) {
-                            this.selectPanel(saved)
-                        }
-                    } catch (_) {}
-
-                    // Upload completion and the last Submit/Discard can also
-                    // change this panel from Livewire, not only tab clicks.
-                    this.$watch('panel', value => {
-                        if (!allowed.includes(value)) return
-                        try { window.sessionStorage.setItem(this.panelStorageKey, value) } catch (_) {}
+                    // Presentation-only active pane; the Staged queue and its
+                    // form values remain owned by the server-side Gallery.
+                    window.adminRememberedTabs.connectAlpine(this, {
+                        property: 'panel',
+                        key: this.panelStorageKey,
+                        allowed: ['upload', 'queue', 'settings'],
+                        accept: pane => pane !== 'queue'
+                            || !this.$root.querySelector('[data-gallery-stage-queue-tab]')?.disabled,
+                        apply: pane => this.selectPanel(pane),
                     })
                 },
                 previewKind: $wire.entangle('galleryStagePreview'),
@@ -82,7 +76,6 @@
                     if (!['upload', 'queue', 'settings'].includes(next)
                         || (next === 'queue' && queueDisabled)) return
                     this.panel = next
-                    try { window.sessionStorage.setItem(this.panelStorageKey, next) } catch (_) {}
                     if (!this.previewAutoFocus) return
 
                     // Only the visible pane is browser-local; the canonical
