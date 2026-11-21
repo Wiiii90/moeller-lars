@@ -1,7 +1,7 @@
 <section class="media-workspace__library admin-visual-stage-followup admin-view-switcher"
     aria-label="Media library"
     data-admin-view-mode="{{ $viewMode }}"
-    x-data="{ viewMode: $wire.entangle('viewMode') }"
+    x-data="{ viewMode: $wire.entangle('viewMode').live }"
     x-bind:data-admin-view-mode="viewMode">
     @php
         $selectableAssetIds = collect($assets)
@@ -97,7 +97,7 @@
         <x-slot:actions>
             <div class="admin-data-control-group media-workspace__view-group">
                 <span class="admin-data-control-label">{{ __('View') }}</span>
-                <x-admin.view-options :view-mode="$viewMode" label="Media view" storage-key="admin-view.storage" />
+                <x-admin.view-options :view-mode="$viewMode" label="Media view" />
             </div>
         </x-slot:actions>
 

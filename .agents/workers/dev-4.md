@@ -2,7 +2,7 @@
 
 **Lease:** 31
 **Branch:** dev
-**State:** Active — Gallery Stage dropdown isolation corrected via Filament fixed-position overlay while the form stays clipped, canonical Media File preview restored; browser review pending.
+**State:** Active — Gallery Editor tab and Gallery/Storage View selections now restore consistently; Dashboard compact Overview selection also saved, source review complete but browser acceptance pending.
 
 ## Current assignment and ownership
 
@@ -51,6 +51,14 @@
 - **Recovery limitation:** The registry follows configured Laravel session lifetime (default 120 minutes) and authentication. An unfinished browser `File` upload still requires the original file to be reselected for the existing resumable transfer; already completed assets and saved Stage form values restore. Simultaneous edits in multiple tabs of the **same** Gallery are not conflict-free and need a separate concurrency design if requested.
 - **Source validation pending:** Verify on a real running app: upload two new files, enter distinct form data, refresh/revisit and check selected field restoration; submit one and revisit to confirm it is absent; discard an unused new file (removed from Storage), discard a reused/referenced asset (removed only from Stage), and switch between two Galleries to confirm distinct queues. Check invalid/deleted asset pruning and duplicate re-upload after lost acknowledgement. No runtime/test/deploy acceptance claimed. Dev must not edit test sources.
 
+## Current task — workspace tab/view continuity (2026-11-21)
+
+- **Issue confirmed:** Gallery and Storage List/Grid/Dense used two independent persistence owners simultaneously: Livewire `#[Session]` plus an Alpine `sessionStorage` reader/watcher in `x-admin.view-options`, and their Alpine entanglements were not `.live`. A rapid refresh/navigation could show a stale mode. Gallery Editor Upload/Staged/Settings was not persisted at all.
+- **Canonical Views:** The single shared `x-admin.view-options` no longer reads/writes browser storage or accepts an obsolete storage key. Both Gallery and Storage consumer bindings now use `$wire.entangle('viewMode').live`; existing server `#[Session]` properties remain authoritative and persist after a successful Livewire action.
+- **Gallery Editor:** The current Gallery-specific tab state is presentation-only and uses the same browser `sessionStorage` pattern as `x-admin.stage-switcher`, namespaced by Gallery ID. Switching tabs saves immediately; a client watch also catches automatic Livewire transitions after upload/submit/discard. At restoration, a saved Staged tab is rejected if there are no staged rows and the user returns to the valid fallback. The existing Staged queue, selection, form values and canonical Storage assets remain exclusively server-backed. Reload cannot resurrect an in-flight File transfer.
+- **Other reviewed tabbars:** Activity's Activity/Commits View is already URL-backed with browser history, and its Stage switcher uses the shared sessionStorage component. Storage uses the canonical `#[Session]` View binding. Dashboard's narrow Storage/Activity/Analytics radio Stage tabs had no persistence; its existing radio inputs now remember their selected panel in sessionStorage, with no parallel structural component or CSS. No changes to Gallery Hero source actions, Pages, other editors or live upload state.
+- **Verification:** Source-only checks and exact diff; no mounted local runtime/Playwright, no tests/Continuous Integration/deploy. Browser cases: Gallery List/Grid/Dense and Storage after click, refresh and reentry, Gallery tab switching with/without Staged rows and after successful upload/last submit/discard, dashboard compact overview restoration, Activity URL behavior. Confirm no console syntax errors and no first-frame view switching; slower network/quick reload remains a known asynchronous edge for Livewire server view preference.
+
 ## Verification and outstanding acceptance
 
 - The prior chat used connected GitHub source inspection and guarded commits; it **did not** run local Laravel, PHP, actual media ingestion, browser review, tests, deployment, Continuous Integration or a database migration as part of the Gallery changes. Do not represent source-reviewed behavior as browser-accepted.
@@ -60,4 +68,4 @@
 
 ## Next
 
-Obtain in-browser acceptance for the canonical Filament fixed-position dropdown and restored Media File thumbnail, especially Stage Material and lower unscrolled fields. Recheck prior Staged restore and safe Discard paths. Preserve owner boundaries, Dev Worker 4 lease 31 and newest `dev` HEAD.
+Review browser acceptance of Gallery/Storage View persistence, per-Gallery editor tab restore, and Dashboard compact overview state, plus previously implemented Staged queue/discard and media preview. Keep changes narrow, verify registered Dev Worker 4 lease 31 and fresh `dev` head before writes, and hand exact regression scenarios to Testing after acceptance.

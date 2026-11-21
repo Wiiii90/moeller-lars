@@ -55,12 +55,34 @@
             data-gallery-staged-preview-url="{{ $stagedPreviewUrl }}"
             x-data="{
                 panel: $wire.entangle('galleryStagePanel'),
+                panelStorageKey: @js('admin-gallery.editor.'.(int) $galleryContext['id']),
+                init() {
+                    const allowed = ['upload', 'queue', 'settings']
+                    try {
+                        const saved = window.sessionStorage.getItem(this.panelStorageKey)
+                        if (saved === 'queue' && this.$root.querySelector('[data-gallery-stage-queue-tab]')?.disabled) {
+                            window.sessionStorage.removeItem(this.panelStorageKey)
+                        } else if (allowed.includes(saved)) {
+                            this.selectPanel(saved)
+                        }
+                    } catch (_) {}
+
+                    // Upload completion and the last Submit/Discard can also
+                    // change this panel from Livewire, not only tab clicks.
+                    this.$watch('panel', value => {
+                        if (!allowed.includes(value)) return
+                        try { window.sessionStorage.setItem(this.panelStorageKey, value) } catch (_) {}
+                    })
+                },
                 previewKind: $wire.entangle('galleryStagePreview'),
                 previewArtworkId: $wire.entangle('galleryStagePreviewArtworkId'),
                 previewAutoFocus: $wire.entangle('galleryPreviewAutoFocus'),
                 selectPanel(next) {
-                    if (this.panel === next || (next === 'queue' && this.$refs.galleryQueueTab?.disabled)) return
+                    const queueDisabled = this.$root.querySelector('[data-gallery-stage-queue-tab]')?.disabled
+                    if (!['upload', 'queue', 'settings'].includes(next)
+                        || (next === 'queue' && queueDisabled)) return
                     this.panel = next
+                    try { window.sessionStorage.setItem(this.panelStorageKey, next) } catch (_) {}
                     if (!this.previewAutoFocus) return
 
                     // Only the visible pane is browser-local; the canonical
@@ -107,7 +129,7 @@
                                 aria-label="Previous staged artwork" title="Previous staged artwork">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Previous->mini()" />
                             </button>
-                            <button class="gallery-stage__queue-tab" type="button" x-ref="galleryQueueTab"
+                            <button class="gallery-stage__queue-tab" type="button" data-gallery-stage-queue-tab
                                 x-on:click="selectPanel('queue')"
                                 x-bind:aria-pressed="(panel === 'queue').toString()"
                                 @disabled($stagedTotal === 0)>Staged (<span aria-live="polite" aria-atomic="true">{{ $stagedPosition }}/{{ $stagedTotal }}</span>)</button>
@@ -247,7 +269,7 @@
 
         <div class="gallery-workspace__result-surface admin-visual-stage-followup admin-view-switcher"
             data-admin-view-mode="{{ $viewMode }}"
-            x-data="{ viewMode: $wire.entangle('viewMode') }"
+            x-data="{ viewMode: $wire.entangle('viewMode').live }"
             x-bind:data-admin-view-mode="viewMode">
             <x-admin.controls class="admin-data-controls--dashboard-responsive admin-data-controls--filters-compact gallery-workspace__controls" aria-label="Gallery controls" metric-grid :filter-count="2" :search-span="2">
                 <x-slot:search>
@@ -315,7 +337,7 @@
                     </div>
                     <div class="admin-data-control-group gallery-workspace__view-group">
                         <span class="admin-data-control-label">{{ __('View') }}</span>
-                        <x-admin.view-options :view-mode="$viewMode" label="Artwork view" storage-key="admin-view.gallery" />
+                        <x-admin.view-options :view-mode="$viewMode" label="Artwork view" />
                     </div>
                 </x-slot:actions>
 

@@ -4,7 +4,7 @@
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
-| Dev Worker 4 | 31 | Active — session-restorable Gallery Staged queues and safe new-versus-reused Discard implemented in source; runtime acceptance pending | Gallery Artwork table, title editor, selection/ordering, Stage/Settings and Public Artwork/Gallery; coordinate shared controls with owners | [dev-4.md](workers/dev-4.md) |
+| Dev Worker 4 | 31 | Active — Gallery Editor tabs and Gallery/Storage View persist consistently; Dashboard compact Overview restore source-ready, browser acceptance pending | Gallery Artwork table, title editor, selection/ordering, Stage/Settings and Public Artwork/Gallery; coordinate shared controls with owners | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 33 | Active — replacement chat continues the Pages type/template cutover; source-integrated, runtime and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom Page types and Hero Artworks template; Pages Settings, nested Page hierarchy and Heading controls | [dev-5.md](workers/dev-5.md) |
 
 | Dev Worker 6 | 32 | Active — Hero-only regular Gallery Edit dialog, shared source-member table and corrected action/Stage rails source-implemented; runtime/browser acceptance pending | Hero Artworks source actions/Stage and named shared table action variant; coordinate Gallery/editor overlap with Dev Worker 4 | [dev-6.md](workers/dev-6.md) |
