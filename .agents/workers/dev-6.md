@@ -2,7 +2,7 @@
 
 **Working branch:** `dev`
 **Current holder:** Dev Worker 6, lease 32; replacement chat activated on 2026-11-21.
-**Current state:** Dummy Gallery membership table/date/Actions source redesign prepared for browser review; source-only verification, no browser/runtime acceptance. Earlier visual picker inset fix and Hero/Random/Filters changes still require acceptance.
+**Current state:** Dummy Gallery membership table/date/Actions source redesign committed (`611461b4`, `9e9edd9e`) for browser review; source-only verification, no browser/runtime acceptance. Earlier visual picker inset fix and Hero/Random/Filters changes still require acceptance.
 
 ## Scope and accepted design
 
