@@ -391,6 +391,22 @@
     white-space: nowrap;
 }
 
+@container admin-table (max-width: 24rem) {
+    .gallery-hero-dummy-gallery-table__col-date {
+        width: 8.25rem;
+    }
+
+    /* At the narrowest dialog width, the name survives over a thumbnail. */
+    .gallery-hero-dummy-gallery-table .gallery-hero-source-candidate__preview {
+        display: none;
+    }
+
+    .gallery-hero-dummy-gallery-table .gallery-hero-source-table__candidate-inline {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+    }
+}
+
 @container admin-table (max-width: 38rem) {
     .gallery-hero-dummy-gallery-table table {
         --admin-row-actions-two-static-width: calc(2 * 1.35rem + .45rem);

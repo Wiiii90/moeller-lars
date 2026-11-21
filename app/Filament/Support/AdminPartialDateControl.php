@@ -29,7 +29,7 @@ final class AdminPartialDateControl
             ->label($shownLabel)
             ->view('filament.forms.components.admin-partial-date-control')
             ->viewData([
-                'region' => $region ?? RegionalFormats::publicRegion(),
+                'region' => $region ?? RegionalFormats::adminRegion(),
                 'accessibleLabel' => $accessibleLabel,
                 'liveUpdates' => $liveUpdates,
             ]);
