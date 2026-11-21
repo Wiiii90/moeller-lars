@@ -2,7 +2,7 @@
 
 - **Working branch:** `dev`
 - **Lease:** 39
-- **State:** Active — replacement chat explicitly took over Custom Pages. Previous source integration is retained as recorded below; current task is read-only source orientation. Database migration, runtime and browser acceptance remain outstanding.
+- **State:** Active — replacement chat registered and current Custom Pages source orientation completed. Previous source integration is retained as recorded below; database migration, runtime and browser acceptance remain outstanding.
 - **Scope:** Custom Page content editor, canonical structured layout, Public Custom Page renderer. Coordinate shared Stage/preview with Dev Worker 1; Pages, navigation and protected Home identity with Dev Worker 5.
 - **Recent source integration:** through `b5ce45962b0c001864833d3709844e09a7453975`, with final source/readback reconciliation still required on fresh `dev` before test handoff.
 
@@ -54,6 +54,14 @@
 - A global optional understated footer with Contact/Legal variants.
 - Upgrade content action targeting from positional indexes to stable component identity after dedicated concurrency design and acceptance.
 
+## Current source orientation (2026-11-21)
+- Admin entrypoint: `app/Filament/Pages/CustomPageWorkspace.php`, with actions, forms, projection and Settings behavior in `app/Filament/Pages/Concerns/CustomPageWorkspace*.php`.
+- Canonical content/document owner: `app/Models/CustomPageSetting.php`; audited mutation owner: `app/Domain/Content/CustomPageEditorialService.php`.
+- Visible Stage: `resources/views/filament/pages/partials/custom-page-layout-stage.blade.php`; page editor and Preview: `resources/views/filament/pages/custom-page-workspace.blade.php`.
+- Public consumer: `app/Http/Controllers/PublicSiteSectionController.php`, `resources/views/pages/custom.blade.php` and recursive `resources/views/pages/partials/component-sequence.blade.php`.
+- Current source exposes distinct Image/Video component types, Grid areas and a Settings form without a nesting-enabled switch. The Stage has direct Edit actions, not an Activate button.
+- This was a bounded remote source review only. No application edits, runtime tests, migrations, browser inspection or deployment were performed in this replacement chat.
+
 ## Next
-- Inspect current `dev` Custom Pages entrypoint, canonical domain owner and immediate Public/Stage consumers in a bounded read-only pass.
-- Do not automatically resume earlier implementation solely from this identity assignment. Await an explicit feature/change request before editing application code.
+- Await a specific new Custom Pages implementation or review request. Do not infer an authorization to resume previous changes from this worker identity alone.
+- When a change is requested, reread current `dev` head and reconcile affected owners with concurrent workers before edits.
