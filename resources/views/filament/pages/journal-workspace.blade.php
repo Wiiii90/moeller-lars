@@ -207,16 +207,16 @@
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">{{ __('Settings') }}</span>
                             </button>
-                            @unless ($isBlog)
-                                <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('exhibitionOrganizers')" aria-label="Exhibition organizers">
-                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon" />
-                                    <span class="admin-action__label">Organizers</span>
-                                </button>
-                            @endunless
                             <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('{{ $isBlog ? 'addPost' : 'addExhibition' }}')" aria-label="Add {{ $entryLabelSingular }}">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">Add {{ $entryLabelSingular }}</span>
                             </button>
+                            @unless ($isBlog)
+                                <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('exhibitionOrganizers')" aria-label="Exhibition organizers">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Organizers->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">Organizers</span>
+                                </button>
+                            @endunless
                             @if ($journalPreviewUrl)
                                 <a class="admin-action admin-action--with-icon" href="{{ $journalPreviewUrl }}" target="_blank" rel="noopener" aria-label="Preview Journal">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
