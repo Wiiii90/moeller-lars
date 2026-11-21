@@ -25,7 +25,7 @@ final class JournalSettingsService
             throw ValidationException::withMessages(['template' => 'Choose Blog or Exhibitions.']);
         }
         $title = $this->requiredText($data['title'] ?? null, 'title', 160, 'A Journal title is required.');
-        $navigationLabel = $data['navigation_label'] ?? null;
+        $navigationLabel = $data['navigation_label'] ?? $section->getAttribute('navigation_label');
         if ($navigationLabel !== null && ! is_string($navigationLabel)) {
             throw ValidationException::withMessages(['navigation_label' => 'The navigation label must be text.']);
         }
@@ -54,7 +54,7 @@ final class JournalSettingsService
             $updated = $this->identity->update(
                 $fresh,
                 $title,
-                is_string($data['slug'] ?? null) ? $data['slug'] : null,
+                is_string($data['slug'] ?? null) ? $data['slug'] : (string) $fresh->getAttribute('slug'),
                 $navigationLabel,
             );
             if ((string) $updated->getAttribute('template') !== $templateValue) {

@@ -73,7 +73,7 @@ final class JournalEntryEditorSchema
         ];
 
         if ($template === JournalTemplate::Blog) {
-            $schema[] = Textarea::make('excerpt')->label(__('Excerpt'))->maxLength(1000)->nullable()->columnSpanFull();
+            array_push($schema, ...AdminRichText::schema('excerpt', __('Excerpt'), 1000, allowEmbeddedMedia: false));
         }
 
         $cover = $template === JournalTemplate::Exhibitions

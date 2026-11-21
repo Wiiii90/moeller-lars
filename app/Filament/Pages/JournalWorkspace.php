@@ -3,7 +3,6 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminNotifier;
-use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Content\BlogEditorialService;
 use App\Domain\Content\ExhibitionDate;
@@ -530,79 +529,27 @@ final class JournalWorkspace extends Page
             ->label('Settings')
             ->fillForm(function (): array {
                 $section = $this->section();
+                $this->journalSettingsOriginal = ['title' => (string) $section->getAttribute('title')];
 
-                // The optimistic concurrency snapshot contains persisted
-                // Journal fields only. Personal workflow preferences belong to
-                // the User and must not participate in that row comparison.
-                $this->journalSettingsOriginal = [
-                    'template' => (string) $section->getAttribute('template'),
-                    'title' => $section->getAttribute('title'),
-                    'navigation_label' => $section->getAttribute('navigation_label'),
-                    'slug' => $section->getAttribute('slug'),
-                ];
-
-                return [
-                    ...$this->journalSettingsOriginal,
-                    'auto_publish_new_entries' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::JOURNAL),
-                ];
+                return $this->journalSettingsOriginal;
             })
             ->schema([
-                Grid::make()->columns(['md' => 2])->schema([
-                    Select::make('template')->label('Template')->options(array_map('__', JournalTemplate::options()))->required(),
-                    TextInput::make('title')->label('Journal title')->required()->maxLength(160),
-                    TextInput::make('navigation_label')->label('Navigation label')->maxLength(160),
-                    TextInput::make('slug')->label('Public URL slug')->required()->maxLength(80)
-                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
-                    AdminControl::toggle('auto_publish_new_entries', 'Auto-publish new Journal entries')
-                        ->live()
-                        ->afterStateUpdated(static function (mixed $state): void {
-                            if (app(AdminAutoPublishPreferences::class)->update(
-                                AdminAutoPublishPreferences::JOURNAL, (bool) $state,
-                            )) {
-                                app(AdminNotifier::class)->notification(title: 'Journal settings saved', status: 'success');
-                            }
-                        }),
-                ]),
+                TextInput::make('title')->label('Journal title')->required()->maxLength(160),
             ])
             ->modalHeading(__('Journal settings'))
-            ->action(function (Schema $schema, array $data): void {
+            ->action(function (array $data): void {
                 $section = $this->section();
-                $before = $section->only(['template', 'title', 'navigation_label', 'slug']);
+                $before = (string) $section->getAttribute('title');
                 try {
                     $updated = app(JournalSettingsService::class)->update($section, $data, $this->journalSettingsOriginal);
                 } catch (ValidationException $exception) {
                     $this->throwMountedValidation($exception);
                 }
-                $this->journalSettingsOriginal = $updated->only(array_keys($this->journalSettingsOriginal));
-                $schema->partialRawState($this->journalSettingsOriginal);
-                $template = $updated->journalTemplate();
-                abort_unless($template instanceof JournalTemplate, 404);
-                $templateChanged = $before['template'] !== $template->value;
-                $this->template = $template->value;
-                if ($templateChanged) {
-                    $this->search = '';
-                    $this->statusFilter = 'any';
-                    $this->timingFilter = 'any';
-                    $this->selectedPostIds = [];
-                    $this->selectedExhibitionIds = [];
-                    $this->journalPreviewFocusedEntryId = null;
-                    $this->page = 1;
-                }
+                $this->journalSettingsOriginal = ['title' => (string) $updated->getAttribute('title')];
                 $this->loadJournalContext($updated);
                 $this->reloadEntries();
-                $publishChanged = app(AdminAutoPublishPreferences::class)->update(
-                    AdminAutoPublishPreferences::JOURNAL,
-                    (bool) ($data['auto_publish_new_entries']
-                        ?? app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::JOURNAL)),
-                );
-                if ($before !== $updated->only(['template', 'title', 'navigation_label', 'slug']) || $publishChanged) {
-                    if ($templateChanged || $before['slug'] !== $updated->getAttribute('slug')) {
-                        // A changed Journal route must replace the old Preview URL.
-                        $this->dispatch('admin-live-preview-updated',
-                            url: $this->journalPreviewUrl, title: 'Interactive Journal preview');
-                    } else {
-                        $this->syncJournalPreviewFocus(forceRefresh: true);
-                    }
+                if ($before !== (string) $updated->getAttribute('title')) {
+                    $this->syncJournalPreviewFocus(forceRefresh: true);
                     $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Journal settings saved',
@@ -621,14 +568,8 @@ final class JournalWorkspace extends Page
             ->modalHeading(__('Add post'))
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
-                $autoPublish = app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::JOURNAL);
                 try {
-                    DB::transaction(static function () use ($data, $autoPublish): void {
-                        $post = app(BlogEditorialService::class)->createDraft($data);
-                        if ($autoPublish) {
-                            app(BlogEditorialService::class)->publish($post);
-                        }
-                    });
+                    app(BlogEditorialService::class)->createDraft($data);
                 } catch (ValidationException $exception) {
                     $this->notifyValidationFailure('Post was not created', $exception);
                     $action->halt();
@@ -638,16 +579,12 @@ final class JournalWorkspace extends Page
                 $this->loadPosts();
                 $this->syncJournalPreviewFocus(forceRefresh: true);
                 app(AdminNotifier::class)->notification(
-                    title: $autoPublish ? 'Post published' : 'Post draft created',
+                    title: 'Post draft created',
                     status: 'success',
                 );
             });
 
-        return AdminDialog::create(
-            $action,
-            app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::JOURNAL) ? 'Create and publish' : 'Create draft',
-            AdminDialogSize::Large,
-        );
+        return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
     }
 
     public function editPostAction(): Action
@@ -722,14 +659,8 @@ final class JournalWorkspace extends Page
             ->modalHeading(__('Add exhibition'))
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
-                $autoPublish = app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::JOURNAL);
                 try {
-                    DB::transaction(static function () use ($data, $autoPublish): void {
-                        $entry = app(ExhibitionEditorialService::class)->createDraft($data);
-                        if ($autoPublish) {
-                            app(ExhibitionEditorialService::class)->publish($entry);
-                        }
-                    });
+                    app(ExhibitionEditorialService::class)->createDraft($data);
                 } catch (ValidationException $exception) {
                     $this->notifyValidationFailure('Exhibition was not created', $exception);
                     $action->halt();
@@ -739,16 +670,12 @@ final class JournalWorkspace extends Page
                 $this->loadExhibitions();
                 $this->syncJournalPreviewFocus(forceRefresh: true);
                 app(AdminNotifier::class)->notification(
-                    title: $autoPublish ? 'Exhibition published' : 'Exhibition created',
+                    title: 'Exhibition draft created',
                     status: 'success',
                 );
             });
 
-        return AdminDialog::create(
-            $action,
-            app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::JOURNAL) ? 'Create and publish' : 'Create exhibition',
-            AdminDialogSize::Large,
-        );
+        return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
     }
 
     public function setExhibitionFieldVisibility(int $id, string $field, bool $visible): void

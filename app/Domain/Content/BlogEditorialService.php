@@ -303,6 +303,9 @@ final class BlogEditorialService
         if ($excerpt !== null && (! is_string($excerpt) || mb_strlen($excerpt) > 1000)) {
             throw ValidationException::withMessages(['excerpt' => 'The blog excerpt is invalid.']);
         }
+        if (is_string($excerpt) && trim($excerpt) !== '') {
+            $this->richText->assertValid($excerpt, allowEmbeddedMedia: false);
+        }
 
         return [
             'site_section_id' => $sectionId,

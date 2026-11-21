@@ -26,10 +26,12 @@
                 $reverseCover = $hasCover && $illustratedIndex % 2 === 0;
                 $postDate = $post->published_at ?? $post->scheduled_at;
                 $excerpt = trim((string) ($post->excerpt ?? ''));
-                if ($excerpt === '') {
-                    $excerpt = \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/u', ' ', strip_tags((string) ($post->body ?? ''))) ?? ''), 220);
+                $excerptFallback = $excerpt === '';
+                if ($excerptFallback) {
+                    $excerpt = \Illuminate\Support\Str::limit(
+                        \App\Domain\Content\RichTextDocument::plainText((string) ($post->body ?? '')), 220,
+                    );
                 }
-                $excerpt = \Illuminate\Support\Str::limit($excerpt, 240);
             @endphp
             <article class="blog-entry @if ($hasCover) blog-entry--illustrated @if ($reverseCover) blog-entry--reverse @endif @else blog-entry--text-only @endif">
                 <div class="blog-entry__body">
@@ -47,7 +49,7 @@
                         <h2 class="blog-entry__title"><a href="{{ $postUrl }}">{{ $post->title }}</a></h2>
                     </header>
                     @if ($excerpt !== '')
-                        <p class="blog-entry__excerpt">{{ $excerpt }}</p>
+                        <div class="blog-entry__excerpt {{ $excerptFallback ? '' : 'rich-text' }}">{!! $excerptFallback ? e($excerpt) : $richText->render($excerpt) !!}</div>
                     @endif
                     <a class="blog-entry__read-more" href="{{ $postUrl }}">Read more <x-public-icon name="arrow-right" /></a>
                 </div>
