@@ -222,7 +222,11 @@ trait GalleryWorkspaceDirectUpload
 
         foreach ($this->pendingBatchArtworkMedia as &$row) {
             if ((int) $row['media_asset_id'] === $this->selectedStagedMediaAssetId) {
-                $row['form'] = $this->stagedArtworkData;
+                // Only the queue row owns the actual Storage identity.
+                // The disabled picker receives that ID for display only.
+                $form = $this->stagedArtworkData;
+                unset($form['primary_media_asset_id'], $form['staged_media_filename']);
+                $row['form'] = $form;
                 break;
             }
         }
@@ -311,11 +315,10 @@ trait GalleryWorkspaceDirectUpload
             // Automatic placement now lives only in the grey placeholder.
             $form['position'] = null;
         }
-        // The queue identity, not the display-only filename, owns the
-        // primary media link. Old hydrated picker fields are discarded.
-        unset($form['primary_media_asset_id']);
-        $form['staged_media_filename'] = (string) ($selected['filename']
-            ?? MediaAsset::query()->whereKey($assetId)->value('original_filename') ?? '');
+        // Render the canonical MediaAssetSelect thumbnail from the queued
+        // Storage asset, never from an editable or persisted form value.
+        unset($form['staged_media_filename']);
+        $form['primary_media_asset_id'] = $assetId;
         $this->stagedArtworkData = $form;
         $this->stagedArtworkForm->fill($form);
         $this->publishStagedArtworkPreview();

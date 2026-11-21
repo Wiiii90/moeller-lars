@@ -22,16 +22,13 @@
     margin-top: var(--admin-section-space);
 }
 
-/* Stage field scrollers keep their normal bounded scrolling and optional
- * edge fade until a dropdown opens. Filament searchable Select menus live in
- * the field DOM, whereas simple native Select pickers use the browser top
- * layer. An open in-DOM menu must be allowed to cross the Stage boundary:
- * release BOTH overflow clipping and masking only while it is open. Do not
- * duplicate the Select or teleport it into a separate overlay owner.
- *
- * Feature stages opt their existing form scroller into this one rule with
- * .admin-visual-stage__field-scroll. The optional fade is a presentation
- * token, not a second scroll/overlay implementation. */
+/* Stage form scrollports remain clipped and scrollable even with an open
+ * Select. Filament's .fi-fixed-positioning-context opts its own searchable
+ * dropdown into Floating UI's viewport-fixed positioning; the native Select
+ * picker uses the browser top layer. The open popup alone crosses the Stage,
+ * never the rest of the form. A CSS mask establishes a fixed-position
+ * containing block, so remove only the optional fade while a Select is open.
+ * No Stage z-index escalation, forced overflow or extra portal is required. */
 .admin-visual-stage__field-scroll {
     -webkit-mask-image: var(--admin-stage-scroll-mask, none);
     mask-image: var(--admin-stage-scroll-mask, none);
@@ -39,9 +36,6 @@
 
 .admin-visual-stage__field-scroll:has(.fi-select-input-btn[aria-expanded="true"]),
 .admin-visual-stage__field-scroll:has(select:open) {
-    position: relative;
-    z-index: 9;
-    overflow: visible;
     -webkit-mask-image: none;
     mask-image: none;
 }

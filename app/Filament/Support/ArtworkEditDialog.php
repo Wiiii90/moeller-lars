@@ -91,11 +91,18 @@ final class ArtworkEditDialog
         }
 
         if ($compact) {
-            // The queued MediaAsset ID is server-owned. Do not initialize an
-            // editable Storage picker merely to render the selected filename.
-            $primaryMedia = AdminControl::text('staged_media_filename', 'Media file')
-                ->readOnly()
+            // Reuse the canonical Storage thumbnail/filename presentation.
+            // The Stage queue owns the ID: this disabled picker never loads
+            // options or submits a second media-assignment state.
+            $primaryMedia = MediaAssetSelect::makeId(
+                'primary_media_asset_id',
+                'Media file',
+                allowedMimeTypes: self::primaryMimeTypes(),
+            )
+                ->placeholder(__('No primary media'))
+                ->disabled()
                 ->dehydrated(false)
+                ->selectablePlaceholder(false)
                 ->columnSpanFull();
         } else {
             $primaryMedia = MediaAssetSelect::makeId(

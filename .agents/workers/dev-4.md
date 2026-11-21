@@ -2,7 +2,7 @@
 
 **Lease:** 31
 **Branch:** dev
-**State:** Active — Gallery Staged queues now session-restorable per Gallery; safe Discard differentiates new uploads from reused/referenced Storage assets; source changes awaiting runtime qualification.
+**State:** Active — Gallery Stage dropdown isolation corrected via Filament fixed-position overlay while the form stays clipped, canonical Media File preview restored; browser review pending.
 
 ## Current assignment and ownership
 
@@ -28,12 +28,14 @@
 - **Current dependency geometry, clarified by artist:** `AdminPanelControl::dependencyTree` places Navigation as a prerequisite on the left, Cyclic immediately to its right at the same row. A short arrow **originates just left of the Cyclic checkbox** and points left toward Navigation. Additional dependent fields stack below Cyclic and can join a right-column connector; the left column accepts optional unrelated form fields below Navigation. The earlier group-centered arrow and vertical-under-Navigation layout have been removed from the common `controls.css` owner, not hidden by Gallery overrides. Gallery invokes this shared control for Artwork Pages and Modal Viewer; Filament owns disabled state, validation and persistence unchanged.
 - **Verification:** GitHub source-only inspection; no local PHP/Filament runtime, browser or screenshot acceptance. Next confirm the actual dependent-label arrow anchor, Navigation/Cyclic same-row alignment, multiple-dependent joining, independent left-column placement, disabled Cyclic when Navigation is off, dialog/Stage responsive width and autosave. No test or deployment run.
 
-## Stage dropdown overflow and durable rule — 2026-11-21
+## Stage Select overlay and Media File preview — 2026-11-21
 
-- **Current request:** Gallery Staged and Settings Select dropdowns must extend past the fixed Stage rather than be clipped by the field scrollports or decorative bottom fades. The Stage height, scrolling while closed, editor/preview split and existing popup implementations remain unchanged.
-- **Source owner:** Both Gallery form scrollports in `manage-gallery-artworks.blade.php` opt into `admin-visual-stage__field-scroll`. Shared `stage.css` now owns the open-Select state: release `overflow` and scroll masking and raise the active scrollport above the shared divider only while an in-DOM Filament searchable Select or native Select is open. `gallery.css` retains its previous fade as the `--admin-stage-scroll-mask` presentation variable instead of clipping the menu through a fixed local mask. No duplicated Select or new JavaScript listener/teleport.
-- **Durable method:** General Stage dropdown escape and browser acceptance requirements were integrated into the current Dev role skill's Stage gate. Pending Docs reconciliation: record the accepted product rule in the existing `docs/admin/responsive.md` Stage/overlays section after browser acceptance, not as a parallel manual.
-- **Still unverified:** Actual browser geometry for an open Material Select in Staged and order/placement controls in Settings near the bottom of the Stage, long option lists, keyboard/focus, closing/reopening and restored normal scrolling, at desktop and mobile widths. No PHP runtime, browser, tests, CI or deployment run.
+- **Artist screenshot:** opening Material in Staged reveals the lower Media File field and action row even before the user scrolls. It also shows a plain Media File filename without the original thumbnail.
+- **Verified source defect:** the previous `stage.css` rule set `overflow: visible` and `z-index: 9` on the entire field scroller during an open Select. That exposed unscrolled form contents; it did not isolate the popup. Filament 5's native Select implementation already supports `fi-fixed-positioning-context` (Floating UI `position: fixed`) and positions on scrolling.
+- **Single correct owner:** the two existing Gallery form scrollers opt into `fi-fixed-positioning-context` through their Blade classes. The central `stage.css` rule retains their normal `overflow-y: auto` throughout and only removes the decorative scroll mask while an inner Select is open, because `mask-image` otherwise establishes a containing block for fixed-position descendants. No new portal, listener, stage z-index escalation, control-specific Material CSS, or unrestricted form overflow.
+- **Media File:** compact `ArtworkEditDialog` reuses disabled, non-dehydrated `MediaAssetSelect::makeId`, whose existing visual value shows the canonical media thumbnail and a truncated filename. `GalleryWorkspaceDirectUpload::selectStagedArtwork` supplies the already-authoritative queue media ID only to display this control. `rememberStagedArtworkChanges` removes its display-only ID before persisting form values, preserving one Storage identity.
+- **Durable method:** previous Stage overflow advice in the Dev skill was corrected to use the supported Filament overlay mode while keeping the Stage scrollport bounded. No general docs/test edits by Dev Worker 4.
+- **Browser acceptance still pending:** Material dropdown above Media File and toolbar with no unscrolled field bleeding, scrollable form on open/close, dropdown placement at viewport edges and on scroll, keyboard/Escape, Stage Settings Selects, disabled Media File image and filename across Stage navigation/refresh. No local PHP runtime, browser, tests or CI run.
 
 ## Checkbox dependency presentation — 2026-11-21 final adjustment
 
@@ -58,4 +60,4 @@
 
 ## Next
 
-Obtain browser/product acceptance for session-restored Staged files and differentiated Discard, then hand targeted new/duplicate/referenced/multi-Gallery regression scenarios to Testing. Always verify Dev Worker 4 lease 31 and fresh `dev` HEAD before new changes.
+Obtain in-browser acceptance for the canonical Filament fixed-position dropdown and restored Media File thumbnail, especially Stage Material and lower unscrolled fields. Recheck prior Staged restore and safe Discard paths. Preserve owner boundaries, Dev Worker 4 lease 31 and newest `dev` HEAD.
