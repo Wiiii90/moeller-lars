@@ -630,11 +630,11 @@
                             <tr>
                                 <td class="admin-table__empty-cell" colspan="9">
                                     @if ($activitySourceExists)
-                                        <x-admin.empty-state title="No matching activity" minimal>
-                                            <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}" wire:navigate>{{ __('Clear filters') }}</a></x-slot:actions>
+                                        <x-admin.empty-state title="No matches" minimal>
+                                            <x-slot:actions><x-admin.clear-filters :href="$resetUrl" wire:navigate label="Clear filters" /></x-slot:actions>
                                         </x-admin.empty-state>
                                     @else
-                                        <x-admin.empty-state title="No activity yet" minimal />
+                                        <x-admin.empty-state title="Empty" minimal />
                                     @endif
                                 </td>
                             </tr>
@@ -778,11 +778,11 @@
                             <tr>
                                 <td class="admin-table__empty-cell" colspan="7">
                                     @if ($activitySourceExists)
-                                        <x-admin.empty-state title="No matching commits" minimal>
-                                            <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}" wire:navigate>{{ __('Clear filters') }}</a></x-slot:actions>
+                                        <x-admin.empty-state title="No matches" minimal>
+                                            <x-slot:actions><x-admin.clear-filters :href="$resetUrl" wire:navigate label="Clear filters" /></x-slot:actions>
                                         </x-admin.empty-state>
                                     @else
-                                        <x-admin.empty-state title="No commits yet" minimal />
+                                        <x-admin.empty-state title="Empty" minimal />
                                     @endif
                                 </td>
                             </tr>

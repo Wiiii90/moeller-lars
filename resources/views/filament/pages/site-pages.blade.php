@@ -212,11 +212,11 @@
                     @else
                         <div class="admin-hierarchy__empty" role="row">
                             @if ($metrics['total'] > 0)
-                                <x-admin.empty-state title="No matching pages" minimal>
-                                    <x-slot:actions><button class="admin-action" type="button" wire:click="resetFilters">{{ __('Clear filters') }}</button></x-slot:actions>
+                                <x-admin.empty-state title="No matches" minimal>
+                                    <x-slot:actions><x-admin.clear-filters label="Clear filters" wire:click="resetFilters" /></x-slot:actions>
                                 </x-admin.empty-state>
                             @else
-                                <x-admin.empty-state title="No pages yet" minimal>
+                                <x-admin.empty-state title="Empty" minimal>
                                     <x-slot:actions><button class="admin-action" type="button" wire:click="mountAction('addPage')">{{ __('Add page') }}</button></x-slot:actions>
                                 </x-admin.empty-state>
                             @endif

@@ -234,15 +234,15 @@
 
         @if ($feed === [])
             @if ($feedHasRecords)
-                <x-admin.empty-state title="No matching feed entries" minimal>
+                <x-admin.empty-state title="No matches" minimal>
                     <x-slot:actions>
                         @if ($hasResettableFeedFilters)
-                            <button class="admin-action" type="button" wire:click="resetFeed">{{ __('Clear filters') }}</button>
+                            <x-admin.clear-filters label="Clear filters" wire:click="resetFeed" />
                         @endif
                     </x-slot:actions>
                 </x-admin.empty-state>
             @else
-                <x-admin.empty-state title="No feed entries yet" minimal />
+                <x-admin.empty-state title="Empty" minimal />
             @endif
         @endif
     </x-admin.table>

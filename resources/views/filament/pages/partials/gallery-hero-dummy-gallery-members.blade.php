@@ -89,7 +89,7 @@
             @empty
                 <tr>
                     <td colspan="6" class="admin-table__empty-cell">
-                        <x-admin.empty-state title="No Dummy Gallery members" minimal />
+                        <x-admin.empty-state title="Empty" minimal />
                     </td>
                 </tr>
             @endforelse

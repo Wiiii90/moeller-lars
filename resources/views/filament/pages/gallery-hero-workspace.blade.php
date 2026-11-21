@@ -479,11 +479,11 @@
                             <tr>
                                 <td class="admin-table__empty-cell" colspan="4">
                                     @if ($sourceHasRecords)
-                                        <x-admin.empty-state title="No matching sources" minimal>
-                                            <x-slot:actions><button class="admin-action" type="button" wire:click="resetSourceFilters">{{ __('Clear filters') }}</button></x-slot:actions>
+                                        <x-admin.empty-state title="No matches" minimal>
+                                            <x-slot:actions><x-admin.clear-filters label="Clear filters" wire:click="resetSourceFilters" /></x-slot:actions>
                                         </x-admin.empty-state>
                                     @else
-                                        <x-admin.empty-state title="No Hero sources" minimal />
+                                        <x-admin.empty-state title="Empty" minimal />
                                     @endif
                                 </td>
                             </tr>

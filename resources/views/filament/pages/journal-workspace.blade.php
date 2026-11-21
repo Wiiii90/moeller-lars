@@ -387,11 +387,11 @@
                             <tr>
                                 <td class="admin-table__empty-cell" colspan="8">
                                     @if ($unfilteredEntryCount > 0)
-                                        <x-admin.empty-state :title="'No matching '.$entryLabel" minimal>
-                                            <x-slot:actions><button class="admin-action" type="button" wire:click="resetFilters">{{ __('Clear filters') }}</button></x-slot:actions>
+                                        <x-admin.empty-state :title="'No matches'" minimal>
+                                            <x-slot:actions><x-admin.clear-filters label="Clear filters" wire:click="resetFilters" /></x-slot:actions>
                                         </x-admin.empty-state>
                                     @else
-                                        <x-admin.empty-state :title="'No '.$entryLabel.' added to this Journal'" minimal>
+                                        <x-admin.empty-state :title="'Empty'" minimal>
                                             <x-slot:actions><button class="admin-action" type="button" wire:click="mountAction('{{ $isBlog ? 'addPost' : 'addExhibition' }}')">Add {{ $entryLabelSingular }}</button></x-slot:actions>
                                         </x-admin.empty-state>
                                     @endif
