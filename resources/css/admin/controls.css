@@ -895,14 +895,20 @@
     align-items: center;
 }
 .admin-option-panel--compact-rows .admin-option-panel__body .fi-fo-field > .fi-fo-field-label-col {
+    display: flex;
     flex: 0 0 auto;
     min-width: 0;
-    align-self: center;
+    min-height: var(--admin-control-height);
+    align-items: center;
+    align-self: stretch;
 }
 .admin-option-panel--compact-rows .admin-option-panel__body .fi-fo-field > .fi-fo-field-content-col {
+    display: flex;
     flex: 1 1 0;
     min-width: 0;
-    align-self: center;
+    min-height: var(--admin-control-height);
+    align-items: center;
+    align-self: stretch;
 }
 .admin-option-panel--compact-rows .admin-option-panel__body .fi-fo-field .fi-fo-field-label-content {
     font-size: .73rem !important;
@@ -912,7 +918,25 @@
     white-space: nowrap;
 }
 .admin-option-panel--compact-rows .admin-option-panel__body .fi-fo-field .fi-input-wrp {
+    display: flex;
+    width: 100%;
     min-width: 0;
+    min-height: var(--admin-control-height);
+    align-items: center;
+}
+/* Native text and select elements have different browser padding and line
+ * boxes. Normalize their content box so each displayed value shares the same
+ * vertical center and left inset inside the existing compact panel rows. */
+.admin-option-panel--compact-rows .admin-option-panel__body .fi-fo-field :is(
+    input.fi-input,
+    select.fi-select-input
+) {
+    box-sizing: border-box;
+    height: var(--admin-control-height);
+    min-height: var(--admin-control-height) !important;
+    padding-block: 0 !important;
+    padding-inline-start: var(--admin-control-text-inset) !important;
+    line-height: 1.25 !important;
 }
 
 /* Opt-in style for an already framed panel: the parent contour supplies the
