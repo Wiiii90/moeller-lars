@@ -377,16 +377,13 @@
                 </table>
             </x-admin.table>
     @elseif ($libraryHasRecords)
-        <x-admin.empty-state title="No matching files">
-            <p>{{ __('Adjust the search or filters.') }}</p>
+        <x-admin.empty-state title="No matches" minimal>
             <x-slot:actions>
                 <x-admin.clear-filters label="Clear filters" wire:click="resetFilters" />
             </x-slot:actions>
         </x-admin.empty-state>
     @else
-        <x-admin.empty-state title="No media files yet">
-            <p>{{ __('Upload a supported file to start the library.') }}</p>
-        </x-admin.empty-state>
+        <x-admin.empty-state title="Empty" minimal />
     @endif
 
     <x-admin.add-row
