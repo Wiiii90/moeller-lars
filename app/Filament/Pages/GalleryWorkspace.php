@@ -145,6 +145,7 @@ final class GalleryWorkspace extends Page
                         $gallery, $get('artwork_date'), $this->selectedStagedMediaAssetId,
                     );
                 },
+                titleSuggestion: fn (): string => $this->stagedArtworkTitleSuggestion(),
             ))
             ->statePath('stagedArtworkData');
     }

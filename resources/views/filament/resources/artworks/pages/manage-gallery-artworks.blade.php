@@ -169,8 +169,6 @@
                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::UploadDropzone->value"
                                 class="admin-gallery-upload__icon" aria-hidden="true" />
                             <strong>Drop images or videos here, or choose files</strong>
-                            <span x-show="uploadRunning" x-cloak
-                                x-text="'Batch progress (' + progress.toFixed(1) + '%)'"></span>
                             <span x-show="phase === 'idle'">
                                 JPEG, PNG, WebP (max {{ \App\Domain\Content\RegionalFormats::adminNumber(\App\Domain\Media\MediaIngestService::MAX_PIXELS / 1000000, 0) }} megapixels); MP4 and WebM. Interrupted transfers can be resumed by selecting the same file.
                             </span>

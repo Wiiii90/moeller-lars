@@ -383,20 +383,21 @@
     --admin-row-actions-gap: .1875rem;
 }
 
-/* Dense keeps the same six actions with compact icons at every width. */
-.admin-row-actions--six-static--dense {
+/* Gallery Dense reads the one canonical workspace mode, not per-row
+ * Alpine classes that may survive a Livewire DOM morph after editing. */
+.admin-view-switcher[data-admin-view-mode="dense"] .admin-row-actions--six-static--gallery {
     --admin-row-actions-width: var(--admin-row-actions-six-static-compact-width);
     --admin-row-actions-columns: repeat(6, 1.35rem);
     --admin-row-actions-gap: .3rem;
 }
-.admin-row-actions--six-static--dense .admin-action {
+.admin-view-switcher[data-admin-view-mode="dense"] .admin-row-actions--six-static--gallery .admin-action {
     width: 1.35rem !important;
     min-width: 1.35rem !important;
     gap: 0 !important;
     padding-inline: 0 !important;
     justify-content: center !important;
 }
-.admin-row-actions--six-static--dense .admin-action__label {
+.admin-view-switcher[data-admin-view-mode="dense"] .admin-row-actions--six-static--gallery .admin-action__label {
     display: none !important;
 }
 
@@ -422,20 +423,27 @@
 }
 
 @container admin-table (max-width: 70rem) {
-    .admin-row-actions--six-static--gallery {
+    .admin-view-switcher[data-admin-view-mode="list"] .admin-row-actions--six-static--gallery {
         --admin-row-actions-width: var(--admin-row-actions-six-static-compact-width);
         --admin-row-actions-columns: repeat(6, 1.35rem);
         --admin-row-actions-gap: .3rem;
     }
-    .admin-row-actions--six-static--gallery .admin-action {
+    .admin-view-switcher[data-admin-view-mode="list"] .admin-row-actions--six-static--gallery .admin-action {
         width: 1.35rem !important;
         min-width: 1.35rem !important;
         gap: 0 !important;
         padding-inline: 0 !important;
         justify-content: center !important;
     }
-    .admin-row-actions--six-static--gallery .admin-action__label {
+    .admin-view-switcher[data-admin-view-mode="list"] .admin-row-actions--six-static--gallery .admin-action__label {
         display: none !important;
+    }
+}
+
+/* Restore List labels after Livewire edits whenever the six labeled slots fit. */
+@container admin-table (min-width: 70.01rem) {
+    .admin-view-switcher[data-admin-view-mode="list"] .admin-row-actions--six-static--gallery .admin-action__label {
+        display: inline !important;
     }
 }
 

@@ -2,13 +2,20 @@
 
 **Lease:** 29
 **Branch:** dev
-**State:** Active — Gallery search/action toolbar geometry unified across List/Grid/Dense by removing Grid-only selection sizing; browser acceptance pending.
+**State:** Active — Staged title now uses filename placeholder, third upload percentage removed; Gallery row labels tied to canonical view mode; browser acceptance pending.
 
 ## Takeover — 2026-11-20
 
 - New chat explicitly replaces the previous Dev Worker 4 under lease 29 on `dev`.
 - User assigned continued Gallery ownership but did not yet specify a new feature or defect for implementation. Await the next concrete task; do not automatically restart historical tasks.
 - Preserve previous Gallery Stage/media/publication and table contracts. All prior browser/runtime checks listed below remain pending; no application code, tests, deployment or Continuous Integration were changed during takeover.
+
+## Gallery Stage title, upload copy and action rail — 2026-11-21
+
+- Removed the third percentage in the Gallery dropzone; two progress readings remain in the tab and status row.
+- The Staged title formerly stored the filename-derived suggestion as a form value. New Staged selections now start with null title, and the canonical ArtworkEditDialog accepts an optional titleSuggestion callback only for the compact Stage, supplied by the selected pending row. Single/batch submit still resolves an untouched blank title to the source filename through existing createStagedArtwork().
+- After returning from Edit, List action labels could disappear while wide rail spacing remained. Removed the morphable per-row Alpine Dense class and made compact icons derive solely from root data-admin-view-mode. Wide List explicitly restores textual labels at its normal breakpoint. No UI changes to Storage or published Gallery views.
+- Source-level verification only; test in browser for Stage title placeholder and custom input, List edit/back and Dense switch, upload indicators. No testing, CI or deployment.
 
 ## Gallery View toolbar stability — 2026-11-21
 

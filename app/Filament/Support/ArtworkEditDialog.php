@@ -58,7 +58,7 @@ final class ArtworkEditDialog
     }
 
     /** @return list<mixed> */
-    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true, ?Closure $onPositionChanged = null, ?Closure $positionSuggestion = null, bool $compact = false): array
+    public function schema(bool $includeGalleryAssignment = false, bool $creating = false, bool $autosave = false, bool $primaryReadOnly = false, ?Closure $onPrimaryMediaChanged = null, ?int $positionCount = null, bool $positionEditable = true, ?Closure $onPositionChanged = null, ?Closure $positionSuggestion = null, bool $compact = false, ?Closure $titleSuggestion = null): array
     {
         $slug = TextInput::make('slug')
             ->label('Public URL slug')
@@ -140,6 +140,7 @@ final class ArtworkEditDialog
                     TextInput::make('title')
                         ->required(! $creating)
                         ->maxLength(240)
+                        ->placeholder($compact ? $titleSuggestion : null)
                         ->live(onBlur: true)
                         ->afterStateUpdated(function (?string $state, callable $set, callable $get) use ($compact): void {
                             if (! $compact && blank($get('slug')) && filled($state)) {

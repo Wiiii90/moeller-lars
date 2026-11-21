@@ -107,6 +107,18 @@ trait GalleryWorkspaceDirectUpload
         return $index === false ? 0 : $index + 1;
     }
 
+    /** The selected upload supplies only a visible hint, not an entered title. */
+    private function stagedArtworkTitleSuggestion(): string
+    {
+        foreach ($this->pendingBatchArtworkMedia as $row) {
+            if ((int) $row['media_asset_id'] === $this->selectedStagedMediaAssetId) {
+                return (string) $row['title'];
+            }
+        }
+
+        return '';
+    }
+
     /** Keep queue navigation on the same selection, form and Preview lifecycle. */
     public function navigateStagedArtwork(int $direction): void
     {
@@ -148,7 +160,7 @@ trait GalleryWorkspaceDirectUpload
         $form = is_array($selected['form'] ?? null) ? $selected['form'] : [];
         if ($form === []) {
             $form = [
-                'title' => (string) $selected['title'],
+                'title' => null,
                 'primary_media_asset_id' => $assetId,
                 'artwork_date' => null,
                 'medium' => null,
