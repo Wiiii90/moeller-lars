@@ -103,7 +103,7 @@
                     </header>
 
                     @if ($heroRailRows !== [] || $excludedHeroRows !== [])
-                        <div class="gallery-hero-rail__rows">
+                        <div class="gallery-hero-rail__rows admin-visual-stage__field-scroll">
                             @foreach ($heroRailRows as $index => $row)
                                 @php $isManual = $row['is_manual'] ?? false; @endphp
                                 <article
@@ -171,7 +171,7 @@
                                     @foreach ($excludedHeroRows as $excluded)
                                         <article class="gallery-hero-candidate is-unavailable" wire:key="gallery-hero-excluded-{{ $excluded['id'] }}">
                                             <span class="gallery-hero-candidate__position"><span class="admin-position">—</span></span>
-                                                    <div class="gallery-hero-candidate__visual">
+                                            <div class="gallery-hero-candidate__visual">
                                                 @if ($excluded['thumbnail_url'])
                                                     <img src="{{ $excluded['thumbnail_url'] }}" alt="" loading="lazy" decoding="async" draggable="false">
                                                 @else

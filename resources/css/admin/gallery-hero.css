@@ -133,10 +133,13 @@
 }
 
 .gallery-hero-rail__rows {
+    /* Match Gallery's accepted scroll-edge fade without adding another
+     * boundary beneath the candidates. The shared Stage scroll owner
+     * suppresses this mask while a Select popup is open. */
+    --admin-stage-scroll-mask: linear-gradient(to bottom, #000 0%, #000 calc(100% - 1rem), transparent);
     box-sizing: border-box;
     min-height: 0;
     flex: 1 1 auto;
-    border-bottom: 1px solid var(--admin-line);
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: none;
@@ -146,6 +149,13 @@
     display: none;
     width: 0;
     height: 0;
+}
+
+/* The scrolling candidates own separators between entries, not a bottom
+ * border that competes with the scroll-edge fade. */
+.gallery-hero-rail__rows > .gallery-hero-candidate:last-child,
+.gallery-hero-rail__exclusions > .gallery-hero-candidate:last-child {
+    border-bottom: 0;
 }
 
 .gallery-hero-rail__empty {
@@ -266,10 +276,13 @@ button.gallery-hero-candidate__visual:focus-visible {
 }
 
 .gallery-hero-candidate__actions {
-    display: flex;
+    /* One stable axis for Disable/Enable and one for Remove. Single-action
+     * automatic candidates must never slide into the Remove slot. */
+    display: grid;
     grid-column: 5;
-    flex-wrap: nowrap;
-    justify-content: flex-end;
+    grid-template-columns: repeat(2, 1.7rem);
+    justify-content: end;
+    align-items: center;
     gap: .12rem;
     min-width: 0;
 }

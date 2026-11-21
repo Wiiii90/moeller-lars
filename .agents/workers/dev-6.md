@@ -2,7 +2,7 @@
 
 **Working branch:** `dev`
 **Current lease:** 32 (replacement chat, 2026-11-21).
-**Current state:** The redundant "Use as Hero source" form toggle is removed from regular Hero source Edit. Contextual Enable/Disable now uses the canonical Edit dialog header action immediately left of the native X, for both regular and existing Dummy sources. Browser/user acceptance outstanding.
+**Current state:** Verified source-path defect: individual `editHeroArtwork` reuses Artwork Edit and mutates original Artwork (not Hero-only). This is not a safe override; no Hero-override persistence was implemented. The user's requested stage fade and stable Actions alignment are source-patched pending browser review.
 
 ## Ownership and accepted design
 
@@ -34,6 +34,13 @@
 - Worker wrongly connected regular Edit to `GalleryWorkspace::getUrl` and then reconnected it to the first Artwork. Both violated the Hero-only source Edit contract. Current source fixes the missing ownership instead of repeating either wrong fallback.
 - The Random, media picker, Filter popup and Hero Stage earlier fixes remain source-only, not browser-accepted.
 
+## Current user audit and scoped Stage repair — 2026-11-21
+
+- **Critical behavioral finding:** Individual Artwork Edit from expanded Hero regular/Dummy source candidate rows calls `ArtworkEditDialog::fill/schema/save` and `changePrimaryMedia` against the original persisted `Artwork` record, through `ArtworkDraftService::update`, `ArtworkPrimaryMediaService` and `MediaAssetEditorialService`. The existing `artwork_information_override` is attached to the original Artwork, **not** scoped to Hero. Editing material/date/media here can alter the actual Gallery's Artwork. It must not be represented as a safe dummy override; warn the user and seek agreement on a proper Hero-scoped override storage/render contract before changing this editor. Hero source activation/disable/weights are separately persisted in `GalleryHeroSetting` and do not update Artwork metadata.
+- **Proposed, not implemented:** One Hero-specific version editor for each `(source id, Artwork id)` with inherited values vs explicit Hero-only overrides, saved solely in the existing Hero setting configuration and applied consistently to Hero Stage, Preview and public Hero renderer; no original Artwork/Media Asset mutation. UI should clearly say `Edit Hero version`, `Original: [Gallery]`, provide original/override source indication and a deliberate Restore original action. The user asked for a proposal first; do not introduce data-schema or public renderer changes yet.
+- **Implemented in source:** Stage candidate list now consumes canonical `admin-visual-stage__field-scroll` with Gallery's existing 1rem bottom fade token; removes the scrollport's extra bottom border and terminal-row rule. Stage candidate Actions use two fixed right-aligned tracks: Enable/Disable is always the first slot, Remove always the second. Regular and excluded candidates reserve the vacant second slot automatically, instead of a flex row pushing the single state action into the second slot.
+- No source changes to individual Artwork editing, Hero resolver, Gallery/editorial persistence, or public rendering. Browser/runtime tests and user visual acceptance are outstanding; review scrolling at top/middle/bottom, short/long candidate lists, random/ordered modes and candidate Actions for Dummy, regular and excluded rows.
+
 ## Verification and next steps
 
 - **Source checks only** after publishing on checked dev HEAD; no browser, PHP runtime or automated tests were performed in this chat.
@@ -41,4 +48,4 @@
 - Review wide, compact, narrow and minimal source table alignment, Edit/Disable/Delete rails, source order controls, selection checkbox and right-aligned Stage candidate actions. Review empty/disabled groups and date placeholder.
 - Reconcile user feedback and hand durable accepted semantics to Docs/Testing owners as appropriate. Always re-check lease 32 and fresh dev HEAD before new writes.
 
-**Next:** Publish the header-action correction against the checked dev HEAD. Browser review must verify close/reopen, header icons and source persistence; no new feature or CSS changes.
+**Next:** Validate updated Stage list appearance and action alignment in browser; separately agree and implement correct Hero-scoped Artwork override semantics before treating the individual Edit as safe.
