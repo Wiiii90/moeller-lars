@@ -196,7 +196,7 @@ final class SitePages extends Page
 
     public function updatedSelectedSectionIds(): void
     {
-        $this->syncPagesPreviewFocus(preferLastSelected: true);
+        $this->syncPagesPreviewFocus();
     }
 
     public function togglePagesPreviewAutoFocus(): void
@@ -228,7 +228,7 @@ final class SitePages extends Page
             : 'Interactive Pages preview';
     }
 
-    private function syncPagesPreviewFocus(bool $preferLastSelected = false, bool $forceRefresh = false): void
+    private function syncPagesPreviewFocus(bool $forceRefresh = false): void
     {
         $selectedIds = $this->selectedIds();
         $previewableIds = array_values(array_map(
@@ -238,18 +238,9 @@ final class SitePages extends Page
             ),
         ));
 
-        // The last selected page wins; on re-projection keep the existing focus
-        // while it remains selected. No persistent copy of the page model is needed.
-        $lastSelectedId = null;
-        foreach ($selectedIds as $id) {
-            if (in_array($id, $previewableIds, true)) {
-                $lastSelectedId = $id;
-            }
-        }
-        $nextId = $preferLastSelected
-            ? $lastSelectedId
-            : (in_array($this->pagesPreviewFocusedSectionId, $previewableIds, true)
-                ? $this->pagesPreviewFocusedSectionId : $lastSelectedId);
+        // Pages has no public multi-page index. As with Gallery and
+        // Journal, multiple selections reset to its normal base preview.
+        $nextId = count($selectedIds) === 1 ? ($previewableIds[0] ?? null) : null;
         $changed = $nextId !== $this->pagesPreviewFocusedSectionId;
         $this->pagesPreviewFocusedSectionId = $nextId;
 

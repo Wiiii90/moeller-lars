@@ -90,7 +90,10 @@ trait CustomPageWorkspaceProjectionState
             ])
             ->all();
         $selected = array_values(array_intersect($this->selectedComponentTargets, $validTargets));
-        $next = $selected === [] ? null : end($selected);
+        // Multiple selected components show the complete Custom Page,
+        // never an arbitrary last-selected component.
+        $next = count($this->selectedComponentTargets) === 1 && count($selected) === 1
+            ? $selected[0] : null;
         $changed = $next !== $this->customPreviewFocusedTarget;
         $this->customPreviewFocusedTarget = $next;
 

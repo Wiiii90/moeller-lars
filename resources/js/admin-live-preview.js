@@ -1,4 +1,4 @@
-// Shared General/Gallery/Journal Preview: actual responsive layout viewports, with
+// Shared Admin Public Preview: actual responsive layout viewports, with
 // browser-local device preference and a single interactive Public frame.
 export function adminLivePreview(element) {
     const profiles = JSON.parse(element.dataset.previewProfiles || '{}')
@@ -12,6 +12,7 @@ export function adminLivePreview(element) {
         selectedProfile: 'current-window',
         rotated: false,
         currentUrl: element.dataset.previewUrl || '',
+        pendingFocusHash: new URL(element.dataset.previewUrl || window.location.href, window.location.href).hash,
         horizontalOverflow: false,
         fitScale: 1,
         zoom: 1,
@@ -101,10 +102,48 @@ export function adminLivePreview(element) {
             return null
         },
         onFrameLoad() {
-            this.currentUrl = this.viewedPreviewUrl() || this.currentUrl
+            const hash = this.pendingFocusHash
+            this.pendingFocusHash = ''
+            const viewed = this.viewedPreviewUrl()
+            if (viewed) {
+                const url = new URL(viewed)
+                if (hash) url.hash = hash
+                this.currentUrl = url.toString()
+            }
             this.scheduleFit()
             this.bindFrameShortcuts()
             this.scheduleDiagnostics()
+            if (hash) this.focusEmbeddedTarget(hash)
+        },
+        focusEmbeddedTarget(hash) {
+            const frame = this.$refs.frame
+            if (!frame || frame.tagName !== 'IFRAME') return
+            try {
+                const doc = frame.contentDocument
+                const win = frame.contentWindow
+                if (!doc || !win || win.location.origin !== window.location.origin) return
+                const target = doc.getElementById(decodeURIComponent(hash.slice(1)))
+                if (!target) return
+
+                // Expanding disclosures and scrolling belong solely to the
+                // embedded Public document; scrollIntoView climbs through
+                // ancestor scroll containers and can move the Admin page.
+                for (let disclosure = target.closest('details'); disclosure;
+                    disclosure = disclosure.parentElement?.closest('details')) {
+                    disclosure.open = true
+                }
+                const ownDisclosure = target.matches('details')
+                    ? target : target.querySelector(':scope > details')
+                if (ownDisclosure) ownDisclosure.open = true
+
+                const stickyHeader = doc.querySelector('.site-header')
+                const top = target.getBoundingClientRect().top + win.scrollY
+                    - (stickyHeader?.getBoundingClientRect().height ?? 0)
+                win.scrollTo({ top: Math.max(0, top), behavior: 'instant' })
+            } catch (_) {
+                // Private previews are same-origin; unavailable document
+                // access must never move the containing Admin page.
+            }
         },
         changeViewport() {
             this.cancelPanGesture()
@@ -551,20 +590,24 @@ export function adminLivePreview(element) {
                 return
             }
 
-            // A Gallery/Journal selection names its target explicitly. With
-            // Auto-focus off, refresh the actual navigated Public preview,
-            // rather than the iframe element's outdated initial src.
+            // Selection targets remain inside the Public frame. With
+            // Auto-focus off, retain the frame's actual navigated URL.
             const source = typeof detail?.url === 'string' && detail.url !== ''
                 ? detail.url : (this.viewedPreviewUrl() || frame.src)
             if (typeof detail?.title === 'string' && detail.title !== '') frame.title = detail.title
             const url = new URL(source, window.location.origin)
+            this.pendingFocusHash = url.hash
+            // Loading an iframe with a fragment can also bring the containing
+            // Admin document into view. Focus the target explicitly inside the
+            // iframe after load instead of navigating its fragment.
+            url.hash = ''
             url.searchParams.set('_appearance', Date.now().toString())
-            this.currentUrl = url.toString()
+            this.currentUrl = url.toString() + this.pendingFocusHash
             this.cancelPanGesture()
             this.touchPanStart = null
             this.unbindFrameShortcuts()
             this.horizontalOverflow = false
-            frame.src = this.currentUrl
+            frame.src = url.toString()
         },
     };
 }

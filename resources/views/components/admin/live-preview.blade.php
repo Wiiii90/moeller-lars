@@ -127,7 +127,7 @@
                     </div>
                 @elseif (filled($url))
                     <iframe x-ref="frame" wire:ignore class="admin-live-preview__frame"
-                        src="{{ $url }}" title="{{ $frameTitle }}"
+                        src="{{ \Illuminate\Support\Str::before((string) $url, '#') }}" title="{{ $frameTitle }}"
                         loading="eager" tabindex="0" allowfullscreen
                         x-on:load="$nextTick(() => onFrameLoad())"></iframe>
                 @else

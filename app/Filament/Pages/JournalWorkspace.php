@@ -286,13 +286,13 @@ final class JournalWorkspace extends Page
     public function togglePostSelection(int $id): void
     {
         $this->selectedPostIds = $this->toggleSelection($this->selectedPostIds, $id);
-        $this->syncJournalPreviewFocus(in_array($id, $this->selectedPostIds, true) ? $id : null);
+        $this->syncJournalPreviewFocus();
     }
 
     public function toggleExhibitionSelection(int $id): void
     {
         $this->selectedExhibitionIds = $this->toggleSelection($this->selectedExhibitionIds, $id);
-        $this->syncJournalPreviewFocus(in_array($id, $this->selectedExhibitionIds, true) ? $id : null);
+        $this->syncJournalPreviewFocus();
     }
 
     public function toggleVisibleSelection(): void
@@ -344,23 +344,22 @@ final class JournalWorkspace extends Page
     }
 
     /** Selection does not alter a manually navigated preview while Auto-focus is off. */
-    private function syncJournalPreviewFocus(?int $preferred = null, bool $forceRefresh = false): void
+    private function syncJournalPreviewFocus(bool $forceRefresh = false): void
     {
         $isBlog = $this->journalTemplate() === JournalTemplate::Blog;
         $selected = $isBlog ? $this->selectedPostIds : $this->selectedExhibitionIds;
         $rows = $isBlog ? $this->posts : $this->exhibitions;
-        $previewable = array_values(array_map(
-            static fn (array $row): int => (int) $row['id'],
-            array_filter($rows, static fn (array $row): bool =>
-                in_array((int) $row['id'], $selected, true)
-                && is_string($row['preview_url'] ?? null)
-            ),
-        ));
-        $next = $preferred !== null && in_array($preferred, $previewable, true)
-            ? $preferred
-            : (in_array($this->journalPreviewFocusedEntryId, $previewable, true)
-                ? $this->journalPreviewFocusedEntryId
-                : ($previewable[0] ?? null));
+        // Like Gallery, one selected entry focuses its own preview; zero
+        // or multiple selections return to the Journal's normal index.
+        $single = count($selected) === 1 ? (int) reset($selected) : null;
+        $next = null;
+        foreach ($rows as $row) {
+            if ($single !== null && (int) $row['id'] === $single
+                && is_string($row['preview_url'] ?? null)) {
+                $next = $single;
+                break;
+            }
+        }
         $changed = $this->journalPreviewFocusedEntryId !== $next;
         $this->journalPreviewFocusedEntryId = $next;
 

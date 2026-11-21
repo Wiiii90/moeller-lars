@@ -314,7 +314,12 @@ function initializeExhibitionAnchorFocus() {
         if (disclosure) disclosure.open = true;
         requestAnimationFrame(() => {
             if (entry.isConnected && window.location.hash === match[0]) {
-                entry.scrollIntoView({ block: 'start', behavior: 'auto' });
+                // Scroll only the Public document. scrollIntoView may also
+                // scroll the Admin page when this route is inside its iframe.
+                const header = document.querySelector('.site-header');
+                const top = entry.getBoundingClientRect().top + window.scrollY
+                    - (header?.getBoundingClientRect().height ?? 0);
+                window.scrollTo({ top: Math.max(0, top), behavior: 'instant' });
             }
         });
     };
