@@ -1224,7 +1224,7 @@ final class General extends Page
             if (in_array($field, [
                 'default_media_copyright_notice', 'legal_imprint', 'legal_privacy',
                 'legal_usage_rights', 'legal_disclaimer',
-            ], true) && is_string($previous) && $candidate === RichTextDocument::forEditor($previous)) {
+            ], true) && is_string($previous) && $candidate === trim(RichTextDocument::forEditor($previous))) {
                 continue;
             }
             if ($candidate !== $previous) {
