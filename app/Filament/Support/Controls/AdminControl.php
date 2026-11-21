@@ -112,7 +112,9 @@ final class AdminControl
      */
     private static function decorateToggle(Toggle $field): Toggle
     {
-        return self::decorate($field)->extraAlpineAttributes([
+        return self::decorate($field)
+            ->extraAttributes(['class' => 'admin-split-toggle'], merge: true)
+            ->extraAlpineAttributes([
             'x-on:click.capture' => <<<'JS'
                 if ($el.closest('.admin-dialog--edit')) {
                     $nextTick(() => $el.dispatchEvent(new Event('change', { bubbles: true })))

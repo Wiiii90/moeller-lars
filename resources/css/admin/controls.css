@@ -407,26 +407,27 @@
     align-self: center;
 }
 
-/* The one Admin Boolean switch design. Filament 5.7's real switch button
- * owns keyboard, aria-checked, Alpine state and persistence. Its existing
- * thumb moves between two square halves; no parallel control is created.
- * This styles every Filament Toggle, including direct Toggle::make() fields. */
-html.fi button.fi-toggle[role="switch"] {
+/* One square split-toggle for every Filament Boolean Toggle, including
+ * direct Toggle::make() fields. The two chambers share the same frame;
+ * the selected half fills its chamber edge to edge without nested outlines.
+ * Filament retains switch semantics, state and lifecycle. */
+button.admin-split-toggle.fi-toggle {
     box-sizing: border-box;
     display: inline-flex;
     inline-size: 2.625rem;
     block-size: 1.375rem;
-    padding: 2px;
+    padding: 0;
     align-items: stretch;
     border: 1px solid var(--admin-line-strong);
     border-radius: 0;
     background: var(--admin-control-popover-surface);
     box-shadow: none;
-    transition: border-color .14s ease;
+    transition: border-color .15s ease;
 }
 
-html.fi button.fi-toggle[role="switch"]::after {
+button.admin-split-toggle.fi-toggle::after {
     position: absolute;
+    z-index: 1;
     top: 0;
     bottom: 0;
     left: calc(50% - .5px);
@@ -436,45 +437,45 @@ html.fi button.fi-toggle[role="switch"]::after {
     pointer-events: none;
 }
 
-html.fi button.fi-toggle[role="switch"] > :first-child {
+button.admin-split-toggle.fi-toggle > :first-child {
     box-sizing: border-box;
     display: block;
-    width: 50%;
-    height: 100%;
+    inline-size: 50%;
+    block-size: 100%;
     border-radius: 0;
-    background: color-mix(in srgb, var(--admin-text) 45%, var(--admin-control-popover-surface));
+    background: color-mix(in srgb, var(--admin-muted) 55%, var(--admin-control-popover-surface));
     box-shadow: none;
     transform: none;
     translate: 0 0;
     transition: translate .16s ease, background-color .16s ease;
 }
 
-html.fi button.fi-toggle[role="switch"].fi-toggle-on > :first-child {
-    background: var(--admin-accent);
+button.admin-split-toggle.fi-toggle.fi-toggle-on > :first-child {
     translate: 100% 0;
+    background: var(--admin-accent);
 }
 
-html.fi button.fi-toggle[role="switch"].fi-toggle-off > :first-child {
+button.admin-split-toggle.fi-toggle.fi-toggle-off > :first-child {
     translate: 0 0;
 }
 
-html.fi button.fi-toggle[role="switch"] .fi-icon {
+button.admin-split-toggle.fi-toggle .fi-icon {
     color: var(--admin-control-popover-surface);
 }
 
-html.fi button.fi-toggle[role="switch"]:hover:not(:disabled) {
+button.admin-split-toggle.fi-toggle:hover:not(:disabled) {
     border-color: var(--admin-text);
 }
 
-html.fi button.fi-toggle[role="switch"]:focus-visible {
+button.admin-split-toggle.fi-toggle:focus-visible {
     outline: 2px solid var(--admin-control-border-focus);
     outline-offset: 2px;
     box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    html.fi button.fi-toggle[role="switch"],
-    html.fi button.fi-toggle[role="switch"] > :first-child {
+    button.admin-split-toggle.fi-toggle,
+    button.admin-split-toggle.fi-toggle > :first-child {
         transition: none;
     }
 }
