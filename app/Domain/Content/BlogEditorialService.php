@@ -285,11 +285,14 @@ final class BlogEditorialService
             throw ValidationException::withMessages(['image_viewer_enabled' => 'Choose whether Journal images can be enlarged.']);
         }
         $excerpt = $data['excerpt'] ?? null;
-        if ($excerpt !== null && (! is_string($excerpt) || mb_strlen($excerpt) > 1000)) {
+        if ($excerpt !== null && ! is_string($excerpt)) {
             throw ValidationException::withMessages(['excerpt' => 'The blog excerpt is invalid.']);
         }
         if (is_string($excerpt) && trim($excerpt) !== '') {
             $this->richText->assertValid($excerpt, allowEmbeddedMedia: false);
+            if (mb_strlen(RichTextDocument::plainText($excerpt)) > 1000) {
+                throw ValidationException::withMessages(['excerpt' => 'The blog excerpt may contain at most 1000 text characters.']);
+            }
         }
 
         return [
