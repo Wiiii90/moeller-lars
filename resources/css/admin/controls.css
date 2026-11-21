@@ -902,67 +902,62 @@
     line-height: 1.2;
 }
 
-/* A prerequisite checkbox occupies the left rail. Its first dependent
- * occupies the right rail at the same height, with a left-pointing arrow.
- * Additional dependents stack in the same right rail. Edges are CSS
- * strokes, not font glyphs. The fields own their actual enabled state. */
+/* Shared two-column checkbox dependencies. Independent options stay on
+ * the left; the first dependent starts beside the prerequisite on the right.
+ * Every connector starts at the dependent checkbox, never at the midpoint of
+ * an outer Group. No extra rows or fixed-width spacer controls are needed. */
 .admin-option-panel__dependency-map,
-.admin-option-panel__dependency-target,
-.admin-option-panel__dependency-branches,
+.admin-option-panel__dependency-independent,
+.admin-option-panel__dependency-dependents,
 .admin-option-panel__dependency-leaf {
     min-width: 0;
 }
 .admin-option-panel__dependency-map > :is(.fi-sc, .fi-sc-grid) {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    column-gap: 1.45rem;
-    align-items: center;
+    column-gap: .9rem;
+    align-items: start;
 }
-.admin-option-panel__dependency-target {
-    align-self: center;
-}
-.admin-option-panel__dependency-branches {
-    position: relative;
-    padding-inline-start: .7rem;
-}
-.admin-option-panel__dependency-branches > :is(.fi-sc, .fi-sc-grid) {
+.admin-option-panel__dependency-independent > :is(.fi-sc, .fi-sc-grid),
+.admin-option-panel__dependency-dependents > :is(.fi-sc, .fi-sc-grid) {
     grid-template-columns: minmax(0, 1fr) !important;
-    row-gap: .3rem;
 }
-/* All dependents converge on one arrow towards Navigation. */
-.admin-option-panel__dependency-branches::before {
-    position: absolute;
-    inset-inline-start: -1.25rem;
-    top: 50%;
-    width: 1.25rem;
-    border-top: 1px solid var(--admin-muted);
-    opacity: .65;
-    content: "";
-    pointer-events: none;
-}
-.admin-option-panel__dependency-branches::after {
-    position: absolute;
-    inset-inline-start: -1.32rem;
-    top: calc(50% - .2rem);
-    border-block: .2rem solid transparent;
-    border-inline-end: .3rem solid var(--admin-muted);
-    content: "";
-    pointer-events: none;
-}
-.admin-option-panel__dependency-branches--multiple {
-    background:
-        linear-gradient(var(--admin-muted), var(--admin-muted))
-        0 50% / 1px calc(100% - 1.3rem) no-repeat;
-}
-.admin-option-panel__dependency-leaf {
+.admin-option-panel__dependency-dependents {
     position: relative;
 }
-.admin-option-panel__dependency-leaf::before {
+.admin-option-panel__dependency-leaf .fi-fo-field-label:has(> .fi-checkbox-input) {
+    position: relative;
+    overflow: visible;
+}
+/* A short left-pointing arrow comes directly from the Cyclic checkbox.
+ * Each later dependent uses the same checkbox-anchored connector stroke. */
+.admin-option-panel__dependency-leaf .fi-fo-field-label:has(> .fi-checkbox-input)::before {
     position: absolute;
-    inset-inline-start: -.7rem;
+    inset-inline-start: -.75rem;
     top: 50%;
-    width: .7rem;
+    width: .6rem;
     border-top: 1px solid var(--admin-muted);
-    opacity: .65;
+    opacity: .7;
+    content: "";
+    pointer-events: none;
+}
+.admin-option-panel__dependency-leaf--first .fi-fo-field-label:has(> .fi-checkbox-input)::after {
+    position: absolute;
+    inset-inline-start: -.82rem;
+    top: calc(50% - .18rem);
+    border-block: .18rem solid transparent;
+    border-inline-end: .25rem solid var(--admin-muted);
+    content: "";
+    pointer-events: none;
+}
+/* Extra dependents, if configured, converge on the first checkbox's arrow
+ * through a shared rail at the same horizontal position as their strokes. */
+.admin-option-panel__dependency-dependents--multiple::before {
+    position: absolute;
+    inset-inline-start: -.55rem;
+    top: .75rem;
+    bottom: .75rem;
+    border-inline-start: 1px solid var(--admin-muted);
+    opacity: .7;
     content: "";
     pointer-events: none;
 }

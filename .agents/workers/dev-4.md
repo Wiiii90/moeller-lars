@@ -22,11 +22,11 @@
 
 ## Current responsive Gallery Stage and Settings — 2026-11-21
 
-- Gallery uses General's <=64rem workspace behavior: editor-only Stage with Upload/Staged/Settings; at larger widths the true protected Public Live Preview remains. The former Editor/Preview switcher and Gallery-specific focused-pane overrides are retired.
-- The canonical `AdminPanelControl` retains one enable checkbox per panel, one disclosure, shared compact Stage sizing, and clear toggle names (`Activate Artwork Pages`, `Activate Modal Viewer`, `Show Artwork Information`). Header space is reserved for the actual disclosure width rather than an equal second column.
-- **Latest artist feedback rejected the first vertical dependency tree:** its upward glyph and connector obstructed Navigation, and the former panel-specific `columnSpan(['default' => 2, 'xl' => 1])` stacked panels while Artwork Order / New Artwork Placement stayed side by side. The rework removes that old tree and per-panel breakpoint, gives all four Settings grid slots the same `['default' => 1, 'sm' => 2]` breakpoint, and keeps panels in two columns exactly while the select pair is in two columns.
-- `AdminPanelControl::dependencyTree` now displays Navigation on the left and first dependent Cyclic on the same row to its right with a simple left-pointing line arrow. Further dependent checkboxes can stack in that right-hand column and converge on the same parent. The dependency presentation is owned by the central panel stylesheet, not Gallery CSS. Tiny Stage checkbox labels were enlarged. The canonical Filament disabled-state callbacks and existing save/refresh behavior are unchanged.
-- **Verification:** Source inspected; no PHP runtime, actual Filament rendering, browser test, or artist acceptance from this chat. Review Stage at wide/narrow/phone sizes; selectors and panels must collapse together, no label clipping or unwanted whitespace, right-hand Cyclic alignment, left-pointing arrow, disabled/enabled state, Stage autosave and Settings-dialog reopening. Review another AdminPanelControl consumer after central style changes. No tests or deployment were run.
+- Gallery uses General's <=64rem workspace behavior: editor-only Stage with Upload/Staged/Settings; at larger widths the protected Public Live Preview remains. The former Editor/Preview switcher and Gallery-specific focused-pane overrides are retired.
+- `AdminPanelControl` retains one enable checkbox and disclosure per panel, shared compact Stage styling and the accepted labels (`Activate Artwork Pages`, `Activate Modal Viewer`, `Show Artwork Information`). The header reserves only the disclosure track, not an equal half-column.
+- After artist feedback, `GalleryWorkspaceUploadSettings::gallerySettingsFields` uses one shared `['default' => 1, 'sm' => 2]` root grid so Artwork Order/Placement and both Settings-panel columns change in sync. The former panel-specific full-width breakpoints were removed.
+- **Current dependency geometry, clarified by artist:** `AdminPanelControl::dependencyTree` places Navigation as a prerequisite on the left, Cyclic immediately to its right at the same row. A short arrow **originates just left of the Cyclic checkbox** and points left toward Navigation. Additional dependent fields stack below Cyclic and can join a right-column connector; the left column accepts optional unrelated form fields below Navigation. The earlier group-centered arrow and vertical-under-Navigation layout have been removed from the common `controls.css` owner, not hidden by Gallery overrides. Gallery invokes this shared control for Artwork Pages and Modal Viewer; Filament owns disabled state, validation and persistence unchanged.
+- **Verification:** GitHub source-only inspection; no local PHP/Filament runtime, browser or screenshot acceptance. Next confirm the actual dependent-label arrow anchor, Navigation/Cyclic same-row alignment, multiple-dependent joining, independent left-column placement, disabled Cyclic when Navigation is off, dialog/Stage responsive width and autosave. No test or deployment run.
 
 ## Verification and outstanding acceptance
 
@@ -37,4 +37,4 @@
 
 ## Next
 
-Obtain artist/browser confirmation of the reworked horizontal dependency map and synchronized responsive Settings columns. Verify lease 31 and fresh `dev` HEAD before all further edits.
+Review the checkbox-anchored left-pointing Cyclic dependency arrow in the artist's Stage and Settings dialog; use browser geometry evidence before any further drawing changes. Preserve synchronized Settings grid and verified lease 31.
