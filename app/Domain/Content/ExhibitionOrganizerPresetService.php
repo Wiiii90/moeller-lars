@@ -74,6 +74,7 @@ final class ExhibitionOrganizerPresetService
             foreach (Exhibition::query()->where('organizer', $previous)->orderBy('id')->get() as $exhibition) {
                 $this->exhibitions->update($exhibition, [
                     'site_section_id' => (int) $exhibition->getAttribute('site_section_id'),
+                    'title' => (string) $exhibition->getAttribute('title'),
                     'organizer' => $name,
                 ]);
             }
