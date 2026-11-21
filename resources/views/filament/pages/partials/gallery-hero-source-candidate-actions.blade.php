@@ -17,11 +17,10 @@
                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
                     label="Edit"
                     wire:click="mountAction('editDummyGallery', { gallery: {{ $groupId }} })" />
-            @elseif ($gallery['workspace_url'])
+            @elseif (str_starts_with($candidate['id'], 'artwork:'))
                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
-                    label="Edit Gallery"
-                    :href="$gallery['workspace_url']"
-                    wire:navigate />
+                    label="Edit"
+                    wire:click="mountAction('editHeroArtwork', { artwork: {{ (int) substr($candidate['id'], 8) }} })" />
             @else
                 <span class="gallery-hero-source-table__action-slot" aria-hidden="true"></span>
             @endif

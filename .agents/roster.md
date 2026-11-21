@@ -4,10 +4,10 @@
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
-| Dev Worker 4 | 31 | Active — Stage Select fixed-position overlay and canonical Media File thumbnail restored in source; browser acceptance pending | Gallery Artwork table, title editor, selection/ordering, Stage/Settings and Public Artwork/Gallery; coordinate shared controls with owners | [dev-4.md](workers/dev-4.md) |
+| Dev Worker 4 | 31 | Active — session-restorable Gallery Staged queues and safe new-versus-reused Discard implemented in source; runtime acceptance pending | Gallery Artwork table, title editor, selection/ordering, Stage/Settings and Public Artwork/Gallery; coordinate shared controls with owners | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 33 | Active — replacement chat continues the Pages type/template cutover; source-integrated, runtime and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom Page types and Hero Artworks template; Pages Settings, nested Page hierarchy and Heading controls | [dev-5.md](workers/dev-5.md) |
 
-| Dev Worker 6 | 32 | Active — regular Gallery Edit misrouting and obsolete Artwork callback corrected in source; Dummy Gallery Date read-only; browser acceptance pending | Hero source Gallery/Dummy Gallery actions, shared media selection and directly affected controls; broader Gallery owned by Dev Worker 4 | [dev-6.md](workers/dev-6.md) |
+| Dev Worker 6 | 32 | Active — restoring pre-existing Hero Edit dialog (not Gallery navigation) while retaining the named-parameter crash fix; browser acceptance pending | Hero source Gallery/Dummy Gallery actions, shared media selection and directly affected controls; broader Gallery owned by Dev Worker 4 | [dev-6.md](workers/dev-6.md) |
 
 | Dev Worker 10 | 26 | Active — rights-processing Validation readiness and completion | Media rights preparation/delivery pipeline, queue-worker integration requirements, current Validation activation evidence and safe rollout handoff; no deployments or artist-data changes without explicit approval | [dev-10.md](workers/dev-10.md) |
 
