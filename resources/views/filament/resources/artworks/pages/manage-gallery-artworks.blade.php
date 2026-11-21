@@ -172,7 +172,7 @@
                 </div>
             </div>
                 @if ($pendingBatchArtworkMedia !== [] && $selectedStagedMediaAssetId !== null)
-                        <div class="gallery-stage__form-scroll" x-show="panel === 'queue'" x-cloak
+                        <div class="gallery-stage__form-scroll admin-visual-stage__field-scroll" x-show="panel === 'queue'" x-cloak
                             wire:change="syncStagedArtworkPreview" wire:key="gallery-staged-editor-{{ $selectedStagedMediaAssetId }}">
                             {{ $this->stagedArtworkForm }}
                         </div>
@@ -212,7 +212,7 @@
                             </div>
                         </div>
                 @endif
-                    <div class="gallery-stage__settings" x-show="panel === 'settings'" x-cloak
+                    <div class="gallery-stage__settings admin-visual-stage__field-scroll" x-show="panel === 'settings'" x-cloak
                         aria-label="Gallery settings">
                         {{ $this->galleryStageSettingsForm }}
                     </div>

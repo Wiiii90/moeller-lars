@@ -604,11 +604,11 @@
 }
 
 
-/* Fading the scroll boundary makes a partially visible panel intentional.
- * No false bottom panel border or extra divider is introduced. */
+/* Keep the accepted scroll-edge fade as a Gallery presentation token.
+ * The shared Stage scroll owner suppresses this mask while a Select is open
+ * so the dropdown is not clipped by its ancestor's masking layer. */
 :is(.gallery-stage__settings, .gallery-stage__form-scroll) {
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 1rem), transparent);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 1rem), transparent);
+    --admin-stage-scroll-mask: linear-gradient(to bottom, #000 0%, #000 calc(100% - 1rem), transparent);
 }
 
 /* Gallery List and Dense consume the ranked Admin table and shared action rail.

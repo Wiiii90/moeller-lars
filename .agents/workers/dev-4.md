@@ -2,13 +2,13 @@
 
 **Lease:** 31
 **Branch:** dev
-**State:** Active — artist-rejected first dependency tree and premature panel stacking replaced with one shared right-column layout and a unified Gallery Settings grid; browser acceptance pending.
+**State:** Active — Gallery Stage Staged/Settings dropdown escape repaired at the shared Stage scroller owner in source; browser acceptance pending.
 
 ## Current assignment and ownership
 
 - The artist assigned this chat **Dev Worker 4** and subsequently requested responsive Gallery Stage and Settings improvements. Preserve Gallery/Artwork editorial ownership: Gallery Stage (Upload/Staged/Settings), Artwork tables, List/Grid/Dense actions, Gallery settings, Stage selection/order and Gallery-specific Public behavior. Work directly on `dev`, with lease verification before every write.
 - Coordination boundaries: Dev Worker 6 owns Gallery Hero; Dev Worker 11 owns Public Gallery batching/loading/captions; Dev Worker 8 owns shared dialogs and table empty states; Dev Worker 9 owns shared Live Preview navigation; Dev Worker 7 owns General/shared dropdowns. Coordinate any touched shared owner, and do not change their accepted behavior without scope approval.
-- **Last identified in-scope implementation:** `637fc5982c6795742e5a4a7d2d9a7303c937fa88` (Stage title suggestion, Upload copy, List action rail). Other workers have subsequently advanced `dev`; re-read its exact head and current source before starting new work. This registration commit changes only branch-local worker state.
+- **Ownership baseline:** Subsequent Gallery Stage responsive and checkbox work through `159edf4de5e87676d4e664128a6e0f8d5e480674` is committed. For any future edit, re-read the current `dev` head, roster and actually overlapping source; other workers may have advanced it.
 
 ## Current Gallery implementation contract (source-reported; browser review still pending)
 
@@ -28,6 +28,13 @@
 - **Current dependency geometry, clarified by artist:** `AdminPanelControl::dependencyTree` places Navigation as a prerequisite on the left, Cyclic immediately to its right at the same row. A short arrow **originates just left of the Cyclic checkbox** and points left toward Navigation. Additional dependent fields stack below Cyclic and can join a right-column connector; the left column accepts optional unrelated form fields below Navigation. The earlier group-centered arrow and vertical-under-Navigation layout have been removed from the common `controls.css` owner, not hidden by Gallery overrides. Gallery invokes this shared control for Artwork Pages and Modal Viewer; Filament owns disabled state, validation and persistence unchanged.
 - **Verification:** GitHub source-only inspection; no local PHP/Filament runtime, browser or screenshot acceptance. Next confirm the actual dependent-label arrow anchor, Navigation/Cyclic same-row alignment, multiple-dependent joining, independent left-column placement, disabled Cyclic when Navigation is off, dialog/Stage responsive width and autosave. No test or deployment run.
 
+## Stage dropdown overflow and durable rule — 2026-11-21
+
+- **Current request:** Gallery Staged and Settings Select dropdowns must extend past the fixed Stage rather than be clipped by the field scrollports or decorative bottom fades. The Stage height, scrolling while closed, editor/preview split and existing popup implementations remain unchanged.
+- **Source owner:** Both Gallery form scrollports in `manage-gallery-artworks.blade.php` opt into `admin-visual-stage__field-scroll`. Shared `stage.css` now owns the open-Select state: release `overflow` and scroll masking and raise the active scrollport above the shared divider only while an in-DOM Filament searchable Select or native Select is open. `gallery.css` retains its previous fade as the `--admin-stage-scroll-mask` presentation variable instead of clipping the menu through a fixed local mask. No duplicated Select or new JavaScript listener/teleport.
+- **Durable method:** General Stage dropdown escape and browser acceptance requirements were integrated into the current Dev role skill's Stage gate. Pending Docs reconciliation: record the accepted product rule in the existing `docs/admin/responsive.md` Stage/overlays section after browser acceptance, not as a parallel manual.
+- **Still unverified:** Actual browser geometry for an open Material Select in Staged and order/placement controls in Settings near the bottom of the Stage, long option lists, keyboard/focus, closing/reopening and restored normal scrolling, at desktop and mobile widths. No PHP runtime, browser, tests, CI or deployment run.
+
 ## Verification and outstanding acceptance
 
 - The prior chat used connected GitHub source inspection and guarded commits; it **did not** run local Laravel, PHP, actual media ingestion, browser review, tests, deployment, Continuous Integration or a database migration as part of the Gallery changes. Do not represent source-reviewed behavior as browser-accepted.
@@ -37,4 +44,4 @@
 
 ## Next
 
-Review the checkbox-anchored left-pointing Cyclic dependency arrow in the artist's Stage and Settings dialog; use browser geometry evidence before any further drawing changes. Preserve synchronized Settings grid and verified lease 31.
+Check in-browser Stage Staged/Settings dropdown escape, focus/selection and restoration of normal scroller after closing; preserve previous Gallery Settings and checkbox responsive contracts. Verify lease 31 and current `dev` head before any further changes.
