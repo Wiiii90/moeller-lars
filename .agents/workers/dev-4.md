@@ -1,8 +1,8 @@
 # Dev Worker 4 — Gallery/Artwork
 
-**Lease:** 31
+**Lease:** 38
 **Branch:** dev
-**State:** Active — corrected public individual Artwork video viewport fitting and playback semantics in the shared public media owner; source-only review pending browser acceptance.
+**State:** Active — replacement chat explicitly took over Dev Worker 4; continuing Gallery/Artwork, current code orientation and browser acceptance pending.
 
 ## Current assignment and ownership
 
