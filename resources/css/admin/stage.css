@@ -435,7 +435,6 @@
     min-height: 2rem;
     padding: .38rem 0;
     color: var(--admin-text);
-    font: inherit;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
