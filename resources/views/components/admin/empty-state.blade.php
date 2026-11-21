@@ -6,11 +6,15 @@
 
 @php($hasBody = trim((string) $slot) !== '')
 
-<div {{ $attributes->class(['admin-empty-state']) }}>
+<div {{ $attributes->class(['admin-empty-state', 'admin-empty-state--minimal' => $minimal]) }}>
     @if (! $minimal && filled($kicker))
         <p class="admin-empty-state__kicker">{{ $kicker }}</p>
     @endif
-    <h3 class="admin-empty-state__title">{{ $title }}</h3>
+    @if ($minimal)
+        <p class="admin-empty-state__title">{{ $title }}</p>
+    @else
+        <h3 class="admin-empty-state__title">{{ $title }}</h3>
+    @endif
     @if (! $minimal && $hasBody)
         <div class="admin-empty-state__body">{{ $slot }}</div>
     @endif

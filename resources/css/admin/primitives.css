@@ -401,6 +401,34 @@
     justify-content: flex-start;
 }
 
+/* Quiet table/list empty states: one compact, centered row with an optional
+ * contextual action. Rich standalone empty states retain their normal format. */
+.admin-empty-state--minimal {
+    display: flex;
+    min-height: 3rem;
+    padding: .4rem .75rem;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: .25rem .75rem;
+    border: 0;
+    text-align: center;
+}
+
+.admin-empty-state--minimal .admin-empty-state__title {
+    margin: 0;
+    color: var(--admin-muted);
+    font-size: var(--admin-font-size-table-empty, .74rem);
+    font-weight: 400;
+    font-style: italic;
+    line-height: 1.35;
+}
+
+.admin-empty-state--minimal .admin-empty-state__actions {
+    margin: 0;
+    justify-content: center;
+}
+
 .admin-metrics {
     gap: 0;
     border-block: 1px solid var(--admin-line-strong);

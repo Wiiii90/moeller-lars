@@ -24,6 +24,7 @@
     $hasNextAction = is_string($nextWireAction) && $nextWireAction !== '';
 @endphp
 
+@if ((int) $total > 0)
 <footer {{ $attributes->class(['admin-pager']) }} aria-label="{{ $ariaLabel }}">
     <x-admin.page-size-picker
         :value="$pageSize"
@@ -35,11 +36,7 @@
     />
 
     <span class="admin-pager__range">
-        @if ((int) $total === 0)
-            0 {{ __('of') }} 0
-        @else
-            {{ (int) $start }}–{{ (int) $end }} {{ __('of') }} {{ (int) $total }}
-        @endif
+        {{ (int) $start }}–{{ (int) $end }} {{ __('of') }} {{ (int) $total }}
     </span>
 
     <div class="admin-pager__actions admin-toolbar">
@@ -62,3 +59,4 @@
         >{{ __('Next') }}</button>
     </div>
 </footer>
+@endif

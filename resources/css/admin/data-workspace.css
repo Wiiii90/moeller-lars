@@ -287,19 +287,8 @@
     border: 0;
 }
 
-.admin-data-table > .admin-empty-state,
-.admin-table--data > .admin-empty-state {
-    min-height: 5.2rem;
-    padding: 1.35rem .6rem;
-}
-
 .admin-table .admin-table__empty-cell {
     padding: 0;
-}
-
-.admin-table__empty-cell > .admin-empty-state {
-    min-height: 5.2rem;
-    padding: 1.35rem .6rem;
 }
 
 .admin-table__identity {
@@ -350,7 +339,7 @@
 
 /* Outside tables (e.g. an empty Storage library), the empty state's lower
  * border already separates content from the persistent add row. */
-.admin-empty-state + .admin-add-row {
+.admin-empty-state:not(.admin-empty-state--minimal) + .admin-add-row {
     border-top: 0;
 }
 
