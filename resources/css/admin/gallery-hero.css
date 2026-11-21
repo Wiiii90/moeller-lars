@@ -15,6 +15,14 @@
     min-width: 0;
 }
 
+/* Expanded source groups are one visual unit: no row separators between
+ * the Gallery and its candidates, or among those candidates. The last
+ * candidate keeps the canonical separator before the next Gallery. */
+.gallery-hero-source-table .gallery-hero-source-table__group:has(+ .gallery-hero-source-table__candidate-row) > td,
+.gallery-hero-source-table .gallery-hero-source-table__candidate-row:has(+ .gallery-hero-source-table__candidate-row) > td {
+    border-bottom: 0 !important;
+}
+
 /* The actions header, column and stable row rail share one source-mode width. */
 .gallery-hero-source-table__col-actions {
     width: var(--gallery-hero-source-actions-width);
