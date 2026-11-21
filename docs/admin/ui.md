@@ -385,18 +385,7 @@ Avoid adding caches blindly before identifying what is repeated or unnecessarily
 
 ## 20. Empty states
 
-Empty states should be concise and task-oriented.
-
-Good:
-
-```text
-No matching exhibitions
-Clear filters
-```
-
-Avoid paragraphs explaining obvious states.
-
-If the empty state is caused by active filters, distinguish it from a genuinely empty dataset.
+Empty states should be concise and task-oriented. Ordinary table/list empties use the shared compact, muted `x-admin.empty-state minimal` rather than a large heading or blank panel. Use `Empty` with no records and `No matches` when a filter/search removes the visible results; add the centrally rendered `x-admin.clear-filters` eraser only when there is an actionable filter to reset. Keep contextual Add actions where relevant and avoid duplicate explanatory paragraphs. The [Admin table contract](tables.md#control-to-table-boundary) owns borders, spacing and zero-count pagination.
 
 ## 21. Responsive behavior
 

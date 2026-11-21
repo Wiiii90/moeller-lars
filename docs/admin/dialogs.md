@@ -108,6 +108,8 @@ Creates collect a complete new object before persistence.
 
 Use `AdminDialog::create()`.
 
+The Create Clear/eraser is a nested Filament Action that resets the parent Create schema. It must complete and unmount **only the child** by retaining `cancelParentActions(false)`; do not halt the Clear action, which would leave an extra mounted Action in the stack. Repeated Clear must not close the parent, block subsequent dialogs or submit a partial record. The correction was source-reviewed against pinned Filament Actions 5.7.6; browser verification of repeated Clear, submit, X/Escape and reopen is still pending.
+
 ### Command
 
 Commands collect parameters for a discrete existing-domain action such as Move, Schedule or Attach.
@@ -128,7 +130,7 @@ Confirmation dialogs guard a concrete action without editable form state.
 - when a confirmation includes a description, the shared dialog header supplies bottom breathing room after the final line, even though Filament renders that description inside the header rather than the modal body; no consumer-specific spacing rules;
 - the optional dialog condition controls whether the modal opens; when false, Filament executes the Action directly instead of opening a modal;
 - the header confirmation icon executes the action;
-- destructive confirmations use the danger treatment and canonical Delete icon;
+- destructive confirmations keep the danger treatment on the shared Check submit icon; the Delete icon remains on the invoking row or launcher action;
 - `X` cancels;
 - no bottom action row.
 
@@ -200,14 +202,15 @@ Compact summary/fact cells are optional inside dialogs. They are a layout device
 
 ## Chrome and actions
 
-The native Filament close control is always the final top-right control. Filament continues to own modal state, focus trapping and Escape behavior.
+The native Filament close control remains the only X/dismiss action. Submitted Create, Command and Confirm dialogs place their Check/Submit immediately **right of X** in the final top-right slot; autosaving Edit and read-only Viewer dialogs keep X as the rightmost control. Filament continues to own modal state, focus trapping and Escape behavior.
 
 Contextual actions are native Filament Actions lifted into the shared header rail. The shared adapter explicitly keeps modal and footer-action alignment at `Start`. Confirmation dialogs deliberately remain normal Filament modals so Filament cannot introduce a second confirmation-specific width, alignment, warning-icon, alert-role or footer-layout branch underneath the shared adapter.
 
 
 - the heading starts at the canonical content inset and occupies the same first-row vertical axis as the header actions;
-- `X` is always at the far right;
-- contextual actions sit immediately to its left in semantic order;
+- in Create, optional Clear (the shared eraser) and other secondary actions sit left of the native X, with Check/Submit at the far right;
+- in Command/Confirm, the native X is immediately left of the far-right Check/Submit; destructive confirmations color that Check with the canonical danger treatment;
+- in Edit/Viewer, X remains rightmost, with contextual actions immediately to its left in semantic order;
 - header reserve is derived from the number of actual header actions. Do not reserve a fixed empty action rail;
 - task headings are concise noun/action phrases, normally one or two words (`Edit file`, `Delete page?`, `Page settings`). Viewer headings may use the record title when identity is the point of the dialog;
 - descriptions are exceptional: keep them only for a material consequence, ambiguity or safety rule that the controls themselves do not communicate. Do not restate the heading or narrate obvious form behavior;
@@ -220,6 +223,10 @@ Contextual actions are native Filament Actions lifted into the shared header rai
 - destructive actions use the danger treatment;
 - never use local SVGs or emoji;
 - never add a redundant bottom action row.
+
+The common native Filament dialog heading uses one subtle tinted header surface and one full-width bottom divider, including confirmation and command dialogs. Dialogs do not have manual resize controls. Fine-pointer deliberate header drag and keyboard Alt+arrow repositioning belong to the existing shared geometry owner, never page-local overrides.
+
+**Browser acceptance still required:** verify Create/Clear twice followed by typing, submit, close and reopening other dialogs; danger Confirm/X/Check placement (including Exhibition Delete), native header tint and hover targets in light/dark and narrow/wide modes; background-scroll restoration, date popover switching and nested media selection. These are source-level changes, not a completed browser qualification. A future user-assigned Dialog Dev worker owns visual feedback, and the Testing workstream owns subsequent automated regression qualification; no inactive worker is treated as currently assigned.
 
 ## Shared mounted-action persistence boundary (current dev)
 
@@ -256,7 +263,7 @@ These examples apply the existing shared Create/Edit Action lifecycle; they do n
 - **General · Add profile:** `General::addSocialLinkAction()` uses a `Small` `AdminDialog::create()` with required Platform, Profile URL and Position. It creates only on the default checkmark commit; the Create form retains required markers.
 - **General · Edit profile:** `General::editSocialLinkAction()` uses a `Small` `AdminDialog::edit()` for those fields, without a Save/Commit footer or red required markers. Each valid semantic change follows the shared autosave path; an invalid change must leave the last persisted profile intact. **The mounted editor is identified by the unique persisted platform**, not by its mutable row index. After platform change the owner updates this identity; Move up/down remounts the action against its newly located record. The Social table's `wire:key` also uses the stable platform value. Never substitute a positional row identity or create a second social editor.
 - **Pages · Settings:** `ManagesSitePagesSettings::pagesSettingsAction()` uses the shared `AdminDialog::edit()` and `PagesSettingsDialog` (Default size). Its Toggle/Select fields persist through discrete `afterStateUpdated`/semantic change events using the one canonical `PagesSettingsDialog`, `HomeRoutingSettingsService`, `AdminSettingsService` and `SiteSectionOrderService` transaction path; no independent Save/Commit footer or redundant persistence. Native `X` closes without an extra write. Turning **Allow nested pages** off when children exist requires the accepted warning before the irreversible flatten operation; re-enabling nesting does not reconstruct previous parent relations. The Pages variant omits redundant Home routing helper copy while Home retains its own descriptions. See [Pages settings implementation](../../app/Filament/Support/PagesSettingsDialog.php) and [mounting Action](../../app/Filament/Pages/Concerns/ManagesSitePagesSettings.php); actual browser acceptances were not re-executed in this documentation pass.
-- **Pages · Add page:** `ManagesSitePageCreateDialog::addPageAction()` is a full Create dialog; its submit uses the canonical `AdminIcon::Pages` instead of the generic checkmark. Other Create tasks retain their normal shared confirmation icon.
+- **Pages · Add page:** `ManagesSitePageCreateDialog::addPageAction()` uses `AdminDialog::create()` with the shared Plus opener, eraser Clear and Check submit; there is no Pages-specific submit icon.
 - **Pages · Edit page:** `ManagesSitePageEditDialog::editPageAction()` uses `AdminDialog::edit()`. Its save comparison operates on the **latest persisted Site Section**, not the original modal form-fill snapshot. Stable Site Section IDs protect mounted Edit actions when row order changes. **Offene quellbelegte Identity-Abweichung:** Bei getrenntem Seitentitel und individuell gesetztem Navigation Label wird das Präsentationslabel als Edit-`name` verwendet und kann beim Speichern den echten Titel überschreiben; siehe [Pages-Identity-Audit](../architecture/ui-surfaces.md#pages--edit-titel-navigation-label-und-no-op-statischer-negativpfad). Dies ist kein als korrekt abgenommenes Verhalten.
 
 **Source:** [General actions](../../app/Filament/Pages/General.php), [Social Blade stable keys](../../resources/views/filament/schemas/components/general-social-links.blade.php), [Pages Create](../../app/Filament/Pages/Concerns/ManagesSitePageCreateDialog.php) and [Pages Edit](../../app/Filament/Pages/Concerns/ManagesSitePageEditDialog.php). Actual browser interaction was not re-executed for this documentation change.
