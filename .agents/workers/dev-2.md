@@ -7,6 +7,7 @@
 - **Recent source integration:** through `b5ce45962b0c001864833d3709844e09a7453975`, with final source/readback reconciliation still required on fresh `dev` before test handoff.
 
 ## User decisions
+- **Admin copy preference (2026-11-21):** Never use the middle dot/interpunct as a separator. Choose a better layout or ordinary grammatical punctuation instead of swapping in a different decorative glyph. Rule is maintained in branch-local `AGENTS.md` and `docs/admin/ui.md`. The Custom Page Grid Stage and area select labels were reconciled in the same scoped change. Pages Stage/menu editor is a separately owned future discussion with Dev Worker 5; do not implement it from this request.
 - Ordinary lists and CV data use the shared Rich Text editor, not a separate List component.
 - Page-template capabilities should eventually be embedded as **page-local configurations/content** inside Custom Pages, not as implicit references to other Pages or hidden Gallery subpages.
 - Layout uses one `CustomPageSetting.blocks` canonical document with responsive row-major Grids/areas, shared content components, central public renderer and Stage preview. No parallel layouts datastore.

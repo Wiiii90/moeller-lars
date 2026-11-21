@@ -230,15 +230,20 @@ The **[Journal split/fold table contract](tables.md#journals-splitfold-compositi
 The **[Admin Dialog contract](dialogs.md#journal-blogexhibitions-edit-aktionen)** owns Journal Create/Edit modal lifecycle and header actions. Blog uses Basics/Text/Gallery sections; the Exhibition editor uses the flat shared responsive schema and the [Exhibition editorial contract](../content/exhibitions.md) governs its specific fields and Gallery media table. Neither a tabular Journal row nor this UI overview defines a separate persistence owner.
 
 **Admin copy rule:** Never use middots/interpuncts (`·`) as separators
-in Admin labels, captions, metadata, metrics, status summaries, or tooltips.
-Use proper separate columns, commas, or a colon where warranted. This is
-a persistent design constraint, not a style choice to reintroduce in another
-feature. The table-specific detail belongs to [Table contract](tables.md).
+in Admin labels, captions, dates, metadata, metrics, status summaries, tooltips,
+option names or source examples intended as product copy. When two facts
+appear to need a decorative separator, **first redesign the presentation**:
+separate fields, proper labels, spacing, line breaks, table columns or the
+existing visual divider. Only use a comma or colon when ordinary language
+calls for it. Do not mechanically swap one decorative separator for another.
+Preserve artist-authored content, proper names and external literal data.
+Inspect any changed UI strings for this regression. The table-specific
+detail belongs to [Table contract](tables.md).
 
 ## Multi-view data surfaces — List, Grid and Dense
 
 Where an Admin collection offers multiple representations, the canonical
-view-selector order is **List · Grid · Dense**. The shared View toolbar
+view-selector order is **List**, **Grid**, **Dense**. The shared View toolbar
 shows both icon and name when Wide space permits, and compacts all view
 options to icons together at the established responsive state. The selected
 view persists as normal browser-session presentation state, not a second
@@ -353,7 +358,7 @@ when `Current Home artwork` already communicates the section.
 
 Likewise avoid eyebrow/kicker labels on every row/card. Information hierarchy should come from page heading, metric strip, control labels, table headers and section titles.
 
-**Metadata separators:** Never insert the decorative middle dot (`·`) between ordinary interface values or dates. Use a comma and space for related metadata within a label (`Gallery, 16 Nov 2026`), or a clearly visible vertical bar (`|`) for separate inline facts (`Preview: Sequential | Next Rotation: 17 Nov 2026`). Date details use the existing canonical regional Artwork-date formatter, not a guessed year or a new formatting helper. Preserve punctuation that is part of artist-authored content and historical titles.
+**Metadata presentation:** Never insert a decorative interpunct between ordinary interface values or dates. Prefer separately labelled facts, typographic grouping or distinct fields. If the values genuinely form one grammatical phrase, use normal punctuation (`Gallery, 16 Nov 2026`). Do not default to another symbol such as a vertical bar in place of the middle dot. Date details use the existing canonical regional Artwork-date formatter, not a guessed year or a new formatting helper. Preserve punctuation that belongs to artist-authored content and historical titles.
 
 ## 16. Dialogs and overlays
 

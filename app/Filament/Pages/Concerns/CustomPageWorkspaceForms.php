@@ -109,8 +109,8 @@ trait CustomPageWorkspaceForms
                 Select::make('column_layout')->label('Column widths')
                     ->options([
                         'equal' => 'Equal',
-                        'left-wide' => 'Left 65% · Right 35%',
-                        'right-wide' => 'Left 35% · Right 65%',
+                        'left-wide' => 'Left 65%, right 35%',
+                        'right-wide' => 'Left 35%, right 65%',
                     ])
                     ->default('equal')
                     ->visible(fn (Get $get): bool => (int) $get('columns') === 2)
@@ -202,7 +202,7 @@ trait CustomPageWorkspaceForms
                 }
                 $row = intdiv($index, $columns) + 1;
                 $column = ($index % $columns) + 1;
-                $options[$area['id']] = 'Grid '.$gridNumber.' · Row '.$row.' / Column '.$column;
+                $options[$area['id']] = 'Grid '.$gridNumber.', row '.$row.', column '.$column;
             }
         }
 
