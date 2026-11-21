@@ -424,6 +424,7 @@ button.admin-split-toggle.fi-toggle {
     border-radius: 0;
     background: color-mix(in srgb, var(--admin-muted) 12%, var(--admin-control-popover-surface));
     box-shadow: none;
+    transition: background-color .14s ease, border-color .14s ease;
 }
 
 button.admin-split-toggle.fi-toggle::after {
@@ -448,7 +449,7 @@ button.admin-split-toggle.fi-toggle > :first-child {
     box-shadow: none;
     transform: none;
     translate: 0 0;
-    transition: translate .15s ease, background-color .15s ease;
+    transition: translate .15s ease, background-color .14s ease, scale .1s ease;
 }
 
 button.admin-split-toggle.fi-toggle.fi-toggle-on > :first-child {
@@ -464,8 +465,37 @@ button.admin-split-toggle.fi-toggle .fi-icon {
     color: var(--admin-control-popover-surface);
 }
 
+/* Hover and press are short-lived affordances, not an additional stored
+ * selection state. Disabled toggles remain visibly unavailable, including
+ * while hovered, and their browser-native disabled semantics are preserved. */
 button.admin-split-toggle.fi-toggle:hover:not(:disabled) {
-    border-color: var(--admin-line-strong);
+    border-color: var(--admin-muted);
+    background: color-mix(in srgb, var(--admin-muted) 19%, var(--admin-control-popover-surface));
+}
+
+button.admin-split-toggle.fi-toggle.fi-toggle-on:hover:not(:disabled) > :first-child {
+    background: color-mix(in srgb, var(--admin-accent) 90%, white);
+}
+
+button.admin-split-toggle.fi-toggle.fi-toggle-off:hover:not(:disabled) > :first-child {
+    background: color-mix(in srgb, var(--admin-muted) 45%, var(--admin-control-popover-surface));
+}
+
+button.admin-split-toggle.fi-toggle:active:not(:disabled) > :first-child {
+    scale: 1 .9;
+}
+
+button.admin-split-toggle.fi-toggle:disabled {
+    opacity: .38;
+    cursor: not-allowed;
+    /* Filament suppresses pointer hit-testing on disabled switches. Restore
+     * hover hit-testing for the blocked cursor only; the native disabled
+     * attribute still prevents click, keyboard and state changes. */
+    pointer-events: auto;
+}
+
+button.admin-split-toggle.fi-toggle:disabled > :first-child {
+    transition: none;
 }
 
 button.admin-split-toggle.fi-toggle:focus-visible {
@@ -475,6 +505,7 @@ button.admin-split-toggle.fi-toggle:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    button.admin-split-toggle.fi-toggle,
     button.admin-split-toggle.fi-toggle > :first-child {
         transition: none;
     }
