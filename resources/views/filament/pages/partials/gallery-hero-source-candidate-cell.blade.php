@@ -1,33 +1,24 @@
-{{-- One candidate presentation for the Gallery's first row and all expanded rows. --}}
+{{-- Every expanded candidate has its own row; only the Gallery strip collapses the group. --}}
 <div class="gallery-hero-source-table__candidate-inline">
-    <button
-        type="button"
-        class="gallery-hero-source-candidate__preview gallery-hero-source-table__candidate-image-toggle"
-        wire:click="toggleSourceExpansion({{ $groupId }})"
-        aria-label="Collapse candidates in {{ $gallery['name'] }}"
-    >
-        @if ($candidate && $candidate['thumbnail_url'])
+    <span class="gallery-hero-source-candidate__preview">
+        @if ($candidate['thumbnail_url'])
             <img src="{{ $candidate['thumbnail_url'] }}" alt="" loading="lazy" decoding="async" draggable="false">
         @else
             <span>—</span>
         @endif
-    </button>
+    </span>
     <div class="gallery-hero-source-table__candidate-meta">
-        @if ($candidate)
-            <strong title="{{ $candidate['title'] }}">{{ $candidate['title'] }}</strong>
-            <small title="{{ ($candidate['disabled'] ?? false) ? __('Disabled') : ($candidate['sequence_label'] ?? '') }}">{{ implode(', ', array_filter([$candidate['gallery'], $candidate['date']])) ?: '—' }}</small>
-        @else
-            <small>{{ __('No sourced candidates') }}</small>
-        @endif
+        <strong title="{{ $candidate['title'] }}">{{ $candidate['title'] }}</strong>
+        <small title="{{ ($candidate['disabled'] ?? false) ? __('Disabled') : ($candidate['sequence_label'] ?? '') }}">{{ implode(', ', array_filter([$candidate['gallery'], $candidate['date']])) ?: '—' }}</small>
     </div>
     <div class="gallery-hero-source-table__candidate-chance">
-        @if ($candidate && $heroDisplayStrategy === 'random' && ($candidate['eligible'] ?? false))
+        @if ($heroDisplayStrategy === 'random' && ($candidate['eligible'] ?? false))
             <x-admin.inline-percentage
                 :value="$candidate['percentage']"
                 :label="'Random chance for '.$candidate['title']"
                 wire:change="setHeroPercentage('{{ $candidate['id'] }}', $event.target.value)"
             />
-        @elseif ($candidate && $heroDisplayStrategy === 'random')
+        @elseif ($heroDisplayStrategy === 'random')
             <span>—</span>
         @endif
     </div>

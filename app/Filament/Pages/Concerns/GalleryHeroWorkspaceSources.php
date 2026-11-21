@@ -163,12 +163,11 @@ trait GalleryHeroWorkspaceSources
         $targets = [];
         foreach ($this->sourceRows()->items() as $row) {
             $groupId = (int) $row['id'];
+            $targets[] = $groupId;
             if (in_array($groupId, $this->expandedSourceIds, true)) {
                 foreach ($row['candidates'] as $candidate) {
                     $targets[] = self::sourceCandidateSelectionId($groupId, $candidate['id']);
                 }
-            } else {
-                $targets[] = $groupId;
             }
         }
 
@@ -188,12 +187,13 @@ trait GalleryHeroWorkspaceSources
             static fn (array $candidate): string => self::sourceCandidateSelectionId($groupId, $candidate['id']),
             $source['candidates'],
         );
-        $this->selectedSourceIds = array_values(array_filter(
-            $this->selectedSourceIds,
-            static fn (int|string $value): bool => $expanded
-                ? ! in_array($value, $keys, true)
-                : (string) $value !== (string) $groupId,
-        ));
+        if ($expanded) {
+            // Collapsing hides candidate rows, not the Gallery's own selection.
+            $this->selectedSourceIds = array_values(array_filter(
+                $this->selectedSourceIds,
+                static fn (int|string $value): bool => ! in_array((string) $value, $keys, true),
+            ));
+        }
         $this->expandedSourceIds = $expanded
             ? array_values(array_diff($this->expandedSourceIds, [$groupId]))
             : [...$this->expandedSourceIds, $groupId];
