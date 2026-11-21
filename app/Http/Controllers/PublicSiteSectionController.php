@@ -115,7 +115,7 @@ final class PublicSiteSectionController extends Controller
         abort_unless($settings instanceof CustomPageSetting, 404);
         $blocks = $settings->components();
         $mediaIds = collect($blocks)
-            ->filter(fn (array $block): bool => in_array($block['type'] ?? null, ['image', 'list'], true))
+            ->filter(fn (array $block): bool => in_array($block['type'] ?? null, [...CustomPageSetting::MEDIA_COMPONENT_TYPES, 'list'], true))
             ->pluck('media_asset_id')
             ->filter(fn ($id): bool => is_numeric($id))->map(fn ($id): int => (int) $id)->unique()->values();
         /** @var Collection<int, MediaAsset> $assets */

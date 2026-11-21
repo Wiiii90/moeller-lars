@@ -19,6 +19,7 @@ final class CustomPageSetting extends Model
 {
     public const COMPONENT_TYPES = [
         'image',
+        'video',
         'text',
         'list',
         'divider',
@@ -26,7 +27,10 @@ final class CustomPageSetting extends Model
         'legal_disclaimer',
     ];
 
-    /** One shared allowlist for Image children in persistence, editing and sorting. */
+    /** Media kinds share the same canonical asset lifecycle. */
+    public const MEDIA_COMPONENT_TYPES = ['image', 'video'];
+
+    /** One shared allowlist for media children in persistence, editing and sorting. */
     public const IMAGE_CHILD_TYPES = ['text', 'list', 'divider', 'contact', 'legal_disclaimer'];
 
     public const IMAGE_ALIGNMENTS = ['left', 'center', 'right'];
@@ -115,7 +119,7 @@ final class CustomPageSetting extends Model
     public static function canDeleteComponent(array $component): bool
     {
         return ! self::componentPublished($component)
-            && (($component['type'] ?? null) !== 'image'
+            && (! in_array($component['type'] ?? null, self::MEDIA_COMPONENT_TYPES, true)
                 || ! is_array($component['children'] ?? null)
                 || $component['children'] === []);
     }
@@ -207,13 +211,13 @@ final class CustomPageSetting extends Model
 
             $published = self::componentPublished($block);
             $normalized[] = match ($type) {
-                'image' => [
-                    'type' => 'image',
+                'image', 'video' => [
+                    'type' => $type,
                     'published' => $published,
                     'media_asset_id' => is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null,
                     'image_decorative' => (bool) ($block['image_decorative'] ?? false),
                     ...($this->validatedImageAlignment($block) !== 'left' ? ['image_alignment' => $this->validatedImageAlignment($block)] : []),
-                    ...(self::videoControls($block) ? [] : ['video_controls_enabled' => false]),
+                    ...($type === 'video' && ! self::videoControls($block) ? ['video_controls_enabled' => false] : []),
                     ...$this->normalizedImageScale($block),
                     ...$this->normalizedImageChildren($block),
                 ],
@@ -324,8 +328,8 @@ final class CustomPageSetting extends Model
 
             $public = $requirePublicMedia && self::componentPublished($block);
 
-            if ($type === 'image') {
-                $this->validateImageComponent($block, $public);
+            if (in_array($type, self::MEDIA_COMPONENT_TYPES, true)) {
+                $this->validateMediaComponent($block, $public);
                 $children = $block['children'] ?? [];
                 if (! is_array($children) || ! array_is_list($children)) {
                     throw ValidationException::withMessages(['blocks' => 'Image children must be ordered components.']);
@@ -393,7 +397,7 @@ final class CustomPageSetting extends Model
     }
 
     /** @param array<string, mixed> $block */
-    private function validateImageComponent(array $block, bool $requirePublicMedia): void
+    private function validateMediaComponent(array $block, bool $requirePublicMedia): void
     {
         $this->validatedImageAlignment($block);
         if (array_key_exists('video_controls_enabled', $block) && ! is_bool($block['video_controls_enabled'])) {
@@ -419,10 +423,12 @@ final class CustomPageSetting extends Model
 
         /** @var MediaAsset|null $asset */
         $asset = MediaAsset::query()->find((int) $mediaId);
+        $type = $block['type'] ?? null;
+        $mimeType = $asset instanceof MediaAsset ? (string) $asset->getAttribute('mime_type') : '';
         if (! $asset instanceof MediaAsset
-            || (! MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))
-                && ! MediaTypePolicy::isVideo((string) $asset->getAttribute('mime_type')))) {
-            throw ValidationException::withMessages(['blocks' => 'Media components must reference an image or video from Storage.']);
+            || ($type === 'image' && ! MediaTypePolicy::isImage($mimeType))
+            || ($type === 'video' && ! MediaTypePolicy::isVideo($mimeType))) {
+            throw ValidationException::withMessages(['blocks' => 'Choose a Storage asset matching the component media type.']);
         }
         if (! is_bool($block['image_decorative'] ?? false)) {
             throw ValidationException::withMessages(['blocks' => 'Image presentation settings must be boolean.']);

@@ -81,7 +81,7 @@ final class MediaReferenceQuery
             }
 
             $type = $component['type'] ?? null;
-            if (in_array($type, ['image', 'list'], true)) {
+            if (in_array($type, [...CustomPageSetting::MEDIA_COMPONENT_TYPES, 'list'], true)) {
                 $mediaId = $component['media_asset_id'] ?? null;
                 if (is_numeric($mediaId) && (int) $mediaId > 0) {
                     $ids[] = (int) $mediaId;
@@ -103,7 +103,7 @@ final class MediaReferenceQuery
                 }
             }
 
-            if ($type === 'image' && is_array($component['children'] ?? null)) {
+            if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) && is_array($component['children'] ?? null)) {
                 $ids = array_merge($ids, $this->componentMediaIds($component['children'], $publishedOnly));
             }
         }

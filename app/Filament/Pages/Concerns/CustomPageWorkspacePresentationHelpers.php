@@ -19,10 +19,9 @@ trait CustomPageWorkspacePresentationHelpers
     private function componentContent(CustomPageSetting $settings, array $block, ?string $imageName): array
     {
         $type = $block['type'] ?? null;
-        if ($type === 'image') {
-            // No invented subordinate metadata: the hierarchy itself shows
-            // children, while the Content cell stays a concise identity.
-            return ['primary' => $imageName ?: 'Image unavailable', 'secondary' => '', 'meta' => ''];
+        if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)) {
+            // The hierarchy owns children; the media cell identifies its asset.
+            return ['primary' => $imageName ?: ($type === 'video' ? 'Video unavailable' : 'Image unavailable'), 'secondary' => '', 'meta' => ''];
         }
         if ($type === 'text') {
             $title = is_string($block['title'] ?? null) ? trim($block['title']) : '';

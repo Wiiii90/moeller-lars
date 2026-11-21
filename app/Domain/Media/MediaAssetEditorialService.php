@@ -418,7 +418,7 @@ class MediaAssetEditorialService
     {
         $type = $component['type'] ?? null;
 
-        if ($type === 'image'
+        if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)
             && is_numeric($component['media_asset_id'] ?? null)
             && (int) $component['media_asset_id'] === $assetId) {
             if (! empty($component['children'])) {
@@ -447,7 +447,7 @@ class MediaAssetEditorialService
             }
         }
 
-        if ($type === 'image' && is_array($component['children'] ?? null)) {
+        if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) && is_array($component['children'] ?? null)) {
             foreach ($component['children'] as $index => $child) {
                 if (! is_array($child)) {
                     continue;

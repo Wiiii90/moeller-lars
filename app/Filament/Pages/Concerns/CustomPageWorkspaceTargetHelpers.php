@@ -81,9 +81,19 @@ trait CustomPageWorkspaceTargetHelpers
         return [(int) $image, (int) $child, $type];
     }
 
+    private function mediaParentAt(int $index): array
+    {
+        $block = $this->settings()->components()[$index] ?? null;
+        if (! is_array($block) || ! in_array($block['type'] ?? null, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)) {
+            throw ValidationException::withMessages(['component' => 'The media parent changed. Reload and try again.']);
+        }
+
+        return $block;
+    }
+
     private function imageChildAt(int $image, int $child, string $type): array
     {
-        $item = $this->componentAt($image, 'image')['children'][$child] ?? null;
+        $item = $this->mediaParentAt($image)['children'][$child] ?? null;
         if (! is_array($item) || ($item['type'] ?? null) !== $type) {
             throw ValidationException::withMessages(['component' => 'This child component changed. Reload and try again.']);
         }

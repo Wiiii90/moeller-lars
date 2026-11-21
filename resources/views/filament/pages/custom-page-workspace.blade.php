@@ -6,7 +6,7 @@
                     $metricRole = match ($metric['label']) {
                         'Components' => 'components',
                         'Entries' => 'entries',
-                        'Images' => 'images',
+                        'Media' => 'images',
                         'Visits' => 'visits',
                         'Views' => 'views',
                         'Contact messages' => 'contact',

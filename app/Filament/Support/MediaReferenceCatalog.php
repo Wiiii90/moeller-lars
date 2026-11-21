@@ -529,10 +529,10 @@ final class MediaReferenceCatalog
                 $type = $component['type'] ?? null;
                 $mediaId = $component['media_asset_id'] ?? null;
 
-                if ($type === 'image' && is_numeric($mediaId) && (int) $mediaId > 0) {
+                if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) && is_numeric($mediaId) && (int) $mediaId > 0) {
                     $this->appendReferenceRow($rows, (int) $mediaId, [
                         'type' => 'Custom Page: '.$this->nodeLabel($node),
-                        'label' => 'Image component',
+                        'label' => $type === 'video' ? 'Video component' : 'Image component',
                         'url' => $this->presentation->workspaceUrl($node),
                     ]);
                 }

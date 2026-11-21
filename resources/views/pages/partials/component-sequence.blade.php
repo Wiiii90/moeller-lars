@@ -11,7 +11,7 @@
             @endphp
             @continue(! $isPreview && ! $componentPublished)
 
-            @if ($type === 'image')
+            @if (in_array($type, \App\Models\CustomPageSetting::MEDIA_COMPONENT_TYPES, true))
                 @php
                     $assetId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
                     $asset = $assetId !== null ? $assets->get($assetId) : null;

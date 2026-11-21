@@ -345,7 +345,7 @@ trait CustomPageWorkspaceComponentActions
             ->modalHeading(__('Edit component'))
             ->extraModalFooterActions(function (array $arguments) use ($actionName): array {
                 [$image, $child, $type] = $this->imageChildTarget($arguments);
-                $blocks = $this->componentAt($image, 'image')['children'] ?? [];
+                $blocks = $this->mediaParentAt($image)['children'] ?? [];
                 $args = ['imageIndex' => $image, 'childIndex' => $child, 'componentType' => $type];
                 $actions = [];
                 foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $dir => $role) {
@@ -530,20 +530,20 @@ trait CustomPageWorkspaceComponentActions
                 },
                 onImageChange: function (mixed $state) use ($arguments): void {
                     [$index, $type] = $this->actionComponentTarget($arguments);
-                    if ($type !== 'image') {
+                    if (! in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)) {
                         return;
                     }
 
                     try {
                         $id = filter_var($state, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
                         if ($id === false) {
-                            throw ValidationException::withMessages(['media_asset_id' => 'Choose an image from Storage.']);
+                            throw ValidationException::withMessages(['media_asset_id' => 'Choose a matching media file from Storage.']);
                         }
-                        $existing = $this->componentAt($index, 'image');
+                        $existing = $this->componentAt($index, $type);
                         $changed = app(CustomPageEditorialService::class)->updateBlock(
                             $this->settings(),
                             $index,
-                            'image',
+                            $type,
                             [...$existing, 'media_asset_id' => $id],
                             $this->editingComponentOriginal,
                         );
@@ -574,7 +574,7 @@ trait CustomPageWorkspaceComponentActions
                 }
 
                 try {
-                    $parentValue = $type !== 'image' ? ($data['parent_image_index'] ?? null) : null;
+                    $parentValue = ! in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) ? ($data['parent_image_index'] ?? null) : null;
                     $payload = $this->componentPayload($data, $existing);
                     if ($parentValue !== null && $parentValue !== '') {
                         $imageIndex = filter_var($parentValue, FILTER_VALIDATE_INT, [

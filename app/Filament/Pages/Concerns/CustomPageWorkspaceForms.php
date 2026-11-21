@@ -72,8 +72,8 @@ trait CustomPageWorkspaceForms
     private function componentTypeFields(string $type, bool $isNew, ?Closure $onImageChange = null, ?Closure $onContactChange = null, bool $allowParentSelection = true, bool $insideImage = false): array
     {
         return match ($type) {
-            'image' => [
-                $this->imageSelectField($onImageChange),
+            'image', 'video' => [
+                $this->mediaSelectField($onImageChange, $type),
                 TextInput::make('image_scale_percent')
                     ->label('Media size')
                     ->numeric()
@@ -90,7 +90,9 @@ trait CustomPageWorkspaceForms
                     ->default('left')
                     ->required(),
                 Toggle::make('image_decorative')->label('Decorative image')->default(false)->live(),
-                Toggle::make('video_controls_enabled')->label('Show video playback controls')->default(true),
+                ...($type === 'video' ? [
+                    Toggle::make('video_controls_enabled')->label('Show video playback controls')->default(true),
+                ] : []),
             ],
             'text' => [
                 ...(! $isNew && $allowParentSelection
@@ -200,7 +202,7 @@ trait CustomPageWorkspaceForms
     {
         $options = [];
         foreach ($this->editorRootComponents() as $index => $block) {
-            if (($block['type'] ?? null) === 'image' && ($block['image_decorative'] ?? false)) {
+            if (in_array($block['type'] ?? null, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) && ($block['image_decorative'] ?? false)) {
                 $options[$index] = 'Decorative Image '.($index + 1);
             }
         }
@@ -208,9 +210,11 @@ trait CustomPageWorkspaceForms
         return $options;
     }
 
-    private function imageSelectField(?Closure $onImageChange): Select
+    private function mediaSelectField(?Closure $onImageChange, string $type): Select
     {
-        $field = MediaAssetSelect::makeId('media_asset_id', 'Image or video from Storage', allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
+        $allowed = $type === 'video' ? MediaTypePolicy::VIDEO_MIME_TYPES : MediaTypePolicy::IMAGE_MIME_TYPES;
+        $label = $type === 'video' ? 'Video from Storage' : 'Image from Storage';
+        $field = MediaAssetSelect::makeId('media_asset_id', $label, allowedMimeTypes: $allowed)
             ->required();
 
         // Searchable Filament selects update their Livewire state without a

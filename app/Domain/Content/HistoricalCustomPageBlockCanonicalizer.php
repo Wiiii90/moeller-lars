@@ -9,15 +9,22 @@ namespace App\Domain\Content;
  */
 final class HistoricalCustomPageBlockCanonicalizer
 {
-    public static function canonicalize(mixed $blocks): mixed
+    public static function canonicalize(mixed $blocks, ?callable $isVideoMedia = null): mixed
     {
         if (! is_array($blocks) || ! array_is_list($blocks)) {
             return $blocks;
         }
 
-        return array_map(static function (mixed $block): mixed {
+        return array_map(static function (mixed $block) use ($isVideoMedia): mixed {
             if (! is_array($block)) {
                 return $block;
+            }
+
+            if (($block['type'] ?? null) === 'image'
+                && is_numeric($block['media_asset_id'] ?? null)
+                && $isVideoMedia !== null
+                && $isVideoMedia((int) $block['media_asset_id'])) {
+                $block['type'] = 'video';
             }
 
             if (($block['type'] ?? null) === 'list') {

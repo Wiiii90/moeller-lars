@@ -11,7 +11,8 @@ use App\Domain\Content\DividerVariant;
 final class ComponentEditorTypes
 {
     public const LABELS = [
-        'image' => 'Image / Video',
+        'image' => 'Image',
+        'video' => 'Video',
         'text' => 'Rich Text',
         'list' => 'List',
         'divider' => 'Divider',

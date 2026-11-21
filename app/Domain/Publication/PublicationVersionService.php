@@ -5,6 +5,7 @@ namespace App\Domain\Publication;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Content\ExhibitionDate;
 use App\Domain\Content\HistoricalCustomPageBlockCanonicalizer;
+use App\Domain\Media\MediaTypePolicy;
 use App\Models\PublicationCheckpoint;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -383,6 +384,14 @@ SQL;
     private function canonicalizeRestoredCustomPageSettings(): void
     {
         $rows = DB::select('SELECT id, blocks FROM public.custom_page_settings ORDER BY id');
+        $videoIds = array_fill_keys(
+            DB::table('public.media_assets')
+                ->whereIn('mime_type', MediaTypePolicy::VIDEO_MIME_TYPES)
+                ->pluck('id')
+                ->map(static fn ($id): int => (int) $id)
+                ->all(),
+            true,
+        );
 
         foreach ($rows as $row) {
             $blocks = $row->blocks ?? null;
@@ -390,7 +399,7 @@ SQL;
                 $blocks = json_decode($blocks, true, 512, JSON_THROW_ON_ERROR);
             }
 
-            $canonical = HistoricalCustomPageBlockCanonicalizer::canonicalize($blocks);
+            $canonical = HistoricalCustomPageBlockCanonicalizer::canonicalize($blocks, static fn (int $id): bool => isset($videoIds[$id]));
             if ($canonical === $blocks) {
                 continue;
             }

@@ -69,9 +69,9 @@ final class CustomPageEditorialService
         return DB::transaction(function () use ($settings, $imageIndex, $image, $sourceIndex, $expectedBlock): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
-            $this->assertTarget($blocks, $imageIndex, 'image');
+            $this->assertMediaParent($blocks, $imageIndex);
             $this->assertUnchangedBlock($blocks[$imageIndex], $expectedBlock);
-            if (($image['type'] ?? null) !== 'image' || ! ($image['image_decorative'] ?? false)) {
+            if (! in_array($image['type'] ?? null, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) || ! ($image['image_decorative'] ?? false)) {
                 throw ValidationException::withMessages(['image_children' => 'Only a decorative image can own text.']);
             }
             $source = $blocks[$sourceIndex] ?? null;
@@ -122,7 +122,7 @@ final class CustomPageEditorialService
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
             $this->assertTarget($blocks, $sourceIndex, $type);
-            $this->assertTarget($blocks, $imageIndex, 'image');
+            $this->assertMediaParent($blocks, $imageIndex);
 
             return $this->nestExisting($fresh, $blocks, $sourceIndex, $imageIndex);
         });
@@ -163,7 +163,7 @@ final class CustomPageEditorialService
         return DB::transaction(function () use ($settings, $imageIndex, $childIndex): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
-            $this->assertTarget($blocks, $imageIndex, 'image');
+            $this->assertMediaParent($blocks, $imageIndex);
             $children = $blocks[$imageIndex]['children'] ?? [];
             if (! is_array($children) || ! array_key_exists($childIndex, $children)) {
                 throw ValidationException::withMessages(['component' => 'Image child changed; reload the page.']);
@@ -192,8 +192,8 @@ final class CustomPageEditorialService
         return DB::transaction(function () use ($settings, $fromImage, $childIndex, $toImage): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
-            $this->assertTarget($blocks, $fromImage, 'image');
-            $this->assertTarget($blocks, $toImage, 'image');
+            $this->assertMediaParent($blocks, $fromImage);
+            $this->assertMediaParent($blocks, $toImage);
             if (! ($blocks[$toImage]['image_decorative'] ?? false)) {
                 throw ValidationException::withMessages(['component' => 'Choose a decorative image parent.']);
             }
@@ -221,7 +221,7 @@ final class CustomPageEditorialService
         return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type, $updated, $expectedBlock): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
-            $this->assertTarget($blocks, $imageIndex, 'image');
+            $this->assertMediaParent($blocks, $imageIndex);
             $children = $blocks[$imageIndex]['children'] ?? [];
             if (($children[$childIndex]['type'] ?? null) !== $type || ($updated['type'] ?? null) !== $type) {
                 throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
@@ -239,7 +239,7 @@ final class CustomPageEditorialService
         return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
-            $this->assertTarget($blocks, $imageIndex, 'image');
+            $this->assertMediaParent($blocks, $imageIndex);
             $children = $blocks[$imageIndex]['children'] ?? [];
             if (($children[$childIndex]['type'] ?? null) !== $type) {
                 throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
@@ -263,7 +263,7 @@ final class CustomPageEditorialService
         return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type, $direction): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
-            $this->assertTarget($blocks, $imageIndex, 'image');
+            $this->assertMediaParent($blocks, $imageIndex);
             $children = $blocks[$imageIndex]['children'] ?? [];
             if (($children[$childIndex]['type'] ?? null) !== $type) {
                 throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
@@ -288,7 +288,7 @@ final class CustomPageEditorialService
         return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $type, $targetType): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
-            $this->assertTarget($blocks, $imageIndex, 'image');
+            $this->assertMediaParent($blocks, $imageIndex);
             $children = $blocks[$imageIndex]['children'] ?? [];
             if (($children[$childIndex]['type'] ?? null) !== $type) {
                 throw ValidationException::withMessages(['component' => 'The child component changed. Reload and try again.']);
@@ -342,7 +342,7 @@ final class CustomPageEditorialService
                     $parent--;
                 }
             } else {
-                $this->assertTarget($blocks, $sourceIndex, 'image');
+                $this->assertMediaParent($blocks, $sourceIndex);
                 $children = $blocks[$sourceIndex]['children'] ?? [];
                 if (($children[$sourceChild]['type'] ?? null) !== $expectedType) {
                     throw ValidationException::withMessages(['component' => 'Child component changed during dragging.']);
@@ -359,7 +359,7 @@ final class CustomPageEditorialService
             if ($parent === null) {
                 array_splice($blocks, max(0, min($position, count($blocks))), 0, [$item]);
             } else {
-                $this->assertTarget($blocks, $parent, 'image');
+                $this->assertMediaParent($blocks, $parent);
                 if (! ($blocks[$parent]['image_decorative'] ?? false)
                     || ! in_array($expectedType, CustomPageSetting::IMAGE_CHILD_TYPES, true)
                     || ($expectedType === 'list' && ($item['media_asset_id'] ?? null) !== null)) {
@@ -393,7 +393,7 @@ final class CustomPageEditorialService
         return DB::transaction(function () use ($settings, $imageIndex, $childIndex, $position): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
-            $this->assertTarget($blocks, $imageIndex, 'image');
+            $this->assertMediaParent($blocks, $imageIndex);
             $children = $blocks[$imageIndex]['children'] ?? [];
             if (! array_key_exists($childIndex, $children)) {
                 throw ValidationException::withMessages(['component' => 'Image child changed; reload the page.']);
@@ -707,6 +707,15 @@ final class CustomPageEditorialService
         $block = $blocks[$index] ?? null;
         if (! is_array($block) || ($block['type'] ?? null) !== $expectedType) {
             throw ValidationException::withMessages(['component' => 'This component changed. Reload the workspace and try again.']);
+        }
+    }
+
+    /** @param list<array<string,mixed>> $blocks */
+    private function assertMediaParent(array $blocks, int $index): void
+    {
+        $block = $blocks[$index] ?? null;
+        if (! is_array($block) || ! in_array($block['type'] ?? null, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)) {
+            throw ValidationException::withMessages(['component' => 'This media parent changed. Reload the workspace and try again.']);
         }
     }
 

@@ -74,7 +74,7 @@ trait CustomPageWorkspaceProjectionState
         // Preserve the existing Public image anchor; all other component
         // roots share the same positional hash grammar, including Image children.
         $hasChild = ($matches[2] ?? '') !== '';
-        $anchor = ($matches[3] === 'image' && ! $hasChild)
+        $anchor = (in_array($matches[3], CustomPageSetting::MEDIA_COMPONENT_TYPES, true) && ! $hasChild)
             ? 'custom-page-image-'.$matches[1]
             : 'custom-page-component-page-'.$matches[1]
                 .($hasChild ? '-'.$matches[2] : '');
@@ -125,7 +125,7 @@ trait CustomPageWorkspaceProjectionState
         $this->unfilteredComponentCount = count($blocks);
 
         $imageIds = collect($blocks)
-            ->filter(static fn (array $block): bool => in_array($block['type'] ?? null, ['image', 'list'], true))
+            ->filter(static fn (array $block): bool => in_array($block['type'] ?? null, [...CustomPageSetting::MEDIA_COMPONENT_TYPES, 'list'], true))
             ->pluck('media_asset_id')
             ->filter(static fn (mixed $id): bool => is_numeric($id))
             ->map(static fn (mixed $id): int => (int) $id)
@@ -153,7 +153,7 @@ trait CustomPageWorkspaceProjectionState
             if ($type === 'list' && is_array($block['items'] ?? null)) {
                 $listEntryCount += count($block['items']);
             }
-            if ($type === 'image') {
+            if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)) {
                 $childComponentCount += count($block['children'] ?? []);
                 foreach ($block['children'] ?? [] as $child) {
                     if (is_array($child) && ($child['type'] ?? null) === 'list') {
@@ -201,8 +201,8 @@ trait CustomPageWorkspaceProjectionState
                 'published' => $published,
                 'target' => $index.':'.$type,
                 'editable' => $type !== 'legal_disclaimer',
-                'children' => $type === 'image' ? $this->imageChildSummaries($settings, $block, $index) : [],
-                'accepts_children' => $type === 'image' && ($block['image_decorative'] ?? false) === true,
+                'children' => in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) ? $this->imageChildSummaries($settings, $block, $index) : [],
+                'accepts_children' => in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) && ($block['image_decorative'] ?? false) === true,
                 'can_nest' => in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)
                     && ($type !== 'list' || ($block['media_asset_id'] ?? null) === null)
                     && ($type !== 'contact' || ! collect($settings->contactChildren($block))
@@ -228,7 +228,7 @@ trait CustomPageWorkspaceProjectionState
         $this->metrics = [
             ['label' => 'Components', 'value' => RegionalFormats::adminNumber(count($blocks) + $childComponentCount), 'description' => 'Page sequence'],
             ['label' => 'Entries', 'value' => RegionalFormats::adminNumber($listEntryCount), 'description' => 'List entries'],
-            ['label' => 'Images', 'value' => RegionalFormats::adminNumber($counts['image']), 'description' => 'Image components'],
+            ['label' => 'Media', 'value' => RegionalFormats::adminNumber($counts['image'] + $counts['video']), 'description' => 'Image and video components'],
             ['label' => 'Visits', 'value' => $this->metricValue($this->analytics['page']['visits'] ?? null), 'description' => 'This page · 30d'],
             ['label' => 'Views', 'value' => $this->metricValue($this->analytics['page']['views'] ?? null), 'description' => 'This page · 30d'],
             ['label' => 'Contact messages', 'value' => $this->metricValue($this->analytics['contact_messages'] ?? null), 'description' => 'Site-wide · 30d'],

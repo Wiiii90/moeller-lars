@@ -16,7 +16,7 @@ trait CustomPageWorkspaceSecondaryForms
             ...$block,
             'publication_state' => CustomPageSetting::componentPublished($block) ? 'published' : 'unpublished',
         ];
-        if (($block['type'] ?? null) === 'image') {
+        if (in_array($block['type'] ?? null, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)) {
             $data['image_scale_percent'] = CustomPageSetting::imageScalePercent($block);
             $data['image_alignment'] = CustomPageSetting::imageAlignment($block);
             $data['video_controls_enabled'] = CustomPageSetting::videoControls($block);
@@ -62,13 +62,13 @@ trait CustomPageWorkspaceSecondaryForms
         $published = ($data['publication_state'] ?? 'published') === 'published';
 
         return match ($type) {
-            'image' => [
-                'type' => 'image',
+            'image', 'video' => [
+                'type' => $type,
                 'published' => $published,
                 'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                 'image_decorative' => (bool) ($data['image_decorative'] ?? false),
                 ...$this->imageAlignmentPayload($data, $existing),
-                ...$this->videoControlsPayload($data, $existing),
+                ...($type === 'video' ? $this->videoControlsPayload($data, $existing) : []),
                 ...$this->imageScalePayload($data, $existing),
                 ...$this->imageChildrenPayload($data, $existing),
             ],
