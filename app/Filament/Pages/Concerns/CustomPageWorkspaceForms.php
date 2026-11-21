@@ -123,9 +123,6 @@ trait CustomPageWorkspaceForms
                 TextInput::make('title')->label('Heading')->maxLength(160),
                 ...AdminRichText::schema('body', 'Text Editor', 20000),
             ],
-            'divider' => [
-                Select::make('variant')->label('Divider')->options(array_map('__', self::DIVIDER_LABELS))->default('thin')->required(),
-            ],
             'contact' => [
                 $this->contactEditorField(
                     TextInput::make('title')->label('Heading')->placeholder(__('Contact'))->maxLength(160)->columnSpanFull(),

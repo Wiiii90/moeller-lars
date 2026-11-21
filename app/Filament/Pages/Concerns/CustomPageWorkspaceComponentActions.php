@@ -280,7 +280,6 @@ trait CustomPageWorkspaceComponentActions
                 return $this->componentEditorData($block);
             })
             ->schema(fn (array $arguments): array => $this->componentEditorSchema(
-                editingType: $this->actionComponentTarget($arguments)[1],
                 onTypeChange: function (mixed $state) use ($arguments): void {
                     $target = is_string($state) ? $state : '';
                     [, $currentType] = $this->actionComponentTarget($arguments);

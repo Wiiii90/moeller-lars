@@ -35,12 +35,6 @@ trait CustomPageWorkspaceSecondaryForms
                     $platform => in_array($platform, $data['contact_social_platforms'], true),
                 ])->all();
         }
-        if (($block['type'] ?? null) === 'divider') {
-            $data['variant'] = in_array($block['variant'] ?? null, array_keys(self::DIVIDER_LABELS), true)
-                ? $block['variant']
-                : 'thin';
-        }
-
         return $data;
     }
 
@@ -76,11 +70,6 @@ trait CustomPageWorkspaceSecondaryForms
                 'published' => $published,
                 'title' => $data['title'] ?? null,
                 'body' => $data['body'] ?? null,
-            ],
-            'divider' => [
-                'type' => 'divider',
-                'published' => $published,
-                'variant' => in_array($data['variant'] ?? null, array_keys(self::DIVIDER_LABELS), true) ? $data['variant'] : 'thin',
             ],
             'contact' => $this->contactComponentPayload($data, $published, $existing),
             'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
