@@ -19,6 +19,7 @@ use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\GalleryHeroSettingsDialog;
 use App\Filament\Support\GalleryHeroDummyGalleryDialog;
 use App\Filament\Support\ArtworkEditDialog;
+use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Controls\AdminControl;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -135,26 +136,16 @@ trait GalleryHeroWorkspaceSourceActions
 
                     return [
                         'gallery_name' => (string) $gallery->getAttribute('name'),
-                        'enabled' => in_array((int) $gallery->getKey(), $this->enabledGalleryIds, true),
                     ];
                 })
                 ->schema(function (array $arguments): array {
                     $gallery = $this->regularHeroGalleryForAction($arguments);
                     $galleryId = (int) $gallery->getKey();
-                    $enabled = in_array($galleryId, $this->enabledGalleryIds, true);
-                    $canEnable = $gallery->getRelationValue('siteSection')?->getAttribute('state') === 'published';
 
                     return [
                         AdminControl::text('gallery_name', 'Gallery')
                             ->readOnly()
                             ->dehydrated(false)
-                            ->columnSpanFull(),
-                        AdminControl::toggle('enabled', 'Use as Hero source')
-                            ->live()
-                            ->disabled(! $enabled && ! $canEnable)
-                            ->afterStateUpdated(function (mixed $state) use ($galleryId): void {
-                                $this->setRegularHeroGalleryEnabled($galleryId, (bool) $state);
-                            })
                             ->columnSpanFull(),
                         View::make('filament.pages.partials.gallery-hero-source-members')
                             ->viewData(fn (): array => [
@@ -166,6 +157,9 @@ trait GalleryHeroWorkspaceSourceActions
                             ->columnSpanFull(),
                     ];
                 })
+                ->extraModalFooterActions(fn (array $arguments): array => [
+                    $this->heroSourcePublicationHeaderAction((int) ($arguments['gallery'] ?? 0), false),
+                ])
                 ->action(static function (): void {}),
             AdminDialogSize::Large,
         );
@@ -210,9 +204,50 @@ trait GalleryHeroWorkspaceSourceActions
                 ])
                 ->schema(fn (array $arguments): array => app(GalleryHeroDummyGalleryDialog::class)
                     ->schema((int) ($arguments['gallery'] ?? 0), false))
+                ->extraModalFooterActions(fn (array $arguments): array => [
+                    $this->heroSourcePublicationHeaderAction((int) ($arguments['gallery'] ?? 0), true),
+                ])
                 ->action(static function (): void {}),
             AdminDialogSize::Large,
         );
+    }
+
+    /**
+     * The row's Hero source state action also belongs in the Edit dialog
+     * header, never as a second form field. The canonical dialog adapter
+     * places contextual actions immediately left of its native close button.
+     */
+    private function heroSourcePublicationHeaderAction(int $galleryId, bool $dummy): Action
+    {
+        if ($dummy) {
+            $source = $this->dummyGallery($galleryId);
+            $enabled = (bool) $source['enabled'];
+            $canEnable = true;
+            $editAction = 'editDummyGallery';
+        } else {
+            $gallery = $this->regularHeroGalleryForAction(['gallery' => $galleryId]);
+            $enabled = in_array($galleryId, $this->enabledGalleryIds, true);
+            $canEnable = $gallery->getRelationValue('siteSection')?->getAttribute('state') === 'published';
+            $editAction = 'editRegularHeroGallery';
+        }
+
+        $role = $enabled ? AdminRowAction::Unpublish : AdminRowAction::Publish;
+
+        return AdminDialog::headerAction(
+            'dialogHeroSourcePublication',
+            $role,
+            function () use ($galleryId, $dummy, $enabled, $editAction): void {
+                if ($dummy) {
+                    $this->toggleDummyGallery($galleryId);
+                } else {
+                    $this->setRegularHeroGalleryEnabled($galleryId, ! $enabled);
+                }
+                // Refresh the retained editor and its header against persisted state.
+                $this->replaceMountedAction($editAction, ['gallery' => $galleryId]);
+            },
+        )
+            ->label($enabled ? 'Disable' : 'Enable')
+            ->disabled(! $enabled && ! $canEnable);
     }
 
     public function renameDummyGallery(int $galleryId, string $name): void
