@@ -186,6 +186,29 @@ Appearance/Gallery tabs, no action separator and no second row at narrower
 preview widths. The Preview viewport no longer adds a second decorative
 screen/frame/shadow panel around its actual public iframe.
 
+**Shared Preview gestures:** An ordinary mouse wheel or two-finger trackpad
+scroll browses the Public document; Shift + wheel/trackpad scroll zooms around
+the pointer inside the Preview. Control/Command + wheel retains the browser's
+behavior. A held middle mouse button pans the outer Preview surface and,
+upon reaching its limits, continues scrolling the embedded Public document.
+Option (Alt) + primary-button **drag** provides the same pan for Mac trackpads
+after a small movement threshold; an Option-click without dragging remains a
+native click. Space + drag and a persistent Pan/Zoom mode were rejected.
+Touchscreen browsing keeps native one-finger page interaction and two-finger
+movement of the magnified Preview. Existing zoom buttons and percentage reset
+remain. Keyboard focus rings on Help, Settings and other actions follow
+native browser focus behavior; custom mouse-origin focus suppression and
+Help-only blur were reverted. The shared toolbar Help describes these
+current gestures and must not preserve the superseded plain-wheel-zoom trial.
+
+**Embedded background:** The shared controller marks only the embedded,
+same-origin Public document with `public-preview--embedded`; its root
+uses the configured `--public-page` backing to address a reported
+first-load/scroll paint gap in the scaled iframe. The marker is removed
+when the frame is rebound or disposed. Standalone Public Preview is not
+modified. Browser confirmation of the previously observed white gap and
+gradient continuity is still outstanding.
+
 **Gallery Preview focus** is consumer-owned by `GalleryWorkspace` rather
 than a second shared iframe. With automatic following enabled, exactly one
 selected and previewable Artwork shows its individual Working preview;
@@ -198,6 +221,30 @@ Previous/Next stepping is not a second route-switching mechanism to restore.
 The user only described future **General** automatic region-focused zoom
 when switching Global/Title/Menu/Page; it was **not implemented** and must
 not be reported as current behavior.
+
+**Gallery selection follow-up:** The canonical Gallery List/Dense checkbox
+and Grid selection route through `GalleryWorkspace::syncGalleryPreviewFocus`,
+which dispatches `gallery-preview-updated` to the shared iframe for a
+changed, valid target. The Gallery's existing selection/workspace owner
+remains responsible for investigating a user-reported failure to follow a
+selected Artwork with Auto-focus enabled. Confirm that exactly one eligible
+Artwork is selected, Artwork Pages are enabled, the detail route is usable,
+the staged queue does not own the Preview, and the event actually refreshes
+the frame. The shared View Options component had a confirmed Alpine
+initialization syntax defect: `@js($storageKey)` must terminate with a
+semicolon before `if (key)`; the canonical component was corrected, but
+it is **not established** that this correction resolves the Auto-focus
+report. A browser check should cover a valid List/Grid/Dense selection,
+deselection and multi-selection, staged queue precedence, disabled Focus,
+and non-previewable Artworks. A preload warning was reported alongside
+the syntax error but not established as its cause.
+
+**Verification boundary:** Source inspection and isolated JavaScript checks
+support the shared gesture, markup and listener lifecycle changes. Actual
+Mac trackpad/Safari behavior, touch interaction, initial embedded-background
+painting and Gallery selection-to-iframe navigation remain unverified in a
+real browser. Do not mark those behaviors browser-accepted on this evidence.
+
 
 No duplicate forms, special responsive tabs, or independent CSS buttons are
 introduced. All actual Appearance changes still use the existing autosave
