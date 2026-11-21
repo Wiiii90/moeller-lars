@@ -192,7 +192,7 @@ final class MediaReferenceCatalog
         ]);
     }
 
-    /** @return list<array{type:string,label:string,url:?string}> */
+    /** @return list<array{type:string,label:string,url:?string,artwork_id?:int,primary_artwork_id?:?int}> */
     public function references(MediaAsset $asset): array
     {
         $rows = [];
@@ -215,6 +215,10 @@ final class MediaReferenceCatalog
                 'type' => 'Gallery: '.$gallery,
                 'label' => (string) $artwork->getAttribute('title').' — '.($role === 'primary' ? 'Primary ' : 'Additional ').$noun,
                 'url' => $node instanceof SiteSection ? $this->presentation->workspaceUrl($node) : null,
+                // Only primary Artwork references own an optional Artwork
+                // deletion checkbox in the Storage confirmation.
+                'artwork_id' => (int) $artwork->getKey(),
+                'primary_artwork_id' => $role === 'primary' ? (int) $artwork->getKey() : null,
             ];
         }
 
@@ -260,7 +264,12 @@ final class MediaReferenceCatalog
 
         $unique = [];
         foreach ($rows as $row) {
-            $unique[implode('|', [$row['type'], $row['label'], $row['url'] ?? ''])] = $row;
+            // Different Artworks can legitimately share the same title,
+            // Gallery and media role. Never merge their delete choices.
+            $unique[implode('|', [
+                $row['type'], $row['label'], $row['url'] ?? '',
+                $row['artwork_id'] ?? '',
+            ])] = $row;
         }
 
         return array_values($unique);

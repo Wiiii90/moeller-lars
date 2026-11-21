@@ -10,6 +10,7 @@ use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Models\ArtworkCategory;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Media\MediaDeletionOptions;
 use App\Domain\Media\MediaReferenceQuery;
 use App\Models\Artwork;
 use App\Models\MediaAsset;
@@ -534,7 +535,7 @@ trait GalleryWorkspaceDirectUpload
                 // The canonical lock/reference guard still makes the final
                 // deletion decision if another editor references the file
                 // between our preflight check and the Storage mutation.
-                if ($mediaEditor->delete($asset, requireUnreferenced: true)) {
+                if ($mediaEditor->delete($asset, new MediaDeletionOptions(requireUnreferenced: true))) {
                     $removed[] = $id;
                     $deleted[] = $id;
                 } else {

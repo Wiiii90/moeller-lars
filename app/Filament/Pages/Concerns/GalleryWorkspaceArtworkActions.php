@@ -6,6 +6,7 @@ use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Media\MediaDeletionOptions;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -64,7 +65,9 @@ trait GalleryWorkspaceArtworkActions
                     if ($deleteFile) {
                         // One media-domain transaction owns both the optional
                         // original deletion and the Gallery Artwork removal.
-                        app(MediaAssetEditorialService::class)->delete($asset, $artwork);
+                        app(MediaAssetEditorialService::class)->delete($asset, new MediaDeletionOptions(
+                            deleteArtworkIds: [(int) $artwork->getKey()],
+                        ));
                     } else {
                         app(ArtworkDraftService::class)->delete($artwork);
                     }

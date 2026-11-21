@@ -2,7 +2,7 @@
 
 **Lease:** 31
 **Branch:** dev
-**State:** Active — consolidated formerly duplicated Admin tab preference persistence into one canonical runtime owner; source commit awaiting browser acceptance.
+**State:** Active — Storage media deletion offers per-primary-Artwork delete checkboxes with user default; retained Artworks stay in their Galleries, Journal carousel reconciliation verified; source and DB migration awaiting runtime acceptance.
 
 ## Current assignment and ownership
 
@@ -67,6 +67,16 @@
 - **Other state owners intentionally unchanged:** Gallery/Storage List/Grid/Dense remain on their existing Livewire `#[Session]` + `.live` control, Activity's view remains URL-backed, and Staged file/field restoration remains in the authenticated server-side Gallery queue. This is semantic ownership, not multiple writers to the same preference.
 - **Acceptance/risks:** Source-only verification, not live browser acceptance. Review Activity Stage switcher, Gallery refresh after Upload/Staged/Settings (with and without a queue), automatic tab switches after Submit/Discard/upload, Dashboard radio tabs on narrow screens, and Gallery/Storage views after navigation. Check quick navigation, unavailable browser storage, and a saved Staged tab after the last queued file is removed. No tests/CI/deploy run.
 
+## Latest task — Storage media deletion and owned Artwork reference choices (2026-11-21)
+
+- **Verified defect:** Existing `MediaAssetEditorialService::removeCanonicalReferences()` unpublishes an Artwork on primary-media deletion, then detaches it from its Gallery with `ArtworkGalleryAssignmentService`. This leaves metadata in a null-gallery draft and the Gallery workspace can no longer show that Artwork. ArtworkResource navigation is disabled; legacy detached Artworks are **not** automatically reconstructed without verified historical Gallery ownership.
+- **Artist contract:** For each displayed Storage file reference whose role is a **primary Artwork**, add an ordinary checkbox immediately below that reference, "Also delete this Artwork". The checkbox default is the user's `storage_delete_related_artworks` boolean, initially false and remembered after successful confirmed deletes. A mixed selection conservatively remembers false. No such checkbox for additional Artwork media, Journal, Custom Pages or Gallery Hero. Existing reference labels identify Gallery, Artwork title and primary image/video role.
+- **Canonical mutation:** All selected Artwork IDs are passed in `MediaDeletionOptions` through the single `MediaAssetEditorialService::delete()`. The service checks reviewed primary Artwork IDs and selected IDs under its existing transaction and lock, then delegates actual selected Artwork removal to the existing `ArtworkDraftService::delete()` (including Gallery position normalization/audit). Unchecked Artworks lose the primary reference, become drafts if published, **remain assigned to their Gallery at the same position**, and are not public-visible due to existing ready-media filters. Other content references are removed through existing journal/custom-page/hero/favicon owners; publication/history-controlled physical cleanup stays unchanged.
+- **Dialogs:** Main Storage single Delete, Preview Delete and bulk Delete selected use the same reference fields and checkbox display. Each confirmation snapshots exact catalog references, with bulk pre-validating every file before beginning mutations; the canonical deletion service still validates the primary Artwork ID set just before mutation. No new Artwork model or reference graph. Two retired view-only confirmation partials are removed as they have no remaining live consumers.
+- **Journal edge case validated:** `JournalEntryMediaService::detachAsset()` normalizes remaining positions and calls `reconcileCarouselPresentation()` when a Carousel has fewer than three gallery entries; switches to Slideshow. Deleting the last relevant Rich Text body media can unpublish a published Blog (or draft a scheduled one); Custom Page Image components with children explicitly fail closed to preserve nested content. The media-delete transaction must roll back if any reference cannot be safely removed.
+- **Files:** `MediaAssetEditorialService.php`, `MediaDeletionOptions.php`, `MediaReferenceCatalog.php`, `ListMediaAssets.php`, `ArtworkDraftService` caller in Gallery actions, Stage Discard caller, `User.php`, a single new users preference migration, retired confirmation partials, Dev skill and worker notes.
+- **Acceptance not claimed:** No local PHP/Laravel runtime, Playwright, tests/CI or deploy. Manual testing required for single/bulk/preview delete, multiple Artworks sharing one media, unchecked Gallery draft retention and position, selected Artwork deletion and position compaction, Journal carousel 3→2 downgrade, Custom Page with children refusal, Committed/media cleanup, and preference restore across logins. Migration must be applied in target environment before using the feature. Testing worker updates regression tests; Dev does not edit test sources.
+
 ## Verification and outstanding acceptance
 
 - The prior chat used connected GitHub source inspection and guarded commits; it **did not** run local Laravel, PHP, actual media ingestion, browser review, tests, deployment, Continuous Integration or a database migration as part of the Gallery changes. Do not represent source-reviewed behavior as browser-accepted.
@@ -76,4 +86,4 @@
 
 ## Next
 
-Verify the single remembered-tabs runtime with existing Gallery, Dashboard and Activity tabbars in a real browser (including invalid Staged selection), alongside Gallery/Storage server-backed View modes. Hand targeted regression scenarios to Testing. Verify Dev Worker 4 lease 31 and the newest `dev` head before new edits.
+Coordinate Testing's targeted deletion/reference regressions and browser validation after user acceptance. Specifically verify Storage checkbox placement below each primary Artwork reference, persisted per-user default, Gallery preservation after unchecked file deletion, explicit Gallery Artwork deletion when checked, Journal carousel fallback, safe Custom Page failure, and absence of old unassigned Artwork creation. Do not auto-assign legacy null-Gallery Artworks without provenance. Verify registered Dev Worker 4 lease 31 and the newest dev head before further edits.

@@ -5,7 +5,6 @@ namespace App\Domain\Media;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminUndoContext;
 use App\Domain\Artwork\ArtworkDraftService;
-use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Domain\Content\JournalEntryMediaService;
 use App\Domain\Content\RichTextMediaReference;
@@ -29,7 +28,6 @@ class MediaAssetEditorialService
         private readonly AdminAuditService $adminAuditService,
         private readonly AdminUndoContext $undoContext,
         private readonly MediaReferenceQuery $referenceQuery,
-        private readonly ArtworkGalleryAssignmentService $galleryAssignments,
         private readonly ArtworkDraftService $artworkDrafts,
         private readonly JournalEntryMediaService $journalMedia,
         private readonly CustomPageEditorialService $customPages,
@@ -164,18 +162,19 @@ class MediaAssetEditorialService
     }
 
     /**
-     * Optional Artwork removal is part of the same reference-deletion database
-     * transaction. This protects the Gallery's "delete file too" action for
-     * draft and working-published Artworks alike.
+     * All affected Working references and explicitly confirmed primary Artwork
+     * deletions are reconciled in the canonical media transaction. Incomplete
+     * Artworks stay in their Gallery as drafts unless selected for deletion.
      */
-    public function delete(MediaAsset $asset, ?Artwork $deleteDraftArtwork = null, bool $requireUnreferenced = false): bool
+    public function delete(MediaAsset $asset, ?MediaDeletionOptions $options = null): bool
     {
+        $options ??= new MediaDeletionOptions;
         $actor = $this->adminAuditService->requireActor();
         $assetId = (int) $asset->getKey();
         $keys = [];
         $deferCleanup = false;
 
-        $changed = DB::transaction(function () use ($assetId, $actor, $deleteDraftArtwork, $requireUnreferenced, &$keys, &$deferCleanup): bool {
+        $changed = DB::transaction(function () use ($assetId, $actor, $options, &$keys, &$deferCleanup): bool {
             DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
             $deferCleanup = DB::table('committed.media_assets')
                 ->where('id', $assetId)
@@ -193,8 +192,8 @@ class MediaAssetEditorialService
 
             $keys = $this->storageKeys($locked);
             if ($locked->getAttribute('state') === 'deleted') {
-                if ($deleteDraftArtwork instanceof Artwork) {
-                    throw ValidationException::withMessages(['media' => 'The original file has already been deleted. Reopen the Artwork editor.']);
+                if ($options->deleteArtworkIds !== []) {
+                    throw ValidationException::withMessages(['media' => 'The original file has already been deleted. Reopen the deletion dialog.']);
                 }
 
                 return false;
@@ -203,7 +202,7 @@ class MediaAssetEditorialService
             // Immediate Stage Discard has no review dialog. A duplicate
             // Storage file may already belong to other content, which must
             // never be detached silently by a one-click action.
-            if ($requireUnreferenced) {
+            if ($options->requireUnreferenced) {
                 $this->referenceQuery->forgetContentReferences();
                 if ($this->referenceQuery->isReferenced($locked)) {
                     throw ValidationException::withMessages([
@@ -212,27 +211,39 @@ class MediaAssetEditorialService
                 }
             }
 
-            $draftToDelete = null;
-            if ($deleteDraftArtwork instanceof Artwork) {
-                $draftToDelete = Artwork::query()
-                    ->whereKey($deleteDraftArtwork->getKey())
+            $deleteArtworkIds = array_values(array_unique(array_map('intval', $options->deleteArtworkIds)));
+            if ($options->reviewedPrimaryArtworkIds !== null || $deleteArtworkIds !== []) {
+                $currentPrimaryIds = ArtworkMedia::query()
+                    ->where('media_asset_id', $assetId)
+                    ->where('role', 'primary')
+                    ->orderBy('artwork_id')
                     ->lockForUpdate()
-                    ->firstOrFail();
-                if (! in_array((string) $draftToDelete->getAttribute('state'), ['draft', 'published'], true)
-                    || ! ArtworkMedia::query()
-                        ->where('artwork_id', $draftToDelete->getKey())
-                        ->where('role', 'primary')
-                        ->where('media_asset_id', $assetId)
-                        ->exists()) {
+                    ->pluck('artwork_id')
+                    ->map(static fn (mixed $id): int => (int) $id)
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if ($options->reviewedPrimaryArtworkIds !== null) {
+                    $reviewed = array_values(array_unique(array_map('intval', $options->reviewedPrimaryArtworkIds)));
+                    sort($reviewed);
+                    if ($reviewed !== $currentPrimaryIds) {
+                        throw ValidationException::withMessages([
+                            'media' => 'The primary Artwork references changed. Reopen Delete to review the affected Artworks.',
+                        ]);
+                    }
+                }
+
+                if (array_diff($deleteArtworkIds, $currentPrimaryIds)) {
                     throw ValidationException::withMessages([
-                        'artwork' => 'The Artwork or its primary file changed. Reopen Delete before removing it.',
+                        'media' => 'A selected Artwork no longer uses this file as its primary media. Reopen Delete.',
                     ]);
                 }
             }
 
-            $this->undoContext->withoutReceipts(function () use ($locked, $actor, $draftToDelete): void {
+            $this->undoContext->withoutReceipts(function () use ($locked, $actor, $deleteArtworkIds): void {
                 if ($this->referenceQuery->isReferenced($locked)) {
-                    $this->removeCanonicalReferences($locked, $actor);
+                    $this->removeCanonicalReferences($locked, $actor, $deleteArtworkIds);
                     // A missing reference-detach path must never make a still
                     // used original eligible for physical cleanup.
                     $this->referenceQuery->forgetContentReferences();
@@ -241,10 +252,6 @@ class MediaAssetEditorialService
                             'media' => 'This media is still referenced by site content. Its file was not deleted. Remove the remaining content references first.',
                         ]);
                     }
-                }
-
-                if ($draftToDelete instanceof Artwork) {
-                    $this->artworkDrafts->delete($draftToDelete);
                 }
 
                 $locked->variants()->update(['state' => 'deleted']);
@@ -274,7 +281,8 @@ class MediaAssetEditorialService
         return $changed;
     }
 
-    private function removeCanonicalReferences(MediaAsset $asset, User $actor): void
+    /** @param list<int> $deleteArtworkIds */
+    private function removeCanonicalReferences(MediaAsset $asset, User $actor, array $deleteArtworkIds): void
     {
         $assetId = (int) $asset->getKey();
 
@@ -292,6 +300,15 @@ class MediaAssetEditorialService
             $removedPrimary = $usages->contains(
                 static fn (ArtworkMedia $usage): bool => $usage->getAttribute('role') === 'primary',
             );
+
+            if (in_array((int) $artworkId, $deleteArtworkIds, true)) {
+                // The existing Artwork domain owns its deletion, audit and
+                // Gallery position normalization. Other attached media stay
+                // in Storage unless separately deleted.
+                $this->artworkDrafts->delete($artwork);
+
+                continue;
+            }
 
             foreach ($usages as $usage) {
                 $usage->delete();
@@ -312,13 +329,8 @@ class MediaAssetEditorialService
                 ['media_asset_id' => $assetId],
             );
 
-            // The primary media cannot disappear while the artwork stays in
-            // its Gallery. This canonical deletion path is used by Storage
-            // AND by the Gallery action. Keep the artwork as an unassigned
-            // draft for audit/history instead of silently destroying metadata.
-            if ($removedPrimary && $artwork->getAttribute('artwork_category_id') !== null) {
-                $this->galleryAssignments->detach($artwork);
-            }
+            // A draft with no primary image remains in its Gallery and keeps
+            // its position. Public queries already exclude incomplete drafts.
         }
 
         $this->journalMedia->detachAsset($asset);

@@ -7,6 +7,7 @@ use App\Domain\Content\RegionalFormats;
 use App\Domain\Admin\AdminMediaUploadFeedback;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Media\MediaDeletionOptions;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaTypePolicy;
@@ -24,14 +25,19 @@ use App\Models\MediaVariant;
 use App\Models\User;
 use DateTimeInterface;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Pages\Page;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Text;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\HtmlString;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Session;
 use Throwable;
@@ -298,12 +304,10 @@ final class ListMediaAssets extends Page
         $action = Action::make('delete')
             ->label('Delete')
             ->color('danger')
-            ->modalContent(fn (array $arguments): View => view(
-                'filament.resources.media-assets.partials.delete-dialog',
-                $this->deleteDialogData($this->actionAsset($arguments)),
-            ))
-            ->action(function (Action $action, array $arguments): void {
-                if (! $this->deleteAsset($this->actionAsset($arguments))) {
+            ->fillForm(fn (array $arguments): array => $this->deleteAssetFormData($this->actionAsset($arguments)))
+            ->schema(fn (array $arguments): array => $this->deleteAssetSchema($this->actionAsset($arguments)))
+            ->action(function (Action $action, array $data, array $arguments): void {
+                if (! $this->deleteAsset($this->actionAsset($arguments), $data)) {
                     $action->halt();
                 }
             });
@@ -321,13 +325,19 @@ final class ListMediaAssets extends Page
         $action = Action::make('deleteSelected')
             ->label('Delete selected')
             ->color('danger')
-            ->modalContent(fn (): View => view(
-                'filament.resources.media-assets.partials.delete-selected-dialog',
-                $this->deleteSelectedDialogData(),
-            ))
-            ->action(function (): void {
+            ->fillForm(fn (): array => $this->deleteSelectedFormData())
+            ->schema(fn (): array => $this->deleteSelectedSchema())
+            ->action(function (array $data): void {
                 $this->normalizeSelection();
                 $ids = $this->selectedAssets;
+                if (! hash_equals(
+                    $this->selectedFilesSnapshot($ids),
+                    (string) ($data['selection_snapshot'] ?? ''),
+                )) {
+                    throw ValidationException::withMessages([
+                        'media' => 'The selected Storage files changed. Reopen Delete to review them.',
+                    ]);
+                }
                 if ($ids === []) {
                     app(AdminNotifier::class)->notification(
                         title: 'No files selected',
@@ -340,10 +350,27 @@ final class ListMediaAssets extends Page
                 /** @var EloquentCollection<int, MediaAsset> $records */
                 $records = MediaAsset::query()->whereIn('id', $ids)->get();
                 $recordsById = $records->keyBy(static fn (MediaAsset $asset): int => (int) $asset->getKey());
+
+                // Review every file BEFORE starting the batch. Deleting one
+                // selected Artwork can legitimately remove an additional
+                // reference from a later file in the same batch.
+                $optionsById = [];
+                foreach ($ids as $id) {
+                    $asset = $recordsById->get($id);
+                    if (! $asset instanceof MediaAsset) {
+                        continue;
+                    }
+                    $optionsById[$id] = $this->deletionOptionsFromConfirmedForm($asset, [
+                        'reference_snapshot' => $data['reference_snapshots'][$id] ?? null,
+                        'delete_artworks' => $data['delete_artworks'][$id] ?? [],
+                    ]);
+                }
+
                 $service = app(MediaAssetEditorialService::class);
                 $deleted = 0;
                 $failed = [];
                 $remaining = [];
+                $confirmedChoices = [];
 
                 foreach ($ids as $id) {
                     $asset = $recordsById->get($id);
@@ -355,8 +382,12 @@ final class ListMediaAssets extends Page
                     }
 
                     try {
-                        if ($service->delete($asset)) {
+                        $options = $optionsById[$id];
+                        if ($service->delete($asset, $options)) {
                             $deleted++;
+                            if ($options->reviewedPrimaryArtworkIds !== []) {
+                                $confirmedChoices[] = $options;
+                            }
                         }
                     } catch (Throwable $exception) {
                         if (! $exception instanceof ValidationException) {
@@ -376,6 +407,19 @@ final class ListMediaAssets extends Page
                             : 'The file could not be deleted.';
                         $remaining[] = $id;
                     }
+                }
+
+                if ($confirmedChoices !== []) {
+                    $this->rememberArtworkDeletionChoice(new MediaDeletionOptions(
+                        deleteArtworkIds: array_merge(...array_map(
+                            static fn (MediaDeletionOptions $choice): array => $choice->deleteArtworkIds,
+                            $confirmedChoices,
+                        )),
+                        reviewedPrimaryArtworkIds: array_merge(...array_map(
+                            static fn (MediaDeletionOptions $choice): array => $choice->reviewedPrimaryArtworkIds ?? [],
+                            $confirmedChoices,
+                        )),
+                    ));
                 }
 
                 $this->selectedAssets = $this->normalizeSelectedAssets($remaining);
@@ -885,12 +929,10 @@ final class ListMediaAssets extends Page
             ->iconButton()
             ->color('danger')
             ->extraAttributes(['class' => 'admin-dialog__header-action is-danger'])
-            ->modalContent(fn (): View => view(
-                'filament.resources.media-assets.partials.delete-dialog',
-                $this->deleteDialogData($this->assetById($assetId)),
-            ))
-            ->action(function (Action $action) use ($assetId): void {
-                if (! $this->deleteAsset($this->assetById($assetId))) {
+            ->fillForm(fn (): array => $this->deleteAssetFormData($this->assetById($assetId)))
+            ->schema(fn (): array => $this->deleteAssetSchema($this->assetById($assetId)))
+            ->action(function (Action $action, array $data) use ($assetId): void {
+                if (! $this->deleteAsset($this->assetById($assetId), $data)) {
                     $action->halt();
                 }
             })
@@ -904,12 +946,17 @@ final class ListMediaAssets extends Page
         );
     }
 
-    private function deleteAsset(MediaAsset $asset): bool
+    /** @param array<string, mixed> $data */
+    private function deleteAsset(MediaAsset $asset, array $data): bool
     {
         $assetId = (int) $asset->getKey();
 
         try {
-            $changed = app(MediaAssetEditorialService::class)->delete($asset);
+            $options = $this->deletionOptionsFromConfirmedForm($asset, $data);
+            $changed = app(MediaAssetEditorialService::class)->delete($asset, $options);
+            if ($changed && $options->reviewedPrimaryArtworkIds !== []) {
+                $this->rememberArtworkDeletionChoice($options);
+            }
         } catch (Throwable $exception) {
             if (! $exception instanceof ValidationException) {
                 report($exception);
@@ -969,13 +1016,227 @@ final class ListMediaAssets extends Page
         return true;
     }
 
-    /** @return array{references:list<array{type:string,label:string,url:?string}>} */
-    private function deleteDialogData(MediaAsset $asset): array
+    /**
+     * Referenced Artworks are listed using their existing catalog labels.
+     * Only a primary Artwork reference receives a nested deletion checkbox.
+     * Other references, including Journal/Custom Page/Hero, are always
+     * removed as references rather than deleting their owning content.
+     *
+     * @return list<mixed>
+     */
+    private function deleteAssetSchema(MediaAsset $asset): array
     {
-        return ['references' => $this->assetReferences($asset)];
+        $references = $this->assetReferences($asset);
+        $schema = [
+            Text::make($references === []
+                ? 'The file and generated variants will be removed.'
+                : 'Deleting this file will also remove the following media references.'),
+        ];
+
+        array_push($schema, ...$this->deletionReferenceFields($references, 'delete_artworks'));
+
+        $schema[] = Hidden::make('reference_snapshot');
+
+        return $schema;
     }
 
-    /** @return list<array{type:string,label:string,url:?string}> */
+    /**
+     * One reference/checkbox layout for single and bulk Storage deletion.
+     *
+     * @param list<array<string,mixed>> $references
+     * @return list<mixed>
+     */
+    private function deletionReferenceFields(array $references, string $checkboxPath): array
+    {
+        $fields = [];
+        foreach ($references as $reference) {
+            $row = [
+                Text::make(new HtmlString(
+                    '<strong>'.e($reference['type']).'</strong> <span>'.e($reference['label']).'</span>',
+                )),
+            ];
+            $artworkId = $reference['primary_artwork_id'] ?? null;
+            if (is_int($artworkId) && $artworkId > 0) {
+                $row[] = Checkbox::make($checkboxPath.'.'.$artworkId)
+                    ->label('Also delete this Artwork');
+            }
+            $fields[] = Group::make($row);
+        }
+
+        return $fields;
+    }
+
+    /** @return list<mixed> */
+    private function deleteSelectedSchema(): array
+    {
+        $ids = $this->normalizeSelectedAssets($this->selectedAssets);
+        $records = MediaAsset::query()->whereIn('id', $ids)->get()->keyBy('id');
+        $schema = [Text::make(count($ids).' selected files. Changes to referenced content are listed below.')];
+
+        foreach ($ids as $id) {
+            $asset = $records->get($id);
+            if (! $asset instanceof MediaAsset) {
+                continue;
+            }
+            $references = $this->assetReferences($asset);
+            $row = [
+                Text::make(new HtmlString('<strong>'.e((string) $asset->getAttribute('original_filename')).'</strong>')),
+            ];
+            if ($references === []) {
+                $row[] = Text::make('No content references.');
+            } else {
+                array_push($row, ...$this->deletionReferenceFields($references, 'delete_artworks.'.$id));
+            }
+            $row[] = Hidden::make('reference_snapshots.'.$id);
+            $schema[] = Group::make($row);
+        }
+        $schema[] = Hidden::make('selection_snapshot');
+
+        return $schema;
+    }
+
+    /** @return array<string,mixed> */
+    private function deleteSelectedFormData(): array
+    {
+        $ids = $this->normalizeSelectedAssets($this->selectedAssets);
+        $records = MediaAsset::query()->whereIn('id', $ids)->get()->keyBy('id');
+        $choices = [];
+        $snapshots = [];
+        foreach ($ids as $id) {
+            $asset = $records->get($id);
+            if (! $asset instanceof MediaAsset) {
+                continue;
+            }
+            $form = $this->deleteAssetFormData($asset);
+            $choices[$id] = $form['delete_artworks'];
+            $snapshots[$id] = $form['reference_snapshot'];
+        }
+
+        return [
+            'delete_artworks' => $choices,
+            'reference_snapshots' => $snapshots,
+            'selection_snapshot' => $this->selectedFilesSnapshot($ids),
+        ];
+    }
+
+    /** @param list<int> $ids */
+    private function selectedFilesSnapshot(array $ids): string
+    {
+        sort($ids);
+
+        return hash('sha256', json_encode($ids, JSON_THROW_ON_ERROR));
+    }
+
+    /** @return array<string, mixed> */
+    private function deleteAssetFormData(MediaAsset $asset): array
+    {
+        $references = $this->assetReferences($asset);
+        $default = (bool) auth()->user()?->getAttribute('storage_delete_related_artworks');
+        $checked = [];
+        foreach ($references as $reference) {
+            $id = $reference['primary_artwork_id'] ?? null;
+            if (is_int($id) && $id > 0) {
+                $checked[$id] = $default;
+            }
+        }
+
+        return [
+            'delete_artworks' => $checked,
+            'reference_snapshot' => $this->referenceSnapshot($references),
+        ];
+    }
+
+    /**
+     * Validate the exact references the artist reviewed, not merely a posted
+     * checkbox name. The media owner then rechecks primary Artwork IDs again
+     * inside its locked deletion transaction.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function deletionOptionsFromConfirmedForm(MediaAsset $asset, array $data): MediaDeletionOptions
+    {
+        $references = $this->assetReferences($asset);
+        $snapshot = $data['reference_snapshot'] ?? null;
+        if (! is_string($snapshot)
+            || ! hash_equals($this->referenceSnapshot($references), $snapshot)) {
+            throw ValidationException::withMessages([
+                'media' => 'The media references changed. Reopen Delete to review the affected content.',
+            ]);
+        }
+
+        $primaryIds = [];
+        foreach ($references as $reference) {
+            $id = $reference['primary_artwork_id'] ?? null;
+            if (is_int($id) && $id > 0) {
+                $primaryIds[] = $id;
+            }
+        }
+        $primaryIds = array_values(array_unique($primaryIds));
+        sort($primaryIds);
+
+        $selected = $data['delete_artworks'] ?? [];
+        if (! is_array($selected)) {
+            throw ValidationException::withMessages(['media' => 'Invalid Artwork deletion choices.']);
+        }
+        $deleteIds = [];
+        foreach ($selected as $id => $checked) {
+            if (! is_numeric($id) || ! in_array((int) $id, $primaryIds, true)
+                || ! is_bool($checked)) {
+                throw ValidationException::withMessages(['media' => 'Invalid Artwork deletion choices.']);
+            }
+            if ($checked) {
+                $deleteIds[] = (int) $id;
+            }
+        }
+        sort($deleteIds);
+
+        return new MediaDeletionOptions(
+            deleteArtworkIds: $deleteIds,
+            reviewedPrimaryArtworkIds: $primaryIds,
+        );
+    }
+
+    /** @param list<array<string, mixed>> $references */
+    private function referenceSnapshot(array $references): string
+    {
+        $identities = array_map(
+            static fn (array $reference): string => json_encode($reference, JSON_THROW_ON_ERROR),
+            $references,
+        );
+        sort($identities, SORT_STRING);
+
+        return hash('sha256', json_encode($identities, JSON_THROW_ON_ERROR));
+    }
+
+    private function rememberArtworkDeletionChoice(MediaDeletionOptions $options): void
+    {
+        // A mixed selection has a conservative unchecked default next time.
+        $remember = $options->deleteArtworkIds !== []
+            && count($options->deleteArtworkIds) === count($options->reviewedPrimaryArtworkIds ?? []);
+
+        $user = auth()->user();
+        if (! $user instanceof User
+            || (bool) $user->getAttribute('storage_delete_related_artworks') === $remember) {
+            return;
+        }
+
+        try {
+            User::query()->whereKey($user->getKey())->update([
+                'storage_delete_related_artworks' => $remember,
+            ]);
+            $user->setAttribute('storage_delete_related_artworks', $remember);
+        } catch (Throwable $exception) {
+            // File deletion is already committed; a preference failure must
+            // not masquerade as a failed or rolled-back Storage delete.
+            report($exception);
+            app(AdminNotifier::class)->notification(
+                title: 'File deleted; preference not saved',
+                status: 'warning',
+            );
+        }
+    }
+
+    /** @return list<array{type:string,label:string,url:?string,primary_artwork_id?:?int}> */
     private function assetReferences(MediaAsset $asset): array
     {
         $catalog = app(MediaReferenceCatalog::class);
@@ -984,44 +1245,6 @@ final class ListMediaAssets extends Page
         return $catalog->references($asset);
     }
 
-    /** @return array{selectedCount:int,referencedFileCount:int,referenceCount:int,references:list<array{filename:string,type:string,label:string}>} */
-    private function deleteSelectedDialogData(): array
-    {
-        $ids = $this->normalizeSelectedAssets($this->selectedAssets);
-        /** @var EloquentCollection<int, MediaAsset> $records */
-        $records = MediaAsset::query()->whereIn('id', $ids)->get();
-        $catalog = app(MediaReferenceCatalog::class);
-        $referencedFileCount = 0;
-        $references = [];
-
-        foreach ($records as $asset) {
-            $catalog->loadAssetReferences($asset);
-            $assetReferences = $catalog->references($asset);
-            if ($assetReferences !== []) {
-                $referencedFileCount++;
-            }
-
-            foreach ($assetReferences as $reference) {
-                $references[] = [
-                    'filename' => (string) $asset->getAttribute('original_filename'),
-                    'type' => $reference['type'],
-                    'label' => $reference['label'],
-                ];
-            }
-        }
-
-        return [
-            'selectedCount' => $records->count(),
-            'referencedFileCount' => $referencedFileCount,
-            'referenceCount' => count($references),
-            'references' => $references,
-        ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $arguments
-     * @return array<string, mixed>
-     */
     private function previewDialogData(array $arguments): array
     {
         $asset = $this->actionAsset($arguments);
