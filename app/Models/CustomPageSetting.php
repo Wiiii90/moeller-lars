@@ -104,7 +104,12 @@ final class CustomPageSetting extends Model
             }
             foreach ($block['areas'] ?? [] as $area) {
                 if (is_array($area) && is_string($area['id'] ?? null)) {
-                    $areas[$area['id']] = [];
+                    // Nested Blade includes may receive an already-projected
+                    // Grid. Preserve its descendants instead of replacing
+                    // those assigned blocks with an empty cell.
+                    $areas[$area['id']] = is_array($area['blocks'] ?? null)
+                        ? $area['blocks']
+                        : [];
                 }
             }
         }
