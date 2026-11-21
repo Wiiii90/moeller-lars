@@ -328,7 +328,9 @@ final class JournalWorkspace extends Page
 
     public function journalStagePreviewUrl(): ?string
     {
-        if ($this->journalStagePanel === 'new'
+        $selectionCount = count($this->journalTemplate() === JournalTemplate::Blog
+            ? $this->selectedPostIds : $this->selectedExhibitionIds);
+        if (($this->journalStagePanel === 'new' && $selectionCount === 0)
             || ($this->journalStagePanel === 'staged' && $this->selectedStagedJournalDraftKey !== null)) {
             return route('preview.journal.staged-entry', ['section' => $this->sectionId, 'token' => $this->getId()]);
         }
@@ -347,7 +349,9 @@ final class JournalWorkspace extends Page
 
     public function journalStagePreviewTitle(): string
     {
-        if ($this->journalStagePanel === 'new'
+        $selectionCount = count($this->journalTemplate() === JournalTemplate::Blog
+            ? $this->selectedPostIds : $this->selectedExhibitionIds);
+        if (($this->journalStagePanel === 'new' && $selectionCount === 0)
             || ($this->journalStagePanel === 'staged' && $this->selectedStagedJournalDraftKey !== null)) {
             return $this->journalTemplate() === JournalTemplate::Blog
                 ? 'Interactive Blog draft preview' : 'Interactive Exhibition draft preview';
