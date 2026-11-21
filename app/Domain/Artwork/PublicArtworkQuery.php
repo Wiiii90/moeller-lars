@@ -263,6 +263,18 @@ class PublicArtworkQuery
         return $this->searchCandidates($this->editorialQuery(), $search, $limit);
     }
 
+    /** True count of editorial Hero candidates, not a preloaded search window. */
+    public function countEditorialHeroCandidates(string $search): int
+    {
+        return $this->candidateSearchQuery($this->editorialQuery()->withoutEagerLoads(), $search)->count();
+    }
+
+    /** @return Collection<int, Artwork> */
+    public function pageEditorialHeroCandidates(string $search, int $offset, int $limit): Collection
+    {
+        return $this->searchCandidates($this->editorialQuery(), $search, $limit, $offset);
+    }
+
     /** @return Collection<int, Artwork> */
     public function editorialHeroCandidatesByIds(array $ids): Collection
     {
@@ -275,26 +287,33 @@ class PublicArtworkQuery
     }
 
     /** @return Collection<int, Artwork> */
-    private function searchCandidates(Builder $query, string $search, int $limit): Collection
+    private function searchCandidates(Builder $query, string $search, int $limit, int $offset = 0): Collection
     {
-        $term = trim($search);
-
-        if ($term !== '') {
-            $needle = '%'.mb_strtolower($term).'%';
-            $query->where(function (Builder $candidate) use ($needle): void {
-                $candidate
-                    ->whereRaw('LOWER(title) LIKE ?', [$needle])
-                    ->orWhereHas('category', fn (Builder $gallery): Builder => $gallery->whereRaw('LOWER(name) LIKE ?', [$needle]));
-            });
-        }
-
         /** @var Collection<int, Artwork> $artworks */
-        $artworks = $query
+        $artworks = $this->candidateSearchQuery($query, $search)
             ->orderByRaw(ArtworkSort::DATE_DESC_SQL)
+            ->offset(max(0, $offset))
             ->limit(max(1, min($limit, 50)))
             ->get();
 
         return $artworks;
+    }
+
+    /** One filter for initial results, exact total count and later pages. */
+    private function candidateSearchQuery(Builder $query, string $search): Builder
+    {
+        $term = trim($search);
+        if ($term === '') {
+            return $query;
+        }
+
+        $needle = '%'.mb_strtolower($term).'%';
+
+        return $query->where(function (Builder $candidate) use ($needle): void {
+            $candidate
+                ->whereRaw('LOWER(title) LIKE ?', [$needle])
+                ->orWhereHas('category', fn (Builder $gallery): Builder => $gallery->whereRaw('LOWER(name) LIKE ?', [$needle]));
+        });
     }
 
     /** @return array{eligible:int,newest_year:?int,newest_year_candidates:int} */

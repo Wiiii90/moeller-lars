@@ -241,7 +241,7 @@ trait GalleryHeroWorkspaceDummyActions
 
     public function addDraftDummyArtwork(int $artworkId): void
     {
-        if (app(PublicArtworkQuery::class)->heroCandidatesByIds([$artworkId])->isEmpty()) {
+        if (app(PublicArtworkQuery::class)->editorialHeroCandidatesByIds([$artworkId])->isEmpty()) {
             throw ValidationException::withMessages(['pending_candidate' => 'Choose an eligible Artwork.']);
         }
         $key = 'artwork:'.$artworkId;

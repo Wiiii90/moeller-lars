@@ -1,5 +1,13 @@
 # Dev Worker 6 — Gallery Hero / former Home Hero
 
+## Shared picker: genuine paged sources — 2026-11-21
+
+- The previous Dummy Gallery callback incorrectly loaded only 30 editorial Artworks and 30 Storage assets, then sliced those 60 rows locally. This exhausted the apparent picker pagination even when more candidates existed. The renderer and its Livewire `MediaAssetPicker::mediaPages` transport already support real incremental loading and remain unchanged.
+- `PublicArtworkQuery` now owns a shared editorial Hero search filter used for exact counts, the existing bounded search and genuine offset/limit Artwork pages. The Dummy dialog combines bounded Artwork pages with existing `MediaAssetSelect::pageOptions`, carrying an offset through the Artwork/Storage boundary without preloading all options or inventing another picker. Both queries preserve their own eligibility and stable sort.
+- Corrected Create-only `addDraftDummyArtwork()` eligibility to use the same editorial query as the picker and the existing Gallery edit action; previously offered but unpublished eligible Artworks could be rejected on insertion. This corrects a confirmed source-contract mismatch, **not** an assertion about an unseen error attachment.
+- The user's message announcing an additional Create bug did not contain an error trace or screenshot in the turn available to this worker. That separate error cannot be identified without its message; do not claim it is resolved unless the user confirms. No tests, CI or deployment triggered. Source-only acceptance remains outstanding.
+
+
 ## Shared visual picker convergence — 2026-11-21
 
 - The artist's repeated screenshot feedback invalidated the previous Filament-native CSS grid approach. Exhibition's functioning visual picker comes from `MediaAssetSelect::makeId()` → `MediaAssetPicker` → `filament.forms.components.media-asset-picker`, while Dummy Gallery had used a generic Filament `Select` with the same option HTML. Identical option markup did not imply identical layout, pagination, focus or modal behavior.

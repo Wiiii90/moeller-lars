@@ -86,27 +86,46 @@ final class GalleryHeroDummyGalleryDialog
     }
 
     /**
-     * Both candidate types use their existing eligibility and visual choice
-     * components. Typed keys keep Artwork and Storage IDs collision-free.
+     * Page across both eligible catalogs without truncating either source.
+     * Artwork results precede Storage; both queries keep their native sort
+     * order and each page fetches at most one bounded slice per source.
      *
-     * @return array<string,string>
+     * @return array{options:list<array{value:string,label:string}>,hasMore:bool}
      */
-    private static function candidateOptions(string $search): array
+    private static function candidatePageOptions(int $offset, string $search): array
     {
+        $offset = max(0, $offset);
+        $size = MediaAssetSelect::PAGE_SIZE;
+        $artworks = app(PublicArtworkQuery::class);
+        $artworkTotal = $artworks->countEditorialHeroCandidates($search);
+        $artworkTake = min($size, max(0, $artworkTotal - $offset));
         $options = [];
-        foreach (app(PublicArtworkQuery::class)->searchEditorialHeroCandidates($search, 30) as $artwork) {
-            $key = 'artwork:'.$artwork->getKey();
-            $image = ArtworkResource::thumbnailUrl($artwork);
-            $preview = $image === null
-                ? '<span class="admin-media-choice__unavailable">—</span>'
-                : '<img src="'.e($image).'" alt="" width="160" height="120" loading="lazy" decoding="async">';
-            $options[$key] = '<span class="admin-media-choice">'
-                .'<span class="admin-media-choice__preview">'.$preview.'</span>'
-                .'<span class="admin-media-choice__meta"><strong>'.e((string) $artwork->getAttribute('title')).'</strong>'
-                .'<small>Artwork</small></span></span>';
+
+        if ($artworkTake > 0) {
+            foreach ($artworks->pageEditorialHeroCandidates($search, $offset, $artworkTake) as $artwork) {
+                $image = ArtworkResource::thumbnailUrl($artwork);
+                $preview = $image === null
+                    ? '<span class="admin-media-choice__unavailable">—</span>'
+                    : '<img src="'.e($image).'" alt="" width="160" height="120" loading="lazy" decoding="async">';
+                $options[] = [
+                    'value' => 'artwork:'.$artwork->getKey(),
+                    'label' => '<span class="admin-media-choice">'
+                        .'<span class="admin-media-choice__preview">'.$preview.'</span>'
+                        .'<span class="admin-media-choice__meta"><strong>'.e((string) $artwork->getAttribute('title')).'</strong>'
+                        .'<small>Artwork</small></span></span>',
+                ];
+            }
         }
 
-        $mediaOptions = MediaAssetSelect::searchOptions(
+        // If more Artwork results exist, Storage starts on a later page.
+        if ($artworkTotal > $offset + $size) {
+            return ['options' => $options, 'hasMore' => true];
+        }
+
+        $remaining = $size - count($options);
+        $storageOffset = max(0, $offset - $artworkTotal);
+        $storage = MediaAssetSelect::pageOptions(
+            $storageOffset,
             $search,
             allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
             modifyQueryUsing: static function (Builder $query): void {
@@ -122,35 +141,17 @@ final class GalleryHeroDummyGalleryDialog
                                 ->where('state', 'available'))));
             },
             visual: true,
-            maxResults: 30,
         );
-        foreach ($mediaOptions as $id => $label) {
-            $options['media:'.$id] = $label;
-        }
-
-        return $options;
-    }
-
-    /**
-     * Use the shared paginated visual picker without changing eligible-source
-     * semantics. The Artwork/Storage search remains the canonical bounded
-     * candidate query; pages expose its existing 30+30 result window.
-     *
-     * @return array{options:list<array{value:string,label:string}>,hasMore:bool}
-     */
-    private static function candidatePageOptions(int $offset, string $search): array
-    {
-        $choices = self::candidateOptions($search);
-        $start = max(0, $offset);
-        $page = array_slice($choices, $start, MediaAssetSelect::PAGE_SIZE, true);
-        $options = [];
-        foreach ($page as $value => $label) {
-            $options[] = ['value' => (string) $value, 'label' => $label];
+        foreach (array_slice($storage['options'], 0, $remaining) as $asset) {
+            $options[] = [
+                'value' => 'media:'.$asset['value'],
+                'label' => $asset['label'],
+            ];
         }
 
         return [
             'options' => $options,
-            'hasMore' => $start + count($page) < count($choices),
+            'hasMore' => count($storage['options']) > $remaining || $storage['hasMore'],
         ];
     }
 
