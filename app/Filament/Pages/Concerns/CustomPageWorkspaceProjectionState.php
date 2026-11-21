@@ -99,6 +99,42 @@ trait CustomPageWorkspaceProjectionState
         }
     }
 
+    /**
+     * The table action must evaluate the same atomic deletion set as
+     * CustomPageEditorialService::deleteBlocks(): selected Grid members
+     * do not prevent their owning Grid from being removed together.
+     */
+    public function canDeleteSelectedComponents(): bool
+    {
+        $targets = $this->selectedComponentTargetData();
+        if ($targets === [] || count($targets) !== count($this->selectedComponentTargets)) {
+            return false;
+        }
+
+        $blocks = $this->settings()->components();
+        $indices = array_column($targets, 'index');
+        if (count(array_unique($indices)) !== count($indices)) {
+            return false;
+        }
+
+        $selected = array_fill_keys($indices, true);
+        $remaining = array_values(array_filter(
+            $blocks,
+            static fn (int $index): bool => ! isset($selected[$index]),
+            ARRAY_FILTER_USE_KEY,
+        ));
+
+        foreach ($targets as $target) {
+            $block = $blocks[$target['index']] ?? null;
+            if (! is_array($block) || ($block['type'] ?? null) !== $target['type']
+                || ! CustomPageSetting::canDeleteComponent($block, $remaining)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private function refreshFromFirstPage(bool $refreshCvCount = false): void
     {
         $this->page = 1;

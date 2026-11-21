@@ -29,9 +29,7 @@
             $canMoveSelected = $selectedItemCount > 0 && $reorderEnabled;
             $canPublishSelected = $selectedParents->contains(static fn (array $component): bool => ($component['published'] ?? false) === false);
             $canUnpublishSelected = $selectedParents->contains(static fn (array $component): bool => ($component['published'] ?? false) === true);
-            $canDeleteSelected = $selectedItemCount > 0
-                && $selectedParents->count() === $selectedItemCount
-                && $selectedParents->every(static fn (array $component): bool => $component['can_delete']);
+            $canDeleteSelected = $this->canDeleteSelectedComponents();
             $canActivateSelected = $selectedItemCount === 1
                 && $selectedParents->count() === 1
                 && $selectedParents->first()['editable'];
