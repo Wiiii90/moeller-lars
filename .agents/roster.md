@@ -4,7 +4,7 @@
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
-| Dev Worker 4 | 31 | Active — Cyclic arrows and connection lines removed centrally; source committed, browser verification pending | Gallery Artwork table, title editor, selection/ordering, Stage/Settings and Public Artwork/Gallery; coordinate shared controls with owners | [dev-4.md](workers/dev-4.md) |
+| Dev Worker 4 | 31 | Active — session-restorable Gallery Staged queues and safe new-versus-reused Discard implemented in source; runtime acceptance pending | Gallery Artwork table, title editor, selection/ordering, Stage/Settings and Public Artwork/Gallery; coordinate shared controls with owners | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 19 | Source cleanup committed; isolated migration and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom types and Hero Artworks template; preserve Gallery/Exhibitions, retire Home-only editors | [dev-5.md](workers/dev-5.md) |
 
 | Dev Worker 6 | 32 | Active — Dummy Gallery responsive membership table and shared date picker committed; browser acceptance pending for this and previous Hero/Random/Filters work | Gallery → Hero Artworks, Dummy Gallery dialogs and directly affected shared media/date/table controls; coordinate Gallery changes with Dev Worker 4 | [dev-6.md](workers/dev-6.md) |

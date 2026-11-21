@@ -346,7 +346,7 @@ export async function adminMediaUploader(state, input, wire, context) {
                 // not after all subsequent files finish uploading.
                 if (context === 'gallery') {
                     state.processingStep = 'Adding media to Gallery Stage';
-                    await wire.queueResumablePrimaryMediaAsset(result.asset_id);
+                    await wire.queueResumablePrimaryMediaAsset(result.asset_id, Boolean(result.duplicate));
                 }
                 // 100% means that the file is ready to use in its consumer.
                 state.progress = 100;

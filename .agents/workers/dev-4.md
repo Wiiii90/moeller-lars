@@ -2,7 +2,7 @@
 
 **Lease:** 31
 **Branch:** dev
-**State:** Active — deprecated checkbox connector arrows removed from shared AdminPanelControl, original two-column layout and disabled states preserved; browser review pending.
+**State:** Active — Gallery Staged queues now session-restorable per Gallery; safe Discard differentiates new uploads from reused/referenced Storage assets; source changes awaiting runtime qualification.
 
 ## Current assignment and ownership
 
@@ -41,6 +41,14 @@
 - The shared layout is now `AdminPanelControl::dependencyColumns()` rather than a misleading visual `dependencyTree()`. Navigation remains left; Cyclic remains right on the same row; future right-column dependents and independent left-column fields still compose normally. Disabled Cyclic styling and the existing Filament state/persistence callbacks remain unchanged. Both Gallery consumers use the same renamed component.
 - Source-level replacement only: no local browser, PHP, testing or deployment. Confirm no residual arrow/line visuals in Stage and Settings dialog, while the two-column layout and enabled/disabled interactions remain correct.
 
+## Latest task — persistent Gallery Staged queue and safe Discard (2026-11-21)
+
+- **Request:** A refresh/revisit during the same authenticated session must restore each Gallery's pending uploaded media, selected item, and already edited Stage form fields. Completed uploaded originals stay in canonical Storage. Explicit Discard deletes newly ingested, unused media but must never delete a pre-existing deduplicated/reuploaded or independently referenced original.
+- **Single source of truth:** `GalleryWorkspaceDirectUpload` serializes the existing `pendingBatchArtworkMedia` as per-Gallery items in one authenticated-session registry using canonical media IDs, current compact form values, selected ID and the upload response's `reused` flag. `GalleryWorkspace::mount()` revalidates available image/video IDs and restores the selected editor; the documented Livewire `dehydrate()` lifecycle hook saves the in-memory queue after every request. No new Artwork Draft table, media store, background worker or duplicate ingest representation.
+- **Safe Discard:** `admin-media-upload.js` forwards the verified server-provided `duplicate` flag. For reused assets, existing Working/content references, Committed references or an outstanding Stage in another Gallery in the same session, Discard only removes the queue entry and retains Storage. For a newly ingested and unused asset, only the canonical `MediaAssetEditorialService::delete(..., requireUnreferenced: true)` may logically remove Storage media; physical cleanup retains its existing publication/history guards. Failed deletions retain the Stage entry; unavailable media are pruned. The Stage button descriptions and notification differentiate retained from deleted media.
+- **Recovery limitation:** The registry follows configured Laravel session lifetime (default 120 minutes) and authentication. An unfinished browser `File` upload still requires the original file to be reselected for the existing resumable transfer; already completed assets and saved Stage form values restore. Simultaneous edits in multiple tabs of the **same** Gallery are not conflict-free and need a separate concurrency design if requested.
+- **Source validation pending:** Verify on a real running app: upload two new files, enter distinct form data, refresh/revisit and check selected field restoration; submit one and revisit to confirm it is absent; discard an unused new file (removed from Storage), discard a reused/referenced asset (removed only from Stage), and switch between two Galleries to confirm distinct queues. Check invalid/deleted asset pruning and duplicate re-upload after lost acknowledgement. No runtime/test/deploy acceptance claimed. Dev must not edit test sources.
+
 ## Verification and outstanding acceptance
 
 - The prior chat used connected GitHub source inspection and guarded commits; it **did not** run local Laravel, PHP, actual media ingestion, browser review, tests, deployment, Continuous Integration or a database migration as part of the Gallery changes. Do not represent source-reviewed behavior as browser-accepted.
@@ -50,4 +58,4 @@
 
 ## Next
 
-Check in-browser Stage Staged/Settings dropdown escape, focus/selection and restoration of normal scroller after closing; preserve previous Gallery Settings and checkbox responsive contracts. Verify lease 31 and current `dev` head before any further changes.
+Obtain browser/product acceptance for session-restored Staged files and differentiated Discard, then hand targeted new/duplicate/referenced/multi-Gallery regression scenarios to Testing. Always verify Dev Worker 4 lease 31 and fresh `dev` HEAD before new changes.

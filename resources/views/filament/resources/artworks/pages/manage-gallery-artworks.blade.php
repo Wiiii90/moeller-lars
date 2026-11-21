@@ -180,7 +180,7 @@
                             x-show="panel === 'queue'" x-cloak aria-label="Staged Artwork actions">
                             <div class="gallery-stage__action-group">
                                 <button class="admin-action is-danger gallery-stage__action-discard" type="button"
-                                    title="Discard staged file and delete it from Storage" aria-label="Discard staged file from Storage"
+                                    title="Remove from Stage; delete a new, unused file from Storage" aria-label="Discard staged Artwork safely"
                                     wire:click="discardStagedMedia({{ $selectedStagedMediaAssetId }})"
                                     wire:loading.attr="disabled" wire:target="discardStagedMedia,discardAllStagedMedia">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
@@ -196,7 +196,7 @@
                             </div>
                             <div class="gallery-stage__action-group gallery-stage__action-group--batch">
                                 <button class="admin-action is-danger" type="button"
-                                    title="Discard all staged files and delete them from Storage" aria-label="Discard all staged files from Storage"
+                                    title="Remove all staged Artworks; delete new, unused files from Storage" aria-label="Discard all staged Artworks safely"
                                     wire:click="discardAllStagedMedia"
                                     wire:loading.attr="disabled" wire:target="discardStagedMedia,discardAllStagedMedia">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />

@@ -10,14 +10,149 @@ use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Models\ArtworkCategory;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Media\MediaReferenceQuery;
 use App\Models\Artwork;
 use App\Models\MediaAsset;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
 trait GalleryWorkspaceDirectUpload
 {
+    /** One authenticated browser-session queue registry, partitioned by Gallery. */
+    private function stagedArtworkQueueSessionKey(): string
+    {
+        return 'gallery.staged-artwork-queues.'.(int) Filament::auth()->id();
+    }
+
+    /**
+     * Restore only still-available primary media from the existing Storage
+     * catalog. The session stores no file bytes or second Artwork identity.
+     */
+    private function restoreStagedArtworkQueue(): void
+    {
+        $queues = session()->get($this->stagedArtworkQueueSessionKey(), []);
+        $galleryId = (int) ($this->galleryContext['id'] ?? 0);
+        $snapshot = is_array($queues) ? ($queues[$galleryId] ?? null) : null;
+        $savedItems = is_array($snapshot) ? ($snapshot['items'] ?? null) : null;
+        if (! is_array($savedItems) || $savedItems === []) {
+            return;
+        }
+
+        $ids = [];
+        foreach ($savedItems as $saved) {
+            if (is_array($saved) && is_numeric($saved['media_asset_id'] ?? null)) {
+                $id = (int) $saved['media_asset_id'];
+                if ($id > 0) {
+                    $ids[] = $id;
+                }
+            }
+        }
+        if ($ids === []) {
+            return;
+        }
+
+        $available = MediaAsset::query()
+            ->whereIn('id', array_values(array_unique($ids)))
+            ->where('state', 'available')
+            ->get()
+            ->keyBy('id');
+
+        $restored = [];
+        $seen = [];
+        foreach ($savedItems as $saved) {
+            if (! is_array($saved) || ! is_numeric($saved['media_asset_id'] ?? null)) {
+                continue;
+            }
+            $id = (int) $saved['media_asset_id'];
+            if ($id <= 0 || isset($seen[$id])) {
+                continue;
+            }
+            /** @var MediaAsset|null $asset */
+            $asset = $available->get($id);
+            if (! $asset instanceof MediaAsset || ! $this->isGalleryPrimaryVisual($asset)) {
+                continue;
+            }
+            $seen[$id] = true;
+            // Missing provenance is conservatively treated as reused: an
+            // unknown older receipt must never authorize Storage deletion.
+            $row = $this->pendingBatchArtworkRow($asset, ($saved['reused'] ?? true) !== false);
+            $row['form'] = is_array($saved['form'] ?? null) ? $saved['form'] : [];
+            $restored[] = $row;
+        }
+
+        $this->pendingBatchArtworkMedia = $restored;
+        if ($restored === []) {
+            return;
+        }
+
+        $selected = is_numeric($snapshot['selected'] ?? null)
+            ? (int) $snapshot['selected'] : 0;
+        $ids = array_column($restored, 'media_asset_id');
+        if (! in_array($selected, $ids, true)) {
+            $selected = (int) $ids[0];
+        }
+        $this->selectStagedArtwork($selected);
+    }
+
+    /** Persist the current queue as a small projection of canonical media IDs. */
+    private function persistStagedArtworkQueue(): void
+    {
+        $key = $this->stagedArtworkQueueSessionKey();
+        $queues = session()->get($key, []);
+        $queues = is_array($queues) ? $queues : [];
+        $galleryId = (int) ($this->galleryContext['id'] ?? 0);
+
+        if ($this->pendingBatchArtworkMedia === []) {
+            unset($queues[$galleryId]);
+        } else {
+            $queues[$galleryId] = [
+                'selected' => $this->selectedStagedMediaAssetId,
+                'items' => array_map(
+                    static fn (array $row): array => [
+                        'media_asset_id' => (int) $row['media_asset_id'],
+                        'reused' => ($row['reused'] ?? true) !== false,
+                        'form' => is_array($row['form'] ?? null) ? $row['form'] : [],
+                    ],
+                    $this->pendingBatchArtworkMedia,
+                ),
+            ];
+        }
+
+        if ($queues === []) {
+            session()->forget($key);
+        } else {
+            session()->put($key, $queues);
+        }
+    }
+
+    /** A file staged in another Gallery in this session still has a consumer. */
+    private function stagedInAnotherGallery(int $assetId): bool
+    {
+        $queues = session()->get($this->stagedArtworkQueueSessionKey(), []);
+        if (! is_array($queues)) {
+            return false;
+        }
+        $currentGallery = (int) ($this->galleryContext['id'] ?? 0);
+        foreach ($queues as $galleryId => $snapshot) {
+            if ((int) $galleryId === $currentGallery || ! is_array($snapshot)) {
+                continue;
+            }
+            $items = $snapshot['items'] ?? null;
+            if (! is_array($items)) {
+                continue;
+            }
+            foreach ($items as $item) {
+                if (is_array($item) && (int) ($item['media_asset_id'] ?? 0) === $assetId) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     /** Report client transfer errors that never reach the ingest action. */
     public function notifyDirectPrimaryTransferFailure(string $message): void
     {
@@ -35,7 +170,7 @@ trait GalleryWorkspaceDirectUpload
      * Queue the canonical available asset returned by the shared resumable
      * ingest endpoint. Only images/videos can become Artwork primary media.
      */
-    public function queueResumablePrimaryMediaAsset(int $assetId): void
+    public function queueResumablePrimaryMediaAsset(int $assetId, bool $reused = false): void
     {
         $asset = MediaAsset::query()->whereKey($assetId)->where('state', 'available')->first();
         if (! $asset instanceof MediaAsset || ! $this->isGalleryPrimaryVisual($asset)) {
@@ -46,7 +181,7 @@ trait GalleryWorkspaceDirectUpload
             return;
         }
 
-        $this->pendingBatchArtworkMedia[] = $this->pendingBatchArtworkRow($asset);
+        $this->pendingBatchArtworkMedia[] = $this->pendingBatchArtworkRow($asset, $reused);
         $this->directPrimaryBatchAddedCount++;
         // Select the first newly accepted file of every upload batch, even
         // when an earlier Staged item remains selected. Subsequent uploads
@@ -346,38 +481,82 @@ trait GalleryWorkspaceDirectUpload
     /** @param list<int> $ids */
     private function discardStagedAssets(array $ids): void
     {
-        $queuedIds = array_map('intval', array_column($this->pendingBatchArtworkMedia, 'media_asset_id'));
-        $ids = array_values(array_unique(array_intersect($ids, $queuedIds)));
+        $queued = [];
+        foreach ($this->pendingBatchArtworkMedia as $row) {
+            $queued[(int) $row['media_asset_id']] = $row;
+        }
+        $ids = array_values(array_unique(array_intersect($ids, array_keys($queued))));
         if ($ids === []) {
             return;
         }
 
+        $removed = [];
         $deleted = [];
+        $retained = [];
+        $missing = [];
         $failed = [];
         $cleanupDelayed = [];
+        $references = app(MediaReferenceQuery::class);
+        $mediaEditor = app(MediaAssetEditorialService::class);
+
         foreach ($ids as $id) {
             $asset = MediaAsset::query()->whereKey($id)->where('state', 'available')->first();
             if (! $asset instanceof MediaAsset) {
-                $failed[] = 'File '.$id.': no longer available.';
+                // The media has already gone from Storage; do not resurrect a
+                // dead queue row when the saved Gallery Stage is reopened.
+                $removed[] = $id;
+                $missing[] = $id;
                 continue;
             }
 
             try {
-                // A one-click Discard must never silently detach content used
-                // elsewhere. The constraint is checked under the Storage lock.
-                if (app(MediaAssetEditorialService::class)->delete($asset, requireUnreferenced: true)) {
+                // A fingerprint-identical re-upload may point to a Storage
+                // original which existed before this Stage. Discard cancels
+                // this Stage entry but must never delete that original.
+                $references->forgetContentReferences();
+                $keepInStorage = ($queued[$id]['reused'] ?? true) !== false
+                    || $this->stagedInAnotherGallery($id)
+                    || $references->isReferenced($asset)
+                    || DB::table('committed.media_assets')
+                        ->where('id', $id)
+                        ->where('state', '<>', 'deleted')
+                        ->exists();
+
+                if ($keepInStorage) {
+                    $removed[] = $id;
+                    $retained[] = $id;
+                    continue;
+                }
+
+                // The canonical lock/reference guard still makes the final
+                // deletion decision if another editor references the file
+                // between our preflight check and the Storage mutation.
+                if ($mediaEditor->delete($asset, requireUnreferenced: true)) {
+                    $removed[] = $id;
                     $deleted[] = $id;
                 } else {
-                    $failed[] = (string) $asset->getAttribute('original_filename').': no longer available.';
+                    $removed[] = $id;
+                    $missing[] = $id;
                 }
             } catch (Throwable $exception) {
                 if ((string) $asset->fresh()?->getAttribute('state') === 'deleted') {
                     report($exception);
+                    $removed[] = $id;
                     $deleted[] = $id;
                     $cleanupDelayed[] = $id;
                     continue;
                 }
 
+                // A newly created reference in another request prevents
+                // deletion, but should not trap the file in this Stage.
+                if ($exception instanceof ValidationException) {
+                    $references->forgetContentReferences();
+                    if ($references->isReferenced($asset)) {
+                        $removed[] = $id;
+                        $retained[] = $id;
+                        continue;
+                    }
+                }
                 if (! $exception instanceof ValidationException) {
                     report($exception);
                 }
@@ -389,17 +568,34 @@ trait GalleryWorkspaceDirectUpload
             }
         }
 
-        if ($deleted !== []) {
-            $this->forgetCompletedStagedArtworks($deleted);
+        if ($removed !== []) {
+            $this->forgetCompletedStagedArtworks($removed);
         }
+
+        $messages = [];
+        if ($deleted !== []) {
+            $messages[] = count($deleted).' newly uploaded '.(count($deleted) === 1 ? 'file was' : 'files were').' removed from Storage.';
+        }
+        if ($retained !== []) {
+            $messages[] = count($retained).' reused or referenced '.(count($retained) === 1 ? 'file was' : 'files were').' kept in Storage.';
+        }
+        if ($missing !== []) {
+            $messages[] = count($missing).' unavailable '.(count($missing) === 1 ? 'file was' : 'files were').' cleared from Stage.';
+        }
+        if ($cleanupDelayed !== []) {
+            $messages[] = 'Physical cleanup is pending for '.count($cleanupDelayed).' '.(count($cleanupDelayed) === 1 ? 'file.' : 'files.');
+        }
+        if ($failed !== []) {
+            $messages[] = implode(' ', array_slice($failed, 0, 3));
+        }
+
         app(AdminNotifier::class)->notification(
-            title: count($deleted).' staged '.(count($deleted) === 1 ? 'file' : 'files').' discarded from Storage',
-            body: $failed !== [] || $cleanupDelayed !== []
-                ? implode(' ', array_slice($failed, 0, 3)).
-                    ($cleanupDelayed !== [] ? ' Some physical cleanup is pending.' : '')
-                : null,
+            title: $removed === []
+                ? 'No staged files discarded'
+                : count($removed).' staged '.(count($removed) === 1 ? 'file' : 'files').' removed',
+            body: $messages === [] ? null : implode(' ', $messages),
             status: $failed !== []
-                ? ($deleted !== [] ? 'warning' : 'danger')
+                ? ($removed !== [] ? 'warning' : 'danger')
                 : ($cleanupDelayed !== [] ? 'warning' : 'success'),
         );
     }
@@ -432,13 +628,14 @@ trait GalleryWorkspaceDirectUpload
         return MediaTypePolicy::isImage($mime) || MediaTypePolicy::isVideo($mime);
     }
 
-    /** @return array{media_asset_id:int,title:string,filename:string,form:array<string,mixed>} */
-    private function pendingBatchArtworkRow(MediaAsset $asset): array
+    /** @return array{media_asset_id:int,title:string,filename:string,reused:bool,form:array<string,mixed>} */
+    private function pendingBatchArtworkRow(MediaAsset $asset, bool $reused = false): array
     {
         return [
             'media_asset_id' => (int) $asset->getKey(),
             'title' => $this->defaultArtworkTitle((string) $asset->getAttribute('original_filename')),
             'filename' => (string) $asset->getAttribute('original_filename'),
+            'reused' => $reused,
             'form' => [],
         ];
     }

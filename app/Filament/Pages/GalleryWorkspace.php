@@ -97,7 +97,7 @@ final class GalleryWorkspace extends Page
     /** Successfully staged new assets in the active upload batch. */
     public int $directPrimaryBatchAddedCount = 0;
 
-    /** @var list<array{media_asset_id:int,title:string,filename:string,form:array<string,mixed>}> */
+    /** @var list<array{media_asset_id:int,title:string,filename:string,reused:bool,form:array<string,mixed>}> */
     public array $pendingBatchArtworkMedia = [];
 
     public string $search = '';
@@ -125,6 +125,17 @@ final class GalleryWorkspace extends Page
         $this->projectArtworks();
         $this->refreshGalleryMetrics();
         $this->refreshGalleryStageSettings();
+        $this->restoreStagedArtworkQueue();
+    }
+
+    /**
+     * Preserve the existing Gallery Stage queue and edited fields for this
+     * browser session after every Livewire action or form change.
+     */
+    public function dehydrate(): void
+    {
+        $this->rememberStagedArtworkChanges();
+        $this->persistStagedArtworkQueue();
     }
 
     public function stagedArtworkForm(Schema $schema): Schema
