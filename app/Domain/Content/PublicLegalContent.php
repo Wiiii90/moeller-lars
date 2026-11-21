@@ -30,7 +30,7 @@ final class PublicLegalContent
         $sections = [];
         foreach (self::EDITORIAL_FIELDS as $field => $label) {
             $value = $settings->getAttribute($field);
-            if (is_string($value) && trim($value) !== '') {
+            if (is_string($value) && RichTextDocument::plainText($value) !== '') {
                 $sections[] = ['slug' => self::SLUGS[$field], 'label' => $label, 'text' => trim($value)];
             }
         }

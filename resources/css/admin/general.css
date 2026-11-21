@@ -233,6 +233,23 @@
     box-shadow: none !important;
 }
 
+/* Legal uses the shared Stage tabs and editor frame, with a larger workspace. */
+.general-legal-settings { min-width: 0; }
+.general-legal-settings .admin-stage-tabs--inline { --admin-stage-tabs-columns: 5; }
+.general-legal-editor {
+    min-width: 0;
+    --admin-rich-text-min-height: clamp(16rem, 38vh, 26rem);
+}
+@container admin-workspace (max-width: 52rem) {
+    .general-legal-settings .admin-stage-tabs--inline {
+        grid-template-columns: none;
+        grid-auto-flow: column;
+        grid-auto-columns: max-content;
+        justify-content: start;
+        overflow-x: auto;
+    }
+}
+
 /* Contact and Legal own the same line-to-heading and heading-to-content
  * rhythm as the rest of the admin section grammar. */
 .general-settings-section {

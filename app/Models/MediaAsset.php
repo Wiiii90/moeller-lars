@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Content\RichTextDocument;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -39,7 +40,9 @@ class MediaAsset extends Model
         return match ((string) $this->getAttribute('copyright_notice_mode')) {
             self::COPYRIGHT_OVERRIDE => $this->normalCopyrightNotice($this->getAttribute('copyright_notice')),
             self::COPYRIGHT_NONE => null,
-            default => $this->normalCopyrightNotice(PublicContentSetting::general()->getAttribute('default_media_copyright_notice')),
+            default => $this->normalCopyrightNotice(RichTextDocument::plainText(
+                (string) (PublicContentSetting::general()->getAttribute('default_media_copyright_notice') ?? '')
+            )),
         };
     }
 

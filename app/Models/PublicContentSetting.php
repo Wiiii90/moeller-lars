@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Domain\Content\PublicAppearance;
+use App\Domain\Content\RichTextDocument;
+use App\Domain\Content\SafeRichTextRenderer;
+use App\Domain\Content\UnsafeRichTextException;
 use App\Domain\Content\PublicLegalContent;
 use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\SocialLinks;
@@ -315,14 +318,17 @@ class PublicContentSetting extends Model
 
         $defaultCopyright = $setting->getAttribute('default_media_copyright_notice');
         if ($defaultCopyright !== null) {
-            if (! is_string($defaultCopyright) || mb_strlen($defaultCopyright) > 500) {
+            if (! is_string($defaultCopyright)
+                || mb_strlen($defaultCopyright) > 20000
+                || mb_strlen(RichTextDocument::plainText($defaultCopyright)) > 500) {
                 throw ValidationException::withMessages([
-                    'default_media_copyright_notice' => 'The default media copyright notice may contain no more than 500 characters.',
+                    'default_media_copyright_notice' => 'The default media copyright notice may contain no more than 500 visible characters.',
                 ]);
             }
 
-            $defaultCopyright = trim($defaultCopyright);
-            $setting->setAttribute('default_media_copyright_notice', $defaultCopyright === '' ? null : $defaultCopyright);
+            self::validateChangedRichText($setting, 'default_media_copyright_notice', $defaultCopyright);
+            $setting->setAttribute('default_media_copyright_notice',
+                RichTextDocument::plainText($defaultCopyright) === '' ? null : trim($defaultCopyright));
         }
 
         $socialLinks = $setting->getAttribute('social_links');
@@ -389,18 +395,28 @@ class PublicContentSetting extends Model
             if (! is_string($value) || mb_strlen($value) > 20000) {
                 throw ValidationException::withMessages([$field => $label.' must contain no more than 20,000 characters.']);
             }
-            // Existing disclaimers may contain historical formatting. Editing
-            // another General setting must not silently rewrite that text.
-            if ($field === 'legal_disclaimer') {
-                if (trim($value) === '') {
-                    throw ValidationException::withMessages([$field => 'The existing legal note must contain text or be empty.']);
-                }
-
+            // The historical external-links note stays byte-for-byte unchanged
+            // until its own content is edited.
+            if ($field === 'legal_disclaimer' && ! $setting->isDirty($field)) {
                 continue;
             }
 
+            self::validateChangedRichText($setting, $field, $value);
             $normalized = trim($value);
-            $setting->setAttribute($field, $normalized === '' ? null : $normalized);
+            $setting->setAttribute($field, RichTextDocument::plainText($normalized) === '' ? null : $normalized);
         }
     }
-}
+
+    private static function validateChangedRichText(self $setting, string $field, string $value): void
+    {
+        if (! $setting->isDirty($field) || ! RichTextDocument::isVisual($value)) {
+            return;
+        }
+
+        try {
+            app(SafeRichTextRenderer::class)->assertValid($value, allowEmbeddedMedia: false);
+        } catch (UnsafeRichTextException $exception) {
+            throw ValidationException::withMessages([$field => $exception->getMessage()]);
+        }
+    }
+

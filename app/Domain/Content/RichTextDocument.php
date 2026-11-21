@@ -12,6 +12,19 @@ final class RichTextDocument
         return preg_match('/^\\s*<(?:p|h[1-6]|blockquote|ul|ol|table|div|img|hr|pre|figure|details|section)\\b/i', $source) === 1;
     }
 
+    /** Return readable text for metadata consumers of formatted editorial content. */
+    public static function plainText(string $source): string
+    {
+        if (! self::isVisual($source)) {
+            return trim($source);
+        }
+
+        $spaced = preg_replace('/<\\s*(?:br|hr)\\b[^>]*\\/?\\s*>|<\\s*\\/\\s*(?:p|div|h[1-6]|li|tr|blockquote)\\s*>/i', ' ', $source) ?? $source;
+        $decoded = html_entity_decode(strip_tags($spaced), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return trim(preg_replace('/[\\p{Z}\\s]+/u', ' ', $decoded) ?? $decoded);
+    }
+
     public static function forEditor(string $source): string
     {
         if ($source === '' || self::isVisual($source)) {

@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
+use App\Domain\Content\RichTextDocument;
 use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\SocialLinks;
 use App\Filament\Support\AdminAngleControl;
@@ -12,6 +13,7 @@ use App\Filament\Support\AdminColorControl;
 use App\Filament\Support\AdminHelp;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\AdminRowAction;
+use App\Filament\Support\AdminRichText;
 use App\Filament\Support\AdminTableRepeater;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -25,7 +27,6 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Group;
@@ -593,45 +594,19 @@ final class General extends Page
                         ->columnSpanFull(),
 
                     Group::make([
-                        TextInput::make('default_media_copyright_notice')
-                            ->label(self::defaultCopyrightLabel())
-                            ->maxLength(500)
-                            ->nullable()
-                            ->lazy()
-                            ->columnSpanFull()
-                            ->extraInputAttributes(self::commitOnEnterAttributes())
-                            ->afterStateUpdated(self::persist('default_media_copyright_notice')),
-                        Textarea::make('legal_imprint')
-                            ->label(self::imprintLabel())
-                            ->rows(8)
-                            ->maxLength(20000)
-                            ->nullable()
-                            ->lazy()
-                            ->afterStateUpdated(self::persist('legal_imprint')),
-                        Textarea::make('legal_privacy')
-                            ->label(self::privacyLabel())
-                            ->rows(8)
-                            ->maxLength(20000)
-                            ->nullable()
-                            ->lazy()
-                            ->afterStateUpdated(self::persist('legal_privacy')),
-                        Textarea::make('legal_usage_rights')
-                            ->label(self::usageRightsLabel())
-                            ->rows(8)
-                            ->maxLength(20000)
-                            ->nullable()
-                            ->lazy()
-                            ->afterStateUpdated(self::persist('legal_usage_rights')),
-                        Textarea::make('legal_disclaimer')
-                            ->label(self::externalLinksNoticeLabel())
-                            ->rows(8)
-                            ->maxLength(20000)
-                            ->nullable()
-                            ->lazy()
-                            ->afterStateUpdated(self::persist('legal_disclaimer')),
+                        View::make('filament.schemas.components.general-legal-switcher')
+                            ->columnSpanFull(),
+                        self::legalRichTextPane('default_media_copyright_notice', self::defaultCopyrightLabel(), 500, 'copyright'),
+                        self::legalRichTextPane('legal_imprint', self::imprintLabel(), 20000, 'imprint'),
+                        self::legalRichTextPane('legal_privacy', self::privacyLabel(), 20000, 'privacy'),
+                        self::legalRichTextPane('legal_usage_rights', self::usageRightsLabel(), 20000, 'usage'),
+                        self::legalRichTextPane('legal_disclaimer', self::externalLinksNoticeLabel(), 20000, 'links'),
                     ])
-                        ->columns(2)
-                        ->extraAttributes(['class' => 'general-two-column-settings general-legal-settings'])
+                        ->columns(1)
+                        ->extraAttributes([
+                            'class' => 'general-legal-settings',
+                            'x-data' => "{ legalTab: 'copyright' }",
+                        ])
                         ->columnSpanFull(),
                 ])
                     ->columns(1)
@@ -801,6 +776,23 @@ final class General extends Page
         ])
             ->columns(1)
             ->extraAttributes(['class' => 'general-background-row'])
+            ->columnSpanFull();
+    }
+
+    private static function legalRichTextPane(string $field, HtmlString $label, int $maxLength, string $pane): Group
+    {
+        return Group::make([
+            ...AdminRichText::schema($field, $label, $maxLength, allowEmbeddedMedia: false, pageAutosave: true),
+        ])
+            ->columns(1)
+            ->extraAttributes([
+                'class' => 'general-legal-editor admin-stage-panel-content',
+                'x-show' => "legalTab === '".$pane."'",
+                'x-cloak' => '',
+                'x-bind:inert' => "legalTab !== '".$pane."'",
+                'x-bind:aria-hidden' => "(legalTab !== '".$pane."').toString()",
+                'x-on:artist-rich-editor-commit.stop' => '$wire.persistChangedField('.json_encode($field).')',
+            ])
             ->columnSpanFull();
     }
 
@@ -1227,7 +1219,15 @@ final class General extends Page
             }
             $this->clearPersistenceErrors($field);
             $candidate = $this->normalizePersistenceValue($field, $this->data[$field]);
-            if ($candidate !== $this->normalizePersistenceValue($field, $record->getAttribute($field))) {
+            $previous = $this->normalizePersistenceValue($field, $record->getAttribute($field));
+            // Opening legacy copy must never rewrite unchanged stored text.
+            if (in_array($field, [
+                'default_media_copyright_notice', 'legal_imprint', 'legal_privacy',
+                'legal_usage_rights', 'legal_disclaimer',
+            ], true) && is_string($previous) && $candidate === RichTextDocument::forEditor($previous)) {
+                continue;
+            }
+            if ($candidate !== $previous) {
                 $changes[$field] = $candidate;
             }
         }
@@ -1565,8 +1565,10 @@ final class General extends Page
             'header_name_size', 'header_name_min_size', 'public_page_width', 'public_content_padding' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $value,
             'social_links' => $this->normalizeSocialLinks($value),
             'public_email', 'contact_recipient_email' => $value === '' ? null : $value,
-            'default_media_copyright_notice' => is_string($value) ? (($trimmed = trim($value)) === '' ? null : $trimmed) : $value,
-            'legal_disclaimer', 'legal_imprint', 'legal_privacy', 'legal_usage_rights' => is_string($value) ? (($trimmed = trim($value)) === '' ? null : $trimmed) : $value,
+            'default_media_copyright_notice',
+            'legal_disclaimer', 'legal_imprint', 'legal_privacy', 'legal_usage_rights' => is_string($value)
+                ? (RichTextDocument::plainText($value) === '' ? null : trim($value))
+                : $value,
             default => $value,
         };
     }

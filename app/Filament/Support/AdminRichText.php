@@ -7,16 +7,18 @@ use App\Livewire\Admin\RichTextMediaPicker;
 use Filament\Forms\Components\RichEditor;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Livewire as LivewireComponent;
+use Illuminate\Contracts\Support\Htmlable;
 
 final class AdminRichText
 {
     /** One visual editor shared by Journal, Custom Pages, Home and nested text. */
     public static function schema(
         string $name,
-        string $label,
+        string|Htmlable $label,
         ?int $maxLength = null,
         bool $allowEmbeddedMedia = true,
         bool $required = false,
+        bool $pageAutosave = false,
     ): array {
         $toolbar = [
             ['bold', 'italic', 'underline', 'strike', 'subscript', 'superscript', 'link'],
@@ -99,6 +101,7 @@ final class AdminRichText
                 ->key($editorKey.'-shell')
                 ->extraAttributes([
                     'class' => 'admin-rich-text-editor-shell',
+                    'data-admin-rich-text-page-autosave' => $pageAutosave ? 'true' : null,
                     'x-data' => <<<'JS'
                         {
                             activeRichPanel: null,
@@ -267,13 +270,22 @@ final class AdminRichText
                                 if (changed) this.commitEditorChange()
                                 return changed
                             },
+                            isAutosavingEditor(shell) {
+                                return shell?.closest('.admin-dialog--edit')
+                                    || shell?.dataset.adminRichTextPageAutosave === 'true'
+                            },
+                            dispatchEditorCommit(shell) {
+                                if (shell.closest('.admin-dialog--edit')) {
+                                    shell.dispatchEvent(new Event('change', { bubbles: true }))
+                                } else {
+                                    shell.dispatchEvent(new CustomEvent('artist-rich-editor-commit', { bubbles: true }))
+                                }
+                            },
                             commitEditorChange() {
                                 const shell = this.richShell()
-                                if (!shell?.closest('.admin-dialog--edit')) return
+                                if (!this.isAutosavingEditor(shell)) return
                                 this.$nextTick(() => {
-                                    if (shell.isConnected) {
-                                        shell.dispatchEvent(new Event('change', { bubbles: true }))
-                                    }
+                                    if (shell.isConnected) this.dispatchEditorCommit(shell)
                                 })
                             },
                             colorSelection: null,
@@ -403,14 +415,14 @@ final class AdminRichText
                             },
                             onRichEditorFocusOut(event) {
                                 const shell = this.richShell()
-                                if (!shell?.closest('.admin-dialog--edit')) return
+                                if (!this.isAutosavingEditor(shell)) return
                                 if (event.relatedTarget) {
-                                    if (!shell.contains(event.relatedTarget)) shell.dispatchEvent(new Event('change', { bubbles: true }))
+                                    if (!shell.contains(event.relatedTarget)) this.dispatchEditorCommit(shell)
                                     return
                                 }
                                 this.$nextTick(() => {
                                     if (!shell.isConnected || shell.contains(document.activeElement)) return
-                                    shell.dispatchEvent(new Event('change', { bubbles: true }))
+                                    this.dispatchEditorCommit(shell)
                                 })
                             },
                             toggleImagePicker(event) {

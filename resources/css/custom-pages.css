@@ -374,7 +374,6 @@
 }
 
 .custom-page__legal-text {
-    white-space: pre-line;
     overflow-wrap: anywhere;
     padding: .35rem 0 .9rem;
     line-height: inherit;

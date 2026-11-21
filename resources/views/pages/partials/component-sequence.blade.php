@@ -158,7 +158,7 @@
                             @foreach ($legalSections as $legalSection)
                                 <details id="legal-{{ $legalSection['slug'] }}" class="custom-page__legal-section">
                                     <summary>{{ $legalSection['label'] }}</summary>
-                                    <div class="custom-page__legal-text">{{ $legalSection['text'] }}</div>
+                                    <div class="custom-page__legal-text rich-text">{!! $richText->render($legalSection['text']) !!}</div>
                                 </details>
                             @endforeach
                         </div>

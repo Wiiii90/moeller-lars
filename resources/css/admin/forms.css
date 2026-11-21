@@ -553,7 +553,7 @@
 }
 
 .admin-rich-text--visual .fi-fo-rich-editor-content {
-    min-height: 11rem;
+    min-height: var(--admin-rich-text-min-height, 11rem);
     line-height: 1.5;
 }
 
