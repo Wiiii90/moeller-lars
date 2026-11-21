@@ -75,8 +75,7 @@ trait ManagesSitePageCreateDialog
                             ->options(fn (): array => $this->parentOptions)
                             ->placeholder(__('Top level'))
                             ->native()
-                            ->nullable()
-                            ->visible(fn (): bool => $this->nestedNavigationEnabled),
+                            ->nullable(),
                         TextInput::make('position')
                             ->label('Position')
                             ->numeric()

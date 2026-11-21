@@ -135,11 +135,6 @@ final class SiteSection extends Model
 
             $parentId = $section->getAttribute('parent_id');
             if ($parentId !== null) {
-                if (! PublicContentSetting::navigationNestingEnabled()) {
-                    throw ValidationException::withMessages([
-                        'parent_id' => 'Nested pages are disabled in Pages settings.',
-                    ]);
-                }
                 if ($section->exists && (int) $parentId === (int) $section->getKey()) {
                     throw ValidationException::withMessages(['parent_id' => 'A site node cannot be its own parent.']);
                 }

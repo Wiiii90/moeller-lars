@@ -20,7 +20,6 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
 use App\Models\Exhibition;
-use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Models\User;
 use BackedEnum;
@@ -92,8 +91,6 @@ final class SitePages extends Page
     public bool $filtersActive = false;
 
     public bool $reorderEnabled = true;
-
-    public bool $nestedNavigationEnabled = true;
 
     public bool $addingPage = false;
 
@@ -297,7 +294,7 @@ final class SitePages extends Page
                 ->schema([
                     HierarchyParentField::make(
                         'parent_id', fn (): array => $this->parentOptions, 'Parent page',
-                    )->visible(fn (): bool => $this->nestedNavigationEnabled),
+                    ),
                 ])
                 ->action(function (array $data, array $arguments): void {
                     /** @var SiteSection $section */
@@ -634,11 +631,6 @@ final class SitePages extends Page
         if ($this->newPageParent === '') {
             return null;
         }
-        if (! $this->nestedNavigationEnabled) {
-            throw ValidationException::withMessages([
-                'parent_id' => 'Nested pages are disabled in Pages settings.',
-            ]);
-        }
         if (! ctype_digit($this->newPageParent)) {
             throw ValidationException::withMessages(['parent_id' => 'Choose a valid top-level parent page.']);
         }
@@ -654,7 +646,6 @@ final class SitePages extends Page
     private function loadSections(bool $navigationChanged = false): void
     {
         $this->orderService = app(SiteSectionOrderService::class);
-        $this->nestedNavigationEnabled = PublicContentSetting::navigationNestingEnabled();
 
         /** @var EloquentCollection<int, SiteSection> $topLevel */
         $topLevel = SiteSection::query()

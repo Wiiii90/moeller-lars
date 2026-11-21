@@ -120,7 +120,6 @@ use LogicException;
     'header_name_auto_scale',
     'public_page_width',
     'public_content_padding',
-    'navigation_nesting_enabled',
 ])]
 #[Guarded(['id', 'scope'])]
 class PublicContentSetting extends Model
@@ -177,7 +176,6 @@ class PublicContentSetting extends Model
             'header_name_auto_scale' => 'boolean',
             'public_page_width' => 'integer',
             'public_content_padding' => 'integer',
-            'navigation_nesting_enabled' => 'boolean',
         ];
     }
 
@@ -206,13 +204,6 @@ class PublicContentSetting extends Model
         self::cacheGeneralForRequest($setting);
 
         return $setting;
-    }
-
-    public static function navigationNestingEnabled(): bool
-    {
-        $value = self::general()->getAttribute('navigation_nesting_enabled');
-
-        return $value === null ? true : (bool) $value;
     }
 
     /** @return BelongsTo<MediaAsset, $this> */

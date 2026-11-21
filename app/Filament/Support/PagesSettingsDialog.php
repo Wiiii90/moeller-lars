@@ -3,29 +3,20 @@
 namespace App\Filament\Support;
 
 use App\Domain\Admin\AdminAutoPublishPreferences;
-use App\Domain\Admin\AdminSettingsService;
-use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\Controls\AdminControl;
-use App\Models\PublicContentSetting;
 use App\Models\User;
 use Closure;
+use Filament\Facades\Filament;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
-use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 
 final class PagesSettingsDialog
 {
-    public function __construct(
-        private readonly AdminSettingsService $settings,
-        private readonly SiteSectionOrderService $order,
-    ) {}
-
-    /** @return array{navigation_nesting_enabled:bool,pages_auto_publish:bool,pages_delete_without_confirmation:bool} */
+    /** @return array{pages_auto_publish:bool,pages_delete_without_confirmation:bool} */
     public function fill(): array
     {
         return [
-            'navigation_nesting_enabled' => PublicContentSetting::navigationNestingEnabled(),
             'pages_delete_without_confirmation' => (bool) (Filament::auth()->user()?->getAttribute('pages_delete_without_confirmation') ?? false),
             'pages_auto_publish' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::PAGES),
         ];
@@ -34,23 +25,16 @@ final class PagesSettingsDialog
     /** @return list<mixed> */
     public function schema(?Closure $persistOnToggle = null): array
     {
-        // Filament's live toggles update their own state, but the shared
-        // modal wire:change handler does not reliably submit that update.
-        // Use the same mutation owner as the native dialog action.
+        // Persist through the existing dialog action after each completed
+        // toggle change; no alternative settings mutation path is introduced.
         $onToggleUpdated = $persistOnToggle === null
             ? null
             : static function (Get $get) use ($persistOnToggle): void {
                 $persistOnToggle([
-                    'navigation_nesting_enabled' => $get('navigation_nesting_enabled'),
                     'pages_delete_without_confirmation' => $get('pages_delete_without_confirmation'),
                     'pages_auto_publish' => $get('pages_auto_publish'),
                 ]);
             };
-
-        $nesting = AdminControl::toggle('navigation_nesting_enabled', 'Allow nested pages')->live();
-        if ($onToggleUpdated !== null) {
-            $nesting->afterStateUpdated($onToggleUpdated);
-        }
 
         $deleteWithoutConfirmation = AdminControl::toggle('pages_delete_without_confirmation', 'Delete without confirmation')->live();
         if ($onToggleUpdated !== null) {
@@ -66,7 +50,6 @@ final class PagesSettingsDialog
             Grid::make()
                 ->columns(['md' => 2])
                 ->schema([
-                    $nesting,
                     $deleteWithoutConfirmation,
                     $autoPublish,
                 ]),
@@ -76,21 +59,7 @@ final class PagesSettingsDialog
     /** @param array<string, mixed> $data */
     public function save(array $data): bool
     {
-        $settings = PublicContentSetting::general();
-        $wasEnabled = PublicContentSetting::navigationNestingEnabled();
-        $enabled = (bool) ($data['navigation_nesting_enabled'] ?? true);
-
-        return DB::transaction(function () use ($data, $settings, $wasEnabled, $enabled): bool {
-            $changed = false;
-
-            if ($wasEnabled && ! $enabled) {
-                $changed = $this->order->flattenHierarchy() > 0 || $changed;
-            }
-
-            $updated = $this->settings->updatePublicContent($settings, [
-                'navigation_nesting_enabled' => $enabled,
-            ]);
-
+        return DB::transaction(function () use ($data): bool {
             $user = Filament::auth()->user();
             $deleteChanged = false;
             if ($user instanceof User) {
@@ -109,8 +78,7 @@ final class PagesSettingsDialog
                 (bool) ($data['pages_auto_publish'] ?? app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::PAGES)),
             );
 
-            return $updated->wasChanged('navigation_nesting_enabled')
-                || $changed || $publishChanged || $deleteChanged;
+            return $publishChanged || $deleteChanged;
         });
     }
 }

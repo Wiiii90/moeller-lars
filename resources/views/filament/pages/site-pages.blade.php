@@ -177,13 +177,13 @@
                                         'journalTemplateOptions' => $journalTemplateOptions,
                                     ])
 
-                                    @if ($section['children'] !== [] || ($reorderEnabled && $nestedNavigationEnabled))
-                                        <div class="admin-hierarchy__children{{ $section['children'] === [] && $reorderEnabled && $nestedNavigationEnabled ? ' admin-pages__empty-child-parent' : '' }}">
+                                    @if ($section['children'] !== [] || $reorderEnabled)
+                                        <div class="admin-hierarchy__children{{ $section['children'] === [] && $reorderEnabled ? ' admin-pages__empty-child-parent' : '' }}">
                                             <div
-                                                class="admin-hierarchy__children-rows{{ $section['children'] === [] && $reorderEnabled && $nestedNavigationEnabled ? ' admin-pages__empty-child-rows' : '' }}"
+                                                class="admin-hierarchy__children-rows{{ $section['children'] === [] && $reorderEnabled ? ' admin-pages__empty-child-rows' : '' }}"
                                                 role="rowgroup"
                                                 aria-label="Child pages under {{ $section['title'] }}"
-                                                @if ($reorderEnabled && $nestedNavigationEnabled)
+                                                @if ($reorderEnabled)
                                                     data-drop-target="true"
                                                     wire:sort="sortSection"
                                                     @if ($section['children'] === [])

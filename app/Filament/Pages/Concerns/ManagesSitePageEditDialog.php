@@ -111,7 +111,7 @@ trait ManagesSitePageEditDialog
                             ->dehydrated(fn (): bool => ! $this->dialogSection($arguments)->isHome()),
                         HierarchyParentField::make(
                             'parent_id', fn (): array => $this->parentOptions, 'Parent page',
-                        )->visible(fn (): bool => $this->nestedNavigationEnabled && ! $this->dialogSection($arguments)->isHome()),
+                        )->visible(fn (): bool => ! $this->dialogSection($arguments)->isHome()),
                         TextInput::make('home_parent_page')
                             ->label('Parent page')
                             ->default('Top level')
