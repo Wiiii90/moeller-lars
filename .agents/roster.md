@@ -12,7 +12,7 @@
 | Dev Worker 8 | 30 | Central minimal Admin table/list empty states and Clear filters eraser committed; source checked, browser acceptance pending | Shared Admin dialogs, common empty-state/pager/filter controls; coordinated direct Gallery/Pages consumers; no deployment | [dev-8.md](workers/dev-8.md) |
 
 
-| Dev Worker 9 | 28 | Custom mouse-origin focus overrides removed by user decision; native browser focus for Settings and Help retained | General/Gallery Live Preview controls and shared Help; preserve Dev Worker 7 device controls and Gallery Focus | [dev-9.md](workers/dev-9.md) |
+| Dev Worker 9 | 28 | Mac trackpad Option+primary drag source-integrated alongside middle-button drag and Shift+wheel zoom; browser acceptance pending | Shared General/Gallery Live Preview navigation, macOS input and Help; preserve Dev Worker 7 device controls and Gallery Focus | [dev-9.md](workers/dev-9.md) |
 | Dev Worker 10 | 26 | Active — rights-processing Validation readiness and completion | Media rights preparation/delivery pipeline, queue-worker integration requirements, current Validation activation evidence and safe rollout handoff; no deployments or artist-data changes without explicit approval | [dev-10.md](workers/dev-10.md) |
 
 | Dev Worker 11 | 27 | Active — Gallery caption pre-decode width collapse fixed in source; browser acceptance pending | Public Gallery server batches, media/caption sizing and viewer sequence; coordinate with Dev Worker 4 | [dev-11.md](workers/dev-11.md) |

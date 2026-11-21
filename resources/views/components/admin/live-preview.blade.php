@@ -95,7 +95,7 @@
             <x-admin.help
                 :toolbar="true"
                 label="Preview controls and gestures"
-                text="Wheel: scroll page. Shift + wheel: zoom at pointer. Middle-button drag: move page and view. Touch: swipe/tap; two fingers: pan. Zoom %: fit."
+                text="Wheel or trackpad scroll: page. Shift + wheel/trackpad: zoom. Middle-button drag or Option (Mac) / Alt + drag: pan. Touchscreen: swipe/tap, two fingers: pan. Zoom %: fit."
             />
         </div>
     </x-admin.stage-tool-row>
@@ -103,6 +103,8 @@
 
     <div x-ref="viewport" class="admin-live-preview__viewport" tabindex="0"
         x-on:pointerdown.capture="startPan($event)"
+        x-on:click.capture="suppressPanClick($event)"
+        x-on:dragstart.capture="if (panCandidate || dragging) $event.preventDefault()"
         x-on:wheel.capture="zoomWithWheel($event)"
         x-on:auxclick="if ($event.button === 1 && (zoom > minZoom || previewScrollRoot())) $event.preventDefault()"
         x-on:touchstart="startTouchPan($event)"

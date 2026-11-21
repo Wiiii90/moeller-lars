@@ -2,7 +2,7 @@
 
 **Branch:** `dev`  
 **Lease:** 28 (active)  
-**State:** Artist chose standard browser focus behavior; custom mouse-origin overrides and special Help dismissal focus reset have been removed.
+**State:** Mac trackpad Option + primary-button drag source-integrated; user Mac browser acceptance pending.
 
 ## Ownership and current decisions
 
@@ -92,3 +92,13 @@
 - The Help-specific mouse-dismissal `blur()` workaround had already been removed from the canonical `resources/views/components/admin/help.blade.php`; keep it removed. No new focus event listeners, styles, or per-button exceptions.
 - Settings buttons, Help triggers, hover/focus-visible states, and Shift follow normal native browser behavior. The shared Live Preview wheel zoom/scroll, middle-button drag, and existing Help popover functionality remain unchanged.
 - Verified the affected source blobs match their pre-override versions and the Help component contains no special focus-reset logic. No build, suite, connected browser, Continuous Integration or deployment run.
+
+
+## 2026-11-21: macOS trackpad gesture parity
+
+- Artist requires usable Mac controls for the same Public Live Preview operations as a Windows middle-mouse-button drag, while retaining the previously chosen Shift + wheel zoom and native scrolling. Do not add a persistent zoom mode, browser-reserved Command/Control wheel zoom, or Space drag.
+- Shared `resources/js/admin-live-preview.js`: add **Option/Alt + primary-button drag** as a second way to pan the same outer Preview and inner Public scroll root. It uses the existing cross-iframe pointer conversion, scroll chaining, listener cleanup and pointer capture logic; no new scroller or divergent Mac component. Middle-button dragging remains unchanged and available with physical mice on either system.
+- Option + simple click must remain a click, because Safari uses Option-click on a link as Download Linked File. Start a deferred pan candidate on Option+primary pointerdown. Activate only after >=5 screen pixels of movement; no pointer capture or click suppression while waiting. During an actual drag cancel native dragstart and suppress the following pointer-generated click to avoid unintended Public navigation/download. Keyboard-generated clicks remain functional. All listeners and capture are cleaned up when the gesture ends or is cancelled. Command/Control/Shift modified clicks do not start the gesture.
+- Shared `resources/views/components/admin/live-preview.blade.php`: adds capture-phase click/dragstart coordination to the canonical Preview viewport, and concise Help text for Mac trackpad, Shift-wheel zoom, mouse drag and touch. The iframe receives matching centralized listeners via the controller; no Preview-specific Alt wheel handler or toolbar-only workaround.
+- Native two-finger trackpad scrolling emits normal wheel events and therefore scrolls the Public page. Shift + wheel/trackpad scroll remains the chosen Preview zoom gesture. On touchscreens, native one-finger taps/scroll and existing two-touch movement are unchanged. These are distinct input types, not new hardware emulation.
+- Validation: JavaScript parsing and isolated gesture simulations passed for no-modifier left click, Command + Option left click, Option click without drag, movement threshold, actual Option pan at fitted zoom, continuation from an enlarged outer scroll boundary to the Public page, unchanged middle-button pan, pointer-generated click suppression and keyboard-click preservation, plus frame click handler binding and teardown. **No actual Mac hardware/Safari/Firefox/Chromium acceptance, full suite, build, Continuous Integration or deployment.**

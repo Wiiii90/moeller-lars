@@ -18,6 +18,9 @@ export function adminLivePreview(element) {
         minZoom: 1,
         maxZoom: 3,
         dragging: false,
+        panCandidate: null,
+        panSuppressClick: false,
+        panCaptureTarget: null,
         pointerId: null,
         panGestureCleanup: null,
         dragLastX: 0,
@@ -262,6 +265,7 @@ export function adminLivePreview(element) {
             const changed = () => this.scheduleDiagnostics()
             const frameWheel = (event) => this.zoomWithWheel(event, true)
             const frameDown = (event) => this.startPan(event, true)
+            const frameClick = (event) => this.suppressPanClick(event)
             const frameTouchStart = (event) => this.startTouchPan(event, true)
             const frameTouchMove = (event) => this.moveTouchPan(event, true)
             const frameTouchEnd = (event) => this.endTouchPan(event)
@@ -272,6 +276,7 @@ export function adminLivePreview(element) {
             }
             documentRef.addEventListener('wheel', frameWheel, { capture: true, passive: false })
             documentRef.addEventListener('pointerdown', frameDown, true)
+            documentRef.addEventListener('click', frameClick, true)
             documentRef.addEventListener('mousedown', preventMiddleAutoscroll, true)
             documentRef.addEventListener('auxclick', preventMiddleAutoscroll, true)
             documentRef.addEventListener('touchstart', frameTouchStart, { passive: true })
@@ -292,6 +297,7 @@ export function adminLivePreview(element) {
             this.frameShortcuts.push(
                 () => documentRef.removeEventListener('wheel', frameWheel, true),
                 () => documentRef.removeEventListener('pointerdown', frameDown, true),
+                () => documentRef.removeEventListener('click', frameClick, true),
                 () => documentRef.removeEventListener('mousedown', preventMiddleAutoscroll, true),
                 () => documentRef.removeEventListener('auxclick', preventMiddleAutoscroll, true),
                 () => documentRef.removeEventListener('touchstart', frameTouchStart),
@@ -355,26 +361,48 @@ export function adminLivePreview(element) {
             scrollRoot.scrollTop += remainderY / scale
         },
         startPan(event, inFrame = false) {
-            if (this.dragging || event.button !== 1) return
+            // The primary-button alternative makes Mac trackpads usable
+            // without a middle button. Option/Alt + a *drag* pans; a plain
+            // Option-click retains its native browser behavior (including
+            // Safari link downloads). Never override Command/Control clicks.
+            const middle = event.button === 1
+            const optionDrag = event.button === 0 && event.altKey
+                && ! event.ctrlKey && ! event.metaKey && ! event.shiftKey
+                && event.pointerType !== 'touch'
+            if (this.dragging || this.panCandidate) return
+            this.panSuppressClick = false
+            if (! middle && ! optionDrag) return
 
             const viewport = this.$refs.viewport
             const scrollRoot = this.previewScrollRoot()
             if (! viewport || (this.zoom <= this.minZoom && ! scrollRoot)) return
-            event.preventDefault()
+
             const point = this.previewPoint(event, inFrame)
-            this.dragging = true
             this.pointerId = event.pointerId
             this.dragLastX = point.x
             this.dragLastY = point.y
             this.dragScrollRoot = scrollRoot
 
-            // An embedded iframe owns another document. Capture both event
-            // paths only during the gesture; ordinary clicks stay untouched.
+            // Option + primary-button drag is a pending gesture until a
+            // minimum movement is measured. Pointer capture and click
+            // suppression must not apply to a stationary Option-click.
+            if (optionDrag) {
+                this.panCandidate = { x: point.x, y: point.y }
+            } else {
+                event.preventDefault()
+                this.dragging = true
+            }
+
+            // The iframe is a separate document; listen on both sides so
+            // a gesture can cross its border without losing the pointer.
             const frameDocument = this.$refs.frame?.tagName === 'IFRAME'
                 ? this.$refs.frame.contentDocument : null
             const moveParent = (movement) => this.movePan(movement)
             const moveFrame = (movement) => this.movePan(movement, true)
             const finish = (release) => this.endPan(release)
+            const stopNativeDrag = (dragEvent) => {
+                if (this.panCandidate || this.dragging) dragEvent.preventDefault()
+            }
             window.addEventListener('pointermove', moveParent)
             window.addEventListener('pointerup', finish)
             window.addEventListener('pointercancel', finish)
@@ -382,8 +410,13 @@ export function adminLivePreview(element) {
             frameDocument?.addEventListener('pointermove', moveFrame)
             frameDocument?.addEventListener('pointerup', finish)
             frameDocument?.addEventListener('pointercancel', finish)
+            frameDocument?.addEventListener('dragstart', stopNativeDrag, true)
+
             const capture = inFrame ? frameDocument?.documentElement : viewport
-            try { capture?.setPointerCapture?.(event.pointerId) } catch (_) {}
+            this.panCaptureTarget = capture
+            if (middle) {
+                try { capture?.setPointerCapture?.(event.pointerId) } catch (_) {}
+            }
             this.panGestureCleanup = () => {
                 window.removeEventListener('pointermove', moveParent)
                 window.removeEventListener('pointerup', finish)
@@ -392,17 +425,27 @@ export function adminLivePreview(element) {
                 frameDocument?.removeEventListener('pointermove', moveFrame)
                 frameDocument?.removeEventListener('pointerup', finish)
                 frameDocument?.removeEventListener('pointercancel', finish)
+                frameDocument?.removeEventListener('dragstart', stopNativeDrag, true)
                 try {
                     if (capture?.hasPointerCapture?.(event.pointerId)) capture.releasePointerCapture(event.pointerId)
                 } catch (_) {}
             }
         },
         movePan(event, inFrame = false) {
-            if (! this.dragging || event.pointerId !== this.pointerId) return
+            if (event.pointerId !== this.pointerId || (! this.dragging && ! this.panCandidate)) return
             const viewport = this.$refs.viewport
             if (! viewport) return
-            event.preventDefault()
+
             const point = this.previewPoint(event, inFrame)
+            if (this.panCandidate) {
+                if (Math.hypot(point.x - this.panCandidate.x, point.y - this.panCandidate.y) < 5) return
+                this.panCandidate = null
+                this.dragging = true
+                this.panSuppressClick = true
+                try { this.panCaptureTarget?.setPointerCapture?.(event.pointerId) } catch (_) {}
+            }
+
+            event.preventDefault()
             const rect = viewport.getBoundingClientRect()
             if (! rect.width || ! rect.height) return
             const deltaX = (this.dragLastX - point.x) * viewport.clientWidth / rect.width
@@ -412,8 +455,11 @@ export function adminLivePreview(element) {
             this.scrollPreviewBy(deltaX, deltaY, this.dragScrollRoot)
         },
         endPan(event) {
-            if (! this.dragging || (event?.pointerId !== undefined && event.pointerId !== this.pointerId)) return
+            if ((! this.dragging && ! this.panCandidate)
+                || (event?.pointerId !== undefined && event.pointerId !== this.pointerId)) return
             this.dragging = false
+            this.panCandidate = null
+            this.panCaptureTarget = null
             this.pointerId = null
             this.dragScrollRoot = null
             this.panGestureCleanup?.()
@@ -421,6 +467,15 @@ export function adminLivePreview(element) {
         },
         cancelPanGesture() {
             this.endPan(null)
+        },
+        suppressPanClick(event) {
+            // A native mouse click after a completed pan must not activate
+            // a Public link. Keyboard-generated clicks (detail === 0)
+            // remain accessible even if the pointer emitted no click.
+            if (! this.panSuppressClick || event.detail === 0) return
+            this.panSuppressClick = false
+            event.preventDefault()
+            event.stopImmediatePropagation()
         },
         touchPoint(event, inFrame) {
             const first = event.touches[0]
