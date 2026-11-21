@@ -151,10 +151,51 @@ trait CustomPageWorkspaceLifecycle
         $this->loadComponentProjection(refreshCvCount: false);
     }
 
+    public function updatedSelectedComponentTargets(): void
+    {
+        $this->syncCustomPreviewFocus();
+    }
+
+    public function activateSelectedComponent(): void
+    {
+        $selected = $this->selectedComponentTargetData();
+        // The editor activates only one current, visible table component.
+        if (count($this->selectedComponentTargets) !== 1
+            || count($selected) !== 1
+            || $this->customPreviewFocusedTarget !== $this->selectedComponentTargets[0]) {
+            return;
+        }
+
+        $target = $selected[0];
+        $index = $target['index'];
+        $type = $target['type'];
+        if ($type === 'legal_disclaimer') {
+            return;
+        }
+
+        if (isset($target['child_index'])) {
+            $this->imageChildAt($index, $target['child_index'], $type);
+            $this->mountAction($type === 'list' ? 'editImageChild' : 'editImageChildInstant', [
+                'imageIndex' => $index,
+                'childIndex' => $target['child_index'],
+                'componentType' => $type,
+            ]);
+
+            return;
+        }
+
+        $this->componentAt($index, $type);
+        $this->mountAction($type === 'list' ? 'editListComponent' : 'editComponent', [
+            'componentIndex' => $index,
+            'componentType' => $type,
+        ]);
+    }
+
     public function selectAllVisible(bool $selected): void
     {
         if (! $selected) {
             $this->clearSelections();
+            $this->syncCustomPreviewFocus();
 
             return;
         }
@@ -166,6 +207,7 @@ trait CustomPageWorkspaceLifecycle
             ->filter(static fn (mixed $target): bool => is_string($target))
             ->values()
             ->all();
+        $this->syncCustomPreviewFocus();
     }
 
     public function pageSettingsAction(): Action

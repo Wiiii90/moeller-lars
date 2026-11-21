@@ -76,7 +76,7 @@
             @endif
 
             @if ($type === 'text')
-                <section class="custom-page__component">
+                <section id="custom-page-component-{{ $imageBlockPrefix }}-{{ $blockIndex }}" class="custom-page__component">
                     <div class="custom-page__copy">
                         @if (filled($block['title'] ?? null))
                             @if ($isHome)<h2>{{ $block['title'] }}</h2>@else<h3>{{ $block['title'] }}</h3>@endif
@@ -96,7 +96,7 @@
                         ? $media->thumbnailVariantForAsset($listAsset)
                         : null;
                 @endphp
-                <section class="custom-page__component">
+                <section id="custom-page-component-{{ $imageBlockPrefix }}-{{ $blockIndex }}" class="custom-page__component">
                     <div class="custom-page__list-layout{{ $listVariant !== null ? ' custom-page__list-layout--with-media' : '' }}">
                         <div class="custom-page__copy">
                             @if (filled($block['title'] ?? null))
@@ -140,11 +140,11 @@
                             ? $block['variant']
                             : 'thin';
                 @endphp
-                <div class="custom-page__divider custom-page__divider--{{ $dividerVariant }}" aria-hidden="true"></div>
+                <div id="custom-page-component-{{ $imageBlockPrefix }}-{{ $blockIndex }}" class="custom-page__divider custom-page__divider--{{ $dividerVariant }}" aria-hidden="true"></div>
             @endif
 
             @if ($type === 'contact')
-                <div class="custom-page__component custom-page__contact">
+                <div id="custom-page-component-{{ $imageBlockPrefix }}-{{ $blockIndex }}" class="custom-page__component custom-page__contact">
                     <x-contact :general-settings="$generalSettings" :children="$componentSettings->contactChildren($block)" :title="$block['title'] ?? null" :heading-id="'contact-heading-'.$imageBlockPrefix.'-'.$blockIndex" />
                 </div>
             @endif
@@ -152,7 +152,7 @@
             @if ($type === 'legal_disclaimer')
                 @php($legalSections = \App\Domain\Content\PublicLegalContent::sections($generalSettings))
                 @if ($legalSections !== [])
-                    <section class="legal-disclaimer custom-page__component custom-page__legal" aria-labelledby="legal-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">
+                    <section id="custom-page-component-{{ $imageBlockPrefix }}-{{ $blockIndex }}" class="legal-disclaimer custom-page__component custom-page__legal" aria-labelledby="legal-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">
                         <h2 id="legal-heading-{{ $imageBlockPrefix }}-{{ $blockIndex }}">Legal Disclaimer</h2>
                         <div class="custom-page__legal-sections">
                             @foreach ($legalSections as $legalSection)

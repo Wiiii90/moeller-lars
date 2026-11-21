@@ -66,6 +66,10 @@ final class CustomPageWorkspace extends Page
 
     public ?string $previewUrl = null;
 
+    public bool $customPreviewAutoFocus = true;
+
+    public ?string $customPreviewFocusedTarget = null;
+
     /** @var array<string, mixed> */
     public array $analytics = [];
 

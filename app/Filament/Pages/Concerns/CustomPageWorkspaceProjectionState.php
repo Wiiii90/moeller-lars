@@ -47,6 +47,62 @@ trait CustomPageWorkspaceProjectionState
         $this->loadComponentProjection();
     }
 
+    public function toggleCustomPreviewAutoFocus(): void
+    {
+        $this->customPreviewAutoFocus = ! $this->customPreviewAutoFocus;
+        if ($this->customPreviewAutoFocus) {
+            $this->syncCustomPreviewFocus(forceRefresh: true);
+        }
+    }
+
+    public function customStagePreviewUrl(): ?string
+    {
+        if ($this->previewUrl === null) {
+            return null;
+        }
+
+        if (! $this->customPreviewAutoFocus || $this->customPreviewFocusedTarget === null) {
+            return $this->previewUrl;
+        }
+
+        // Targets are checked against the current rendered table projection
+        // before they become Public document anchors.
+        if (! preg_match('/^(\\d+)(?:\\.(\\d+))?:[a-z_]+$/', $this->customPreviewFocusedTarget, $matches)) {
+            return $this->previewUrl;
+        }
+
+        // Preserve the existing Public image anchor; all other component
+        // roots share the same positional hash grammar, including Image children.
+        $hasChild = ($matches[2] ?? '') !== '';
+        $anchor = ($matches[3] === 'image' && ! $hasChild)
+            ? 'custom-page-image-'.$matches[1]
+            : 'custom-page-component-page-'.$matches[1]
+                .($hasChild ? '-'.$matches[2] : '');
+
+        return $this->previewUrl.'#'.$anchor;
+    }
+
+    private function syncCustomPreviewFocus(bool $forceRefresh = false): void
+    {
+        $validTargets = collect($this->components)
+            ->flatMap(static fn (array $row): array => [
+                $row['target'], ...array_column($row['children'] ?? [], 'target'),
+            ])
+            ->all();
+        $selected = array_values(array_intersect($this->selectedComponentTargets, $validTargets));
+        $next = $selected === [] ? null : end($selected);
+        $changed = $next !== $this->customPreviewFocusedTarget;
+        $this->customPreviewFocusedTarget = $next;
+
+        if (($this->customPreviewAutoFocus && $changed) || $forceRefresh) {
+            if ($this->customPreviewAutoFocus && $this->previewUrl !== null) {
+                $this->dispatch('admin-live-preview-updated', url: $this->customStagePreviewUrl());
+            } else {
+                $this->dispatch('admin-live-preview-updated');
+            }
+        }
+    }
+
     private function refreshFromFirstPage(bool $refreshCvCount = false): void
     {
         $this->page = 1;
@@ -167,6 +223,7 @@ trait CustomPageWorkspaceProjectionState
             array_slice($projected, $offset, $this->pageSize),
         );
         $this->retainVisibleSelections();
+        $this->syncCustomPreviewFocus(forceRefresh: true);
 
         $this->metrics = [
             ['label' => 'Components', 'value' => RegionalFormats::adminNumber(count($blocks) + $childComponentCount), 'description' => 'Page sequence'],

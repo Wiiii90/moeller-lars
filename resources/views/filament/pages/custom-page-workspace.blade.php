@@ -34,17 +34,57 @@
             $canDeleteSelected = $selectedItemCount > 0
                 && $selectedParents->count() === $selectedItemCount
                 && $selectedParents->every(static fn (array $component): bool => \App\Models\CustomPageSetting::canDeleteComponent($component));
+            $canActivateSelected = $selectedItemCount === 1
+                && $selectedParents->count() === 1
+                && $selectedParents->first()['editable'];
             $visibleSelectableCount = count($components) + collect($components)
                 ->sum(static fn (array $component): int => count($component['children'] ?? []));
             $resultStart = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
             $resultEnd = $total === 0 ? 0 : min($total, $page * $pageSize);
         @endphp
 
+        <section class="admin-visual-stage admin-visual-stage--split admin-visual-stage--editor-preview"
+            aria-label="Custom Page editor and live public preview">
+            <div class="admin-visual-stage__pane admin-visual-stage__editor-pane">
+                <h2 class="admin-section__kicker admin-visual-stage__heading">{{ __('Editor') }}</h2>
+                <x-admin.stage-tool-row label="Editor actions">
+                    <div class="admin-stage-tool-group">
+                        <button class="admin-action admin-action--with-icon" type="button"
+                            wire:click="activateSelectedComponent" @disabled(! $canActivateSelected)>
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
+                            <span class="admin-action__label">{{ __('Activate') }}</span>
+                        </button>
+                    </div>
+                </x-admin.stage-tool-row>
+            </div>
+            <div class="admin-visual-stage__pane admin-visual-stage__preview-pane">
+                <h2 class="admin-section__kicker admin-visual-stage__heading">{{ __('Live preview') }}</h2>
+                <x-admin.live-preview
+                    :heading="false"
+                    :url="$this->customStagePreviewUrl()"
+                    frame-title="Interactive Custom Page preview"
+                    wire:key="custom-page-live-preview"
+                >
+                    <x-slot:focusAction>
+                        <button class="admin-action admin-stage-tool-icon {{ $customPreviewAutoFocus ? 'is-primary' : '' }}"
+                            type="button" wire:click="toggleCustomPreviewAutoFocus"
+                            aria-label="Auto-focus preview to selection"
+                            aria-pressed="{{ $customPreviewAutoFocus ? 'true' : 'false' }}"
+                            title="{{ $customPreviewAutoFocus ? 'Auto-focus selection on' : 'Auto-focus selection off' }}">
+                            <x-filament::icon icon="heroicon-m-cursor-arrow-rays" />
+                        </button>
+                    </x-slot:focusAction>
+                </x-admin.live-preview>
+            </div>
+        </section>
+
+        <div class="admin-visual-stage-followup">
         @include('filament.pages.partials.custom-page-workspace-controls')
 
         @include('filament.pages.partials.custom-page-workspace-sequence')
 
         @include('filament.pages.partials.custom-page-workspace-footer')
+        </div>
     </x-admin.workspace>
 
     <x-filament-actions::modals />
