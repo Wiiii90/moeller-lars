@@ -410,7 +410,8 @@
 /* One compact two-chamber toggle across Admin schemas. Filament continues
  * to own the switch state, keyboard input and save events. A quiet surface
  * delineates the inactive chamber; the full-width plate moves flush between
- * halves. No overlapping borders, inset frame or page-specific variants. */
+ * halves. One fine contour, without layered gradients or secondary
+ * shadows, keeps the compact silhouette legible on either theme. */
 button.admin-split-toggle.fi-toggle {
     box-sizing: border-box;
     display: inline-flex;
@@ -419,7 +420,7 @@ button.admin-split-toggle.fi-toggle {
     padding: 0;
     align-items: stretch;
     overflow: hidden;
-    border: 0;
+    border: 1px solid color-mix(in srgb, var(--admin-line-strong) 60%, transparent);
     border-radius: 0;
     background: color-mix(in srgb, var(--admin-muted) 12%, var(--admin-control-popover-surface));
     box-shadow: none;
@@ -443,11 +444,7 @@ button.admin-split-toggle.fi-toggle > :first-child {
     inline-size: 50%;
     block-size: 100%;
     border-radius: 0;
-    background: linear-gradient(
-        to bottom,
-        color-mix(in srgb, var(--admin-muted) 44%, var(--admin-control-popover-surface)),
-        color-mix(in srgb, var(--admin-muted) 32%, var(--admin-control-popover-surface))
-    );
+    background: color-mix(in srgb, var(--admin-muted) 37%, var(--admin-control-popover-surface));
     box-shadow: none;
     transform: none;
     translate: 0 0;
@@ -456,12 +453,7 @@ button.admin-split-toggle.fi-toggle > :first-child {
 
 button.admin-split-toggle.fi-toggle.fi-toggle-on > :first-child {
     translate: 100% 0;
-    background: linear-gradient(
-        to bottom,
-        color-mix(in srgb, var(--admin-accent) 83%, white),
-        var(--admin-accent) 52%,
-        color-mix(in srgb, var(--admin-accent) 88%, black)
-    );
+    background: var(--admin-accent);
 }
 
 button.admin-split-toggle.fi-toggle.fi-toggle-off > :first-child {
@@ -472,8 +464,8 @@ button.admin-split-toggle.fi-toggle .fi-icon {
     color: var(--admin-control-popover-surface);
 }
 
-button.admin-split-toggle.fi-toggle:hover:not(:disabled) > :first-child {
-    filter: brightness(1.08);
+button.admin-split-toggle.fi-toggle:hover:not(:disabled) {
+    border-color: var(--admin-line-strong);
 }
 
 button.admin-split-toggle.fi-toggle:focus-visible {
