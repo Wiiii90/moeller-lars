@@ -1,6 +1,6 @@
 {{-- Source-level controls stay present on the first expanded candidate row. --}}
 @if ($candidate)
-    <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable {{ str_starts_with($heroSourceRule, 'gallery_') ? 'admin-row-actions--move-state-delete' : 'admin-row-actions--edit-state-delete' }} admin-toolbar gallery-hero-source-table__row-actions gallery-hero-source-table__candidate-actions">
+    <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable {{ str_starts_with($heroSourceRule, 'gallery_') ? 'admin-row-actions--hero-ranked' : 'admin-row-actions--hero-source' }} admin-toolbar gallery-hero-source-table__row-actions gallery-hero-source-table__candidate-actions">
         @if (str_starts_with($heroSourceRule, 'gallery_'))
             @if ($showSourceActions ?? false)
                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp"
@@ -17,12 +17,10 @@
                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
                     label="Edit"
                     wire:click="mountAction('editDummyGallery', { gallery: {{ $groupId }} })" />
-            @elseif (str_starts_with($candidate['id'], 'artwork:'))
+            @else
                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
                     label="Edit"
-                    wire:click="mountAction('editHeroArtwork', { artwork: {{ (int) substr($candidate['id'], 8) }} })" />
-            @else
-                <span class="gallery-hero-source-table__action-slot" aria-hidden="true"></span>
+                    wire:click="mountAction('editRegularHeroGallery', { gallery: {{ $groupId }} })" />
             @endif
         @elseif (str_starts_with($candidate['id'], 'artwork:'))
             <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"

@@ -9,6 +9,7 @@ use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Content\GalleryHeroCandidate;
 use App\Domain\Content\GalleryHeroConfigurationService;
 use App\Domain\Content\GalleryHeroResolver;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\MediaPreviewVariant;
@@ -204,12 +205,9 @@ trait GalleryHeroWorkspaceProjection
             'visual_key' => $candidate->visualKey(),
             'title' => $candidate->title(),
             'year' => $artwork?->getAttribute('year') ?? $candidate->year,
-            'date' => $artwork instanceof Artwork ? ArtworkDate::display($artwork)
-                : ($candidate->year === null ? null : implode('-', array_filter([
-                    (string) $candidate->year,
-                    $candidate->month === null ? '' : sprintf('%02d', $candidate->month),
-                    $candidate->day === null ? '' : sprintf('%02d', $candidate->day),
-                ], static fn (string $part): bool => $part !== ''))),
+            'date' => $artwork instanceof Artwork
+                ? ArtworkDate::display($artwork, RegionalFormats::adminRegion())
+                : ArtworkDate::displayParts($candidate->year, $candidate->month, $candidate->day, RegionalFormats::adminRegion()),
             'gallery' => $candidate->sourceName
                 ?? ($gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : null),
             'gallery_id' => $candidate->sourceId ?? $gallery?->getKey(),

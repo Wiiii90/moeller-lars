@@ -143,7 +143,6 @@
 
                                 >
                                     <span class="gallery-hero-candidate__position"><span class="admin-position">{{ $index + 1 }}</span></span>
-                                    <span class="gallery-hero-candidate__drag-spacer" aria-hidden="true"></span>
 
                                     <div class="gallery-hero-candidate__visual">
                                         @if ($row['thumbnail_url'])
@@ -198,8 +197,7 @@
                                     @foreach ($excludedHeroRows as $excluded)
                                         <article class="gallery-hero-candidate is-unavailable" wire:key="gallery-hero-excluded-{{ $excluded['id'] }}">
                                             <span class="gallery-hero-candidate__position"><span class="admin-position">—</span></span>
-                                            <span class="gallery-hero-candidate__drag-spacer" aria-hidden="true"></span>
-                                            <div class="gallery-hero-candidate__visual">
+                                                    <div class="gallery-hero-candidate__visual">
                                                 @if ($excluded['thumbnail_url'])
                                                     <img src="{{ $excluded['thumbnail_url'] }}" alt="" loading="lazy" decoding="async" draggable="false">
                                                 @else
@@ -408,7 +406,7 @@
                                 </td>
                                 <td class="admin-table__actions">
                                     @if (! $expanded || $firstCandidate === null)
-                                        <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable {{ str_starts_with($heroSourceRule, 'gallery_') ? 'admin-row-actions--move-state-delete' : 'admin-row-actions--edit-state-delete' }} admin-toolbar gallery-hero-source-table__row-actions">
+                                        <div class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable {{ str_starts_with($heroSourceRule, 'gallery_') ? 'admin-row-actions--hero-ranked' : 'admin-row-actions--hero-source' }} admin-toolbar gallery-hero-source-table__row-actions">
                                             @if (str_starts_with($heroSourceRule, 'gallery_'))
                                                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                                     :disabled="$sourceSearch !== ''" wire:click="moveHeroSource({{ $groupId }}, 'up')" />
@@ -418,12 +416,10 @@
                                             @if ($manualSource)
                                                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
                                                     label="Edit" wire:click="mountAction('editDummyGallery', { gallery: {{ $groupId }} })" />
-                                            @elseif ($firstCandidate && str_starts_with($firstCandidate['id'], 'artwork:'))
+                                            @else
                                                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
                                                     label="Edit"
-                                                    wire:click="mountAction('editHeroArtwork', { artwork: {{ (int) substr($firstCandidate['id'], 8) }} })" />
-                                            @else
-                                                <span class="gallery-hero-source-table__action-slot" aria-hidden="true"></span>
+                                                    wire:click="mountAction('editRegularHeroGallery', { gallery: {{ $groupId }} })" />
                                             @endif
                                             <x-admin.row-action
                                                 :action="$gallery['preference_enabled'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"

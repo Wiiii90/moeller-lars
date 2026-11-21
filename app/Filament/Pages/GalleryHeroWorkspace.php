@@ -3,7 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminNotifier;
-use App\Filament\Pages\Concerns\GalleryHeroWorkspaceDummyActions;
+use App\Filament\Pages\Concerns\GalleryHeroWorkspaceSourceActions;
 use App\Filament\Pages\Concerns\GalleryHeroWorkspaceSources;
 use App\Filament\Pages\Concerns\GalleryHeroWorkspaceProjection;
 use App\Domain\Analytics\ArtistReportingService;
@@ -39,7 +39,7 @@ use Livewire\Attributes\Session;
 
 final class GalleryHeroWorkspace extends Page
 {
-    use GalleryHeroWorkspaceDummyActions;
+    use GalleryHeroWorkspaceSourceActions;
     use GalleryHeroWorkspaceSources;
     use GalleryHeroWorkspaceProjection;
 

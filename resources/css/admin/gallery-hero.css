@@ -1,13 +1,13 @@
 /* Gallery Hero presentation. Shared Admin primitives own its controls and tables. */
 
-/* Hero source Galleries use the shared table structure and action rails. */
+/* Source Actions have one common track model for regular and Dummy Galleries.
+ * The header and body use the same shared, content-sized Hero action rail. */
 .gallery-hero-source-table {
-    --gallery-hero-source-actions-width: var(--admin-row-actions-edit-state-delete-width);
-    --admin-row-actions-width: var(--gallery-hero-source-actions-width);
+    --gallery-hero-source-actions-width: var(--admin-row-actions-hero-source-width);
 }
 
 .gallery-hero-source-table--gallery-order {
-    --gallery-hero-source-actions-width: var(--admin-row-actions-move-state-delete-width);
+    --gallery-hero-source-actions-width: var(--admin-row-actions-hero-ranked-width);
 }
 
 .gallery-hero-source-table__action-slot {
@@ -38,12 +38,12 @@
 }
 @container admin-table (max-width: 64rem) {
     .gallery-hero-source-table--gallery-order table {
-        --gallery-hero-source-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
+        --gallery-hero-source-actions-width: var(--admin-row-actions-hero-ranked-compact-width);
     }
 }
 @container admin-table (max-width: 38rem) {
     .gallery-hero-source-table:not(.gallery-hero-source-table--gallery-order) table {
-        --gallery-hero-source-actions-width: var(--admin-row-actions-edit-state-delete-compact-width);
+        --gallery-hero-source-actions-width: var(--admin-row-actions-hero-compact-width);
     }
 }
 
@@ -108,8 +108,8 @@
 }
 
 .gallery-hero-rail {
-    /* Heading and every row share one fixed Chance/Actions axis. */
-    --gallery-hero-candidate-tracks: 1.9rem 1.75rem 3.7rem minmax(0, 1fr) 5.5rem 7.25rem;
+    /* Rows retain fixed Chance and right-aligned Actions tracks without a retired Drag column. */
+    --gallery-hero-candidate-tracks: 1.9rem 3.7rem minmax(0, 1fr) 5.5rem 7.25rem;
     display: flex;
     min-width: 0;
     flex-direction: column;
@@ -216,10 +216,6 @@
     padding-inline: .2rem;
 }
 
-.gallery-hero-candidate__drag-spacer {
-    width: 1.75rem;
-}
-
 .gallery-hero-candidate.is-current {
     background: var(--admin-subtle);
 }
@@ -277,7 +273,7 @@
 
 .gallery-hero-weight {
     display: flex;
-    grid-column: 5;
+    grid-column: 4;
     min-width: 0;
     flex-direction: column;
     align-items: center;
@@ -300,9 +296,9 @@
 
 .gallery-hero-candidate__actions {
     display: flex;
-    grid-column: 6;
+    grid-column: 5;
     flex-wrap: nowrap;
-    justify-content: flex-start;
+    justify-content: flex-end;
     gap: .12rem;
     min-width: 0;
 }
@@ -339,41 +335,35 @@
 /* One thumbnail frame is reused by the folded strip and the table rows.
  * Keep images small and consistently rectangular, without cropping art. */
 .gallery-hero-source-table,
-.gallery-hero-dummy-gallery-table {
+.gallery-hero-source-members-table {
     --gallery-hero-source-thumb-width: 2.55rem;
     --gallery-hero-source-thumb-height: 2rem;
 }
 
-/* Dummy Gallery rows have one elastic identity, a compact precision date,
- * and the canonical State/Delete action rail; no sort or drag affordance. */
-.gallery-hero-dummy-gallery-table {
+/* Both Hero source editors share table/date/action alignment, with only
+ * the source member mutation capabilities differing. */
+.gallery-hero-source-members-table {
     --gallery-hero-source-thumb-height: 1.9rem;
-    --admin-row-actions-two-static-width: calc(
-        var(--admin-row-action-slot-state-width) + var(--admin-row-action-slot-delete-width) + .25rem
-    );
-    --admin-row-actions-two-static-columns:
-        minmax(var(--admin-row-action-slot-state-width), max-content)
-        minmax(var(--admin-row-action-slot-delete-width), max-content);
     --admin-row-actions-trailing-inset: var(--admin-table-edge-inset);
 }
 
-.gallery-hero-dummy-gallery-table table {
-    --admin-row-actions-width: var(--admin-row-actions-two-static-width);
+.gallery-hero-source-members-table table {
+    --admin-row-actions-width: var(--admin-row-actions-hero-member-width);
 }
 
-.gallery-hero-dummy-gallery-table__col-date {
+.gallery-hero-source-members-table__col-date {
     width: 9.5rem;
 }
 
-.gallery-hero-dummy-gallery-table__col-actions {
-    width: calc(var(--admin-row-actions-two-static-width) + var(--admin-table-edge-inset));
+.gallery-hero-source-members-table__col-actions {
+    width: calc(var(--admin-row-actions-hero-member-width) + var(--admin-table-edge-inset));
 }
 
-.gallery-hero-dummy-gallery-table .gallery-hero-source-table__candidate-inline {
+.gallery-hero-source-members-table .gallery-hero-source-table__candidate-inline {
     grid-template-columns: var(--gallery-hero-source-thumb-width) minmax(0, 1fr);
 }
 
-.gallery-hero-dummy-gallery-table .gallery-hero-source-table__candidate-inline > :is(strong, .admin-inline-input) {
+.gallery-hero-source-members-table .gallery-hero-source-table__candidate-inline > :is(strong, .admin-inline-input) {
     display: block;
     min-width: 0;
     width: 100%;
@@ -382,33 +372,32 @@
     white-space: nowrap;
 }
 
-.gallery-hero-dummy-gallery-table__date {
+.gallery-hero-source-members-table__date {
     font-variant-numeric: tabular-nums;
 }
 
 @container admin-table (max-width: 24rem) {
-    .gallery-hero-dummy-gallery-table__col-date {
+    .gallery-hero-source-members-table__col-date {
         width: 8.25rem;
     }
 
     /* At the narrowest dialog width, the name survives over a thumbnail. */
-    .gallery-hero-dummy-gallery-table .gallery-hero-source-candidate__preview {
+    .gallery-hero-source-members-table .gallery-hero-source-candidate__preview {
         display: none;
     }
 
-    .gallery-hero-dummy-gallery-table .gallery-hero-source-table__candidate-inline {
+    .gallery-hero-source-members-table .gallery-hero-source-table__candidate-inline {
         grid-template-columns: minmax(0, 1fr);
         gap: 0;
     }
 }
 
 @container admin-table (max-width: 38rem) {
-    .gallery-hero-dummy-gallery-table table {
-        --admin-row-actions-two-static-width: calc(2 * 1.35rem + .45rem);
+    .gallery-hero-source-members-table table {
+        --admin-row-actions-width: var(--admin-row-actions-hero-member-compact-width);
     }
-
-    .gallery-hero-dummy-gallery-table .admin-row-actions--two-static {
-        --admin-row-actions-columns: repeat(2, 1.35rem);
+    .gallery-hero-source-members-table__col-actions {
+        width: calc(var(--admin-row-actions-hero-member-compact-width) + var(--admin-table-edge-inset));
     }
 }
 

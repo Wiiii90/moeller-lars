@@ -74,12 +74,13 @@ final class GalleryHeroDummyGalleryDialog
                     $set('pending_candidate', null);
                 })
                 ->columnSpanFull(),
-            View::make('filament.pages.partials.gallery-hero-dummy-gallery-members')
+            View::make('filament.pages.partials.gallery-hero-source-members')
                 ->viewData(fn ($livewire): array => [
                     'members' => $livewire instanceof GalleryHeroWorkspace
                         ? $livewire->dummyEditorMembers($galleryId, $creating) : [],
                     'galleryId' => $galleryId,
                     'creating' => $creating,
+                    'regularSource' => false,
                 ])
                 ->columnSpanFull(),
         ];

@@ -133,8 +133,13 @@ trait GalleryHeroWorkspaceSources
 
     public function toggleGalleryEligibility(int $galleryId): void
     {
-        ArtworkCategory::query()->findOrFail($galleryId);
-        $enabled = ! in_array($galleryId, $this->enabledGalleryIds, true);
+        $this->setRegularHeroGalleryEnabled($galleryId, ! in_array($galleryId, $this->enabledGalleryIds, true));
+    }
+
+    /** One mutation owner for the source row and its Hero-only Edit dialog. */
+    public function setRegularHeroGalleryEnabled(int $galleryId, bool $enabled): void
+    {
+        ArtworkCategory::query()->whereHas('siteSection')->findOrFail($galleryId);
         $changed = app(GalleryHeroConfigurationService::class)->setRegularGalleriesEnabled(
             $this->settings(), [$galleryId], $enabled,
         );
@@ -143,7 +148,7 @@ trait GalleryHeroWorkspaceSources
         }
         $this->clearSourceSelection();
         $this->reloadWorkspace();
-        app(AdminNotifier::class)->notification(title: 'Gallery source preference updated', status: 'success');
+        app(AdminNotifier::class)->notification(title: 'Hero Gallery source updated', status: 'success');
     }
 
     /** One selection key per source membership, even for reused Artwork IDs. */

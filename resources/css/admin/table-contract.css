@@ -86,6 +86,34 @@
         + var(--admin-row-action-slot-delete-width) + 1.08rem
     );
     --admin-row-actions-journal-blog-compact-width: 12.15rem;
+    /* Hero source actions are context-specific semantic slots. The same
+     * tracks size header, column and rows across regular/Dummy sources. */
+    --admin-row-action-slot-hero-edit-width: 3.75rem;
+    --admin-row-action-slot-hero-state-width: 4.75rem;
+    --admin-row-action-slot-hero-delete-width: 4.75rem;
+    --admin-row-actions-hero-gap: .55rem;
+    --admin-row-actions-hero-source-width: calc(
+        var(--admin-row-action-slot-hero-edit-width) +
+        var(--admin-row-action-slot-hero-state-width) +
+        var(--admin-row-action-slot-hero-delete-width) +
+        2 * var(--admin-row-actions-hero-gap)
+    );
+    --admin-row-actions-hero-ranked-width: calc(
+        var(--admin-row-action-slot-move-up-width) +
+        var(--admin-row-action-slot-move-down-width) +
+        var(--admin-row-action-slot-hero-edit-width) +
+        var(--admin-row-action-slot-hero-state-width) +
+        var(--admin-row-action-slot-hero-delete-width) +
+        4 * var(--admin-row-actions-hero-gap)
+    );
+    --admin-row-actions-hero-member-width: calc(
+        var(--admin-row-action-slot-hero-state-width) +
+        var(--admin-row-action-slot-hero-delete-width) +
+        var(--admin-row-actions-hero-gap)
+    );
+    --admin-row-actions-hero-compact-width: calc(3 * 1.35rem + 2 * .45rem);
+    --admin-row-actions-hero-ranked-compact-width: calc(5 * 1.35rem + 4 * .45rem);
+    --admin-row-actions-hero-member-compact-width: calc(2 * 1.35rem + .45rem);
 
     /* Shared semantic typography for ordinary table/control surfaces. Feature
      * layouts consume these tokens instead of shrinking text to make it fit. */
@@ -353,6 +381,36 @@
     --admin-row-actions-columns: max-content max-content max-content;
 }
 
+/* Hero-only source Actions use stable semantics, even when a real Gallery
+ * lacks Remove and instead reserves the same terminal placeholder slot. */
+.admin-row-actions--hero-source {
+    --admin-row-actions-width: var(--admin-row-actions-hero-source-width);
+    --admin-row-actions-columns:
+        minmax(var(--admin-row-action-slot-hero-edit-width), max-content)
+        minmax(var(--admin-row-action-slot-hero-state-width), max-content)
+        minmax(var(--admin-row-action-slot-hero-delete-width), max-content);
+    --admin-row-actions-gap: var(--admin-row-actions-hero-gap);
+}
+
+.admin-row-actions--hero-ranked {
+    --admin-row-actions-width: var(--admin-row-actions-hero-ranked-width);
+    --admin-row-actions-columns:
+        minmax(var(--admin-row-action-slot-move-up-width), max-content)
+        minmax(var(--admin-row-action-slot-move-down-width), max-content)
+        minmax(var(--admin-row-action-slot-hero-edit-width), max-content)
+        minmax(var(--admin-row-action-slot-hero-state-width), max-content)
+        minmax(var(--admin-row-action-slot-hero-delete-width), max-content);
+    --admin-row-actions-gap: var(--admin-row-actions-hero-gap);
+}
+
+.admin-row-actions--hero-member {
+    --admin-row-actions-width: var(--admin-row-actions-hero-member-width);
+    --admin-row-actions-columns:
+        minmax(var(--admin-row-action-slot-hero-state-width), max-content)
+        minmax(var(--admin-row-action-slot-hero-delete-width), max-content);
+    --admin-row-actions-gap: var(--admin-row-actions-hero-gap);
+}
+
 /* Fixed Edit / Enable-Disable / Delete slots for Source tables. */
 .admin-row-actions--edit-state-delete {
     --admin-row-actions-width: var(--admin-row-actions-edit-state-delete-width);
@@ -574,6 +632,45 @@
     }
 
     .admin-row-actions--move-state-delete .admin-action__label {
+        display: none !important;
+    }
+}
+
+/* Fixed Hero slots compact alongside their table columns, never by clipping
+ * a labeled action into an undersized track. */
+@container admin-table (max-width: 64rem) {
+    .admin-row-actions--hero-ranked {
+        --admin-row-actions-width: var(--admin-row-actions-hero-ranked-compact-width);
+        --admin-row-actions-columns: repeat(5, 1.35rem);
+        --admin-row-actions-gap: .45rem;
+    }
+    .admin-row-actions--hero-ranked .admin-action {
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        padding-inline: 0 !important;
+    }
+    .admin-row-actions--hero-ranked .admin-action__label {
+        display: none !important;
+    }
+}
+
+@container admin-table (max-width: 38rem) {
+    .admin-row-actions--hero-source {
+        --admin-row-actions-width: var(--admin-row-actions-hero-compact-width);
+        --admin-row-actions-columns: repeat(3, 1.35rem);
+        --admin-row-actions-gap: .45rem;
+    }
+    .admin-row-actions--hero-member {
+        --admin-row-actions-width: var(--admin-row-actions-hero-member-compact-width);
+        --admin-row-actions-columns: repeat(2, 1.35rem);
+        --admin-row-actions-gap: .45rem;
+    }
+    :is(.admin-row-actions--hero-source, .admin-row-actions--hero-member) .admin-action {
+        width: 1.35rem !important;
+        min-width: 1.35rem !important;
+        padding-inline: 0 !important;
+    }
+    :is(.admin-row-actions--hero-source, .admin-row-actions--hero-member) .admin-action__label {
         display: none !important;
     }
 }

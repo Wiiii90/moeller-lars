@@ -19,6 +19,7 @@ use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\GalleryHeroSettingsDialog;
 use App\Filament\Support\GalleryHeroDummyGalleryDialog;
 use App\Filament\Support\ArtworkEditDialog;
+use App\Filament\Support\Controls\AdminControl;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\GalleryHeroSetting;
@@ -26,6 +27,7 @@ use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use App\Models\User;
 use Filament\Actions\Action;
+use Filament\Schemas\Components\View;
 use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,7 +37,7 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Session;
 
-trait GalleryHeroWorkspaceDummyActions
+trait GalleryHeroWorkspaceSourceActions
 {
     /** The Create dialog stages its gallery name and members in one commit. */
     public function addDummyGalleryAction(): Action
@@ -119,6 +121,80 @@ trait GalleryHeroWorkspaceDummyActions
         $artwork = Artwork::query()->with('category')->findOrFail($id);
 
         return $artwork;
+    }
+
+    /** Edit only this Hero page's regular Gallery source, never Gallery metadata. */
+    public function editRegularHeroGalleryAction(): Action
+    {
+        return AdminDialog::edit(
+            Action::make('editRegularHeroGallery')
+                ->label('Edit')
+                ->modalHeading('Edit Hero Gallery')
+                ->fillForm(function (array $arguments): array {
+                    $gallery = $this->regularHeroGalleryForAction($arguments);
+
+                    return [
+                        'gallery_name' => (string) $gallery->getAttribute('name'),
+                        'enabled' => in_array((int) $gallery->getKey(), $this->enabledGalleryIds, true),
+                    ];
+                })
+                ->schema(function (array $arguments): array {
+                    $gallery = $this->regularHeroGalleryForAction($arguments);
+                    $galleryId = (int) $gallery->getKey();
+                    $enabled = in_array($galleryId, $this->enabledGalleryIds, true);
+                    $canEnable = $gallery->getRelationValue('siteSection')?->getAttribute('state') === 'published';
+
+                    return [
+                        AdminControl::text('gallery_name', 'Gallery')
+                            ->readOnly()
+                            ->dehydrated(false)
+                            ->columnSpanFull(),
+                        AdminControl::toggle('enabled', 'Use as Hero source')
+                            ->live()
+                            ->disabled(! $enabled && ! $canEnable)
+                            ->afterStateUpdated(function (mixed $state) use ($galleryId): void {
+                                $this->setRegularHeroGalleryEnabled($galleryId, (bool) $state);
+                            })
+                            ->columnSpanFull(),
+                        View::make('filament.pages.partials.gallery-hero-source-members')
+                            ->viewData(fn (): array => [
+                                'members' => $this->regularHeroGalleryMembers($galleryId),
+                                'galleryId' => $galleryId,
+                                'creating' => false,
+                                'regularSource' => true,
+                            ])
+                            ->columnSpanFull(),
+                    ];
+                })
+                ->action(static function (): void {}),
+            AdminDialogSize::Large,
+        );
+    }
+
+    private function regularHeroGalleryForAction(array $arguments): ArtworkCategory
+    {
+        $id = (int) ($arguments['gallery'] ?? 0);
+        if ($id < 1) {
+            throw ValidationException::withMessages(['gallery' => 'Choose an existing Gallery.']);
+        }
+
+        return ArtworkCategory::query()->with('siteSection')->whereHas('siteSection')->findOrFail($id);
+    }
+
+    /** Only current/excluded Hero candidates are editable here; not Gallery membership. */
+    public function regularHeroGalleryMembers(int $galleryId): array
+    {
+        return collect([...$this->heroRailRows, ...$this->excludedHeroRows])
+            ->filter(static fn (array $row): bool =>
+                ($row['is_automatic'] ?? false) && (int) ($row['gallery_id'] ?? 0) === $galleryId)
+            ->unique('id')
+            ->map(static function (array $row): array {
+                $row['disabled'] = ! ($row['eligible'] ?? false);
+
+                return $row;
+            })
+            ->values()
+            ->all();
     }
 
     /** Editing an existing Dummy Gallery autosaves immediately. */
