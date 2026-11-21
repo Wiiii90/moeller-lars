@@ -15,6 +15,6 @@
 | Dev Worker 9 | 28 | Custom mouse-origin focus overrides removed by user decision; native browser focus for Settings and Help retained | General/Gallery Live Preview controls and shared Help; preserve Dev Worker 7 device controls and Gallery Focus | [dev-9.md](workers/dev-9.md) |
 | Dev Worker 10 | 26 | Active — rights-processing Validation readiness and completion | Media rights preparation/delivery pipeline, queue-worker integration requirements, current Validation activation evidence and safe rollout handoff; no deployments or artist-data changes without explicit approval | [dev-10.md](workers/dev-10.md) |
 
-| Dev Worker 11 | 27 | Active — single-image native-lazy Gallery source repair prepared; browser acceptance pending | Progressive Public Gallery server batches, native image decode and viewer sequence; coordinate with Dev Worker 4 | [dev-11.md](workers/dev-11.md) |
+| Dev Worker 11 | 27 | Active — Gallery caption pre-decode width collapse fixed in source; browser acceptance pending | Public Gallery server batches, media/caption sizing and viewer sequence; coordinate with Dev Worker 4 | [dev-11.md](workers/dev-11.md) |
 
 Only activated Dev workers receive a row and their own `.agents/workers/dev-N.md` record. This roster belongs exclusively to `dev` and must never receive Docs, Testing or Refactor worker entries. Follow the [shared worker protocol](README.md) for atomic registration, takeover and lease updates.

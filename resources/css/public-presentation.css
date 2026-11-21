@@ -903,11 +903,20 @@ body.public-site:has(.site-content--fitted-image, .site-content--gallery-hero-fi
     --gallery-drift-left: 5fr;
     --gallery-drift-right: 3fr;
 }
+/* The media/caption track must have a definite width BEFORE image decoding.
+   A fit-content track otherwise shrinks to the temporary ALT fallback's
+   intrinsic width and wraps the caption into one-character lines. */
 .artwork-list .artwork-card__composition {
     grid-column: 2;
-    width: fit-content;
+    width: 100cqw;
     max-width: 100%;
     min-width: 0;
+}
+/* The canonical server-provided thumbnail/poster aspect determines the
+   image-width track, independently of whether image bytes have arrived.
+   The fallback covers a transient missing nonce-owned dimension rule. */
+.artwork-list .artwork-card--gallery-dimensioned .artwork-card__composition {
+    width: min(100cqw, calc(var(--gallery-artwork-height) * var(--gallery-media-aspect, 1)));
 }
 /* Metadata must not make the intrinsic image/caption grouping wider than the
    actual displayed image. Inline-size containment still allows natural text
@@ -950,26 +959,22 @@ body.public-site:has(.site-content--fitted-image, .site-content--gallery-hero-fi
 /* Gallery stills and videos use their real aspect ratios, constrained by
    Content width and a shared viewport-height ceiling without cropping. */
 .artwork-list .artwork-card__link {
-    width: fit-content;
+    width: 100%;
     max-width: 100%;
     margin-inline: 0;
 }
 .artwork-list .artwork-card__image {
-    width: auto;
+    width: 100%;
     max-width: 100%;
     height: auto;
     max-height: var(--gallery-artwork-height);
     margin-inline: 0;
     object-fit: contain;
 }
-/* Use thumbnail or video-poster dimensions against the Gallery's real
-   Content-width container. Both media types preserve their display aspect;
-   the shared composition keeps captions aligned to the visible media. */
-.artwork-list .artwork-card--gallery-dimensioned :is(.artwork-card__image, .artwork-card__video) {
-    width: min(100cqw, calc(var(--gallery-artwork-height) * var(--gallery-media-aspect)));
-    height: auto;
-}
+/* Still and video fill the already-sized media track. Neither an
+   unrequested image nor its ALT fallback can resize that track. */
 .artwork-list .artwork-card__video {
+    width: 100%;
     max-height: var(--gallery-artwork-height);
     object-fit: contain;
 }
