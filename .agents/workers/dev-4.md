@@ -2,7 +2,18 @@
 
 **Lease:** 29
 **Branch:** dev
-**State:** Active — Staged title now uses filename placeholder, third upload percentage removed; Gallery row labels tied to canonical view mode; browser acceptance pending.
+**State:** Active — current chat consolidated for archival; next-chat takeover pending, no sign-off. Gallery Stage/View and upload fixes are on dev, browser acceptance pending.
+
+## Current handoff — 2026-11-21 (chat archival, worker remains active)
+
+- **Ownership:** Dev Worker 4, dev branch, current lease 29. The artist is archiving the chat, **not** retiring or unregistering this worker. The new Dev Worker 4 chat must explicitly take over/register with the next lease under the branch-local protocol before new work. Roster and this worker record remain the authoritative state.
+- **Last in-scope product commit:** `637fc5982c6795742e5a4a7d2d9a7303c937fa88` (Stage Title placeholder, Upload copy and Gallery List action rail); other workers may have advanced dev since. Always fetch fresh dev HEAD and verify the roster before editing.
+- **Stage:** Upload/Staged/Settings tabs switch locally with Alpine, retain their panes, synchronize the existing entangled Livewire panel/preview properties; actual edits, selection, queue submission and media transfer remain on canonical server/shared owners. The first accepted upload of each batch selects a staged Artwork. Active upload percentage appears in the Upload tab and status row only; the Dropzone contains no third percentage. Newly staged Title starts empty with a grey suggested title from the media filename; untouched submit keeps the existing filename fallback. No new standalone media/title state or duplicate persistence.
+- **Gallery/Storage view modes:** The shared List/Grid/Dense control switches locally and keeps a browser-session preference. List and Dense share one semantic table but retain their distinct columns/density; Grid retains a separate card renderer with page-specific actions. Both remain mounted per loaded dataset; this improves return switching but increases initial DOM work. Duplicate image elements do **not** prove duplicate transfers; any performance optimization must start from measured network/render/server timing.
+- **Gallery controls:** Gallery List/Dense no longer offer the `Public` row action, and the Grid image overlay no longer has a Public action. Publish/Unpublish, Edit, Move, Delete, reorder, selection and Gallery/Storage-specific controls remain. Gallery toolbar's List/Grid/Dense terminal Selection width is unified. List labels are reserved at wide widths and compact at <=70rem; Dense uses icon-only rail. After an Edit roundtrip the per-row Alpine compact flag was removed and actions now derive density from the one root `data-admin-view-mode`; the user-provided screenshot was **not** browser-retested.
+- **Priority browser acceptance (not yet verified):** (1) List -> Edit -> Back/Save shows correctly spaced action labels and buttons, including responsive widths; (2) List/Grid/Dense switching, toolbar alignment, filtering, selection and sorting after Livewire morphs; (3) Stage upload reaches Staged automatically, allows custom/blank suggested Title and both single and batch Submit, and preserves an ongoing multi-upload while switching tabs; (4) Storage 50/100-file grid/list/dense transitions, cached image requests, page first-load latency and Public preview focus. Review actual browser evidence before further fixes.
+- **Boundaries:** No browser runtime/automated tests, CI, deployment, Validation publication, promotion or release were carried out in this chat. Source and commit inspections only. Respect other active owners (Dev 6 Gallery Hero, Dev 11 Public Gallery, Dev 8 shared dialogs/controls, Dev 9 shared Live Preview) before touching their surfaces. Project documentation, comments and worker records remain English.
+- **Next:** Wait for the artist's next specific Dev Worker 4 assignment in a new chat; do not restart earlier tasks or retire this slot automatically.
 
 ## Takeover — 2026-11-20
 
@@ -193,13 +204,12 @@
 - Amended the existing Dev role skill to require explicit producer-to-consumer field checks and overlapping CSS-section reconciliation before a commit. Source contract checked; PHP/Laravel runtime, browser, suites, Continuous Integration and deployment not executed.
 - Independent acceptance needed: load both Gallery views with partial and complete Artwork dates and evaluate actions, compact table layouts and auto Preview focus.
 
-## Current Gallery table assignment
+## Gallery table contract (current; historical implementation details above)
 
-- Latest request: List shows the canonical full Artwork date under its title, not a Year column. Dimensions and Material share one Details column, with dimensions on the first line and material on the second.
-- Dense keeps separate compact Date, Dimensions and Material columns; Date uses year/month/day precision actually supplied. Neither table has a redundant Status column; publication actions remain the authoritative state control, and filtering still supports status/readiness.
-- List uses the existing centrally labeled seven-action row rail at genuine wide-table widths, with collective icon-only compression at table pressure. Dense explicitly uses that same central rail's compact variant. Preserve Position/Drag, optional List Media preview, title inline editing, Analytics priority, Actions and trailing shared Selection checkbox axis.
-- Reuse `ArtworkDate::display()` in the existing Gallery projection, no new date persistence. Search includes the formatted date. The actual Gallery Grid remains unchanged by this slice.
-- Source owners for this slice: `GalleryWorkspaceDataProjection.php`, `gallery-artwork-table.blade.php`, `gallery.css`, and shared `table-contract.css`. No tests, deployment or site publication authorized.
+- List shows the canonical formatted Artwork date beneath the title and has a Details column with dimensions then material. Dense instead has compact Date, Dimensions and Material columns using the available year/month/day precision. Neither adds a redundant Status column.
+- Gallery List/Dense have **six** editorial row actions, without Public. Wide List keeps labels; Dense deliberately uses compact icons, both read the canonical root view mode. Preserve Position/Drag, optional List Media preview, inline title editing, Analytics priority, actions, and trailing Selection checkbox.
+- `ArtworkDate::display()` and search formatting belong to `GalleryWorkspaceDataProjection.php`; no new date persistence. Grid remains a separate Gallery card renderer, but its Public link overlay has been removed.
+- Current owners: `GalleryWorkspaceDataProjection.php`, `gallery-artwork-table.blade.php`, `manage-gallery-artworks.blade.php`, `gallery.css` and the canonical `table-contract.css`. The earlier seven-action CSS recipe was deleted. Browser acceptance is still pending.
 
 ## Current preserved Gallery contracts
 
@@ -212,6 +222,6 @@
 ## Verification and follow-up
 
 - Source only through the connected GitHub repository. No local application runtime, actual database migration, PHP/Blade execution, browser review, test run, Continuous Integration or deployment performed by this worker.
-- Browser acceptance: Gallery List/Dense at Wide/Compact/Narrow/Minimal; full date for year-only/month-only/day-precise records; Details order and truncation; label availability at full table width; compact seven-action icons; analytics fold; Position/Drag, selection count/header/row checkboxes and action states. Check Storage and Exhibitions after shared rail threshold change.
+- Browser acceptance: Gallery List/Dense at Wide/Compact/Narrow/Minimal; full date for year-only/month-only/day-precise records; Details order and truncation; label availability at full table width; compact six-action icons; analytics fold; Position/Drag, selection count/header/row checkboxes and action states. Check Storage and Exhibitions after shared rail threshold change.
 - Docs/Testing follow-up: reconcile dated Gallery table semantics in the canonical Admin tables contract and test-owner scenarios only after reviewed behavior. The present worker record retains earlier Public/Stage boundaries until the appropriate durable owners are confirmed reconciled.
 - Next: review actual Gallery browser feedback from the artist, then fix only reproduced in-scope regressions and keep this record current.
