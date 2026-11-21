@@ -135,30 +135,6 @@ trait CustomPageWorkspaceLifecycle
         $this->syncCustomPreviewFocus();
     }
 
-    public function activateSelectedComponent(): void
-    {
-        $selected = $this->selectedComponentTargetData();
-        // The editor activates only one current, visible table component.
-        if (count($this->selectedComponentTargets) !== 1
-            || count($selected) !== 1
-            || $this->customPreviewFocusedTarget !== $this->selectedComponentTargets[0]) {
-            return;
-        }
-
-        $target = $selected[0];
-        $index = $target['index'];
-        $type = $target['type'];
-        if ($type === 'legal_disclaimer') {
-            return;
-        }
-
-        $this->componentAt($index, $type);
-        $this->mountAction('editComponent', [
-            'componentIndex' => $index,
-            'componentType' => $type,
-        ]);
-    }
-
     public function selectAllVisible(bool $selected): void
     {
         if (! $selected) {

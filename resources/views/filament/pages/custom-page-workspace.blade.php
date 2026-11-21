@@ -30,9 +30,6 @@
             $canPublishSelected = $selectedParents->contains(static fn (array $component): bool => ($component['published'] ?? false) === false);
             $canUnpublishSelected = $selectedParents->contains(static fn (array $component): bool => ($component['published'] ?? false) === true);
             $canDeleteSelected = $this->canDeleteSelectedComponents();
-            $canActivateSelected = $selectedItemCount === 1
-                && $selectedParents->count() === 1
-                && $selectedParents->first()['editable'];
             $visibleSelectableCount = count($components);
             $resultStart = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
             $resultEnd = $total === 0 ? 0 : min($total, $page * $pageSize);
@@ -48,11 +45,6 @@
                             wire:click="mountAction('addComponent', { initialType: 'grid' })">
                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
                             <span class="admin-action__label">{{ __('Add Grid') }}</span>
-                        </button>
-                        <button class="admin-action admin-action--with-icon" type="button"
-                            wire:click="activateSelectedComponent" @disabled(! $canActivateSelected)>
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
-                            <span class="admin-action__label">{{ __('Activate') }}</span>
                         </button>
                     </div>
                 </x-admin.stage-tool-row>

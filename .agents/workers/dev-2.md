@@ -28,6 +28,8 @@
 - Remove the defunct `variant` default from the Custom Page Add-component form after standalone Divider retirement.
 - The reusable Grid supports optional equal/65%-35% two-column layouts and row-major stacking in narrow containers; the existing Stage exposes content editing and placement into addressable areas.
 
+- **2026-11-21 UI consolidation:** Removed the Stage `Activate` button, its single-selection eligibility variable and `activateSelectedComponent()` Livewire handler. The button only opened the same canonical Edit action already offered by the component rows and Grid areas. It did not change publication or activation state. All direct Edit controls remain; no alternative action or extra interaction owner was added. Source-only verification; browser review still pending.
+
 ## Architecture and data compatibility
 - Source owner: `CustomPageSetting` for schema and publication checks, `CustomPageEditorialService` for audited mutation, shared `component-sequence.blade.php` for Public and Stage presentation.
 - Grid content stays as individually authored source blocks with `layout_area_id`, never cloned into Grid `areas[]` at persistence. `layoutProjection()` supplies nested render-time children only.
