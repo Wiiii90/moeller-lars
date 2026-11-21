@@ -2,7 +2,7 @@
 
 **Branch:** `dev`
 **Lease:** 30 (active; replacement registered 2026-11-21)
-**State:** Shared Admin dialogs and compact empty-table/list components are source-integrated on dev; final browser acceptance, tests and deployment remain pending.
+**State:** Repeated Create Clear nested-action state regression corrected at the shared Filament lifecycle owner; previous Admin dialog/empty-state work remains source-integrated and browser acceptance pending.
 
 ## Assigned ownership and canonical sources
 - Central Filament Action modal lifecycle: `app/Filament/Support/Dialogs/AdminDialog.php`, `resources/js/admin-dialog-geometry.js` and `resources/css/admin/dialog-contract.css`. Preserve native focus, close/Escape, form validation, Create submission, Edit autosave, overlay stacking, scroll lock and nested picker interactions.
@@ -39,6 +39,12 @@
 - Direct consumer inventory and updates: Dashboard feed, Activity/Commits, Journal, Pages, Analytics detail, Custom Page component hierarchy, Gallery artworks, Gallery Hero source and dummy-members lists, Material Presets, General social profiles and Storage library empty views. Real no-data state labels are “Empty”; filtered-empty labels are “No matches”. Analytics' unavailable state is intentionally unchanged because it represents missing data availability, not an empty result.
 - The canonical Clear component now accepts an optional label, so “Clear filters” and “Clear search” both display the central eraser without page-local icon markup or an extra component. Existing Livewire reset methods and Activity reset URL with native navigation are preserved. The central pager omits all 0-of-0 controls while preserving nonempty ranges/page-size behavior; the empty Storage state now relies on the already-present Add Media File row rather than redundant helper copy.
 - Source verification: fetched changed direct consumers on current dev and checked all reviewed empty-state labels, actions and absence of stale 5.2rem layouts. No local PHP/Blade runtime, browser screenshot, keyboard/responsive/color-mode acceptance, CI/test suite, build or deployment available/run. Recommended browser review: zero rows vs filtered zero rows, clear action icon/link, zero→nonzero pager transitions and Add row alignment in wide/narrow and light/dark states.
+
+## Repeated Create Clear lifecycle correction (2026-11-21)
+- Report: pressing the Eraser/Clear twice in Gallery Add Artwork closes the dialog; no subsequent modal can be opened until reload. The callback is shared by every `AdminDialog::create()` consumer, not Gallery-only.
+- Root cause verified against pinned Filament Actions 5.7.6 (`packages/actions/src/Concerns/InteractsWithActions.php`): `callMountedAction()` catches `Halt` and returns before `unmountAction()`. Our nested `clearCreateForm` had an `after()` handler that always called `halt()`, leaving the nested action mounted after the first click. Another invocation further nests/corrupts the action stack and modal syncing.
+- Shared correction: remove the nested child `after()->halt()` and explicitly set `cancelParentActions(false)`. Filament's successful child lifecycle now pops only Clear, calls `syncActionModals()` with the still-mounted parent Create, and keeps native X/Escape/Submit available. The parent form schema is still reset by its existing `fill([])` callback and optional `onClear`, and the page still uses the existing `forceRender()` refresh. No feature-local handler, second modal lock, timers or JavaScript interception.
+- Source verification: compared Filament 5.7.6 `mountAction()`, `callMountedAction()`, `unmountAction()` and `HasParentActions` semantics, the shared AdminDialog callback, and Gallery `addArtworkAction()` wiring. Browser repetition, cancel/submit sequence, double-click queueing and modal/scroll recovery still need an actual runtime pass. No tests, continuous integration, build, preview or deployment run.
 
 ## Current verification boundary
 - Previous holder reported central source changes and isolated JavaScript simulations/static checks, **not** browser acceptance. Current replacement changed only the centrally mapped Clear glyph as described above.

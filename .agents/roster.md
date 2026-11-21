@@ -9,7 +9,7 @@
 
 | Dev Worker 6 | 16 | Handoff ready — Hero Stage `disabled` crash repaired; Random, Dummy Picker/Pagination and Filters popup browser acceptance pending in replacement chat | Gallery → Hero Artworks and directly affected shared controls; new Dev-6 chat must take over with fresh lease | [dev-6.md](workers/dev-6.md) |
 | Dev Worker 7 | 18 | Shared dropdown CSS tokens consolidated across native/Filament/pager; browser acceptance pending | General Appearance, shared Admin Selects and Gallery/General Preview | [dev-7.md](workers/dev-7.md) |
-| Dev Worker 8 | 30 | Central minimal Admin table/list empty states and Clear filters eraser committed; source checked, browser acceptance pending | Shared Admin dialogs, common empty-state/pager/filter controls; coordinated direct Gallery/Pages consumers; no deployment | [dev-8.md](workers/dev-8.md) |
+| Dev Worker 8 | 30 | Fixed repeated Create Clear: nested Filament action now unmounts normally without closing parent; source verified, browser acceptance pending | Shared Admin dialogs, common empty-state/pager/filter controls; no deployment | [dev-8.md](workers/dev-8.md) |
 
 
 | Dev Worker 9 | 28 | Mac trackpad Option+primary drag source-integrated alongside middle-button drag and Shift+wheel zoom; browser acceptance pending | Shared General/Gallery Live Preview navigation, macOS input and Help; preserve Dev Worker 7 device controls and Gallery Focus | [dev-9.md](workers/dev-9.md) |

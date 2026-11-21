@@ -169,9 +169,11 @@ final class AdminDialog
                         $onClear?->__invoke($livewire);
                         $livewire->forceRender();
                     })
-                    ->after(static function (Action $action): void {
-                        $action->halt();
-                    }),
+                    // Clear is a nested, modal-less Action. Let Filament finish
+                    // and unmount this child normally while retaining Create.
+                    // Halting here leaves the child mounted, so a second Clear
+                    // nests another Action and corrupts the dialog stack.
+                    ->cancelParentActions(false),
             ]);
         }
 
