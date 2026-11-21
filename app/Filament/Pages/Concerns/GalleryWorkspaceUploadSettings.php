@@ -142,19 +142,15 @@ trait GalleryWorkspaceUploadSettings
             'add_placement', $stage,
         );
 
-        // The two selector fields keep their shared row. On narrow screens,
-        // each settings panel receives a full-width row instead of clipping
-        // its header in one half of an already narrow Stage.
-        $panelSpan = $stage ? ['default' => 2, 'xl' => 1] : 1;
+        // Both selector fields and the two panel groups occupy the same
+        // schema grid. One breakpoint controls their columns together.
         $fields[] = Grid::make(['default' => 1])
             ->schema([
                 $this->galleryDetailPagesPanel($stage),
                 $this->galleryViewerPanel($stage),
-            ])
-            ->columnSpan($panelSpan);
+            ]);
         $fields[] = Grid::make(['default' => 1])
-            ->schema([$this->galleryInformationPanel($stage)])
-            ->columnSpan($panelSpan);
+            ->schema([$this->galleryInformationPanel($stage)]);
         if (! $stage) {
             $fields[] = AdminControl::select('artwork_divider', 'Between Artworks')
                 ->options(GalleryPresentation::DIVIDER_OPTIONS)
@@ -163,7 +159,7 @@ trait GalleryWorkspaceUploadSettings
                 ->columnSpanFull();
         }
 
-        return Grid::make(['default' => 2])->schema($fields);
+        return Grid::make(['default' => 1, 'sm' => 2])->schema($fields);
     }
 
     /** Gallery information checkboxes share the Stage and Edit domain owner. */

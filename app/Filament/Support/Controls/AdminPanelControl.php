@@ -59,31 +59,44 @@ final class AdminPanelControl
             ->columnSpanFull();
     }
     /**
-     * One reusable presentation of dependent checkbox options. Checkbox
-     * callbacks remain the only owners of disabled state and persistence.
-     * Nested trees and multiple dependents use the same connector structure.
+     * Present a prerequisite on the left, and dependent fields in a shared
+     * right column. The dependency edges are decorative: the original form
+     * fields retain their own disabled state, validation and persistence.
      *
      * @param list<Checkbox|Group> $dependents
      */
     public static function dependencyTree(Checkbox $required, array $dependents): Group
     {
-        $branches = array_map(
-            static fn (Checkbox|Group $dependent): Group => Group::make([$dependent])
-                ->columns(1)
-                ->extraAttributes(['class' => 'admin-option-panel__dependency-branch'])
-                ->columnSpanFull(),
-            $dependents,
+        $required->extraFieldWrapperAttributes(
+            ['class' => 'admin-option-panel__dependency-target'],
+            merge: true,
         );
 
-        return Group::make([
-            $required,
-            Group::make($branches)
-                ->columns(1)
-                ->extraAttributes(['class' => 'admin-option-panel__dependency-branches'])
-                ->columnSpanFull(),
-        ])
-            ->columns(1)
-            ->extraAttributes(['class' => 'admin-option-panel__dependency-tree'])
+        foreach ($dependents as $dependent) {
+            if ($dependent instanceof Checkbox) {
+                $dependent->extraFieldWrapperAttributes(
+                    ['class' => 'admin-option-panel__dependency-leaf'],
+                    merge: true,
+                );
+            } else {
+                $dependent->extraAttributes(
+                    ['class' => 'admin-option-panel__dependency-leaf'],
+                    merge: true,
+                );
+            }
+        }
+
+        $branches = Group::make($dependents)
+            ->columns(['default' => 1])
+            ->extraAttributes([
+                'class' => 'admin-option-panel__dependency-branches'
+                    . (count($dependents) > 1 ? ' admin-option-panel__dependency-branches--multiple' : ''),
+            ]);
+
+        return Group::make([$required, $branches])
+            ->columns(['default' => 2])
+            ->extraAttributes(['class' => 'admin-option-panel__dependency-map'])
             ->columnSpanFull();
     }
+
 }

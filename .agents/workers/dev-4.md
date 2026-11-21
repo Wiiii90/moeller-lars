@@ -2,7 +2,7 @@
 
 **Lease:** 31
 **Branch:** dev
-**State:** Active — responsive Gallery Stage and centrally owned panel dependency presentation prepared on 2026-11-21; source work requires artist/browser acceptance.
+**State:** Active — artist-rejected first dependency tree and premature panel stacking replaced with one shared right-column layout and a unified Gallery Settings grid; browser acceptance pending.
 
 ## Current assignment and ownership
 
@@ -20,12 +20,13 @@
 - **Video:** Gallery videos have their own inline controls and an independent existing Viewer trigger rather than treating playback as a link. Shared Viewer fits video to metadata and viewport. The usable poster is required for publication readiness. Browser autoplay remains governed by visibility, mute, reduced-motion and browser policy; no visual/browser acceptance claimed here.
 - **Preserved layout:** Public Artwork detail Expanded layout centers its naturally proportioned fitted image-plus-info group. No Gallery work may casually replace the shared Gallery form schema, Public Viewer, Gallery Hero or cross-feature controls.
 
-## Current responsive Gallery Stage and Settings change — 2026-11-21
+## Current responsive Gallery Stage and Settings — 2026-11-21
 
-- At the <=64rem Admin workspace threshold already used by General, Gallery displays only the editor Stage pane and retains its inner Upload/Staged/Settings tabs; the obsolete Gallery-only Editor/Preview focused switcher and CSS are removed. At wider widths, the genuine Public Preview is unchanged.
-- Canonical `AdminPanelControl` now reserves only the narrow disclosure track rather than splitting its header in half, keeps toggle titles on one line, and owns the former Gallery-specific dense Stage styling through an opt-in variant. The labels are `Activate Artwork Pages`, `Show Artwork Information` and `Activate Modal Viewer`.
-- The central `AdminPanelControl::dependencyTree` presents a parent checkbox plus one or more subordinates with joined upward connectors, supporting nested Groups; Gallery applies it to Navigation/Cyclic in both Artwork Pages and Modal Viewer. The form's existing disabled and persistence callbacks remain authoritative. On narrow Stage form widths, the two panel columns span a full row; primary selects remain adjacent.
-- **Evidence:** GitHub source-only changes, no executable local PHP/Filament runtime or browser review. Check tablet/mobile and desktop breakpoint, header single-line without overflow, Cyclic visually and functionally disabled until Navigation enabled, checkbox autosave/reopen, initial Stage/Preview layout, and both Stage and Settings dialog rendering. Shared panel consumers must preserve accepted behavior.
+- Gallery uses General's <=64rem workspace behavior: editor-only Stage with Upload/Staged/Settings; at larger widths the true protected Public Live Preview remains. The former Editor/Preview switcher and Gallery-specific focused-pane overrides are retired.
+- The canonical `AdminPanelControl` retains one enable checkbox per panel, one disclosure, shared compact Stage sizing, and clear toggle names (`Activate Artwork Pages`, `Activate Modal Viewer`, `Show Artwork Information`). Header space is reserved for the actual disclosure width rather than an equal second column.
+- **Latest artist feedback rejected the first vertical dependency tree:** its upward glyph and connector obstructed Navigation, and the former panel-specific `columnSpan(['default' => 2, 'xl' => 1])` stacked panels while Artwork Order / New Artwork Placement stayed side by side. The rework removes that old tree and per-panel breakpoint, gives all four Settings grid slots the same `['default' => 1, 'sm' => 2]` breakpoint, and keeps panels in two columns exactly while the select pair is in two columns.
+- `AdminPanelControl::dependencyTree` now displays Navigation on the left and first dependent Cyclic on the same row to its right with a simple left-pointing line arrow. Further dependent checkboxes can stack in that right-hand column and converge on the same parent. The dependency presentation is owned by the central panel stylesheet, not Gallery CSS. Tiny Stage checkbox labels were enlarged. The canonical Filament disabled-state callbacks and existing save/refresh behavior are unchanged.
+- **Verification:** Source inspected; no PHP runtime, actual Filament rendering, browser test, or artist acceptance from this chat. Review Stage at wide/narrow/phone sizes; selectors and panels must collapse together, no label clipping or unwanted whitespace, right-hand Cyclic alignment, left-pointing arrow, disabled/enabled state, Stage autosave and Settings-dialog reopening. Review another AdminPanelControl consumer after central style changes. No tests or deployment were run.
 
 ## Verification and outstanding acceptance
 
@@ -36,4 +37,4 @@
 
 ## Next
 
-Obtain artist/browser feedback on responsive editor-only Stage and the new dependency panel geometry. Before every follow-up write, verify lease 31 and the fresh `dev` HEAD.
+Obtain artist/browser confirmation of the reworked horizontal dependency map and synchronized responsive Settings columns. Verify lease 31 and fresh `dev` HEAD before all further edits.

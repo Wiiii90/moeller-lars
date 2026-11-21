@@ -4,7 +4,7 @@
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
-| Dev Worker 4 | 31 | Active — replacement chat registered; Gallery/Stage/List/Dense state reviewed; awaiting new specific assignment; browser acceptance pending | Gallery Artwork table, title editor, selection/ordering, Stage/Settings and Public Artwork/Gallery; coordinate shared controls with owners | [dev-4.md](workers/dev-4.md) |
+| Dev Worker 4 | 31 | Active — Gallery Settings dependency/column rework source prepared; browser acceptance pending | Gallery Artwork table, title editor, selection/ordering, Stage/Settings and Public Artwork/Gallery; coordinate shared controls with owners | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 19 | Source cleanup committed; isolated migration and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom types and Hero Artworks template; preserve Gallery/Exhibitions, retire Home-only editors | [dev-5.md](workers/dev-5.md) |
 
 | Dev Worker 6 | 32 | Active — replacement chat registered; prior Hero/Random/Dummy Gallery/Filters source changes awaiting browser and user acceptance; awaiting a specific new task | Gallery → Hero Artworks and directly affected shared controls; coordinate broader Gallery changes with Dev Worker 4 | [dev-6.md](workers/dev-6.md) |

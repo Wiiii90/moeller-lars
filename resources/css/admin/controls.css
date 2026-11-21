@@ -816,7 +816,7 @@
     position: relative;
     width: 100%;
     min-height: 2rem;
-    padding-inline-end: 1.5rem;
+    padding-inline-end: 0;
 }
 .admin-option-panel__header > :is(.fi-sc, .fi-sc-grid) {
     grid-template-columns: minmax(0, 1fr) 1.9rem !important;
@@ -877,8 +877,8 @@
     border-radius: .17rem !important;
 }
 .admin-option-panel--dense .admin-option-panel__switch .fi-fo-field-label-content {
-    font-size: .69rem;
-    letter-spacing: .035em;
+    font-size: .73rem;
+    letter-spacing: .012em;
 }
 .admin-option-panel--dense .admin-option-panel__body {
     margin-top: .15rem;
@@ -889,8 +889,8 @@
     column-gap: .28rem;
 }
 .admin-option-panel--dense .admin-option-panel__body .fi-fo-field-label:has(> .fi-checkbox-input) {
-    min-height: 1.38rem !important;
-    gap: .28rem !important;
+    min-height: 1.55rem !important;
+    gap: .32rem !important;
 }
 .admin-option-panel--dense .admin-option-panel__body .fi-fo-field-label > .fi-checkbox-input {
     width: .72rem !important;
@@ -898,58 +898,76 @@
     border-radius: .12rem !important;
 }
 .admin-option-panel--dense .admin-option-panel__body .fi-fo-field-label-content {
-    font-size: .61rem;
-    line-height: 1.15;
+    font-size: .69rem;
+    line-height: 1.2;
 }
 
-/* Opt-in checkbox dependency tree. One upward edge joins any number of
- * subordinate options to their required parent. The form fields, not the
- * tree decoration, own disabled state, validation and persistence. */
-.admin-option-panel__dependency-tree,
+/* A prerequisite checkbox occupies the left rail. Its first dependent
+ * occupies the right rail at the same height, with a left-pointing arrow.
+ * Additional dependents stack in the same right rail. Edges are CSS
+ * strokes, not font glyphs. The fields own their actual enabled state. */
+.admin-option-panel__dependency-map,
+.admin-option-panel__dependency-target,
 .admin-option-panel__dependency-branches,
-.admin-option-panel__dependency-branch {
+.admin-option-panel__dependency-leaf {
     min-width: 0;
+}
+.admin-option-panel__dependency-map > :is(.fi-sc, .fi-sc-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    column-gap: 1.45rem;
+    align-items: center;
+}
+.admin-option-panel__dependency-target {
+    align-self: center;
 }
 .admin-option-panel__dependency-branches {
     position: relative;
-    margin-inline-start: .35rem;
-    padding-inline-start: 1rem;
+    padding-inline-start: .7rem;
 }
+.admin-option-panel__dependency-branches > :is(.fi-sc, .fi-sc-grid) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    row-gap: .3rem;
+}
+/* All dependents converge on one arrow towards Navigation. */
 .admin-option-panel__dependency-branches::before {
     position: absolute;
-    inset-inline-start: 0;
-    top: -.5rem;
-    bottom: .65rem;
-    border-inline-start: 1px solid var(--admin-muted);
-    opacity: .6;
+    inset-inline-start: -1.25rem;
+    top: 50%;
+    width: 1.25rem;
+    border-top: 1px solid var(--admin-muted);
+    opacity: .65;
     content: "";
     pointer-events: none;
 }
 .admin-option-panel__dependency-branches::after {
     position: absolute;
-    inset-inline-start: -.19rem;
-    top: -.9rem;
-    color: var(--admin-muted);
-    font-size: .75rem;
-    line-height: 1;
-    content: "↑";
-    pointer-events: none;
-}
-.admin-option-panel__dependency-branch {
-    position: relative;
-}
-.admin-option-panel__dependency-branch::before {
-    position: absolute;
-    inset-inline-start: -1rem;
-    top: .65rem;
-    width: .85rem;
-    border-top: 1px solid var(--admin-muted);
-    opacity: .6;
+    inset-inline-start: -1.32rem;
+    top: calc(50% - .2rem);
+    border-block: .2rem solid transparent;
+    border-inline-end: .3rem solid var(--admin-muted);
     content: "";
     pointer-events: none;
 }
-.admin-option-panel__dependency-branch:has(.fi-checkbox-input:disabled) .fi-fo-field-label {
-    opacity: .42;
+.admin-option-panel__dependency-branches--multiple {
+    background:
+        linear-gradient(var(--admin-muted), var(--admin-muted))
+        0 50% / 1px calc(100% - 1.3rem) no-repeat;
+}
+.admin-option-panel__dependency-leaf {
+    position: relative;
+}
+.admin-option-panel__dependency-leaf::before {
+    position: absolute;
+    inset-inline-start: -.7rem;
+    top: 50%;
+    width: .7rem;
+    border-top: 1px solid var(--admin-muted);
+    opacity: .65;
+    content: "";
+    pointer-events: none;
+}
+.admin-option-panel__dependency-leaf:has(.fi-checkbox-input:disabled) {
+    opacity: .5;
 }
 
 .admin-option-panel__disclosure {
