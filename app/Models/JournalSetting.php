@@ -7,10 +7,19 @@ use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['listing_title', 'listing_intro'])]
+#[Fillable(['listing_title', 'listing_intro', 'default_gallery_presentation', 'default_image_viewer_enabled', 'default_gallery_enabled', 'default_show_vernissage'])]
 #[Guarded(['id', 'site_section_id'])]
 final class JournalSetting extends Model
 {
+    protected function casts(): array
+    {
+        return [
+            'default_image_viewer_enabled' => 'boolean',
+            'default_gallery_enabled' => 'boolean',
+            'default_show_vernissage' => 'boolean',
+        ];
+    }
+
     /** @return BelongsTo<SiteSection, $this> */
     public function siteSection(): BelongsTo
     {

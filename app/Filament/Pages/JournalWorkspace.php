@@ -52,6 +52,9 @@ final class JournalWorkspace extends Page
     #[Locked]
     public array $journalSettingsOriginal = [];
 
+    /** Journal presentation controls shared by Settings and the Stage. */
+    public array $journalStageSettingsData = [];
+
     #[Locked]
     public array $entryEditorOriginal = [];
 
@@ -127,6 +130,7 @@ final class JournalWorkspace extends Page
         $this->template = $template->value;
         $this->loadJournalContext($siteSection);
         $this->reloadEntries();
+        $this->refreshJournalStageSettings();
     }
 
     public function getView(): string
@@ -531,40 +535,109 @@ final class JournalWorkspace extends Page
                 $section = $this->section();
                 $this->journalSettingsOriginal = ['title' => (string) $section->getAttribute('title')];
 
-                return $this->journalSettingsOriginal;
+                return [
+                    ...$this->journalSettingsOriginal,
+                    ...app(JournalSettingsService::class)->displayValues($section),
+                ];
             })
-            ->schema([
-                TextInput::make('title')->label('Journal title')->required()->maxLength(160),
-            ])
+            ->schema([$this->journalSettingFields(false)])
             ->modalHeading(__('Journal settings'))
             ->action(function (array $data): void {
                 $section = $this->section();
                 $before = (string) $section->getAttribute('title');
+                $service = app(JournalSettingsService::class);
                 try {
-                    $updated = app(JournalSettingsService::class)->update($section, $data, $this->journalSettingsOriginal);
+                    [$updated, $displayChanged] = DB::transaction(function () use ($section, $data, $service): array {
+                        $updated = $service->update($section, $data, $this->journalSettingsOriginal);
+
+                        return [$updated, $service->updateDisplay($updated, $data)];
+                    });
                 } catch (ValidationException $exception) {
                     $this->throwMountedValidation($exception);
                 }
+
                 $this->journalSettingsOriginal = ['title' => (string) $updated->getAttribute('title')];
                 $this->loadJournalContext($updated);
                 $this->reloadEntries();
-                if ($before !== (string) $updated->getAttribute('title')) {
+                $this->refreshJournalStageSettings();
+                if ($displayChanged || $before !== (string) $updated->getAttribute('title')) {
                     $this->syncJournalPreviewFocus(forceRefresh: true);
                     $this->forceRender();
-                    app(AdminNotifier::class)->notification(
-                        title: 'Journal settings saved',
-                        status: 'success',
-                    );
+                    app(AdminNotifier::class)->notification(title: 'Journal settings saved', status: 'success');
                 }
             });
 
-        return AdminDialog::edit($action, AdminDialogSize::Default);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    /** Stage and dialog share the same public presentation controls. */
+    private function journalSettingFields(bool $stage): Grid
+    {
+        $fields = [];
+        if (! $stage) {
+            $fields[] = AdminControl::text('title', 'Journal title')->required()->maxLength(160)->columnSpanFull();
+        }
+        $galleryOptions = $this->journalTemplate() === JournalTemplate::Blog
+            ? ['sequence' => 'Media sequence', 'grid' => 'Grid', 'mosaic' => 'Mosaic', 'slideshow' => 'Slideshow', 'carousel' => 'Carousel']
+            : ['grid' => 'Grid', 'mosaic' => 'Mosaic', 'slideshow' => 'Slideshow', 'carousel' => 'Carousel'];
+
+        $gallery = AdminControl::select('default_gallery_presentation')
+            ->label('Default gallery presentation')->options($galleryOptions)->required();
+        $viewer = AdminControl::toggle('default_image_viewer_enabled', 'Enlarge images on click by default');
+        $galleryEnabled = AdminControl::toggle('default_gallery_enabled', 'Enable exhibition gallery by default');
+        $vernissage = AdminControl::toggle('default_show_vernissage', 'Show vernissage until it begins by default');
+
+        if ($stage) {
+            $gallery->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_gallery_presentation', $state));
+            $viewer->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_image_viewer_enabled', (bool) $state));
+            $galleryEnabled->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_gallery_enabled', (bool) $state));
+            $vernissage->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_show_vernissage', (bool) $state));
+        }
+        $fields[] = $gallery->columnSpanFull();
+        $fields[] = $viewer->columnSpanFull();
+        if ($this->journalTemplate() === JournalTemplate::Exhibitions) {
+            $fields[] = $galleryEnabled->columnSpanFull();
+            $fields[] = $vernissage->columnSpanFull();
+        }
+
+        return Grid::make(['default' => 1])->schema($fields);
+    }
+
+    public function journalStageSettingsForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([$this->journalSettingFields(true)])
+            ->statePath('journalStageSettingsData');
+    }
+
+    private function refreshJournalStageSettings(): void
+    {
+        $this->journalStageSettingsForm->fill(app(JournalSettingsService::class)->displayValues($this->section()));
+    }
+
+    private function updateJournalStageSetting(string $field, mixed $state): void
+    {
+        try {
+            $changed = app(JournalSettingsService::class)->updateDisplay($this->section(), [$field => $state]);
+        } catch (ValidationException $exception) {
+            $this->refreshJournalStageSettings();
+            $this->notifyValidationFailure('Journal settings unchanged', $exception);
+
+            return;
+        }
+
+        $this->refreshJournalStageSettings();
+        if ($changed) {
+            $this->syncJournalPreviewFocus(forceRefresh: true);
+            app(AdminNotifier::class)->notification(title: 'Journal settings saved', status: 'success');
+        }
     }
 
     public function addPostAction(): Action
     {
         $action = Action::make('addPost')->label('Add post')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
+            ->fillForm(fn (): array => app(JournalSettingsService::class)->editorDefaults($this->section()))
             ->modalHeading(__('Add post'))
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
@@ -656,6 +729,7 @@ final class JournalWorkspace extends Page
     {
         $action = Action::make('addExhibition')->label('Add exhibition')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
+            ->fillForm(fn (): array => app(JournalSettingsService::class)->editorDefaults($this->section()))
             ->modalHeading(__('Add exhibition'))
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
