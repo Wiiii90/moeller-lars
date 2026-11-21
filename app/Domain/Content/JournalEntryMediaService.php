@@ -124,7 +124,7 @@ final class JournalEntryMediaService
             return null;
         }
 
-        $body = (string) ($post->getAttribute('body') ?? '');
+        $body = trim((string) ($post->getAttribute('body') ?? ''));
         if ($body === '') {
             return null;
         }
