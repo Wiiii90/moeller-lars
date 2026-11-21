@@ -22,7 +22,7 @@
     margin-top: var(--admin-section-space);
 }
 
-/* Gallery and Journal use one direct two-pane Stage frame. General retains its
+/* Gallery, Journal and Pages use one direct two-pane Stage frame. General retains its
  * schema-specific panel wrappers while sharing the same divider and preview. */
 .admin-visual-stage--editor-preview {
     --admin-stage-divider-axis: 50%;

@@ -148,6 +148,7 @@ trait ManagesSitePageEditDialog
                                 app(SiteSectionEditorialService::class)->updateHomePublicSiteGate($section, (bool) $state);
                                 $this->pageDialogOriginals[(int) $section->getKey()]['public_site_gate'] = (bool) $state;
                                 $this->loadSections();
+                                $this->syncPagesPreviewFocus(forceRefresh: true);
                             }),
                     ]),
                 PageHeadingFields::schema(function (string $field, mixed $value) use ($arguments): bool {
@@ -156,8 +157,12 @@ trait ManagesSitePageEditDialog
                     $this->dialogSectionCache = [];
                     $this->pageDialogOriginals[(int) $section->getKey()][$field] = $updated->getAttribute($field);
                     $this->loadSections();
+                    $changed = $updated->wasChanged($field);
+                    if ($changed) {
+                        $this->syncPagesPreviewFocus(forceRefresh: true);
+                    }
 
-                    return $updated->wasChanged($field);
+                    return $changed;
                 }, 'Page updated')
                     ->visible(fn (): bool => $this->dialogSection($arguments)->hasPublicPage()),
             ])

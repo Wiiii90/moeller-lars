@@ -10,6 +10,7 @@ use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionCreationDefaults;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Domain\Content\SiteSectionType;
+use App\Domain\Content\SitePreviewContext;
 use App\Filament\Pages\Concerns\ManagesSitePageDialogs;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -76,6 +77,11 @@ final class SitePages extends Page
 
     /** @var list<int|string> */
     public array $selectedSectionIds = [];
+
+    /** Pages reuses the Journal/Gallery Preview without storing a second page projection. */
+    public bool $pagesPreviewAutoFocus = true;
+
+    public ?int $pagesPreviewFocusedSectionId = null;
 
     /** @var array<int, string> */
     public array $parentOptions = [];
@@ -188,6 +194,76 @@ final class SitePages extends Page
         $this->loadSections();
     }
 
+    public function updatedSelectedSectionIds(): void
+    {
+        $this->syncPagesPreviewFocus(preferLastSelected: true);
+    }
+
+    public function togglePagesPreviewAutoFocus(): void
+    {
+        $this->pagesPreviewAutoFocus = ! $this->pagesPreviewAutoFocus;
+        if ($this->pagesPreviewAutoFocus) {
+            $this->syncPagesPreviewFocus(forceRefresh: true);
+        }
+    }
+
+    public function pagesStagePreviewUrl(): string
+    {
+        if ($this->pagesPreviewAutoFocus && $this->pagesPreviewFocusedSectionId !== null) {
+            foreach ($this->filteredRows as $row) {
+                if ((int) $row['id'] === $this->pagesPreviewFocusedSectionId
+                    && is_string($row['preview_url'])) {
+                    return $row['preview_url'];
+                }
+            }
+        }
+
+        return route('preview.home');
+    }
+
+    public function pagesStagePreviewTitle(): string
+    {
+        return $this->pagesPreviewAutoFocus && $this->pagesPreviewFocusedSectionId !== null
+            ? 'Interactive selected Page preview'
+            : 'Interactive Pages preview';
+    }
+
+    private function syncPagesPreviewFocus(bool $preferLastSelected = false, bool $forceRefresh = false): void
+    {
+        $selectedIds = $this->selectedIds();
+        $previewableIds = array_values(array_map(
+            static fn (array $row): int => (int) $row['id'],
+            array_filter($this->filteredRows, static fn (array $row): bool =>
+                is_string($row['preview_url']) && in_array((int) $row['id'], $selectedIds, true)
+            ),
+        ));
+
+        // The last selected page wins; on re-projection keep the existing focus
+        // while it remains selected. No persistent copy of the page model is needed.
+        $lastSelectedId = null;
+        foreach ($selectedIds as $id) {
+            if (in_array($id, $previewableIds, true)) {
+                $lastSelectedId = $id;
+            }
+        }
+        $nextId = $preferLastSelected
+            ? $lastSelectedId
+            : (in_array($this->pagesPreviewFocusedSectionId, $previewableIds, true)
+                ? $this->pagesPreviewFocusedSectionId : $lastSelectedId);
+        $changed = $nextId !== $this->pagesPreviewFocusedSectionId;
+        $this->pagesPreviewFocusedSectionId = $nextId;
+
+        if (($this->pagesPreviewAutoFocus && $changed) || $forceRefresh) {
+            if ($this->pagesPreviewAutoFocus) {
+                $this->dispatch('admin-live-preview-updated',
+                    url: $this->pagesStagePreviewUrl(), title: $this->pagesStagePreviewTitle());
+            } else {
+                // Preserve a manually navigated Public page while Auto-focus is off.
+                $this->dispatch('admin-live-preview-updated');
+            }
+        }
+    }
+
     public function toggleSelectAll(): void
     {
         $visibleIds = array_map(static fn (array $row): int => (int) $row['id'], $this->filteredRows);
@@ -201,6 +277,7 @@ final class SitePages extends Page
         }
 
         $this->selectedSectionIds = $selected;
+        $this->syncPagesPreviewFocus();
     }
 
     public function sortSection(int $sectionId, int $position, int|string|null $groupId = null): void
@@ -738,6 +815,7 @@ final class SitePages extends Page
 
         $visibleIds = array_map(static fn (array $row): int => (int) $row['id'], $this->filteredRows);
         $this->selectedSectionIds = array_values(array_intersect($this->selectedIds(), $visibleIds));
+        $this->syncPagesPreviewFocus(forceRefresh: $navigationChanged);
         $this->reorderEnabled = ! $this->filtersActive && $this->totalGroups <= $this->perPage;
 
         if ($navigationChanged) {
@@ -851,6 +929,8 @@ final class SitePages extends Page
             'can_convert' => $type->canConvert(),
             'filter_context' => false,
             'workspace_url' => app(SiteNodePresentation::class)->workspaceUrl($section),
+            'preview_url' => $section->hasPublicPage()
+                ? app(SitePreviewContext::class)->previewUrlFor($section) : null,
         ];
     }
 

@@ -33,7 +33,34 @@
             <x-admin.metric class="pages-metric pages-metric--galleries" label="Galleries" :value="$metrics['galleries']">{{ __('Gallery pages') }}</x-admin.metric>
         </x-admin.metrics>
 
-        <section aria-label="Pages editor">
+        <section class="admin-visual-stage admin-visual-stage--split admin-visual-stage--editor-preview"
+            aria-label="Pages editor and live public preview">
+            <div class="admin-visual-stage__pane admin-visual-stage__editor-pane">
+                <h2 class="admin-section__kicker admin-visual-stage__heading">{{ __('Editor') }}</h2>
+            </div>
+            <div class="admin-visual-stage__pane admin-visual-stage__preview-pane">
+                <h2 class="admin-section__kicker admin-visual-stage__heading">{{ __('Live preview') }}</h2>
+                <x-admin.live-preview
+                    :heading="false"
+                    :url="$this->pagesStagePreviewUrl()"
+                    :frame-title="$this->pagesStagePreviewTitle()"
+                    wire:key="pages-live-preview"
+                >
+                    <x-slot:focusAction>
+                        <button class="admin-action admin-stage-tool-icon {{ $pagesPreviewAutoFocus ? 'is-primary' : '' }}"
+                            type="button"
+                            wire:click="togglePagesPreviewAutoFocus"
+                            aria-label="Auto-focus preview to selection"
+                            aria-pressed="{{ $pagesPreviewAutoFocus ? 'true' : 'false' }}"
+                            title="{{ $pagesPreviewAutoFocus ? 'Auto-focus selection on' : 'Auto-focus selection off' }}">
+                            <x-filament::icon icon="heroicon-m-cursor-arrow-rays" />
+                        </button>
+                    </x-slot:focusAction>
+                </x-admin.live-preview>
+            </div>
+        </section>
+
+        <section class="admin-visual-stage-followup" aria-label="Pages editor">
             <x-admin.controls
                 class="admin-task-controls admin-task-controls--pages admin-data-controls--dashboard-responsive"
                 aria-label="Page controls"
@@ -92,6 +119,12 @@
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">{{ __('Add page') }}</span>
                             </button>
+                            <a class="admin-action admin-action--with-icon"
+                                href="{{ $this->pagesStagePreviewUrl() }}"
+                                target="_blank" rel="noopener noreferrer" aria-label="Preview selected page">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">{{ __('Preview') }}</span>
+                            </a>
                         </div>
                     </div>
                 </x-slot:actions>
