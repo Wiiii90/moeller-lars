@@ -34,7 +34,6 @@
     $preview = app(\App\Domain\Content\SitePreviewContext::class);
     // Individual Artwork pages always use the accepted Expanded composition.
     // The Home Hero is a separate surface and remains independently owned.
-    $fitArtwork = ! $isVideo;
     $viewerEnabled = $presentation::viewerEnabled($category);
     $informationRows = \App\Domain\Artwork\ArtworkInformation::rows($artwork, $primaryAsset);
 
@@ -47,9 +46,9 @@
         || preg_match('/<(?:img|figure|video|audio|table|hr)\\b/i', $renderedDescription) === 1;
 @endphp
 
-{{-- Every individual Artwork uses Expanded; still images fit the viewport and
-     videos retain natural proportions. General owns Menu and Page geometry. --}}
-@section('content_class', 'site-content--fitted-artwork'.($fitArtwork ? ' site-content--fitted-image' : ''))
+{{-- Individual images and videos use one shared fitted-media composition.
+     General still owns Menu and Page geometry. --}}
+@section('content_class', 'site-content--fitted-artwork site-content--fitted-media')
 @section('title', $artwork->title.' — Lars Möller')
 @section('meta_description', trim(strip_tags((string) $artwork->description)) ?: $artwork->title.' — Lars Möller')
 @section('canonical', ($stagedPreview ?? false) ? route('preview.home') : app(\App\Domain\Content\CanonicalUrl::class)->forPath('/artworks/'.$artwork->slug))
@@ -67,18 +66,31 @@
             :next-artwork="$nextArtwork"
             :empty-step-mode="$navigationEnabled ? $presentation::EDGE_DISABLED : $presentation::EDGE_HIDDEN"
         />
-        @if ($fitArtwork)
-            {{-- Keep the fitted image and its information in one height-aware
-                 composition immediately below the shared navigation. --}}
-            <div class="artwork-detail__fitted-group">
-        @endif
+        {{-- The media and information share one viewport-aware composition. --}}
+        <div class="artwork-detail__fitted-group">
         <div class="artwork-detail__media">
-            @if ($fitArtwork)
-                <div class="artwork-detail__image-stage">
+            <div class="artwork-detail__media-stage">
+            @if ($isVideo)
+                <video
+                    class="artwork-detail__video"
+                    src="{{ $originalUrl }}"
+                    @if ($posterUrl) poster="{{ $posterUrl }}" @endif
+                    @if ($posterVariant)
+                        width="{{ $posterVariant->getAttribute('width') }}"
+                        height="{{ $posterVariant->getAttribute('height') }}"
+                    @endif
+                    aria-label="{{ $media->altText($artwork) }}"
+                    controls
+                    muted
+                    loop
+                    playsinline
+                    data-public-loop-video
+                    preload="metadata"
+                ></video>
             @endif
             @if ($viewerEnabled)
             <a
-                class="artwork-detail__viewer-trigger"
+                class="artwork-detail__viewer-trigger{{ $isVideo ? ' artwork-detail__viewer-trigger--video-action' : '' }}"
                 href="{{ $originalUrl }}"
                 data-artwork-viewer-trigger
                 data-viewer-key="{{ $artwork->slug }}"
@@ -93,25 +105,13 @@
                 data-viewer-cyclic="{{ $presentation::viewerNavigationCyclic($category) ? '1' : '0' }}"
                 aria-label="Open {{ $artwork->title }} in media viewer"
             >
-            @else
+            @elseif (! $isVideo)
             <div class="artwork-detail__viewer-trigger artwork-detail__viewer-trigger--static">
             @endif
                 @if ($isVideo)
-                    <video
-                        class="artwork-detail__video"
-                        src="{{ $originalUrl }}"
-                        @if ($posterUrl) poster="{{ $posterUrl }}" @endif
-                        @if ($posterVariant)
-                            width="{{ $posterVariant->getAttribute('width') }}"
-                            height="{{ $posterVariant->getAttribute('height') }}"
-                        @endif
-                        aria-label="{{ $media->altText($artwork) }}"
-                        muted
-                        loop
-                        playsinline
-                        data-public-loop-video
-                        preload="metadata"
-                    ></video>
+                    @if ($viewerEnabled)
+                        Open in viewer
+                    @endif
                 @else
                     <img
                         class="artwork-image artwork-detail__image"
@@ -129,13 +129,10 @@
                 @endif
             @if ($viewerEnabled)
             </a>
-            @else
+            @elseif (! $isVideo)
             </div>
             @endif
-            @if ($fitArtwork)
-                </div>
-            @endif
-
+            </div>
         </div>
 
         @if ($informationRows !== [])
@@ -143,9 +140,7 @@
                 <x-artwork-caption :artwork="$artwork" :rows="$informationRows" />
             </div>
         @endif
-        @if ($fitArtwork)
-            </div>
-        @endif
+        </div>
 
         @if ($hasDescription)
             <div class="artwork-detail__narrative rich-text">{!! $renderedDescription !!}</div>

@@ -589,7 +589,7 @@ html.public-preview--embedded {
 
 /* Fitted image compositions retain their own internal flex layout. The
  * shared Public frame now owns viewport filling and the external sheet gap. */
-#content:is(.site-content--fitted-image, .site-content--gallery-hero-fitted) {
+#content:is(.site-content--fitted-media, .site-content--gallery-hero-fitted) {
     display: flex;
     min-height: 0;
     flex: 1 1 auto;
@@ -597,9 +597,9 @@ html.public-preview--embedded {
 }
 /* The fitted image and information remain a group, centered within the
    Page. This internal white space is independent of the external gap. */
-.site-content--fitted-image > .public-content-reveal,
-.site-content--fitted-image .artwork-detail,
-.site-content--fitted-image .artwork-detail__fitted-group {
+.site-content--fitted-media > .public-content-reveal,
+.site-content--fitted-media .artwork-detail,
+.site-content--fitted-media .artwork-detail__fitted-group {
     display: flex;
     min-height: 0;
     flex: 1 1 auto;
@@ -607,12 +607,12 @@ html.public-preview--embedded {
 }
 /* Restore the accepted centered image-and-caption composition. The earlier
    flex-end change pushed landscapes down without correcting the Page edge. */
-.site-content--fitted-image .artwork-detail__fitted-group,
+.site-content--fitted-media .artwork-detail__fitted-group,
 .site-content--gallery-hero-fitted .artwork-card__composition--gallery-hero {
     justify-content: center;
 }
-.site-content--fitted-image .artwork-detail__media,
-.site-content--fitted-image .artwork-detail__image-stage {
+.site-content--fitted-media .artwork-detail__media,
+.site-content--fitted-media .artwork-detail__media-stage {
     display: flex;
     min-height: 0;
     flex: 0 0 auto;
@@ -621,19 +621,19 @@ html.public-preview--embedded {
 /* A fitted image, its Viewer trigger and its information share the same
    visible width. The old 100%-wide trigger also activated on white space
    beside narrow portraits. Preserve the native anchor/keyboard behavior. */
-.site-content--fitted-image .artwork-detail__viewer-trigger,
-.site-content--fitted-image .artwork-detail__footer {
+.site-content--fitted-media .artwork-detail__viewer-trigger,
+.site-content--fitted-media .artwork-detail__footer {
     width: min(100%, var(--public-fitted-image-width, 100%));
     max-width: 100%;
     margin-inline: auto;
 }
-.site-content--fitted-image .artwork-detail__viewer-trigger {
+.site-content--fitted-media .artwork-detail__viewer-trigger {
     position: relative;
     display: block;
     flex: 0 0 auto;
     min-height: 0;
 }
-.site-content--fitted-image .artwork-detail__image {
+.site-content--fitted-media .artwork-detail__image {
     /* The image fills its actual clickable box, not a wider frame. */
     position: static;
     width: 100%;
@@ -642,7 +642,28 @@ html.public-preview--embedded {
     margin: 0;
     object-fit: contain;
 }
-.site-content--fitted-image .artwork-detail__footer {
+/* Images and videos share the same measured fitting width. The video
+   remains a native, controllable player instead of a Viewer-linked poster. */
+.site-content--fitted-media .artwork-detail__video {
+    width: min(100%, var(--public-fitted-image-width, 100%));
+    max-width: 100%;
+    max-height: 100svh;
+    margin-inline: auto;
+    object-fit: contain;
+}
+.site-content--fitted-media .artwork-detail__viewer-trigger--video-action {
+    margin-top: .35rem;
+    text-align: right;
+    font-size: .74rem;
+    line-height: 1.45;
+    text-decoration: underline;
+    text-underline-offset: .15em;
+}
+.site-content--fitted-media .artwork-detail__viewer-trigger--video-action:focus-visible {
+    outline: 1px dotted currentColor;
+    outline-offset: .15rem;
+}
+.site-content--fitted-media .artwork-detail__footer {
     flex: 0 0 auto;
 }
 

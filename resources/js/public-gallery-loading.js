@@ -67,16 +67,15 @@ function revealDecodedImage(image, key, signal) {
     }
 }
 
-function initializeArtworkDetailImage(root) {
-    const image = root.querySelector?.('.artwork-detail__image[data-artwork-image-state="pending"]');
-    if (!image) return () => {};
+function initializeArtworkDetailMedia(root) {
+    const media = root.querySelector?.('.artwork-detail__media-stage :is(.artwork-detail__image, .artwork-detail__video)');
+    if (!media) return () => {};
 
+    const image = media.matches('.artwork-detail__image') ? media : null;
     const lifetime = new AbortController();
-    const page = image.closest('#content');
-    const detail = image.closest('.artwork-detail');
-    const stage = detail?.querySelector('.artwork-detail__image-stage');
-    const sourceWidth = Number(image.getAttribute('width'));
-    const sourceHeight = Number(image.getAttribute('height'));
+    const page = media.closest('#content');
+    const detail = media.closest('.artwork-detail');
+    const stage = detail?.querySelector('.artwork-detail__media-stage');
     const fitStyle = fittedStyleRule();
     let frameRequest = 0;
 
@@ -87,12 +86,19 @@ function initializeArtworkDetailImage(root) {
     };
 
     const fit = () => {
-        if (lifetime.signal.aborted || !fitStyle || !page || !detail || !stage
-            || sourceWidth <= 0 || sourceHeight <= 0) return;
+        if (lifetime.signal.aborted || !fitStyle || !page || !detail || !stage) return;
+        // Available poster attributes provide an immediate stable ratio;
+        // older videos fall back to their actual decoded metadata.
+        const sourceWidth = Number(media.getAttribute('width'))
+            || Number(image?.naturalWidth) || Number(media.videoWidth) || 0;
+        const sourceHeight = Number(media.getAttribute('height'))
+            || Number(image?.naturalHeight) || Number(media.videoHeight) || 0;
+        if (sourceWidth <= 0 || sourceHeight <= 0) return;
 
         const fittedWidth = fittedMediaWidth(
             page, detail, Math.max(1, stage.getBoundingClientRect().width),
             sourceWidth, sourceHeight, detail.querySelector('.artwork-detail__footer'),
+            detail.querySelector('.artwork-detail__viewer-trigger--video-action'),
         );
         fitStyle.setProperty('--public-fitted-image-width', Math.max(1, Math.floor(fittedWidth)) + 'px');
         fitStyle.removeProperty('--public-fitted-paper-width');
@@ -109,21 +115,25 @@ function initializeArtworkDetailImage(root) {
     if (page?.classList.contains('site-content--fitted-artwork') && fitStyle) {
         fit();
         window.addEventListener('resize', scheduleFit, { passive: true, signal: lifetime.signal });
-        // The navigation controller may settle its height after page setup.
+        // Fonts and folio/navigation can settle after the initial layout.
         scheduleFit();
         document.fonts?.ready?.then(() => {
             if (!lifetime.signal.aborted) scheduleFit();
         });
+        // An old video may have no poster dimensions; fit its real frame once
+        // native metadata resolves, without creating a second video fitter.
+        media.addEventListener('loadedmetadata', scheduleFit, { signal: lifetime.signal });
     }
 
-    const ready = () => revealDecodedImage(image, 'artworkImageState', lifetime.signal);
-    const failed = () => {
-        image.dataset.artworkImageState = 'error';
-    };
-
-    image.addEventListener('load', ready, { signal: lifetime.signal });
-    image.addEventListener('error', failed, { signal: lifetime.signal });
-    if (image.complete) ready();
+    if (image) {
+        const ready = () => revealDecodedImage(image, 'artworkImageState', lifetime.signal);
+        const failed = () => {
+            image.dataset.artworkImageState = 'error';
+        };
+        image.addEventListener('load', ready, { signal: lifetime.signal });
+        image.addEventListener('error', failed, { signal: lifetime.signal });
+        if (image.complete) ready();
+    }
 
     return () => {
         lifetime.abort();
@@ -201,7 +211,7 @@ function initializeGalleryHeroFitting(root) {
 }
 
 export function initializeGalleryImageLoading(root = document) {
-    const disposeDetail = initializeArtworkDetailImage(root);
+    const disposeDetail = initializeArtworkDetailMedia(root);
     const disposeGalleryHero = initializeGalleryHeroFitting(root);
     const disposeFitted = () => {
         disposeDetail();

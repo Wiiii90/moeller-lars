@@ -2,7 +2,7 @@
 
 **Lease:** 31
 **Branch:** dev
-**State:** Active — Storage delete confirmation now reports plural Artwork references and Journal presentation/publication effects from canonical services; source awaiting browser acceptance.
+**State:** Active — corrected public individual Artwork video viewport fitting and playback semantics in the shared public media owner; source-only review pending browser acceptance.
 
 ## Current assignment and ownership
 
@@ -85,6 +85,14 @@
 - **Single/Bulk consistency:** Both single and Preview Delete pass the asset ID; bulk Delete selected passes the complete selected asset ID set to form schema, pre-filled reference snapshots and preflight validation before any mutation. Impact changes are therefore detected by the existing snapshot check. No new saved state or second deletion service.
 - **Acceptance pending:** Browser review must confirm 3→2 Carousel→Slideshow warning, 4→3 no warning, combined 4→2 bulk warning on both affected references, a fully emptied published/scheduled Blog state warning, absence of Journal checkbox, and per-asset plurality when one Storage file has multiple primary Artworks. Check shared-media duplicates and replacement Gallery Hero references after the Custom Page Image/Video changes. No PHP runtime, Livewire, browser tests, CI or deploy performed by Dev Worker 4.
 
+## Current task — public individual Artwork video fits the viewport (2026-11-21)
+
+- **Reported symptom:** The public individual Artwork route for a video displays a poster-like still spanning more than the viewport height, with no visible native video controls. Image Artwork pages fit correctly.
+- **Verified root cause:** `resources/views/pages/artworks/show.blade.php` set `$fitArtwork = ! $isVideo`. Video pages were excluded from the `site-content--fitted-image` presentation and `initializeArtworkDetailImage()` only selected an `img`. The large video had `height:auto` with no detail-page height limit. When Viewer was enabled, the video was nested in the Viewer trigger anchor and had no `controls`, leaving a poster frame when background autoplay was unavailable or disabled.
+- **Canonical repair:** Both image and video detail compositions now use `site-content--fitted-media` and one `artwork-detail__media-stage` (formerly image-only). The existing `fittedMediaWidth()` in `resources/js/public-gallery-loading.js` owns media sizing and caption width for either kind, including actual `videoWidth/videoHeight` after `loadedmetadata` when legacy videos have no poster. The video has native controls, muted loop behavior under the existing `public-media-playback.js`, and a `max-height:100svh` fallback; the optional Viewer trigger remains a separate text link rather than wrapping interactive video controls. Original image Viewer click area and Gallery Hero fitting remain intact. Legacy 16:9 video fallback becomes `aspect-ratio:auto 16/9`, ceding to the encoded video's intrinsic aspect after metadata.
+- **Affected source:** `resources/views/pages/artworks/show.blade.php`, `resources/css/public-presentation.css`, `resources/css/app.css`, `resources/js/public-gallery-loading.js`, the Dev role skill and worker state. No changes to `PublicMedia` delivery, image/video content records, upload flow or publication.
+- **Acceptance:** Source verification only; no mounted PHP/browser or Laravel runtime. Test individual portrait/landscape video on large and short viewports, native play/pause/mute/seek/fullscreen under normal and reduced-motion preferences, the Viewer link, small/portrait photo regressions, default/fitted Gallery Hero photos/videos, legacy videos with missing poster dimensions, public live and preview routes, and Livewire page swaps. If a video still fails to play, verify original video GET/Range network responses independently of the sizing bug.
+
 ## Verification and outstanding acceptance
 
 - The prior chat used connected GitHub source inspection and guarded commits; it **did not** run local Laravel, PHP, actual media ingestion, browser review, tests, deployment, Continuous Integration or a database migration as part of the Gallery changes. Do not represent source-reviewed behavior as browser-accepted.
@@ -101,4 +109,4 @@
 
 ## Next
 
-Coordinate Testing's targeted deletion/reference regressions and browser validation after user acceptance. Specifically verify Storage checkbox placement below each primary Artwork reference, persisted per-user default, Gallery preservation after unchecked file deletion, explicit Gallery Artwork deletion when checked, Journal carousel fallback, safe Custom Page failure, and absence of old unassigned Artwork creation. Do not auto-assign legacy null-Gallery Artworks without provenance. Verify registered Dev Worker 4 lease 31 and the newest dev head before further edits.
+Review the public individual Artwork video fitting and playback in a browser, especially the viewport height and native controls when background autoplay is disabled. Then hand the exact media/Viewer/SPA regressions to Testing. Continue previous Storage delete and Gallery Stage/browser acceptance gates without claiming runtime tests. Recheck active Dev Worker 4 lease 31 and latest dev HEAD before future writes.
