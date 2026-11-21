@@ -59,26 +59,26 @@ final class AdminPanelControl
             ->columnSpanFull();
     }
     /**
-     * Keep a prerequisite and its independent siblings in the left column.
-     * Dependent checkboxes occupy the right column, beginning alongside the
-     * prerequisite. Connectors are anchored to the dependent checkbox itself,
-     * while each field retains its own disabled state and persistence owner.
+     * Keep a prerequisite and optional independent fields in the left column.
+     * Dependent checkboxes stay to the right, beginning on the same row.
+     * Each original field owns its disabled state and persistence behavior.
      *
      * @param list<Checkbox|Group> $dependents
      * @param list<mixed> $independent
      */
-    public static function dependencyTree(Checkbox $required, array $dependents, array $independent = []): Group
+    public static function dependencyColumns(Checkbox $required, array $dependents, array $independent = []): Group
     {
-        foreach ($dependents as $index => $dependent) {
-            $attributes = [
-                'class' => 'admin-option-panel__dependency-leaf'
-                    . ($index === 0 ? ' admin-option-panel__dependency-leaf--first' : ''),
-            ];
-
+        foreach ($dependents as $dependent) {
             if ($dependent instanceof Checkbox) {
-                $dependent->extraFieldWrapperAttributes($attributes, merge: true);
+                $dependent->extraFieldWrapperAttributes(
+                    ['class' => 'admin-option-panel__dependency-leaf'],
+                    merge: true,
+                );
             } else {
-                $dependent->extraAttributes($attributes, merge: true);
+                $dependent->extraAttributes(
+                    ['class' => 'admin-option-panel__dependency-leaf'],
+                    merge: true,
+                );
             }
         }
 
@@ -88,14 +88,11 @@ final class AdminPanelControl
 
         $right = Group::make($dependents)
             ->columns(1)
-            ->extraAttributes([
-                'class' => 'admin-option-panel__dependency-dependents'
-                    . (count($dependents) > 1 ? ' admin-option-panel__dependency-dependents--multiple' : ''),
-            ]);
+            ->extraAttributes(['class' => 'admin-option-panel__dependency-dependents']);
 
         return Group::make([$left, $right])
             ->columns(['default' => 2])
-            ->extraAttributes(['class' => 'admin-option-panel__dependency-map'])
+            ->extraAttributes(['class' => 'admin-option-panel__dependency-columns'])
             ->columnSpanFull();
     }
 

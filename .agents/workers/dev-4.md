@@ -2,7 +2,7 @@
 
 **Lease:** 31
 **Branch:** dev
-**State:** Active — Gallery Stage Staged/Settings dropdown escape repaired at the shared Stage scroller owner in source; browser acceptance pending.
+**State:** Active — deprecated checkbox connector arrows removed from shared AdminPanelControl, original two-column layout and disabled states preserved; browser review pending.
 
 ## Current assignment and ownership
 
@@ -34,6 +34,12 @@
 - **Source owner:** Both Gallery form scrollports in `manage-gallery-artworks.blade.php` opt into `admin-visual-stage__field-scroll`. Shared `stage.css` now owns the open-Select state: release `overflow` and scroll masking and raise the active scrollport above the shared divider only while an in-DOM Filament searchable Select or native Select is open. `gallery.css` retains its previous fade as the `--admin-stage-scroll-mask` presentation variable instead of clipping the menu through a fixed local mask. No duplicated Select or new JavaScript listener/teleport.
 - **Durable method:** General Stage dropdown escape and browser acceptance requirements were integrated into the current Dev role skill's Stage gate. Pending Docs reconciliation: record the accepted product rule in the existing `docs/admin/responsive.md` Stage/overlays section after browser acceptance, not as a parallel manual.
 - **Still unverified:** Actual browser geometry for an open Material Select in Staged and order/placement controls in Settings near the bottom of the Stage, long option lists, keyboard/focus, closing/reopening and restored normal scrolling, at desktop and mobile widths. No PHP runtime, browser, tests, CI or deployment run.
+
+## Checkbox dependency presentation — 2026-11-21 final adjustment
+
+- At the artist's explicit request, **remove the arrow before Cyclic altogether**. Delete the former pseudo-element connector strokes, triangular arrowhead, and multiple-dependency rail from the central `controls.css`, rather than hiding them with Gallery-specific CSS.
+- The shared layout is now `AdminPanelControl::dependencyColumns()` rather than a misleading visual `dependencyTree()`. Navigation remains left; Cyclic remains right on the same row; future right-column dependents and independent left-column fields still compose normally. Disabled Cyclic styling and the existing Filament state/persistence callbacks remain unchanged. Both Gallery consumers use the same renamed component.
+- Source-level replacement only: no local browser, PHP, testing or deployment. Confirm no residual arrow/line visuals in Stage and Settings dialog, while the two-column layout and enabled/disabled interactions remain correct.
 
 ## Verification and outstanding acceptance
 

@@ -208,7 +208,7 @@ trait GalleryWorkspaceUploadSettings
         }
 
         return AdminPanelControl::make('Activate Modal Viewer', 'media_viewer_enabled', [
-            AdminPanelControl::dependencyTree($navigation, [$cyclic]),
+            AdminPanelControl::dependencyColumns($navigation, [$cyclic]),
         ], $stage ? fn (mixed $state) => $this->updateGalleryStageSetting('media_viewer_enabled', $state) : null, collapsible: true, dense: $stage);
     }
 
@@ -237,7 +237,7 @@ trait GalleryWorkspaceUploadSettings
         }
 
         return AdminPanelControl::make('Activate Artwork Pages', 'artwork_pages_enabled', [
-            AdminPanelControl::dependencyTree($navigation, [$cyclic]),
+            AdminPanelControl::dependencyColumns($navigation, [$cyclic]),
         ], $stage ? fn (mixed $state) => $this->updateGalleryStageSetting('artwork_pages_enabled', $state) : null, collapsible: true, dense: $stage);
     }
 
