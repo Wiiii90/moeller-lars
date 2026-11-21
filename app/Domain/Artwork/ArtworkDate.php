@@ -11,15 +11,22 @@ final class ArtworkDate
 {
     public static function fromArtwork(Artwork $artwork): ?string
     {
-        $year = $artwork->getAttribute('year');
+        return self::fromParts(
+            $artwork->getAttribute('year'),
+            $artwork->getAttribute('month'),
+            $artwork->getAttribute('day'),
+        );
+    }
+
+    /** One stored precision value, without inventing a missing month or day. */
+    public static function fromParts(mixed $year, mixed $month, mixed $day): ?string
+    {
         if ($year === null) {
             return null;
         }
-        $month = $artwork->getAttribute('month');
         if ($month === null) {
             return sprintf('%04d', (int) $year);
         }
-        $day = $artwork->getAttribute('day');
 
         return $day === null
             ? sprintf('%04d-%02d', (int) $year, (int) $month)
@@ -28,18 +35,26 @@ final class ArtworkDate
 
     public static function display(Artwork $artwork, ?string $region = null): ?string
     {
-        $year = $artwork->getAttribute('year');
+        return self::displayParts(
+            $artwork->getAttribute('year'),
+            $artwork->getAttribute('month'),
+            $artwork->getAttribute('day'),
+            $region,
+        );
+    }
+
+    /** Preserve partial precision and use the requested regional display. */
+    public static function displayParts(mixed $year, mixed $month, mixed $day, ?string $region = null): ?string
+    {
         if ($year === null) {
             return null;
         }
-        $month = $artwork->getAttribute('month');
         if ($month === null) {
             return (string) $year;
         }
         $region = RegionalFormats::region($region ?? RegionalFormats::publicRegion());
         $y = sprintf('%04d', (int) $year);
         $m = sprintf('%02d', (int) $month);
-        $day = $artwork->getAttribute('day');
         if ($day === null) {
             return $region === 'de-DE' ? $m.'.'.$y : $m.'/'.$y;
         }

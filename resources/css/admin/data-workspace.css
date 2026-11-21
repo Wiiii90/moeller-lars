@@ -275,7 +275,7 @@
     border-bottom: 0;
 }
 
-.admin-table--data tbody tr:hover,
+.admin-table--data:not(.admin-table--static) tbody tr:hover,
 .media-workspace__table tbody tr:hover {
     background: var(--admin-subtle);
 }

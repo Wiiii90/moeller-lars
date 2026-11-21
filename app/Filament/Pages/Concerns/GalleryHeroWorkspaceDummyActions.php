@@ -9,6 +9,7 @@ use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Content\GalleryHeroCandidate;
 use App\Domain\Content\GalleryHeroConfigurationService;
 use App\Domain\Content\GalleryHeroResolver;
+use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\MediaPreviewVariant;
@@ -214,6 +215,10 @@ trait GalleryHeroWorkspaceDummyActions
             $row['year'] = $artwork?->getAttribute('year') ?? ($member['year'] ?? null);
             $row['month'] = $artwork?->getAttribute('month') ?? ($member['month'] ?? null);
             $row['day'] = $artwork?->getAttribute('day') ?? ($member['day'] ?? null);
+            $row['date_value'] = ArtworkDate::fromParts($row['year'], $row['month'], $row['day']);
+            $row['date'] = ArtworkDate::displayParts(
+                $row['year'], $row['month'], $row['day'], RegionalFormats::adminRegion(),
+            );
             $row['disabled'] = ! ($member['enabled'] ?? true);
             $rows[] = $row;
         }
@@ -273,12 +278,19 @@ trait GalleryHeroWorkspaceDummyActions
 
     public function updateDraftDummyMember(int $unused, string $key, string $field, mixed $value): void
     {
-        if (! in_array($field, ['title', 'year', 'month', 'day'], true)) {
+        if (! in_array($field, ['title', 'date'], true)) {
             throw ValidationException::withMessages(['candidate' => 'Unknown Dummy Gallery field.']);
         }
+        $changes = $field === 'date'
+            ? ArtworkDate::normalize($value)
+            : ['title' => $value === '' ? null : $value];
+
         foreach ($this->draftDummyMembers as &$member) {
             if (GalleryHeroConfigurationService::memberKey($member) === $key && isset($member['media_asset_id'])) {
-                $member[$field] = $value === '' ? null : $value;
+                foreach ($changes as $part => $partValue) {
+                    $member[$part] = $partValue;
+                }
+                unset($member);
                 return;
             }
         }
@@ -287,11 +299,15 @@ trait GalleryHeroWorkspaceDummyActions
 
     public function updateDummyMember(int $galleryId, string $key, string $field, mixed $value): void
     {
-        if (! in_array($field, ['title', 'year', 'month', 'day'], true)) {
+        if (! in_array($field, ['title', 'date'], true)) {
             throw ValidationException::withMessages(['candidate' => 'Unknown Dummy Gallery field.']);
         }
+        $changes = $field === 'date'
+            ? ArtworkDate::normalize($value)
+            : ['title' => $value === '' ? null : $value];
+
         $changed = app(GalleryHeroConfigurationService::class)->updateDummyMember(
-            $this->settings(), $galleryId, $key, [$field => $value === '' ? null : $value],
+            $this->settings(), $galleryId, $key, $changes,
         );
         if ($changed) {
             $this->reloadWorkspace();

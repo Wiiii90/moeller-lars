@@ -254,7 +254,7 @@
     grid-template-columns: var(--admin-row-actions-columns, minmax(0, 1fr));
     gap: var(--admin-row-actions-gap, .25rem) !important;
     margin-inline-start: auto !important;
-    margin-inline-end: 0 !important;
+    margin-inline-end: var(--admin-row-actions-trailing-inset, 0) !important;
     align-items: center;
     justify-content: end !important;
 }
@@ -345,7 +345,7 @@
 
 .admin-row-actions--two-static {
     --admin-row-actions-width: var(--admin-row-actions-two-static-width);
-    --admin-row-actions-columns: max-content max-content;
+    --admin-row-actions-columns: var(--admin-row-actions-two-static-columns, max-content max-content);
 }
 
 .admin-row-actions--three-static {
@@ -630,6 +630,7 @@
     display: block;
     width: min(100%, var(--admin-row-actions-width, 100%));
     margin-left: auto;
+    margin-right: var(--admin-row-actions-trailing-inset, 0);
     padding-left: .25rem;
     text-align: left;
 }

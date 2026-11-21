@@ -344,32 +344,61 @@
     --gallery-hero-source-thumb-height: 2rem;
 }
 
-/* Dummy Gallery membership rows reuse the source thumbnail frame and
- * single-line identity, without the retired manual-order controls. */
+/* Dummy Gallery rows have one elastic identity, a compact precision date,
+ * and the canonical State/Delete action rail; no sort or drag affordance. */
 .gallery-hero-dummy-gallery-table {
     --gallery-hero-source-thumb-height: 1.9rem;
     --admin-row-actions-two-static-width: calc(
         var(--admin-row-action-slot-state-width) + var(--admin-row-action-slot-delete-width) + .25rem
     );
+    --admin-row-actions-two-static-columns:
+        minmax(var(--admin-row-action-slot-state-width), max-content)
+        minmax(var(--admin-row-action-slot-delete-width), max-content);
+    --admin-row-actions-trailing-inset: var(--admin-table-edge-inset);
+}
+
+.gallery-hero-dummy-gallery-table table {
+    --admin-row-actions-width: var(--admin-row-actions-two-static-width);
+}
+
+.gallery-hero-dummy-gallery-table__col-date {
+    width: 9.5rem;
 }
 
 .gallery-hero-dummy-gallery-table__col-actions {
-    width: calc(var(--admin-row-actions-two-static-width) + .5rem);
-}
-
-.gallery-hero-dummy-gallery-table__col-artwork,
-.gallery-hero-dummy-gallery-table__col-storage {
-    width: auto;
-}
-
-@container admin-table (max-width: 38rem) {
-    .gallery-hero-dummy-gallery-table__col-actions {
-        width: calc(2 * 1.35rem + .45rem + .5rem);
-    }
+    width: calc(var(--admin-row-actions-two-static-width) + var(--admin-table-edge-inset));
 }
 
 .gallery-hero-dummy-gallery-table .gallery-hero-source-table__candidate-inline {
     grid-template-columns: var(--gallery-hero-source-thumb-width) minmax(0, 1fr);
+}
+
+.gallery-hero-dummy-gallery-table .gallery-hero-source-table__candidate-inline > :is(strong, .admin-inline-input) {
+    display: block;
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gallery-hero-dummy-gallery-table__date {
+    font-variant-numeric: tabular-nums;
+}
+
+.gallery-hero-dummy-gallery-table .admin-partial-date__trigger {
+    min-height: var(--admin-control-height);
+    white-space: nowrap;
+}
+
+@container admin-table (max-width: 38rem) {
+    .gallery-hero-dummy-gallery-table table {
+        --admin-row-actions-two-static-width: calc(2 * 1.35rem + .45rem);
+    }
+
+    .gallery-hero-dummy-gallery-table .admin-row-actions--two-static {
+        --admin-row-actions-columns: repeat(2, 1.35rem);
+    }
 }
 
 .gallery-hero-source-candidates__toggle {
