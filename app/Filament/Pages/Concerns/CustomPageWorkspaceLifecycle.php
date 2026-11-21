@@ -10,7 +10,6 @@ use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\CustomPageSetting;
-use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -255,7 +254,7 @@ trait CustomPageWorkspaceLifecycle
                             ->options(fn (): array => $this->parentOptions())
                             ->nullable()
                             ->placeholder(__('Top level'))
-                            ->visible(fn (): bool => PublicContentSetting::navigationNestingEnabled() && ! $this->section()->isHome()),
+                            ->visible(fn (): bool => ! $this->section()->isHome()),
                         AdminControl::toggle('auto_publish_new_components', 'Auto-publish new components')
                             ->live()
                             ->afterStateUpdated(function (mixed $state): void {
@@ -299,7 +298,7 @@ trait CustomPageWorkspaceLifecycle
                         $service->updatePlacement(
                             $section,
                             ($data['publication_state'] ?? 'unpublished') === 'published' ? 'published' : 'hidden',
-                            PublicContentSetting::navigationNestingEnabled() && is_numeric($data['parent_id'] ?? null) ? (int) $data['parent_id'] : null,
+                            is_numeric($data['parent_id'] ?? null) ? (int) $data['parent_id'] : null,
                         );
                     });
                 } catch (ValidationException $exception) {
