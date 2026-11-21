@@ -355,66 +355,78 @@ MediaAsset reference/publication contracts.
 
 ## Gallery delivery and loading
 
-Gallery index markup retains the **complete canonical Artwork and Viewer
-sequence**; images are not paginated out of the document or removed on scroll.
-The first two Artwork media images load eagerly (only the first is high
-priority). Later Gallery images preserve their original thumbnail URL in
-`data-gallery-src`, with no initial `src` request. The shared
-`public-gallery-loading.js` uses `IntersectionObserver` with a 960px lookahead
-and at most two speculative image requests. Visible images always bypass the
-prefetch queue and receive high request priority. Once loaded, their canonical
-URLs use the normal immutable browser cache; scrolling backward never reloads
-a new image object. Intrinsic thumbnail dimensions prevent layout jumps.
+The Standard public Gallery is **server-batched**, not a complete Artwork list
+with image-only lazy loading. `PublicArtworkQuery::categoryBatch()` reads the
+canonical Gallery presentation order and public/preview eligibility; the first
+response renders at most six Artwork cards. Subsequent six-card fragments are
+requested through the same protected section route and appended by
+`public-gallery-batches.js` as the user scrolls. The existing
+`gallery_page` query and real `Load more artworks` link provide a
+page-by-page fallback when scripting or automatic loading is unavailable.
+The transport does not create another Gallery renderer: all cards use the
+existing `artwork-card.blade.php` and shared
+`pages/artworks/partials/batch.blade.php`. A small ordered ID/position
+outline supports deterministic lateral offsets and divider gaps without
+eager-loading the media relationships for every Artwork.
 
-A `<noscript>` image preserves native `loading=lazy` when JavaScript is
-disabled. Without IntersectionObserver, the runtime restores real `src`
-attributes and lets the browser handle native lazy loading. Gallery ownership
-and observers are disposed with the existing Livewire SPA page lifecycle.
-No timers, detached preloader images, duplicated requests, dynamic viewer
-sequence or new media URL endpoint are introduced. Hero and Artwork detail
-retain their independent media loading/priority contracts. Artwork detail now
-uses the same revision-aware `PublicMedia::variantUrl()` as the Gallery, so
-public and preview render the selected immutable rights revision where present
-rather than an unrevisioned URL the controller must reject.
+The first two Gallery stills load eagerly (only the first uses high request
+priority); all later stills use a single canonical `<img src>` with native
+`loading="lazy"`, asynchronous decode and real thumbnail dimensions.
+There is no separate `data-gallery-src` request queue and no duplicate
+`<noscript>` image. `public-gallery-loading.js` retains the shared page
+lifecycle for initial, cached, failed and newly appended images, and the
+separate fitted Artwork-detail / Gallery-Hero consumers. The page-scoped
+`public-media-playback.js` registers appended Gallery videos. The
+Gallery-specific Viewer fetches the full canonical navigation metadata only
+when opened; it can navigate Artworks not yet appended to the page.
+All media requests continue through the existing PublicMedia revision/rights
+selection and protected Preview routes.
 
-Public thumbnails are immutable WebP `public-v1` or large-image `public-v2` MediaVariant resources (maximum preview edge 960px) served by `EnsureMediaVariantFile` and
-`PublicMediaController`. Deleted-but-rebuildable variants can be regenerated
-synchronously during first request. **Slow server responses or initial
-regeneration are not fixed by scroll buffering**; before changing publication
-access, variant integrity, sendfile, storage or cache behavior, inspect real
-response timings and variant availability in the running preview.
+The scrolling affordance is one accessible next-page link, progressively
+enhanced into three restrained dots while requesting a batch. It keeps a
+visible retry label after a failed request. Reduced-motion settings avoid
+the dot animation. These are source-level implementation contracts, not
+a substitute for runtime browser acceptance.
 
-### Gallery index image composition (2026-11-18)
+Public thumbnails are canonical, immutable WebP variants. Slow responses
+or missing/preparing media cannot be repaired solely by adding scroll
+batches; inspect actual network requests and media readiness before
+changing publication, access, storage, caching or variant generation.
 
-The public Gallery keeps its authored, vertically ordered Artwork sequence
-inside General's Content width. Its temporary (not yet artist-configurable)
-presentation values live on `.artwork-list`: an image-height ceiling of
-`min(94svh, calc(100svh - 6rem))`, a natural-width media display with
-`object-fit: contain`, and an Artwork-to-Artwork gap of
-`clamp(2.5rem, 6.5svh, 4.5rem)`. The remaining viewport is reserved for the
-sticky Menu and ordinary Artwork information. The outer Artwork slot has a
-minimum height of `max(0px, calc(100svh - 12rem))` so short landscape works
-receive comparable breathing room; long rights/captions still expand naturally,
-without forcing an exact one-image-per-viewport promise in every case.
+### Gallery index image composition
 
-`GalleryPresentation::indexCardOffsets()` uses a stable Gallery+Artwork hash
-and a neighbor constraint to choose one of five restrained lateral placements.
-The CSS grid distributes only **unused** Content width, so a near-full-width
-landscape has little or no displacement, a narrower portrait can shift more,
-and no shift causes horizontal overflow. At 40rem and below, all placement
-tracks become symmetrical. Positions are presentation-only: no Artwork sort
-value, persisted field or publication/Viewer sequence changes. A Gallery-only
-media-and-information composition keeps the footer (Artwork information,
-Media credits and Copyright) the same **rendered width as its image** via
-inline-size containment. Existing per-field visibility and left/center/right
-arrangement controls still own the actual text alignment. Gallery video
-footprints retain their previous full-width behavior. The separate Home
-Artwork card and individual Artwork pages are unchanged.
+The Gallery keeps the authored Artwork sequence inside General's Content
+width. Its current presentation values live on `.artwork-list`: an
+image-height ceiling of `min(82svh, calc(100svh - 9rem))` and a vertical
+Artwork gap of `clamp(8rem, 17svh, 10rem)`; narrow viewports use the
+existing compact mobile gap. `GalleryPresentation::indexCardOffsets()`
+derives five deterministic lateral placements without altering Artwork
+ordering. Dividers and captions remain aligned to the canonical media track.
 
-This composition is source implemented. Full-width image, long metadata,
-narrow/zoomed viewport and Gallery video acceptance still require a real
-local application browser pass; isolated Chromium geometry checks are useful
-but are not end-to-end acceptance.
+**The Artwork image/caption composition must have a definite width before
+an image has loaded or decoded.** The intrinsic media size is not a safe
+basis for an outer `fit-content` track while a caption is excluded from
+intrinsic sizing via `contain: inline-size`. In that state, a tiny native
+placeholder can shrink the composition and wrap ordinary Artwork caption
+letters one per line. The existing Gallery stylesheet owns a definite
+container-query-width budget; dimensioned items resolve the track from the
+canonical thumbnail or video poster aspect and viewport media-height cap.
+The link, media and caption share that stable track. Full-size media remains
+uncropped and actual ALT text remains on its real image.
+
+**Verification status (2026-11-21):** The user observed that server batches
+appeared faster and requested the dots. The earlier duplicate-image and
+native-lazy corrections did **not** resolve the brief vertical text in the
+user's browser. Isolated Chromium reproduction identified severe caption-track
+width collapse and showed that a definite composition width removes it in
+that fixture. The later width fix (commit `03113241`) was source-implemented
+but **has not been user-accepted or verified in the running application**.
+Before calling it resolved, verify first paint, slow image responses, cached
+and broken images, portrait/landscape widths, captions, mobile layouts,
+Livewire navigation, no-script behavior, page batching, Viewer sequence
+and inline video. The Testing workstream also needs to replace obsolete
+tests that still expect the removed Gallery image-prefetch queue; Development
+must not alter those test sources.
 
 ## Gallery and Artwork ordering
 
@@ -430,9 +442,9 @@ Gallery presentation uses persisted Artwork `position` as authoritative order.
 
 Viewer previous/next follows the same public Gallery order.
 
-## First-paint Artwork image readiness and shared viewer (source `dev@671d8214e060`)
+## First-paint Artwork image readiness and shared viewer
 
-The canonical Artwork image is hidden until the real thumbnail has successfully decoded; only then is its media frame revealed. This covers eager Gallery images, deferred Gallery images, Artwork detail and Home/other Artwork cards consistently rather than relying on a late scroll listener or briefly rendering broken intrinsic-width ALT text. `public-gallery-loading.js` owns page-scoped `data-gallery-image-state` and Artwork-detail decode/error transitions and is disposed at Livewire navigation. Deliberate image load errors retain visible failure/ALT feedback; image hiding is **not** permission to mask missing-media integrity failures. `public-spa.js` reconciles the saved Appearance presentation before showing initialized navigation; no default-style flash or second observer/polling engine should be added.
+When scripting is enabled, the canonical Artwork image remains in its pending state until its thumbnail has actually decoded; a real media failure transitions to an explicit error state rather than being silently treated as ready. This applies to eager and natively lazy Gallery images, Artwork detail and the shared Artwork-card presentation. `public-gallery-loading.js` owns the page-scoped Gallery image readiness and Artwork-detail decode/error transitions and is disposed during Livewire navigation. Hiding pending media is **not** permission to mask missing-media integrity failures or strip meaningful image ALT text. Stable Gallery media/caption sizing is owned by the composition rule above, independent of pending image paint. `public-spa.js` reconciles the saved Appearance presentation before showing initialized navigation; no default-style flash or second observer/polling engine should be added.
 
 `PublicImageViewer` is the **single public image-to-viewer adapter** for permitted Home and Journal image occurrences. It safely renders Rich Text through the canonical `SafeRichTextRenderer` *before* decorating images with scoped viewer attributes. Journal structured Cover/Gallery and Rich Text use the same content viewer scope; image-only navigation is limited to that content context. Videos stay inline and a Journal image viewer must not expose Gallery Artwork detail-action links. The main Gallery Artwork Viewer retains its existing distinct Artwork/navigation context. Each content consumer has an explicit opt-in for enlargement; never globally make all images clickable merely because a viewer exists.
 
