@@ -79,9 +79,6 @@ final class CustomPageEditorialService
             if ($sourceIndex === $imageIndex || ! in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
                 throw ValidationException::withMessages(['image_children' => 'Choose a text-capable page component.']);
             }
-            if ($type === 'list' && ($source['media_asset_id'] ?? null) !== null) {
-                throw ValidationException::withMessages(['image_children' => 'A List with media cannot move under an Image.']);
-            }
             if ($type === 'contact') {
                 foreach ($source['children'] ?? [] as $child) {
                     if (is_array($child) && ($child['type'] ?? null) === 'contact_form'
@@ -137,9 +134,6 @@ final class CustomPageEditorialService
             || $sourceIndex === $imageIndex
             || ! in_array($source['type'] ?? null, CustomPageSetting::IMAGE_CHILD_TYPES, true)) {
             throw ValidationException::withMessages(['component' => 'Only a text-capable component can be moved into a decorative image.']);
-        }
-        if ($source['type'] === 'list' && ($source['media_asset_id'] ?? null) !== null) {
-            throw ValidationException::withMessages(['component' => 'A list containing an image cannot wrap another image.']);
         }
         if ($source['type'] === 'contact') {
             foreach ($source['children'] ?? [] as $child) {
@@ -362,7 +356,7 @@ final class CustomPageEditorialService
                 $this->assertMediaParent($blocks, $parent);
                 if (! ($blocks[$parent]['image_decorative'] ?? false)
                     || ! in_array($expectedType, CustomPageSetting::IMAGE_CHILD_TYPES, true)
-                    || ($expectedType === 'list' && ($item['media_asset_id'] ?? null) !== null)) {
+                    ) {
                     throw ValidationException::withMessages(['component' => 'Only supported components can be children of a decorative Image.']);
                 }
                 if ($expectedType === 'contact') {
@@ -404,94 +398,6 @@ final class CustomPageEditorialService
             $blocks[$imageIndex]['children'] = $children;
 
             return $this->persist($fresh, $blocks);
-        });
-    }
-
-    /** @param array<string, mixed> $item */
-    public function addListItem(CustomPageSetting $settings, int $index, string $expectedType, array $item): bool
-    {
-        return $this->mutateListItems($settings, $index, $expectedType, static function (array $items) use ($item): array {
-            $items[] = $item;
-
-            return $items;
-        });
-    }
-
-    /** @param array<string, mixed> $item */
-    public function updateListItem(CustomPageSetting $settings, int $index, string $expectedType, int $itemIndex, array $item): bool
-    {
-        return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndex, $item): array {
-            $this->assertListItem($items, $itemIndex);
-            $items[$itemIndex] = $item;
-
-            return $items;
-        });
-    }
-
-    public function setListItemPublished(CustomPageSetting $settings, int $index, string $expectedType, int $itemIndex, bool $published): bool
-    {
-        return $this->setListItemsPublished($settings, $index, $expectedType, [$itemIndex], $published);
-    }
-
-    /** @param list<int> $itemIndices */
-    public function setListItemsPublished(CustomPageSetting $settings, int $index, string $expectedType, array $itemIndices, bool $published): bool
-    {
-        return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndices, $published): array {
-            foreach (array_values(array_unique($itemIndices)) as $itemIndex) {
-                $this->assertListItem($items, $itemIndex);
-                $items[$itemIndex]['published'] = $published;
-            }
-
-            return $items;
-        });
-    }
-
-    public function moveListItem(CustomPageSetting $settings, int $index, string $expectedType, int $itemIndex, string $direction): bool
-    {
-        $this->assertDirection($direction);
-
-        return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndex, $direction): array {
-            $this->assertListItem($items, $itemIndex);
-            $target = $direction === 'up' ? $itemIndex - 1 : $itemIndex + 1;
-            if (! array_key_exists($target, $items)) {
-                return $items;
-            }
-            [$items[$itemIndex], $items[$target]] = [$items[$target], $items[$itemIndex]];
-
-            return $items;
-        }, ordering: true);
-    }
-
-    public function sortListItem(CustomPageSetting $settings, int $index, string $expectedType, int $itemIndex, int $position): bool
-    {
-        return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndex, $position): array {
-            $this->assertListItem($items, $itemIndex);
-            $moved = $items[$itemIndex];
-            array_splice($items, $itemIndex, 1);
-            $position = max(0, min($position, count($items)));
-            array_splice($items, $position, 0, [$moved]);
-
-            return $items;
-        }, ordering: true);
-    }
-
-    public function deleteListItem(CustomPageSetting $settings, int $index, string $expectedType, int $itemIndex): bool
-    {
-        return $this->deleteListItems($settings, $index, $expectedType, [$itemIndex]);
-    }
-
-    /** @param list<int> $itemIndices */
-    public function deleteListItems(CustomPageSetting $settings, int $index, string $expectedType, array $itemIndices): bool
-    {
-        return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndices): array {
-            $indices = array_values(array_unique($itemIndices));
-            rsort($indices);
-            foreach ($indices as $itemIndex) {
-                $this->assertListItem($items, $itemIndex);
-                unset($items[$itemIndex]);
-            }
-
-            return array_values($items);
         });
     }
 
@@ -640,35 +546,6 @@ final class CustomPageEditorialService
         });
     }
 
-    /** @param callable(list<array<string,mixed>>): list<array<string,mixed>> $mutator */
-    private function mutateListItems(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        callable $mutator,
-        bool $ordering = false,
-    ): bool {
-        return DB::transaction(function () use ($settings, $index, $expectedType, $mutator, $ordering): bool {
-            $fresh = $this->locked($settings);
-            $blocks = $fresh->components();
-            $this->assertListTarget($blocks, $index, $expectedType);
-            $beforeItems = $this->listItems($blocks[$index]);
-            $afterItems = $mutator($beforeItems);
-            $blocks[$index]['items'] = $afterItems;
-
-            return $this->persist(
-                $fresh,
-                $blocks,
-                $ordering ? [
-                    'action' => 'site_section.list_entries_reordered',
-                    'scope' => 'page-list:'.(int) $fresh->getAttribute('site_section_id').':'.$index,
-                    'before' => AdminOrderingState::fingerprints($beforeItems),
-                    'after' => AdminOrderingState::fingerprints($afterItems),
-                ] : null,
-            );
-        });
-    }
-
     private function locked(CustomPageSetting $settings): CustomPageSetting
     {
         /** @var CustomPageSetting $fresh */
@@ -716,31 +593,6 @@ final class CustomPageEditorialService
         $block = $blocks[$index] ?? null;
         if (! is_array($block) || ! in_array($block['type'] ?? null, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)) {
             throw ValidationException::withMessages(['component' => 'This media parent changed. Reload the workspace and try again.']);
-        }
-    }
-
-    /** @param list<array<string,mixed>> $blocks */
-    private function assertListTarget(array $blocks, int $index, string $expectedType): void
-    {
-        $this->assertTarget($blocks, $index, $expectedType);
-        if ($expectedType !== 'list') {
-            throw ValidationException::withMessages(['component' => 'Only List components contain list entries.']);
-        }
-    }
-
-    /** @param array<string,mixed> $block
-     * @return list<array<string,mixed>>
-     */
-    private function listItems(array $block): array
-    {
-        return is_array($block['items'] ?? null) ? array_values($block['items']) : [];
-    }
-
-    /** @param list<array<string,mixed>> $items */
-    private function assertListItem(array $items, int $itemIndex): void
-    {
-        if ($itemIndex < 0 || ! array_key_exists($itemIndex, $items)) {
-            throw ValidationException::withMessages(['component' => 'This list entry changed. Reload the workspace and try again.']);
         }
     }
 

@@ -128,7 +128,7 @@ trait CustomPageWorkspaceProjectionState
         $this->unfilteredComponentCount = count($blocks);
 
         $imageIds = collect($blocks)
-            ->filter(static fn (array $block): bool => in_array($block['type'] ?? null, [...CustomPageSetting::MEDIA_COMPONENT_TYPES, 'list'], true))
+            ->filter(static fn (array $block): bool => in_array($block['type'] ?? null, CustomPageSetting::MEDIA_COMPONENT_TYPES, true))
             ->pluck('media_asset_id')
             ->filter(static fn (mixed $id): bool => is_numeric($id))
             ->map(static fn (mixed $id): int => (int) $id)
@@ -143,7 +143,7 @@ trait CustomPageWorkspaceProjectionState
             ->all();
 
         $counts = array_fill_keys(array_keys(self::COMPONENT_LABELS), 0);
-        $listEntryCount = 0;
+        $richTextChildCount = 0;
         $childComponentCount = 0;
         $projected = [];
         $needle = mb_strtolower(trim($this->componentSearch));
@@ -153,14 +153,11 @@ trait CustomPageWorkspaceProjectionState
             if (isset($counts[$type])) {
                 $counts[$type]++;
             }
-            if ($type === 'list' && is_array($block['items'] ?? null)) {
-                $listEntryCount += count($block['items']);
-            }
             if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)) {
                 $childComponentCount += count($block['children'] ?? []);
                 foreach ($block['children'] ?? [] as $child) {
-                    if (is_array($child) && ($child['type'] ?? null) === 'list') {
-                        $listEntryCount += count($child['items'] ?? []);
+                    if (is_array($child) && ($child['type'] ?? null) === 'text') {
+                        $richTextChildCount++;
                     }
                 }
             }
@@ -172,21 +169,6 @@ trait CustomPageWorkspaceProjectionState
             $mediaId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
             $imageName = $mediaId !== null ? ($imageNames[$mediaId] ?? null) : null;
             $parentSearch = mb_strtolower($this->componentParentSearchText($settings, $block, $imageName));
-            if ($type === 'list') {
-                // List entries are edited within the parent, but remain
-                // searchable without creating phantom child rows.
-                foreach (is_array($block['items'] ?? null) ? $block['items'] : [] as $item) {
-                    if (! is_array($item)) {
-                        continue;
-                    }
-                    $parentSearch .= ' '.mb_strtolower(implode(' ', array_filter([
-                        $item['title'] ?? null,
-                        CustomPageSetting::listItemContext($item),
-                        CustomPageSetting::listItemDetails($item),
-                    ], 'is_string')));
-                }
-            }
-
             if ($needle !== '') {
                 $parentMatches = str_contains($parentSearch, $needle);
                 if (! $parentMatches) {
@@ -207,7 +189,6 @@ trait CustomPageWorkspaceProjectionState
                 'children' => in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) ? $this->imageChildSummaries($settings, $block, $index) : [],
                 'accepts_children' => in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) && ($block['image_decorative'] ?? false) === true,
                 'can_nest' => in_array($type, CustomPageSetting::IMAGE_CHILD_TYPES, true)
-                    && ($type !== 'list' || ($block['media_asset_id'] ?? null) === null)
                     && ($type !== 'contact' || ! collect($settings->contactChildren($block))
                         ->contains(fn (array $item): bool => ($item['type'] ?? null) === 'contact_form'
                             && CustomPageSetting::contactChildPublished($item))),
@@ -230,7 +211,7 @@ trait CustomPageWorkspaceProjectionState
 
         $this->metrics = [
             ['label' => 'Components', 'value' => RegionalFormats::adminNumber(count($blocks) + $childComponentCount), 'description' => 'Page sequence'],
-            ['label' => 'Entries', 'value' => RegionalFormats::adminNumber($listEntryCount), 'description' => 'List entries'],
+            ['label' => 'Rich Text', 'value' => RegionalFormats::adminNumber($counts['text'] + $richTextChildCount), 'description' => 'Text components'],
             ['label' => 'Media', 'value' => RegionalFormats::adminNumber($counts['image'] + $counts['video']), 'description' => 'Image and video components'],
             ['label' => 'Visits', 'value' => $this->metricValue($this->analytics['page']['visits'] ?? null), 'description' => 'This page · 30d'],
             ['label' => 'Views', 'value' => $this->metricValue($this->analytics['page']['views'] ?? null), 'description' => 'This page · 30d'],

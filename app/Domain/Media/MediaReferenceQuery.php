@@ -81,7 +81,7 @@ final class MediaReferenceQuery
             }
 
             $type = $component['type'] ?? null;
-            if (in_array($type, [...CustomPageSetting::MEDIA_COMPONENT_TYPES, 'list'], true)) {
+            if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)) {
                 $mediaId = $component['media_asset_id'] ?? null;
                 if (is_numeric($mediaId) && (int) $mediaId > 0) {
                     $ids[] = (int) $mediaId;
@@ -90,17 +90,6 @@ final class MediaReferenceQuery
 
             if ($type === 'text' && is_string($component['body'] ?? null)) {
                 $ids = array_merge($ids, RichTextMediaReference::ids($component['body']));
-            }
-
-            if ($type === 'list' && is_array($component['items'] ?? null)) {
-                foreach ($component['items'] as $item) {
-                    if (! is_array($item) || ($publishedOnly && ! CustomPageSetting::listItemPublished($item))) {
-                        continue;
-                    }
-                    if (is_string($item['body'] ?? null)) {
-                        $ids = array_merge($ids, RichTextMediaReference::ids($item['body']));
-                    }
-                }
             }
 
             if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) && is_array($component['children'] ?? null)) {

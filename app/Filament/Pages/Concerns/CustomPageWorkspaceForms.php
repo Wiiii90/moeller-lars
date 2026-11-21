@@ -5,7 +5,6 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Content\PublicLegalContent;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Support\AdminRichText;
-use App\Filament\Support\ComponentListEditor;
 use App\Filament\Support\HierarchyParentField;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\CustomPageSetting;
@@ -101,14 +100,6 @@ trait CustomPageWorkspaceForms
                 TextInput::make('title')->label('Heading')->maxLength(160),
                 ...AdminRichText::schema('body', 'Text Editor', 20000),
             ],
-            'list' => [
-                TextInput::make('title')->label('Heading')->maxLength(160),
-                ...(! $insideImage ? [
-                    MediaAssetSelect::makeId('media_asset_id', 'Optional list image', imagesOnly: true)
-                        ->placeholder(__('No list image'))->nullable(),
-                ] : []),
-                ComponentListEditor::make(),
-            ],
             'divider' => [
                 Select::make('variant')->label('Divider')->options(array_map('__', self::DIVIDER_LABELS))->default('thin')->required(),
             ],
@@ -174,8 +165,7 @@ trait CustomPageWorkspaceForms
         return $field->afterStateUpdated(static fn (mixed $state) => $save($key, $state));
     }
 
-    /** Visible at the top of every eligible component edit, even for List
-     * dialogs with long repeater content. Null means Page level. */
+    /** Shared parent selector for existing component edits. */
     private function componentParentField(string $editingType): Select
     {
         // Root and child Edit Actions already know the persisted type.
@@ -185,9 +175,7 @@ trait CustomPageWorkspaceForms
             fn (): array => $this->decorativeImageParentOptions(),
             'Parent', 'Page level',
         )
-            ->disabled(fn (Get $get): bool => ($editingType === 'list' && filled($get('media_asset_id')))
-                || ($editingType === 'contact' && (bool) $get('contact_form_enabled'))
-            )
+            ->disabled(fn (Get $get): bool => $editingType === 'contact' && (bool) $get('contact_form_enabled'))
             ->columnSpanFull();
     }
 

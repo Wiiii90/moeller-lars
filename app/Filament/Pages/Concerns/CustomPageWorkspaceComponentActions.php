@@ -297,21 +297,13 @@ trait CustomPageWorkspaceComponentActions
         $this->placeSortedComponent($target, $position, $groupId);
     }
 
-    /** Child components own the SAME Edit schema, action rail and persisted
-     * data as their top-level counterparts. The Image owns only placement. */
-    public function editImageChildAction(): Action
-    {
-        return $this->imageChildEditingAction('editImageChild', committed: true);
-    }
-
-    /** Non-List children use the same autosaving Edit lifecycle as root
-     * components. List keeps its atomic Apply changes command. */
+    /** Media child editors share the autosaving root component lifecycle. */
     public function editImageChildInstantAction(): Action
     {
-        return $this->imageChildEditingAction('editImageChildInstant', committed: false);
+        return $this->imageChildEditingAction('editImageChildInstant');
     }
 
-    private function imageChildEditingAction(string $actionName, bool $committed): Action
+    private function imageChildEditingAction(string $actionName): Action
     {
         $action = Action::make($actionName)
             ->label('Edit')
@@ -412,9 +404,7 @@ trait CustomPageWorkspaceComponentActions
                 }
             });
 
-        return $committed
-            ? AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large)
-            : AdminDialog::edit($action, AdminDialogSize::Large);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function setImageChildPublished(int $image, int $child, string $type, bool $published): void
@@ -491,15 +481,10 @@ trait CustomPageWorkspaceComponentActions
 
     public function editComponentAction(): Action
     {
-        return $this->componentEditingAction('editComponent', committed: false);
+        return $this->componentEditingAction('editComponent');
     }
 
-    public function editListComponentAction(): Action
-    {
-        return $this->componentEditingAction('editListComponent', committed: true);
-    }
-
-    private function componentEditingAction(string $actionName, bool $committed): Action
+    private function componentEditingAction(string $actionName): Action
     {
         $action = Action::make($actionName)
             ->label('Edit')
@@ -621,9 +606,7 @@ trait CustomPageWorkspaceComponentActions
                 }
             });
 
-        return $committed
-            ? AdminDialog::command($action, 'Apply changes', AdminDialogSize::Large)
-            : AdminDialog::edit($action, AdminDialogSize::Large);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     /**
@@ -687,7 +670,7 @@ trait CustomPageWorkspaceComponentActions
     /** @param array<string,mixed> $target */
     private function retargetComponentEditor(string $actionName, array $target): void
     {
-        $this->cacheAction($this->componentEditingAction($actionName, committed: $actionName === 'editListComponent'));
+        $this->cacheAction($this->componentEditingAction($actionName));
         $this->replaceMountedAction($actionName, $target);
     }
 

@@ -21,7 +21,6 @@ final class CustomPageSetting extends Model
         'image',
         'video',
         'text',
-        'list',
         'divider',
         'contact',
         'legal_disclaimer',
@@ -31,7 +30,7 @@ final class CustomPageSetting extends Model
     public const MEDIA_COMPONENT_TYPES = ['image', 'video'];
 
     /** One shared allowlist for media children in persistence, editing and sorting. */
-    public const IMAGE_CHILD_TYPES = ['text', 'list', 'divider', 'contact', 'legal_disclaimer'];
+    public const IMAGE_CHILD_TYPES = ['text', 'divider', 'contact', 'legal_disclaimer'];
 
     public const IMAGE_ALIGNMENTS = ['left', 'center', 'right'];
 
@@ -135,46 +134,6 @@ final class CustomPageSetting extends Model
         }
     }
 
-    public static function listItemPublished(array $item): bool
-    {
-        return ($item['published'] ?? true) === true;
-    }
-
-    /** Read old Date / Organisation / Location fields as one Context. */
-    public static function listItemContext(array $item): ?string
-    {
-        $value = $item['context'] ?? null;
-        if (is_string($value) && trim($value) !== '') {
-            return trim($value);
-        }
-        $parts = [];
-        foreach (['date', 'meta', 'location'] as $key) {
-            $part = $item[$key] ?? null;
-            if (is_string($part) && trim($part) !== '') {
-                $parts[] = trim($part);
-            }
-        }
-
-        return $parts === [] ? null : implode(' · ', $parts);
-    }
-
-    /** Preserve existing optional links as part of Details when migrating. */
-    public static function listItemDetails(array $item): ?string
-    {
-        $body = is_string($item['body'] ?? null) ? trim($item['body']) : '';
-        if ($body === '<p></p>') {
-            $body = '';
-        }
-        $url = is_string($item['url'] ?? null) ? trim($item['url']) : '';
-        if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL)
-            && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
-            $link = '[More information]('.str_replace(['(', ')'], ['%28', '%29'], $url).')';
-            $body = $body !== '' ? $body."\n\n".$link : $link;
-        }
-
-        return $body === '' ? null : $body;
-    }
-
     public static function contactChildPublished(array $child): bool
     {
         return ($child['published'] ?? true) === true;
@@ -226,13 +185,6 @@ final class CustomPageSetting extends Model
                     'published' => $published,
                     'title' => $this->nullableTrimmedString($block['title'] ?? null),
                     'body' => $block['body'] ?? null,
-                ],
-                'list' => [
-                    'type' => 'list',
-                    'published' => $published,
-                    'title' => $this->nullableTrimmedString($block['title'] ?? null),
-                    'media_asset_id' => is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null,
-                    'items' => $this->normalizeListItems($block['items'] ?? []),
                 ],
                 'divider' => [
                     'type' => 'divider',
@@ -340,10 +292,7 @@ final class CustomPageSetting extends Model
                 foreach ($children as $child) {
                     $childType = is_array($child) ? ($child['type'] ?? null) : null;
                     if (! in_array($childType, self::IMAGE_CHILD_TYPES, true)) {
-                        throw ValidationException::withMessages(['blocks' => 'Images may only contain Text, List, Divider, Contact details or Legal Disclaimer.']);
-                    }
-                    if ($childType === 'list' && ($child['media_asset_id'] ?? null) !== null) {
-                        throw ValidationException::withMessages(['blocks' => 'Lists beside an image cannot contain another image.']);
+                        throw ValidationException::withMessages(['blocks' => 'Images may only contain Rich Text, Divider, Contact details or Legal Disclaimer.']);
                     }
                     if ($childType === 'contact') {
                         foreach ($child['children'] ?? [] as $contactChild) {
@@ -367,9 +316,6 @@ final class CustomPageSetting extends Model
                     throw ValidationException::withMessages(['blocks' => 'Text component headings must be short text.']);
                 }
                 $this->validateRichText($block['body'] ?? null, 'blocks.'.$blockIndex.'.body', $public);
-            }
-            if ($type === 'list') {
-                $this->validateListComponent($block, $blockIndex, $public);
             }
             if ($type === 'divider') {
                 $variant = $block['variant'] ?? 'thin';
@@ -452,58 +398,6 @@ final class CustomPageSetting extends Model
     }
 
     /** @param array<string, mixed> $block */
-    private function validateListComponent(array $block, int $blockIndex, bool $requirePublicMedia): void
-    {
-        $title = $block['title'] ?? null;
-        if ($title !== null && (! is_string($title) || mb_strlen($title) > 160)) {
-            throw ValidationException::withMessages(['blocks' => 'List component headings must be short text.']);
-        }
-
-        $mediaId = $block['media_asset_id'] ?? null;
-        if ($mediaId !== null) {
-            if (filter_var($mediaId, FILTER_VALIDATE_INT) === false) {
-                throw ValidationException::withMessages(['blocks' => 'List images must reference an image from Media.']);
-            }
-            /** @var MediaAsset|null $asset */
-            $asset = MediaAsset::query()->find((int) $mediaId);
-            if (! $asset instanceof MediaAsset || ! str_starts_with((string) $asset->getAttribute('mime_type'), 'image/')) {
-                throw ValidationException::withMessages(['blocks' => 'List images must reference an image from Media.']);
-            }
-            if ($requirePublicMedia) {
-                $alt = $asset->getAttribute('alt_text');
-                if ((string) $asset->getAttribute('state') !== 'available') {
-                    throw ValidationException::withMessages(['blocks' => 'Published list images must be available.']);
-                }
-                if (! is_string($alt) || trim($alt) === '') {
-                    throw ValidationException::withMessages(['blocks' => 'Published list images must have canonical ALT text in Media.']);
-                }
-            }
-        }
-
-        $items = $block['items'] ?? [];
-        if (! is_array($items) || ! array_is_list($items)) {
-            throw ValidationException::withMessages(['blocks' => 'List component entries must be ordered.']);
-        }
-
-        foreach ($items as $itemIndex => $item) {
-            if (! is_array($item)) {
-                throw ValidationException::withMessages(['blocks' => 'A list component entry is invalid.']);
-            }
-            if (! is_bool($item['published'] ?? true)) {
-                throw ValidationException::withMessages(['blocks' => 'List entry publication state must be boolean.']);
-            }
-            $itemTitle = $item['title'] ?? null;
-            if (! is_string($itemTitle) || trim($itemTitle) === '' || mb_strlen($itemTitle) > 240) {
-                throw ValidationException::withMessages(['blocks' => 'Each list entry requires a short title.']);
-            }
-            $this->validateRichText($item['body'] ?? null, 'blocks.'.$blockIndex.'.items.'.$itemIndex.'.body', $requirePublicMedia && self::listItemPublished($item));
-            if (isset($item['context']) && (! is_string($item['context']) || mb_strlen($item['context']) > 600)) {
-                throw ValidationException::withMessages(['blocks' => 'List entry context may not exceed 600 characters.']);
-            }
-        }
-    }
-
-    /** @param array<string, mixed> $block */
     private function validateContactComponent(array $block): void
     {
         $children = $this->normalizeContactChildren($block);
@@ -532,27 +426,6 @@ final class CustomPageSetting extends Model
                 }
             }
         }
-    }
-
-    /** @return list<array<string, mixed>> */
-    private function normalizeListItems(mixed $items): array
-    {
-        if (! is_array($items) || ! array_is_list($items)) {
-            return [];
-        }
-
-        return array_map(function (mixed $item): array {
-            if (! is_array($item)) {
-                return [];
-            }
-
-            return [
-                'published' => self::listItemPublished($item),
-                'title' => $this->nullableTrimmedString($item['title'] ?? null),
-                'context' => self::listItemContext($item),
-                'body' => self::listItemDetails($item),
-            ];
-        }, $items);
     }
 
     /** @param array<string, mixed> $block

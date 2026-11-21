@@ -88,51 +88,6 @@
                 </section>
             @endif
 
-            @if ($type === 'list')
-                @php
-                    $listAssetId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
-                    $listAsset = $listAssetId !== null ? $assets->get($listAssetId) : null;
-                    $listVariant = $listAsset !== null && $listAsset->getAttribute('state') === 'available'
-                        ? $media->thumbnailVariantForAsset($listAsset)
-                        : null;
-                @endphp
-                <section id="custom-page-component-{{ $imageBlockPrefix }}-{{ $blockIndex }}" class="custom-page__component">
-                    <div class="custom-page__list-layout{{ $listVariant !== null ? ' custom-page__list-layout--with-media' : '' }}">
-                        <div class="custom-page__copy">
-                            @if (filled($block['title'] ?? null))
-                                @if ($isHome)<h2>{{ $block['title'] }}</h2>@else<h3>{{ $block['title'] }}</h3>@endif
-                            @endif
-                            <div class="custom-page__list">
-                                @foreach (($block['items'] ?? []) as $itemIndex => $item)
-                                    @continue(! is_array($item) || (! $isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item)))
-                                    <article class="custom-page__list-item">
-                                        <div class="custom-page__list-line">
-                                            <strong>{{ $item['title'] ?? '' }}</strong>
-                                            @if (filled(\App\Models\CustomPageSetting::listItemContext($item)))
-                                                <span class="custom-page__context">{{ \App\Models\CustomPageSetting::listItemContext($item) }}</span>
-                                            @endif
-                                        </div>
-                                        @if (filled(\App\Models\CustomPageSetting::listItemDetails($item)))
-                                            <div class="rich-text">{!! $homeImageViewerEnabled ? $imageViewer->renderRichText((string) \App\Models\CustomPageSetting::listItemDetails($item), 'home-list-rich-'.$imageBlockPrefix.'-'.$blockIndex.'-'.$itemIndex) : $richText->render((string) \App\Models\CustomPageSetting::listItemDetails($item)) !!}</div>
-                                        @endif
-                                    </article>
-                                @endforeach
-                            </div>
-                        </div>
-                        @if ($listVariant !== null && $listAsset instanceof \App\Models\MediaAsset)
-                            <img
-                                class="custom-page__list-media"
-                                src="{{ $media->variantUrl($listVariant) }}"
-                                alt="{{ $media->altTextForAsset($listAsset) }}"
-                                loading="lazy"
-                                decoding="async"
-                                @if ($homeImageViewerEnabled) {!! $imageViewer->attributes('home-list-image-'.$imageBlockPrefix.'-'.$blockIndex, $media->originalUrlForAsset($listAsset), $media->altTextForAsset($listAsset)) !!} @endif
-                            >
-                        @endif
-                    </div>
-                </section>
-            @endif
-
             @if ($type === 'divider')
                 @php
                     $dividerVariant = is_string($block['variant'] ?? null)

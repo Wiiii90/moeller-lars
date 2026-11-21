@@ -21,14 +21,6 @@ trait CustomPageWorkspaceSecondaryForms
             $data['image_alignment'] = CustomPageSetting::imageAlignment($block);
             $data['video_controls_enabled'] = CustomPageSetting::videoControls($block);
         }
-        if (($block['type'] ?? null) === 'list') {
-            $data['items'] = array_map(static fn (array $item): array => [
-                'title' => $item['title'] ?? null,
-                'context' => CustomPageSetting::listItemContext($item),
-                'body' => CustomPageSetting::listItemDetails($item),
-                'published' => CustomPageSetting::listItemPublished($item),
-            ], array_values(array_filter($block['items'] ?? [], 'is_array')));
-        }
         if (($block['type'] ?? null) === 'contact') {
             $children = collect((new CustomPageSetting)->contactChildren($block))->keyBy('type');
             $email = $children->get('public_email');
@@ -77,13 +69,6 @@ trait CustomPageWorkspaceSecondaryForms
                 'published' => $published,
                 'title' => $data['title'] ?? null,
                 'body' => $data['body'] ?? null,
-            ],
-            'list' => [
-                'type' => 'list',
-                'published' => $published,
-                'title' => $data['title'] ?? null,
-                'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
-                'items' => is_array($data['items'] ?? null) ? array_values($data['items']) : (is_array($existing['items'] ?? null) ? array_values($existing['items']) : []),
             ],
             'divider' => [
                 'type' => 'divider',

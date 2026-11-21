@@ -5,7 +5,7 @@
                 @php
                     $metricRole = match ($metric['label']) {
                         'Components' => 'components',
-                        'Entries' => 'entries',
+                        'Rich Text' => 'entries',
                         'Media' => 'images',
                         'Visits' => 'visits',
                         'Views' => 'views',

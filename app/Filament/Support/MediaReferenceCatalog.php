@@ -569,14 +569,6 @@ final class MediaReferenceCatalog
                     ]);
                 }
 
-                if ($type === 'list' && is_numeric($mediaId) && (int) $mediaId > 0) {
-                    $this->appendReferenceRow($rows, (int) $mediaId, [
-                        'type' => 'Custom Page: '.$this->nodeLabel($node),
-                        'label' => 'List component image',
-                        'url' => $this->presentation->workspaceUrl($node),
-                    ]);
-                }
-
                 if ($type === 'text' && is_string($component['body'] ?? null)) {
                     $title = trim((string) ($component['title'] ?? ''));
                     foreach (RichTextMediaReference::ids($component['body']) as $richTextMediaId) {
@@ -588,21 +580,6 @@ final class MediaReferenceCatalog
                     }
                 }
 
-                if ($type === 'list' && is_array($component['items'] ?? null)) {
-                    foreach ($component['items'] as $item) {
-                        if (! is_array($item) || ! is_string($item['body'] ?? null)) {
-                            continue;
-                        }
-                        $itemTitle = trim((string) ($item['title'] ?? ''));
-                        foreach (RichTextMediaReference::ids($item['body']) as $richTextMediaId) {
-                            $this->appendReferenceRow($rows, $richTextMediaId, [
-                                'type' => 'Custom Page: '.$this->nodeLabel($node),
-                                'label' => $itemTitle === '' ? 'List item Rich Text' : 'List item Rich Text · '.$itemTitle,
-                                'url' => $this->presentation->workspaceUrl($node),
-                            ]);
-                        }
-                    }
-                }
             }
         }
 

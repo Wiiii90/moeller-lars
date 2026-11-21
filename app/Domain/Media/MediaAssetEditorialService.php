@@ -430,21 +430,8 @@ class MediaAssetEditorialService
             return null;
         }
 
-        if ($type === 'list' && is_numeric($component['media_asset_id'] ?? null)
-            && (int) $component['media_asset_id'] === $assetId) {
-            $component['media_asset_id'] = null;
-        }
-
         if ($type === 'text') {
             $component['body'] = $this->removeRichTextReference($component['body'] ?? null, $assetId);
-        }
-
-        if ($type === 'list' && is_array($component['items'] ?? null)) {
-            foreach ($component['items'] as $index => $item) {
-                if (is_array($item)) {
-                    $component['items'][$index]['body'] = $this->removeRichTextReference($item['body'] ?? null, $assetId);
-                }
-            }
         }
 
         if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true) && is_array($component['children'] ?? null)) {

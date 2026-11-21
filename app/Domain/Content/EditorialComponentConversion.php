@@ -18,7 +18,7 @@ final class EditorialComponentConversion
     {
         self::assertType($targetType);
 
-        $title = in_array($block['type'] ?? null, ['text', 'list', 'contact'], true)
+        $title = in_array($block['type'] ?? null, ['text', 'contact'], true)
             && is_string($block['title'] ?? null) ? $block['title'] : null;
         $published = CustomPageSetting::componentPublished($block);
 
@@ -26,7 +26,6 @@ final class EditorialComponentConversion
             'image' => ['type' => 'image', 'published' => $published, 'media_asset_id' => null, 'image_decorative' => false],
             'video' => ['type' => 'video', 'published' => $published, 'media_asset_id' => null, 'image_decorative' => false],
             'text' => ['type' => 'text', 'published' => $published, 'title' => $title, 'body' => null],
-            'list' => ['type' => 'list', 'published' => $published, 'title' => $title, 'media_asset_id' => null, 'items' => []],
             'divider' => ['type' => 'divider', 'published' => $published, 'variant' => 'thin'],
             'contact' => [
                 'type' => 'contact',

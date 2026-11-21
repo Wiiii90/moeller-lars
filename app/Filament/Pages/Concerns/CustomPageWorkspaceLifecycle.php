@@ -174,7 +174,7 @@ trait CustomPageWorkspaceLifecycle
 
         if (isset($target['child_index'])) {
             $this->imageChildAt($index, $target['child_index'], $type);
-            $this->mountAction($type === 'list' ? 'editImageChild' : 'editImageChildInstant', [
+            $this->mountAction('editImageChildInstant', [
                 'imageIndex' => $index,
                 'childIndex' => $target['child_index'],
                 'componentType' => $type,
@@ -184,7 +184,7 @@ trait CustomPageWorkspaceLifecycle
         }
 
         $this->componentAt($index, $type);
-        $this->mountAction($type === 'list' ? 'editListComponent' : 'editComponent', [
+        $this->mountAction('editComponent', [
             'componentIndex' => $index,
             'componentType' => $type,
         ]);

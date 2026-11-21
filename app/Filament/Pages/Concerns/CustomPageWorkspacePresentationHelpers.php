@@ -29,16 +29,6 @@ trait CustomPageWorkspacePresentationHelpers
 
             return ['primary' => $title !== '' ? $title : $body, 'secondary' => $title !== '' ? $body : '', 'meta' => ''];
         }
-        if ($type === 'list') {
-            $title = is_string($block['title'] ?? null) ? trim($block['title']) : '';
-            $items = is_array($block['items'] ?? null) ? array_values(array_filter($block['items'], 'is_array')) : [];
-
-            return [
-                'primary' => $title,
-                'secondary' => $imageName !== null ? 'Image: '.$imageName : '',
-                'meta' => count($items).' '.(count($items) === 1 ? 'entry' : 'entries'),
-            ];
-        }
         if ($type === 'divider') {
             $variant = is_string($block['variant'] ?? null) ? $block['variant'] : 'thin';
 
@@ -122,7 +112,7 @@ trait CustomPageWorkspacePresentationHelpers
     {
         $type = is_string($block['type'] ?? null) ? $block['type'] : '';
         $parts = [self::COMPONENT_LABELS[$type] ?? $type, CustomPageSetting::componentPublished($block) ? 'Published' : 'Unpublished'];
-        if (in_array($type, ['image', 'list'], true)) {
+        if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)) {
             $parts[] = $imageName;
         }
         if ($type === 'image') {
@@ -131,19 +121,10 @@ trait CustomPageWorkspacePresentationHelpers
                     continue;
                 }
                 $parts[] = $this->componentParentSearchText($settings, $child, null);
-                if (($child['type'] ?? null) === 'list') {
-                    foreach ($child['items'] ?? [] as $item) {
-                        if (is_array($item)) {
-                            $parts[] = ($item['title'] ?? '').' '.(CustomPageSetting::listItemContext($item) ?? '');
-                        }
-                    }
-                }
             }
         } elseif ($type === 'text') {
             $parts[] = $block['title'] ?? null;
             $parts[] = $block['body'] ?? null;
-        } elseif ($type === 'list') {
-            $parts[] = $block['title'] ?? null;
         } elseif ($type === 'divider') {
             $variant = is_string($block['variant'] ?? null) ? $block['variant'] : 'thin';
             $parts[] = self::DIVIDER_LABELS[$variant] ?? $variant;
