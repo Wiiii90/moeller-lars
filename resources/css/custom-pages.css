@@ -39,7 +39,8 @@
    Area content stays in the original Custom Page document, not a new Page. */
 .custom-page__grid {
     display: grid;
-    grid-template-columns: repeat(var(--custom-page-grid-columns, 2), minmax(0, 1fr));
+    --custom-page-grid-tracks: repeat(var(--custom-page-grid-columns, 2), minmax(0, 1fr));
+    grid-template-columns: var(--custom-page-grid-tracks);
     align-items: start;
     min-width: 0;
     gap: var(--custom-page-grid-gap, 1rem);
@@ -48,6 +49,8 @@
 .custom-page__grid--columns-2 { --custom-page-grid-columns: 2; }
 .custom-page__grid--columns-3 { --custom-page-grid-columns: 3; }
 .custom-page__grid--columns-4 { --custom-page-grid-columns: 4; }
+.custom-page__grid--layout-left-wide { --custom-page-grid-tracks: minmax(0, 13fr) minmax(0, 7fr); }
+.custom-page__grid--layout-right-wide { --custom-page-grid-tracks: minmax(0, 7fr) minmax(0, 13fr); }
 .custom-page__grid--gap-none { --custom-page-grid-gap: 0; }
 .custom-page__grid--gap-small { --custom-page-grid-gap: .5rem; }
 .custom-page__grid--gap-medium { --custom-page-grid-gap: 1.25rem; }

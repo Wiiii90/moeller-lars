@@ -70,6 +70,7 @@ trait CustomPageWorkspaceSecondaryForms
                 (int) ($data['rows'] ?? 1),
                 (string) ($data['gap'] ?? 'medium'),
                 $existing,
+                (string) ($data['column_layout'] ?? ($existing['column_layout'] ?? 'equal')),
             ),
             'text' => [
                 'type' => 'text',

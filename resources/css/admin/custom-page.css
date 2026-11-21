@@ -1,6 +1,7 @@
 /* Custom Page hierarchy and component presentation. Generic controls/actions live in shared admin modules. */
 
 .custom-page-layout-stage {
+    container-type: inline-size;
     display: grid;
     gap: .65rem;
     width: 100%;
@@ -17,13 +18,16 @@
 }
 .custom-page-layout-stage__cells {
     display: grid;
-    grid-template-columns: repeat(var(--stage-grid-columns, 2), minmax(0, 1fr));
+    --stage-grid-tracks: repeat(var(--stage-grid-columns, 2), minmax(0, 1fr));
+    grid-template-columns: var(--stage-grid-tracks);
     gap: .25rem;
 }
 .custom-page-layout-stage__cells--columns-1 { --stage-grid-columns: 1; }
 .custom-page-layout-stage__cells--columns-2 { --stage-grid-columns: 2; }
 .custom-page-layout-stage__cells--columns-3 { --stage-grid-columns: 3; }
 .custom-page-layout-stage__cells--columns-4 { --stage-grid-columns: 4; }
+.custom-page-layout-stage__cells--layout-left-wide { --stage-grid-tracks: minmax(0, 13fr) minmax(0, 7fr); }
+.custom-page-layout-stage__cells--layout-right-wide { --stage-grid-tracks: minmax(0, 7fr) minmax(0, 13fr); }
 .custom-page-layout-stage__cell {
     display: grid;
     gap: .15rem;
@@ -49,6 +53,23 @@
     min-width: 0;
     text-align: start;
     background: transparent;
+}
+.custom-page-layout-stage__member {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: .22rem .3rem;
+    border: 1px solid var(--admin-line);
+    border-radius: .15rem;
+    font-size: .7rem;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.custom-page-layout-stage__member:hover,
+.custom-page-layout-stage__member:focus-visible {
+    border-color: var(--admin-muted);
 }
 .custom-page-layout-stage__border {
     justify-self: start;

@@ -113,6 +113,15 @@ trait CustomPageWorkspaceForms
                 Select::make('rows')->label('Rows')->options(array_combine(
                     range(1, 12), array_map('strval', range(1, 12)),
                 ))->default(1)->required(),
+                Select::make('column_layout')->label('Column widths')
+                    ->options([
+                        'equal' => 'Equal',
+                        'left-wide' => 'Left 65% · Right 35%',
+                        'right-wide' => 'Left 35% · Right 65%',
+                    ])
+                    ->default('equal')
+                    ->visible(fn (Get $get): bool => (int) $get('columns') === 2)
+                    ->required(),
                 Select::make('gap')->label('Gap')->options([
                     'none' => 'None', 'small' => 'Small', 'medium' => 'Medium', 'large' => 'Large',
                 ])->default('medium')->required(),

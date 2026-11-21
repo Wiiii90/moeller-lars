@@ -9,15 +9,22 @@
                     {{ __('Edit') }}
                 </button>
             </div>
-            <div class="custom-page-layout-stage__cells custom-page-layout-stage__cells--columns-{{ $grid['columns'] }}">
+            <div class="custom-page-layout-stage__cells custom-page-layout-stage__cells--columns-{{ $grid['columns'] }} custom-page-layout-stage__cells--layout-{{ $grid['column_layout'] }}">
                 @foreach ($grid['areas'] as $area)
                     <div class="custom-page-layout-stage__cell">
                         <button class="custom-page-layout-stage__add" type="button"
                             wire:click="mountAction('addComponent', { layoutAreaId: '{{ $area['id'] }}' })"
                             title="Add content to this Grid area">
                             <strong>{{ __('Row') }} {{ $area['row'] }} · {{ __('Column') }} {{ $area['column'] }}</strong>
-                            <span>{{ $area['summary'] }}</span>
+                            <span>{{ count($area['members']) }} {{ count($area['members']) === 1 ? __('component') : __('components') }}</span>
                         </button>
+                        @foreach ($area['members'] as $member)
+                            <button class="custom-page-layout-stage__member" type="button"
+                                wire:click="mountAction('editComponent', { componentIndex: {{ $member['index'] }}, componentType: '{{ $member['type'] }}' })"
+                                title="Edit {{ $member['label'] }}">
+                                {{ $member['label'] }}
+                            </button>
+                        @endforeach
                         <button class="admin-action custom-page-layout-stage__border" type="button"
                             wire:click="mountAction('editGridArea', { gridIndex: {{ $grid['index'] }}, areaId: '{{ $area['id'] }}' })">
                             {{ __('Separator') }}

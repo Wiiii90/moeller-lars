@@ -33,6 +33,8 @@ final class CustomPageSetting extends Model
 
     public const GRID_GAPS = ['none', 'small', 'medium', 'large'];
 
+    public const GRID_COLUMN_LAYOUTS = ['equal', 'left-wide', 'right-wide'];
+
     /** One shared allowlist for media children in persistence, editing and sorting. */
     public const IMAGE_CHILD_TYPES = ['text', 'divider', 'contact', 'legal_disclaimer'];
 
@@ -146,9 +148,11 @@ final class CustomPageSetting extends Model
      * @param array<string, mixed>|null $existing
      * @return array<string, mixed>
      */
-    public static function gridBlock(bool $published, int $columns = 2, int $rows = 1, string $gap = 'medium', ?array $existing = null): array
+    public static function gridBlock(bool $published, int $columns = 2, int $rows = 1, string $gap = 'medium', ?array $existing = null, string $columnLayout = 'equal'): array
     {
-        if ($columns < 1 || $columns > 4 || $rows < 1 || $rows > 12 || ! in_array($gap, self::GRID_GAPS, true)) {
+        if ($columns < 1 || $columns > 4 || $rows < 1 || $rows > 12
+            || ! in_array($gap, self::GRID_GAPS, true)
+            || ! in_array($columnLayout, self::GRID_COLUMN_LAYOUTS, true)) {
             throw ValidationException::withMessages(['columns' => 'Choose one to four columns and one to twelve rows.']);
         }
 
@@ -165,6 +169,7 @@ final class CustomPageSetting extends Model
             'columns' => $columns,
             'rows' => $rows,
             'gap' => $gap,
+            'column_layout' => $columns === 2 ? $columnLayout : 'equal',
             'areas' => $areas,
         ];
     }
@@ -270,6 +275,7 @@ final class CustomPageSetting extends Model
                     'columns' => $block['columns'] ?? 2,
                     'rows' => $block['rows'] ?? 1,
                     'gap' => $block['gap'] ?? 'medium',
+                    'column_layout' => $block['column_layout'] ?? 'equal',
                     'areas' => $this->normalizedGridAreas($block),
                 ],
                 'text' => [
@@ -326,6 +332,11 @@ final class CustomPageSetting extends Model
         $columns = $block['columns'] ?? null;
         $rows = $block['rows'] ?? null;
         $gap = $block['gap'] ?? null;
+        $columnLayout = $block['column_layout'] ?? 'equal';
+        if (! in_array($columnLayout, self::GRID_COLUMN_LAYOUTS, true)
+            || ($columns !== 2 && $columnLayout !== 'equal')) {
+            throw ValidationException::withMessages(['blocks' => 'Grid column proportions are invalid.']);
+        }
         if (! is_string($id) || ! preg_match('/^[a-z0-9-]{8,64}$/i', $id)
             || ! is_int($columns) || $columns < 1 || $columns > 4
             || ! is_int($rows) || $rows < 1 || $rows > 12

@@ -167,6 +167,18 @@ trait CustomPageWorkspacePresentationHelpers
             foreach ($grid['areas'] as $areaIndex => $area) {
                 $members = array_values(array_filter($blocks, static fn (array $block): bool =>
                     ($block['layout_area_id'] ?? null) === ($area['id'] ?? null)));
+                $memberRows = [];
+                foreach ($blocks as $memberIndex => $member) {
+                    if (! is_array($member) || ($member['layout_area_id'] ?? null) !== ($area['id'] ?? null)) {
+                        continue;
+                    }
+                    $title = is_string($member['title'] ?? null) ? trim($member['title']) : '';
+                    $memberRows[] = [
+                        'index' => $memberIndex,
+                        'type' => (string) ($member['type'] ?? ''),
+                        'label' => $title !== '' ? $title : (self::COMPONENT_LABELS[$member['type']] ?? 'Component'),
+                    ];
+                }
                 $labels = array_map(static function (array $member): string {
                     $type = (string) ($member['type'] ?? '');
                     $title = is_string($member['title'] ?? null) ? trim($member['title']) : '';
@@ -179,9 +191,11 @@ trait CustomPageWorkspacePresentationHelpers
                     'column' => ($areaIndex % $columns) + 1,
                     'border' => $area['border'] ?? 'none',
                     'summary' => $labels === [] ? 'Empty' : implode(' · ', $labels),
+                    'members' => $memberRows,
                 ];
             }
             $grids[] = ['index' => $index, 'columns' => $columns,
+                'column_layout' => $grid['column_layout'] ?? 'equal',
                 'rows' => (int) $grid['rows'], 'areas' => $areas];
         }
 

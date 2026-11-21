@@ -12,9 +12,13 @@
             @endphp
             @continue(! $isPreview && ! $componentPublished)
 
+            @if (($block['layout_divider_before'] ?? 'none') !== 'none')
+                <div class="custom-page__divider custom-page__divider--{{ $block['layout_divider_before'] }}" aria-hidden="true"></div>
+            @endif
+
             @if ($type === 'grid')
                 <section id="custom-page-component-{{ $imageBlockPrefix }}-{{ $blockIndex }}"
-                    class="custom-page__component custom-page__grid custom-page__grid--columns-{{ $block['columns'] }} custom-page__grid--gap-{{ $block['gap'] }}"
+                    class="custom-page__component custom-page__grid custom-page__grid--columns-{{ $block['columns'] }} custom-page__grid--layout-{{ $block['column_layout'] ?? 'equal' }} custom-page__grid--gap-{{ $block['gap'] }}"
                     aria-label="Grid">
                     @foreach ($block['areas'] as $areaIndex => $area)
                         <div class="custom-page__grid-area custom-page__grid-area--border-{{ $area['border'] }}"
