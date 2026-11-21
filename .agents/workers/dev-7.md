@@ -2,9 +2,9 @@
 
 - **Branch:** `dev`
 - **Lease:** 37
-- **Status:** Active; General Legal Rich Text layout source-implemented; runtime/browser acceptance pending.
-- **Claimed scope:** General Admin and directly affected canonical Rich Text, legal rendering and inherited rights projection.
-- **Source baseline:** `a4ac971b43a2300cb87517ace003fd8fa3c8b51d`.
-- **Implemented:** Replace five plain Legal controls with five remembered shared Stage tabs presenting one visible Rich Text editor at a time. Keep original five persisted field identities, Help, saving, audits, notifications and publication ownership. Add explicit page-autosave dispatch to shared editor, safe Public legal Rich Text rendering and plain inherited copyright metadata; widen the copyright field without data loss in Working and Committed, update living rights workstream.
-- **Verification:** Source inspection and checked commit only. No database migration run, automatic tests, local runtime/browser, deployment or artist acceptance.
-- **Next:** Verify focused syntax and field bindings; run the migration only under an approved isolated Preview workflow; browser-check tab switch/focus loss/reopen, legacy content, Public legal sections, original versus Committed publication and rights metadata. Recheck lease 37 and HEAD before further writes.
+- **Status:** Active; screenshot-driven Legal editor repair source-prepared, browser acceptance pending.
+- **Claimed scope:** General Legal editor and the existing shared Stage tabs/Help and Rich Text visual frame.
+- **Current task:** Remove the obsolete 2×2 Legal textarea CSS and Filament wrapper spacing, suppress duplicate below-tab labels, retain original full help text as tab-attached bulbs, and style the real central Rich Text editor frame (including nested Filament root). Preserve the five persisted values, existing publication and inherited media rights; never replace or reset user-authored default copyright.
+- **Current baseline:** `daa99f0cac464637a8a05c23d8b846d72ee37c7b`.
+- **Verification:** Source-only review and guarded change. No executed browser test, runtime, migrations, CI or deployment.
+- **Next:** Inspect rendered panel width, editor border, five bulb hover/focus, missing-gap elimination, selected tab persistence and save/reopen with unchanged default copyright; check public Legal and plain media metadata separately. Recheck worker lease and current dev head before next write.

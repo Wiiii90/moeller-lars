@@ -595,12 +595,13 @@ final class General extends Page
 
                     Group::make([
                         View::make('filament.schemas.components.general-legal-switcher')
+                            ->viewData(['help' => self::legalTabHelp()])
                             ->columnSpanFull(),
-                        self::legalRichTextPane('default_media_copyright_notice', self::defaultCopyrightLabel(), 500, 'copyright'),
-                        self::legalRichTextPane('legal_imprint', self::imprintLabel(), 20000, 'imprint'),
-                        self::legalRichTextPane('legal_privacy', self::privacyLabel(), 20000, 'privacy'),
-                        self::legalRichTextPane('legal_usage_rights', self::usageRightsLabel(), 20000, 'usage'),
-                        self::legalRichTextPane('legal_disclaimer', self::externalLinksNoticeLabel(), 20000, 'links'),
+                        self::legalRichTextPane('default_media_copyright_notice', 'Default Copyright Notice', 500, 'copyright'),
+                        self::legalRichTextPane('legal_imprint', 'Imprint', 20000, 'imprint'),
+                        self::legalRichTextPane('legal_privacy', 'Privacy Policy', 20000, 'privacy'),
+                        self::legalRichTextPane('legal_usage_rights', 'Copyright & AI Use', 20000, 'usage'),
+                        self::legalRichTextPane('legal_disclaimer', 'External Links Notice', 20000, 'links'),
                     ])
                         ->columns(1)
                         ->extraAttributes([
@@ -779,10 +780,10 @@ final class General extends Page
             ->columnSpanFull();
     }
 
-    private static function legalRichTextPane(string $field, HtmlString $label, int $maxLength, string $pane): Group
+    private static function legalRichTextPane(string $field, string $label, int $maxLength, string $pane): Group
     {
         return Group::make([
-            ...AdminRichText::schema($field, $label, $maxLength, allowEmbeddedMedia: false, pageAutosave: true),
+            ...AdminRichText::schema($field, $label, $maxLength, allowEmbeddedMedia: false, pageAutosave: true, hideLabel: true),
         ])
             ->columns(1)
             ->extraAttributes([
@@ -1394,49 +1395,31 @@ final class General extends Page
         );
     }
 
-    private static function defaultCopyrightLabel(): HtmlString
+    /** All five original contextual help descriptions follow the tab names. */
+    private static function legalTabHelp(): array
     {
-        return self::helpLabel(
-            'Default copyright notice',
-            'About the default copyright notice',
-            'Used only for media that inherit the global copyright notice. Each asset can supply its own notice or explicitly use none. This does not automatically add a copyright line to Artwork detail pages.',
-        );
-    }
-
-    private static function imprintLabel(): HtmlString
-    {
-        return self::helpLabel(
-            'Imprint',
-            'About the imprint',
-            'Identify the actual website operator, a serviceable postal address, reliable contact details and any legally required registration information. Publish only verified operator information; the Legal Disclaimer page component controls public display.',
-        );
-    }
-
-    private static function privacyLabel(): HtmlString
-    {
-        return self::helpLabel(
-            'Privacy Policy',
-            'About the privacy policy',
-            'Describe verified processing of visitor data: hosting and access logs, contact messages and email delivery, enabled analytics, purposes, recipients, retention periods and applicable visitor rights. Check the real deployment and providers before publishing.',
-        );
-    }
-
-    private static function usageRightsLabel(): HtmlString
-    {
-        return self::helpLabel(
-            'Copyright & AI Use',
-            'About copyright and AI use',
-            'Distinguish rights in artworks from rights in photographs, explain permitted reuse and how to request a license, and state the intended terms for AI training and text/data mining. Do not claim rights or technical protections that have not been established.',
-        );
-    }
-
-    private static function externalLinksNoticeLabel(): HtmlString
-    {
-        return self::helpLabel(
-            'External Links Notice',
-            'About the external links notice',
-            'Optional factual notice for links to third-party sites, including that those sites have their own content and privacy practices. Avoid blanket liability waivers; the External Links Notice appears through a published Legal Disclaimer component.',
-        );
+        return [
+            'copyright' => [
+                'label' => 'About the default copyright notice',
+                'text' => 'Used only for media that inherit the global copyright notice. Each asset can supply its own notice or explicitly use none. This does not automatically add a copyright line to Artwork detail pages.',
+            ],
+            'imprint' => [
+                'label' => 'About the imprint',
+                'text' => 'Identify the actual website operator, a serviceable postal address, reliable contact details and any legally required registration information. Publish only verified operator information; the Legal Disclaimer page component controls public display.',
+            ],
+            'privacy' => [
+                'label' => 'About the privacy policy',
+                'text' => 'Describe verified processing of visitor data: hosting and access logs, contact messages and email delivery, enabled analytics, purposes, recipients, retention periods and applicable visitor rights. Check the real deployment and providers before publishing.',
+            ],
+            'usage' => [
+                'label' => 'About copyright and AI use',
+                'text' => 'Distinguish rights in artworks from rights in photographs, explain permitted reuse and how to request a license, and state the intended terms for AI training and text/data mining. Do not claim rights or technical protections that have not been established.',
+            ],
+            'links' => [
+                'label' => 'About the external links notice',
+                'text' => 'Optional factual notice for links to third-party sites, including that those sites have their own content and privacy practices. Avoid blanket liability waivers; the External Links Notice appears through a published Legal Disclaimer component.',
+            ],
+        ];
     }
 
     private static function regionalDatesLabel(): HtmlString

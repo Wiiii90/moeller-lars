@@ -412,6 +412,42 @@
     min-width: 0;
 }
 
+/* Tab Help is a sibling of the selection button, never nested inside it.
+ * Only switchers explicitly requesting Help use this composite tab item. */
+.admin-stage-tabs--with-help > .admin-stage-tabs__item {
+    display: flex;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 2rem;
+    align-items: center;
+    justify-content: center;
+    gap: .2rem;
+    border: 1px solid transparent;
+    border-radius: .2rem;
+}
+.admin-stage-tabs--with-help > .admin-stage-tabs__item:has(> .admin-action[aria-pressed="true"]) {
+    border-color: var(--admin-accent);
+    background: var(--admin-subtle);
+}
+.admin-stage-tabs--with-help > .admin-stage-tabs__item > .admin-action {
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 2rem;
+    padding: .38rem 0;
+    color: var(--admin-text);
+    font: inherit;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+.admin-stage-tabs--with-help > .admin-stage-tabs__item > .admin-action:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: -2px;
+}
+.admin-stage-tabs--with-help > .admin-stage-tabs__item .admin-help {
+    flex: none;
+}
+
 /* Stage tool rows and optional tab tools share the same separator baseline
  * and .admin-action grammar; ordinary Dashboard/Storage tabs are unchanged. */
 .admin-stage-tool-row {

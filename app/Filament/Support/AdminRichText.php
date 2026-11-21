@@ -19,6 +19,7 @@ final class AdminRichText
         bool $allowEmbeddedMedia = true,
         bool $required = false,
         bool $pageAutosave = false,
+        bool $hideLabel = false,
     ): array {
         $toolbar = [
             ['bold', 'italic', 'underline', 'strike', 'subscript', 'superscript', 'link'],
@@ -60,6 +61,10 @@ final class AdminRichText
             // The frame and visual styles belong to the editor's actual root.
             // Parent field wrappers own form layout, not component appearance.
             ->extraAttributes(['class' => 'admin-rich-text-editor-frame admin-rich-text--visual']);
+
+        if ($hideLabel) {
+            $editor->hiddenLabel();
+        }
 
         if ($allowEmbeddedMedia) {
             $editor->resizableImages();

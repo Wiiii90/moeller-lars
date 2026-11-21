@@ -5,6 +5,7 @@
     'ariaLabel' => 'Stage view',
     'externalState' => null,
     'rememberedState' => [],
+    'paneHelp' => [],
 ])
 
 @php
@@ -15,7 +16,7 @@
 @endphp
 
 <div
-    class="admin-stage-tabs admin-stage-switcher @if ($externalState !== null) admin-stage-tabs--inline @endif @isset($tools) admin-stage-tabs--with-tools @endisset"
+    class="admin-stage-tabs admin-stage-switcher @if ($externalState !== null) admin-stage-tabs--inline @endif @if ($paneHelp !== []) admin-stage-tabs--with-help @endif @isset($tools) admin-stage-tabs--with-tools @endisset"
     role="group"
     aria-label="{{ $ariaLabel }}"
     {{ $attributes }}
@@ -58,6 +59,9 @@
     }"
 >
     @foreach ($normalizedPanes as $value => $label)
+        @if (isset($paneHelp[$value]))
+            <span class="admin-stage-tabs__item">
+        @endif
         <button
             class="admin-action"
             type="button"
@@ -72,6 +76,10 @@
                 x-bind:aria-pressed="({{ $externalState }} === @js($value)).toString()"
             @endif
         >{{ $label }}</button>
+        @if (isset($paneHelp[$value]))
+                <x-admin.help :label="$paneHelp[$value]['label']" :text="$paneHelp[$value]['text']" />
+            </span>
+        @endif
     @endforeach
     @isset($tools)
         <span class="admin-control-separator admin-stage-tabs__separator" aria-hidden="true"></span>

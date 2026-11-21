@@ -473,7 +473,7 @@
 /* One square, complete frame on the Filament RichEditor root.
    Other admin input fields keep their intentionally underlined controls.
    The root class is set by AdminRichText for every shared editor. */
-.fi-fo-rich-editor.admin-rich-text-editor-frame {
+:is(.fi-fo-rich-editor.admin-rich-text-editor-frame, .admin-rich-text-editor-frame .fi-fo-rich-editor) {
     border: 1px solid var(--admin-line-strong);
     border-radius: 0;
     background: transparent;
@@ -481,7 +481,7 @@
     box-shadow: none;
 }
 
-.fi-fo-rich-editor.admin-rich-text-editor-frame:focus-within {
+:is(.fi-fo-rich-editor.admin-rich-text-editor-frame, .admin-rich-text-editor-frame .fi-fo-rich-editor):focus-within {
     border-color: var(--admin-control-border-focus, var(--admin-accent));
 }
 

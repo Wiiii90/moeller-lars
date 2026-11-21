@@ -10,4 +10,5 @@
     ]"
     aria-label="Legal section"
     external-state="legalTab"
+    :pane-help="$help"
 />
