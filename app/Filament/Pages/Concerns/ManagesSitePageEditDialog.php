@@ -382,7 +382,8 @@ trait ManagesSitePageEditDialog
         }
 
         $parentId = (int) $value;
-        if (! SiteSection::query()->whereKey($parentId)->whereNull('parent_id')->exists()) {
+        $parent = SiteSection::query()->find($parentId);
+        if (! $parent instanceof SiteSection || ! $parent->canContainSitePages()) {
             throw ValidationException::withMessages(['parent_id' => 'The parent must be a top-level page.']);
         }
 

@@ -238,7 +238,7 @@ final class SiteSectionOrderService
 
         /** @var SiteSection|null $parent */
         $parent = SiteSection::query()->whereKey($parentSectionId)->lockForUpdate()->first();
-        if (! $parent instanceof SiteSection || $parent->getAttribute('parent_id') !== null) {
+        if (! $parent instanceof SiteSection || ! $parent->canContainSitePages()) {
             throw ValidationException::withMessages(['parent_id' => 'The parent must be a top-level page.']);
         }
 

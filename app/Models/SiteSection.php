@@ -144,7 +144,7 @@ final class SiteSection extends Model
                 if (! $parent instanceof self) {
                     throw ValidationException::withMessages(['parent_id' => 'The selected parent site node does not exist.']);
                 }
-                if ($parent->getAttribute('parent_id') !== null) {
+                if (! $parent->canContainSitePages()) {
                     throw ValidationException::withMessages(['parent_id' => 'The parent must be a top-level page.']);
                 }
                 if ($section->exists && self::query()->where('parent_id', $section->getKey())->exists()) {
@@ -195,6 +195,12 @@ final class SiteSection extends Model
     public function isHome(): bool
     {
         return (bool) $this->getAttribute('is_home');
+    }
+
+    /** Only ordinary top-level pages can receive one level of child pages. */
+    public function canContainSitePages(): bool
+    {
+        return ! $this->isHome() && $this->getAttribute('parent_id') === null;
     }
 
     public function journalTemplate(): ?JournalTemplate

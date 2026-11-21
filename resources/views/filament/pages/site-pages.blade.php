@@ -177,13 +177,13 @@
                                         'journalTemplateOptions' => $journalTemplateOptions,
                                     ])
 
-                                    @if ($section['children'] !== [] || $reorderEnabled)
+                                    @if ($section['children'] !== [] || ($reorderEnabled && ! $section['is_home']))
                                         <div class="admin-hierarchy__children{{ $section['children'] === [] && $reorderEnabled ? ' admin-pages__empty-child-parent' : '' }}">
                                             <div
                                                 class="admin-hierarchy__children-rows{{ $section['children'] === [] && $reorderEnabled ? ' admin-pages__empty-child-rows' : '' }}"
                                                 role="rowgroup"
                                                 aria-label="Child pages under {{ $section['title'] }}"
-                                                @if ($reorderEnabled)
+                                                @if ($reorderEnabled && ! $section['is_home'])
                                                     data-drop-target="true"
                                                     wire:sort="sortSection"
                                                     @if ($section['children'] === [])
@@ -194,7 +194,7 @@
                                                 @endif
                                             >
                                                 @foreach ($section['children'] as $child)
-                                                    <div wire:key="site-page-child-{{ $child['id'] }}" @if ($reorderEnabled) wire:sort:item="{{ $child['id'] }}" @endif>
+                                                    <div wire:key="site-page-child-{{ $child['id'] }}" @if ($reorderEnabled && ! $section['is_home']) wire:sort:item="{{ $child['id'] }}" @endif>
                                                         @include('filament.pages.partials.site-section-row', [
                                                             'section' => $child,
                                                             'reorderEnabled' => $reorderEnabled,

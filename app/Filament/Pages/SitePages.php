@@ -636,7 +636,8 @@ final class SitePages extends Page
         }
 
         $parentId = (int) $this->newPageParent;
-        if (! SiteSection::query()->whereKey($parentId)->whereNull('parent_id')->exists()) {
+        $parent = SiteSection::query()->find($parentId);
+        if (! $parent instanceof SiteSection || ! $parent->canContainSitePages()) {
             throw ValidationException::withMessages(['parent_id' => 'The parent must be a top-level page.']);
         }
 
@@ -702,8 +703,10 @@ final class SitePages extends Page
         }
 
         $this->parentOptions = [];
-        foreach ($allGroups as $group) {
-            $this->parentOptions[(int) $group['id']] = (string) ($group['navigation_label'] ?: $group['title']);
+        foreach ($topLevel as $parent) {
+            if ($parent->canContainSitePages()) {
+                $this->parentOptions[(int) $parent->getKey()] = $this->sectionLabel($parent);
+            }
         }
 
         // Match public navigation eligibility while retaining hidden editorial rows.
