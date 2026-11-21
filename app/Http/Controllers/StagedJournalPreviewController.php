@@ -39,7 +39,9 @@ final class StagedJournalPreviewController extends Controller
         $template = $page->journalTemplate();
         abort_unless($template instanceof JournalTemplate && $template->value === ($snapshot['template'] ?? null), 404);
         $form = is_array($snapshot['form'] ?? null) ? $snapshot['form'] : [];
-        $usages = $this->mediaUsages($form);
+        $settings = JournalSetting::forSection($page);
+        $defaultVideoControls = (bool) ($settings->getAttribute('default_video_controls_enabled') ?? true);
+        $usages = $this->mediaUsages($form, $defaultVideoControls);
         $title = trim((string) ($form['title'] ?? ''));
         $title = $title !== '' ? $title : ($template === JournalTemplate::Blog ? 'Untitled post' : 'Untitled exhibition');
 
@@ -124,14 +126,14 @@ final class StagedJournalPreviewController extends Controller
     }
 
     /** @param array<string,mixed> $form */
-    private function mediaUsages(array $form): Collection
+    private function mediaUsages(array $form, bool $defaultVideoControls): Collection
     {
         $rows = [];
         if (filled($form['cover_media_asset_id'] ?? null)) {
             $rows[] = [
                 'role' => JournalEntryMedia::ROLE_COVER,
                 'media_asset_id' => $form['cover_media_asset_id'],
-                'video_controls_enabled' => $form['cover_video_controls_enabled'] ?? true,
+                'video_controls_enabled' => $defaultVideoControls,
             ];
         }
         foreach (is_array($form['gallery_images'] ?? null) ? $form['gallery_images'] : [] as $row) {
@@ -139,7 +141,7 @@ final class StagedJournalPreviewController extends Controller
                 $rows[] = [
                     'role' => JournalEntryMedia::ROLE_GALLERY,
                     'media_asset_id' => $row['media_asset_id'],
-                    'video_controls_enabled' => $row['video_controls_enabled'] ?? true,
+                    'video_controls_enabled' => $defaultVideoControls,
                 ];
             }
         }

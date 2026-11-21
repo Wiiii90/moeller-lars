@@ -6,6 +6,9 @@ use App\Domain\Media\MediaPreviewVariant;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\PublicMedia;
 use App\Models\JournalEntryMedia;
+use App\Models\JournalSetting;
+use App\Models\Exhibition;
+use App\Models\BlogPost;
 use App\Models\MediaAsset;
 use Illuminate\Support\HtmlString;
 use LogicException;
@@ -16,6 +19,31 @@ final class JournalMediaRenderer
         private readonly PublicMedia $media,
         private readonly PublicImageViewer $viewer,
     ) {}
+
+    /** @var array<string, bool> */
+    private array $videoControlsDefaultsByOwner = [];
+
+    /** Only new (unoverridden) media need a Journal setting lookup. */
+    private function journalVideoControlsDefault(JournalEntryMedia $usage): bool
+    {
+        $isExhibition = $usage->getAttribute('exhibition_id') !== null;
+        $ownerId = (int) ($usage->getAttribute($isExhibition ? 'exhibition_id' : 'blog_post_id') ?? 0);
+        if ($ownerId <= 0) {
+            return true;
+        }
+
+        $ownerKey = ($isExhibition ? 'exhibition:' : 'blog:').$ownerId;
+        if (! array_key_exists($ownerKey, $this->videoControlsDefaultsByOwner)) {
+            $sectionId = $isExhibition
+                ? Exhibition::query()->whereKey($ownerId)->value('site_section_id')
+                : BlogPost::query()->whereKey($ownerId)->value('site_section_id');
+            $saved = $sectionId === null ? null : JournalSetting::query()
+                ->where('site_section_id', $sectionId)->value('default_video_controls_enabled');
+            $this->videoControlsDefaultsByOwner[$ownerKey] = $saved === null ? true : (bool) $saved;
+        }
+
+        return $this->videoControlsDefaultsByOwner[$ownerKey];
+    }
 
     public function inheritsDefaultNotice(JournalEntryMedia $usage): bool
     {
@@ -70,11 +98,13 @@ final class JournalMediaRenderer
             : '';
 
         $dimensions = $width > 0 && $height > 0 ? ' width="'.$width.'" height="'.$height.'"' : '';
+        $videoControls = $isVideo
+            && ($usage->videoControlsOverride() ?? $this->journalVideoControlsDefault($usage));
         $element = $isVideo
             ? '<video src="'.e($this->media->originalUrlForAsset($asset)).'" aria-label="'.e($alt).'"'.$viewerAttributes
                 .($posterUrl !== null ? ' poster="'.e($posterUrl).'"' : '')
                 .($posterVariant !== null ? ' width="'.(int) $posterVariant->getAttribute('width').'" height="'.(int) $posterVariant->getAttribute('height').'"' : '')
-                .($manualVideoPlayback || $usage->videoControlsEnabled() ? ' controls' : '')
+                .($videoControls ? ' controls' : '')
                 .($manualVideoPlayback
                     ? ' playsinline preload="metadata"'
                     : ' muted loop playsinline preload="metadata" data-public-loop-video')

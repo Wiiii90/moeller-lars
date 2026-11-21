@@ -585,17 +585,20 @@ final class JournalWorkspace extends Page
         $gallery = AdminControl::select('default_gallery_presentation')
             ->label('Default gallery presentation')->options($galleryOptions)->required();
         $viewer = AdminControl::toggle('default_image_viewer_enabled', 'Enlarge images on click by default');
+        $videoControls = AdminControl::toggle('default_video_controls_enabled', 'Show video playback controls by default');
         $galleryEnabled = AdminControl::toggle('default_gallery_enabled', 'Enable exhibition gallery by default');
         $vernissage = AdminControl::toggle('default_show_vernissage', 'Show vernissage until it begins by default');
 
         if ($stage) {
             $gallery->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_gallery_presentation', $state));
             $viewer->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_image_viewer_enabled', (bool) $state));
+            $videoControls->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_video_controls_enabled', (bool) $state));
             $galleryEnabled->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_gallery_enabled', (bool) $state));
             $vernissage->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_show_vernissage', (bool) $state));
         }
         $fields[] = $gallery->columnSpanFull();
         $fields[] = $viewer->columnSpanFull();
+        $fields[] = $videoControls->columnSpanFull();
         if ($this->journalTemplate() === JournalTemplate::Exhibitions) {
             $fields[] = $galleryEnabled->columnSpanFull();
             $fields[] = $vernissage->columnSpanFull();

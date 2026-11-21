@@ -36,13 +36,13 @@ final class JournalEntryMediaService
             ->values()
             ->map(fn (JournalEntryMedia $usage): array => [
                 'media_asset_id' => (int) $usage->getAttribute('media_asset_id'),
-                'video_controls_enabled' => $usage->videoControlsEnabled(),
+                'video_controls_enabled' => $usage->videoControlsChoice(),
             ])
             ->all();
 
         return [
             'cover_media_asset_id' => $cover instanceof JournalEntryMedia ? (int) $cover->getAttribute('media_asset_id') : null,
-            'cover_video_controls_enabled' => $cover instanceof JournalEntryMedia ? $cover->videoControlsEnabled() : true,
+            'cover_video_controls_enabled' => $cover instanceof JournalEntryMedia ? $cover->videoControlsChoice() : 'inherit',
             'gallery_images' => $gallery,
         ];
     }
@@ -339,12 +339,12 @@ final class JournalEntryMediaService
         $this->assertMediaReady($mediaAssetId, 'cover_media_asset_id');
         $controls = array_key_exists('cover_video_controls_enabled', $data)
             ? $this->validatedVideoControls($data['cover_video_controls_enabled'], 'cover_video_controls_enabled')
-            : ($existing?->videoControlsEnabled() ?? true);
+            : $existing?->videoControlsOverride();
 
         if ($current->count() === 1
             && (int) $existing->getAttribute('media_asset_id') === $mediaAssetId
             && (int) $existing->getAttribute('position') === 0) {
-            if ($existing->videoControlsEnabled() === $controls) {
+            if ($existing->videoControlsOverride() === $controls) {
                 return false;
             }
 
@@ -393,7 +393,7 @@ final class JournalEntryMediaService
                 : null;
             $controls = array_key_exists('video_controls_enabled', $row)
                 ? $this->validatedVideoControls($row['video_controls_enabled'], 'gallery_images')
-                : ($previous?->videoControlsEnabled() ?? true);
+                : $previous?->videoControlsOverride();
 
             $desired[] = [
                 'media_asset_id' => $mediaAssetId,
@@ -414,7 +414,7 @@ final class JournalEntryMediaService
             $changed = false;
             foreach ($current->values() as $index => $usage) {
                 $controls = $desired[$index]['video_controls_enabled'];
-                if ($usage->videoControlsEnabled() === $controls) {
+                if ($usage->videoControlsOverride() === $controls) {
                     continue;
                 }
 
@@ -442,16 +442,25 @@ final class JournalEntryMediaService
         return true;
     }
 
-    private function validatedVideoControls(mixed $value, string $field): bool
+    private function validatedVideoControls(mixed $value, string $field): ?bool
     {
-        if (! is_bool($value)) {
-            throw ValidationException::withMessages([$field => 'Choose whether video playback controls are shown.']);
+        // Preserve compatibility with existing domain callers while the
+        // canonical editor uses the explicit three-way choice.
+        if (is_bool($value) || $value === null) {
+            return $value;
         }
 
-        return $value;
+        return match ($value) {
+            'show' => true,
+            'hide' => false,
+            'inherit' => null,
+            default => throw ValidationException::withMessages([
+                $field => 'Choose Journal default, Show or Hide for video playback controls.',
+            ]),
+        };
     }
 
-    private function createUsage(BlogPost|Exhibition $entry, int $mediaAssetId, string $role, int $position, bool $controls = true): void
+    private function createUsage(BlogPost|Exhibition $entry, int $mediaAssetId, string $role, int $position, ?bool $controls = null): void
     {
         $usage = new JournalEntryMedia;
         $usage->fill([

@@ -24,9 +24,26 @@ final class JournalEntryMedia extends Model
         return ['video_controls_enabled' => 'boolean'];
     }
 
-    public function videoControlsEnabled(): bool
+    /** A NULL value inherits the Journal setting; explicit choices override it. */
+    public function videoControlsOverride(): ?bool
     {
-        return $this->getAttribute('video_controls_enabled') !== false;
+        $value = $this->getAttribute('video_controls_enabled');
+
+        return $value === null ? null : (bool) $value;
+    }
+
+    public function videoControlsChoice(): string
+    {
+        return match ($this->videoControlsOverride()) {
+            true => 'show',
+            false => 'hide',
+            null => 'inherit',
+        };
+    }
+
+    public function videoControlsEnabled(bool $journalDefault = true): bool
+    {
+        return $this->videoControlsOverride() ?? $journalDefault;
     }
 
     public function blogPost(): BelongsTo

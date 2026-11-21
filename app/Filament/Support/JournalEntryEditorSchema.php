@@ -44,7 +44,7 @@ final class JournalEntryEditorSchema
     public static function staged(Schema $schema, JournalTemplate $template): Schema
     {
         $fields = $template === JournalTemplate::Exhibitions
-            ? self::basicsFields($template)
+            ? self::basicsFields($template, stage: true)
             : [
                 self::title(),
                 MediaAssetSelect::makeId('cover_media_asset_id', __('Cover image'), imagesOnly: true)
@@ -68,7 +68,7 @@ final class JournalEntryEditorSchema
                 ->schema(AdminRichText::schema('description', __('Text'), 50000, allowEmbeddedMedia: true, pageAutosave: true))
                 ->collapsible()->collapsed()->columnSpanFull();
             $fields[] = AdminForm::section(__('Exhibition gallery'))
-                ->schema(self::exhibitionGalleryFields())
+                ->schema(self::exhibitionGalleryFields(stage: true))
                 ->collapsible()->collapsed()->columnSpanFull();
         } else {
             $fields[] = AdminForm::section(__('Excerpt'))
@@ -77,7 +77,7 @@ final class JournalEntryEditorSchema
             $fields[] = AdminForm::section(__('Text'))
                 ->schema(AdminRichText::schema('body', __('Text'), 50000, allowEmbeddedMedia: true, pageAutosave: true))
                 ->collapsible()->collapsed()->columnSpanFull();
-            $fields[] = self::gallerySection()->collapsible()->collapsed()->columnSpanFull();
+            $fields[] = self::gallerySection(stage: true)->collapsible()->collapsed()->columnSpanFull();
             $fields[] = AdminControl::select('stage_publication_mode', 'On submit')
                 ->options(['publish' => 'Publish', 'schedule' => 'Schedule', 'draft' => 'Save draft'])
                 ->default('publish')->live()->required()->columnSpanFull();
@@ -118,7 +118,7 @@ final class JournalEntryEditorSchema
         return AdminForm::section(__('Basics'))->schema(self::basicsFields($template))->columns(['md' => 2]);
     }
 
-    private static function basicsFields(JournalTemplate $template): array
+    private static function basicsFields(JournalTemplate $template, bool $stage = false): array
     {
         $schema = [
             self::title(),
@@ -139,8 +139,8 @@ final class JournalEntryEditorSchema
 
         $schema[] = $cover->nullable()->columnSpanFull();
 
-        if ($template === JournalTemplate::Exhibitions) {
-            $schema[] = self::videoControlsToggle('cover_video_controls_enabled')->columnSpanFull();
+        if ($template === JournalTemplate::Exhibitions && ! $stage) {
+            $schema[] = self::videoControlsChoice('cover_video_controls_enabled')->columnSpanFull();
         }
 
         if ($template === JournalTemplate::Blog) {
@@ -204,7 +204,7 @@ final class JournalEntryEditorSchema
         ];
     }
 
-    private static function gallerySection(): mixed
+    private static function gallerySection(bool $stage = false): mixed
     {
         return AdminForm::section(__('Gallery'))->schema([
             Select::make('gallery_presentation')
@@ -219,7 +219,7 @@ final class JournalEntryEditorSchema
                 ->disableOptionWhen(static fn (string $value, Get $get): bool => self::carouselOptionDisabled($value, $get))
                 ->default('sequence')
                 ->required(),
-            self::galleryImages(),
+            self::galleryImages(stage: $stage),
         ]);
     }
 
@@ -241,9 +241,9 @@ final class JournalEntryEditorSchema
         }
     }
 
-    private static function exhibitionGalleryFields(): array
+    private static function exhibitionGalleryFields(bool $stage = false): array
     {
-        $images = self::galleryImages(table: true);
+        $images = self::galleryImages(table: true, stage: $stage);
         $images
             ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
             ->dehydrated(fn (Get $get): bool => (bool) $get('gallery_enabled'));
@@ -306,14 +306,20 @@ final class JournalEntryEditorSchema
         ]);
     }
 
-    private static function videoControlsToggle(string $name): Toggle
+    /** Each media entry can inherit the Journal's playback setting or override it. */
+    private static function videoControlsChoice(string $name): Select
     {
-        return Toggle::make($name)
-            ->label(__('Show video playback controls'))
-            ->default(true);
+        return AdminControl::select($name, 'Show video playback controls')
+            ->options([
+                'inherit' => 'Use Journal setting',
+                'show' => 'Show',
+                'hide' => 'Hide',
+            ])
+            ->default('inherit')
+            ->required();
     }
 
-    private static function galleryImages(bool $table = false): Repeater
+    private static function galleryImages(bool $table = false, bool $stage = false): Repeater
     {
         $onMediaChanged = static function (mixed $state, Get $get, Set $set): void {
             self::reconcileCarouselEditor($state, $get, $set);
@@ -328,7 +334,7 @@ final class JournalEntryEditorSchema
                         __('Image or video'),
                         allowedMimeTypes: [...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES],
                     )->required()->live(),
-                    self::videoControlsToggle('video_controls_enabled'),
+                    ...($stage ? [] : [self::videoControlsChoice('video_controls_enabled')]),
                 ])
                 ->addActionLabel(__('Add media'))
                 ->reorderableWithButtons()
@@ -341,7 +347,9 @@ final class JournalEntryEditorSchema
         return AdminTableRepeater::make('gallery_images')
             ->label(__('Gallery media'))
             ->hiddenLabel()
-            ->table([TableColumn::make(__('Image or video')), TableColumn::make(__('Video controls'))])
+            ->table($stage
+                ? [TableColumn::make(__('Image or video'))]
+                : [TableColumn::make(__('Image or video')), TableColumn::make(__('Video controls'))])
             ->compact()
             ->schema([
                 MediaAssetSelect::makeId(
@@ -361,18 +369,20 @@ final class JournalEntryEditorSchema
                             $livewire->callMountedAction();
                         }
                     }),
-                self::videoControlsToggle('video_controls_enabled')
-                    ->hiddenLabel()
-                    ->visible(static function (Get $get): bool {
-                        $assetId = filter_var($get('media_asset_id'), FILTER_VALIDATE_INT);
+                ...($stage ? [] : [
+                    self::videoControlsChoice('video_controls_enabled')
+                        ->hiddenLabel()
+                        ->visible(static function (Get $get): bool {
+                            $assetId = filter_var($get('media_asset_id'), FILTER_VALIDATE_INT);
 
-                        return $assetId !== false
-                            && $assetId > 0
-                            && MediaAsset::query()
-                                ->whereKey((int) $assetId)
-                                ->whereIn('mime_type', MediaTypePolicy::VIDEO_MIME_TYPES)
-                                ->exists();
-                    }),
+                            return $assetId !== false
+                                && $assetId > 0
+                                && MediaAsset::query()
+                                    ->whereKey((int) $assetId)
+                                    ->whereIn('mime_type', MediaTypePolicy::VIDEO_MIME_TYPES)
+                                    ->exists();
+                        }),
+                ]),
             ])
             ->addActionLabel(__('Add media'))
             ->reorderableWithButtons()

@@ -109,6 +109,7 @@ final class JournalSettingsService
                 'default_image_viewer_enabled' => ['required', 'boolean'],
                 'default_gallery_enabled' => ['required', 'boolean'],
                 'default_show_vernissage' => ['required', 'boolean'],
+                'default_video_controls_enabled' => ['required', 'boolean'],
             ])->validate();
 
             $setting->fill($values);
@@ -134,6 +135,7 @@ final class JournalSettingsService
             'default_image_viewer_enabled' => (bool) $setting->getAttribute('default_image_viewer_enabled'),
             'default_gallery_enabled' => (bool) $setting->getAttribute('default_gallery_enabled'),
             'default_show_vernissage' => (bool) $setting->getAttribute('default_show_vernissage'),
+            'default_video_controls_enabled' => (bool) ($setting->getAttribute('default_video_controls_enabled') ?? true),
         ];
     }
 
