@@ -43,6 +43,15 @@
     text-transform: uppercase;
 }
 
+/* Keep accepted Chrome autofill suggestions without the browser's
+ * blue-grey filled rectangle obscuring the canonical Admin input surface. */
+.admin-control-field .fi-input:is(:-webkit-autofill, :autofill) {
+    -webkit-box-shadow: 0 0 0 1000px var(--admin-control-popover-surface) inset !important;
+    box-shadow: 0 0 0 1000px var(--admin-control-popover-surface) inset !important;
+    -webkit-text-fill-color: var(--admin-text) !important;
+    caret-color: var(--admin-text);
+}
+
 /* Sole owner of ordinary Filament input chrome. RichEditor also has the
  * framework's fi-input-wrp class but owns a complete frame instead. */
 .admin-control-field .fi-input-wrp:not(.fi-fo-rich-editor) {
@@ -1020,19 +1029,13 @@
     min-height: var(--admin-control-height);
     align-items: center;
 }
-/* Native text and select elements have different browser padding and line
- * boxes. Normalize their content box so each displayed value shares the same
- * vertical center and left inset inside the existing compact panel rows. */
-.admin-option-panel--compact-rows .admin-option-panel__body .fi-fo-field :is(
-    input.fi-input,
-    select.fi-select-input
-) {
-    box-sizing: border-box;
-    height: var(--admin-control-height);
+/* Compact panels use the ordinary Filament Select trigger. Its own
+ * value and chevron share a center axis without browser-native text offsets. */
+.admin-option-panel--compact-rows .admin-option-panel__body .fi-select-input-btn {
+    display: flex;
+    width: 100%;
     min-height: var(--admin-control-height) !important;
-    padding-block: 0 !important;
-    padding-inline-start: var(--admin-control-text-inset) !important;
-    line-height: 1.25 !important;
+    align-items: center;
 }
 
 /* Opt-in style for an already framed panel: the parent contour supplies the
