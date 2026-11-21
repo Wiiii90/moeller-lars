@@ -9,6 +9,7 @@ use App\Http\Controllers\PublicMediaController;
 use App\Http\Controllers\PublicSeoController;
 use App\Http\Controllers\PublicSiteSectionController;
 use App\Http\Controllers\StagedArtworkPreviewController;
+use App\Http\Controllers\StagedJournalPreviewController;
 use App\Http\Middleware\EnforcePublicSiteGate;
 use App\Http\Middleware\ProtectArtistPreview;
 use Illuminate\Support\Facades\Route;
@@ -49,6 +50,8 @@ Route::middleware(ProtectArtistPreview::class)
             ->name('media.variant');
         Route::get('/gallery-stage/{gallery}/{token}', [StagedArtworkPreviewController::class, 'show'])
             ->whereNumber('gallery')->where('token', '[A-Za-z0-9]+')->name('gallery.staged-artwork');
+        Route::get('/journal-stage/{section}/{token}', [StagedJournalPreviewController::class, 'show'])
+            ->whereNumber('section')->where('token', '[A-Za-z0-9]+')->name('journal.staged-entry');
         Route::get('/artworks/{slug}', [PublicArtworkController::class, 'show'])->name('artworks.show');
         Route::get('/journal-entries/{slug}', [PublicSiteSectionController::class, 'homeJournalEntry'])
             ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')

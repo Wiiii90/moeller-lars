@@ -7,6 +7,7 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\RegionalFormats;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Pages\JournalWorkspace;
+use App\Filament\Support\Controls\AdminControl;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
@@ -34,6 +35,43 @@ final class JournalEntryEditorSchema
     public static function exhibition(Schema $schema, ?Exhibition $exhibition = null): Schema
     {
         return self::entry($schema, JournalTemplate::Exhibitions, $exhibition);
+    }
+
+    /** The Stage reuses the canonical Journal fields in collapsible editor groups. */
+    public static function staged(Schema $schema, JournalTemplate $template): Schema
+    {
+        $fields = [...self::basicsFields($template)];
+
+        if ($template === JournalTemplate::Exhibitions) {
+            $fields[] = self::dateFields()[0];
+            $fields[] = Grid::make()->columns(['default' => 1, 'sm' => 2])->schema([
+                AdminControl::text('organizer', 'Organizer')->maxLength(240),
+                AdminControl::text('venue', 'Venue')->maxLength(240),
+            ])->columnSpanFull();
+            $fields[] = AdminForm::section(__('Description'))
+                ->schema(AdminRichText::schema('description', __('Text'), 50000, allowEmbeddedMedia: true, pageAutosave: true))
+                ->collapsible()->collapsed()->columnSpanFull();
+            $fields[] = AdminForm::section(__('Exhibition gallery'))
+                ->schema(self::exhibitionGalleryFields())
+                ->collapsible()->collapsed()->columnSpanFull();
+        } else {
+            $fields[] = AdminForm::section(__('Excerpt'))
+                ->schema(AdminRichText::schema('excerpt', __('Excerpt'), 1000, allowEmbeddedMedia: false, pageAutosave: true))
+                ->collapsible()->collapsed()->columnSpanFull();
+            $fields[] = AdminForm::section(__('Text'))
+                ->schema(AdminRichText::schema('body', __('Text'), 50000, allowEmbeddedMedia: true, pageAutosave: true))
+                ->collapsible()->collapsed()->columnSpanFull();
+            $fields[] = self::gallerySection()->collapsible()->collapsed()->columnSpanFull();
+            $fields[] = AdminControl::select('stage_publication_mode', 'On submit')
+                ->options(['publish' => 'Publish', 'schedule' => 'Schedule', 'draft' => 'Save draft'])
+                ->default('publish')->live()->required()->columnSpanFull();
+            $fields[] = DateTimePicker::make('stage_scheduled_at')
+                ->label(__('Publish at'))->seconds(false)->native(false)->nullable()
+                ->visible(fn (Get $get): bool => $get('stage_publication_mode') === 'schedule')
+                ->columnSpanFull();
+        }
+
+        return $schema->components($fields)->columns(['default' => 1]);
     }
 
     private static function entry(Schema $schema, JournalTemplate $template, ?Exhibition $exhibition = null): Schema

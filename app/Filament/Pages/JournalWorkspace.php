@@ -18,6 +18,7 @@ use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
+use App\Filament\Pages\Concerns\JournalWorkspaceStage;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
@@ -49,6 +50,8 @@ use Throwable;
 
 final class JournalWorkspace extends Page
 {
+    use JournalWorkspaceStage;
+
     #[Locked]
     public array $journalSettingsOriginal = [];
 
@@ -131,6 +134,7 @@ final class JournalWorkspace extends Page
         $this->loadJournalContext($siteSection);
         $this->reloadEntries();
         $this->refreshJournalStageSettings();
+        $this->restoreStagedJournalDrafts();
     }
 
     public function getView(): string
@@ -322,6 +326,9 @@ final class JournalWorkspace extends Page
 
     public function journalStagePreviewUrl(): ?string
     {
+        if ($this->journalStagePanel === 'staged' && $this->selectedStagedJournalDraftKey !== null) {
+            return route('preview.journal.staged-entry', ['section' => $this->sectionId, 'token' => $this->getId()]);
+        }
         if ($this->journalPreviewAutoFocus && $this->journalPreviewFocusedEntryId !== null) {
             $rows = $this->journalTemplate() === JournalTemplate::Blog ? $this->posts : $this->exhibitions;
             foreach ($rows as $row) {
@@ -337,6 +344,10 @@ final class JournalWorkspace extends Page
 
     public function journalStagePreviewTitle(): string
     {
+        if ($this->journalStagePanel === 'staged' && $this->selectedStagedJournalDraftKey !== null) {
+            return $this->journalTemplate() === JournalTemplate::Blog
+                ? 'Interactive staged Blog preview' : 'Interactive staged Exhibition preview';
+        }
         if ($this->journalPreviewAutoFocus && $this->journalPreviewFocusedEntryId !== null) {
             return $this->journalTemplate() === JournalTemplate::Blog
                 ? 'Interactive Blog post preview'
