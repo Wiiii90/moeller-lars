@@ -40,7 +40,16 @@ final class JournalEntryEditorSchema
     /** The Stage reuses the canonical Journal fields in collapsible editor groups. */
     public static function staged(Schema $schema, JournalTemplate $template): Schema
     {
-        $fields = [...self::basicsFields($template)];
+        $fields = $template === JournalTemplate::Exhibitions
+            ? self::basicsFields($template)
+            : [
+                self::title(),
+                MediaAssetSelect::makeId('cover_media_asset_id', __('Cover image'), imagesOnly: true)
+                    ->placeholder(__('No cover image'))->nullable()->columnSpanFull(),
+                self::imageViewerField(),
+            ];
+        // Unfinished Stage drafts may be saved without a title.
+        $fields[0]->required(false)->columnSpanFull();
 
         if ($template === JournalTemplate::Exhibitions) {
             $fields[] = self::dateFields()[0];

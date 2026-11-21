@@ -109,7 +109,7 @@
                             </button>
                             <button class="admin-action is-success" type="button" wire:click="submitAllStagedJournalDrafts"
                                 wire:loading.attr="disabled" wire:target="submitStagedJournalDraft,submitAllStagedJournalDrafts">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::SubmitAll->value()" />
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::SubmitAll->value" />
                                 <span class="gallery-stage__action-label">Submit All</span>
                             </button>
                         </div>
