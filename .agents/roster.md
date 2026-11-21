@@ -1,6 +1,6 @@
 # Dev workstream — branch-local coordination
 
-**Next lease token:** 37
+**Next lease token:** 38
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
@@ -12,6 +12,7 @@
 
 | Dev Worker 6 | 32 | Active — Hero-only regular Gallery Edit dialog, shared source-member table and corrected action/Stage rails source-implemented; runtime/browser acceptance pending | Hero Artworks source actions/Stage and named shared table action variant; coordinate Gallery/editor overlap with Dev Worker 4 | [dev-6.md](workers/dev-6.md) |
 
+| Dev Worker 7 | 37 | Active — General Admin Page source orientation pending; no feature edits authorized yet | General Admin appearance, settings and related presentation; coordinate shared Stage and controls with other Dev workers | [dev-7.md](workers/dev-7.md) |
 | Dev Worker 10 | 26 | Active — rights-processing Validation readiness and completion | Media rights preparation/delivery pipeline, queue-worker integration requirements, current Validation activation evidence and safe rollout handoff; no deployments or artist-data changes without explicit approval | [dev-10.md](workers/dev-10.md) |
 
 Only activated Dev workers receive a row and their own `.agents/workers/dev-N.md` record. This roster belongs exclusively to `dev` and must never receive Docs, Testing or Refactor worker entries. Follow the [shared worker protocol](README.md) for atomic registration, takeover and lease updates.
