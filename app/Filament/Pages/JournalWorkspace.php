@@ -214,14 +214,17 @@ final class JournalWorkspace extends Page
             return;
         }
         $post = $this->post((int) $id);
-        if (app(JournalEntryOrderService::class)->moveToPosition($post, $position)) {
-            $this->refreshJournalPreview();
+        $changed = app(JournalEntryOrderService::class)->moveToPosition($post, $position);
+        if ($changed) {
             app(AdminNotifier::class)->notification(
                 title: 'Journal order updated',
                 status: 'success',
             );
         }
         $this->loadPosts(false);
+        if ($changed) {
+            $this->syncJournalPreviewFocus(forceRefresh: true);
+        }
     }
 
     public function sortExhibition(int|string $id, int $position): void
@@ -230,14 +233,17 @@ final class JournalWorkspace extends Page
             return;
         }
         $entry = $this->exhibition((int) $id);
-        if (app(JournalEntryOrderService::class)->moveToPosition($entry, $position)) {
-            $this->refreshJournalPreview();
+        $changed = app(JournalEntryOrderService::class)->moveToPosition($entry, $position);
+        if ($changed) {
             app(AdminNotifier::class)->notification(
                 title: 'Exhibition order updated',
                 status: 'success',
             );
         }
         $this->loadExhibitions(false);
+        if ($changed) {
+            $this->syncJournalPreviewFocus(forceRefresh: true);
+        }
     }
 
     private function validSortEntryId(int|string $id): bool
@@ -358,7 +364,7 @@ final class JournalWorkspace extends Page
         $changed = $this->journalPreviewFocusedEntryId !== $next;
         $this->journalPreviewFocusedEntryId = $next;
 
-        if ($this->journalPreviewAutoFocus && ($changed || $forceRefresh)) {
+        if (($this->journalPreviewAutoFocus && $changed) || $forceRefresh) {
             $this->refreshJournalPreview();
         }
     }
@@ -376,26 +382,32 @@ final class JournalWorkspace extends Page
 
     public function movePost(int $id, string $direction): void
     {
-        if (app(BlogEditorialService::class)->move($this->post($id), $direction)) {
-            $this->refreshJournalPreview();
+        $changed = app(BlogEditorialService::class)->move($this->post($id), $direction);
+        if ($changed) {
             app(AdminNotifier::class)->notification(
                 title: 'Journal order updated',
                 status: 'success',
             );
         }
         $this->loadPosts(false);
+        if ($changed) {
+            $this->syncJournalPreviewFocus(forceRefresh: true);
+        }
     }
 
     public function moveExhibition(int $id, string $direction): void
     {
-        if (app(ExhibitionEditorialService::class)->move($this->exhibition($id), $direction)) {
-            $this->refreshJournalPreview();
+        $changed = app(ExhibitionEditorialService::class)->move($this->exhibition($id), $direction);
+        if ($changed) {
             app(AdminNotifier::class)->notification(
                 title: 'Exhibition order updated',
                 status: 'success',
             );
         }
         $this->loadExhibitions(false);
+        if ($changed) {
+            $this->syncJournalPreviewFocus(forceRefresh: true);
+        }
     }
 
     public function publishPost(int $id): void
@@ -448,7 +460,7 @@ final class JournalWorkspace extends Page
             $this->notifyBatch('posts reordered', $ok, $failed);
             $this->loadPosts(false);
             if ($ok > 0) {
-                $this->refreshJournalPreview();
+                $this->syncJournalPreviewFocus(forceRefresh: true);
             }
 
             return;
@@ -461,7 +473,7 @@ final class JournalWorkspace extends Page
         $this->notifyBatch('exhibitions reordered', $ok, $failed);
         $this->loadExhibitions(false);
         if ($ok > 0) {
-            $this->refreshJournalPreview();
+            $this->syncJournalPreviewFocus(forceRefresh: true);
         }
     }
 
@@ -585,7 +597,13 @@ final class JournalWorkspace extends Page
                         ?? app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::JOURNAL)),
                 );
                 if ($before !== $updated->only(['template', 'title', 'navigation_label', 'slug']) || $publishChanged) {
-                    $this->refreshJournalPreview();
+                    if ($templateChanged || $before['slug'] !== $updated->getAttribute('slug')) {
+                        // A changed Journal route must replace the old Preview URL.
+                        $this->dispatch('admin-live-preview-updated',
+                            url: $this->journalPreviewUrl, title: 'Interactive Journal preview');
+                    } else {
+                        $this->syncJournalPreviewFocus(forceRefresh: true);
+                    }
                     $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Journal settings saved',
@@ -619,7 +637,7 @@ final class JournalWorkspace extends Page
                     return;
                 }
                 $this->loadPosts();
-                $this->refreshJournalPreview();
+                $this->syncJournalPreviewFocus(forceRefresh: true);
                 app(AdminNotifier::class)->notification(
                     title: $autoPublish ? 'Post published' : 'Post draft created',
                     status: 'success',
@@ -659,7 +677,7 @@ final class JournalWorkspace extends Page
                 $changed = $before !== $this->journalEntryMutationState($updated);
                 $this->loadPosts(false);
                 if ($changed) {
-                    $this->refreshJournalPreview();
+                    $this->syncJournalPreviewFocus(forceRefresh: true);
                     $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Post saved',
@@ -720,7 +738,7 @@ final class JournalWorkspace extends Page
                     return;
                 }
                 $this->loadExhibitions();
-                $this->refreshJournalPreview();
+                $this->syncJournalPreviewFocus(forceRefresh: true);
                 app(AdminNotifier::class)->notification(
                     title: $autoPublish ? 'Exhibition published' : 'Exhibition created',
                     status: 'success',
@@ -747,7 +765,7 @@ final class JournalWorkspace extends Page
         $this->entryEditorOriginal['record']['updated_at'] = $saved['updated_at'];
 
         $this->loadExhibitions(false);
-        $this->refreshJournalPreview();
+        $this->syncJournalPreviewFocus(forceRefresh: true);
         app(AdminNotifier::class)->notification(
             title: __('Exhibition visibility updated'),
             status: 'success',
@@ -790,7 +808,7 @@ final class JournalWorkspace extends Page
                 $changed = $before !== $this->journalEntryMutationState($updated);
                 $this->loadExhibitions(false);
                 if ($changed) {
-                    $this->refreshJournalPreview();
+                    $this->syncJournalPreviewFocus(forceRefresh: true);
                     $this->forceRender();
                     app(AdminNotifier::class)->notification(
                         title: 'Exhibition saved',
@@ -1280,14 +1298,13 @@ final class JournalWorkspace extends Page
 
     private function runEntryAction(string $successTitle, BlogPost|Exhibition $entry, callable $action): void
     {
+        $changed = false;
         try {
             $before = $this->journalEntryMutationState($entry);
             $updated = $action($entry);
-            if (
-                ($updated instanceof BlogPost || $updated instanceof Exhibition)
-                && $before !== $this->journalEntryMutationState($updated)
-            ) {
-                $this->refreshJournalPreview();
+            $changed = ($updated instanceof BlogPost || $updated instanceof Exhibition)
+                && $before !== $this->journalEntryMutationState($updated);
+            if ($changed) {
                 app(AdminNotifier::class)->notification(
                     title: $successTitle,
                     status: 'success',
@@ -1297,6 +1314,9 @@ final class JournalWorkspace extends Page
             $this->notifyValidationFailure('Journal entry unchanged', $exception);
         }
         $this->reloadEntries();
+        if ($changed) {
+            $this->syncJournalPreviewFocus(forceRefresh: true);
+        }
     }
 
     private function runPostBatch(string $label, callable $action): void
@@ -1306,7 +1326,7 @@ final class JournalWorkspace extends Page
         $this->notifyBatch($label, $ok, $failed);
         $this->loadPosts();
         if ($ok > 0) {
-            $this->refreshJournalPreview();
+            $this->syncJournalPreviewFocus(forceRefresh: true);
         }
     }
 

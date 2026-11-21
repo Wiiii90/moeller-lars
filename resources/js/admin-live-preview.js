@@ -86,7 +86,22 @@ export function adminLivePreview(element) {
             this.saveDevicePreference()
             this.changeViewport()
         },
+        // The iframe element's src does not track navigation inside Public.
+        // Read only same-origin private-preview destinations as current targets.
+        viewedPreviewUrl() {
+            try {
+                const value = new URL(this.$refs.frame?.contentWindow?.location.href)
+                if (value.origin === window.location.origin
+                    && (value.pathname === '/preview' || value.pathname.startsWith('/preview/'))) {
+                    return value.toString()
+                }
+            } catch (_) {
+                // An unloaded or cross-origin frame has no readable local URL.
+            }
+            return null
+        },
         onFrameLoad() {
+            this.currentUrl = this.viewedPreviewUrl() || this.currentUrl
             this.scheduleFit()
             this.bindFrameShortcuts()
             this.scheduleDiagnostics()
@@ -536,10 +551,11 @@ export function adminLivePreview(element) {
                 return
             }
 
-            // Gallery selections can change the URL without remounting the
-            // preview's device/zoom state; Appearance edits reload the current.
+            // A Gallery/Journal selection names its target explicitly. With
+            // Auto-focus off, refresh the actual navigated Public preview,
+            // rather than the iframe element's outdated initial src.
             const source = typeof detail?.url === 'string' && detail.url !== ''
-                ? detail.url : frame.src
+                ? detail.url : (this.viewedPreviewUrl() || frame.src)
             if (typeof detail?.title === 'string' && detail.title !== '') frame.title = detail.title
             const url = new URL(source, window.location.origin)
             url.searchParams.set('_appearance', Date.now().toString())
