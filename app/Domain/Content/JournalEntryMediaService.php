@@ -16,6 +16,8 @@ use LogicException;
 
 final class JournalEntryMediaService
 {
+    private const CAROUSEL_MINIMUM_ITEMS = 3;
+
     public function __construct(
         private readonly SafeRichTextRenderer $richText,
         private readonly PublicMedia $publicMedia,
@@ -66,20 +68,76 @@ final class JournalEntryMediaService
     }
 
     /**
-     * A Carousel needs at least three persisted gallery entries. The common
-     * media owner reconciles the presentation after edits and asset removal;
-     * callers save the changed entry inside their existing transaction.
+     * Predict the same Carousel -> Slideshow transition that is enforced
+     * after media removal. A bulk Storage deletion supplies all selected
+     * asset IDs, so its confirmation shows the combined impact.
+     *
+     * @param list<int> $removedAssetIds
+     * @return array{before:int,after:int}|null
+     */
+    public function carouselFallbackAfterRemoving(BlogPost|Exhibition $entry, array $removedAssetIds): ?array
+    {
+        if ($entry->getAttribute('gallery_presentation') !== 'carousel') {
+            return null;
+        }
+
+        $mediaIds = $entry->mediaUsages()
+            ->where('role', JournalEntryMedia::ROLE_GALLERY)
+            ->pluck('media_asset_id')
+            ->map(static fn (mixed $id): int => (int) $id);
+
+        $before = $mediaIds->count();
+        $after = $removedAssetIds === []
+            ? $before
+            : $mediaIds->reject(static fn (int $id): bool => in_array($id, $removedAssetIds, true))->count();
+
+        return $after < self::CAROUSEL_MINIMUM_ITEMS
+            ? ['before' => $before, 'after' => $after]
+            : null;
+    }
+
+    /**
+     * A Carousel needs at least three persisted Gallery entries. Both the
+     * deletion preview and this mutation use the same minimum and predicate.
      */
     public function reconcileCarouselPresentation(BlogPost|Exhibition $entry): bool
     {
-        if ($entry->getAttribute('gallery_presentation') !== 'carousel'
-            || $entry->mediaUsages()->where('role', JournalEntryMedia::ROLE_GALLERY)->count() >= 3) {
+        if ($this->carouselFallbackAfterRemoving($entry, []) === null) {
             return false;
         }
 
         $entry->setAttribute('gallery_presentation', 'slideshow');
 
         return true;
+    }
+
+    /**
+     * Preview the publication-state consequence of removing a Blog's last
+     * Rich Text media. The same empty-body rule is enforced during deletion.
+     *
+     * @param list<int> $removedAssetIds
+     */
+    public function blogRichTextStateAfterRemoving(BlogPost $post, array $removedAssetIds): ?string
+    {
+        $state = (string) $post->getAttribute('state');
+        if (! in_array($state, ['published', 'scheduled'], true)) {
+            return null;
+        }
+
+        $body = (string) ($post->getAttribute('body') ?? '');
+        if ($body === '') {
+            return null;
+        }
+
+        foreach ($removedAssetIds as $id) {
+            $body = RichTextMediaReference::remove($body, $id);
+        }
+
+        if ($body !== '') {
+            return null;
+        }
+
+        return $state === 'published' ? 'unpublished' : 'draft';
     }
 
     public function assertPublicReady(BlogPost|Exhibition $entry): void
@@ -204,12 +262,13 @@ final class JournalEntryMediaService
             return null;
         }
 
+        $nextState = $this->blogRichTextStateAfterRemoving($post, [$assetId]);
         $clean = RichTextMediaReference::remove($source, $assetId);
         $state = (string) $post->getAttribute('state');
 
         $post->setAttribute('body', $clean === '' ? null : $clean);
-        if ($clean === '' && in_array($state, ['published', 'scheduled'], true)) {
-            $post->setAttribute('state', $state === 'published' ? 'unpublished' : 'draft');
+        if ($nextState !== null) {
+            $post->setAttribute('state', $nextState);
             $post->setAttribute('scheduled_at', null);
         }
         $post->save();

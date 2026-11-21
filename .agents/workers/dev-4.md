@@ -2,7 +2,7 @@
 
 **Lease:** 31
 **Branch:** dev
-**State:** Active — Storage media deletion offers per-primary-Artwork delete checkboxes with user default; retained Artworks stay in their Galleries, Journal carousel reconciliation verified; source and DB migration awaiting runtime acceptance.
+**State:** Active — Storage delete confirmation now reports plural Artwork references and Journal presentation/publication effects from canonical services; source awaiting browser acceptance.
 
 ## Current assignment and ownership
 
@@ -76,6 +76,14 @@
 - **Journal edge case validated:** `JournalEntryMediaService::detachAsset()` normalizes remaining positions and calls `reconcileCarouselPresentation()` when a Carousel has fewer than three gallery entries; switches to Slideshow. Deleting the last relevant Rich Text body media can unpublish a published Blog (or draft a scheduled one); Custom Page Image components with children explicitly fail closed to preserve nested content. The media-delete transaction must roll back if any reference cannot be safely removed.
 - **Files:** `MediaAssetEditorialService.php`, `MediaDeletionOptions.php`, `MediaReferenceCatalog.php`, `ListMediaAssets.php`, `ArtworkDraftService` caller in Gallery actions, Stage Discard caller, `User.php`, a single new users preference migration, retired confirmation partials, Dev skill and worker notes.
 - **Acceptance not claimed:** No local PHP/Laravel runtime, Playwright, tests/CI or deploy. Manual testing required for single/bulk/preview delete, multiple Artworks sharing one media, unchecked Gallery draft retention and position, selected Artwork deletion and position compaction, Journal carousel 3→2 downgrade, Custom Page with children refusal, Committed/media cleanup, and preference restore across logins. Migration must be applied in target environment before using the feature. Testing worker updates regression tests; Dev does not edit test sources.
+
+## Storage deletion confirmation: plurality and Journal effects (2026-11-21)
+
+- **Artist request:** A reference-scoped primary Artwork checkbox must not misleadingly assume a single Artwork when a file belongs to several. Show "Also delete Artwork(s)" for multiple primary Artwork references and singular wording otherwise. Journal automatic changes must appear directly alongside the affected reference in both individual and bulk Storage confirmation.
+- **One effects owner:** `JournalEntryMediaService::carouselFallbackAfterRemoving()` computes the same under-three Gallery-image predicate used by `reconcileCarouselPresentation()`, including combined media IDs for bulk delete. `JournalEntryMediaService::blogRichTextStateAfterRemoving()` is shared by the Blog Rich Text mutation and confirmation preview for a last-media deletion that unpublishes a published Blog or returns a scheduled Blog to Draft.
+- **One reference owner:** `MediaReferenceCatalog::references($asset, ?array $deletingAssetIds)` optionally enriches reference rows with `impact` for Storage deletion confirmation. Ordinary Storage inventory remains unchanged, without expensive effects calculations. Catalogue references retain distinct Journal/Artwork identities and the Custom Page Image/Video split merged from the concurrently updated dev HEAD. The existing `ListMediaAssets::deletionReferenceFields()` renders an impact line alongside the existing row, with its existing checkbox for primary Artworks only.
+- **Single/Bulk consistency:** Both single and Preview Delete pass the asset ID; bulk Delete selected passes the complete selected asset ID set to form schema, pre-filled reference snapshots and preflight validation before any mutation. Impact changes are therefore detected by the existing snapshot check. No new saved state or second deletion service.
+- **Acceptance pending:** Browser review must confirm 3→2 Carousel→Slideshow warning, 4→3 no warning, combined 4→2 bulk warning on both affected references, a fully emptied published/scheduled Blog state warning, absence of Journal checkbox, and per-asset plurality when one Storage file has multiple primary Artworks. Check shared-media duplicates and replacement Gallery Hero references after the Custom Page Image/Video changes. No PHP runtime, Livewire, browser tests, CI or deploy performed by Dev Worker 4.
 
 ## Verification and outstanding acceptance
 

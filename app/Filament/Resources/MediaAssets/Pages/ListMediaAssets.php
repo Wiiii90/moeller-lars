@@ -363,7 +363,7 @@ final class ListMediaAssets extends Page
                     $optionsById[$id] = $this->deletionOptionsFromConfirmedForm($asset, [
                         'reference_snapshot' => $data['reference_snapshots'][$id] ?? null,
                         'delete_artworks' => $data['delete_artworks'][$id] ?? [],
-                    ]);
+                    ], $ids);
                 }
 
                 $service = app(MediaAssetEditorialService::class);
@@ -1026,7 +1026,7 @@ final class ListMediaAssets extends Page
      */
     private function deleteAssetSchema(MediaAsset $asset): array
     {
-        $references = $this->assetReferences($asset);
+        $references = $this->assetReferences($asset, [(int) $asset->getKey()]);
         $schema = [
             Text::make($references === []
                 ? 'The file and generated variants will be removed.'
@@ -1049,16 +1049,29 @@ final class ListMediaAssets extends Page
     private function deletionReferenceFields(array $references, string $checkboxPath): array
     {
         $fields = [];
+        $artworkIds = array_unique(array_filter(
+            array_column($references, 'primary_artwork_id'),
+            static fn (mixed $id): bool => is_int($id) && $id > 0,
+        ));
+        $artworkCheckboxLabel = count($artworkIds) > 1
+            ? 'Also delete Artwork(s)'
+            : 'Also delete Artwork';
+
         foreach ($references as $reference) {
             $row = [
                 Text::make(new HtmlString(
                     '<strong>'.e($reference['type']).'</strong> <span>'.e($reference['label']).'</span>',
                 )),
             ];
+
+            if (is_string($reference['impact'] ?? null) && $reference['impact'] !== '') {
+                $row[] = Text::make('Effect: '.$reference['impact']);
+            }
+
             $artworkId = $reference['primary_artwork_id'] ?? null;
             if (is_int($artworkId) && $artworkId > 0) {
                 $row[] = Checkbox::make($checkboxPath.'.'.$artworkId)
-                    ->label('Also delete this Artwork');
+                    ->label($artworkCheckboxLabel);
             }
             $fields[] = Group::make($row);
         }
@@ -1078,7 +1091,7 @@ final class ListMediaAssets extends Page
             if (! $asset instanceof MediaAsset) {
                 continue;
             }
-            $references = $this->assetReferences($asset);
+            $references = $this->assetReferences($asset, $ids);
             $row = [
                 Text::make(new HtmlString('<strong>'.e((string) $asset->getAttribute('original_filename')).'</strong>')),
             ];
@@ -1107,7 +1120,7 @@ final class ListMediaAssets extends Page
             if (! $asset instanceof MediaAsset) {
                 continue;
             }
-            $form = $this->deleteAssetFormData($asset);
+            $form = $this->deleteAssetFormData($asset, $ids);
             $choices[$id] = $form['delete_artworks'];
             $snapshots[$id] = $form['reference_snapshot'];
         }
@@ -1128,9 +1141,9 @@ final class ListMediaAssets extends Page
     }
 
     /** @return array<string, mixed> */
-    private function deleteAssetFormData(MediaAsset $asset): array
+    private function deleteAssetFormData(MediaAsset $asset, ?array $deletingAssetIds = null): array
     {
-        $references = $this->assetReferences($asset);
+        $references = $this->assetReferences($asset, $deletingAssetIds ?? [(int) $asset->getKey()]);
         $default = (bool) auth()->user()?->getAttribute('storage_delete_related_artworks');
         $checked = [];
         foreach ($references as $reference) {
@@ -1153,9 +1166,9 @@ final class ListMediaAssets extends Page
      *
      * @param array<string, mixed> $data
      */
-    private function deletionOptionsFromConfirmedForm(MediaAsset $asset, array $data): MediaDeletionOptions
+    private function deletionOptionsFromConfirmedForm(MediaAsset $asset, array $data, ?array $deletingAssetIds = null): MediaDeletionOptions
     {
-        $references = $this->assetReferences($asset);
+        $references = $this->assetReferences($asset, $deletingAssetIds ?? [(int) $asset->getKey()]);
         $snapshot = $data['reference_snapshot'] ?? null;
         if (! is_string($snapshot)
             || ! hash_equals($this->referenceSnapshot($references), $snapshot)) {
@@ -1237,12 +1250,12 @@ final class ListMediaAssets extends Page
     }
 
     /** @return list<array{type:string,label:string,url:?string,primary_artwork_id?:?int}> */
-    private function assetReferences(MediaAsset $asset): array
+    private function assetReferences(MediaAsset $asset, ?array $deletingAssetIds = null): array
     {
         $catalog = app(MediaReferenceCatalog::class);
         $catalog->loadAssetReferences($asset);
 
-        return $catalog->references($asset);
+        return $catalog->references($asset, $deletingAssetIds);
     }
 
     private function previewDialogData(array $arguments): array

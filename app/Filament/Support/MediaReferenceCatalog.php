@@ -4,6 +4,7 @@ namespace App\Filament\Support;
 
 use App\Domain\Content\GalleryTemplate;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\JournalEntryMediaService;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\MediaReferenceQuery;
@@ -32,6 +33,7 @@ final class MediaReferenceCatalog
     public function __construct(
         private readonly SiteNodePresentation $presentation,
         private readonly MediaReferenceQuery $referenceQuery,
+        private readonly JournalEntryMediaService $journalMedia,
     ) {}
 
     /** @return list<array{label:string,options:list<array{value:string,label:string}>}> */
@@ -192,8 +194,14 @@ final class MediaReferenceCatalog
         ]);
     }
 
-    /** @return list<array{type:string,label:string,url:?string,artwork_id?:int,primary_artwork_id?:?int}> */
-    public function references(MediaAsset $asset): array
+    /**
+     * A deletion preview supplies its complete selected asset IDs. Normal
+     * Storage listings omit them and do not compute deletion consequences.
+     *
+     * @param list<int>|null $deletingAssetIds
+     * @return list<array<string,mixed>>
+     */
+    public function references(MediaAsset $asset, ?array $deletingAssetIds = null): array
     {
         $rows = [];
         $kind = MediaTypePolicy::kind((string) $asset->getAttribute('mime_type'));
@@ -238,19 +246,41 @@ final class MediaReferenceCatalog
             }
 
             $node = $entry->getRelationValue('siteSection');
-            $role = match ((string) $usage->getAttribute('role')) {
+            $mediaRole = (string) $usage->getAttribute('role');
+            $role = match ($mediaRole) {
                 JournalEntryMedia::ROLE_COVER => 'Cover image',
                 JournalEntryMedia::ROLE_GALLERY => 'Gallery image',
                 default => 'Journal image',
             };
-            $rows[] = [
+            $row = [
                 'type' => 'Journal: '.$template,
                 'label' => (string) $entry->getAttribute('title').' — '.$role,
                 'url' => $node instanceof SiteSection ? $this->presentation->workspaceUrl($node) : null,
+                'journal_entry_id' => ($entry instanceof BlogPost ? 'blog:' : 'exhibition:').$entry->getKey(),
             ];
+
+            if ($deletingAssetIds !== null && $mediaRole === JournalEntryMedia::ROLE_GALLERY) {
+                $fallback = $this->journalMedia->carouselFallbackAfterRemoving($entry, $deletingAssetIds);
+                if ($fallback !== null) {
+                    $row['impact'] = 'Carousel changes to Slideshow ('
+                        .$fallback['before'].' → '.$fallback['after'].' gallery files) if the selected files are deleted.';
+                }
+            }
+            $rows[] = $row;
         }
 
         foreach ($this->contentReferenceRowsByMediaId()[(int) $asset->getKey()] ?? [] as $row) {
+            if ($deletingAssetIds !== null && isset($row['blog_post_id'])) {
+                $post = BlogPost::query()->find((int) $row['blog_post_id']);
+                $nextState = $post instanceof BlogPost
+                    ? $this->journalMedia->blogRichTextStateAfterRemoving($post, $deletingAssetIds)
+                    : null;
+                if ($nextState === 'unpublished') {
+                    $row['impact'] = 'This published Blog will be unpublished because its Rich Text becomes empty.';
+                } elseif ($nextState === 'draft') {
+                    $row['impact'] = 'This scheduled Blog will return to Draft because its Rich Text becomes empty.';
+                }
+            }
             $rows[] = $row;
         }
 
@@ -269,6 +299,7 @@ final class MediaReferenceCatalog
             $unique[implode('|', [
                 $row['type'], $row['label'], $row['url'] ?? '',
                 $row['artwork_id'] ?? '',
+                $row['journal_entry_id'] ?? $row['blog_post_id'] ?? '',
             ])] = $row;
         }
 
@@ -500,6 +531,7 @@ final class MediaReferenceCatalog
                     'type' => 'Journal: Blog',
                     'label' => (string) $post->getAttribute('title').' — Rich Text image',
                     'url' => $node instanceof SiteSection ? $this->presentation->workspaceUrl($node) : null,
+                    'blog_post_id' => (int) $post->getKey(),
                 ]);
             }
         }
