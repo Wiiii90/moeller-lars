@@ -92,6 +92,13 @@
 - **Pending durable consolidation for Docs/Testing:** Once artist-accepted, reconcile Gallery date/list/dense table semantics, Stage lifecycle/placeholder/upload progress, six-action rail and cross-feature preservation into the existing canonical Admin table/Gallery contracts; Testing owns regression cases and browser qualification. Do not edit their files from this Dev worker.
 - **Working environment:** The GitHub connector is available; the Windows application checkout and running local Preview are not mounted in this chat. Implementation can be source-committed, but local runtime and browser acceptance must be reported separately.
 
+## Emergency PHP parser fix — PublicContentSetting (2026-11-21)
+
+- **Reported from live local stack trace:** `ParseError: Unclosed '{' on line 129`, loading `app/Models/PublicContentSetting.php` from Dashboard/Storage overview; other Gallery and public previews share this model, so the failure is global rather than specific to selection or live preview.
+- **Confirmed root cause:** the General Legal rich-text change in commit `063cf1a1b0ecd28e24bf8490b96ded0ad0279dd8` omitted the single final class-closing brace at EOF. The previous version ended with two closing braces (method and class); the current version ended with only the method brace.
+- **Minimal cross-owner repair:** append exactly the missing class-closing `}`, retaining every General Legal/Media and other worker change; no preview-specific compensation and no contract/persistence changes. General is owned by Dev Worker 7, who should be aware of this narrow cross-area emergency fix.
+- **Verification class:** source-diff/root cause and brace balance checked. No mounted Laravel checkout, executable PHP lint or browser/runtime smoke test is available through this connected GitHub-only branch workflow; do not call the runtime acceptance complete.
+
 ## Next
 
 Coordinate Testing's targeted deletion/reference regressions and browser validation after user acceptance. Specifically verify Storage checkbox placement below each primary Artwork reference, persisted per-user default, Gallery preservation after unchecked file deletion, explicit Gallery Artwork deletion when checked, Journal carousel fallback, safe Custom Page failure, and absence of old unassigned Artwork creation. Do not auto-assign legacy null-Gallery Artworks without provenance. Verify registered Dev Worker 4 lease 31 and the newest dev head before further edits.

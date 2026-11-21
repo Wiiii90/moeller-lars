@@ -419,4 +419,4 @@ class PublicContentSetting extends Model
             throw ValidationException::withMessages([$field => $exception->getMessage()]);
         }
     }
-
+}
