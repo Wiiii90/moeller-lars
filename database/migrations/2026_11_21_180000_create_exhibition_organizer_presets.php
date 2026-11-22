@@ -18,6 +18,18 @@ return new class extends Migration
             $table->timestampsTz();
         });
 
+        Schema::create('exhibition_venue_presets', static function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('organizer_preset_id')->constrained('exhibition_organizer_presets')->cascadeOnDelete();
+            $table->string('name', 240);
+            $table->string('street', 500)->nullable();
+            $table->string('postal_code', 16)->nullable();
+            $table->string('city', 160)->nullable();
+            $table->string('country', 160)->nullable();
+            $table->unsignedInteger('position')->default(0);
+            $table->timestampsTz();
+        });
+
         // Only exact original organizer names are imported. Composite names
         // are deliberately left distinct; inconsistent venues/addresses are
         // not inferred or changed during migration.
