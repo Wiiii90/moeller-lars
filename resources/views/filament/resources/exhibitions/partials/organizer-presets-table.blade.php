@@ -1,9 +1,11 @@
-<div x-data="{ adding: false }">
+<div>
     <x-admin.table class="admin-table--data admin-table--ranked" aria-label="Exhibition organizers">
         <table class="admin-table--six-grid">
             <colgroup>
                 <col class="admin-table__col-position">
                 <col class="admin-table__col-drag">
+                <col>
+                <col>
                 <col>
                 <col class="admin-table__col-actions-move-delete">
             </colgroup>
@@ -11,6 +13,8 @@
                 <tr>
                     <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
                     <th scope="col">Organizer</th>
+                    <th scope="col">City</th>
+                    <th scope="col">Website</th>
                     <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
                 </tr>
             </thead>
@@ -22,15 +26,21 @@
                             <button class="admin-drag-handle" type="button" wire:sort:handle
                                 aria-label="Drag organizer {{ $organizer->name }} to reorder">⋮⋮</button>
                         </td>
+                        <td>{{ $organizer->name }}</td>
+                        <td>{{ $organizer->city ?: '—' }}</td>
                         <td>
-                            <input class="admin-inline-input" type="text" maxlength="240"
-                                value="{{ $organizer->name }}"
-                                aria-label="Organizer name {{ $loop->iteration }}"
-                                wire:change="renameExhibitionOrganizerPreset({{ $organizer->getKey() }}, $event.target.value)"
-                                x-on:keydown.enter.prevent="$el.blur()">
+                            @if ($organizer->website)
+                                <a href="{{ $organizer->website }}" target="_blank" rel="noopener noreferrer">
+                                    {{ parse_url($organizer->website, PHP_URL_HOST) ?: $organizer->website }}
+                                </a>
+                            @else
+                                —
+                            @endif
                         </td>
                         <td class="admin-table__actions">
                             <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-delete">
+                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Edit"
+                                    wire:click="mountAction('editExhibitionOrganizer', { organizer: {{ $organizer->getKey() }} })" />
                                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                     wire:click="moveExhibitionOrganizerPreset({{ $organizer->getKey() }}, 'up')"
                                     :disabled="$loop->first" />
@@ -43,23 +53,10 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="admin-table__empty-cell"><x-admin.empty-state title="Empty" minimal /></td></tr>
+                    <tr><td colspan="6" class="admin-table__empty-cell"><x-admin.empty-state title="Empty" minimal /></td></tr>
                 @endforelse
-            </tbody>
-            <tbody x-show="adding" x-cloak>
-                <tr>
-                    <td colspan="2"></td>
-                    <td>
-                        <input class="admin-inline-input" type="text" maxlength="240" x-ref="newOrganizer"
-                            aria-label="New organizer name" placeholder="Organizer name"
-                            x-on:keydown.enter.prevent="$el.blur()"
-                            x-on:keydown.escape.prevent="adding = false; $el.value = ''"
-                            x-on:change="$wire.addExhibitionOrganizerPreset($el.value).then(saved => { if (saved) { adding = false; $el.value = '' } })">
-                    </td>
-                    <td class="admin-table__actions"></td>
-                </tr>
             </tbody>
         </table>
     </x-admin.table>
-    <x-admin.add-row x-on:click="adding = true; $nextTick(() => $refs.newOrganizer.focus())">Add organizer</x-admin.add-row>
+    <x-admin.add-row wire:click="mountAction('addExhibitionOrganizer')">Add organizer</x-admin.add-row>
 </div>

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['name', 'position'])]
+#[Fillable(['name', 'street', 'postal_code', 'city', 'country', 'website', 'position'])]
 #[Guarded(['id'])]
 final class ExhibitionOrganizerPreset extends Model
 {

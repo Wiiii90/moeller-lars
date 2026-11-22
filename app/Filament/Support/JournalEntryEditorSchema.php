@@ -2,6 +2,8 @@
 
 namespace App\Filament\Support;
 
+use App\Domain\Admin\AdminNotifier;
+use App\Domain\Content\ExhibitionDirectoryService;
 use App\Domain\Content\ExhibitionMapAddress;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\RegionalFormats;
@@ -10,9 +12,11 @@ use App\Filament\Pages\JournalWorkspace;
 use App\Filament\Support\Controls\AdminControl;
 use App\Models\Exhibition;
 use App\Models\ExhibitionOrganizerPreset;
+use App\Models\ExhibitionVenuePreset;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
@@ -56,8 +60,13 @@ final class JournalEntryEditorSchema
             $fields[] = self::dateFields()[0];
             $fields[] = Grid::make()->columns(['default' => 1, 'sm' => 2])->schema([
                 self::organizerSelect(),
-                AdminControl::text('venue', 'Venue')->maxLength(240),
+                self::venueSelect(),
             ])->columnSpanFull();
+            // The Stage edits a venue, not individual address inputs.
+            // Snapshot location values still flow into Submit and Public Preview.
+            foreach (['location_text', 'postal_code', 'city', 'country'] as $field) {
+                $fields[] = Hidden::make($field);
+            }
             $fields[] = AdminForm::section(__('Description'))
                 ->schema(AdminRichText::schema('description', __('Text'), 50000, allowEmbeddedMedia: true, pageAutosave: true))
                 ->collapsible()->collapsed()->columnSpanFull();
@@ -394,6 +403,21 @@ final class JournalEntryEditorSchema
             ->columnSpanFull();
     }
 
+    /** Reusable catalog fields shared by dialog management and inline creation. */
+    public static function directoryFields(string $kind): array
+    {
+        return [
+            AdminControl::text('name', $kind)->required()->maxLength(240)->columnSpanFull(),
+            AdminControl::url('website', 'Website')->maxLength(2048)->nullable()->columnSpanFull(),
+            AdminControl::text('street', 'Street address')->maxLength(500)->nullable()->columnSpanFull(),
+            Grid::make()->columns(['default' => 1, 'sm' => 2])->schema([
+                AdminControl::text('postal_code', 'Postal code')->maxLength(16)->nullable(),
+                AdminControl::text('city', 'City')->maxLength(160)->nullable(),
+            ])->columnSpanFull(),
+            AdminControl::text('country', 'Country')->maxLength(160)->nullable()->columnSpanFull(),
+        ];
+    }
+
     /** Organizer names remain exact canonical text in Exhibition snapshots. */
     private static function organizerSelect(): Select
     {
@@ -402,14 +426,60 @@ final class JournalEntryEditorSchema
                 ->orderBy('position')->orderBy('id')->pluck('name', 'name')->all())
             ->getOptionLabelUsing(static fn (mixed $value): ?string =>
                 is_string($value) && trim($value) !== '' ? $value : null)
-            ->searchable()->preload()->native(false)->nullable();
+            ->searchable()->preload()->native(false)->nullable()
+            ->createOptionModalHeading('Add organizer')
+            ->createOptionForm(self::directoryFields('Organizer'))
+            ->createOptionUsing(static function (array $data): string {
+                app(ExhibitionDirectoryService::class)->addOrganizer($data);
+                app(AdminNotifier::class)->notification(title: 'Organizer added', status: 'success');
+
+                return trim((string) $data['name']);
+            });
+    }
+
+    /** The Venue selection never changes the Organizer. */
+    private static function venueSelect(): Select
+    {
+        return AdminControl::select('venue', 'Venue')
+            ->options(fn (): array => ExhibitionVenuePreset::query()
+                ->orderBy('position')->orderBy('id')->pluck('name', 'name')->all())
+            ->getOptionLabelUsing(static fn (mixed $value): ?string =>
+                is_string($value) && trim($value) !== '' ? $value : null)
+            ->searchable()->preload()->native(false)->nullable()->live()
+            ->afterStateUpdated(static function (mixed $state, Set $set): void {
+                if (! is_string($state) || trim($state) === '') {
+                    return;
+                }
+                $venue = ExhibitionVenuePreset::query()->where('name', trim($state))->first();
+                if (! $venue instanceof ExhibitionVenuePreset) {
+                    return;
+                }
+                foreach ([
+                    'street' => 'location_text',
+                    'postal_code' => 'postal_code',
+                    'city' => 'city',
+                    'country' => 'country',
+                ] as $source => $target) {
+                    $set($target, $venue->getAttribute($source));
+                }
+            })
+            ->createOptionModalHeading('Add venue')
+            ->createOptionForm(self::directoryFields('Venue'))
+            ->createOptionUsing(static function (array $data): string {
+                app(ExhibitionDirectoryService::class)->addVenue($data);
+                app(AdminNotifier::class)->notification(title: 'Venue added', status: 'success');
+
+                return trim((string) $data['name']);
+            });
     }
 
     private static function publicLocationField(string $name, string $label, int $max, ?Exhibition $exhibition): TextInput|Select
     {
         $field = $name === 'organizer'
             ? self::organizerSelect()
-            : TextInput::make($name)->label(__($label))->maxLength($max)->nullable();
+            : ($name === 'venue'
+                ? self::venueSelect()
+                : TextInput::make($name)->label(__($label))->maxLength($max)->nullable());
 
         if (! $exhibition instanceof Exhibition) {
             return $field;

@@ -216,6 +216,10 @@
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Organizers->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">Organizers</span>
                                 </button>
+                                <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('exhibitionVenues')" aria-label="Exhibition venues">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Venues->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">Venues</span>
+                                </button>
                             @endunless
                             @if ($journalPreviewUrl)
                                 <a class="admin-action admin-action--with-icon" href="{{ $journalPreviewUrl }}" target="_blank" rel="noopener" aria-label="Preview Journal">

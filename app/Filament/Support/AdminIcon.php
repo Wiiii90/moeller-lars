@@ -33,6 +33,7 @@ enum AdminIcon: string
     case BlogPost = 'heroicon-o-document';
     case Exhibition = 'heroicon-o-calendar';
     case Organizers = 'heroicon-o-user-group';
+    case Venues = 'heroicon-o-map-pin';
     case Account = 'heroicon-o-user-circle';
     case Language = 'heroicon-o-language';
     case GeneratePassword = 'heroicon-o-sparkles';
