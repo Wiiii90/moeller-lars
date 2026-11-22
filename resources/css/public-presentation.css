@@ -956,6 +956,26 @@ html.public-preview--embedded {
     margin-block: calc((var(--gallery-artwork-gap) + var(--gallery-gap-jitter, 0rem)) / 2);
 }
 
+/* The existing Gallery list owns its explicit two-column embedded variant.
+   The Custom Page provides the available width, not a competing media skin. */
+.artwork-list--embedded-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(.65rem, 2vw, 1.25rem);
+    width: 100%;
+    --gallery-artwork-gap: 0;
+    --gallery-artwork-height: min(50svh, 30rem);
+}
+.artwork-list--embedded-columns > .artwork-card {
+    min-width: 0;
+    margin-bottom: 0;
+    --gallery-drift-left: 1fr;
+    --gallery-drift-right: 1fr;
+}
+@container (max-width: 30rem) {
+    .artwork-list--embedded-columns { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* Gallery media and Artwork information must use ONE width owner:
    the composition track above. The shared image/video base rules already
    fill that track at their natural aspect ratio. A second max-height on the
@@ -2517,24 +2537,4 @@ body.public-site--frame-backing #content:not(.site-content--transparent)::after 
 }
 .artwork-card__footer--rights-right .artwork-caption {
     text-align: left;
-}
-
-/* The existing Gallery list owns its explicit two-column embedded variant.
-   The Custom Page provides the available width, not a competing media skin. */
-.artwork-list--embedded-columns {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: clamp(.65rem, 2vw, 1.25rem);
-    width: 100%;
-    --gallery-artwork-gap: 0;
-    --gallery-artwork-height: min(50svh, 30rem);
-}
-.artwork-list--embedded-columns > .artwork-card {
-    min-width: 0;
-    margin-bottom: 0;
-    --gallery-drift-left: 1fr;
-    --gallery-drift-right: 1fr;
-}
-@container (max-width: 30rem) {
-    .artwork-list--embedded-columns { grid-template-columns: minmax(0, 1fr); }
 }
