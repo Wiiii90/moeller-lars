@@ -251,21 +251,12 @@ trait CustomPageWorkspaceProjectionState
         $this->setPagination(count($projected));
         $offset = ($this->page - 1) * $this->pageSize;
         $reorderEnabled = $this->componentReorderEnabled();
-        $siblings = [];
-        foreach ($blocks as $index => $block) {
-            $siblings[$block['layout_area_id'] ?? 'root'][] = $index;
-        }
         $this->components = array_map(
-            static function (array $component) use ($reorderEnabled, $siblings): array {
-                $group = $siblings[$component['layout_area_id'] ?? 'root'] ?? [];
-                $position = array_search($component['index'], $group, true);
-
-                return [
-                    ...$component,
-                    'can_move_up' => $reorderEnabled && $position !== false && $position > 0,
-                    'can_move_down' => $reorderEnabled && $position !== false && $position < count($group) - 1,
-                ];
-            },
+            static fn (array $component): array => [
+                ...$component,
+                'can_move_up' => $reorderEnabled && $component['index'] > 0,
+                'can_move_down' => $reorderEnabled && $component['index'] < count($blocks) - 1,
+            ],
             array_slice($projected, $offset, $this->pageSize),
         );
         $this->retainVisibleSelections();

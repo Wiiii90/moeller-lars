@@ -279,10 +279,8 @@ final class CustomPageEditorialService
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
             $this->assertTarget($blocks, $index, $expectedType);
-            $siblings = CustomPageSetting::layoutSiblingIndices($blocks, $blocks[$index]['layout_area_id'] ?? null);
-            $position = array_search($index, $siblings, true);
-            $target = $siblings[$position + ($direction === 'up' ? -1 : 1)] ?? null;
-            if ($target === null) {
+            $target = $direction === 'up' ? $index - 1 : $index + 1;
+            if (! array_key_exists($target, $blocks)) {
                 return false;
             }
             $beforeOrder = AdminOrderingState::fingerprints($blocks);
@@ -368,31 +366,20 @@ final class CustomPageEditorialService
 
             $selected = array_fill_keys($indices, true);
             $sequence = [];
-            $groups = [];
             foreach ($blocks as $index => $block) {
                 $sequence[] = ['block' => $block, 'selected' => isset($selected[$index])];
-                $groups[$block['layout_area_id'] ?? 'root'][] = $index;
             }
 
-            // Move only among siblings in the same Layout area. Swapping
-            // unrelated flat-document neighbors would not move either row
-            // visibly within the rendered hierarchy.
-            foreach ($groups as $siblings) {
-                if ($direction === 'up') {
-                    for ($i = 1, $count = count($siblings); $i < $count; $i++) {
-                        $index = $siblings[$i];
-                        $before = $siblings[$i - 1];
-                        if ($sequence[$index]['selected'] && ! $sequence[$before]['selected']) {
-                            [$sequence[$before], $sequence[$index]] = [$sequence[$index], $sequence[$before]];
-                        }
+            if ($direction === 'up') {
+                for ($index = 1, $count = count($sequence); $index < $count; $index++) {
+                    if ($sequence[$index]['selected'] && ! $sequence[$index - 1]['selected']) {
+                        [$sequence[$index - 1], $sequence[$index]] = [$sequence[$index], $sequence[$index - 1]];
                     }
-                } else {
-                    for ($i = count($siblings) - 2; $i >= 0; $i--) {
-                        $index = $siblings[$i];
-                        $after = $siblings[$i + 1];
-                        if ($sequence[$index]['selected'] && ! $sequence[$after]['selected']) {
-                            [$sequence[$index], $sequence[$after]] = [$sequence[$after], $sequence[$index]];
-                        }
+                }
+            } else {
+                for ($index = count($sequence) - 2; $index >= 0; $index--) {
+                    if ($sequence[$index]['selected'] && ! $sequence[$index + 1]['selected']) {
+                        [$sequence[$index], $sequence[$index + 1]] = [$sequence[$index + 1], $sequence[$index]];
                     }
                 }
             }
