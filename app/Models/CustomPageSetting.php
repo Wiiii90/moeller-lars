@@ -288,6 +288,20 @@ final class CustomPageSetting extends Model
                 continue;
             }
 
+            // A historical checkpoint can reintroduce entry-ID based embedding
+            // after the database's forward migration. Reject that state instead
+            // of silently dropping the artist's old selections on save.
+            if (in_array($type, self::EMBEDDED_COMPONENT_TYPES, true)
+                && ! array_key_exists('source_page_id', $block)
+                && array_intersect(
+                    ['gallery_id', 'gallery_ids', 'exhibition_ids', 'post_ids'],
+                    array_keys($block),
+                ) !== []) {
+                throw ValidationException::withMessages([
+                    'blocks' => 'Historical embedded content must be migrated to a whole source page before editing.',
+                ]);
+            }
+
             $published = self::componentPublished($block);
             $canonical = match ($type) {
                 'image', 'video' => [
