@@ -131,7 +131,7 @@
     @if ($galleryIndex || $heroFitted)
         {{-- The shared image-and-caption composition keeps artwork information
              immediately below its actual media, including on the Gallery Hero. --}}
-        <div class="artwork-card__composition{{ $isVideo ? ' artwork-card__composition--video' : '' }}{{ $heroFitted ? ' artwork-card__composition--gallery-hero' : '' }}">
+        <div class="artwork-card__composition{{ $heroFitted ? ' artwork-card__composition--gallery-hero' : '' }}">
     @endif
 
     @if ($viewerActive && ! $galleryVideoPlayer)
