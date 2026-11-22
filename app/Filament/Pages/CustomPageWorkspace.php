@@ -70,15 +70,8 @@ final class CustomPageWorkspace extends Page
 
     public string $customStagePanel = 'layout';
 
-    public string $stageQuickType = 'text';
-
-    public string $stageQuickTitle = '';
-
-    public string $stageQuickBody = '';
-
-    public string $stageQuickAreaId = '';
-
-    public string $stageQuickSourceId = '';
+    /** Unsaved New Stage form, built from the canonical component editor schema. */
+    public array $customStageNewData = [];
 
     public ?string $stageSelectedLayoutId = null;
 

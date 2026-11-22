@@ -47,53 +47,24 @@
                     @endforeach
                 </div>
                 @if ($customStagePanel === 'create')
-                    <form class="admin-stage-workspace admin-visual-stage__field-scroll custom-page-stage__create"
-                        wire:submit.prevent="createStageComponent">
-                        <label class="admin-stage-workspace__field">
-                            <span>{{ __('Component') }}</span>
-                            <select wire:model.live="stageQuickType" aria-label="Component type">
-                                @foreach (array_keys($componentTypeOptions) as $type)
-                                    <option value="{{ $type }}">{{ $componentTypeOptions[$type] }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        @if ($stageQuickType === 'text' || $stageQuickType === 'contact')
-                            <label class="admin-stage-workspace__field">
-                                <span>{{ __('Title') }}</span>
-                                <input type="text" maxlength="160" wire:model="stageQuickTitle" placeholder="{{ __('Optional title') }}">
-                            </label>
-                        @endif
-                        @if ($stageQuickType === 'text')
-                            <label class="admin-stage-workspace__field">
-                                <span>{{ __('Text') }}</span>
-                                <textarea wire:model="stageQuickBody" rows="5" aria-label="Quick Rich Text content"></textarea>
-                            </label>
-                        @endif
-                        @if (in_array($stageQuickType, \App\Models\CustomPageSetting::EMBEDDED_COMPONENT_TYPES, true))
-                            <label class="admin-stage-workspace__field">
-                                <span>{{ in_array($stageQuickType, ['gallery', 'hero_artworks'], true) ? __('Source gallery') : __('Source entry') }}</span>
-                                <select wire:model="stageQuickSourceId" aria-label="Component source">
-                                    <option value="">{{ __('Select source') }}</option>
-                                    @foreach ($this->stageQuickSources() as $sourceId => $sourceName)
-                                        <option value="{{ $sourceId }}">{{ $sourceName }}</option>
-                                    @endforeach
-                                </select>
-                            </label>
-                        @endif
-                        <label class="admin-stage-workspace__field">
-                            <span>{{ __('Place in') }}</span>
-                            <select wire:model="stageQuickAreaId" aria-label="Component layout destination">
-                                <option value="">{{ __('Full width') }}</option>
-                                @foreach ($this->stageLayoutAreaOptions() as $id => $label)
-                                    <option value="{{ $id }}">{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <button class="admin-action is-primary" type="submit">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" />
-                            {{ __('Create unpublished component') }}
-                        </button>
-                    </form>
+                    <div class="gallery-stage__form-scroll admin-visual-stage__field-scroll fi-fixed-positioning-context"
+                        wire:key="custom-stage-new-editor">
+                        {{ $this->customStageNewForm }}
+                    </div>
+                    <div class="gallery-stage__editor-actions admin-toolbar" aria-label="New component actions">
+                        <div class="gallery-stage__action-group">
+                            <button class="admin-action is-danger" type="button" wire:click="discardStageComponent"
+                                wire:loading.attr="disabled" wire:target="discardStageComponent,createStageComponent">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
+                                <span class="gallery-stage__action-label">Discard</span>
+                            </button>
+                            <button class="admin-action is-success" type="button" wire:click="createStageComponent"
+                                wire:loading.attr="disabled" wire:target="discardStageComponent,createStageComponent">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
+                                <span class="gallery-stage__action-label">Submit</span>
+                            </button>
+                        </div>
+                    </div>
                 @elseif ($customStagePanel === 'layout')
                     @include('filament.pages.partials.custom-page-layout-stage')
                 @else

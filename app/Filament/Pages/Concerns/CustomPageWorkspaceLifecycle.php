@@ -38,6 +38,7 @@ trait CustomPageWorkspaceLifecycle
         $this->loadAvailableSocialPlatforms();
         $this->loadAnalyticsSnapshot($siteSection);
         $this->reloadWorkspace();
+        $this->customStageNewForm->fill($this->defaultCustomStageNew());
     }
 
     /**

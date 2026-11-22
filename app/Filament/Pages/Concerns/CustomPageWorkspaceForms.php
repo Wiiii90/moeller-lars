@@ -15,11 +15,44 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
 
 trait CustomPageWorkspaceForms
 {
+    public function customStageNewForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components($this->componentEditorSchema(stage: true))
+            ->statePath('customStageNewData');
+    }
+
+    /** @return array<string,mixed> */
+    private function defaultCustomStageNew(): array
+    {
+        return [
+            'type' => 'text',
+            'publication_state' => 'unpublished',
+            'title' => '',
+            'body' => '',
+            'layout_area_id' => null,
+            'layout_divider_before' => 'none',
+            'layout_mode' => 'rows',
+            'columns' => 2,
+            'rows' => 1,
+            'column_layout' => 'equal',
+            'gap' => 'medium',
+            'media_asset_id' => null,
+            'image_decorative' => false,
+            'image_scale_percent' => CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT,
+            'image_alignment' => 'left',
+            'video_controls_enabled' => true,
+            'source_page_id' => null,
+            'gallery_presentation' => 'sequence',
+        ];
+    }
+
     /** @return list<mixed> */
-    private function componentEditorSchema(?Closure $onTypeChange = null, ?Closure $onImageChange = null, ?Closure $onContactChange = null): array
+    private function componentEditorSchema(?Closure $onTypeChange = null, ?Closure $onImageChange = null, ?Closure $onContactChange = null, bool $stage = false): array
     {
         $typeField = Select::make('type')
             ->label('Component')
@@ -44,7 +77,7 @@ trait CustomPageWorkspaceForms
         // Edit type changes use the canonical conversion Action, never a
         // second implicit mutation in the field state callback.
         $dynamicFields = Grid::make()
-            ->columns(['md' => 2])
+            ->columns($stage ? ['default' => 1] : ['md' => 2])
             ->schema(fn (Get $get): array => [
                 ...$this->componentTypeFields((string) $get('type'), $onImageChange, $onContactChange),
             ])
@@ -53,7 +86,7 @@ trait CustomPageWorkspaceForms
 
         return [
             Grid::make()
-                ->columns(['md' => 2])
+                ->columns($stage ? ['default' => 1] : ['md' => 2])
                 ->schema([
                     $typeField,
                     $statusField,

@@ -195,67 +195,44 @@ trait CustomPageWorkspaceComponentActions
         $this->syncCustomPreviewFocus();
     }
 
-    public function updatedStageQuickType(): void
-    {
-        $this->stageQuickSourceId = '';
-    }
-
-    /** Page templates, not individual Gallery/Journal records. */
-    public function stageQuickSources(): array
-    {
-        if (! in_array($this->stageQuickType, CustomPageSetting::EMBEDDED_COMPONENT_TYPES, true)) {
-            return [];
-        }
-
-        return app(\App\Domain\Content\CustomPageEmbeddedContent::class)->sourceOptions($this->stageQuickType);
-    }
-
-    /** Choose a cell in the visual Layout; the New tab owns creation. */
+    /** Choose a visual Layout cell within the one unsaved New form. */
     public function createStageComponentInArea(string $areaId): void
     {
         if (! array_key_exists($areaId, $this->layoutAreaOptions())) {
             return;
         }
-        $this->stageQuickAreaId = $areaId;
+
+        $this->customStageNewForm->fill([
+            ...$this->customStageNewForm->getRawState(),
+            'layout_area_id' => $areaId,
+        ]);
         $this->customStagePanel = 'create';
+    }
+
+    public function discardStageComponent(): void
+    {
+        $this->customStageNewForm->fill($this->defaultCustomStageNew());
     }
 
     public function createStageComponent(): void
     {
-        $type = $this->stageQuickType;
-        if (! in_array($type, CustomPageSetting::COMPONENT_TYPES, true)) {
-            return;
-        }
-
-        $data = [
-            'type' => $type,
-            'publication_state' => 'unpublished',
-            'title' => $this->stageQuickTitle,
-            'body' => $this->stageQuickBody,
-            'layout_area_id' => $this->stageQuickAreaId !== '' ? $this->stageQuickAreaId : null,
-            'layout_mode' => 'rows',
-            'columns' => 2,
-            'rows' => 1,
-            'gap' => 'medium',
-            'column_layout' => 'equal',
-            'media_asset_id' => null,
-            'image_decorative' => false,
-            'source_page_id' => ctype_digit($this->stageQuickSourceId) ? (int) $this->stageQuickSourceId : null,
-            'gallery_presentation' => 'sequence',
-        ];
         try {
-            $changed = app(CustomPageEditorialService::class)->addBlock($this->settings(), $this->componentPayload($data));
+            $data = $this->customStageNewForm->getState();
+            $type = (string) ($data['type'] ?? '');
+            $changed = app(CustomPageEditorialService::class)->addBlock(
+                $this->settings(),
+                $this->componentPayload($data),
+            );
             if (! $changed) {
                 return;
             }
+
             $index = count($this->settings()->fresh()->components()) - 1;
-            $this->stageQuickTitle = '';
-            $this->stageQuickBody = '';
-            $this->stageQuickSourceId = '';
+            $this->discardStageComponent();
             $this->customStagePanel = 'layout';
             $this->reloadWorkspace();
             $this->focusStageComponent($index, $type);
-            app(AdminNotifier::class)->notification(title: 'Unpublished component created', status: 'success');
+            app(AdminNotifier::class)->notification(title: 'Component created', status: 'success');
         } catch (ValidationException $exception) {
             $this->stageValidationFailure('Component was not created', $exception);
         }
