@@ -20,6 +20,7 @@
 - `GalleryHeroArtworkOverrides` is the sole source-bound overlay mutation trait of `GalleryHeroConfigurationService`; overlays live in `gallery_hero_settings.configuration.hero_artwork_overrides` by `sourceId|artwork:artworkId`. The `enabled` boolean gates rendering while preserving previously authored deltas. Older entries lacking `enabled` remain active when nonempty. Previously created unsupported media/ALT/visibility overlay entries are no longer editable or projected.
 - The resolver applies enabled metadata after source ranking. `GalleryHeroWorkspaceProjection`, the public Hero `artwork-card` and `ArtworkInformation::rows` consume the same effective values. All original Gallery screens continue to consume canonical Artwork data.
 - Legacy authored freeform dimensions are still preserved for read/display; no Hero UI creates or edits `dimension_custom`. Do not delete historical original dimensions. `ArtworkDimensions` continues to own structured parsing/display.
+- Deliberate null overrides for Material, Date and Dimensions remain distinct from an omitted autosave field: clearing a value survives an off/on panel cycle instead of restoring inherited data inadvertently.
 - Existing `MediaReferenceQuery` still authorizes directly sourced Dummy Storage files; it does not authorize rejected Hero Media replacements.
 - Existing Stage fade, source table action rails and regular/Dummy source editor contracts remain separate.
 

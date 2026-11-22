@@ -119,22 +119,25 @@ trait GalleryHeroArtworkOverrides
                         'title' => 'Enter a title of at most 240 characters.',
                     ]);
                 }
-                $medium = trim((string) ($values['medium']
-                    ?? ($current['medium'] ?? $artwork->getAttribute('medium') ?? '')));
+                $mediumValue = array_key_exists('medium', $values)
+                    ? $values['medium']
+                    : (array_key_exists('medium', $current)
+                        ? $current['medium'] : $artwork->getAttribute('medium'));
+                $medium = trim((string) $mediumValue);
                 if (mb_strlen($medium) > 255) {
                     throw ValidationException::withMessages([
                         'medium' => 'Material must not exceed 255 characters.',
                     ]);
                 }
-                $date = $values['artwork_date']
-                    ?? ($current['date'] ?? ArtworkDate::fromArtwork($artwork));
-                // A submitted explicit null clears the Hero date.
-                if (array_key_exists('artwork_date', $values)) {
-                    $date = $values['artwork_date'];
-                }
+                // Both an explicit null and a stored null mean a cleared date.
+                $date = array_key_exists('artwork_date', $values)
+                    ? $values['artwork_date']
+                    : (array_key_exists('date', $current)
+                        ? $current['date'] : ArtworkDate::fromArtwork($artwork));
                 ArtworkDate::normalize($date);
 
-                $inheritedDimensions = $current['dimensions'] ?? $artwork->getAttribute('dimensions');
+                $inheritedDimensions = array_key_exists('dimensions', $current)
+                    ? $current['dimensions'] : $artwork->getAttribute('dimensions');
                 $inheritedParts = ArtworkDimensions::split($inheritedDimensions);
                 $height = array_key_exists('dimension_height', $values)
                     ? $values['dimension_height'] : $inheritedParts['height'];
