@@ -261,7 +261,7 @@ final class CustomPageEmbeddedContent
                 }
             }
         };
-        $visit(\\App\\Models\\CustomPageSetting::layoutProjection($blocks));
+        $visit(\App\Models\CustomPageSetting::layoutProjection($blocks));
 
         return $resolved;
     }
