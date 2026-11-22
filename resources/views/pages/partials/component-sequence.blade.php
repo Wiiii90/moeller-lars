@@ -97,6 +97,31 @@
                 </section>
             @endif
 
+            @if (isset($embedded[$blockIndex]) && in_array($type, \App\Models\CustomPageSetting::EMBEDDED_COMPONENT_TYPES, true))
+                @php($template = $embedded[$blockIndex])
+                <section id="custom-page-component-{{ $imageBlockPrefix }}-{{ $blockIndex }}"
+                    class="custom-page__component custom-page__embedded custom-page__embedded--{{ $type }}"
+                    aria-label="{{ ucwords(str_replace('_', ' ', $type)) }}">
+                    @if ($type === 'gallery')
+                        @include('pages.artworks.partials.list', $template)
+                    @elseif ($type === 'hero_artworks')
+                        @include('pages.gallery.hero-artwork', $template)
+                    @elseif ($type === 'exhibitions')
+                        @include('pages.exhibitions.partials.list', [
+                            'exhibitions' => $template['exhibitions'],
+                            'journalMedia' => app(\App\Domain\Content\JournalMediaRenderer::class),
+                            'embedPrefix' => $imageBlockPrefix.'-'.$blockIndex,
+                        ])
+                    @elseif ($type === 'blog')
+                        @include('pages.blog.partials.list', [
+                            'posts' => $template['posts'],
+                            'embeddedListing' => true,
+                            'journalMedia' => app(\App\Domain\Content\JournalMediaRenderer::class),
+                        ])
+                    @endif
+                </section>
+            @endif
+
             @if ($type === 'contact')
                 <div id="custom-page-component-{{ $imageBlockPrefix }}-{{ $blockIndex }}" class="custom-page__component custom-page__contact">
                     <x-contact :general-settings="$generalSettings" :children="$componentSettings->contactChildren($block)" :title="$block['title'] ?? null" :heading-id="'contact-heading-'.$imageBlockPrefix.'-'.$blockIndex" />

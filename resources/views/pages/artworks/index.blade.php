@@ -6,18 +6,5 @@
 
 @section('content')
     <x-public.page-heading :section="$section" />
-    <div class="artwork-list{{ $divider !== 'none' ? ' artwork-list--divided' : '' }}"
-        data-artwork-viewer-sequence data-gallery-infinite
-        data-gallery-viewer-manifest="{{ request()->fullUrlWithQuery(['gallery_viewer' => '1']) }}">
-        @include('pages.artworks.partials.batch')
-    </div>
-    @if ($hasMore)
-        <a class="gallery-load-more" data-gallery-load-more
-            href="{{ request()->fullUrlWithQuery(['gallery_page' => $page + 1]) }}">
-            <span class="gallery-load-more__label" data-gallery-load-more-label aria-live="polite">Load more artworks</span>
-            <span class="gallery-load-more__dots" data-gallery-load-more-dots aria-hidden="true" hidden>
-                <span></span><span></span><span></span>
-            </span>
-        </a>
-    @endif
+    @include('pages.artworks.partials.list')
 @endsection

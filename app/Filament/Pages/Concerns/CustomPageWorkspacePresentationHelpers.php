@@ -42,6 +42,19 @@ trait CustomPageWorkspacePresentationHelpers
                 'meta' => '',
             ];
         }
+        if ($type === 'gallery') {
+            $gallery = \App\Models\ArtworkCategory::query()->find($block['gallery_id'] ?? null);
+
+            return ['primary' => $gallery?->name ?? 'Choose a Gallery', 'secondary' => '', 'meta' => ''];
+        }
+        if ($type === 'hero_artworks') {
+            return ['primary' => count($block['gallery_ids'] ?? []).' source galleries', 'secondary' => 'Hero Artworks', 'meta' => ''];
+        }
+        if ($type === 'exhibitions' || $type === 'blog') {
+            $ids = $type === 'exhibitions' ? ($block['exhibition_ids'] ?? []) : ($block['post_ids'] ?? []);
+
+            return ['primary' => count($ids).' selected '.($type === 'blog' ? 'posts' : 'exhibitions'), 'secondary' => '', 'meta' => ''];
+        }
         if ($type === 'contact') {
             $enabled = [];
             foreach ($settings->contactChildren($block) as $child) {

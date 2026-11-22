@@ -23,12 +23,18 @@ final class CustomPageSetting extends Model
         'video',
         'text',
         'layout',
+        'gallery',
+        'hero_artworks',
+        'exhibitions',
+        'blog',
         'contact',
         'legal_disclaimer',
     ];
 
     /** Media kinds share the same canonical asset lifecycle. */
     public const MEDIA_COMPONENT_TYPES = ['image', 'video'];
+
+    public const EMBEDDED_COMPONENT_TYPES = ['gallery', 'hero_artworks', 'exhibitions', 'blog'];
 
     public const LAYOUT_GAPS = ['none', 'small', 'medium', 'large'];
 
@@ -304,6 +310,27 @@ final class CustomPageSetting extends Model
                     'column_layout' => $block['column_layout'] ?? 'equal',
                     'areas' => $this->normalizedLayoutAreas($block),
                 ],
+                'gallery' => [
+                    'type' => 'gallery',
+                    'published' => $published,
+                    'gallery_id' => is_numeric($block['gallery_id'] ?? null) ? (int) $block['gallery_id'] : null,
+                ],
+                'hero_artworks' => [
+                    'type' => 'hero_artworks',
+                    'published' => $published,
+                    'gallery_ids' => $this->normalizedEmbeddedIds($block['gallery_ids'] ?? []),
+                    'source_rule' => $block['source_rule'] ?? 'newest_artwork',
+                ],
+                'exhibitions' => [
+                    'type' => 'exhibitions',
+                    'published' => $published,
+                    'exhibition_ids' => $this->normalizedEmbeddedIds($block['exhibition_ids'] ?? []),
+                ],
+                'blog' => [
+                    'type' => 'blog',
+                    'published' => $published,
+                    'post_ids' => $this->normalizedEmbeddedIds($block['post_ids'] ?? []),
+                ],
                 'text' => [
                     'type' => 'text',
                     'published' => $published,
@@ -328,6 +355,12 @@ final class CustomPageSetting extends Model
         }
 
         return $normalized;
+    }
+
+    /** @return list<mixed> */
+    private function normalizedEmbeddedIds(mixed $value): array
+    {
+        return is_array($value) && array_is_list($value) ? array_values(array_unique($value, SORT_REGULAR)) : [];
     }
 
     /** @return list<array<string, mixed>> */
@@ -505,6 +538,10 @@ final class CustomPageSetting extends Model
                 && ($areaId === null || $areaVisible($areaId));
 
             if ($type === 'layout') {
+                continue;
+            }
+            if (in_array($type, self::EMBEDDED_COMPONENT_TYPES, true)) {
+                app(\App\Domain\Content\CustomPageEmbeddedContent::class)->assertValid($block, $public);
                 continue;
             }
             if (in_array($type, self::MEDIA_COMPONENT_TYPES, true)) {

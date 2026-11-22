@@ -7,6 +7,10 @@ use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\CustomPageSetting;
+use App\Models\ArtworkCategory;
+use App\Models\Exhibition;
+use App\Models\BlogPost;
+use App\Domain\Content\GalleryHeroConfigurationService;
 use App\Models\PublicContentSetting;
 use Closure;
 use Filament\Forms\Components\Placeholder;
@@ -122,6 +126,29 @@ trait CustomPageWorkspaceForms
                 Select::make('gap')->label('Gap')->options([
                     'none' => 'None', 'small' => 'Small', 'medium' => 'Medium', 'large' => 'Large',
                 ])->default('medium')->required(),
+            ],
+            'gallery' => [
+                Select::make('gallery_id')->label('Gallery')
+                    ->options(fn (): array => ArtworkCategory::query()->whereHas('siteSection', fn ($q) => $q->where('template', 'standard'))->orderBy('name')->pluck('name', 'id')->all())
+                    ->searchable()->nullable(),
+            ],
+            'hero_artworks' => [
+                Select::make('gallery_ids')->label('Source galleries')
+                    ->options(fn (): array => ArtworkCategory::query()->whereHas('siteSection', fn ($q) => $q->where('template', 'standard'))->orderBy('name')->pluck('name', 'id')->all())
+                    ->multiple()->searchable(),
+                Select::make('source_rule')->label('Artwork order')
+                    ->options(GalleryHeroConfigurationService::SOURCE_RULES)
+                    ->default('newest_artwork')->required(),
+            ],
+            'exhibitions' => [
+                Select::make('exhibition_ids')->label('Exhibitions')
+                    ->options(fn (): array => Exhibition::query()->where('state', '<>', 'archived')->orderBy('title')->pluck('title', 'id')->all())
+                    ->multiple()->searchable(),
+            ],
+            'blog' => [
+                Select::make('post_ids')->label('Blog posts')
+                    ->options(fn (): array => BlogPost::query()->where('state', '<>', 'archived')->orderBy('title')->pluck('title', 'id')->all())
+                    ->multiple()->searchable(),
             ],
             'text' => [
                 TextInput::make('title')->label('Heading')->maxLength(160),

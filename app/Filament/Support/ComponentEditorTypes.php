@@ -15,6 +15,10 @@ final class ComponentEditorTypes
         'video' => 'Video',
         'text' => 'Rich Text',
         'layout' => 'Layout',
+        'gallery' => 'Gallery',
+        'hero_artworks' => 'Hero Artworks',
+        'exhibitions' => 'Exhibitions',
+        'blog' => 'Blog',
         'contact' => 'Contact',
         'legal_disclaimer' => 'Legal Disclaimer',
     ];

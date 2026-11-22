@@ -145,6 +145,7 @@ final class PublicSiteSectionController extends Controller
 
         return view('pages.custom', [
             'section' => $section, 'settings' => $settings, 'blocks' => $blocks, 'assets' => $assets,
+            'embedded' => app(\App\Domain\Content\CustomPageEmbeddedContent::class)->presentations($blocks),
             'generalSettings' => PublicContentSetting::general(), 'richText' => $this->richText, 'media' => $this->media, 'siteNodeRoute' => $this->siteNodeRoute,
         ]);
     }

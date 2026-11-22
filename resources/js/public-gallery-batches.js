@@ -1,9 +1,7 @@
 // Gallery cards are paged on the existing public route. The server remains
 // the sole source of Artwork order, media eligibility and rendered card markup.
 // This transport only appends canonical fragments and informs page-scoped owners.
-export function initializeGalleryBatches(root = document) {
-    const list = root.querySelector('[data-gallery-infinite]');
-    const more = root.querySelector('[data-gallery-load-more]');
+function initializeGalleryBatch(root, list, more) {
     if (!list || !more) return () => {};
     const status = more.querySelector('[data-gallery-load-more-label]');
     const dots = more.querySelector('[data-gallery-load-more-dots]');
@@ -110,4 +108,12 @@ export function initializeGalleryBatches(root = document) {
         more.removeEventListener('click', onClick);
         attachedStyles.forEach((style) => style.remove());
     };
+}
+
+export function initializeGalleryBatches(root = document) {
+    const cleanups = [...root.querySelectorAll('[data-gallery-infinite]')].map((list) => {
+        const more = list.nextElementSibling;
+        return initializeGalleryBatch(root, list, more?.matches('[data-gallery-load-more]') ? more : null);
+    });
+    return () => cleanups.forEach((cleanup) => cleanup());
 }
