@@ -391,7 +391,7 @@ trait JournalWorkspaceStage
         if ($this->selectedJournalEntryId !== null) {
             $this->loadSelectedJournalEntry($this->selectedJournalEntryId);
         }
-        $this->reloadEntries(false);
+        $this->reloadEntries();
         $this->publishJournalEditorPreview();
         app(AdminNotifier::class)->notification(
             title: count($edits) === 1 ? 'Journal entry saved' : count($edits).' Journal entries saved',
