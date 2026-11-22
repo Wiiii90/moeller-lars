@@ -136,7 +136,7 @@ final class JournalWorkspace extends Page
         $this->loadJournalContext($siteSection);
         $this->reloadEntries();
         $this->refreshJournalStageSettings();
-        $this->restoreStagedJournalDrafts();
+        $this->restoreJournalStageEditor();
     }
 
     public function getView(): string
@@ -295,13 +295,15 @@ final class JournalWorkspace extends Page
     public function togglePostSelection(int $id): void
     {
         $this->selectedPostIds = $this->toggleSelection($this->selectedPostIds, $id);
-        $this->syncJournalPreviewFocus();
+        $this->syncJournalPreviewFocus(updateOnly: true);
+        $this->onJournalStageSelectionChanged(in_array($id, $this->selectedPostIds, true) ? $id : null);
     }
 
     public function toggleExhibitionSelection(int $id): void
     {
         $this->selectedExhibitionIds = $this->toggleSelection($this->selectedExhibitionIds, $id);
-        $this->syncJournalPreviewFocus();
+        $this->syncJournalPreviewFocus(updateOnly: true);
+        $this->onJournalStageSelectionChanged(in_array($id, $this->selectedExhibitionIds, true) ? $id : null);
     }
 
     public function toggleVisibleSelection(): void
@@ -309,13 +311,15 @@ final class JournalWorkspace extends Page
         if ($this->journalTemplate() === JournalTemplate::Blog) {
             $visible = collect($this->posts)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
             $this->selectedPostIds = $this->toggledVisibleSelection($this->selectedPostIds, $visible);
-            $this->syncJournalPreviewFocus();
+            $this->syncJournalPreviewFocus(updateOnly: true);
+            $this->onJournalStageSelectionChanged();
 
             return;
         }
         $visible = collect($this->exhibitions)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
         $this->selectedExhibitionIds = $this->toggledVisibleSelection($this->selectedExhibitionIds, $visible);
-        $this->syncJournalPreviewFocus();
+        $this->syncJournalPreviewFocus(updateOnly: true);
+        $this->onJournalStageSelectionChanged();
     }
 
     public function toggleJournalPreviewAutoFocus(): void
@@ -328,11 +332,13 @@ final class JournalWorkspace extends Page
 
     public function journalStagePreviewUrl(): ?string
     {
-        $selectionCount = count($this->journalTemplate() === JournalTemplate::Blog
-            ? $this->selectedPostIds : $this->selectedExhibitionIds);
-        if (($this->journalStagePanel === 'new' && $selectionCount === 0)
-            || ($this->journalStagePanel === 'staged' && $this->selectedStagedJournalDraftKey !== null)) {
-            return route('preview.journal.staged-entry', ['section' => $this->sectionId, 'token' => $this->getId()]);
+        if ($this->journalStagePanel === 'new'
+            || ($this->journalStagePanel === 'selected' && $this->selectedJournalEntryId !== null)) {
+            $url = route('preview.journal.staged-entry', ['section' => $this->sectionId, 'token' => $this->getId()]);
+
+            return $this->journalStagePanel === 'selected'
+                && $this->journalTemplate() === JournalTemplate::Exhibitions
+                ? $url.'#exhibition-'.$this->selectedJournalEntryId : $url;
         }
         if ($this->journalPreviewAutoFocus && $this->journalPreviewFocusedEntryId !== null) {
             $rows = $this->journalTemplate() === JournalTemplate::Blog ? $this->posts : $this->exhibitions;
@@ -349,24 +355,21 @@ final class JournalWorkspace extends Page
 
     public function journalStagePreviewTitle(): string
     {
-        $selectionCount = count($this->journalTemplate() === JournalTemplate::Blog
-            ? $this->selectedPostIds : $this->selectedExhibitionIds);
-        if (($this->journalStagePanel === 'new' && $selectionCount === 0)
-            || ($this->journalStagePanel === 'staged' && $this->selectedStagedJournalDraftKey !== null)) {
+        if ($this->journalStagePanel === 'new'
+            || ($this->journalStagePanel === 'selected' && $this->selectedJournalEntryId !== null)) {
             return $this->journalTemplate() === JournalTemplate::Blog
-                ? 'Interactive Blog draft preview' : 'Interactive Exhibition draft preview';
+                ? 'Interactive Blog editor preview' : 'Interactive Exhibition editor preview';
         }
         if ($this->journalPreviewAutoFocus && $this->journalPreviewFocusedEntryId !== null) {
             return $this->journalTemplate() === JournalTemplate::Blog
-                ? 'Interactive Blog post preview'
-                : 'Interactive Exhibition preview';
+                ? 'Interactive Blog post preview' : 'Interactive Exhibition preview';
         }
 
         return 'Interactive Journal preview';
     }
 
     /** Selection does not alter a manually navigated preview while Auto-focus is off. */
-    private function syncJournalPreviewFocus(bool $forceRefresh = false): void
+    private function syncJournalPreviewFocus(bool $forceRefresh = false, bool $updateOnly = false): void
     {
         $isBlog = $this->journalTemplate() === JournalTemplate::Blog;
         $selected = $isBlog ? $this->selectedPostIds : $this->selectedExhibitionIds;
@@ -385,7 +388,7 @@ final class JournalWorkspace extends Page
         $changed = $this->journalPreviewFocusedEntryId !== $next;
         $this->journalPreviewFocusedEntryId = $next;
 
-        if (($this->journalPreviewAutoFocus && $changed) || $forceRefresh) {
+        if (! $updateOnly && (($this->journalPreviewAutoFocus && $changed) || $forceRefresh)) {
             $this->refreshJournalPreview();
         }
     }
@@ -956,7 +959,8 @@ final class JournalWorkspace extends Page
 
                     return;
                 }
-                $this->syncJournalPreviewFocus(forceRefresh: true);
+                $this->syncJournalPreviewFocus(updateOnly: true);
+                $this->onJournalStageSelectionChanged();
                 app(AdminNotifier::class)->notification(
                     title: ucfirst($type).' deleted',
                     status: 'success',
@@ -980,9 +984,8 @@ final class JournalWorkspace extends Page
                 $this->selectedPostIds = [];
                 $this->notifyBatch('posts deleted', $ok, $failed);
                 $this->loadPosts();
-                if ($ok > 0) {
-                    $this->syncJournalPreviewFocus(forceRefresh: true);
-                }
+                $this->syncJournalPreviewFocus(updateOnly: true);
+                $this->onJournalStageSelectionChanged();
             });
 
         return AdminDialog::confirm(
@@ -1002,9 +1005,8 @@ final class JournalWorkspace extends Page
                 $this->selectedExhibitionIds = [];
                 $this->notifyBatch('exhibitions deleted', $ok, $failed);
                 $this->loadExhibitions();
-                if ($ok > 0) {
-                    $this->syncJournalPreviewFocus(forceRefresh: true);
-                }
+                $this->syncJournalPreviewFocus(updateOnly: true);
+                $this->onJournalStageSelectionChanged();
             });
 
         return AdminDialog::confirm(
@@ -1326,9 +1328,8 @@ final class JournalWorkspace extends Page
         $this->selectedPostIds = [];
         $this->notifyBatch($label, $ok, $failed);
         $this->loadPosts();
-        if ($ok > 0) {
-            $this->syncJournalPreviewFocus(forceRefresh: true);
-        }
+        $this->syncJournalPreviewFocus(updateOnly: true);
+        $this->onJournalStageSelectionChanged();
     }
 
     private function runEntryBatch(iterable $records, callable $action): array

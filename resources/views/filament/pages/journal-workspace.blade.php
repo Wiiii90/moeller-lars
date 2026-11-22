@@ -44,26 +44,28 @@
 
         <section class="admin-visual-stage admin-visual-stage--split admin-visual-stage--editor-preview"
             aria-label="Journal editor and live public preview">
-            @php($stagedTotal = count($stagedJournalDrafts))
-            @php($stagedPosition = $this->stagedJournalPosition())
+            @php($selectedStageIds = $this->journalStageSelectedIds())
+            @php($selectedStageTotal = count($selectedStageIds))
+            @php($selectedStagePosition = $this->journalStageSelectedPosition())
             <div class="gallery-stage__workspace admin-visual-stage__pane admin-visual-stage__editor-pane">
                 <header class="gallery-stage__workspace-header">
                     <h2 class="admin-section__kicker admin-visual-stage__heading">{{ $isBlog ? __('Blog editor') : __('Exhibitions editor') }}</h2>
-                    <div class="admin-stage-tabs gallery-stage__workspace-tabs" role="group" aria-label="Journal editor mode and draft navigation">
+                    <div class="admin-stage-tabs gallery-stage__workspace-tabs" role="group" aria-label="Journal editor mode and selected entry navigation">
                         <button class="admin-action {{ $journalStagePanel === 'new' ? 'is-primary' : '' }}"
-                            type="button" wire:click="createStagedJournalDraft" aria-label="Stage a new Journal entry">New</button>
-                        <div class="admin-action gallery-stage__queue-control {{ $journalStagePanel === 'staged' ? 'is-primary' : '' }}"
-                            role="group" aria-label="Staged Journal draft navigation">
-                            <button class="gallery-stage__queue-arrow" type="button" wire:click="navigateStagedJournalDraft(-1)"
-                                @disabled($stagedTotal <= 1) aria-label="Previous staged draft">
+                            type="button" wire:click="showJournalStagePanel('new')"
+                            aria-pressed="{{ $journalStagePanel === 'new' ? 'true' : 'false' }}">New</button>
+                        <div class="admin-action gallery-stage__queue-control {{ $journalStagePanel === 'selected' ? 'is-primary' : '' }}"
+                            role="group" aria-label="Selected Journal entry navigation">
+                            <button class="gallery-stage__queue-arrow" type="button" wire:click="navigateSelectedJournalEntry(-1)"
+                                @disabled($selectedStageTotal <= 1) aria-label="Previous selected entry">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Previous->mini()" />
                             </button>
-                            <button class="gallery-stage__queue-tab" type="button" wire:click="showJournalStagePanel('staged')"
-                                @disabled($stagedTotal === 0) aria-pressed="{{ $journalStagePanel === 'staged' ? 'true' : 'false' }}">
-                                Staged ({{ $stagedPosition }}/{{ $stagedTotal }})
+                            <button class="gallery-stage__queue-tab" type="button" wire:click="showJournalStagePanel('selected')"
+                                @disabled($selectedStageTotal === 0) aria-pressed="{{ $journalStagePanel === 'selected' ? 'true' : 'false' }}">
+                                Selected ({{ $selectedStagePosition }}/{{ $selectedStageTotal }})
                             </button>
-                            <button class="gallery-stage__queue-arrow" type="button" wire:click="navigateStagedJournalDraft(1)"
-                                @disabled($stagedTotal <= 1) aria-label="Next staged draft">
+                            <button class="gallery-stage__queue-arrow" type="button" wire:click="navigateSelectedJournalEntry(1)"
+                                @disabled($selectedStageTotal <= 1) aria-label="Next selected entry">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Next->mini()" />
                             </button>
                         </div>
@@ -75,47 +77,52 @@
 
                 @if ($journalStagePanel === 'new')
                     <div class="gallery-stage__form-scroll admin-visual-stage__field-scroll fi-fixed-positioning-context"
-                        wire:change="rememberNewJournalDraft"
-                        x-on:artist-rich-editor-commit="$wire.rememberNewJournalDraft()">
+                        wire:change="rememberNewJournalEntry"
+                        x-on:artist-rich-editor-commit="$wire.rememberNewJournalEntry()">
                         {{ $this->journalNewForm }}
                     </div>
                     <div class="gallery-stage__editor-actions admin-toolbar" aria-label="New Journal entry actions">
                         <div class="gallery-stage__action-group">
-                            <button class="admin-action is-primary" type="button" wire:click="createStagedJournalDraft"
-                                wire:loading.attr="disabled" wire:target="createStagedJournalDraft">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" />
-                                <span class="gallery-stage__action-label">Stage {{ $entryLabelSingular }}</span>
-                            </button>
-                        </div>
-                    </div>
-                @elseif ($journalStagePanel === 'staged' && $selectedStagedJournalDraftKey !== null)
-                    <div class="gallery-stage__form-scroll admin-visual-stage__field-scroll fi-fixed-positioning-context"
-                        wire:key="journal-staged-editor-{{ $selectedStagedJournalDraftKey }}"
-                        wire:change="rememberStagedJournalDraft"
-                        x-on:artist-rich-editor-commit="$wire.rememberStagedJournalDraft()">
-                        {{ $this->journalStagedForm }}
-                    </div>
-                    <div class="gallery-stage__editor-actions admin-toolbar" aria-label="Staged Journal draft actions">
-                        <div class="gallery-stage__action-group">
-                            <button class="admin-action is-danger" type="button" wire:click="discardStagedJournalDraft"
-                                wire:loading.attr="disabled" wire:target="discardStagedJournalDraft,discardAllStagedJournalDrafts">
+                            <button class="admin-action is-danger" type="button" wire:click="discardNewJournalEntry"
+                                wire:loading.attr="disabled" wire:target="discardNewJournalEntry,submitNewJournalEntry">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
                                 <span class="gallery-stage__action-label">Discard</span>
                             </button>
-                            <button class="admin-action is-success" type="button" wire:click="submitStagedJournalDraft"
-                                wire:loading.attr="disabled" wire:target="submitStagedJournalDraft,submitAllStagedJournalDrafts">
+                            <button class="admin-action is-success" type="button" wire:click="submitNewJournalEntry"
+                                wire:loading.attr="disabled" wire:target="discardNewJournalEntry,submitNewJournalEntry">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
+                                <span class="gallery-stage__action-label">Submit</span>
+                            </button>
+                        </div>
+                    </div>
+                @elseif ($journalStagePanel === 'selected' && $selectedJournalEntryId !== null)
+                    <div class="gallery-stage__form-scroll admin-visual-stage__field-scroll fi-fixed-positioning-context"
+                        wire:key="journal-selected-editor-{{ $selectedJournalEntryId }}"
+                        wire:change="rememberSelectedJournalEdit"
+                        x-on:artist-rich-editor-commit="$wire.rememberSelectedJournalEdit()">
+                        {{ $this->journalSelectedForm }}
+                    </div>
+                    <div class="gallery-stage__editor-actions admin-toolbar" aria-label="Selected Journal entry actions">
+                        <div class="gallery-stage__action-group">
+                            <button class="admin-action is-danger" type="button" wire:click="discardSelectedJournalEdit"
+                                wire:loading.attr="disabled" wire:target="discardSelectedJournalEdit,discardAllSelectedJournalEdits">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
+                                <span class="gallery-stage__action-label">Discard</span>
+                            </button>
+                            <button class="admin-action is-success" type="button" wire:click="submitSelectedJournalEdit"
+                                wire:loading.attr="disabled" wire:target="submitSelectedJournalEdit,submitAllSelectedJournalEdits">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
                                 <span class="gallery-stage__action-label">Submit</span>
                             </button>
                         </div>
                         <div class="gallery-stage__action-group gallery-stage__action-group--batch">
-                            <button class="admin-action is-danger" type="button" wire:click="discardAllStagedJournalDrafts"
-                                wire:loading.attr="disabled" wire:target="discardStagedJournalDraft,discardAllStagedJournalDrafts">
+                            <button class="admin-action is-danger" type="button" wire:click="discardAllSelectedJournalEdits"
+                                wire:loading.attr="disabled" wire:target="discardSelectedJournalEdit,discardAllSelectedJournalEdits">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
                                 <span class="gallery-stage__action-label">Discard All</span>
                             </button>
-                            <button class="admin-action is-success" type="button" wire:click="submitAllStagedJournalDrafts"
-                                wire:loading.attr="disabled" wire:target="submitStagedJournalDraft,submitAllStagedJournalDrafts">
+                            <button class="admin-action is-success" type="button" wire:click="submitAllSelectedJournalEdits"
+                                wire:loading.attr="disabled" wire:target="submitSelectedJournalEdit,submitAllSelectedJournalEdits">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::SubmitAll->value" />
                                 <span class="gallery-stage__action-label">Submit All</span>
                             </button>

@@ -43,7 +43,7 @@ final class JournalEntryEditorSchema
     }
 
     /** The Stage reuses the canonical Journal fields in collapsible editor groups. */
-    public static function staged(Schema $schema, JournalTemplate $template): Schema
+    public static function stageEditor(Schema $schema, JournalTemplate $template, bool $creating = true): Schema
     {
         $fields = $template === JournalTemplate::Exhibitions
             ? self::basicsFields($template, stage: true)
@@ -53,8 +53,11 @@ final class JournalEntryEditorSchema
                     ->placeholder(__('No cover image'))->nullable()->columnSpanFull(),
                 self::imageViewerField(),
             ];
-        // Unfinished Stage drafts may be saved without a title.
-        $fields[0]->required(false)->columnSpanFull();
+        // Only the new-entry form may remain untitled until direct Submit.
+        if ($creating) {
+            $fields[0]->required(false);
+        }
+        $fields[0]->columnSpanFull();
 
         if ($template === JournalTemplate::Exhibitions) {
             $fields[] = self::dateFields()[0];
@@ -81,13 +84,15 @@ final class JournalEntryEditorSchema
                 ->schema(AdminRichText::schema('body', __('Text'), 50000, allowEmbeddedMedia: true, pageAutosave: true))
                 ->collapsible()->collapsed()->columnSpanFull();
             $fields[] = self::gallerySection(stage: true)->collapsible()->collapsed()->columnSpanFull();
-            $fields[] = AdminControl::select('stage_publication_mode', 'On submit')
-                ->options(['publish' => 'Publish', 'schedule' => 'Schedule', 'draft' => 'Save draft'])
-                ->default('publish')->live()->required()->columnSpanFull();
-            $fields[] = DateTimePicker::make('stage_scheduled_at')
-                ->label(__('Publish at'))->seconds(false)->native(false)->nullable()
-                ->visible(fn (Get $get): bool => $get('stage_publication_mode') === 'schedule')
-                ->columnSpanFull();
+            if ($creating) {
+                $fields[] = AdminControl::select('stage_publication_mode', 'On submit')
+                    ->options(['publish' => 'Publish', 'schedule' => 'Schedule', 'draft' => 'Save draft'])
+                    ->default('publish')->live()->required()->columnSpanFull();
+                $fields[] = DateTimePicker::make('stage_scheduled_at')
+                    ->label(__('Publish at'))->seconds(false)->native(false)->nullable()
+                    ->visible(fn (Get $get): bool => $get('stage_publication_mode') === 'schedule')
+                    ->columnSpanFull();
+            }
         }
 
         return $schema->components($fields)->columns(['default' => 1]);

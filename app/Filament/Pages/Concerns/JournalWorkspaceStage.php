@@ -8,34 +8,41 @@ use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
 use App\Filament\Support\JournalEntryEditorSchema;
+use App\Filament\Support\JournalEntryEditorState;
+use App\Models\BlogPost;
+use App\Models\Exhibition;
 use Filament\Facades\Filament;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 trait JournalWorkspaceStage
 {
-    /** @var list<array{key:string,form:array<string,mixed>}> */
-    public array $stagedJournalDrafts = [];
-
-    public ?string $selectedStagedJournalDraftKey = null;
-
-    /** @var array<string,mixed> */
-    public array $stagedJournalFormData = [];
-
-    /** @var array<string,mixed> */
+    /** The only unsaved creation form; it submits directly to the Journal table. */
     public array $newJournalFormData = [];
+
+    /** @var array<int,array{form:array<string,mixed>,original:array<string,mixed>,dirty:bool}> */
+    public array $selectedJournalEdits = [];
+
+    public ?int $selectedJournalEntryId = null;
+
+    public array $selectedJournalFormData = [];
 
     public string $journalStagePanel = 'new';
 
     public function journalNewForm(Schema $schema): Schema
     {
-        return JournalEntryEditorSchema::staged($schema, $this->journalTemplate())
+        return JournalEntryEditorSchema::stageEditor($schema, $this->journalTemplate(), creating: true)
             ->statePath('newJournalFormData');
     }
 
-    private function defaultJournalDraft(): array
+    public function journalSelectedForm(Schema $schema): Schema
+    {
+        return JournalEntryEditorSchema::stageEditor($schema, $this->journalTemplate(), creating: false)
+            ->statePath('selectedJournalFormData');
+    }
+
+    private function defaultNewJournalEntry(): array
     {
         return [
             ...app(JournalSettingsService::class)->editorDefaults($this->section()),
@@ -44,298 +51,333 @@ trait JournalWorkspaceStage
         ];
     }
 
-    public function journalStagedForm(Schema $schema): Schema
+    private function journalStageSessionKey(): string
     {
-        return JournalEntryEditorSchema::staged($schema, $this->journalTemplate())
-            ->statePath('stagedJournalFormData');
+        return 'journal.stage.editor.'.(int) Filament::auth()->id().'.'.$this->sectionId;
     }
 
-    private function stagedJournalSessionKey(): string
+    private function restoreJournalStageEditor(): void
     {
-        return 'journal.stage.drafts.'.(int) Filament::auth()->id().'.'.$this->sectionId;
-    }
-
-    private function restoreStagedJournalDrafts(): void
-    {
-        $saved = session()->get($this->stagedJournalSessionKey(), []);
+        // Old session-only staged forms are left intact for manual recovery.
+        // The editor no longer consumes or mutates that rejected queue.
+        $saved = session()->get($this->journalStageSessionKey(), []);
         $saved = is_array($saved) && ($saved['template'] ?? null) === $this->template ? $saved : [];
-
         $new = $saved['new'] ?? [];
-        $this->journalNewForm->fill(is_array($new) && $new !== [] ? $new : $this->defaultJournalDraft());
+        $this->journalNewForm->fill(is_array($new) && $new !== [] ? $new : $this->defaultNewJournalEntry());
 
-        $items = $saved['items'] ?? [];
-        $this->stagedJournalDrafts = is_array($items) ? array_values(array_filter($items,
-            static fn (mixed $row): bool => is_array($row)
-                && is_string($row['key'] ?? null) && is_array($row['form'] ?? null),
-        )) : [];
-
-        $preferred = $saved['selected'] ?? null;
-        $this->selectedStagedJournalDraftKey = is_string($preferred) && $this->stagedDraftIndex($preferred) !== null
-            ? $preferred : ($this->stagedJournalDrafts[0]['key'] ?? null);
-        $panel = (string) ($saved['panel'] ?? ($this->selectedStagedJournalDraftKey !== null ? 'staged' : 'new'));
-        $this->journalStagePanel = $panel === 'settings' || $panel === 'new'
-            ? $panel : ($this->selectedStagedJournalDraftKey === null ? 'new' : 'staged');
-
-        if ($this->selectedStagedJournalDraftKey !== null) {
-            $this->fillSelectedStagedJournalDraft();
-        }
-        $this->publishStagedJournalPreview();
+        $this->selectedJournalEntryId = null;
+        $this->selectedJournalEdits = [];
+        $this->journalStagePanel = ($saved['panel'] ?? 'new') === 'settings' ? 'settings' : 'new';
+        $this->publishJournalEditorPreview();
     }
 
-    private function persistStagedJournalDrafts(): void
+    private function persistJournalStage(): void
     {
-        session()->put($this->stagedJournalSessionKey(), [
+        session()->put($this->journalStageSessionKey(), [
             'template' => $this->template,
-            'selected' => $this->selectedStagedJournalDraftKey,
             'panel' => $this->journalStagePanel,
-            'items' => $this->stagedJournalDrafts,
             'new' => $this->newJournalFormData,
         ]);
     }
 
-    public function rememberNewJournalDraft(bool $refreshPreview = true): void
+    public function rememberNewJournalEntry(bool $refreshPreview = true): void
     {
         $form = $this->journalNewForm->getRawState();
-        if (! is_array($form)) {
-            return;
-        }
-        $saved = session()->get($this->stagedJournalSessionKey(), []);
-        if (is_array($saved) && ($saved['new'] ?? null) === $form) {
+        if (! is_array($form) || $form === $this->newJournalFormData) {
             return;
         }
         $this->newJournalFormData = $form;
-        $this->persistStagedJournalDrafts();
+        $this->persistJournalStage();
         if ($refreshPreview) {
-            $this->publishStagedJournalPreview();
+            $this->publishJournalEditorPreview();
         }
     }
 
-    private function stagedDraftIndex(?string $key): ?int
+    /** @return list<int> */
+    public function journalStageSelectedIds(): array
     {
-        if ($key === null) {
-            return null;
+        $raw = $this->journalTemplate() === JournalTemplate::Blog
+            ? $this->selectedPostIds : $this->selectedExhibitionIds;
+
+        return collect($raw)->map(static fn (mixed $id): int => (int) $id)
+            ->filter(static fn (int $id): bool => $id > 0)->unique()->values()->all();
+    }
+
+    public function journalStageSelectedPosition(): int
+    {
+        $index = array_search($this->selectedJournalEntryId, $this->journalStageSelectedIds(), true);
+
+        return $index === false ? 0 : $index + 1;
+    }
+
+    private function stageEntry(int $id): BlogPost|Exhibition
+    {
+        return $this->journalTemplate() === JournalTemplate::Blog
+            ? $this->post($id) : $this->exhibition($id);
+    }
+
+    private function stageEntryForm(BlogPost|Exhibition $entry): array
+    {
+        return [
+            ...$entry->attributesToArray(),
+            ...app(JournalEntryEditorState::class)->for($entry),
+        ];
+    }
+
+    private function loadSelectedJournalEntry(int $id): void
+    {
+        $entry = $this->stageEntry($id);
+        $this->selectedJournalEntryId = $id;
+        if (! isset($this->selectedJournalEdits[$id]) || ! $this->selectedJournalEdits[$id]['dirty']) {
+            $this->selectedJournalEdits[$id] = [
+                'form' => $this->stageEntryForm($entry),
+                'original' => $this->journalEntryMutationState($entry),
+                'dirty' => false,
+            ];
         }
-        foreach ($this->stagedJournalDrafts as $index => $row) {
-            if ($row['key'] === $key) {
-                return $index;
+        $this->journalSelectedForm->fill($this->selectedJournalEdits[$id]['form']);
+        if (! $this->selectedJournalEdits[$id]['dirty']) {
+            // Compare against the actual quick-editor fields, not unseen
+            // full-record attributes discarded during form hydration.
+            $this->selectedJournalEdits[$id]['form'] = $this->journalSelectedForm->getRawState();
+        }
+    }
+
+    /** Selection is the Stage's editing target, never an intermediate draft queue. */
+    private function onJournalStageSelectionChanged(?int $preferred = null): void
+    {
+        if ($this->journalStagePanel === 'new') {
+            $this->rememberNewJournalEntry(false);
+        }
+        $this->rememberSelectedJournalEdit(false);
+        $ids = $this->journalStageSelectedIds();
+        $next = $preferred !== null && in_array($preferred, $ids, true)
+            ? $preferred
+            : (in_array($this->selectedJournalEntryId, $ids, true)
+                ? $this->selectedJournalEntryId : ($ids[0] ?? null));
+        if ($next !== null) {
+            $this->loadSelectedJournalEntry($next);
+            $this->journalStagePanel = 'selected';
+        } else {
+            $this->selectedJournalEntryId = null;
+            if ($this->journalStagePanel === 'selected') {
+                $this->journalStagePanel = 'new';
             }
         }
-
-        return null;
-    }
-
-    public function stagedJournalPosition(): int
-    {
-        $index = $this->stagedDraftIndex($this->selectedStagedJournalDraftKey);
-
-        return $index === null ? 0 : $index + 1;
-    }
-
-    public function createStagedJournalDraft(): void
-    {
-        $this->rememberNewJournalDraft(false);
-        $key = Str::random(12);
-        $form = $this->newJournalFormData;
-        $this->journalNewForm->fill($this->defaultJournalDraft());
-        $this->stagedJournalDrafts[] = ['key' => $key, 'form' => $form];
-        $this->selectedStagedJournalDraftKey = $key;
-        $this->journalStagePanel = 'staged';
-        $this->fillSelectedStagedJournalDraft();
-        $this->persistStagedJournalDrafts();
-        $this->publishStagedJournalPreview();
+        $this->persistJournalStage();
+        $this->publishJournalEditorPreview();
     }
 
     public function showJournalStagePanel(string $panel): void
     {
-        if (! in_array($panel, ['new', 'staged', 'settings'], true)) {
+        if (! in_array($panel, ['new', 'selected', 'settings'], true)) {
             return;
         }
-        if ($panel === 'staged' && $this->stagedJournalDrafts === []) {
+        if ($panel === 'selected' && $this->journalStageSelectedIds() === []) {
             return;
         }
         if ($this->journalStagePanel === 'new') {
-            $this->rememberNewJournalDraft(false);
-        } else {
-            $this->rememberStagedJournalDraft(false);
+            $this->rememberNewJournalEntry(false);
+        } elseif ($this->journalStagePanel === 'selected') {
+            $this->rememberSelectedJournalEdit(false);
         }
         $this->journalStagePanel = $panel;
-        $this->persistStagedJournalDrafts();
-        $this->publishStagedJournalPreview();
+        if ($panel === 'selected') {
+            $id = $this->selectedJournalEntryId ?? $this->journalStageSelectedIds()[0];
+            $this->loadSelectedJournalEntry($id);
+        }
+        $this->persistJournalStage();
+        $this->publishJournalEditorPreview();
     }
 
-    public function navigateStagedJournalDraft(int $direction): void
+    public function navigateSelectedJournalEntry(int $direction): void
     {
-        if ($this->stagedJournalDrafts === []) {
+        $ids = $this->journalStageSelectedIds();
+        if ($ids === []) {
             return;
         }
-        $this->rememberStagedJournalDraft(false);
-        $count = count($this->stagedJournalDrafts);
-        $current = $this->stagedDraftIndex($this->selectedStagedJournalDraftKey) ?? 0;
-        $next = ($current + ($direction < 0 ? -1 : 1) + $count) % $count;
-        $this->selectedStagedJournalDraftKey = $this->stagedJournalDrafts[$next]['key'];
-        $this->journalStagePanel = 'staged';
-        $this->fillSelectedStagedJournalDraft();
-        $this->persistStagedJournalDrafts();
-        $this->publishStagedJournalPreview();
+        $this->rememberSelectedJournalEdit(false);
+        $index = array_search($this->selectedJournalEntryId, $ids, true);
+        $current = $index === false ? 0 : $index;
+        $next = ($current + ($direction < 0 ? -1 : 1) + count($ids)) % count($ids);
+        $this->loadSelectedJournalEntry($ids[$next]);
+        $this->journalStagePanel = 'selected';
+        $this->persistJournalStage();
+        $this->publishJournalEditorPreview();
     }
 
-    private function fillSelectedStagedJournalDraft(): void
+    public function rememberSelectedJournalEdit(bool $refreshPreview = true): void
     {
-        $index = $this->stagedDraftIndex($this->selectedStagedJournalDraftKey);
-        if ($index === null) {
+        $id = $this->selectedJournalEntryId;
+        if ($id === null || ! isset($this->selectedJournalEdits[$id])) {
             return;
         }
-        $form = $this->stagedJournalDrafts[$index]['form'];
-        $assetIds = collect([
-            $form['cover_media_asset_id'] ?? null,
-            ...array_map(static fn (mixed $row): mixed => is_array($row) ? ($row['media_asset_id'] ?? null) : null,
-                is_array($form['gallery_images'] ?? null) ? $form['gallery_images'] : []),
-        ])->filter(static fn (mixed $id): bool => is_numeric($id))->map(static fn (mixed $id): int => (int) $id)->unique()->values();
-        if ($assetIds->isNotEmpty()) {
-            foreach (\App\Models\MediaAsset::query()->whereIn('id', $assetIds)->get() as $asset) {
-                \App\Filament\Support\MediaAssetSelect::primeOptionLabel($asset);
-            }
-        }
-
-        $this->journalStagedForm->fill($form);
-    }
-
-    /** Persist the current Stage form, including rich text and media ordering. */
-    public function rememberStagedJournalDraft(bool $refreshPreview = true): void
-    {
-        $index = $this->stagedDraftIndex($this->selectedStagedJournalDraftKey);
-        if ($index === null) {
+        $form = $this->journalSelectedForm->getRawState();
+        if (! is_array($form) || $form === $this->selectedJournalEdits[$id]['form']) {
             return;
         }
-        $form = $this->journalStagedForm->getRawState();
-        if (! is_array($form) || $form === $this->stagedJournalDrafts[$index]['form']) {
-            return;
-        }
-
-        $this->stagedJournalDrafts[$index]['form'] = $form;
-        $this->persistStagedJournalDrafts();
+        $this->selectedJournalEdits[$id]['form'] = $form;
+        $this->selectedJournalEdits[$id]['dirty'] = true;
         if ($refreshPreview) {
-            $this->publishStagedJournalPreview();
+            $this->publishJournalEditorPreview();
         }
     }
 
-    /** A single protected snapshot is shared by New and Staged modes. */
-    private function publishStagedJournalPreview(): void
+    /** Reuse the protected Public renderer for both new and selected edits. */
+    private function publishJournalEditorPreview(): void
     {
-        $index = $this->stagedDraftIndex($this->selectedStagedJournalDraftKey);
-        $form = match ($this->journalStagePanel) {
-            'new' => $this->newJournalFormData,
-            'staged' => $index !== null ? $this->stagedJournalDrafts[$index]['form'] : null,
-            default => null,
-        };
+        $form = null;
+        $id = null;
+        if ($this->journalStagePanel === 'new') {
+            $form = $this->newJournalFormData;
+        } elseif ($this->journalStagePanel === 'selected' && $this->selectedJournalEntryId !== null) {
+            $id = $this->selectedJournalEntryId;
+            $form = $this->selectedJournalEdits[$id]['form'] ?? null;
+        }
         if (! is_array($form)) {
             session()->forget('journal.stage.preview.'.$this->getId());
-            $this->refreshJournalPreview();
-
-            return;
+        } else {
+            session()->put('journal.stage.preview.'.$this->getId(), [
+                'section_id' => $this->sectionId,
+                'template' => $this->template,
+                'entry_id' => $id,
+                'form' => $form,
+            ]);
         }
-        session()->put('journal.stage.preview.'.$this->getId(), [
-            'section_id' => $this->sectionId,
-            'template' => $this->template,
-            'form' => $form,
-        ]);
         $this->refreshJournalPreview();
     }
 
-    public function discardStagedJournalDraft(): void
+    public function discardNewJournalEntry(): void
     {
-        $index = $this->stagedDraftIndex($this->selectedStagedJournalDraftKey);
-        if ($index === null) {
+        $this->journalNewForm->fill($this->defaultNewJournalEntry());
+        $this->rememberNewJournalEntry(false);
+        $this->publishJournalEditorPreview();
+    }
+
+    public function submitNewJournalEntry(): void
+    {
+        $this->rememberNewJournalEntry(false);
+        $data = [...$this->newJournalFormData, 'site_section_id' => $this->sectionId];
+        try {
+            DB::transaction(function () use ($data): void {
+                if ($this->journalTemplate() === JournalTemplate::Blog) {
+                    $service = app(BlogEditorialService::class);
+                    $entry = $service->createDraft($data);
+                    match ((string) ($data['stage_publication_mode'] ?? 'publish')) {
+                        'draft' => null,
+                        'schedule' => $service->schedule($entry, $data['stage_scheduled_at'] ?? null),
+                        'publish' => $service->publish($entry),
+                        default => throw ValidationException::withMessages([
+                            'stage_publication_mode' => 'Choose a supported publication action.',
+                        ]),
+                    };
+                } else {
+                    $service = app(ExhibitionEditorialService::class);
+                    $entry = $service->createDraft($data);
+                    $service->publish($entry);
+                }
+            });
+        } catch (ValidationException $exception) {
+            $this->notifyValidationFailure('Journal entry was not submitted', $exception);
+
             return;
         }
 
-        array_splice($this->stagedJournalDrafts, $index, 1);
-        $this->selectedStagedJournalDraftKey = $this->stagedJournalDrafts === []
-            ? null : $this->stagedJournalDrafts[min($index, count($this->stagedJournalDrafts) - 1)]['key'];
-        if ($this->selectedStagedJournalDraftKey === null) {
-            $this->journalStagePanel = 'new';
-        } else {
-            $this->fillSelectedStagedJournalDraft();
-        }
-        $this->persistStagedJournalDrafts();
-        $this->publishStagedJournalPreview();
+        $this->journalNewForm->fill($this->defaultNewJournalEntry());
+        $this->rememberNewJournalEntry(false);
+        $this->persistJournalStage();
+        $this->reloadEntries();
+        $this->publishJournalEditorPreview();
+        app(AdminNotifier::class)->notification(title: 'Journal entry submitted', status: 'success');
     }
 
-    public function discardAllStagedJournalDrafts(): void
+    public function discardSelectedJournalEdit(): void
     {
-        if ($this->stagedJournalDrafts === []) {
+        $id = $this->selectedJournalEntryId;
+        if ($id === null) {
             return;
         }
-
-        $this->stagedJournalDrafts = [];
-        $this->selectedStagedJournalDraftKey = null;
-        $this->journalStagePanel = 'new';
-        $this->persistStagedJournalDrafts();
-        $this->publishStagedJournalPreview();
+        unset($this->selectedJournalEdits[$id]);
+        $this->loadSelectedJournalEntry($id);
+        $this->publishJournalEditorPreview();
     }
 
-    public function submitStagedJournalDraft(): void
+    public function discardAllSelectedJournalEdits(): void
     {
-        $this->submitStagedJournalDrafts(false);
+        $id = $this->selectedJournalEntryId;
+        $this->selectedJournalEdits = [];
+        if ($id !== null) {
+            $this->loadSelectedJournalEntry($id);
+        }
+        $this->publishJournalEditorPreview();
     }
 
-    public function submitAllStagedJournalDrafts(): void
+    public function submitSelectedJournalEdit(): void
     {
-        $this->submitStagedJournalDrafts(true);
+        $this->submitSelectedJournalEdits(false);
     }
 
-    private function submitStagedJournalDrafts(bool $all): void
+    public function submitAllSelectedJournalEdits(): void
     {
-        $this->rememberStagedJournalDraft(false);
-        $index = $this->stagedDraftIndex($this->selectedStagedJournalDraftKey);
-        if ($index === null) {
+        $this->submitSelectedJournalEdits(true);
+    }
+
+    private function submitSelectedJournalEdits(bool $all): void
+    {
+        $this->rememberSelectedJournalEdit(false);
+        $ids = $all ? $this->journalStageSelectedIds() : [$this->selectedJournalEntryId];
+        $edits = [];
+        foreach ($ids as $id) {
+            if ($id !== null && ($this->selectedJournalEdits[$id]['dirty'] ?? false)) {
+                $edits[$id] = $this->selectedJournalEdits[$id];
+            }
+        }
+        if ($edits === []) {
             return;
         }
-        $selected = $all ? $this->stagedJournalDrafts : [$this->stagedJournalDrafts[$index]];
 
         try {
-            // A failed member rolls back the entire Submit All batch.
-            DB::transaction(function () use ($selected): void {
-                foreach ($selected as $row) {
-                    $data = [...$row['form'], 'site_section_id' => $this->sectionId];
-                    if ($this->journalTemplate() === JournalTemplate::Blog) {
-                        $service = app(BlogEditorialService::class);
-                        $post = $service->createDraft($data);
-                        $mode = (string) ($data['stage_publication_mode'] ?? 'publish');
-                        match ($mode) {
-                            'draft' => null,
-                            'schedule' => $service->schedule($post, $data['stage_scheduled_at'] ?? null),
-                            'publish' => $service->publish($post),
-                            default => throw ValidationException::withMessages([
-                                'stage_publication_mode' => 'Choose a supported publication action.',
-                            ]),
-                        };
+            DB::transaction(function () use ($edits): void {
+                foreach ($edits as $id => $edit) {
+                    $entry = $this->stageEntry((int) $id);
+                    $entry = $entry->newQuery()->where('site_section_id', $this->sectionId)
+                        ->whereKey($id)->lockForUpdate()->firstOrFail();
+                    if ($this->journalEntryMutationState($entry) !== $edit['original']) {
+                        throw ValidationException::withMessages([
+                            'title' => 'This entry was changed elsewhere. Discard these edits to reload it.',
+                        ]);
+                    }
+                    $data = [...$edit['form'], 'site_section_id' => $this->sectionId];
+                    if ($entry instanceof BlogPost) {
+                        $data = [
+                            ...$data,
+                            'state' => $entry->getAttribute('state'),
+                            'position' => $entry->getAttribute('position'),
+                            'published_at' => $entry->getAttribute('published_at'),
+                            'scheduled_at' => $entry->getAttribute('scheduled_at'),
+                        ];
+                        app(BlogEditorialService::class)->update($entry, $data);
                     } else {
-                        $service = app(ExhibitionEditorialService::class);
-                        $entry = $service->createDraft($data);
-                        $service->publish($entry);
+                        app(ExhibitionEditorialService::class)->update($entry, $data);
                     }
                 }
             });
         } catch (ValidationException $exception) {
-            $this->notifyValidationFailure($all ? 'Staged entries were not submitted' : 'Staged entry was not submitted', $exception);
+            $this->notifyValidationFailure('Selected Journal changes were not submitted', $exception);
 
             return;
         }
 
-        $submittedKeys = array_column($selected, 'key');
-        $this->stagedJournalDrafts = array_values(array_filter($this->stagedJournalDrafts,
-            static fn (array $row): bool => ! in_array($row['key'], $submittedKeys, true)));
-        $this->selectedStagedJournalDraftKey = $this->stagedJournalDrafts[0]['key'] ?? null;
-        $this->journalStagePanel = $this->selectedStagedJournalDraftKey === null ? 'new' : 'staged';
-        if ($this->selectedStagedJournalDraftKey !== null) {
-            $this->fillSelectedStagedJournalDraft();
+        foreach (array_keys($edits) as $id) {
+            unset($this->selectedJournalEdits[$id]);
         }
-        $this->persistStagedJournalDrafts();
-        $this->publishStagedJournalPreview();
-        $this->reloadEntries();
+        if ($this->selectedJournalEntryId !== null) {
+            $this->loadSelectedJournalEntry($this->selectedJournalEntryId);
+        }
+        $this->reloadEntries(false);
+        $this->publishJournalEditorPreview();
         app(AdminNotifier::class)->notification(
-            title: count($selected) === 1 ? 'Journal entry submitted' : count($selected).' Journal entries submitted',
+            title: count($edits) === 1 ? 'Journal entry saved' : count($edits).' Journal entries saved',
             status: 'success',
         );
     }
