@@ -2,7 +2,7 @@
 
 - **Working branch:** `dev`
 - **Lease:** 42 (replaced previous lease 34 on 2026-11-22)
-- **Status:** Exhibition Stage source-integrated: Vernissage flag retirement, checkbox defaults, compact Rich Text, Gallery table native Add action, single-row text-plus-suggestion Organizer/Venue with submit-time catalog creation, and full-list New preview with last-position focus. Browser/runtime/migrations pending.
+- **Status:** Exhibition Stage source-integrated: Vernissage flag retirement, checkbox defaults, compact Rich Text, Gallery table native header Add action and shared icon-only row actions, single-row text-plus-suggestion Organizer/Venue with submit-time catalog creation, and full-list New preview with last-position focus. Browser/runtime/migrations pending.
 - **Assignment:** Continue the actual Journal workstream (Blog and Exhibitions), particularly Exhibition Stage Settings and user-approved defaults simplification; propose, but do not prematurely implement, new layout/effect options.
 - **Ownership:** `JournalWorkspace`, Journal Stage and its private Public preview, exhibition-specific settings and organizer/venue catalogs. Dev Worker 5 owns shared Page/Journal template architecture, Dev Worker 4 Gallery shared surfaces, Dev Worker 8 dialog chrome; update direct consumers without creating second systems.
 

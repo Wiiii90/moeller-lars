@@ -92,17 +92,20 @@
                                     <x-admin.row-action
                                         :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                         :disabled="$loop->first"
+                                        :icon-only="$isStageGallery"
                                         wire:click="{{ $moveUpAction(['item' => $itemKey])->getLivewireClickHandler() }}"
                                     />
                                     <x-admin.row-action
                                         :action="\App\Filament\Support\AdminRowAction::MoveDown"
                                         :disabled="$loop->last"
+                                        :icon-only="$isStageGallery"
                                         wire:click="{{ $moveDownAction(['item' => $itemKey])->getLivewireClickHandler() }}"
                                     />
                                 @endif
                                 <x-admin.row-action
                                     :action="\App\Filament\Support\AdminRowAction::Delete"
                                     :disabled="! $canDelete || ! $deleteAction(['item' => $itemKey])->isVisible()"
+                                    :icon-only="$isStageGallery"
                                     wire:click="{{ $deleteAction(['item' => $itemKey])->getLivewireClickHandler() }}"
                                     :aria-label="$isMediaTable ? __('Delete').' '.__('Gallery media').' '.$loop->iteration : 'Delete color '.$loop->iteration"
                                 />

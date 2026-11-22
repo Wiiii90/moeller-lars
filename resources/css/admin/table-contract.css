@@ -998,3 +998,12 @@ body.sorting .admin-hierarchy--pages .admin-pages__root-rows:has(> .sortable-gho
 /* Native Sortable owns both sibling and inter-level drag gestures. */
 .admin-hierarchy--pages .admin-hierarchy__group { position: relative; }
 .admin-hierarchy__header { position: relative; }
+
+/* Icon-only is an explicit shared row-action presentation, not a
+   Stage-local hidden-label override. Native accessible labels remain. */
+.admin-action--icon-only {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding-inline: .25rem;
+}

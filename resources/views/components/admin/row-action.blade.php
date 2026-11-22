@@ -3,6 +3,7 @@
     'label' => null,
     'href' => null,
     'disabled' => false,
+    'iconOnly' => false,
 ])
 
 @php
@@ -18,7 +19,8 @@
         'admin-action',
         'admin-action--with-icon',
         'admin-order-action' => $rowAction->isOrderAction(),
-        'admin-order-action--labeled' => $rowAction->isOrderAction(),
+        'admin-order-action--labeled' => $rowAction->isOrderAction() && ! $iconOnly,
+        'admin-action--icon-only' => $iconOnly,
         'admin-action--state' => $rowAction->isStateAction(),
         'is-danger' => $rowAction->isDangerAction(),
     ];
@@ -27,11 +29,15 @@
 @if ($href !== null)
     <a href="{{ $href }}" {{ $actionAttributes->class($classes) }}>
         <x-filament::icon :icon="$rowAction->icon()->mini()" :size="\Filament\Support\Enums\IconSize::Small" class="admin-action__icon" />
-        <span class="admin-action__label">{{ $resolvedLabel }}</span>
+        @unless ($iconOnly)
+            <span class="admin-action__label">{{ $resolvedLabel }}</span>
+        @endunless
     </a>
 @else
     <button type="button" {{ $actionAttributes->class($classes) }} @disabled($disabled)>
         <x-filament::icon :icon="$rowAction->icon()->mini()" :size="\Filament\Support\Enums\IconSize::Small" class="admin-action__icon" />
-        <span class="admin-action__label">{{ $resolvedLabel }}</span>
+        @unless ($iconOnly)
+            <span class="admin-action__label">{{ $resolvedLabel }}</span>
+        @endunless
     </button>
 @endif
