@@ -62,7 +62,10 @@ trait JournalWorkspaceStage
         // The editor no longer consumes or mutates that rejected queue.
         $saved = session()->get($this->journalStageSessionKey(), []);
         $saved = is_array($saved) && ($saved['template'] ?? null) === $this->template ? $saved : [];
-        $new = $saved['new'] ?? [];
+        $legacy = session()->get('journal.stage.drafts.'.(int) Filament::auth()->id().'.'.$this->sectionId, []);
+        $legacyNew = is_array($legacy) && ($legacy['template'] ?? null) === $this->template
+            ? ($legacy['new'] ?? []) : [];
+        $new = $saved['new'] ?? $legacyNew;
         $this->journalNewForm->fill(is_array($new) && $new !== [] ? $new : $this->defaultNewJournalEntry());
 
         $this->selectedJournalEntryId = null;
@@ -78,6 +81,20 @@ trait JournalWorkspaceStage
             'panel' => $this->journalStagePanel,
             'new' => $this->newJournalFormData,
         ]);
+    }
+
+    public function updatedNewJournalFormData(): void
+    {
+        if ($this->journalStagePanel === 'new') {
+            $this->rememberNewJournalEntry();
+        }
+    }
+
+    public function updatedSelectedJournalFormData(): void
+    {
+        if ($this->journalStagePanel === 'selected') {
+            $this->rememberSelectedJournalEdit();
+        }
     }
 
     public function rememberNewJournalEntry(bool $refreshPreview = true): void

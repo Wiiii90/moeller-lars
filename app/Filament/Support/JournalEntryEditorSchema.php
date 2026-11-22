@@ -50,8 +50,8 @@ final class JournalEntryEditorSchema
             : [
                 self::title(),
                 MediaAssetSelect::makeId('cover_media_asset_id', __('Cover image'), imagesOnly: true)
-                    ->placeholder(__('No cover image'))->nullable()->columnSpanFull(),
-                self::imageViewerField(),
+                    ->placeholder(__('No cover image'))->nullable()->live()->columnSpanFull(),
+                self::imageViewerField()->live(),
             ];
         // Only the new-entry form may remain untitled until direct Submit.
         if ($creating) {
@@ -62,7 +62,7 @@ final class JournalEntryEditorSchema
         if ($template === JournalTemplate::Exhibitions) {
             $fields[] = self::dateFields()[0];
             $fields[] = Grid::make()->columns(['default' => 1, 'sm' => 2])->schema([
-                self::organizerSelect(),
+                self::organizerSelect()->live(),
                 self::venueSelect(),
             ])->columnSpanFull();
             // The Stage edits a venue, not individual address inputs.
@@ -145,6 +145,9 @@ final class JournalEntryEditorSchema
             : MediaAssetSelect::makeId('cover_media_asset_id', __('Cover image'), imagesOnly: true)
                 ->placeholder(__('No cover image'));
 
+        if ($stage) {
+            $cover->live();
+        }
         $schema[] = $cover->nullable()->columnSpanFull();
 
         if ($template === JournalTemplate::Exhibitions && ! $stage) {
@@ -213,19 +216,24 @@ final class JournalEntryEditorSchema
 
     private static function gallerySection(bool $stage = false): mixed
     {
+        $presentation = Select::make('gallery_presentation')
+            ->label(__('Gallery presentation'))
+            ->options([
+                'sequence' => __('Media sequence'),
+                'grid' => __('Grid'),
+                'mosaic' => __('Mosaic'),
+                'slideshow' => __('Slideshow'),
+                'carousel' => __('Carousel'),
+            ])
+            ->disableOptionWhen(static fn (string $value, Get $get): bool => self::carouselOptionDisabled($value, $get))
+            ->default('sequence')
+            ->required();
+        if ($stage) {
+            $presentation->live();
+        }
+
         return AdminForm::section(__('Gallery'))->schema([
-            Select::make('gallery_presentation')
-                ->label(__('Gallery presentation'))
-                ->options([
-                    'sequence' => __('Media sequence'),
-                    'grid' => __('Grid'),
-                    'mosaic' => __('Mosaic'),
-                    'slideshow' => __('Slideshow'),
-                    'carousel' => __('Carousel'),
-                ])
-                ->disableOptionWhen(static fn (string $value, Get $get): bool => self::carouselOptionDisabled($value, $get))
-                ->default('sequence')
-                ->required(),
+            $presentation,
             self::galleryImages(stage: $stage),
         ]);
     }
@@ -255,24 +263,29 @@ final class JournalEntryEditorSchema
             ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
             ->dehydrated(fn (Get $get): bool => (bool) $get('gallery_enabled'));
 
+        $presentation = Select::make('gallery_presentation')
+            ->label(__('Gallery presentation'))
+            ->options([
+                'grid' => __('Grid'),
+                'mosaic' => __('Mosaic'),
+                'slideshow' => __('Slideshow'),
+                'carousel' => __('Carousel'),
+            ])
+            ->disableOptionWhen(static fn (string $value, Get $get): bool => self::carouselOptionDisabled($value, $get))
+            ->default('grid')
+            ->required()
+            ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
+            ->columnSpanFull();
+        if ($stage) {
+            $presentation->live();
+        }
+
         return [
             Toggle::make('gallery_enabled')
                 ->label(__('Gallery enabled'))
                 ->live()
                 ->columnSpanFull(),
-            Select::make('gallery_presentation')
-                ->label(__('Gallery presentation'))
-                ->options([
-                    'grid' => __('Grid'),
-                    'mosaic' => __('Mosaic'),
-                    'slideshow' => __('Slideshow'),
-                    'carousel' => __('Carousel'),
-                ])
-                ->disableOptionWhen(static fn (string $value, Get $get): bool => self::carouselOptionDisabled($value, $get))
-                ->default('grid')
-                ->required()
-                ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
-                ->columnSpanFull(),
+            $presentation,
             $images,
         ];
     }
