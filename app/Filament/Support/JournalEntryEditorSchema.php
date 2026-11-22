@@ -402,10 +402,7 @@ final class JournalEntryEditorSchema
                 ->orderBy('position')->orderBy('id')->pluck('name', 'name')->all())
             ->getOptionLabelUsing(static fn (mixed $value): ?string =>
                 is_string($value) && trim($value) !== '' ? $value : null)
-            ->searchable()->preload()->native(false)->nullable()->live()
-            ->afterStateUpdated(static function (Set $set): void {
-                $set('venue_preset_id', null);
-            });
+            ->searchable()->preload()->native(false)->nullable();
     }
 
     private static function publicLocationField(string $name, string $label, int $max, ?Exhibition $exhibition): TextInput|Select
