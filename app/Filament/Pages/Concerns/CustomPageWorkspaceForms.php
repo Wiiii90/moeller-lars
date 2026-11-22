@@ -42,7 +42,6 @@ trait CustomPageWorkspaceForms
             'column_layout' => 'equal',
             'gap' => 'medium',
             'media_asset_id' => null,
-            'image_decorative' => false,
             'image_scale_percent' => CustomPageSetting::DEFAULT_IMAGE_SCALE_PERCENT,
             'image_alignment' => 'left',
             'video_controls_enabled' => true,
@@ -127,7 +126,6 @@ trait CustomPageWorkspaceForms
                     ->options(['left' => __('Left'), 'center' => __('Center'), 'right' => __('Right')])
                     ->default('left')
                     ->required(),
-                Toggle::make('image_decorative')->label('Decorative media')->default(false)->live(),
                 ...($type === 'video' ? [
                     Toggle::make('video_controls_enabled')->label('Show video playback controls')->default(true),
                 ] : []),
@@ -233,7 +231,7 @@ trait CustomPageWorkspaceForms
     }
 
     /** @return array<string, string> */
-    private function layoutAreaOptions(): array
+    public function layoutAreaOptions(): array
     {
         $options = [];
         $layoutNumber = 0;

@@ -1,7 +1,4 @@
-        <div class="custom-page-component-sequence__add-actions">
-            <x-admin.add-row wire:click="mountAction('addComponent')">{{ __('Add component') }}</x-admin.add-row>
-            <x-admin.add-row wire:click="mountAction('addLayout')" :icon="\App\Filament\Support\AdminIcon::ViewGrid">{{ __('Add layout') }}</x-admin.add-row>
-        </div>
+        <x-admin.add-row wire:click="mountAction('addComponent')">{{ __('Add component') }}</x-admin.add-row>
 
         <footer class="admin-pager">
             <x-admin.page-size-picker

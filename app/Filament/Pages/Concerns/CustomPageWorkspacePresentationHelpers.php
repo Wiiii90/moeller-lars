@@ -124,50 +124,6 @@ trait CustomPageWorkspacePresentationHelpers
         return CustomPageSetting::layoutProjection($this->settings()->components());
     }
 
-    /** @return array{index:int,block:array<string,mixed>}|null */
-    private function stageLayoutById(string $id): ?array
-    {
-        foreach ($this->settings()->components() as $index => $block) {
-            if (($block['type'] ?? null) === 'layout' && ($block['id'] ?? null) === $id) {
-                return ['index' => $index, 'block' => $block];
-            }
-        }
-
-        return null;
-    }
-
-    /** @return array{index:int,block:array<string,mixed>}|null */
-    public function selectedStageLayout(): ?array
-    {
-        return $this->stageSelectedLayoutId !== null
-            ? $this->stageLayoutById($this->stageSelectedLayoutId)
-            : null;
-    }
-
-    /** @return array{index:int,type:string,block:array<string,mixed>}|null */
-    public function selectedStageComponent(): ?array
-    {
-        if (! is_string($this->customPreviewFocusedTarget)
-            || ! preg_match('/^(\\d+):([a-z_]+)$/', $this->customPreviewFocusedTarget, $matches)) {
-            return null;
-        }
-
-        $index = (int) $matches[1];
-        $type = $matches[2];
-        $blocks = $this->settings()->components();
-        if (! isset($blocks[$index]) || ($blocks[$index]['type'] ?? null) !== $type) {
-            return null;
-        }
-
-        return ['index' => $index, 'type' => $type, 'block' => $blocks[$index]];
-    }
-
-    /** The quick creator uses the same canonical layout-area options as Edit. */
-    public function stageLayoutAreaOptions(): array
-    {
-        return $this->layoutAreaOptions();
-    }
-
     /** @return array<int,string> */
     private function parentOptions(): array
     {

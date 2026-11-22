@@ -52,7 +52,7 @@ trait CustomPageWorkspaceSecondaryForms
                 'type' => $type,
                 'published' => $published,
                 'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
-                'image_decorative' => (bool) ($data['image_decorative'] ?? false),
+                'image_decorative' => (bool) ($data['image_decorative'] ?? ($existing['image_decorative'] ?? false)),
                 ...$this->imageAlignmentPayload($data, $existing),
                 ...($type === 'video' ? $this->videoControlsPayload($data, $existing) : []),
                 ...$this->imageScalePayload($data, $existing),

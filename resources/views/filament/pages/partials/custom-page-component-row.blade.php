@@ -21,7 +21,7 @@
             aria-label="Assign {{ $label }} to layout area"
             wire:change="setTableComponentLayout({{ $index }}, '{{ $type }}', $event.target.value)">
             <option value="" @selected($row['layout_area_id'] === null)>{{ __('Full width') }}</option>
-            @foreach ($this->stageLayoutAreaOptions() as $areaId => $areaLabel)
+            @foreach ($this->layoutAreaOptions() as $areaId => $areaLabel)
                 <option value="{{ $areaId }}" @selected($row['layout_area_id'] === $areaId)>{{ $areaLabel }}</option>
             @endforeach
         </select>

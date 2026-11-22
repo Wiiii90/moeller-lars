@@ -68,12 +68,8 @@ final class CustomPageWorkspace extends Page
 
     public bool $customPreviewAutoFocus = true;
 
-    public string $customStagePanel = 'layout';
-
     /** Unsaved New Stage form, built from the canonical component editor schema. */
     public array $customStageNewData = [];
-
-    public ?string $stageSelectedLayoutId = null;
 
     public ?string $customPreviewFocusedTarget = null;
 
