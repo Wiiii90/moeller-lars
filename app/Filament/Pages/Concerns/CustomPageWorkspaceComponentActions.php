@@ -330,6 +330,34 @@ trait CustomPageWorkspaceComponentActions
         }
     }
 
+    public function setStageComponentBoundary(int $index, string $type, string $border): void
+    {
+        if (! in_array($border, ['none', ...CustomPageSetting::DIVIDER_VARIANTS], true)) {
+            return;
+        }
+
+        $original = $this->componentAt($index, $type);
+        $updated = $original;
+        if ($border === 'none') {
+            unset($updated['layout_divider_before']);
+        } else {
+            $updated['layout_divider_before'] = $border;
+        }
+
+        try {
+            $changed = app(CustomPageEditorialService::class)->updateBlock(
+                $this->settings(), $index, $type, $updated, $original,
+            );
+            $this->reloadWorkspace();
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Component boundary updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->reloadWorkspace();
+            $this->stageValidationFailure('Component boundary unchanged', $exception);
+        }
+    }
+
     public function setStageLayoutAreaBorder(string $id, string $areaId, string $border): void
     {
         if (! in_array($border, ['none', ...CustomPageSetting::DIVIDER_VARIANTS], true)) {

@@ -87,7 +87,23 @@
                     @include('filament.pages.partials.custom-page-layout-stage')
                 @else
                     @php($selectedLayout = $this->selectedStageLayout())
-                    <div class="admin-stage-workspace admin-visual-stage__field-scroll" aria-label="Selected layout settings">
+                    @php($selectedComponent = $this->selectedStageComponent())
+                    <div class="admin-stage-workspace admin-visual-stage__field-scroll" aria-label="Selected component and layout settings">
+                        @if ($selectedComponent !== null)
+                            @php($component = $selectedComponent['block'])
+                            <div class="admin-stage-workspace__group">
+                                <strong>{{ __('Boundaries') }}</strong>
+                                <label class="admin-stage-workspace__field">
+                                    <span>{{ __('Before component') }}</span>
+                                    <select wire:change="setStageComponentBoundary({{ $selectedComponent['index'] }}, '{{ $selectedComponent['type'] }}', $event.target.value)">
+                                        <option value="none" @selected(($component['layout_divider_before'] ?? 'none') === 'none')>{{ __('None') }}</option>
+                                        @foreach ($dividerVariantOptions as $value => $label)
+                                            <option value="{{ $value }}" @selected(($component['layout_divider_before'] ?? 'none') === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                            </div>
+                        @endif
                         @if ($selectedLayout !== null)
                             @php($layout = $selectedLayout['block'])
                             @php($layoutId = $layout['id'])
@@ -151,9 +167,9 @@
                                     </label>
                                 @endforeach
                             </div>
-                        @else
+                        @elseif ($selectedComponent === null)
                             <button class="admin-action" type="button" wire:click="showCustomStagePanel('layout')">
-                                {{ __('Select a layout in the canvas') }}
+                                {{ __('Select a component in the canvas') }}
                             </button>
                         @endif
                     </div>
