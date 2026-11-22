@@ -44,6 +44,21 @@
                                 'reorderEnabled' => $reorderEnabled, 'componentTypeOptions' => $componentTypeOptions,
                             ])
 
+                            @if ($pageComponent['embedded_children'] !== [])
+                                <div class="custom-page-component__embedded-children" role="group"
+                                    aria-label="{{ $pageComponent['type_label'] }} entries">
+                                    @foreach ($pageComponent['embedded_children'] as $child)
+                                        <div class="custom-page-component__embedded-child" wire:key="embedded-entry-{{ $pageComponent['index'] }}-{{ $child['kind'] }}-{{ $child['id'] }}">
+                                            <span class="custom-page-component__embedded-child-title">{{ $child['title'] }}</span>
+                                            <button class="admin-action" type="button"
+                                                wire:click="mountAction('editEmbeddedEntry', { kind: '{{ $child['kind'] }}', entryId: {{ $child['id'] }} })">
+                                                {{ __('Edit') }}
+                                            </button>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+
                         </article>
                     @endforeach
                 </div>

@@ -172,3 +172,25 @@
 }
 
 /* Shared action, drag and selection primitives style the component table. */
+
+/* The table remains the detailed editor. Embedded Journal records are
+   real children of their template component, not duplicated table rows. */
+.custom-page-component__embedded-children {
+    margin: .1rem 0 .55rem calc(var(--admin-hierarchy-position-column) + var(--admin-hierarchy-drag-column) + .65rem);
+    padding: .15rem 0 .15rem .65rem;
+    border-inline-start: 1px dashed var(--admin-line);
+}
+.custom-page-component__embedded-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    min-height: 2rem;
+}
+.custom-page-component__embedded-child-title {
+    min-width: 0;
+    font-size: .72rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

@@ -7,9 +7,6 @@ use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\CustomPageSetting;
-use App\Models\ArtworkCategory;
-use App\Models\Exhibition;
-use App\Models\BlogPost;
 use App\Domain\Content\GalleryHeroConfigurationService;
 use App\Models\PublicContentSetting;
 use Closure;
@@ -129,12 +126,12 @@ trait CustomPageWorkspaceForms
             ],
             'gallery' => [
                 Select::make('gallery_id')->label('Gallery')
-                    ->options(fn (): array => ArtworkCategory::query()->whereHas('siteSection', fn ($q) => $q->where('template', 'standard'))->orderBy('name')->pluck('name', 'id')->all())
+                    ->options(fn (): array => app(\App\Domain\Content\CustomPageEmbeddedContent::class)->sourceOptions('gallery'))
                     ->searchable()->nullable(),
             ],
             'hero_artworks' => [
                 Select::make('gallery_ids')->label('Source galleries')
-                    ->options(fn (): array => ArtworkCategory::query()->whereHas('siteSection', fn ($q) => $q->where('template', 'standard'))->orderBy('name')->pluck('name', 'id')->all())
+                    ->options(fn (): array => app(\App\Domain\Content\CustomPageEmbeddedContent::class)->sourceOptions('gallery'))
                     ->multiple()->searchable(),
                 Select::make('source_rule')->label('Artwork order')
                     ->options(GalleryHeroConfigurationService::SOURCE_RULES)
@@ -142,12 +139,12 @@ trait CustomPageWorkspaceForms
             ],
             'exhibitions' => [
                 Select::make('exhibition_ids')->label('Exhibitions')
-                    ->options(fn (): array => Exhibition::query()->where('state', '<>', 'archived')->orderBy('title')->pluck('title', 'id')->all())
+                    ->options(fn (): array => app(\App\Domain\Content\CustomPageEmbeddedContent::class)->sourceOptions('exhibitions'))
                     ->multiple()->searchable(),
             ],
             'blog' => [
                 Select::make('post_ids')->label('Blog posts')
-                    ->options(fn (): array => BlogPost::query()->where('state', '<>', 'archived')->orderBy('title')->pluck('title', 'id')->all())
+                    ->options(fn (): array => app(\App\Domain\Content\CustomPageEmbeddedContent::class)->sourceOptions('blog'))
                     ->multiple()->searchable(),
             ],
             'text' => [

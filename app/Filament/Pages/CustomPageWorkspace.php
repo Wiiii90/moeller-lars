@@ -78,6 +78,8 @@ final class CustomPageWorkspace extends Page
 
     public string $stageQuickAreaId = '';
 
+    public string $stageQuickSourceId = '';
+
     public ?string $stageSelectedLayoutId = null;
 
     public ?string $customPreviewFocusedTarget = null;

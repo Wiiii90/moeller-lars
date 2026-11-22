@@ -5,6 +5,13 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Content\CustomPageEditorialService;
+use App\Domain\Content\BlogEditorialService;
+use App\Domain\Content\ExhibitionEditorialService;
+use App\Filament\Support\JournalEntryEditorSchema;
+use App\Filament\Support\JournalEntryEditorState;
+use App\Models\BlogPost;
+use App\Models\Exhibition;
+use Filament\Schemas\Schema;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -19,6 +26,9 @@ trait CustomPageWorkspaceComponentActions
 {
     #[Locked]
     public ?array $editingComponentOriginal = null;
+
+    #[Locked]
+    public ?array $embeddedEntryOriginal = null;
 
     public function moveComponent(int $index, string $type, string $direction): void
     {
@@ -396,6 +406,85 @@ trait CustomPageWorkspaceComponentActions
             body: $messages[0] ?? 'The change could not be saved.',
             status: 'danger',
         );
+    }
+
+    /** Entries stay with their original Journal; the Custom Page is a consumer. */
+    private function embeddedEntry(string $kind, int $entryId): BlogPost|Exhibition
+    {
+        $field = $kind === 'exhibitions' ? 'exhibition_ids' : 'post_ids';
+        if (! in_array($kind, ['blog', 'exhibitions'], true)
+            || ! collect($this->settings()->components())->contains(
+                static fn (array $block): bool => ($block['type'] ?? null) === $kind
+                    && in_array($entryId, $block[$field] ?? [], true),
+            )) {
+            throw ValidationException::withMessages(['entry' => 'The entry no longer belongs to this Custom Page.']);
+        }
+
+        return $kind === 'exhibitions'
+            ? Exhibition::query()->findOrFail($entryId)
+            : BlogPost::query()->findOrFail($entryId);
+    }
+
+    public function editEmbeddedEntryAction(): Action
+    {
+        $action = Action::make('editEmbeddedEntry')
+            ->label('Edit')
+            ->fillForm(function (array $arguments): array {
+                $entry = $this->embeddedEntry((string) ($arguments['kind'] ?? ''), (int) ($arguments['entryId'] ?? 0));
+                $this->embeddedEntryOriginal = [
+                    'kind' => (string) ($arguments['kind'] ?? ''),
+                    'id' => (int) $entry->getKey(),
+                    'updated_at' => (string) $entry->getRawOriginal('updated_at'),
+                ];
+
+                return [...$entry->attributesToArray(), ...app(JournalEntryEditorState::class)->for($entry)];
+            })
+            ->schema(fn (Schema $schema, array $arguments): Schema =>
+                ($arguments['kind'] ?? null) === 'exhibitions'
+                    ? JournalEntryEditorSchema::exhibition($schema,
+                        $this->embeddedEntry('exhibitions', (int) ($arguments['entryId'] ?? 0)))
+                    : JournalEntryEditorSchema::blog($schema))
+            ->modalHeading(fn (array $arguments): string =>
+                ($arguments['kind'] ?? null) === 'exhibitions' ? __('Edit exhibition') : __('Edit blog post'))
+            ->action(function (array $data, array $arguments): void {
+                $kind = (string) ($arguments['kind'] ?? '');
+                $entry = $this->embeddedEntry($kind, (int) ($arguments['entryId'] ?? 0));
+                $original = $this->embeddedEntryOriginal;
+                if (! is_array($original)
+                    || ($original['kind'] ?? null) !== $kind
+                    || ($original['id'] ?? null) !== (int) $entry->getKey()
+                    || ($original['updated_at'] ?? null) !== (string) $entry->getRawOriginal('updated_at')) {
+                    throw ValidationException::withMessages(['entry' => 'This entry changed while its editor was open. Reopen it.']);
+                }
+                $data['site_section_id'] = (int) $entry->getAttribute('site_section_id');
+                if ($entry instanceof Exhibition) {
+                    $updated = app(ExhibitionEditorialService::class)->update($entry, $data);
+                } else {
+                    $data = [
+                        ...$data,
+                        'state' => (string) $entry->getAttribute('state'),
+                        'position' => (int) $entry->getAttribute('position'),
+                        'published_at' => $entry->getAttribute('published_at'),
+                        'scheduled_at' => $entry->getAttribute('scheduled_at'),
+                    ];
+                    $updated = app(BlogEditorialService::class)->update($entry, $data);
+                }
+                $changed = (string) $updated->getRawOriginal('updated_at') !== (string) $entry->getRawOriginal('updated_at');
+                $this->reloadWorkspace();
+                if ($changed) {
+                    app(AdminNotifier::class)->notification(title: 'Journal entry updated', status: 'success');
+                }
+            });
+
+        return AdminDialog::edit($action, AdminDialogSize::Large);
+    }
+
+    public function setExhibitionFieldVisibility(int $entryId, string $field, bool $visible): void
+    {
+        $entry = $this->embeddedEntry('exhibitions', $entryId);
+        if (app(ExhibitionEditorialService::class)->setPublicFieldVisibility($entry, $field, $visible)) {
+            app(AdminNotifier::class)->notification(title: 'Exhibition visibility updated', status: 'success');
+        }
     }
 
     public function addComponentAction(): Action

@@ -176,6 +176,17 @@ trait CustomPageWorkspaceProjectionState
             ->mapWithKeys(static fn (mixed $name, mixed $id): array => [(int) $id => (string) $name])
             ->all();
 
+        $exhibitionIds = collect($blocks)->where('type', 'exhibitions')
+            ->flatMap(static fn (array $block): array => $block['exhibition_ids'] ?? [])
+            ->unique()->values()->all();
+        $postIds = collect($blocks)->where('type', 'blog')
+            ->flatMap(static fn (array $block): array => $block['post_ids'] ?? [])
+            ->unique()->values()->all();
+        $exhibitionNames = $exhibitionIds === [] ? []
+            : \App\Models\Exhibition::query()->whereKey($exhibitionIds)->pluck('title', 'id')->all();
+        $postNames = $postIds === [] ? []
+            : \App\Models\BlogPost::query()->whereKey($postIds)->pluck('title', 'id')->all();
+
         $counts = array_fill_keys(array_keys(self::COMPONENT_LABELS), 0);
         $projected = [];
         $needle = mb_strtolower(trim($this->componentSearch));
@@ -209,7 +220,27 @@ trait CustomPageWorkspaceProjectionState
                 ], static fn (string $value): bool => $value !== '')));
             }
 
+            $embeddedChildren = [];
+            if ($type === 'exhibitions') {
+                foreach ($block['exhibition_ids'] ?? [] as $entryId) {
+                    $embeddedChildren[] = [
+                        'id' => (int) $entryId,
+                        'kind' => 'exhibitions',
+                        'title' => $exhibitionNames[$entryId] ?? 'Exhibition unavailable',
+                    ];
+                }
+            } elseif ($type === 'blog') {
+                foreach ($block['post_ids'] ?? [] as $entryId) {
+                    $embeddedChildren[] = [
+                        'id' => (int) $entryId,
+                        'kind' => 'blog',
+                        'title' => $postNames[$entryId] ?? 'Post unavailable',
+                    ];
+                }
+            }
+
             $projected[] = [
+                'embedded_children' => $embeddedChildren,
                 'index' => $index,
                 'position' => $index + 1,
                 'type' => $type,

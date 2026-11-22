@@ -64,7 +64,8 @@ trait CustomPageWorkspaceLifecycle
                 || ! array_key_exists('can_move_up', $component)
                 || ! array_key_exists('can_move_down', $component)
                 || ! array_key_exists('can_delete', $component)
-                || ! array_key_exists('layout_area_id', $component)) {
+                || ! array_key_exists('layout_area_id', $component)
+                || ! array_key_exists('embedded_children', $component)) {
                 return false;
             }
         }

@@ -52,7 +52,7 @@
                         <label class="admin-stage-workspace__field">
                             <span>{{ __('Component') }}</span>
                             <select wire:model.live="stageQuickType" aria-label="Component type">
-                                @foreach (['text', 'image', 'video', 'layout', 'contact', 'legal_disclaimer'] as $type)
+                                @foreach (array_keys($componentTypeOptions) as $type)
                                     <option value="{{ $type }}">{{ $componentTypeOptions[$type] }}</option>
                                 @endforeach
                             </select>
@@ -67,6 +67,17 @@
                             <label class="admin-stage-workspace__field">
                                 <span>{{ __('Text') }}</span>
                                 <textarea wire:model="stageQuickBody" rows="5" aria-label="Quick Rich Text content"></textarea>
+                            </label>
+                        @endif
+                        @if (in_array($stageQuickType, \App\Models\CustomPageSetting::EMBEDDED_COMPONENT_TYPES, true))
+                            <label class="admin-stage-workspace__field">
+                                <span>{{ in_array($stageQuickType, ['gallery', 'hero_artworks'], true) ? __('Source gallery') : __('Source entry') }}</span>
+                                <select wire:model="stageQuickSourceId" aria-label="Component source">
+                                    <option value="">{{ __('Select source') }}</option>
+                                    @foreach ($this->stageQuickSources() as $sourceId => $sourceName)
+                                        <option value="{{ $sourceId }}">{{ $sourceName }}</option>
+                                    @endforeach
+                                </select>
                             </label>
                         @endif
                         <label class="admin-stage-workspace__field">

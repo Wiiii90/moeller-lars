@@ -28,6 +28,23 @@ final class CustomPageEmbeddedContent
         private readonly SiteNodeRoute $routes,
     ) {}
 
+    /** @return array<int,string> */
+    public function sourceOptions(string $type): array
+    {
+        return match ($type) {
+            'gallery', 'hero_artworks' => ArtworkCategory::query()
+                ->whereHas('siteSection', static fn ($q) => $q->where('type', 'gallery')->where('template', GalleryTemplate::Standard->value))
+                ->orderBy('name')->pluck('name', 'id')->all(),
+            'exhibitions' => Exhibition::query()
+                ->where('state', '<>', 'archived')
+                ->orderBy('title')->pluck('title', 'id')->all(),
+            'blog' => BlogPost::query()
+                ->where('state', '<>', 'archived')
+                ->orderBy('title')->pluck('title', 'id')->all(),
+            default => [],
+        };
+    }
+
     /** @param array<string,mixed> $block */
     public function assertValid(array $block, bool $public): void
     {
