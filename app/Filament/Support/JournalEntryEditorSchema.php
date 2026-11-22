@@ -476,15 +476,15 @@ final class JournalEntryEditorSchema
             ->label('Add '.strtolower($title))
             ->modalHeading('Add '.strtolower($title))
             ->schema(self::directoryFields($title))
-            ->action(static function (array $data, Set $set) use ($isVenue, $kind, $title): void {
+            ->action(static function (array $data, Set $schemaSet) use ($isVenue, $kind, $title): void {
                 if ($isVenue) {
                     app(ExhibitionDirectoryService::class)->addVenue($data);
                 } else {
                     app(ExhibitionDirectoryService::class)->addOrganizer($data);
                 }
-                $set($kind, trim((string) $data['name']));
+                $schemaSet($kind, trim((string) $data['name']));
                 if ($isVenue) {
-                    self::fillVenueSnapshot($data['name'], $set);
+                    self::fillVenueSnapshot($data['name'], $schemaSet);
                 }
                 app(AdminNotifier::class)->notification(title: $title.' added', status: 'success');
             });
