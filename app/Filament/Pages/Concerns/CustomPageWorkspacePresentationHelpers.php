@@ -63,7 +63,7 @@ trait CustomPageWorkspacePresentationHelpers
 
             return [
                 'primary' => $title !== '' ? $title : 'Contact',
-                'secondary' => $enabled === [] ? 'No contact items enabled' : implode(' · ', $enabled),
+                'secondary' => $enabled === [] ? 'No contact items enabled' : implode(', ', $enabled),
                 'meta' => '',
             ];
         }

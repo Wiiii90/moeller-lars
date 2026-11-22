@@ -266,9 +266,9 @@ trait CustomPageWorkspaceProjectionState
             ['label' => 'Components', 'value' => RegionalFormats::adminNumber(count($blocks)), 'description' => 'Page sequence'],
             ['label' => 'Rich Text', 'value' => RegionalFormats::adminNumber($counts['text']), 'description' => 'Text components'],
             ['label' => 'Media', 'value' => RegionalFormats::adminNumber($counts['image'] + $counts['video']), 'description' => 'Image and video components'],
-            ['label' => 'Visits', 'value' => $this->metricValue($this->analytics['page']['visits'] ?? null), 'description' => 'This page · 30d'],
-            ['label' => 'Views', 'value' => $this->metricValue($this->analytics['page']['views'] ?? null), 'description' => 'This page · 30d'],
-            ['label' => 'Contact messages', 'value' => $this->metricValue($this->analytics['contact_messages'] ?? null), 'description' => 'Site-wide · 30d'],
+            ['label' => 'Visits', 'value' => $this->metricValue($this->analytics['page']['visits'] ?? null), 'description' => 'This page, last 30 days'],
+            ['label' => 'Views', 'value' => $this->metricValue($this->analytics['page']['views'] ?? null), 'description' => 'This page, last 30 days'],
+            ['label' => 'Contact messages', 'value' => $this->metricValue($this->analytics['contact_messages'] ?? null), 'description' => 'Site-wide, last 30 days'],
         ];
     }
 }

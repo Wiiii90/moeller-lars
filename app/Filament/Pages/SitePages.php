@@ -1328,7 +1328,7 @@ final class SitePages extends Page
         app(AdminNotifier::class)->notification(
             title: $action.' selection complete',
             body: $blocked > 0
-                ? $changed.' changed · '.$blocked.' blocked by page safety rules'
+                ? $changed.' changed, '.$blocked.' blocked by page safety rules'
                 : $changed.' changed',
             status: $blocked > 0 ? 'warning' : 'success',
         );
