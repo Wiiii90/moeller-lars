@@ -29,7 +29,7 @@ trait CustomPageWorkspacePresentationHelpers
 
             return ['primary' => $title !== '' ? $title : $body, 'secondary' => $title !== '' ? $body : '', 'meta' => ''];
         }
-        if ($type === 'grid') {
+        if ($type === 'layout') {
             $columns = (int) ($block['columns'] ?? 2);
             $rows = (int) ($block['rows'] ?? 1);
             $areaIds = array_column($block['areas'] ?? [], 'id');
@@ -107,17 +107,17 @@ trait CustomPageWorkspacePresentationHelpers
     }
 
     /** @return list<array<string, mixed>> */
-    public function layoutStageGrids(): array
+    public function layoutStageLayouts(): array
     {
         $blocks = $this->settings()->components();
-        $grids = [];
-        foreach ($blocks as $index => $grid) {
-            if (($grid['type'] ?? null) !== 'grid') {
+        $layouts = [];
+        foreach ($blocks as $index => $layout) {
+            if (($layout['type'] ?? null) !== 'layout') {
                 continue;
             }
-            $columns = (int) $grid['columns'];
+            $columns = (int) $layout['columns'];
             $areas = [];
-            foreach ($grid['areas'] as $areaIndex => $area) {
+            foreach ($layout['areas'] as $areaIndex => $area) {
                 $memberRows = [];
                 foreach ($blocks as $memberIndex => $member) {
                     if (! is_array($member) || ($member['layout_area_id'] ?? null) !== ($area['id'] ?? null)) {
@@ -140,12 +140,13 @@ trait CustomPageWorkspacePresentationHelpers
                     'members' => $memberRows,
                 ];
             }
-            $grids[] = ['index' => $index, 'columns' => $columns,
-                'column_layout' => $grid['column_layout'] ?? 'equal',
-                'rows' => (int) $grid['rows'], 'areas' => $areas];
+            $layouts[] = ['index' => $index, 'columns' => $columns,
+                'column_layout' => $layout['column_layout'] ?? 'equal',
+                'layout_mode' => $layout['layout_mode'] ?? 'rows',
+                'rows' => (int) $layout['rows'], 'areas' => $areas];
         }
 
-        return $grids;
+        return $layouts;
     }
 
     /** @return array<int,string> */

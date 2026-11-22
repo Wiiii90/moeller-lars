@@ -58,9 +58,9 @@ trait CustomPageWorkspaceForms
                     $typeField,
                     $statusField,
                         Select::make('layout_area_id')
-                            ->label('Grid area')
+                            ->label('Layout area')
                             ->placeholder('Full width')
-                            ->options(fn (): array => $this->gridAreaOptions())
+                            ->options(fn (): array => $this->layoutAreaOptions())
                             ->nullable(),
                         Select::make('layout_divider_before')
                             ->label('Separator above')
@@ -99,13 +99,17 @@ trait CustomPageWorkspaceForms
                     Toggle::make('video_controls_enabled')->label('Show video playback controls')->default(true),
                 ] : []),
             ],
-            'grid' => [
+            'layout' => [
+                Select::make('layout_mode')->label('Arrangement')
+                    ->options(['rows' => 'Aligned rows', 'columns' => 'Independent columns'])
+                    ->default('rows')->live()->required(),
                 Select::make('columns')->label('Columns')->options([
                     1 => '1', 2 => '2', 3 => '3', 4 => '4',
                 ])->default(2)->required(),
                 Select::make('rows')->label('Rows')->options(array_combine(
                     range(1, 12), array_map('strval', range(1, 12)),
-                ))->default(1)->required(),
+                ))->default(1)->required()
+                    ->visible(fn (Get $get): bool => $get('layout_mode') !== 'columns'),
                 Select::make('column_layout')->label('Column widths')
                     ->options([
                         'equal' => 'Equal',
@@ -186,15 +190,15 @@ trait CustomPageWorkspaceForms
     }
 
     /** @return array<string, string> */
-    private function gridAreaOptions(): array
+    private function layoutAreaOptions(): array
     {
         $options = [];
-        $gridNumber = 0;
+        $layoutNumber = 0;
         foreach ($this->settings()->components() as $block) {
-            if (($block['type'] ?? null) !== 'grid') {
+            if (($block['type'] ?? null) !== 'layout') {
                 continue;
             }
-            $gridNumber++;
+            $layoutNumber++;
             $columns = (int) ($block['columns'] ?? 2);
             foreach ($block['areas'] ?? [] as $index => $area) {
                 if (! is_array($area) || ! is_string($area['id'] ?? null)) {
@@ -202,7 +206,7 @@ trait CustomPageWorkspaceForms
                 }
                 $row = intdiv($index, $columns) + 1;
                 $column = ($index % $columns) + 1;
-                $options[$area['id']] = 'Grid '.$gridNumber.', row '.$row.', column '.$column;
+                $options[$area['id']] = 'Layout '.$layoutNumber.', row '.$row.', column '.$column;
             }
         }
 

@@ -57,13 +57,14 @@ trait CustomPageWorkspaceSecondaryForms
                 ...($type === 'video' ? $this->videoControlsPayload($data, $existing) : []),
                 ...$this->imageScalePayload($data, $existing),
             ],
-            'grid' => CustomPageSetting::gridBlock(
+            'layout' => CustomPageSetting::layoutBlock(
                 $published,
                 (int) ($data['columns'] ?? 2),
-                (int) ($data['rows'] ?? 1),
+                ($data['layout_mode'] ?? ($existing['layout_mode'] ?? 'rows')) === 'columns' ? 1 : (int) ($data['rows'] ?? 1),
                 (string) ($data['gap'] ?? 'medium'),
                 $existing,
                 (string) ($data['column_layout'] ?? ($existing['column_layout'] ?? 'equal')),
+                (string) ($data['layout_mode'] ?? ($existing['layout_mode'] ?? 'rows')),
             ),
             'text' => [
                 'type' => 'text',

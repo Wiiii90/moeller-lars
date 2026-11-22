@@ -14,7 +14,7 @@ final class ComponentEditorTypes
         'image' => 'Image',
         'video' => 'Video',
         'text' => 'Rich Text',
-        'grid' => 'Grid',
+        'layout' => 'Layout',
         'contact' => 'Contact',
         'legal_disclaimer' => 'Legal Disclaimer',
     ];

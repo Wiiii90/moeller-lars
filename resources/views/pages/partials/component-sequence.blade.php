@@ -16,12 +16,12 @@
                 <div class="custom-page__divider custom-page__divider--{{ $block['layout_divider_before'] }}" aria-hidden="true"></div>
             @endif
 
-            @if ($type === 'grid')
+            @if ($type === 'layout')
                 <section id="custom-page-component-{{ $imageBlockPrefix }}-{{ $blockIndex }}"
-                    class="custom-page__component custom-page__grid custom-page__grid--columns-{{ $block['columns'] }} custom-page__grid--layout-{{ $block['column_layout'] ?? 'equal' }} custom-page__grid--gap-{{ $block['gap'] }}"
-                    aria-label="Grid">
+                    class="custom-page__component custom-page__layout custom-page__layout--mode-{{ $block['layout_mode'] ?? 'rows' }} custom-page__layout--columns-{{ $block['columns'] }} custom-page__layout--layout-{{ $block['column_layout'] ?? 'equal' }} custom-page__layout--gap-{{ $block['gap'] }}"
+                    aria-label="Layout">
                     @foreach ($block['areas'] as $areaIndex => $area)
-                        <div class="custom-page__grid-area custom-page__grid-area--border-{{ $area['border'] }}"
+                        <div class="custom-page__layout-area custom-page__layout-area--border-{{ $area['border'] }}"
                             data-layout-area="{{ $area['id'] }}">
                             @if (($area['blocks'] ?? []) !== [])
                                 @include('pages.partials.component-sequence', [

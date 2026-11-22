@@ -42,9 +42,9 @@
                 <x-admin.stage-tool-row label="Editor actions">
                     <div class="admin-stage-tool-group">
                         <button class="admin-action admin-action--with-icon" type="button"
-                            wire:click="mountAction('addComponent', { initialType: 'grid' })">
+                            wire:click="mountAction('addComponent', { initialType: 'layout' })">
                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
-                            <span class="admin-action__label">{{ __('Add Grid') }}</span>
+                            <span class="admin-action__label">{{ __('Add Layout') }}</span>
                         </button>
                     </div>
                 </x-admin.stage-tool-row>

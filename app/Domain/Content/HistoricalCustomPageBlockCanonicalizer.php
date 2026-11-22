@@ -23,23 +23,28 @@ final class HistoricalCustomPageBlockCanonicalizer
             }
 
             $identity = $path.'.'.$blockIndex;
+            if (($block['type'] ?? null) === 'grid') {
+                $block['type'] = 'layout';
+                $block['layout_mode'] = 'rows';
+            }
 
             if (($block['type'] ?? null) === 'divider') {
-                $gridId = self::stableId('divider-grid', $identity);
+                $layoutId = self::stableId('divider-layout', $identity);
                 $areaId = self::stableId('divider-area', $identity);
-                $grid = [
-                    'type' => 'grid',
+                $layout = [
+                    'type' => 'layout',
+                    'layout_mode' => 'rows',
                     'published' => ($block['published'] ?? true) === true,
-                    'id' => $gridId,
+                    'id' => $layoutId,
                     'columns' => 1,
                     'rows' => 1,
                     'gap' => 'none',
                     'areas' => [['id' => $areaId, 'border' => $block['variant'] ?? 'thin']],
                 ];
                 if (is_string($block['layout_area_id'] ?? null)) {
-                    $grid['layout_area_id'] = $block['layout_area_id'];
+                    $layout['layout_area_id'] = $block['layout_area_id'];
                 }
-                $normalized[] = $grid;
+                $normalized[] = $layout;
 
                 continue;
             }
@@ -57,10 +62,11 @@ final class HistoricalCustomPageBlockCanonicalizer
                 $mediaRight = ($block['image_alignment'] ?? 'left') === 'right';
                 $imageArea = self::stableId('media-image', $identity);
                 $copyArea = self::stableId('media-copy', $identity);
-                $grid = [
-                    'type' => 'grid',
+                $layout = [
+                    'type' => 'layout',
+                    'layout_mode' => 'rows',
                     'published' => ($block['published'] ?? true) === true,
-                    'id' => self::stableId('media-grid', $identity),
+                    'id' => self::stableId('media-layout', $identity),
                     'columns' => 2,
                     'column_layout' => $mediaRight ? 'left-wide' : 'right-wide',
                     'rows' => 1,
@@ -71,15 +77,15 @@ final class HistoricalCustomPageBlockCanonicalizer
                     ],
                 ];
                 if (is_string($block['layout_area_id'] ?? null)) {
-                    $grid['layout_area_id'] = $block['layout_area_id'];
+                    $layout['layout_area_id'] = $block['layout_area_id'];
                 }
                 if (isset($block['layout_divider_before'])) {
-                    $grid['layout_divider_before'] = $block['layout_divider_before'];
+                    $layout['layout_divider_before'] = $block['layout_divider_before'];
                     unset($block['layout_divider_before']);
                 }
                 unset($block['children'], $block['layout_area_id']);
                 $block['layout_area_id'] = $imageArea;
-                $normalized[] = $grid;
+                $normalized[] = $layout;
                 $normalized[] = $block;
                 foreach ($children as $child) {
                     $child['layout_area_id'] = $copyArea;

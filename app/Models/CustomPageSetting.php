@@ -22,7 +22,7 @@ final class CustomPageSetting extends Model
         'image',
         'video',
         'text',
-        'grid',
+        'layout',
         'contact',
         'legal_disclaimer',
     ];
@@ -30,9 +30,11 @@ final class CustomPageSetting extends Model
     /** Media kinds share the same canonical asset lifecycle. */
     public const MEDIA_COMPONENT_TYPES = ['image', 'video'];
 
-    public const GRID_GAPS = ['none', 'small', 'medium', 'large'];
+    public const LAYOUT_GAPS = ['none', 'small', 'medium', 'large'];
 
-    public const GRID_COLUMN_LAYOUTS = ['equal', 'left-wide', 'right-wide'];
+    public const LAYOUT_COLUMN_LAYOUTS = ['equal', 'left-wide', 'right-wide'];
+
+    public const LAYOUT_MODES = ['rows', 'columns'];
 
     public const IMAGE_ALIGNMENTS = ['left', 'center', 'right'];
 
@@ -89,7 +91,7 @@ final class CustomPageSetting extends Model
     }
 
     /**
-     * Project stored content into grid areas without duplicating data ownership.
+     * Project stored content into layout areas without duplicating data ownership.
      * Each projected block retains its root index for the existing Preview anchors.
      *
      * @param list<array<string, mixed>> $blocks
@@ -99,13 +101,13 @@ final class CustomPageSetting extends Model
     {
         $areas = [];
         foreach ($blocks as $block) {
-            if (($block['type'] ?? null) !== 'grid') {
+            if (($block['type'] ?? null) !== 'layout') {
                 continue;
             }
             foreach ($block['areas'] ?? [] as $area) {
                 if (is_array($area) && is_string($area['id'] ?? null)) {
                     // Nested Blade includes may receive an already-projected
-                    // Grid. Preserve its descendants instead of replacing
+                    // Layout. Preserve its descendants instead of replacing
                     // those assigned blocks with an empty cell.
                     $areas[$area['id']] = is_array($area['blocks'] ?? null)
                         ? $area['blocks']
@@ -129,7 +131,7 @@ final class CustomPageSetting extends Model
         }
 
         $expand = static function (array $block) use (&$expand, $areas): array {
-            if (($block['type'] ?? null) !== 'grid') {
+            if (($block['type'] ?? null) !== 'layout') {
                 return $block;
             }
             $block['areas'] = array_map(static fn (array $area): array => [
@@ -144,18 +146,20 @@ final class CustomPageSetting extends Model
     }
 
     /**
-     * Author new grid cells in the existing component document. Resizing
+     * Author new layout areas in the existing component document. Resizing
      * reuses every surviving stable cell ID; deleting a referenced cell is
      * rejected by document validation.
      *
      * @param array<string, mixed>|null $existing
      * @return array<string, mixed>
      */
-    public static function gridBlock(bool $published, int $columns = 2, int $rows = 1, string $gap = 'medium', ?array $existing = null, string $columnLayout = 'equal'): array
+    public static function layoutBlock(bool $published, int $columns = 2, int $rows = 1, string $gap = 'medium', ?array $existing = null, string $columnLayout = 'equal', string $layoutMode = 'rows'): array
     {
         if ($columns < 1 || $columns > 4 || $rows < 1 || $rows > 12
-            || ! in_array($gap, self::GRID_GAPS, true)
-            || ! in_array($columnLayout, self::GRID_COLUMN_LAYOUTS, true)) {
+            || ! in_array($gap, self::LAYOUT_GAPS, true)
+            || ! in_array($columnLayout, self::LAYOUT_COLUMN_LAYOUTS, true)
+            || ! in_array($layoutMode, self::LAYOUT_MODES, true)
+            || ($layoutMode === 'columns' && $rows !== 1)) {
             throw ValidationException::withMessages(['columns' => 'Choose one to four columns and one to twelve rows.']);
         }
 
@@ -166,10 +170,11 @@ final class CustomPageSetting extends Model
         }
 
         return [
-            'type' => 'grid',
+            'type' => 'layout',
             'published' => $published,
             'id' => $existing['id'] ?? (string) Str::uuid(),
             'columns' => $columns,
+            'layout_mode' => $layoutMode,
             'rows' => $rows,
             'gap' => $gap,
             'column_layout' => $columns === 2 ? $columnLayout : 'equal',
@@ -206,7 +211,7 @@ final class CustomPageSetting extends Model
     }
 
     /**
-     * A Grid cannot be removed while it still owns page components.
+     * A Layout cannot be removed while it still owns page components.
      * Supply the remaining component sequence for an exact deletion check.
      *
      * @param list<array<string, mixed>> $remaining
@@ -216,7 +221,7 @@ final class CustomPageSetting extends Model
         if (self::componentPublished($component)) {
             return false;
         }
-        if (($component['type'] ?? null) !== 'grid') {
+        if (($component['type'] ?? null) !== 'layout') {
             return true;
         }
 
@@ -238,7 +243,7 @@ final class CustomPageSetting extends Model
         }
         if (! self::canDeleteComponent($component, $remaining)) {
             throw ValidationException::withMessages([
-                'component' => 'Move or delete the components inside this Grid before deleting the Grid.',
+                'component' => 'Move or delete the components inside this Layout before deleting the Layout.',
             ]);
         }
     }
@@ -288,15 +293,16 @@ final class CustomPageSetting extends Model
                     ...($type === 'video' && ! self::videoControls($block) ? ['video_controls_enabled' => false] : []),
                     ...$this->normalizedImageScale($block),
                 ],
-                'grid' => [
-                    'type' => 'grid',
+                'layout' => [
+                    'type' => 'layout',
                     'published' => $published,
                     'id' => $block['id'] ?? null,
                     'columns' => $block['columns'] ?? 2,
+                    'layout_mode' => $block['layout_mode'] ?? 'rows',
                     'rows' => $block['rows'] ?? 1,
                     'gap' => $block['gap'] ?? 'medium',
                     'column_layout' => $block['column_layout'] ?? 'equal',
-                    'areas' => $this->normalizedGridAreas($block),
+                    'areas' => $this->normalizedLayoutAreas($block),
                 ],
                 'text' => [
                     'type' => 'text',
@@ -325,43 +331,46 @@ final class CustomPageSetting extends Model
     }
 
     /** @return list<array<string, mixed>> */
-    private function normalizedGridAreas(array $grid): array
+    private function normalizedLayoutAreas(array $layout): array
     {
-        $areas = $grid['areas'] ?? [];
+        $areas = $layout['areas'] ?? [];
         if (! is_array($areas) || ! array_is_list($areas)) {
-            throw ValidationException::withMessages(['blocks' => 'Grid areas must be an ordered list.']);
+            throw ValidationException::withMessages(['blocks' => 'Layout areas must be an ordered list.']);
         }
 
         return array_map(static function (mixed $area): array {
             if (! is_array($area)) {
-                throw ValidationException::withMessages(['blocks' => 'Grid cells must be structured data.']);
+                throw ValidationException::withMessages(['blocks' => 'Layout cells must be structured data.']);
             }
 
             return ['id' => $area['id'] ?? null, 'border' => $area['border'] ?? 'none'];
         }, $areas);
     }
 
-    private function validateGridComponent(array $block): void
+    private function validateLayoutComponent(array $block): void
     {
         $id = $block['id'] ?? null;
         $columns = $block['columns'] ?? null;
         $rows = $block['rows'] ?? null;
         $gap = $block['gap'] ?? null;
         $columnLayout = $block['column_layout'] ?? 'equal';
-        if (! in_array($columnLayout, self::GRID_COLUMN_LAYOUTS, true)
+        $layoutMode = $block['layout_mode'] ?? 'rows';
+        if (! in_array($layoutMode, self::LAYOUT_MODES, true)
+            || ($layoutMode === 'columns' && $rows !== 1)
+            || ! in_array($columnLayout, self::LAYOUT_COLUMN_LAYOUTS, true)
             || ($columns !== 2 && $columnLayout !== 'equal')) {
-            throw ValidationException::withMessages(['blocks' => 'Grid column proportions are invalid.']);
+            throw ValidationException::withMessages(['blocks' => 'Layout column proportions are invalid.']);
         }
         if (! is_string($id) || ! preg_match('/^[a-z0-9-]{8,64}$/i', $id)
             || ! is_int($columns) || $columns < 1 || $columns > 4
             || ! is_int($rows) || $rows < 1 || $rows > 12
-            || ! in_array($gap, self::GRID_GAPS, true)) {
-            throw ValidationException::withMessages(['blocks' => 'Grid configuration is invalid.']);
+            || ! in_array($gap, self::LAYOUT_GAPS, true)) {
+            throw ValidationException::withMessages(['blocks' => 'Layout configuration is invalid.']);
         }
 
         $areas = $block['areas'] ?? null;
         if (! is_array($areas) || ! array_is_list($areas) || count($areas) !== $columns * $rows) {
-            throw ValidationException::withMessages(['blocks' => 'Grid areas must match the number of columns and rows.']);
+            throw ValidationException::withMessages(['blocks' => 'Layout areas must match the number of columns and rows.']);
         }
         $seen = [];
         foreach ($areas as $area) {
@@ -370,7 +379,7 @@ final class CustomPageSetting extends Model
             if (! is_string($areaId) || ! preg_match('/^[a-z0-9-]{8,64}$/i', $areaId)
                 || isset($seen[$areaId])
                 || ! in_array($border, ['none', ...self::DIVIDER_VARIANTS], true)) {
-                throw ValidationException::withMessages(['blocks' => 'Grid area identity or border is invalid.']);
+                throw ValidationException::withMessages(['blocks' => 'Layout area identity or border is invalid.']);
             }
             $seen[$areaId] = true;
         }
@@ -420,51 +429,51 @@ final class CustomPageSetting extends Model
         }
 
         $legalDisclaimerCount = 0;
-        $gridAreas = [];
-        $gridOwners = [];
-        $gridBlocks = [];
-        foreach ($blocks as $gridBlock) {
-            if (! is_array($gridBlock) || ($gridBlock['type'] ?? null) !== 'grid') {
+        $layoutAreas = [];
+        $layoutOwners = [];
+        $layoutBlocks = [];
+        foreach ($blocks as $layoutBlock) {
+            if (! is_array($layoutBlock) || ($layoutBlock['type'] ?? null) !== 'layout') {
                 continue;
             }
-            $this->validateGridComponent($gridBlock);
-            if (isset($gridBlocks[$gridBlock['id']])) {
-                throw ValidationException::withMessages(['blocks' => 'Grid IDs must be unique across the page.']);
+            $this->validateLayoutComponent($layoutBlock);
+            if (isset($layoutBlocks[$layoutBlock['id']])) {
+                throw ValidationException::withMessages(['blocks' => 'Layout IDs must be unique across the page.']);
             }
-            $gridBlocks[$gridBlock['id']] = $gridBlock;
-            foreach ($gridBlock['areas'] as $area) {
+            $layoutBlocks[$layoutBlock['id']] = $layoutBlock;
+            foreach ($layoutBlock['areas'] as $area) {
                 $areaId = $area['id'];
-                if (isset($gridAreas[$areaId])) {
-                    throw ValidationException::withMessages(['blocks' => 'Grid area IDs must be unique.']);
+                if (isset($layoutAreas[$areaId])) {
+                    throw ValidationException::withMessages(['blocks' => 'Layout area IDs must be unique.']);
                 }
-                $gridAreas[$areaId] = true;
-                $gridOwners[$areaId] = $gridBlock['id'];
+                $layoutAreas[$areaId] = true;
+                $layoutOwners[$areaId] = $layoutBlock['id'];
             }
         }
 
         // Parent chains must be finite, even if a cycle is unpublished.
-        foreach ($gridBlocks as $gridId => $gridBlock) {
-            $seen = [$gridId => true];
-            $parent = $gridBlock['layout_area_id'] ?? null;
-            while (is_string($parent) && isset($gridOwners[$parent])) {
-                $ownerId = $gridOwners[$parent];
+        foreach ($layoutBlocks as $layoutId => $layoutBlock) {
+            $seen = [$layoutId => true];
+            $parent = $layoutBlock['layout_area_id'] ?? null;
+            while (is_string($parent) && isset($layoutOwners[$parent])) {
+                $ownerId = $layoutOwners[$parent];
                 if (isset($seen[$ownerId])) {
-                    throw ValidationException::withMessages(['blocks' => 'Grid layouts cannot contain themselves.']);
+                    throw ValidationException::withMessages(['blocks' => 'Layout layouts cannot contain themselves.']);
                 }
                 $seen[$ownerId] = true;
-                $parent = $gridBlocks[$ownerId]['layout_area_id'] ?? null;
+                $parent = $layoutBlocks[$ownerId]['layout_area_id'] ?? null;
             }
         }
 
-        $areaVisible = static function (string $areaId) use ($gridOwners, $gridBlocks): bool {
-            $ownerId = $gridOwners[$areaId] ?? null;
-            while (is_string($ownerId) && isset($gridBlocks[$ownerId])) {
-                $grid = $gridBlocks[$ownerId];
-                if (! self::componentPublished($grid)) {
+        $areaVisible = static function (string $areaId) use ($layoutOwners, $layoutBlocks): bool {
+            $ownerId = $layoutOwners[$areaId] ?? null;
+            while (is_string($ownerId) && isset($layoutBlocks[$ownerId])) {
+                $layout = $layoutBlocks[$ownerId];
+                if (! self::componentPublished($layout)) {
                     return false;
                 }
-                $parentId = $grid['layout_area_id'] ?? null;
-                $ownerId = is_string($parentId) ? ($gridOwners[$parentId] ?? null) : null;
+                $parentId = $layout['layout_area_id'] ?? null;
+                $ownerId = is_string($parentId) ? ($layoutOwners[$parentId] ?? null) : null;
             }
 
             return true;
@@ -484,8 +493,8 @@ final class CustomPageSetting extends Model
             }
 
             $areaId = $block['layout_area_id'] ?? null;
-            if ($areaId !== null && (! is_string($areaId) || ! isset($gridAreas[$areaId]))) {
-                throw ValidationException::withMessages(['blocks' => 'Choose a valid Grid area for this component.']);
+            if ($areaId !== null && (! is_string($areaId) || ! isset($layoutAreas[$areaId]))) {
+                throw ValidationException::withMessages(['blocks' => 'Choose a valid Layout area for this component.']);
             }
             $divider = $block['layout_divider_before'] ?? 'none';
             if (! is_string($divider) || ! in_array($divider, ['none', ...self::DIVIDER_VARIANTS], true)) {
@@ -495,12 +504,12 @@ final class CustomPageSetting extends Model
             $public = $requirePublicMedia && self::componentPublished($block)
                 && ($areaId === null || $areaVisible($areaId));
 
-            if ($type === 'grid') {
+            if ($type === 'layout') {
                 continue;
             }
             if (in_array($type, self::MEDIA_COMPONENT_TYPES, true)) {
                 if (array_key_exists('children', $block)) {
-                    throw ValidationException::withMessages(['blocks' => 'Move older media children into Grid areas before editing this page.']);
+                    throw ValidationException::withMessages(['blocks' => 'Move older media children into Layout areas before editing this page.']);
                 }
                 $this->validateMediaComponent($block, $public);
             }

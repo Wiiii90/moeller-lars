@@ -180,7 +180,7 @@ trait CustomPageWorkspaceComponentActions
     }
 
     /**
-     * One canonical Grid-area border edit. Area membership is stored in the
+     * One canonical Layout-area border edit. Area membership is stored in the
      * page component document; this does not introduce another Page record.
      */
     public function editGridAreaAction(): Action
@@ -189,13 +189,13 @@ trait CustomPageWorkspaceComponentActions
             ->label('Area separator')
             ->fillForm(function (array $arguments): array {
                 $index = filter_var($arguments['gridIndex'] ?? null, FILTER_VALIDATE_INT);
-                $grid = $index !== false ? $this->componentAt((int) $index, 'grid') : null;
+                $grid = $index !== false ? $this->componentAt((int) $index, 'layout') : null;
                 $areaId = $arguments['areaId'] ?? null;
                 $areaIndex = is_array($grid) && is_string($areaId)
                     ? array_search($areaId, array_column($grid['areas'], 'id'), true)
                     : false;
                 if ($areaIndex === false) {
-                    throw ValidationException::withMessages(['border' => 'This Grid area changed. Reopen its settings.']);
+                    throw ValidationException::withMessages(['border' => 'This Layout area changed. Reopen its settings.']);
                 }
                 $this->editingComponentOriginal = $grid;
 
@@ -209,7 +209,7 @@ trait CustomPageWorkspaceComponentActions
             ->modalHeading(__('Area separator'))
             ->action(function (array $data, array $arguments): void {
                 $index = filter_var($arguments['gridIndex'] ?? null, FILTER_VALIDATE_INT);
-                $grid = $index !== false ? $this->componentAt((int) $index, 'grid') : null;
+                $grid = $index !== false ? $this->componentAt((int) $index, 'layout') : null;
                 $areaId = $arguments['areaId'] ?? null;
                 $areaIndex = is_array($grid) && is_string($areaId)
                     ? array_search($areaId, array_column($grid['areas'], 'id'), true)
@@ -222,12 +222,12 @@ trait CustomPageWorkspaceComponentActions
                 }
                 $grid['areas'][$areaIndex]['border'] = $data['border'];
                 $changed = app(CustomPageEditorialService::class)->updateBlock(
-                    $this->settings(), (int) $index, 'grid', $grid, $this->editingComponentOriginal,
+                    $this->settings(), (int) $index, 'layout', $grid, $this->editingComponentOriginal,
                 );
                 if ($changed) {
                     $this->clearSelections();
                     $this->reloadWorkspace();
-                    app(AdminNotifier::class)->notification(title: 'Grid area updated', status: 'success');
+                    app(AdminNotifier::class)->notification(title: 'Layout area updated', status: 'success');
                 }
             });
 
@@ -239,7 +239,7 @@ trait CustomPageWorkspaceComponentActions
         $action = Action::make('addComponent')
             ->label('Add component')
             ->fillForm(fn (array $arguments): array => [
-                'type' => ($arguments['initialType'] ?? null) === 'grid' ? 'grid' : 'text',
+                'type' => ($arguments['initialType'] ?? null) === 'layout' ? 'layout' : 'text',
                 'layout_area_id' => is_string($arguments['layoutAreaId'] ?? null) ? $arguments['layoutAreaId'] : null,
                 'layout_divider_before' => 'none',
                 'publication_state' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::CUSTOM_PAGE)

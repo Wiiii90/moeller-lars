@@ -101,8 +101,8 @@ trait CustomPageWorkspaceProjectionState
 
     /**
      * The table action must evaluate the same atomic deletion set as
-     * CustomPageEditorialService::deleteBlocks(): selected Grid members
-     * do not prevent their owning Grid from being removed together.
+     * CustomPageEditorialService::deleteBlocks(): selected Layout members
+     * do not prevent their owning Layout from being removed together.
      */
     public function canDeleteSelectedComponents(): bool
     {
@@ -197,7 +197,7 @@ trait CustomPageWorkspaceProjectionState
 
             $content = $this->componentContent($settings, $block, $imageName);
             $areaId = $block['layout_area_id'] ?? null;
-            $areaOptions = $this->gridAreaOptions();
+            $areaOptions = $this->layoutAreaOptions();
             if (is_string($areaId) && isset($areaOptions[$areaId])) {
                 $content['secondary'] = trim(implode(' · ', array_filter([
                     $content['secondary'], $areaOptions[$areaId],
