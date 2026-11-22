@@ -37,8 +37,8 @@
             aria-label="Pages editor and live public preview">
             <div class="admin-visual-stage__pane admin-visual-stage__editor-pane">
                 <h2 class="admin-section__kicker admin-visual-stage__heading">{{ __('Editor') }}</h2>
-                <div class="admin-stage-tabs admin-stage-tabs--two" role="tablist" aria-label="Pages editing mode">
-                    @foreach (['create' => 'New', 'selected' => 'Selected'] as $panel => $label)
+                <div class="admin-stage-tabs admin-stage-tabs--three" role="tablist" aria-label="Pages editing mode">
+                    @foreach (['create' => 'New', 'selected' => 'Selected', 'settings' => 'Settings'] as $panel => $label)
                         <button class="admin-action {{ $pagesStagePanel === $panel ? 'is-primary' : '' }}"
                             type="button" role="tab" aria-selected="{{ $pagesStagePanel === $panel ? 'true' : 'false' }}"
                             wire:click="showPagesStagePanel('{{ $panel }}')">{{ __($label) }}</button>
@@ -63,7 +63,7 @@
                             </button>
                         </div>
                     </div>
-                @else
+                @elseif ($pagesStagePanel === 'selected')
                     @php($stageSelected = $this->stageSelectedPage())
                     <div class="admin-stage-workspace admin-visual-stage__field-scroll" aria-label="Selected page appearance">
                         @if ($stageSelected === null)
@@ -105,6 +105,14 @@
                                 @endif
                             </div>
                         @endif
+                    </div>
+                @else
+                    <div class="admin-stage-workspace admin-visual-stage__field-scroll" aria-label="Pages settings">
+                        <button class="admin-action admin-action--with-icon" type="button"
+                            wire:click="mountAction('pagesSettings')">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" />
+                            {{ __('Edit Pages settings') }}
+                        </button>
                     </div>
                 @endif
             </div>

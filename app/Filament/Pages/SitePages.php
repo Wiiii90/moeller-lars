@@ -299,7 +299,7 @@ final class SitePages extends Page
 
     public function showPagesStagePanel(string $panel): void
     {
-        if (in_array($panel, ['create', 'selected'], true)) {
+        if (in_array($panel, ['create', 'selected', 'settings'], true)) {
             $this->pagesStagePanel = $panel;
         }
     }

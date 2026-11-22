@@ -71,6 +71,9 @@ final class CustomPageWorkspace extends Page
     /** Unsaved New Stage form, built from the canonical component editor schema. */
     public array $customStageNewData = [];
 
+    /** Keep the three editorial modes visible without duplicating table ordering. */
+    public string $customStagePanel = 'create';
+
     public ?string $customPreviewFocusedTarget = null;
 
     /** @var array<string, mixed> */
