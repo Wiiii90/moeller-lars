@@ -103,18 +103,6 @@
                         {{ $this->journalSelectedForm }}
                     </div>
                     <div class="gallery-stage__editor-actions admin-toolbar" aria-label="Selected Journal entry actions">
-                        <div class="gallery-stage__action-group">
-                            <button class="admin-action is-danger" type="button" wire:click="discardSelectedJournalEdit"
-                                wire:loading.attr="disabled" wire:target="discardSelectedJournalEdit,discardAllSelectedJournalEdits">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
-                                <span class="gallery-stage__action-label">Discard</span>
-                            </button>
-                            <button class="admin-action is-success" type="button" wire:click="submitSelectedJournalEdit"
-                                wire:loading.attr="disabled" wire:target="submitSelectedJournalEdit,submitAllSelectedJournalEdits">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
-                                <span class="gallery-stage__action-label">Submit</span>
-                            </button>
-                        </div>
                         <div class="gallery-stage__action-group gallery-stage__action-group--batch">
                             <button class="admin-action is-danger" type="button" wire:click="discardAllSelectedJournalEdits"
                                 wire:loading.attr="disabled" wire:target="discardSelectedJournalEdit,discardAllSelectedJournalEdits">
@@ -125,6 +113,18 @@
                                 wire:loading.attr="disabled" wire:target="submitSelectedJournalEdit,submitAllSelectedJournalEdits">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::SubmitAll->value" />
                                 <span class="gallery-stage__action-label">Submit All</span>
+                            </button>
+                        </div>
+                        <div class="gallery-stage__action-group">
+                            <button class="admin-action is-danger" type="button" wire:click="discardSelectedJournalEdit"
+                                wire:loading.attr="disabled" wire:target="discardSelectedJournalEdit,discardAllSelectedJournalEdits">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
+                                <span class="gallery-stage__action-label">Discard</span>
+                            </button>
+                            <button class="admin-action is-success" type="button" wire:click="submitSelectedJournalEdit"
+                                wire:loading.attr="disabled" wire:target="submitSelectedJournalEdit,submitAllSelectedJournalEdits">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
+                                <span class="gallery-stage__action-label">Submit</span>
                             </button>
                         </div>
                     </div>
@@ -491,9 +491,21 @@
                                 </td>
                                 <td class="admin-table__selection admin-table__selection--trailing">
                                     @if ($isBlog)
-                                        <input type="checkbox" wire:click="togglePostSelection({{ $entry['id'] }})" @checked(in_array($entry['id'], $selectedIds, true)) aria-label="Toggle selection for {{ $entry['title'] }}">
+                                        <input
+                                            type="checkbox"
+                                            x-data="{}"
+                                            wire:click.prevent="togglePostSelection({{ $entry['id'] }})"
+                                            x-effect="$el.checked = $wire.selectedPostIds.map(Number).includes({{ (int) $entry['id'] }})"
+                                            aria-label="Toggle selection for {{ $entry['title'] }}"
+                                        >
                                     @else
-                                        <input type="checkbox" wire:click="toggleExhibitionSelection({{ $entry['id'] }})" @checked(in_array($entry['id'], $selectedIds, true)) aria-label="Toggle selection for {{ $entry['title'] }}">
+                                        <input
+                                            type="checkbox"
+                                            x-data="{}"
+                                            wire:click.prevent="toggleExhibitionSelection({{ $entry['id'] }})"
+                                            x-effect="$el.checked = $wire.selectedExhibitionIds.map(Number).includes({{ (int) $entry['id'] }})"
+                                            aria-label="Toggle selection for {{ $entry['title'] }}"
+                                        >
                                     @endif
                                 </td>
                             </tr>

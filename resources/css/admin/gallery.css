@@ -161,7 +161,9 @@
     gap: .12rem;
 }
 
-.gallery-stage__action-group--batch {
+/* Keep the right-hand action group aligned regardless of whether it
+ * operates on one selected item or the full selected batch. */
+.gallery-stage__editor-actions > .gallery-stage__action-group:last-child {
     margin-left: auto;
 }
 
