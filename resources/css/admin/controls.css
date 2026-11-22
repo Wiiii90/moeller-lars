@@ -1139,3 +1139,26 @@ button.admin-split-toggle.fi-toggle:focus-visible {
     outline: 1px solid var(--admin-control-border-focus);
     outline-offset: -1px;
 }
+
+/* Canonical text input with an explicitly openable native datalist.
+   Keep it inside the existing input suffix, not a second popover or field. */
+.admin-browsable-datalist .admin-datalist-picker {
+    display: inline-flex;
+    width: 1.75rem;
+    min-width: 1.75rem;
+    min-height: calc(var(--admin-control-height) - 1px);
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--admin-muted);
+    cursor: pointer;
+}
+.admin-browsable-datalist .admin-datalist-picker:is(:hover, :focus-visible) {
+    color: var(--admin-text);
+}
+.admin-browsable-datalist .admin-datalist-picker:focus-visible {
+    outline: 1px solid var(--admin-control-border-focus);
+    outline-offset: -2px;
+}

@@ -3,6 +3,7 @@
 namespace App\Filament\Support\Controls;
 
 use App\Domain\Content\RegionalFormats;
+use Illuminate\Support\HtmlString;
 
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\ColorPicker;
@@ -50,6 +51,45 @@ final class AdminControl
     public static function text(string $name, ?string $label = null): TextInput
     {
         return self::label(self::decorate(TextInput::make($name)), $label);
+    }
+
+    /**
+     * Keep a real text value and its browser-native datalist, while providing
+     * an explicit keyboard-accessible picker button. A native datalist does not
+     * consistently expose its own dropdown affordance on text inputs.
+     *
+     * @param list<string>|\Closure():list<string> $values
+     */
+    public static function browsableDatalist(TextInput $field, array|\Closure $values, string $itemName): TextInput
+    {
+        $label = e('Show saved '.$itemName);
+        $button = <<<'HTML'
+            <button
+                type="button"
+                class="admin-datalist-picker"
+                aria-label="%LABEL%"
+                title="%LABEL%"
+                x-on:click.stop.prevent="
+                    const input = $el.closest('.fi-input-wrp')?.querySelector('input[list]');
+                    if (! input) return;
+                    input.focus();
+                    if (typeof input.showPicker === 'function') {
+                        try { input.showPicker(); } catch (error) { /* Keep text editing available. */ }
+                    }
+                "
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                    width="16" height="16" aria-hidden="true" focusable="false">
+                    <path d="m5 9 7 7 7-7" />
+                </svg>
+            </button>
+            HTML;
+
+        return $field
+            ->datalist($values)
+            ->suffix(new HtmlString(str_replace('%LABEL%', $label, $button)))
+            ->extraFieldWrapperAttributes(['class' => 'admin-browsable-datalist'], merge: true);
     }
 
     public static function email(string $name, ?string $label = null): TextInput

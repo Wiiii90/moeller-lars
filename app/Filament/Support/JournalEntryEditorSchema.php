@@ -461,12 +461,13 @@ final class JournalEntryEditorSchema
     {
         $isVenue = $kind === 'venue';
         $title = $isVenue ? 'Venue' : 'Organizer';
-        $field = AdminControl::text($kind, $title)
-            ->maxLength(240)->nullable()
-            ->datalist($isVenue
+        $field = AdminControl::browsableDatalist(
+            AdminControl::text($kind, $title)->maxLength(240)->nullable(),
+            $isVenue
                 ? fn (): array => ExhibitionVenuePreset::query()->orderByRaw('LOWER(name)')->orderBy('name')->pluck('name')->all()
-                : fn (): array => ExhibitionOrganizerPreset::query()->orderByRaw('LOWER(name)')->orderBy('name')->pluck('name')->all())
-            ->live(onBlur: true);
+                : fn (): array => ExhibitionOrganizerPreset::query()->orderByRaw('LOWER(name)')->orderBy('name')->pluck('name')->all(),
+            strtolower($title).' entries',
+        )->live(onBlur: true);
 
         if ($isVenue) {
             $field->afterStateUpdated(static fn (mixed $state, Set $set) => self::fillVenueSnapshot($state, $set));
