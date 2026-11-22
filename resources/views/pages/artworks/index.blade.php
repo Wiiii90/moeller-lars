@@ -7,7 +7,7 @@
 @section('content')
     <x-public.page-heading :section="$section" />
     <div class="artwork-list{{ $divider !== 'none' ? ' artwork-list--divided' : '' }}"
-        data-artwork-viewer-sequence data-gallery-image-buffer data-gallery-infinite
+        data-artwork-viewer-sequence data-gallery-infinite
         data-gallery-viewer-manifest="{{ request()->fullUrlWithQuery(['gallery_viewer' => '1']) }}">
         @include('pages.artworks.partials.batch')
     </div>

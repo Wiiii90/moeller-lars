@@ -93,8 +93,9 @@
 @endphp
 
 @if ($galleryMediaAspect !== null)
-    {{-- Gallery alone consumes the existing nonce-authorized stylesheet slot;
-         no inline style attribute, viewport expansion or new script path. --}}
+    {{-- The Gallery media and caption share one aspect-derived composition
+         width before media decode. The child image/video must never receive a
+         second height limit that changes its painted edge independently. --}}
     @push('public-component-styles')
         <style nonce="{{ request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE) }}">
             .artwork-card--gallery-dimensioned[data-gallery-artwork="{{ (int) $artwork->getKey() }}"] {

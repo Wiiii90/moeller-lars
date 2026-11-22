@@ -944,9 +944,6 @@ html.public-preview--embedded {
         --gallery-drift-left: 1fr;
         --gallery-drift-right: 1fr;
     }
-    .artwork-list .artwork-card__composition {
-        max-width: 100%;
-    }
 }
 .artwork-list > .artwork-card:last-child {
     margin-bottom: 0;
