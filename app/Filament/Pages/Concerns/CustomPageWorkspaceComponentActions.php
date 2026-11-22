@@ -440,15 +440,22 @@ trait CustomPageWorkspaceComponentActions
     {
         [$index, $type] = $this->actionComponentTarget($arguments);
         $block = $this->componentAt($index, $type);
-        $count = count($this->settings()->components());
+        $siblings = CustomPageSetting::layoutSiblingIndices(
+            $this->settings()->components(), $block['layout_area_id'] ?? null,
+        );
+        $position = array_search($index, $siblings, true);
         $target = ['componentIndex' => $index, 'componentType' => $type];
         $actions = [];
 
         foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
-            $canMove = $this->componentReorderEnabled() && ($direction === 'up' ? $index > 0 : $index < $count - 1);
-            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($index, $type, $direction, $actionName): void {
+            $nextIndex = $position === false ? null
+                : ($siblings[$position + ($direction === 'up' ? -1 : 1)] ?? null);
+            $canMove = $this->componentReorderEnabled() && $nextIndex !== null;
+            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($index, $type, $direction, $actionName, $nextIndex): void {
+                if ($nextIndex === null) {
+                    return;
+                }
                 $this->moveComponent($index, $type, $direction);
-                $nextIndex = $index + ($direction === 'up' ? -1 : 1);
                 $this->retargetComponentEditor($actionName, ['componentIndex' => $nextIndex, 'componentType' => $type]);
             })->disabled(! $canMove);
         }

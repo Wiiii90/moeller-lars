@@ -90,7 +90,7 @@ final class SitePages extends Page
     /** Pages reuses the Journal/Gallery Preview without storing a second page projection. */
     public bool $pagesPreviewAutoFocus = true;
 
-    public string $pagesStagePanel = 'selected';
+    public string $pagesStagePanel = 'create';
 
     public ?int $pagesStageSelectedSectionId = null;
 

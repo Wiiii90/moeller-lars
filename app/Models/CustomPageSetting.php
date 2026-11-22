@@ -96,6 +96,21 @@ final class CustomPageSetting extends Model
         return is_array($blocks) && array_is_list($blocks) ? $blocks : [];
     }
 
+    /** @param list<array<string,mixed>> $blocks
+     * @return list<int>
+     */
+    public static function layoutSiblingIndices(array $blocks, ?string $areaId): array
+    {
+        $indices = [];
+        foreach ($blocks as $index => $block) {
+            if (($block['layout_area_id'] ?? null) === $areaId) {
+                $indices[] = $index;
+            }
+        }
+
+        return $indices;
+    }
+
     /**
      * Project stored content into layout areas without duplicating data ownership.
      * Each projected block retains its root index for the existing Preview anchors.
