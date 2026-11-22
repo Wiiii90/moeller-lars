@@ -20,6 +20,12 @@
 - Public individual Artwork video change already source-integrated: `pages/artworks/show.blade.php`, `public-gallery-loading.js`, and shared media styles now give fitted video pages native player controls; previous source review only, no artist browser acceptance.
 - Do not casually alter Home Gallery Hero (Dev Worker 3/6), General (Dev Worker 7), Pages (Dev Worker 5), Journal (Dev Worker 1) or Custom Pages (Dev Worker 2). Shared Public primitives require explicit consumer comparison and regression review. No Dev modifications to tests or routine `docs/`.
 
+## Shared native Public video controls — 2026-11-22
+
+- Artist requested that the browser-native three-dot video player menu no longer expose its Download action across Public media presentations, ideally in one owner. This is a presentation hint, not a prohibition on obtaining original Public media (the product intentionally serves playable originals).
+- Existing canonical public-media initializer `resources/js/public-media-playback.js` now applies `video.controlsList?.add('nodownload')` to every currently rendered `video[controls]` at page initialization, including Gallery index, individual Artwork, Journal/Blog/Exhibitions, Custom Pages and the separate fullscreen Viewer. The same initializer applies the policy to subsequent Gallery batch elements via its existing `gallery:items-appended` callback. No per-template attributes, alternative player, new observer, new module or lifecycle were introduced. Native play, seek, sound and fullscreen remain unaffected.
+- Browser behavior is browser-dependent: unsupported native media controllers may still show Download. The media URL and normal request/recording options are intentionally not blocked. Review initial load, gallery append, public Livewire navigation, fullscreen viewer and Journal controls on desktop/mobile browsers. Source-only, no runtime/browser acceptance.
+
 ## Other still-open user acceptance / Testing and Docs handoff
 
 - Gallery Stage upload queue and edited values are restored within the session; reused/referenced Storage files survive Discard while truly unreferenced new uploads can be removed by the canonical media service. Review rapid navigation, uploads and queue cleanup in a real browser.
@@ -30,6 +36,7 @@
 
 ## Next
 
-1. Obtain real browser measurements for both screenshot Artworks on direct Public/Preview navigation and after appended batches. Verify media painted bounds vs caption bounds in landscape/portrait, initial loading, unavailable dimensions, narrow screens and video. User acceptance remains open.
-2. If computed Gallery `--gallery-media-aspect` is absent after Livewire navigation, establish the actual nonce/style delivery fault in the existing public style owner before making further architectural changes; no compensating page-local sizing script.
-3. Finish a bounded review of Gallery-only presentation selectors and their direct consumers; remove only proven dead/conflicting styling. Report exact checks and ask Testing for regression qualification. No automatic deployment or Continuous Integration.
+1. Verify native player Download action is absent in supporting browsers for Gallery, detail, Journal, Custom Pages and fullscreen Viewer, including dynamically appended Gallery cards and public navigation; confirm playback controls remain usable. Unsupported browser menus cannot be suppressed by this hint.
+2. Obtain real browser measurements for both screenshot Artworks on direct Public/Preview navigation and after appended batches. Verify media painted bounds vs caption bounds in landscape/portrait, initial loading, unavailable dimensions, narrow screens and video. User acceptance remains open.
+3. If computed Gallery `--gallery-media-aspect` is absent after Livewire navigation, establish the actual nonce/style delivery fault in the existing public style owner before making further architectural changes; no compensating page-local sizing script.
+4. Finish a bounded review of Gallery-only presentation selectors and their direct consumers; remove only proven dead/conflicting styling. Report exact checks and ask Testing for regression qualification. No automatic deployment or Continuous Integration.

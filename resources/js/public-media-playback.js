@@ -4,7 +4,19 @@ export function shouldPlayPublicVideo(intersecting, pageVisible, slideVisible, r
     return intersecting && pageVisible && slideVisible && !reducedMotion;
 }
 
+// Native controls are rendered by several canonical Public media owners.
+// Apply their shared presentation policy here, including the fullscreen
+// Viewer and Journal/Custom Page players, without replacing browser controls.
+// This hides the Download action where supported; it does not restrict access
+// to publicly delivered media.
+function configureNativeVideoControls(container) {
+    for (const video of container.querySelectorAll('video[controls]')) {
+        video.controlsList?.add('nodownload');
+    }
+}
+
 export function initializePublicMediaPlayback(root = document) {
+    configureNativeVideoControls(root);
     const videos = Array.from(root.querySelectorAll('video[data-public-loop-video]'));
     if (videos.length === 0 && !root.querySelector('[data-gallery-infinite]')) return () => {};
 
@@ -75,6 +87,7 @@ export function initializePublicMediaPlayback(root = document) {
     initiallyRendered.forEach(attachVideo);
     const onGalleryBatch = (event) => {
         event.detail.elements.forEach((element) => {
+            configureNativeVideoControls(element);
             element.querySelectorAll('video[data-public-loop-video]').forEach(attachVideo);
         });
     };
