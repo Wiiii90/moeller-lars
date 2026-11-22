@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Content\BlogEditorialService;
 use App\Domain\Content\JournalMediaRenderer;
+use App\Domain\Content\ExhibitionChronology;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SitePreviewContext;
@@ -171,9 +172,10 @@ final class PublicSiteSectionController extends Controller
 
     private function exhibitionsJournal(SiteSection $section): View
     {
-        $exhibitions = Exhibition::query()->where('site_section_id', $section->getKey())
+        $exhibitions = ExhibitionChronology::order(Exhibition::query()
+            ->where('site_section_id', $section->getKey())
             ->when($this->preview->active(), fn (Builder $query) => $query->where('state', '<>', 'archived'), fn (Builder $query) => $query->where('state', 'published'))
-            ->with('mediaUsages.mediaAsset.variants')->orderBy('position')->orderBy('id')->get();
+            ->with('mediaUsages.mediaAsset.variants')->get());
 
         return view('pages.exhibitions', [
             'section' => $section, 'settings' => JournalSetting::forSection($section), 'exhibitions' => $exhibitions,

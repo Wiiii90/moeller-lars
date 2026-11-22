@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Content\ExhibitionChronology;
 use App\Domain\Content\ExhibitionDate;
 use App\Domain\Content\JournalMediaRenderer;
 use App\Domain\Content\JournalTemplate;
@@ -111,18 +112,17 @@ final class StagedJournalPreviewController extends Controller
         ]);
         $exhibition->setRelation('mediaUsages', $usages);
 
-        // The Public page is position-ordered, not date-ordered. A freshly
-        // submitted Exhibition receives nextPosition(), so stage the new draft
-        // at that same location rather than rendering a misleading solo page.
+        // Keep real Public neighbors around the draft; never persist preview data.
         $exhibitions = Exhibition::query()->where('site_section_id', $section)
             ->where('state', '<>', 'archived')
-            ->with('mediaUsages.mediaAsset.variants')->orderBy('position')->orderBy('id')->get();
+            ->with('mediaUsages.mediaAsset.variants')->get();
         if ($existing instanceof Exhibition) {
             $exhibitions = $exhibitions->map(static fn (Exhibition $item): Exhibition =>
                 (int) $item->getKey() === (int) $existing->getKey() ? $exhibition : $item);
         } else {
             $exhibitions->push($exhibition);
         }
+        $exhibitions = ExhibitionChronology::order($exhibitions);
 
         return view('pages.exhibitions', [
             'section' => $page, 'settings' => JournalSetting::forSection($page),

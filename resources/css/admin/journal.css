@@ -12,7 +12,7 @@
 /* The shared table contract owns Blog Action rail and track widths together.
  * Supporting data yields before it squeezes the identity track. */
 .journal-table--exhibitions {
-    --admin-row-actions-width: var(--admin-row-actions-move-state-delete-width);
+    --admin-row-actions-width: var(--admin-row-actions-edit-state-delete-width);
 }
 
 .journal-table col.journal-col--visual {
@@ -53,16 +53,18 @@
 
 /* Exhibition Actions retain their accepted 64rem density transition. */
 @container admin-table (max-width: 64rem) {
-    .journal-table--exhibitions {
-        --admin-row-actions-width: var(--admin-row-actions-move-state-delete-compact-width);
-    }
-
     .journal-table--exhibitions col.journal-col--date {
         width: 12.5rem;
     }
 
     .journal-table--blog col.journal-col--publication-date {
         width: 11rem;
+    }
+}
+
+@container admin-table (max-width: 38rem) {
+    .journal-table--exhibitions {
+        --admin-row-actions-width: var(--admin-row-actions-edit-state-delete-compact-width);
     }
 }
 

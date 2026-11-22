@@ -9,7 +9,7 @@
         $visibleIds = collect($entries)->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
         $resultStart = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
         $resultEnd = $total === 0 ? 0 : min($total, $page * $pageSize);
-        $dragEnabled = $this->canDragSort();
+        $dragEnabled = $isBlog && $this->canDragSort();
         $canMoveSelectedUp = $dragEnabled && collect($entries)->contains(static fn (array $entry): bool =>
             in_array((int) $entry['id'], $selectedIds, true) && $entry['can_move_up']
         );
@@ -261,9 +261,9 @@
                                 <x-admin.selection-trigger-label>{{ __('Selected') }}</x-admin.selection-trigger-label>
                             </button>
                             <div class="admin-selection__menu" role="menu" x-show="open" x-cloak x-on:click.outside="open = false">
-                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('up')" x-on:click="open = false" @disabled(! $canMoveSelectedUp)>{{ __('Move selected up') }}</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('down')" x-on:click="open = false" @disabled(! $canMoveSelectedDown)>{{ __('Move selected down') }}</button>
                                 @if ($isBlog)
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('up')" x-on:click="open = false" @disabled(! $canMoveSelectedUp)>{{ __('Move selected up') }}</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('down')" x-on:click="open = false" @disabled(! $canMoveSelectedDown)>{{ __('Move selected down') }}</button>
                                     <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedPosts" x-on:click="open = false" @disabled(! $selectedCapabilities['publish'])>{{ __('Publish selected') }}</button>
                                     <button class="admin-action" type="button" role="menuitem" wire:click="unpublishSelectedPosts" x-on:click="open = false" @disabled(! $selectedCapabilities['unpublish'])>{{ __('Unpublish selected') }}</button>
                                     <button class="admin-action" type="button" role="menuitem" wire:click="restoreSelectedPosts" x-on:click="open = false" @disabled(! $selectedCapabilities['restore'])>{{ __('Restore selected to draft') }}</button>
@@ -276,12 +276,12 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            <x-admin.table class="admin-table--data admin-table--ranked">
+            <x-admin.table class="admin-table--data {{ $isBlog ? 'admin-table--ranked' : '' }}">
                 <table class="admin-table--six-grid journal-table {{ $isBlog ? 'journal-table--blog admin-table--fold-dense' : 'journal-table--exhibitions admin-table--fold-at-compact' }}">
                     <colgroup>
-                        <col class="admin-table__col-quarter-unit admin-table__col-position">
-                        <col class="admin-table__col-quarter-unit admin-table__col-drag">
                         @if ($isBlog)
+                            <col class="admin-table__col-quarter-unit admin-table__col-position">
+                            <col class="admin-table__col-quarter-unit admin-table__col-drag">
                             <col class="admin-table__col-half-unit journal-col--visual">
                             <col class="admin-table__col-one-unit journal-col--identity">
                             <col class="journal-col--publication-date admin-table__yield--narrow">
@@ -298,7 +298,9 @@
                     </colgroup>
                     <thead>
                         <tr>
-                            <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">{{ __('Position') }}</th>
+                            @if ($isBlog)
+                                <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">{{ __('Position') }}</th>
+                            @endif
                             <th scope="col" class="journal-visual journal-col--visual">{{ __('Image') }}</th>
                             <th scope="col" class="journal-col--identity">{{ $isBlog ? 'Post' : 'Exhibition' }}</th>
                             @if ($isBlog)
@@ -335,15 +337,17 @@
                                 wire:key="journal-{{ $template }}-{{ $entry['id'] }}"
                                 @if ($dragEnabled) wire:sort:item="{{ $entry['id'] }}" @endif
                             >
-                                <td class="admin-table__position"><span class="admin-position">{{ $entry['rank'] }}</span></td>
-                                <td class="admin-table__drag">
-                                    <button
-                                        class="admin-drag-handle"
-                                        type="button"
-                                        @if ($dragEnabled) wire:sort:handle title="Drag to reorder" @else disabled title="Drag reorder is available only with no search/filter and all entries on one page" @endif
-                                        aria-label="Drag {{ $entry['title'] }} to reorder"
-                                    >⋮⋮</button>
-                                </td>
+                                @if ($isBlog)
+                                    <td class="admin-table__position"><span class="admin-position">{{ $entry['rank'] }}</span></td>
+                                    <td class="admin-table__drag">
+                                        <button
+                                            class="admin-drag-handle"
+                                            type="button"
+                                            @if ($dragEnabled) wire:sort:handle title="Drag to reorder" @else disabled title="Drag reorder is available only with no search/filter and all entries on one page" @endif
+                                            aria-label="Drag {{ $entry['title'] }} to reorder"
+                                        >⋮⋮</button>
+                                    </td>
+                                @endif
                                 <td class="journal-visual journal-col--visual">
                                     <div class="journal-visual__thumbnail">
                                         @if ($entry['thumbnail_url'])
@@ -392,7 +396,7 @@
                                     </td>
                                 @endif
                                 <td class="admin-table__actions">
-                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable journal-row-actions {{ $isBlog ? 'admin-row-actions--journal-blog journal-row-actions--blog' : 'admin-row-actions--move-state-delete journal-row-actions--exhibitions' }}">
+                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable journal-row-actions {{ $isBlog ? 'admin-row-actions--journal-blog journal-row-actions--blog' : 'admin-row-actions--edit-state-delete journal-row-actions--exhibitions' }}">
                                         @if ($isBlog)
                                             <x-admin.row-action
                                                 :action="\App\Filament\Support\AdminRowAction::MoveUp"
@@ -456,18 +460,6 @@
                                                 title="{{ $entry['delete_help'] ?? 'Delete post' }}"
                                             />
                                         @else
-                                            <x-admin.row-action
-                                                :action="\App\Filament\Support\AdminRowAction::MoveUp"
-                                                wire:click="moveExhibition({{ $entry['id'] }}, 'up')"
-                                                :disabled="! $entry['can_move_up']"
-                                                aria-label="Move {{ $entry['title'] }} up"
-                                            />
-                                            <x-admin.row-action
-                                                :action="\App\Filament\Support\AdminRowAction::MoveDown"
-                                                wire:click="moveExhibition({{ $entry['id'] }}, 'down')"
-                                                :disabled="! $entry['can_move_down']"
-                                                aria-label="Move {{ $entry['title'] }} down"
-                                            />
                                             <x-admin.row-action
                                                 :action="\App\Filament\Support\AdminRowAction::Edit"
                                                 wire:click="mountAction('editExhibition', { exhibition: {{ $entry['id'] }} })"

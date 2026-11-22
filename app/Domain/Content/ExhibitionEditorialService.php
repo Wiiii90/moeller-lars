@@ -15,7 +15,6 @@ final class ExhibitionEditorialService
 {
     public function __construct(
         private readonly AdminAuditService $audit,
-        private readonly JournalEntryOrderService $order,
         private readonly SafeLinkPolicy $links,
         private readonly SafeRichTextRenderer $richText,
         private readonly JournalEntryMediaService $media,
@@ -43,7 +42,6 @@ final class ExhibitionEditorialService
                 'site_section_id' => $sectionId,
                 'state' => 'draft',
                 'archived_from_state' => null,
-                'position' => $this->order->nextPosition(new Exhibition, $sectionId),
                 'published_at' => null,
             ]);
             $entry->save();
@@ -216,16 +214,6 @@ final class ExhibitionEditorialService
         });
     }
 
-    public function canMove(Exhibition $entry, string $direction): bool
-    {
-        return $this->order->canMove($entry, $direction);
-    }
-
-    public function move(Exhibition $entry, string $direction): bool
-    {
-        return $this->order->move($entry, $direction);
-    }
-
     public function delete(Exhibition $entry): void
     {
         $actor = $this->audit->requireActor();
@@ -239,7 +227,6 @@ final class ExhibitionEditorialService
             $id = (int) $fresh->getKey();
             $sectionId = (int) $fresh->getAttribute('site_section_id');
             $fresh->delete();
-            $this->order->compactAfterDeletion($fresh);
             $this->audit->record($actor, 'exhibition.deleted', 'exhibition', $id, ['site_section_id' => $sectionId]);
         });
     }

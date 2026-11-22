@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Content\BlogEditorialService;
+use App\Domain\Content\ExhibitionChronology;
 use App\Domain\Content\ExhibitionDate;
 use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalEntryOrderService;
@@ -211,9 +212,9 @@ final class JournalWorkspace extends Page
 
     public function canDragSort(): bool
     {
-        return trim($this->search) === ''
+        return $this->journalTemplate() === JournalTemplate::Blog
+            && trim($this->search) === ''
             && $this->statusFilter === 'any'
-            && ($this->journalTemplate() === JournalTemplate::Blog || $this->timingFilter === 'any')
             && $this->page === 1
             && $this->total <= $this->pageSize;
     }
@@ -232,25 +233,6 @@ final class JournalWorkspace extends Page
             );
         }
         $this->loadPosts(false);
-        if ($changed) {
-            $this->syncJournalPreviewFocus(forceRefresh: true);
-        }
-    }
-
-    public function sortExhibition(int|string $id, int $position): void
-    {
-        if (! $this->canDragSort() || $this->journalTemplate() !== JournalTemplate::Exhibitions || ! $this->validSortEntryId($id)) {
-            return;
-        }
-        $entry = $this->exhibition((int) $id);
-        $changed = app(JournalEntryOrderService::class)->moveToPosition($entry, $position);
-        if ($changed) {
-            app(AdminNotifier::class)->notification(
-                title: 'Exhibition order updated',
-                status: 'success',
-            );
-        }
-        $this->loadExhibitions(false);
         if ($changed) {
             $this->syncJournalPreviewFocus(forceRefresh: true);
         }
@@ -422,21 +404,6 @@ final class JournalWorkspace extends Page
         }
     }
 
-    public function moveExhibition(int $id, string $direction): void
-    {
-        $changed = app(ExhibitionEditorialService::class)->move($this->exhibition($id), $direction);
-        if ($changed) {
-            app(AdminNotifier::class)->notification(
-                title: 'Exhibition order updated',
-                status: 'success',
-            );
-        }
-        $this->loadExhibitions(false);
-        if ($changed) {
-            $this->syncJournalPreviewFocus(forceRefresh: true);
-        }
-    }
-
     public function publishPost(int $id): void
     {
         $post = $this->post($id);
@@ -485,16 +452,6 @@ final class JournalWorkspace extends Page
             }
 
             return;
-        }
-        $records = $this->selectedExhibitions();
-        if ($direction === 'down') {
-            $records = $records->reverse();
-        }
-        [$ok, $failed] = $this->runEntryBatch($records, fn (Exhibition $entry): bool => app(ExhibitionEditorialService::class)->move($entry, $direction));
-        $this->notifyBatch('exhibitions reordered', $ok, $failed);
-        $this->loadExhibitions(false);
-        if ($ok > 0) {
-            $this->syncJournalPreviewFocus(forceRefresh: true);
         }
     }
 
@@ -865,26 +822,20 @@ final class JournalWorkspace extends Page
         $state = (string) $entry->getAttribute('state');
         $target = [$kind => $id];
         $editAction = $isPost ? 'editPost' : 'editExhibition';
-        $orderedIds = ($isPost ? BlogPost::query() : Exhibition::query())
-            ->where('site_section_id', $this->sectionId)
-            ->orderBy('position')
-            ->orderBy('id')
-            ->pluck('id')
-            ->map(static fn (mixed $value): int => (int) $value)
-            ->all();
-        $index = array_search($id, $orderedIds, true);
         $actions = [];
-
-        foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
-            $canMove = $index !== false && ($direction === 'up' ? $index > 0 : $index < count($orderedIds) - 1);
-            $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($isPost, $id, $direction, $editAction, $target): void {
-                if ($isPost) {
+        if ($isPost) {
+            $orderedIds = BlogPost::query()
+                ->where('site_section_id', $this->sectionId)
+                ->orderBy('position')->orderBy('id')->pluck('id')
+                ->map(static fn (mixed $value): int => (int) $value)->all();
+            $index = array_search($id, $orderedIds, true);
+            foreach (['up' => AdminRowAction::MoveUp, 'down' => AdminRowAction::MoveDown] as $direction => $role) {
+                $canMove = $index !== false && ($direction === 'up' ? $index > 0 : $index < count($orderedIds) - 1);
+                $actions[] = AdminDialog::headerAction('dialogMove'.ucfirst($direction), $role, function () use ($id, $direction, $editAction, $target): void {
                     $this->movePost($id, $direction);
-                } else {
-                    $this->moveExhibition($id, $direction);
-                }
-                $this->replaceMountedAction($editAction, $target);
-            })->disabled(! $canMove);
+                    $this->replaceMountedAction($editAction, $target);
+                })->disabled(! $canMove);
+            }
         }
 
         if (! $isPost) {
@@ -1140,19 +1091,16 @@ final class JournalWorkspace extends Page
         }
         $this->total = (clone $query)->count();
         $this->setPagination($this->total);
-        $canonicalIds = Exhibition::query()->where('site_section_id', $this->sectionId)->orderBy('position')->orderBy('id')->pluck('id')->map(fn ($id): int => (int) $id)->values();
-        $ranks = $canonicalIds->flip();
-        $count = $canonicalIds->count();
         $query->with(['mediaUsages' => function ($usages): void {
             $usages->where('role', JournalEntryMedia::ROLE_COVER)->with('mediaAsset.variants');
         }]);
         /** @var EloquentCollection<int, Exhibition> $records */
-        $records = $query->orderBy('position')->orderBy('id')->forPage($this->page, $this->pageSize)->get();
         $now = now();
-        $this->exhibitions = $records->map(function (Exhibition $entry) use ($ranks, $count, $now): array {
+        $records = ExhibitionChronology::order($query->get(), $now)
+            ->forPage($this->page, $this->pageSize);
+        $this->exhibitions = $records->map(function (Exhibition $entry) use ($now): array {
             $internalState = (string) $entry->getAttribute('state');
             $state = $internalState === 'published' ? 'published' : 'unpublished';
-            $rank = ((int) ($ranks[(int) $entry->getKey()] ?? 0)) + 1;
             $location = $entry->summaryAttribution();
 
             $dateRange = ExhibitionDate::display(
@@ -1166,14 +1114,14 @@ final class JournalWorkspace extends Page
                 : (filled($entry->getAttribute('opening_text')) ? trim((string) $entry->getAttribute('opening_text')) : null);
 
             return [
-                'id' => (int) $entry->getKey(), 'rank' => $rank, 'title' => (string) $entry->getAttribute('title'), 'location' => $location,
+                'id' => (int) $entry->getKey(), 'title' => (string) $entry->getAttribute('title'), 'location' => $location,
                 'state' => $state, 'timing' => $entry->temporalState($now), 'vernissage' => $vernissage,
                 'date_range' => $dateRange,
                 'thumbnail_url' => $this->coverThumbnailUrl($entry),
                 'public_url' => $this->journalPublicUrl !== null && $internalState === 'published' ? $this->journalPublicUrl : null,
                 'preview_url' => $internalState === 'archived' || $this->journalPreviewUrl === null
                     ? null : $this->journalPreviewUrl.'#exhibition-'.$entry->getKey(),
-                'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count, 'can_delete' => $internalState !== 'published',
+                'can_delete' => $internalState !== 'published',
                 'delete_help' => $internalState === 'published' ? 'Unpublish this exhibition before deleting' : null,
             ];
         })->all();
@@ -1480,7 +1428,8 @@ final class JournalWorkspace extends Page
     {
         $ids = collect($this->selectedExhibitionIds)->map(fn (mixed $id): int => (int) $id)->unique()->all();
 
-        return Exhibition::query()->where('site_section_id', $this->sectionId)->whereKey($ids)->orderBy('position')->orderBy('id')->get();
+        return ExhibitionChronology::order(Exhibition::query()
+            ->where('site_section_id', $this->sectionId)->whereKey($ids)->get());
     }
 
     private function post(int $id): BlogPost

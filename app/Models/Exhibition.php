@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'organizer', 'venue', 'city', 'country', 'location_text', 'postal_code', 'show_organizer', 'show_venue', 'show_external_url', 'show_location_text', 'show_postal_code', 'show_city', 'show_country', 'description', 'description_enabled', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'image_viewer_enabled', 'map_enabled', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'kind', 'organizer', 'venue', 'city', 'country', 'location_text', 'postal_code', 'show_organizer', 'show_venue', 'show_external_url', 'show_location_text', 'show_postal_code', 'show_city', 'show_country', 'description', 'description_enabled', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'image_viewer_enabled', 'map_enabled', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
 #[Guarded(['id'])]
 class Exhibition extends Model
 {

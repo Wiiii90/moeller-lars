@@ -154,14 +154,14 @@ final class ExhibitionDate
             ? 'current' : 'unknown';
     }
 
-    private static function earliest(string $value): string
+    public static function earliest(string $value): string
     {
         return strlen($value) === 4
             ? $value.'-01-01'
             : (strlen($value) === 7 ? $value.'-01' : $value);
     }
 
-    private static function latest(string $value): string
+    public static function latest(string $value): string
     {
         if (strlen($value) === 4) {
             return $value.'-12-31';

@@ -4,7 +4,6 @@ namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Models\BlogPost;
-use App\Models\Exhibition;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -18,9 +17,8 @@ final class JournalEntryOrderService
     /**
      * Reserve the first canonical position for a newly-created Journal entry.
      *
-     * Journal lists are editorial timelines: new drafts/exhibitions should open
-     * at the top, while the explicit Move up/down controls remain the manual
-     * override afterwards. Existing rows are normalized through temporary
+     * Blog lists are editorial timelines: new drafts open at the top,
+     * while explicit Move up/down controls provide a manual override. Existing rows are normalized through temporary
      * positions first so the unique (site_section_id, position) indexes are
      * never violated and the sequence stays contiguous.
      */
@@ -211,8 +209,8 @@ final class JournalEntryOrderService
 
     private function assertSupported(Model $record): void
     {
-        if (! $record instanceof BlogPost && ! $record instanceof Exhibition) {
-            throw new InvalidArgumentException('Journal ordering supports BlogPost and Exhibition records only.');
+        if (! $record instanceof BlogPost) {
+            throw new InvalidArgumentException('Manual Journal ordering supports BlogPost records only.');
         }
     }
 
