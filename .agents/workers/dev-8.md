@@ -19,7 +19,7 @@
 - Existing `resources/js/admin-viz.js` imports the same shared module. No new parallel form persistence, custom modal or domain validation.
 
 ## Verification and next
-- Verify the committed code on current `dev`, then run bounded syntax and pure state checks; neither replaces browser validation.
+- Verified the published source on the current `dev`, including the real Filament 5.7.6 `mountedActions[index].data` state path and native `x-modal-opened` lifecycle. An isolated JavaScript syntax check and focused pure-state exercises passed for initial defaults, typing before blur, complete revert, Livewire synchronization, Media/Title readiness, partial exhibition date, nested Action indices and reset on close. Authenticated browser behavior remains unverified.
 - Browser review still required: freshly opened Create defaults, instant typing, revert, Clear, reopen, Media picker, partial date, nested Command, no-readiness forms, enabled/disabled Submit, Edit/Viewer unaffected, light/dark and narrow viewports.
 - Journal's *modal* exhibition title currently remains required by its schema. The Stage's untitled draft convenience is a separate owner; do not silently weaken unrelated validation in this dialog-style task.
 - Current `docs/admin/dialogs.md` still describes the rejected action ordering and requires later reviewed Docs reconciliation.
