@@ -6,28 +6,28 @@
  */
 export function adminDialogDraft() {
     return {
-        index: -1,
-        initialState: null,
-        active: false,
-        dirty: false,
+        draftIndex: -1,
+        draftBaseline: null,
+        draftActive: false,
+        draftDirty: false,
 
-        open(mountedActionsData) {
+        captureDraft(mountedActionsData) {
             const actions = Array.isArray(mountedActionsData) ? mountedActionsData : [];
-            this.index = actions.length - 1;
-            this.initialState = JSON.stringify(actions[this.index] ?? null);
-            this.active = true;
-            this.dirty = false;
+            this.draftIndex = actions.length - 1;
+            this.draftBaseline = JSON.stringify(actions[this.draftIndex] ?? null);
+            this.draftActive = true;
+            this.draftDirty = false;
         },
 
-        track(currentState) {
-            this.dirty = this.active && currentState !== this.initialState;
+        compareDraft(currentState) {
+            this.draftDirty = this.draftActive && currentState !== this.draftBaseline;
         },
 
-        close() {
-            this.active = false;
-            this.index = -1;
-            this.initialState = null;
-            this.dirty = false;
+        clearDraft() {
+            this.draftActive = false;
+            this.draftIndex = -1;
+            this.draftBaseline = null;
+            this.draftDirty = false;
         },
     };
 }

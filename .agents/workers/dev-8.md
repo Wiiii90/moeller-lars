@@ -16,7 +16,7 @@
 - Draft state owner: `resources/js/admin-dialog-draft.js` imported in existing `resources/js/admin-viz.js`; reads the active action slot from Filament's `mountedActionsData`, with native modal open/close reset and Alpine reactive comparison.
 - Reference: `resources/css/admin/task-surfaces.css` and Journal/Gallery Stage Submit/Discard actions.
 - Started on previous source change `aefc67971b430403daffe37f35d0a60c69cd87cf`; current release commit recorded in Git history.
-- No local authenticated app/browser was available. Source/syntax verification and rendered acceptance must be distinguished.
+- Checked the published source and worker lease, and exercised the pure draft-state logic with Node.js: untouched defaults, edits, revert, close/reset and nested-action indexing passed. This does not establish Filament/Livewire reactive runtime or browser acceptance.
 
 ## Remaining
 - Browser acceptance: Create untouched/edited/reverted/cleared, Command including nested actions, enabled/disabled Submit, default-generated empty Create, destructive/non-destructive Confirm, Edit/Viewer no regression, keyboard hover/focus and narrow/light/dark layouts.

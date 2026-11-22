@@ -205,10 +205,10 @@ final class AdminDialog
             // close action destructive. Initial form defaults do not count.
             $windowAttributes += [
                 'x-data' => 'adminDialogDraft()',
-                'x-on:x-modal-opened.window' => 'if ($event.detail?.id === $el.closest(".fi-modal")?.id) open($wire.mountedActionsData)',
-                'x-on:modal-closed.window' => 'if ($event.detail?.id === $el.closest(".fi-modal")?.id) close()',
-                'x-effect' => 'track(JSON.stringify($wire.mountedActionsData?.[index] ?? null))',
-                'x-bind:data-admin-dialog-dirty' => 'dirty ? "true" : null',
+                'x-on:x-modal-opened.window' => 'if ($event.detail?.id === $el.closest(".fi-modal")?.id) captureDraft($wire.mountedActionsData)',
+                'x-on:modal-closed.window' => 'if ($event.detail?.id === $el.closest(".fi-modal")?.id) clearDraft()',
+                'x-effect' => 'compareDraft(JSON.stringify($wire.mountedActionsData?.[draftIndex] ?? null))',
+                'x-bind:data-admin-dialog-dirty' => 'draftDirty ? "true" : null',
             ];
         }
 
