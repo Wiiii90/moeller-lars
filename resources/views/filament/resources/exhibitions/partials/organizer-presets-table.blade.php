@@ -31,8 +31,6 @@
                         </td>
                         <td class="admin-table__actions">
                             <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--stable admin-row-actions--move-delete">
-                                <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::Details"
-                                    wire:click="mountAction('exhibitionOrganizerVenues', { organizer: {{ $organizer->getKey() }} })" />
                                 <x-admin.row-action :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                     wire:click="moveExhibitionOrganizerPreset({{ $organizer->getKey() }}, 'up')"
                                     :disabled="$loop->first" />

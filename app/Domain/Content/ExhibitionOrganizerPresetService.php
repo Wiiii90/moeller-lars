@@ -5,10 +5,8 @@ namespace App\Domain\Content;
 use App\Domain\Admin\AdminAuditService;
 use App\Models\Exhibition;
 use App\Models\ExhibitionOrganizerPreset;
-use App\Models\ExhibitionVenuePreset;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 final class ExhibitionOrganizerPresetService
@@ -22,13 +20,6 @@ final class ExhibitionOrganizerPresetService
     public function organizers(): EloquentCollection
     {
         return ExhibitionOrganizerPreset::query()->orderBy('position')->orderBy('id')->get();
-    }
-
-    /** @return EloquentCollection<int, ExhibitionVenuePreset> */
-    public function venues(int $organizerId): EloquentCollection
-    {
-        return ExhibitionVenuePreset::query()->where('organizer_preset_id', $organizerId)
-            ->orderBy('position')->orderBy('id')->get();
     }
 
     public function addOrganizer(string $name): bool
@@ -138,61 +129,6 @@ final class ExhibitionOrganizerPresetService
         });
     }
 
-    /** @param array<string,mixed> $data */
-    public function addVenue(int $organizerId, array $data): bool
-    {
-        $values = $this->venueFields($data);
-        $actor = $this->audit->requireActor();
-
-        return DB::transaction(function () use ($organizerId, $values, $actor): bool {
-            ExhibitionOrganizerPreset::query()->whereKey($organizerId)->lockForUpdate()->firstOrFail();
-            $position = ExhibitionVenuePreset::query()->where('organizer_preset_id', $organizerId)->count();
-            $venue = ExhibitionVenuePreset::query()->create([
-                ...$values, 'organizer_preset_id' => $organizerId, 'position' => $position,
-            ]);
-            $this->audit->record($actor, 'exhibition_venue_preset.created', 'exhibition_venue_preset', (int) $venue->getKey());
-
-            return true;
-        });
-    }
-
-    /** @param array<string,mixed> $data */
-    public function updateVenue(int $id, array $data): bool
-    {
-        $values = $this->venueFields($data);
-        $actor = $this->audit->requireActor();
-
-        return DB::transaction(function () use ($id, $values, $actor): bool {
-            $venue = ExhibitionVenuePreset::query()->whereKey($id)->lockForUpdate()->firstOrFail();
-            $venue->fill($values);
-            if (! $venue->isDirty()) {
-                return false;
-            }
-            // A venue is a reusable form preset, not a live reference into
-            // historical location data. Editing it never rewrites past places.
-            $venue->save();
-            $this->audit->record($actor, 'exhibition_venue_preset.updated', 'exhibition_venue_preset', $id);
-
-            return true;
-        });
-    }
-
-    public function deleteVenue(int $id): bool
-    {
-        $actor = $this->audit->requireActor();
-
-        return DB::transaction(function () use ($id, $actor): bool {
-            $venue = ExhibitionVenuePreset::query()->whereKey($id)->lockForUpdate()->first();
-            if (! $venue instanceof ExhibitionVenuePreset) {
-                return false;
-            }
-            $venue->delete();
-            $this->audit->record($actor, 'exhibition_venue_preset.deleted', 'exhibition_venue_preset', $id);
-
-            return true;
-        });
-    }
-
     private function name(string $name): string
     {
         $name = trim($name);
@@ -213,27 +149,4 @@ final class ExhibitionOrganizerPresetService
         }
     }
 
-    /** @param array<string,mixed> $data
-     *  @return array<string,string|null>
-     */
-    private function venueFields(array $data): array
-    {
-        $values = Validator::make($data, [
-            'name' => ['required', 'string', 'max:240'],
-            'street' => ['nullable', 'string', 'max:500'],
-            'postal_code' => ['nullable', 'string', 'max:16'],
-            'city' => ['nullable', 'string', 'max:160'],
-            'country' => ['nullable', 'string', 'max:160'],
-        ])->validate();
-        foreach ($values as $field => $value) {
-            if (is_string($value)) {
-                $values[$field] = trim($value) === '' ? null : trim($value);
-            }
-        }
-        if ($values['name'] === null) {
-            throw ValidationException::withMessages(['name' => 'Venue name is required.']);
-        }
-
-        return $values;
-    }
 }

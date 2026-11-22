@@ -9,7 +9,6 @@ use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\ExhibitionOrganizerPreset;
-use App\Models\ExhibitionVenuePreset;
 use Filament\Actions\Action;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
@@ -28,73 +27,6 @@ trait JournalWorkspaceOrganizers
 
         return AdminDialog::viewer($action, AdminDialogSize::Default)
             ->extraModalWindowAttributes(['class' => 'admin-dialog--table-viewer'], merge: true);
-    }
-
-    public function exhibitionOrganizerVenuesAction(): Action
-    {
-        $action = Action::make('exhibitionOrganizerVenues')
-            ->label('Venues')
-            ->modalHeading(fn (array $arguments): string => 'Venues · '.(string) ExhibitionOrganizerPreset::query()
-                ->whereKey((int) ($arguments['organizer'] ?? 0))->value('name'))
-            ->modalContent(fn (array $arguments): View => view(
-                'filament.resources.exhibitions.partials.venue-presets-table',
-                [
-                    'organizerId' => (int) ($arguments['organizer'] ?? 0),
-                    'venues' => app(ExhibitionOrganizerPresetService::class)->venues((int) ($arguments['organizer'] ?? 0)),
-                ],
-            ));
-
-        return AdminDialog::viewer($action, AdminDialogSize::Default)
-            ->extraModalWindowAttributes(['class' => 'admin-dialog--table-viewer'], merge: true);
-    }
-
-    /** @return list<mixed> */
-    private function organizerVenueFields(): array
-    {
-        return [
-            AdminControl::text('name', 'Venue')->required()->maxLength(240)->columnSpanFull(),
-            AdminControl::text('street', 'Street address')->maxLength(500)->columnSpanFull(),
-            AdminControl::text('postal_code', 'Postal code')->maxLength(16),
-            AdminControl::text('city', 'City')->maxLength(160),
-            AdminControl::text('country', 'Country')->maxLength(160)->columnSpanFull(),
-        ];
-    }
-
-    public function addExhibitionVenuePresetAction(): Action
-    {
-        $action = Action::make('addExhibitionVenuePreset')
-            ->label('Add venue')
-            ->modalHeading('Add venue')
-            ->schema($this->organizerVenueFields())
-            ->action(function (Action $action, array $arguments, array $data): void {
-                if (! $this->changeExhibitionPreset(
-                    fn (): bool => app(ExhibitionOrganizerPresetService::class)->addVenue((int) ($arguments['organizer'] ?? 0), $data),
-                    'Venue added',
-                )) {
-                    $action->halt();
-                }
-            });
-
-        return AdminDialog::create($action, 'Add venue', AdminDialogSize::Default);
-    }
-
-    public function editExhibitionVenuePresetAction(): Action
-    {
-        $action = Action::make('editExhibitionVenuePreset')
-            ->label('Edit venue')
-            ->modalHeading('Edit venue')
-            ->fillForm(fn (array $arguments): array => ExhibitionVenuePreset::query()
-                ->findOrFail((int) ($arguments['venue'] ?? 0))
-                ->only(['name', 'street', 'postal_code', 'city', 'country']))
-            ->schema($this->organizerVenueFields())
-            ->action(function (array $arguments, array $data): void {
-                $this->changeExhibitionPreset(
-                    fn (): bool => app(ExhibitionOrganizerPresetService::class)->updateVenue((int) ($arguments['venue'] ?? 0), $data),
-                    'Venue updated',
-                );
-            });
-
-        return AdminDialog::edit($action, AdminDialogSize::Default);
     }
 
     public function addExhibitionOrganizerPreset(string $name): bool
@@ -143,20 +75,12 @@ trait JournalWorkspaceOrganizers
         $this->sortExhibitionOrganizerPreset($id, (int) $current + ($direction === 'up' ? -1 : 1));
     }
 
-    public function deleteExhibitionVenuePreset(int $id): void
-    {
-        $this->changeExhibitionPreset(
-            fn (): bool => app(ExhibitionOrganizerPresetService::class)->deleteVenue($id),
-            'Venue removed',
-        );
-    }
-
     private function changeExhibitionPreset(\Closure $mutation, string $title, bool $refreshExhibitions = false): bool
     {
         try {
             $changed = $mutation();
         } catch (ValidationException $exception) {
-            $this->notifyValidationFailure('Organizer or venue not saved', $exception);
+            $this->notifyValidationFailure('Organizer not saved', $exception);
 
             return false;
         }
