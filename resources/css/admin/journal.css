@@ -51,7 +51,7 @@
     width: var(--admin-row-actions-width);
 }
 
-/* Exhibition Actions retain their accepted 64rem density transition. */
+/* Exhibition Date column retains the existing 64rem sizing boundary. */
 @container admin-table (max-width: 64rem) {
     .journal-table--exhibitions col.journal-col--date {
         width: 12.5rem;

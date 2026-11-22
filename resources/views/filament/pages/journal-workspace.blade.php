@@ -330,7 +330,7 @@
                             </th>
                         </tr>
                     </thead>
-                    <tbody @if ($dragEnabled) wire:sort="{{ $isBlog ? 'sortPost' : 'sortExhibition' }}" @endif>
+                    <tbody @if ($dragEnabled) wire:sort="sortPost" @endif>
                         @forelse ($entries as $entry)
                             <tr
                                 class="{{ in_array($entry['id'], $selectedIds, true) ? 'is-selected' : '' }}"

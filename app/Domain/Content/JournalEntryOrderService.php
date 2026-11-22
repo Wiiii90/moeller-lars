@@ -18,8 +18,9 @@ final class JournalEntryOrderService
      * Reserve the first canonical position for a newly-created Journal entry.
      *
      * Blog lists are editorial timelines: new drafts open at the top,
-     * while explicit Move up/down controls provide a manual override. Existing rows are normalized through temporary
-     * positions first so the unique (site_section_id, position) indexes are
+     * while Move up/down remains a manual override. Existing rows are
+     * normalized through temporary positions first so the unique
+     * (site_section_id, position) indexes are
      * never violated and the sequence stays contiguous.
      */
     public function nextPosition(Model $model, int $siteSectionId): int

@@ -29,7 +29,13 @@ final class ExhibitionChronology
                 return $date;
             }
 
-            return (int) $left->getKey() <=> (int) $right->getKey();
+            // A draft has a temporary negative key. On equal dates place it
+            // after saved rows, where its newly assigned positive ID will land.
+            $leftId = (int) $left->getKey();
+            $rightId = (int) $right->getKey();
+
+            return ($leftId > 0 ? $leftId : PHP_INT_MAX)
+                <=> ($rightId > 0 ? $rightId : PHP_INT_MAX);
         })->values();
     }
 
