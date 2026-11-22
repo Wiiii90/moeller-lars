@@ -10,6 +10,7 @@ use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionCreationDefaults;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Domain\Content\SiteSectionType;
+use App\Domain\Content\SitePageHeading;
 use App\Domain\Content\SitePreviewContext;
 use App\Filament\Pages\Concerns\ManagesSitePageDialogs;
 use App\Filament\Support\AdminIcon;
@@ -385,6 +386,45 @@ final class SitePages extends Page
             }
         } catch (ValidationException $exception) {
             $this->validationNotification('Home navigation unchanged', $exception);
+        }
+    }
+
+    /**
+     * Direct Page appearance editing uses the same audited heading owner
+     * as the full Pages Edit dialog. The Stage never edits a second model.
+     */
+    public function setPagesStageHeading(int $sectionId, string $field, mixed $value): void
+    {
+        if (! in_array($field, [
+            'content_heading_enabled',
+            'content_heading_override',
+            'content_heading_alignment',
+            'content_heading_divider',
+        ], true)) {
+            return;
+        }
+
+        $selected = $this->stageSelectedPage();
+        if ($selected === null || (int) $selected['id'] !== $sectionId
+            || $selected['type'] === SiteSectionType::NavigationNode->value) {
+            return;
+        }
+
+        try {
+            $section = SiteSection::query()->findOrFail($sectionId);
+            $before = SitePageHeading::formState($section);
+            $updated = app(SiteSectionEditorialService::class)->updatePageHeading(
+                $section, [$field => $value],
+            );
+            if ($before === SitePageHeading::formState($updated)) {
+                return;
+            }
+            $this->loadSections();
+            $this->syncPagesPreviewFocus(forceRefresh: true);
+            app(AdminNotifier::class)->notification(title: 'Page heading updated', status: 'success');
+        } catch (ValidationException $exception) {
+            $this->loadSections();
+            $this->validationNotification('Page heading unchanged', $exception);
         }
     }
 
@@ -1063,6 +1103,7 @@ final class SitePages extends Page
             'can_change_publication' => ! $section->isHome() && $type->canChangePublication(),
             'can_convert' => $type->canConvert(),
             'filter_context' => false,
+            'heading' => SitePageHeading::formState($section),
             'workspace_url' => app(SiteNodePresentation::class)->workspaceUrl($section),
             'preview_url' => $section->hasPublicPage()
                 ? app(SitePreviewContext::class)->previewUrlFor($section) : null,

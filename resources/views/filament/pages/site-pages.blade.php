@@ -180,6 +180,41 @@
                                     </label>
                                 @endif
                             </div>
+                            @if ($stageSelected['type'] !== \App\Domain\Content\SiteSectionType::NavigationNode->value)
+                                <div class="admin-stage-workspace__group">
+                                    <strong>{{ __('Page heading') }}</strong>
+                                    <label class="pages-stage__toggle">
+                                        <input type="checkbox" @checked($stageSelected['heading']['content_heading_enabled'])
+                                            wire:change="setPagesStageHeading({{ $stageSelected['id'] }}, 'content_heading_enabled', $event.target.checked)">
+                                        {{ __('Show page heading') }}
+                                    </label>
+                                    @if ($stageSelected['heading']['content_heading_enabled'])
+                                        <label class="admin-stage-workspace__field">
+                                            <span>{{ __('Heading text') }}</span>
+                                            <input type="text" maxlength="160"
+                                                value="{{ $stageSelected['heading']['content_heading_override'] }}"
+                                                wire:change="setPagesStageHeading({{ $stageSelected['id'] }}, 'content_heading_override', $event.target.value)"
+                                                placeholder="{{ __('Use page name') }}">
+                                        </label>
+                                        <label class="admin-stage-workspace__field">
+                                            <span>{{ __('Alignment') }}</span>
+                                            <select wire:change="setPagesStageHeading({{ $stageSelected['id'] }}, 'content_heading_alignment', $event.target.value)">
+                                                @foreach (\App\Domain\Content\SitePageHeading::ALIGNMENTS as $value => $label)
+                                                    <option value="{{ $value }}" @selected($stageSelected['heading']['content_heading_alignment'] === $value)>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+                                        <label class="admin-stage-workspace__field">
+                                            <span>{{ __('Divider') }}</span>
+                                            <select wire:change="setPagesStageHeading({{ $stageSelected['id'] }}, 'content_heading_divider', $event.target.value)">
+                                                @foreach (\App\Domain\Content\SitePageHeading::DIVIDERS as $value => $label)
+                                                    <option value="{{ $value }}" @selected($stageSelected['heading']['content_heading_divider'] === $value)>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+                                    @endif
+                                </div>
+                            @endif
                         @endif
                     </div>
                 @endif

@@ -132,7 +132,17 @@ final class CustomPageEmbeddedContent
     {
         $type = $block['type'] ?? null;
         $public = ! $this->preview->active();
-        $this->assertValid($block, $public);
+        try {
+            $this->assertValid($block, $public);
+        } catch (ValidationException $exception) {
+            if (! $public) {
+                throw $exception;
+            }
+
+            // The published source can change independently of its consumer.
+            // Never turn the containing Custom Page into a server error.
+            return null;
+        }
         if ($type === 'gallery') {
             $galleryId = $block['gallery_id'] ?? null;
             if (! is_int($galleryId)) {
