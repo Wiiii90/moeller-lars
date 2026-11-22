@@ -210,6 +210,16 @@ trait CustomPageWorkspaceComponentActions
         return app(\App\Domain\Content\CustomPageEmbeddedContent::class)->sourceOptions($this->stageQuickType);
     }
 
+    /** Choose a cell in the visual Layout; the New tab owns creation. */
+    public function createStageComponentInArea(string $areaId): void
+    {
+        if (! array_key_exists($areaId, $this->layoutAreaOptions())) {
+            return;
+        }
+        $this->stageQuickAreaId = $areaId;
+        $this->customStagePanel = 'create';
+    }
+
     public function createStageComponent(): void
     {
         $type = $this->stageQuickType;

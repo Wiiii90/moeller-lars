@@ -55,6 +55,12 @@
                                     'stageAreaId' => $area['id'],
                                     'stageDepth' => $stageDepth + 1,
                                 ])
+                                <button class="admin-action custom-page-layout-stage__area-add" type="button"
+                                    wire:click="createStageComponentInArea('{{ $area['id'] }}')"
+                                    aria-label="Create component in {{ ($component['layout_mode'] ?? 'rows') === 'columns' ? 'column' : 'area' }} {{ $areaIndex + 1 }}">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" />
+                                    <span>{{ __('New') }}</span>
+                                </button>
                             </div>
                         @endforeach
                     </div>

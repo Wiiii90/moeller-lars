@@ -38,7 +38,7 @@
                             <span class="admin-action__label">{{ __('Add component') }}</span>
                         </button>
                         <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addLayout')" aria-label="Add layout">
-                            <x-filament::icon icon="heroicon-m-squares-2x2" class="admin-action__icon" />
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::ViewGrid->mini()" class="admin-action__icon" />
                             <span class="admin-action__label">{{ __('Add layout') }}</span>
                         </button>
                         @if ($previewUrl)

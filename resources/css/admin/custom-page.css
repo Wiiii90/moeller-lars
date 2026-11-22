@@ -29,6 +29,21 @@
 }
 .custom-page-layout-stage__layout {
     min-width: 0;
+    container-type: inline-size;
+}
+.custom-page-layout-stage__area-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .25rem;
+    min-height: 1.4rem;
+    padding: .15rem .3rem;
+    font-size: .65rem;
+    color: var(--admin-muted);
+}
+.custom-page-layout-stage__area-add svg {
+    width: .75rem;
+    height: .75rem;
 }
 .custom-page-layout-stage__identity {
     display: flex;
