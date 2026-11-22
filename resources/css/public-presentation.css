@@ -959,28 +959,12 @@ html.public-preview--embedded {
     margin-block: calc((var(--gallery-artwork-gap) + var(--gallery-gap-jitter, 0rem)) / 2);
 }
 
-/* Gallery stills and videos use their real aspect ratios, constrained by
-   Content width and a shared viewport-height ceiling without cropping. */
-.artwork-list .artwork-card__link {
-    width: 100%;
-    max-width: 100%;
-    margin-inline: 0;
-}
-.artwork-list .artwork-card__image {
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    max-height: var(--gallery-artwork-height);
-    margin-inline: 0;
-    object-fit: contain;
-}
-/* Still and video fill the already-sized media track. Neither an
-   unrequested image nor its ALT fallback can resize that track. */
-.artwork-list .artwork-card__video {
-    width: 100%;
-    max-height: var(--gallery-artwork-height);
-    object-fit: contain;
-}
+/* Gallery media and Artwork information must use ONE width owner:
+   the composition track above. The shared image/video base rules already
+   fill that track at their natural aspect ratio. A second max-height on the
+   replaced media would shrink only the painted content (object-fit: contain)
+   while leaving the caption at the wider box edge. The viewport-height cap
+   belongs exclusively to the aspect-derived composition width. */
 
 .artwork-card__link,
 .artwork-detail__viewer-trigger {
