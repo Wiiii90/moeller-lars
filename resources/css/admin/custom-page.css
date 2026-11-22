@@ -104,22 +104,3 @@
     white-space: nowrap;
 }
 
-
-/* The component table owns Layout membership and sortable child drop zones,
- * using the same hierarchy grammar as Pages rather than a second Stage canvas. */
-.custom-page-component__layout-members {
-    display: grid;
-    gap: .3rem;
-}
-.custom-page-component__layout-area {
-    min-width: 0;
-}
-.custom-page-component__layout-area-label {
-    display: block;
-    padding: .2rem .55rem;
-    font-size: .68rem;
-    color: var(--admin-muted);
-}
-.custom-page-component__layout-area-rows {
-    min-height: 1.5rem;
-}

@@ -118,12 +118,6 @@ trait CustomPageWorkspacePresentationHelpers
         return implode(' ', array_filter($parts, static fn (mixed $part): bool => is_string($part) && trim($part) !== ''));
     }
 
-    /** The component table projects the canonical Public Layout hierarchy. */
-    public function componentLayoutItems(): array
-    {
-        return CustomPageSetting::layoutProjection($this->settings()->components());
-    }
-
     /** @return array<int,string> */
     private function parentOptions(): array
     {

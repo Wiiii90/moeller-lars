@@ -78,8 +78,8 @@ trait CustomPageWorkspaceComponentActions
             return;
         }
         try {
-            $changed = app(CustomPageEditorialService::class)->placeLayoutComponent(
-                $this->settings(), $target, $position, (string) ($groupId ?? 'root'),
+            $changed = app(CustomPageEditorialService::class)->placeComponent(
+                $this->settings(), $target, $position, $groupId,
             );
             $this->clearSelections();
             $this->reloadWorkspace();
