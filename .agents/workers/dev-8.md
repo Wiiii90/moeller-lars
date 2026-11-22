@@ -1,27 +1,28 @@
-# Dev Worker 8 — Dialog header action alignment
+# Dev Worker 8 — Dialog header actions
 
 **Branch:** `dev`
 **Lease:** 40
-**State:** Active; scoped source changes integrated, runtime and browser review pending.
+**State:** Active; source-integrated, no authenticated browser acceptance yet.
 
-## Assignment and accepted outcome
-- Keep the native Filament close X in the rightmost upper-header slot. In submitted Create, Command and Confirm dialogs, Submit is immediately to its left; Create's optional Clear stays farther left.
-- In Create/Command draft forms, the X signals discarded unsaved changes with the existing danger treatment. Normal Submit uses the Stage's success-green semantics. Danger Confirm submit stays red; non-danger Confirm submit is green. Edit/Viewer X and contextual actions stay unchanged.
-- Scope is the shared dialog action factory, header chrome, focus styling and direct submitted-dialog consumers, not feature-local form schemas or unrelated stages.
+## Scope and accepted behavior
+- Filament's native X stays in the last header slot. Submitted Create/Command/Confirm show Submit just left of X; the Create Clear action stays farther left. Edit/Viewer remain unchanged.
+- Create and Command X are neutral at initial default state. It becomes danger-red only when the mounted task's current draft differs from its opening data, and returns to neutral on revert or reopen. No faux unsaved status from ordinary default values.
+- Submit uses success-green only while actionable; native disabled/busy submit is visually muted, with no new blanket empty-field check. Domain defaults/validation remain authoritative. Destructive Confirm stays red while actionable; Confirm X remains neutral.
+- Reuse the shared Journal/Gallery Stage semantic colors. No mutations to individual form schemas, defaults, autosave or confirmation logic.
 
-## Current source
-- Starting implementation baseline: `a1329ad0f4d10fd071d9939f49970cb3cc6a7605`.
-- `app/Filament/Support/Dialogs/AdminDialog.php`: source-level action color roles.
-- `resources/css/admin/dialog-contract.css`: native X/Submit placement and shared semantic action variables.
-- `resources/css/admin/dialog-interactions.css`: keyboard-visible focus inherits the action's semantic color without reintroducing a pointer-hover backdrop.
-- Reference: `resources/views/filament/pages/journal-workspace.blade.php` and `resources/css/admin/task-surfaces.css` for Stage Discard (danger) and Submit (success).
+## Current source and checks
+- Dialog action factory: `app/Filament/Support/Dialogs/AdminDialog.php`.
+- Canonical styles: `resources/css/admin/dialog-contract.css`, existing focus hardening remains in `resources/css/admin/dialog-interactions.css`.
+- Draft state owner: `resources/js/admin-dialog-draft.js` imported in existing `resources/js/admin-viz.js`; reads the active action slot from Filament's `mountedActionsData`, with native modal open/close reset and Alpine reactive comparison.
+- Reference: `resources/css/admin/task-surfaces.css` and Journal/Gallery Stage Submit/Discard actions.
+- Started on previous source change `aefc67971b430403daffe37f35d0a60c69cd87cf`; current release commit recorded in Git history.
+- No local authenticated app/browser was available. Source/syntax verification and rendered acceptance must be distinguished.
 
-## Verification and remaining gates
-- Reviewed the published change at `dev@aefc67971b430403daffe37f35d0a60c69cd87cf` against the canonical factory and shared styles. Ten focused source/lease/head invariants passed. No local application checkout or authenticated browser was available for runtime qualification.
-- Browser acceptance pending: Create with Clear, Command, danger/non-danger Confirm, Edit/Viewer preserved, light/dark, keyboard focus, narrow widths, modal close/submit behavior and overlapping hit targets.
-- The previous order remains in `docs/admin/dialogs.md` and needs a later reviewed Docs reconciliation. Avoid unrelated documentation edits on this Dev assignment.
-- No branch transfers, deployment, full test suites or application data writes authorized.
+## Remaining
+- Browser acceptance: Create untouched/edited/reverted/cleared, Command including nested actions, enabled/disabled Submit, default-generated empty Create, destructive/non-destructive Confirm, Edit/Viewer no regression, keyboard hover/focus and narrow/light/dark layouts.
+- The existing opposite ordering in `docs/admin/dialogs.md` requires later Docs reconciliation; no routine Dev docs edits.
+- No deploy, integration, broad test suite, database mutation or production action authorized.
 
 ## Next
-1. Perform targeted browser verification when an authorized running app is available.
-2. Request a reviewed Docs reconciliation of the outdated dialog order rule after acceptance; do not change Docs as routine Dev work.
+1. Review browser action lifecycle and colors in a running authorized instance.
+2. Hand accepted dialog contract to Docs for bounded update.

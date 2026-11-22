@@ -6,6 +6,8 @@ import { adminRememberedTabs } from './admin-remembered-tabs.js';
 window.adminRememberedTabs = adminRememberedTabs;
 import './admin-action-titles.js';
 import './admin-dialog-geometry.js';
+import { adminDialogDraft } from './admin-dialog-draft.js';
+window.adminDialogDraft = adminDialogDraft;
 import './admin-partial-date.js';
 import { adminLivePreview } from './admin-live-preview.js';
 window.adminLivePreview = adminLivePreview;

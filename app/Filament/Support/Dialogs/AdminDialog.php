@@ -198,12 +198,26 @@ final class AdminDialog
             $classes[] = 'admin-dialog--confirmation';
         }
 
+        $windowAttributes = ['class' => implode(' ', $classes)];
+
+        if (in_array($type, [AdminDialogType::Create, AdminDialogType::Command], true)) {
+            // Only an unsaved change to this mounted task can make the native
+            // close action destructive. Initial form defaults do not count.
+            $windowAttributes += [
+                'x-data' => 'adminDialogDraft()',
+                'x-on:x-modal-opened.window' => 'if ($event.detail?.id === $el.closest(".fi-modal")?.id) open($wire.mountedActionsData)',
+                'x-on:modal-closed.window' => 'if ($event.detail?.id === $el.closest(".fi-modal")?.id) close()',
+                'x-effect' => 'track(JSON.stringify($wire.mountedActionsData?.[index] ?? null))',
+                'x-bind:data-admin-dialog-dirty' => 'dirty ? "true" : null',
+            ];
+        }
+
         return $action
             // Filament still owns modal state, focus, Escape and the native X.
             // The shared CSS width modifier is the actual visual authority.
             ->modalWidth(Width::Large)
             ->modalAlignment(Alignment::Start)
             ->modalFooterActionsAlignment(Alignment::Start)
-            ->extraModalWindowAttributes(['class' => implode(' ', $classes)]);
+            ->extraModalWindowAttributes($windowAttributes);
     }
 }
