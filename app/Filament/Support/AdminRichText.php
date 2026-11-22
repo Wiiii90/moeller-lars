@@ -20,6 +20,7 @@ final class AdminRichText
         bool $required = false,
         bool $pageAutosave = false,
         bool $hideLabel = false,
+        bool $stageCompact = false,
     ): array {
         $toolbar = [
             ['bold', 'italic', 'underline', 'strike', 'subscript', 'superscript', 'link'],
@@ -60,10 +61,15 @@ final class AdminRichText
             ->columnSpanFull()
             // The frame and visual styles belong to the editor's actual root.
             // Parent field wrappers own form layout, not component appearance.
-            ->extraAttributes(['class' => 'admin-rich-text-editor-frame admin-rich-text--visual']);
+            ->extraAttributes(['class' => 'admin-rich-text-editor-frame admin-rich-text--visual'.($stageCompact ? ' admin-rich-text--stage' : '')]);
 
         if ($hideLabel) {
             $editor->hiddenLabel();
+        }
+        if ($stageCompact) {
+            // Commit semantic Rich Editor content on blur, without a server
+            // request or morph for every keystroke in the Stage.
+            $editor->live(onBlur: true);
         }
 
         if ($allowEmbeddedMedia) {
@@ -105,7 +111,7 @@ final class AdminRichText
                 ->schema([$editor, $popovers])
                 ->key($editorKey.'-shell')
                 ->extraAttributes([
-                    'class' => 'admin-rich-text-editor-shell',
+                    'class' => 'admin-rich-text-editor-shell'.($stageCompact ? ' admin-rich-text-editor-shell--stage' : ''),
                     'data-admin-rich-text-page-autosave' => $pageAutosave ? 'true' : null,
                     'x-data' => <<<'JS'
                         {

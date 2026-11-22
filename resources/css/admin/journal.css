@@ -252,3 +252,36 @@
     min-height: 2.7rem;
 }
 
+
+/* Journal Stage editor uses the same compact row grammar as Pages.
+   Only this explicitly named Stage context changes the embedded media rail. */
+.journal-stage-directory { min-width: 0; }
+.journal-stage-directory .admin-control-field,
+.journal-stage-directory .fi-fo-field,
+.journal-stage-directory .fi-select-input-btn { min-width: 0; }
+.journal-stage-directory .fi-select-input-value-label {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.admin-repeater-table--stage-gallery .admin-table__ordering-heading {
+    font-size: 0;
+}
+.admin-repeater-table--stage-gallery .admin-repeater-table__add-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.65rem;
+    min-height: 1.65rem;
+    padding: .2rem;
+}
+.admin-repeater-table--stage-gallery .admin-repeater-table__add-icon svg {
+    width: 1rem;
+    height: 1rem;
+}
+.admin-repeater-table--stage-gallery .admin-row-actions--stable .admin-action__label {
+    display: none;
+}

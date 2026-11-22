@@ -582,8 +582,12 @@ final class JournalWorkspace extends Page
         if (! $stage) {
             $fields[] = AdminControl::text('title', 'Journal title')->required()->maxLength(160)->columnSpanFull();
         }
-        $viewer = AdminControl::toggle('default_image_viewer_enabled', 'Enlarge images on click');
-        $videoControls = AdminControl::toggle('default_video_controls_enabled', 'Show video playback controls');
+        $viewer = ($this->journalTemplate() === JournalTemplate::Exhibitions
+            ? AdminControl::checkbox('default_image_viewer_enabled', 'Enlarge images on click')
+            : AdminControl::toggle('default_image_viewer_enabled', 'Enlarge images on click'));
+        $videoControls = ($this->journalTemplate() === JournalTemplate::Exhibitions
+            ? AdminControl::checkbox('default_video_controls_enabled', 'Show video playback controls')
+            : AdminControl::toggle('default_video_controls_enabled', 'Show video playback controls'));
         if ($stage) {
             $viewer->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_image_viewer_enabled', (bool) $state));
             $videoControls->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_video_controls_enabled', (bool) $state));
@@ -596,7 +600,8 @@ final class JournalWorkspace extends Page
                 [$viewer, $videoControls],
                 $stage ? fn (mixed $state) => $this->updateJournalStageSetting('default_settings_enabled', (bool) $state) : null,
                 collapsible: true,
-                bodyColumns: ['default' => 1],
+                bodyColumns: ['default' => 2],
+                dense: true,
                 hideWhenDisabled: true,
             );
         } else {

@@ -15,9 +15,10 @@
     $moveUpAction = $canReorder ? $repeater->getAction($repeater->getMoveUpActionName()) : null;
     $moveDownAction = $canReorder ? $repeater->getAction($repeater->getMoveDownActionName()) : null;
     $isMediaTable = $repeater->getName() === 'gallery_images';
+    $isStageGallery = $isMediaTable && ($repeater->getExtraAttributes()['data-admin-stage-gallery'] ?? null) === 'true';
 @endphp
 
-<div class="admin-repeater-table @if ($isMediaTable) admin-repeater-table--media @endif" role="group" aria-label="{{ $repeater->getLabel() }}">
+<div class="admin-repeater-table @if ($isMediaTable) admin-repeater-table--media @endif @if ($isStageGallery) admin-repeater-table--stage-gallery @endif" role="group" aria-label="{{ $repeater->getLabel() }}">
     <x-admin.table :class="$isMediaTable ? 'admin-table--data admin-repeater-table__table admin-table--ranked' : 'admin-table--data admin-repeater-table__table'" aria-label="{{ $repeater->getLabel() }}">
         <table>
             @if ($isMediaTable)
@@ -32,13 +33,27 @@
             <thead>
                 <tr>
                     @if ($isMediaTable)
-                        <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
+                        @if ($isStageGallery)
+                            <th scope="colgroup" colspan="2" class="admin-table__ordering-heading" aria-label="Media order"></th>
+                        @else
+                            <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
+                        @endif
                     @endif
                     @foreach ($columns as $column)
                         <th scope="col">{{ $column->getLabel() }}</th>
                     @endforeach
                     @if ($hasActions)
-                        <th scope="col" class="admin-table__actions"><span class="admin-row-actions-heading">Actions</span></th>
+                        <th scope="col" class="admin-table__actions">
+                            @if ($isStageGallery && $isAddable)
+                                <button type="button" class="admin-action admin-repeater-table__add-icon"
+                                    wire:click="{{ $addAction->getLivewireClickHandler() }}"
+                                    aria-label="Add media" title="Add media">
+                                    <x-filament::icon icon="heroicon-m-plus" class="admin-action__icon" />
+                                </button>
+                            @else
+                                <span class="admin-row-actions-heading">Actions</span>
+                            @endif
+                        </th>
                     @endif
                 </tr>
             </thead>
@@ -100,7 +115,7 @@
         </table>
     </x-admin.table>
 
-    @if ($isAddable)
+    @if ($isAddable && ! $isStageGallery)
         <x-admin.add-row wire:click="{{ $addAction->getLivewireClickHandler() }}">{{ $addAction->getLabel() }}</x-admin.add-row>
     @endif
 </div>

@@ -2,7 +2,7 @@
 
 - **Working branch:** `dev`
 - **Lease:** 42 (replaced previous lease 34 on 2026-11-22)
-- **Status:** Exhibition Settings simplification committed `cd8036a8`; Vernissage visibility cutoff removed from source and preserved dates, forward migration pending. Runtime/browser acceptance and migration execution remain pending.
+- **Status:** Exhibition Settings and Vernissage cutoff removed; compact checkbox defaults, Stage Rich Text variant, single-line directory row, and Stage Gallery table Add action integrated in source. Browser/runtime and migrations still pending.
 - **Assignment:** Continue the actual Journal workstream (Blog and Exhibitions), particularly Exhibition Stage Settings and user-approved defaults simplification; propose, but do not prematurely implement, new layout/effect options.
 - **Ownership:** `JournalWorkspace`, Journal Stage and its private Public preview, exhibition-specific settings and organizer/venue catalogs. Dev Worker 5 owns shared Page/Journal template architecture, Dev Worker 4 Gallery shared surfaces, Dev Worker 8 dialog chrome; update direct consumers without creating second systems.
 
@@ -20,7 +20,7 @@
 ## User decisions and ongoing proposal (2026-11-22)
 
 - **Implemented in source:** The Exhibition Settings Stage and dialog no longer offer Default Gallery Presentation. Blog continues to own its separate default.
-- **Implemented in source:** One central **Activate Defaults** panel holds Enlarge images on click and Show video playback controls. The new persisted switch defaults on for existing Journals and off restores native values (image viewer off, video controls on).
+- **Implemented in source:** One central **Activate Defaults** panel holds two compact checkboxes, Enlarge images on click and Show video playback controls. The new persisted switch defaults on for existing Journals and off restores native values (image viewer off, video controls on).
 - **Implemented in source:** Global Exhibition Gallery and Vernissage defaults are retired and dropped through a new forward migration; each Exhibition still owns its own switches.
 - **Vernissage decision:** On 2026-11-22 the artist explicitly removed the global and per-Exhibition hide-until-start behavior. Any recorded Vernissage date or historical opening text remains visible without a cutoff. Forward-only column-drop migration `2026_11_22_163000_retire_exhibition_vernissage_visibility.php` needs fresh/incremental schema verification.
 - **Still only proposals, not approved:** Separate **Exhibition page presentation** from per-Exhibition gallery presentation. Prefer one page-layout preset rather than a cluster of unrelated toggles: current **Catalogue**; alternative **Editorial rhythm** (stable alternating left/right media and restrained larger/smaller emphasis); optional later **Gallery-led** (more prominent gallery). A single **Regular / Varied** choice might be warranted only if the preset itself cannot express rhythm. Any "randomness" must be deterministic per entry and stable between page loads; no jumping layout, no media-order changes and no per-item surprise overrides.

@@ -698,3 +698,42 @@
 .admin-rich-text--visual .tiptap th {
     font-weight: 600;
 }
+
+/* The compact Stage variant belongs to the canonical RichEditor, not a
+   Journal-only parent override. Keep tools accessible in one scrollable rail. */
+.admin-rich-text--stage.fi-fo-rich-editor,
+.admin-rich-text--stage .fi-fo-rich-editor {
+    border: 0;
+    border-bottom: 1px solid var(--admin-control-border);
+    box-shadow: none;
+}
+.admin-rich-text--stage .fi-fo-rich-editor-toolbar {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    gap: .15rem;
+    padding: .15rem 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--admin-muted) transparent;
+}
+.admin-rich-text--stage .fi-fo-rich-editor-toolbar-group {
+    flex: none;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+.admin-rich-text--stage .fi-fo-rich-editor-tool {
+    flex-basis: 1.65rem;
+    min-width: 1.65rem;
+    min-height: 1.65rem;
+    width: 1.65rem;
+    height: 1.65rem;
+}
+.admin-rich-text--stage .fi-fo-rich-editor-content {
+    min-height: 5.25rem;
+}
+.admin-rich-text--stage .tiptap {
+    min-height: 5rem;
+    padding: .55rem .25rem;
+}

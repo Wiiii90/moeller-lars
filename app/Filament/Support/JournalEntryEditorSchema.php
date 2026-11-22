@@ -64,10 +64,10 @@ final class JournalEntryEditorSchema
 
         if ($template === JournalTemplate::Exhibitions) {
             $fields[] = self::dateFields()[0];
-            $fields[] = Grid::make()->columns(['default' => 1, 'sm' => 2])->schema([
+            $fields[] = Grid::make()->columns(['default' => 2])->schema([
                 self::organizerSelect()->live(),
                 self::venueSelect(),
-            ])->columnSpanFull();
+            ])->extraAttributes(['class' => 'journal-stage-directory'])->columnSpanFull();
             // The Stage edits a venue, not individual address inputs.
             // Snapshot location values still flow into Submit and Public Preview.
             foreach (['location_text', 'postal_code', 'city', 'country'] as $field) {
@@ -264,6 +264,7 @@ final class JournalEntryEditorSchema
                 allowEmbeddedMedia: true,
                 pageAutosave: $stage,
                 hideLabel: true,
+                stageCompact: $stage,
             ),
             collapsible: true,
             bodyColumns: ['default' => 1],
@@ -277,7 +278,7 @@ final class JournalEntryEditorSchema
         // The panel switch is the only Gallery visibility control.
         // Presentation remains optional; the canonical default is Grid.
         $presentation = Select::make('gallery_presentation')
-            ->label(__('Gallery presentation'))
+            ->label($stage ? __('Presentation') : __('Gallery presentation'))
             ->options([
                 'grid' => __('Grid'),
                 'mosaic' => __('Mosaic'),
@@ -298,6 +299,7 @@ final class JournalEntryEditorSchema
             [$presentation, self::galleryImages(table: true, stage: $stage)],
             collapsible: true,
             bodyColumns: ['default' => 1],
+            compactRows: $stage,
             dense: $stage,
             hideWhenDisabled: true,
         );
@@ -418,6 +420,7 @@ final class JournalEntryEditorSchema
                 ]),
             ])
             ->addActionLabel(__('Add media'))
+            ->extraAttributes($stage ? ['data-admin-stage-gallery' => 'true'] : [])
             ->reorderableWithButtons()
             ->reorderableWithDragAndDrop(false)
             ->deleteAction(fn (Action $action): Action => $action->after(
