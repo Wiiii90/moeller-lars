@@ -313,24 +313,13 @@ final class CustomPageSetting extends Model
                 'gallery' => [
                     'type' => 'gallery',
                     'published' => $published,
-                    'gallery_id' => is_numeric($block['gallery_id'] ?? null) ? (int) $block['gallery_id'] : null,
+                    'source_page_id' => is_numeric($block['source_page_id'] ?? null) ? (int) $block['source_page_id'] : null,
                     'gallery_presentation' => $block['gallery_presentation'] ?? 'sequence',
                 ],
-                'hero_artworks' => [
-                    'type' => 'hero_artworks',
+                'hero_artworks', 'exhibitions', 'blog' => [
+                    'type' => $type,
                     'published' => $published,
-                    'gallery_ids' => $this->normalizedEmbeddedIds($block['gallery_ids'] ?? []),
-                    'source_rule' => $block['source_rule'] ?? 'newest_artwork',
-                ],
-                'exhibitions' => [
-                    'type' => 'exhibitions',
-                    'published' => $published,
-                    'exhibition_ids' => $this->normalizedEmbeddedIds($block['exhibition_ids'] ?? []),
-                ],
-                'blog' => [
-                    'type' => 'blog',
-                    'published' => $published,
-                    'post_ids' => $this->normalizedEmbeddedIds($block['post_ids'] ?? []),
+                    'source_page_id' => is_numeric($block['source_page_id'] ?? null) ? (int) $block['source_page_id'] : null,
                 ],
                 'text' => [
                     'type' => 'text',
@@ -356,12 +345,6 @@ final class CustomPageSetting extends Model
         }
 
         return $normalized;
-    }
-
-    /** @return list<mixed> */
-    private function normalizedEmbeddedIds(mixed $value): array
-    {
-        return is_array($value) && array_is_list($value) ? array_values(array_unique($value, SORT_REGULAR)) : [];
     }
 
     /** @return list<array<string, mixed>> */

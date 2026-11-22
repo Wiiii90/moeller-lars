@@ -7,7 +7,6 @@ use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\CustomPageSetting;
-use App\Domain\Content\GalleryHeroConfigurationService;
 use App\Models\PublicContentSetting;
 use Closure;
 use Filament\Forms\Components\Placeholder;
@@ -124,31 +123,15 @@ trait CustomPageWorkspaceForms
                     'none' => 'None', 'small' => 'Small', 'medium' => 'Medium', 'large' => 'Large',
                 ])->default('medium')->required(),
             ],
-            'gallery' => [
-                Select::make('gallery_id')->label('Gallery')
-                    ->options(fn (): array => app(\App\Domain\Content\CustomPageEmbeddedContent::class)->sourceOptions('gallery'))
+            'gallery', 'hero_artworks', 'exhibitions', 'blog' => [
+                Select::make('source_page_id')->label('Source page')
+                    ->options(fn (): array => app(\App\Domain\Content\CustomPageEmbeddedContent::class)->sourceOptions($type))
                     ->searchable()->nullable(),
-                Select::make('gallery_presentation')->label('Presentation')
-                    ->options(['sequence' => 'Sequence', 'two_columns' => 'Two columns'])
-                    ->default('sequence')->required(),
-            ],
-            'hero_artworks' => [
-                Select::make('gallery_ids')->label('Source galleries')
-                    ->options(fn (): array => app(\App\Domain\Content\CustomPageEmbeddedContent::class)->sourceOptions('gallery'))
-                    ->multiple()->searchable(),
-                Select::make('source_rule')->label('Artwork order')
-                    ->options(GalleryHeroConfigurationService::SOURCE_RULES)
-                    ->default('newest_artwork')->required(),
-            ],
-            'exhibitions' => [
-                Select::make('exhibition_ids')->label('Exhibitions')
-                    ->options(fn (): array => app(\App\Domain\Content\CustomPageEmbeddedContent::class)->sourceOptions('exhibitions'))
-                    ->multiple()->searchable(),
-            ],
-            'blog' => [
-                Select::make('post_ids')->label('Blog posts')
-                    ->options(fn (): array => app(\App\Domain\Content\CustomPageEmbeddedContent::class)->sourceOptions('blog'))
-                    ->multiple()->searchable(),
+                ...($type === 'gallery' ? [
+                    Select::make('gallery_presentation')->label('Presentation')
+                        ->options(['sequence' => 'Sequence', 'two_columns' => 'Two columns'])
+                        ->default('sequence')->required(),
+                ] : []),
             ],
             'text' => [
                 TextInput::make('title')->label('Heading')->maxLength(160),

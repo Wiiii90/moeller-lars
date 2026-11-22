@@ -42,18 +42,14 @@ trait CustomPageWorkspacePresentationHelpers
                 'meta' => '',
             ];
         }
-        if ($type === 'gallery') {
-            $gallery = \App\Models\ArtworkCategory::query()->find($block['gallery_id'] ?? null);
+        if (in_array($type, CustomPageSetting::EMBEDDED_COMPONENT_TYPES, true)) {
+            $page = \App\Models\SiteSection::query()->find($block['source_page_id'] ?? null);
 
-            return ['primary' => $gallery?->name ?? 'Choose a Gallery', 'secondary' => '', 'meta' => ''];
-        }
-        if ($type === 'hero_artworks') {
-            return ['primary' => count($block['gallery_ids'] ?? []).' source galleries', 'secondary' => 'Hero Artworks', 'meta' => ''];
-        }
-        if ($type === 'exhibitions' || $type === 'blog') {
-            $ids = $type === 'exhibitions' ? ($block['exhibition_ids'] ?? []) : ($block['post_ids'] ?? []);
-
-            return ['primary' => count($ids).' selected '.($type === 'blog' ? 'posts' : 'exhibitions'), 'secondary' => '', 'meta' => ''];
+            return [
+                'primary' => $page?->getAttribute('title') ?? 'Choose a source page',
+                'secondary' => self::COMPONENT_LABELS[$type],
+                'meta' => '',
+            ];
         }
         if ($type === 'contact') {
             $enabled = [];
@@ -102,6 +98,9 @@ trait CustomPageWorkspacePresentationHelpers
         $parts = [self::COMPONENT_LABELS[$type] ?? $type, CustomPageSetting::componentPublished($block) ? 'Published' : 'Unpublished'];
         if (in_array($type, CustomPageSetting::MEDIA_COMPONENT_TYPES, true)) {
             $parts[] = $imageName;
+        }
+        if (in_array($type, CustomPageSetting::EMBEDDED_COMPONENT_TYPES, true)) {
+            $parts[] = \App\Models\SiteSection::query()->whereKey($block['source_page_id'] ?? 0)->value('title');
         }
         if ($type === 'text') {
             $parts[] = $block['title'] ?? null;

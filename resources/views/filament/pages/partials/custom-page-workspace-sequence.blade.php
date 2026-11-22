@@ -46,14 +46,18 @@
 
                             @if ($pageComponent['embedded_children'] !== [])
                                 <div class="custom-page-component__embedded-children" role="group"
-                                    aria-label="{{ $pageComponent['type_label'] }} entries">
+                                    aria-label="{{ $pageComponent['type_label'] }} page template">
                                     @foreach ($pageComponent['embedded_children'] as $child)
-                                        <div class="custom-page-component__embedded-child" wire:key="embedded-entry-{{ $pageComponent['index'] }}-{{ $child['kind'] }}-{{ $child['id'] }}">
-                                            <span class="custom-page-component__embedded-child-title">{{ $child['title'] }}</span>
-                                            <button class="admin-action" type="button"
-                                                wire:click="mountAction('editEmbeddedEntry', { kind: '{{ $child['kind'] }}', entryId: {{ $child['id'] }} })">
-                                                {{ __('Edit') }}
-                                            </button>
+                                        <div class="custom-page-component__embedded-child"
+                                            wire:key="embedded-page-{{ $pageComponent['index'] }}-{{ $child['id'] }}">
+                                            <span class="custom-page-component__embedded-child-title">
+                                                {{ __('Source page') }}: {{ $child['title'] }}
+                                            </span>
+                                            @if ($child['workspace_url'])
+                                                <a class="admin-action" href="{{ $child['workspace_url'] }}">
+                                                    {{ __('Open source editor') }}
+                                                </a>
+                                            @endif
                                         </div>
                                     @endforeach
                                 </div>

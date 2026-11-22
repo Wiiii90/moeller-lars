@@ -176,16 +176,13 @@ trait CustomPageWorkspaceProjectionState
             ->mapWithKeys(static fn (mixed $name, mixed $id): array => [(int) $id => (string) $name])
             ->all();
 
-        $exhibitionIds = collect($blocks)->where('type', 'exhibitions')
-            ->flatMap(static fn (array $block): array => $block['exhibition_ids'] ?? [])
-            ->unique()->values()->all();
-        $postIds = collect($blocks)->where('type', 'blog')
-            ->flatMap(static fn (array $block): array => $block['post_ids'] ?? [])
-            ->unique()->values()->all();
-        $exhibitionNames = $exhibitionIds === [] ? []
-            : \App\Models\Exhibition::query()->whereKey($exhibitionIds)->pluck('title', 'id')->all();
-        $postNames = $postIds === [] ? []
-            : \App\Models\BlogPost::query()->whereKey($postIds)->pluck('title', 'id')->all();
+        $embeddedPageIds = collect($blocks)
+            ->filter(static fn (array $block): bool =>
+                in_array($block['type'] ?? null, CustomPageSetting::EMBEDDED_COMPONENT_TYPES, true))
+            ->pluck('source_page_id')->filter(fn ($id): bool => is_numeric($id))
+            ->map(fn ($id): int => (int) $id)->unique()->values()->all();
+        $embeddedPages = $embeddedPageIds === [] ? collect()
+            : \App\Models\SiteSection::query()->whereKey($embeddedPageIds)->get()->keyBy('id');
 
         $counts = array_fill_keys(array_keys(self::COMPONENT_LABELS), 0);
         $projected = [];
@@ -215,26 +212,22 @@ trait CustomPageWorkspaceProjectionState
             $areaId = $block['layout_area_id'] ?? null;
             $areaOptions = $this->layoutAreaOptions();
             if (is_string($areaId) && isset($areaOptions[$areaId])) {
-                $content['secondary'] = trim(implode(' · ', array_filter([
+                $content['secondary'] = trim(implode(', ', array_filter([
                     $content['secondary'], $areaOptions[$areaId],
                 ], static fn (string $value): bool => $value !== '')));
             }
 
             $embeddedChildren = [];
-            if ($type === 'exhibitions') {
-                foreach ($block['exhibition_ids'] ?? [] as $entryId) {
+            if (in_array($type, CustomPageSetting::EMBEDDED_COMPONENT_TYPES, true)) {
+                $sourceId = (int) ($block['source_page_id'] ?? 0);
+                $source = $embeddedPages->get($sourceId);
+                if ($source instanceof \App\Models\SiteSection) {
                     $embeddedChildren[] = [
-                        'id' => (int) $entryId,
-                        'kind' => 'exhibitions',
-                        'title' => $exhibitionNames[$entryId] ?? 'Exhibition unavailable',
-                    ];
-                }
-            } elseif ($type === 'blog') {
-                foreach ($block['post_ids'] ?? [] as $entryId) {
-                    $embeddedChildren[] = [
-                        'id' => (int) $entryId,
-                        'kind' => 'blog',
-                        'title' => $postNames[$entryId] ?? 'Post unavailable',
+                        'id' => $sourceId,
+                        'kind' => 'page',
+                        'title' => (string) $source->getAttribute('title'),
+                        'workspace_url' => app(\App\Filament\Support\SiteNodePresentation::class)
+                            ->workspaceUrl($source),
                     ];
                 }
             }

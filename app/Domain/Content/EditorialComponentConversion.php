@@ -25,10 +25,8 @@ final class EditorialComponentConversion
         $converted = match ($targetType) {
             'image' => ['type' => 'image', 'published' => $published, 'media_asset_id' => null, 'image_decorative' => false],
             'video' => ['type' => 'video', 'published' => $published, 'media_asset_id' => null, 'image_decorative' => false],
-            'gallery' => ['type' => 'gallery', 'published' => $published, 'gallery_id' => null, 'gallery_presentation' => 'sequence'],
-            'hero_artworks' => ['type' => 'hero_artworks', 'published' => $published, 'gallery_ids' => [], 'source_rule' => 'newest_artwork'],
-            'exhibitions' => ['type' => 'exhibitions', 'published' => $published, 'exhibition_ids' => []],
-            'blog' => ['type' => 'blog', 'published' => $published, 'post_ids' => []],
+            'gallery' => ['type' => 'gallery', 'published' => $published, 'source_page_id' => null, 'gallery_presentation' => 'sequence'],
+            'hero_artworks', 'exhibitions', 'blog' => ['type' => $targetType, 'published' => $published, 'source_page_id' => null],
             'text' => ['type' => 'text', 'published' => $published, 'title' => $title, 'body' => null],
             'layout' => CustomPageSetting::layoutBlock($published),
             'contact' => [

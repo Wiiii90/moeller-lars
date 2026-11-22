@@ -5,13 +5,6 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Content\CustomPageEditorialService;
-use App\Domain\Content\BlogEditorialService;
-use App\Domain\Content\ExhibitionEditorialService;
-use App\Filament\Support\JournalEntryEditorSchema;
-use App\Filament\Support\JournalEntryEditorState;
-use App\Models\BlogPost;
-use App\Models\Exhibition;
-use Filament\Schemas\Schema;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -26,9 +19,6 @@ trait CustomPageWorkspaceComponentActions
 {
     #[Locked]
     public ?array $editingComponentOriginal = null;
-
-    #[Locked]
-    public ?array $embeddedEntryOriginal = null;
 
     public function moveComponent(int $index, string $type, string $direction): void
     {
@@ -205,10 +195,25 @@ trait CustomPageWorkspaceComponentActions
         $this->syncCustomPreviewFocus();
     }
 
+    public function updatedStageQuickType(): void
+    {
+        $this->stageQuickSourceId = '';
+    }
+
+    /** Page templates, not individual Gallery/Journal records. */
+    public function stageQuickSources(): array
+    {
+        if (! in_array($this->stageQuickType, CustomPageSetting::EMBEDDED_COMPONENT_TYPES, true)) {
+            return [];
+        }
+
+        return app(\App\Domain\Content\CustomPageEmbeddedContent::class)->sourceOptions($this->stageQuickType);
+    }
+
     public function createStageComponent(): void
     {
         $type = $this->stageQuickType;
-        if (! in_array($type, ['text', 'image', 'video', 'layout', 'contact', 'legal_disclaimer'], true)) {
+        if (! in_array($type, CustomPageSetting::COMPONENT_TYPES, true)) {
             return;
         }
 
@@ -225,6 +230,8 @@ trait CustomPageWorkspaceComponentActions
             'column_layout' => 'equal',
             'media_asset_id' => null,
             'image_decorative' => false,
+            'source_page_id' => ctype_digit($this->stageQuickSourceId) ? (int) $this->stageQuickSourceId : null,
+            'gallery_presentation' => 'sequence',
         ];
         try {
             $changed = app(CustomPageEditorialService::class)->addBlock($this->settings(), $this->componentPayload($data));
@@ -234,6 +241,7 @@ trait CustomPageWorkspaceComponentActions
             $index = count($this->settings()->fresh()->components()) - 1;
             $this->stageQuickTitle = '';
             $this->stageQuickBody = '';
+            $this->stageQuickSourceId = '';
             $this->customStagePanel = 'layout';
             $this->reloadWorkspace();
             $this->focusStageComponent($index, $type);
@@ -330,13 +338,8 @@ trait CustomPageWorkspaceComponentActions
 
     public function setStageEmbeddedProperty(int $index, string $type, string $field, string $value): void
     {
-        $allowed = match ($type) {
-            'gallery' => $field === 'gallery_presentation' && in_array($value, ['sequence', 'two_columns'], true),
-            'hero_artworks' => $field === 'source_rule'
-                && array_key_exists($value, \App\Domain\Content\GalleryHeroConfigurationService::SOURCE_RULES),
-            default => false,
-        };
-        if (! $allowed) {
+        if ($type !== 'gallery' || $field !== 'gallery_presentation'
+            || ! in_array($value, ['sequence', 'two_columns'], true)) {
             return;
         }
 
@@ -348,11 +351,37 @@ trait CustomPageWorkspaceComponentActions
             );
             $this->reloadWorkspace();
             if ($changed) {
-                app(AdminNotifier::class)->notification(title: 'Component appearance updated', status: 'success');
+                app(AdminNotifier::class)->notification(title: 'Gallery presentation updated', status: 'success');
             }
         } catch (ValidationException $exception) {
             $this->reloadWorkspace();
-            $this->stageValidationFailure('Appearance unchanged', $exception);
+            $this->stageValidationFailure('Gallery presentation unchanged', $exception);
+        }
+    }
+
+    public function setStageEmbeddedPage(int $index, string $type, string $pageId): void
+    {
+        if (! in_array($type, CustomPageSetting::EMBEDDED_COMPONENT_TYPES, true)) {
+            return;
+        }
+        if ($pageId !== '' && ! ctype_digit($pageId)) {
+            return;
+        }
+
+        $original = $this->componentAt($index, $type);
+        $updated = [...$original,
+            'source_page_id' => $pageId === '' ? null : (int) $pageId];
+        try {
+            $changed = app(CustomPageEditorialService::class)->updateBlock(
+                $this->settings(), $index, $type, $updated, $original,
+            );
+            $this->reloadWorkspace();
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Source page updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->reloadWorkspace();
+            $this->stageValidationFailure('Source page unchanged', $exception);
         }
     }
 
@@ -414,7 +443,7 @@ trait CustomPageWorkspaceComponentActions
         }
     }
 
-        private function stageValidationFailure(string $title, ValidationException $exception): void
+    private function stageValidationFailure(string $title, ValidationException $exception): void
     {
         $messages = array_merge(...array_values($exception->errors()));
         app(AdminNotifier::class)->notification(
@@ -422,85 +451,6 @@ trait CustomPageWorkspaceComponentActions
             body: $messages[0] ?? 'The change could not be saved.',
             status: 'danger',
         );
-    }
-
-    /** Entries stay with their original Journal; the Custom Page is a consumer. */
-    private function embeddedEntry(string $kind, int $entryId): BlogPost|Exhibition
-    {
-        $field = $kind === 'exhibitions' ? 'exhibition_ids' : 'post_ids';
-        if (! in_array($kind, ['blog', 'exhibitions'], true)
-            || ! collect($this->settings()->components())->contains(
-                static fn (array $block): bool => ($block['type'] ?? null) === $kind
-                    && in_array($entryId, $block[$field] ?? [], true),
-            )) {
-            throw ValidationException::withMessages(['entry' => 'The entry no longer belongs to this Custom Page.']);
-        }
-
-        return $kind === 'exhibitions'
-            ? Exhibition::query()->findOrFail($entryId)
-            : BlogPost::query()->findOrFail($entryId);
-    }
-
-    public function editEmbeddedEntryAction(): Action
-    {
-        $action = Action::make('editEmbeddedEntry')
-            ->label('Edit')
-            ->fillForm(function (array $arguments): array {
-                $entry = $this->embeddedEntry((string) ($arguments['kind'] ?? ''), (int) ($arguments['entryId'] ?? 0));
-                $this->embeddedEntryOriginal = [
-                    'kind' => (string) ($arguments['kind'] ?? ''),
-                    'id' => (int) $entry->getKey(),
-                    'updated_at' => (string) $entry->getRawOriginal('updated_at'),
-                ];
-
-                return [...$entry->attributesToArray(), ...app(JournalEntryEditorState::class)->for($entry)];
-            })
-            ->schema(fn (Schema $schema, array $arguments): Schema =>
-                ($arguments['kind'] ?? null) === 'exhibitions'
-                    ? JournalEntryEditorSchema::exhibition($schema,
-                        $this->embeddedEntry('exhibitions', (int) ($arguments['entryId'] ?? 0)))
-                    : JournalEntryEditorSchema::blog($schema))
-            ->modalHeading(fn (array $arguments): string =>
-                ($arguments['kind'] ?? null) === 'exhibitions' ? __('Edit exhibition') : __('Edit blog post'))
-            ->action(function (array $data, array $arguments): void {
-                $kind = (string) ($arguments['kind'] ?? '');
-                $entry = $this->embeddedEntry($kind, (int) ($arguments['entryId'] ?? 0));
-                $original = $this->embeddedEntryOriginal;
-                if (! is_array($original)
-                    || ($original['kind'] ?? null) !== $kind
-                    || ($original['id'] ?? null) !== (int) $entry->getKey()
-                    || ($original['updated_at'] ?? null) !== (string) $entry->getRawOriginal('updated_at')) {
-                    throw ValidationException::withMessages(['entry' => 'This entry changed while its editor was open. Reopen it.']);
-                }
-                $data['site_section_id'] = (int) $entry->getAttribute('site_section_id');
-                if ($entry instanceof Exhibition) {
-                    $updated = app(ExhibitionEditorialService::class)->update($entry, $data);
-                } else {
-                    $data = [
-                        ...$data,
-                        'state' => (string) $entry->getAttribute('state'),
-                        'position' => (int) $entry->getAttribute('position'),
-                        'published_at' => $entry->getAttribute('published_at'),
-                        'scheduled_at' => $entry->getAttribute('scheduled_at'),
-                    ];
-                    $updated = app(BlogEditorialService::class)->update($entry, $data);
-                }
-                $changed = (string) $updated->getRawOriginal('updated_at') !== (string) $entry->getRawOriginal('updated_at');
-                $this->reloadWorkspace();
-                if ($changed) {
-                    app(AdminNotifier::class)->notification(title: 'Journal entry updated', status: 'success');
-                }
-            });
-
-        return AdminDialog::edit($action, AdminDialogSize::Large);
-    }
-
-    public function setExhibitionFieldVisibility(int $entryId, string $field, bool $visible): void
-    {
-        $entry = $this->embeddedEntry('exhibitions', $entryId);
-        if (app(ExhibitionEditorialService::class)->setPublicFieldVisibility($entry, $field, $visible)) {
-            app(AdminNotifier::class)->notification(title: 'Exhibition visibility updated', status: 'success');
-        }
     }
 
     public function addComponentAction(): Action
