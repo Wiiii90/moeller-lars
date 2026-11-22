@@ -45,52 +45,24 @@
                     @endforeach
                 </div>
                 @if ($pagesStagePanel === 'create')
-                    <form class="admin-stage-workspace admin-visual-stage__field-scroll" wire:submit.prevent="createStagePage">
-                        <label class="admin-stage-workspace__field">
-                            <span>{{ __('Page type') }}</span>
-                            <select wire:model.live="newPageType">
-                                @foreach ($editableTypeOptions as $value => $label)
-                                    <option value="{{ $value }}">{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        @if ($newPageType === 'gallery')
-                            <label class="admin-stage-workspace__field">
-                                <span>{{ __('Template') }}</span>
-                                <select wire:model="stageNewGalleryTemplate">
-                                    @foreach (\App\Domain\Content\GalleryTemplate::options() as $value => $label)
-                                        <option value="{{ $value }}">{{ $label }}</option>
-                                    @endforeach
-                                </select>
-                            </label>
-                        @elseif ($newPageType === 'journal')
-                            <label class="admin-stage-workspace__field">
-                                <span>{{ __('Template') }}</span>
-                                <select wire:model="newJournalTemplate">
-                                    @foreach ($journalTemplateOptions as $value => $label)
-                                        <option value="{{ $value }}">{{ $label }}</option>
-                                    @endforeach
-                                </select>
-                            </label>
-                        @endif
-                        <label class="admin-stage-workspace__field">
-                            <span>{{ __('Name') }}</span>
-                            <input type="text" maxlength="160" wire:model="newPageTitle" placeholder="{{ __('Page name') }}">
-                        </label>
-                        <label class="admin-stage-workspace__field">
-                            <span>{{ __('Navigation parent') }}</span>
-                            <select wire:model="newPageParent">
-                                <option value="">{{ __('Top level') }}</option>
-                                @foreach ($parentOptions as $id => $label)
-                                    <option value="{{ $id }}">{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <button class="admin-action is-primary" type="submit">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" />
-                            {{ __('Create page') }}
-                        </button>
-                    </form>
+                    <div class="gallery-stage__form-scroll admin-visual-stage__field-scroll fi-fixed-positioning-context"
+                        wire:key="pages-stage-new-editor">
+                        {{ $this->pagesStageNewForm }}
+                    </div>
+                    <div class="gallery-stage__editor-actions admin-toolbar" aria-label="New page actions">
+                        <div class="gallery-stage__action-group">
+                            <button class="admin-action is-danger" type="button" wire:click="discardStagePage"
+                                wire:loading.attr="disabled" wire:target="discardStagePage,createStagePage">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" />
+                                <span class="gallery-stage__action-label">Discard</span>
+                            </button>
+                            <button class="admin-action is-success" type="button" wire:click="createStagePage"
+                                wire:loading.attr="disabled" wire:target="discardStagePage,createStagePage">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DialogSubmit->mini()" />
+                                <span class="gallery-stage__action-label">Submit</span>
+                            </button>
+                        </div>
+                    </div>
                 @elseif ($pagesStagePanel === 'navigation')
                     @php($stageSelected = $this->stageSelectedPage())
                     <nav class="pages-stage__navigation admin-visual-stage__field-scroll"

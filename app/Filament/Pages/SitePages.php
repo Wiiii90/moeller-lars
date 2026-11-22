@@ -14,6 +14,7 @@ use App\Domain\Content\SitePageHeading;
 use App\Domain\Content\SitePreviewContext;
 use App\Filament\Pages\Concerns\ManagesSitePageDialogs;
 use App\Filament\Support\AdminIcon;
+use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\HierarchyParentField;
@@ -29,6 +30,10 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -92,7 +97,8 @@ final class SitePages extends Page
 
     public bool $stagePagesAutoPublish = false;
 
-    public string $stageNewGalleryTemplate = 'standard';
+    /** Unsaved New Page Stage form; Add Page dialog remains the detailed editor. */
+    public array $pagesStageNewData = [];
 
     public ?int $pagesPreviewFocusedSectionId = null;
 
@@ -149,6 +155,7 @@ final class SitePages extends Page
     {
         $this->stagePagesAutoPublish = app(PagesSettingsDialog::class)->fill()['pages_auto_publish'];
         $this->loadSections();
+        $this->pagesStageNewForm->fill($this->defaultPagesStageNew());
     }
 
     public function updatedSearch(): void
@@ -315,41 +322,94 @@ final class SitePages extends Page
         }
     }
 
-    /** The visual navigation editor prepares the same native New-page form. */
+    /** Stage inputs use canonical controls and the existing Page creation owner. */
+    public function pagesStageNewForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Grid::make(['default' => 1])->schema([
+                    AdminControl::select('type', 'Page type')
+                        ->options(array_map('__', SiteSectionType::compactOptions()))
+                        ->native()
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(function (?string $state, Set $set): void {
+                            $set('template', match ($state) {
+                                SiteSectionType::Gallery->value => GalleryTemplate::Standard->value,
+                                SiteSectionType::Journal->value => JournalTemplate::Blog->value,
+                                default => null,
+                            });
+                        }),
+                    AdminControl::select('template', 'Template')
+                        ->options(fn (Get $get): array => match ($get('type')) {
+                            SiteSectionType::Gallery->value => array_map('__', GalleryTemplate::options()),
+                            SiteSectionType::Journal->value => array_map('__', JournalTemplate::options()),
+                            default => [],
+                        })
+                        ->native()
+                        ->visible(fn (Get $get): bool => in_array($get('type'), [
+                            SiteSectionType::Gallery->value, SiteSectionType::Journal->value,
+                        ], true)),
+                    AdminControl::text('name', 'Name')->maxLength(160),
+                    AdminControl::select('parent_id', 'Navigation parent')
+                        ->options(fn (): array => $this->parentOptions)
+                        ->placeholder(__('Top level'))
+                        ->native()
+                        ->nullable(),
+                ]),
+            ])
+            ->statePath('pagesStageNewData');
+    }
+
+    /** @return array<string,mixed> */
+    private function defaultPagesStageNew(): array
+    {
+        return [
+            'type' => SiteSectionType::CustomPage->value,
+            'template' => null,
+            'name' => '',
+            'parent_id' => null,
+        ];
+    }
+
+    public function discardStagePage(): void
+    {
+        $this->pagesStageNewForm->fill($this->defaultPagesStageNew());
+    }
+
+    /** Navigation chooses the parent within the same unsaved New form. */
     public function prepareStageChildPage(int $parentId): void
     {
         if (! array_key_exists($parentId, $this->parentOptions)) {
             return;
         }
-        $this->newPageParent = (string) $parentId;
+
+        $this->pagesStageNewForm->fill([
+            ...$this->pagesStageNewForm->getRawState(),
+            'parent_id' => $parentId,
+        ]);
         $this->pagesStagePanel = 'create';
     }
 
     public function prepareStageRootPage(): void
     {
-        $this->newPageParent = '';
+        $this->pagesStageNewForm->fill([
+            ...$this->pagesStageNewForm->getRawState(),
+            'parent_id' => null,
+        ]);
         $this->pagesStagePanel = 'create';
     }
 
     public function createStagePage(): void
     {
-        $data = [
-            'type' => $this->newPageType,
-            'template' => match ($this->newPageType) {
-                SiteSectionType::Gallery->value => $this->stageNewGalleryTemplate,
-                SiteSectionType::Journal->value => $this->newJournalTemplate,
-                default => null,
-            },
-            'name' => $this->newPageTitle,
-            'slug' => '',
-            'parent_id' => $this->newPageParent !== '' ? $this->newPageParent : null,
-            'position' => null,
-        ];
-
         try {
+            $data = [
+                ...$this->pagesStageNewForm->getState(),
+                'slug' => '',
+                'position' => null,
+            ];
             $section = DB::transaction(fn (): SiteSection => $this->createPageFromDialog($data));
-            $this->newPageTitle = '';
-            $this->newPageParent = '';
+            $this->discardStagePage();
             $this->pageNumber = 1;
             $this->loadSections(navigationChanged: true);
             $id = (int) $section->getKey();
