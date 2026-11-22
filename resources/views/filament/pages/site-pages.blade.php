@@ -89,13 +89,6 @@
                                         @if ($section['children'] !== [])
                                             <span class="pages-stage__child-count">{{ count($section['children']) }}</span>
                                         @endif
-                                        @unless ($section['is_home'])
-                                            <button class="admin-action pages-stage__add-child" type="button"
-                                                wire:click="prepareStageChildPage({{ $section['id'] }})"
-                                                aria-label="Add child page under {{ $section['title'] }}">
-                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" />
-                                            </button>
-                                        @endunless
                                     </div>
                                     @unless ($section['is_home'])
                                         <div class="pages-stage__submenu{{ $section['children'] === [] ? ' pages-stage__submenu--empty' : '' }}"
@@ -125,23 +118,10 @@
                                 </div>
                             @endforeach
                         </div>
-                        <button class="admin-action pages-stage__add-root" type="button"
-                            wire:click="prepareStageRootPage">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" />
-                            {{ __('New top-level page') }}
-                        </button>
                     </nav>
                 @else
                     @php($stageSelected = $this->stageSelectedPage())
                     <div class="admin-stage-workspace admin-visual-stage__field-scroll" aria-label="Page and navigation settings">
-                        <div class="admin-stage-workspace__group">
-                            <strong>{{ __('Page defaults') }}</strong>
-                            <label class="pages-stage__toggle">
-                                <input type="checkbox" @checked($stagePagesAutoPublish)
-                                    wire:change="setPagesStageAutoPublish($event.target.checked)">
-                                {{ __('Auto-publish new pages') }}
-                            </label>
-                        </div>
                         @if ($stageSelected !== null)
                             <div class="admin-stage-workspace__group">
                                 <strong>{{ $stageSelected['navigation_label'] ?: $stageSelected['title'] }}</strong>

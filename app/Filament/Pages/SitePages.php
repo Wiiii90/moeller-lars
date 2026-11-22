@@ -95,8 +95,6 @@ final class SitePages extends Page
 
     public ?int $pagesStageSelectedSectionId = null;
 
-    public bool $stagePagesAutoPublish = false;
-
     /** Unsaved New Page Stage form; Add Page dialog remains the detailed editor. */
     public array $pagesStageNewData = [];
 
@@ -153,7 +151,6 @@ final class SitePages extends Page
 
     public function mount(): void
     {
-        $this->stagePagesAutoPublish = app(PagesSettingsDialog::class)->fill()['pages_auto_publish'];
         $this->loadSections();
         $this->pagesStageNewForm->fill($this->defaultPagesStageNew());
     }
@@ -328,10 +325,10 @@ final class SitePages extends Page
         return $schema
             ->components([
                 Grid::make(['default' => 1])->schema([
+                    AdminControl::text('name', 'Name')->maxLength(160),
                     AdminControl::select('type', 'Page type')
                         ->options(array_map('__', SiteSectionType::compactOptions()))
                         ->native()
-                        ->required()
                         ->live()
                         ->afterStateUpdated(function (?string $state, Set $set): void {
                             $set('template', match ($state) {
@@ -350,7 +347,6 @@ final class SitePages extends Page
                         ->visible(fn (Get $get): bool => in_array($get('type'), [
                             SiteSectionType::Gallery->value, SiteSectionType::Journal->value,
                         ], true)),
-                    AdminControl::text('name', 'Name')->maxLength(160),
                     AdminControl::select('parent_id', 'Navigation parent')
                         ->options(fn (): array => $this->parentOptions)
                         ->placeholder(__('Top level'))
@@ -377,29 +373,6 @@ final class SitePages extends Page
         $this->pagesStageNewForm->fill($this->defaultPagesStageNew());
     }
 
-    /** Navigation chooses the parent within the same unsaved New form. */
-    public function prepareStageChildPage(int $parentId): void
-    {
-        if (! array_key_exists($parentId, $this->parentOptions)) {
-            return;
-        }
-
-        $this->pagesStageNewForm->fill([
-            ...$this->pagesStageNewForm->getRawState(),
-            'parent_id' => $parentId,
-        ]);
-        $this->pagesStagePanel = 'create';
-    }
-
-    public function prepareStageRootPage(): void
-    {
-        $this->pagesStageNewForm->fill([
-            ...$this->pagesStageNewForm->getRawState(),
-            'parent_id' => null,
-        ]);
-        $this->pagesStagePanel = 'create';
-    }
-
     public function createStagePage(): void
     {
         try {
@@ -414,25 +387,12 @@ final class SitePages extends Page
             $this->loadSections(navigationChanged: true);
             $id = (int) $section->getKey();
             $this->pagesStageSelectedSectionId = $id;
-            $visible = array_column($this->filteredRows, 'id');
-            $this->selectedSectionIds = in_array($id, $visible, true) ? [$id] : [];
+            $this->selectedSectionIds = [];
             $this->syncPagesPreviewFocus();
             $this->pagesStagePanel = 'navigation';
             app(AdminNotifier::class)->notification(title: $section->nodeType()->label().' added', status: 'success');
         } catch (ValidationException $exception) {
             $this->validationNotification('Page was not added', $exception);
-        }
-    }
-
-    public function setPagesStageAutoPublish(bool $enabled): void
-    {
-        $dialog = app(PagesSettingsDialog::class);
-        $data = $dialog->fill();
-        $data['pages_auto_publish'] = $enabled;
-        $changed = $dialog->save($data);
-        $this->stagePagesAutoPublish = $dialog->fill()['pages_auto_publish'];
-        if ($changed) {
-            app(AdminNotifier::class)->notification(title: 'Pages settings saved', status: 'success');
         }
     }
 
