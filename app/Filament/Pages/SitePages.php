@@ -228,6 +228,10 @@ final class SitePages extends Page
 
     public function pagesStagePreviewUrl(): string
     {
+        if ($this->pagesStagePanel === 'settings') {
+            return route('preview.home');
+        }
+
         if ($this->pagesPreviewAutoFocus && $this->pagesPreviewFocusedSectionId !== null) {
             foreach ($this->stageNavigationRows() as $row) {
                 if ((int) $row['id'] === $this->pagesPreviewFocusedSectionId
@@ -242,6 +246,10 @@ final class SitePages extends Page
 
     public function pagesStagePreviewTitle(): string
     {
+        if ($this->pagesStagePanel === 'settings') {
+            return 'Interactive navigation preview';
+        }
+
         return $this->pagesPreviewAutoFocus && $this->pagesPreviewFocusedSectionId !== null
             ? 'Interactive selected Page preview'
             : 'Interactive Pages preview';
@@ -299,8 +307,18 @@ final class SitePages extends Page
 
     public function showPagesStagePanel(string $panel): void
     {
-        if (in_array($panel, ['create', 'selected', 'settings'], true)) {
-            $this->pagesStagePanel = $panel;
+        if (! in_array($panel, ['create', 'selected', 'settings'], true)
+            || $this->pagesStagePanel === $panel) {
+            return;
+        }
+
+        $this->pagesStagePanel = $panel;
+
+        // Settings previews the actual navigation on Home, not the selected
+        // page's content. Other modes preserve the existing autofocus contract.
+        if ($panel === 'settings' || $this->pagesPreviewAutoFocus) {
+            $this->dispatch('admin-live-preview-updated',
+                url: $this->pagesStagePreviewUrl(), title: $this->pagesStagePreviewTitle());
         }
     }
 

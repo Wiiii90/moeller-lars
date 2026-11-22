@@ -107,12 +107,15 @@
                         @endif
                     </div>
                 @else
-                    <div class="admin-stage-workspace admin-visual-stage__field-scroll" aria-label="Pages settings">
-                        <button class="admin-action admin-action--with-icon" type="button"
-                            wire:click="mountAction('pagesSettings')">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" />
-                            {{ __('Edit Pages settings') }}
-                        </button>
+                    <div class="admin-stage-workspace admin-visual-stage__field-scroll" aria-label="Navigation appearance">
+                        <div class="admin-stage-workspace__group">
+                            <strong>{{ __('Navigation appearance') }}</strong>
+                            <a class="admin-action admin-action--with-icon"
+                                href="{{ \App\Filament\Pages\General::getUrl() }}">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" />
+                                {{ __('Edit global menu appearance') }}
+                            </a>
+                        </div>
                     </div>
                 @endif
             </div>
