@@ -340,6 +340,34 @@ trait CustomPageWorkspaceComponentActions
         }
     }
 
+    public function setStageEmbeddedProperty(int $index, string $type, string $field, string $value): void
+    {
+        $allowed = match ($type) {
+            'gallery' => $field === 'gallery_presentation' && in_array($value, ['sequence', 'two_columns'], true),
+            'hero_artworks' => $field === 'source_rule'
+                && array_key_exists($value, \App\Domain\Content\GalleryHeroConfigurationService::SOURCE_RULES),
+            default => false,
+        };
+        if (! $allowed) {
+            return;
+        }
+
+        $original = $this->componentAt($index, $type);
+        $updated = [...$original, $field => $value];
+        try {
+            $changed = app(CustomPageEditorialService::class)->updateBlock(
+                $this->settings(), $index, $type, $updated, $original,
+            );
+            $this->reloadWorkspace();
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Component appearance updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->reloadWorkspace();
+            $this->stageValidationFailure('Appearance unchanged', $exception);
+        }
+    }
+
     public function setStageComponentBoundary(int $index, string $type, string $border): void
     {
         if (! in_array($border, ['none', ...CustomPageSetting::DIVIDER_VARIANTS], true)) {

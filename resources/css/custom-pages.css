@@ -29,6 +29,12 @@
 .custom-page__component {
     min-width: 0;
 }
+/* Embedded templates form a local responsive sizing context within a Layout area. */
+.custom-page__embedded {
+    min-width: 0;
+    container-type: inline-size;
+}
+
 
 /* Layout is structural: the same Layout and areas work in Public and Preview.
    Area content stays in the original Custom Page document, not a new Page. */

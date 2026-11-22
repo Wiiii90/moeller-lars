@@ -1,4 +1,4 @@
-    <div class="artwork-list{{ $divider !== 'none' ? ' artwork-list--divided' : '' }}"
+    <div class="artwork-list{{ $divider !== 'none' ? ' artwork-list--divided' : '' }}{{ ($embeddedGalleryPresentation ?? 'sequence') === 'two_columns' ? ' artwork-list--embedded-columns' : '' }}"
         data-artwork-viewer-sequence data-gallery-infinite
         data-gallery-viewer-manifest="{{ isset($galleryUrl) ? $galleryUrl.'?gallery_viewer=1' : request()->fullUrlWithQuery(['gallery_viewer' => '1']) }}">
         @include('pages.artworks.partials.batch')

@@ -314,6 +314,7 @@ final class CustomPageSetting extends Model
                     'type' => 'gallery',
                     'published' => $published,
                     'gallery_id' => is_numeric($block['gallery_id'] ?? null) ? (int) $block['gallery_id'] : null,
+                    'gallery_presentation' => $block['gallery_presentation'] ?? 'sequence',
                 ],
                 'hero_artworks' => [
                     'type' => 'hero_artworks',

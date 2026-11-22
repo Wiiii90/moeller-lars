@@ -128,6 +128,9 @@ trait CustomPageWorkspaceForms
                 Select::make('gallery_id')->label('Gallery')
                     ->options(fn (): array => app(\App\Domain\Content\CustomPageEmbeddedContent::class)->sourceOptions('gallery'))
                     ->searchable()->nullable(),
+                Select::make('gallery_presentation')->label('Presentation')
+                    ->options(['sequence' => 'Sequence', 'two_columns' => 'Two columns'])
+                    ->default('sequence')->required(),
             ],
             'hero_artworks' => [
                 Select::make('gallery_ids')->label('Source galleries')

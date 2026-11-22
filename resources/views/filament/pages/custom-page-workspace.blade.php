@@ -102,6 +102,30 @@
                     <div class="admin-stage-workspace admin-visual-stage__field-scroll" aria-label="Selected component and layout settings">
                         @if ($selectedComponent !== null)
                             @php($component = $selectedComponent['block'])
+                            @if ($selectedComponent['type'] === 'gallery')
+                                <div class="admin-stage-workspace__group">
+                                    <strong>{{ __('Gallery presentation') }}</strong>
+                                    <label class="admin-stage-workspace__field">
+                                        <span>{{ __('Arrangement') }}</span>
+                                        <select wire:change="setStageEmbeddedProperty({{ $selectedComponent['index'] }}, 'gallery', 'gallery_presentation', $event.target.value)">
+                                            <option value="sequence" @selected(($component['gallery_presentation'] ?? 'sequence') === 'sequence')>{{ __('Sequence') }}</option>
+                                            <option value="two_columns" @selected(($component['gallery_presentation'] ?? 'sequence') === 'two_columns')>{{ __('Two columns') }}</option>
+                                        </select>
+                                    </label>
+                                </div>
+                            @elseif ($selectedComponent['type'] === 'hero_artworks')
+                                <div class="admin-stage-workspace__group">
+                                    <strong>{{ __('Hero Artworks') }}</strong>
+                                    <label class="admin-stage-workspace__field">
+                                        <span>{{ __('Artwork order') }}</span>
+                                        <select wire:change="setStageEmbeddedProperty({{ $selectedComponent['index'] }}, 'hero_artworks', 'source_rule', $event.target.value)">
+                                            @foreach (\App\Domain\Content\GalleryHeroConfigurationService::SOURCE_RULES as $rule => $label)
+                                                <option value="{{ $rule }}" @selected(($component['source_rule'] ?? 'newest_artwork') === $rule)>{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                </div>
+                            @endif
                             <div class="admin-stage-workspace__group">
                                 <strong>{{ __('Boundaries') }}</strong>
                                 <label class="admin-stage-workspace__field">

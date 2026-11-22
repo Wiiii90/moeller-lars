@@ -50,6 +50,9 @@ final class CustomPageEmbeddedContent
     {
         $type = $block['type'] ?? null;
         if ($type === 'gallery') {
+            if (! in_array($block['gallery_presentation'] ?? 'sequence', ['sequence', 'two_columns'], true)) {
+                throw ValidationException::withMessages(['gallery_presentation' => 'Choose a supported Gallery presentation.']);
+            }
             $id = $block['gallery_id'] ?? null;
             if ($id === null && ! $public) {
                 return;
@@ -80,7 +83,6 @@ final class CustomPageEmbeddedContent
         }
         $ids = $block[$field] ?? [];
         if (! is_array($ids) || ! array_is_list($ids)
-            || count($ids) > 100
             || count($ids) !== count(array_unique($ids, SORT_REGULAR))
             || array_filter($ids, static fn (mixed $id): bool => ! is_int($id) || $id < 1) !== []) {
             throw ValidationException::withMessages([$field => 'Choose valid, unique source records.']);
@@ -149,7 +151,8 @@ final class CustomPageEmbeddedContent
                 'outline' => $batch['outline'],
                 'hasMore' => $batch['hasMore'],
                 'page' => 1,
-                'divider' => GalleryPresentation::divider($category),
+                'divider' => ($block['gallery_presentation'] ?? 'sequence') === 'two_columns' ? 'none' : GalleryPresentation::divider($category),
+                'embeddedGalleryPresentation' => $block['gallery_presentation'] ?? 'sequence',
                 'galleryOffsets' => GalleryPresentation::indexCardOffsets($batch['outline'], $category),
                 'galleryGaps' => GalleryPresentation::indexCardGapSteps($batch['outline'], $category),
                 'galleryUrl' => $url,
