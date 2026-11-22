@@ -141,38 +141,8 @@ final class CustomPageEditorialService
     }
 
     /**
-     * Native sortable root sequence. Area placement is stored on each
-     * component and edited through the same canonical component action.
-     */
-    public function placeComponent(CustomPageSetting $settings, string $locator, int $position, int|string|null $groupId): bool
-    {
-        if (! preg_match('/^(\\d+):([a-z_]+)$/', $locator, $matches)
-            || ($groupId !== null && $groupId !== 'root')) {
-            throw ValidationException::withMessages(['component' => 'Invalid component drag target.']);
-        }
-
-        return DB::transaction(function () use ($settings, $matches, $position): bool {
-            $fresh = $this->locked($settings);
-            $blocks = $fresh->components();
-            $index = (int) $matches[1];
-            $this->assertTarget($blocks, $index, $matches[2]);
-            $before = AdminOrderingState::fingerprints($blocks);
-            $component = $blocks[$index];
-            array_splice($blocks, $index, 1);
-            array_splice($blocks, max(0, min($position, count($blocks))), 0, [$component]);
-
-            return $this->persist($fresh, $blocks, [
-                'action' => 'site_section.page_components_reordered',
-                'scope' => 'page-components:'.(int) $fresh->getAttribute('site_section_id'),
-                'before' => $before,
-                'after' => AdminOrderingState::fingerprints($blocks),
-            ]);
-        });
-    }
-
-    /**
-     * Stage sorting changes both placement and order in the canonical component
-     * document. Table sorting deliberately retains the component's current area.
+     * Native sortable groups place components at the root or inside Layout
+     * areas in the same canonical document used by the Public renderer.
      */
     public function placeLayoutComponent(CustomPageSetting $settings, string $locator, int $position, string $destination): bool
     {

@@ -118,8 +118,8 @@ trait CustomPageWorkspacePresentationHelpers
         return implode(' ', array_filter($parts, static fn (mixed $part): bool => is_string($part) && trim($part) !== ''));
     }
 
-    /** The Stage is a canvas of the canonical Public layout projection. */
-    public function stageLayoutItems(): array
+    /** The component table projects the canonical Public Layout hierarchy. */
+    public function componentLayoutItems(): array
     {
         return CustomPageSetting::layoutProjection($this->settings()->components());
     }

@@ -26,6 +26,7 @@
                     </x-slot:actions>
                 </x-admin.empty-state>
             @else
+                @php($componentRows = collect($components)->keyBy('target')->all())
                 <div class="custom-page-component-sequence__rows"
                     @if ($reorderEnabled)
                         wire:sort="sortComponent"
@@ -33,38 +34,25 @@
                         wire:sort:group-id="root"
                     @endif
                 >
-                    @foreach ($components as $pageComponent)
-                        <article
-                            class="custom-page-component admin-hierarchy__group"
-                            wire:key="custom-component-{{ $pageComponent['target'] }}"
-                            @if ($reorderEnabled) wire:sort:item="{{ $pageComponent['target'] }}" @endif
-                        >
-                            @include('filament.pages.partials.custom-page-component-row', [
-                                'row' => $pageComponent,
-                                'reorderEnabled' => $reorderEnabled, 'componentTypeOptions' => $componentTypeOptions,
+                    @if ($reorderEnabled)
+                        @foreach ($this->componentLayoutItems() as $componentBlock)
+                            @include('filament.pages.partials.custom-page-component-item', [
+                                'componentBlock' => $componentBlock,
+                                'pageComponent' => null,
+                                'componentRows' => $componentRows,
+                                'reorderEnabled' => true,
                             ])
-
-                            @if ($pageComponent['embedded_children'] !== [])
-                                <div class="custom-page-component__embedded-children" role="group"
-                                    aria-label="{{ $pageComponent['type_label'] }} page template">
-                                    @foreach ($pageComponent['embedded_children'] as $child)
-                                        <div class="custom-page-component__embedded-child"
-                                            wire:key="embedded-page-{{ $pageComponent['index'] }}-{{ $child['id'] }}">
-                                            <span class="custom-page-component__embedded-child-title">
-                                                {{ __('Source page') }}: {{ $child['title'] }}
-                                            </span>
-                                            @if ($child['workspace_url'])
-                                                <a class="admin-action" href="{{ $child['workspace_url'] }}">
-                                                    {{ __('Open source editor') }}
-                                                </a>
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @endif
-
-                        </article>
-                    @endforeach
+                        @endforeach
+                    @else
+                        @foreach ($components as $pageComponent)
+                            @include('filament.pages.partials.custom-page-component-item', [
+                                'componentBlock' => null,
+                                'pageComponent' => $pageComponent,
+                                'componentRows' => $componentRows,
+                                'reorderEnabled' => false,
+                            ])
+                        @endforeach
+                    @endif
                 </div>
             @endif
             </section>

@@ -78,13 +78,18 @@ trait CustomPageWorkspaceComponentActions
         if (! $this->componentReorderEnabled()) {
             return;
         }
-        $changed = app(CustomPageEditorialService::class)->placeComponent(
-            $this->settings(), $target, $position, $groupId,
-        );
-        $this->clearSelections();
-        $this->reloadWorkspace();
-        if ($changed) {
-            app(AdminNotifier::class)->notification(title: 'Component order updated', status: 'success');
+        try {
+            $changed = app(CustomPageEditorialService::class)->placeLayoutComponent(
+                $this->settings(), $target, $position, (string) ($groupId ?? 'root'),
+            );
+            $this->clearSelections();
+            $this->reloadWorkspace();
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Component placement updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->reloadWorkspace();
+            $this->stageValidationFailure('Component placement unchanged', $exception);
         }
     }
 
