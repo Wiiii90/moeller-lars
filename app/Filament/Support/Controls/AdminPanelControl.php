@@ -20,7 +20,7 @@ final class AdminPanelControl
      *  presentation variants. The original Filament fields keep their own
      *  state, labels, validation, and event handling.
      */
-    public static function make(string $title, string $enabledField, array $fields, ?Closure $onUpdated = null, bool $collapsible = false, array $bodyColumns = ['default' => 2], bool $unlinedFields = false, bool $compactRows = false, bool $dense = false): Group
+    public static function make(string $title, string $enabledField, array $fields, ?Closure $onUpdated = null, bool $collapsible = false, array $bodyColumns = ['default' => 2], bool $unlinedFields = false, bool $compactRows = false, bool $dense = false, bool $hideWhenDisabled = false): Group
     {
         $toggle = AdminControl::toggle($enabledField, $title)
             ->inline()
@@ -51,7 +51,8 @@ final class AdminPanelControl
             .($collapsible ? ' admin-option-panel--collapsible' : '')
             .($unlinedFields ? ' admin-option-panel--unlined-fields' : '')
             .($compactRows ? ' admin-option-panel--compact-rows' : '')
-            .($dense ? ' admin-option-panel--dense' : '');
+            .($dense ? ' admin-option-panel--dense' : '')
+            .($hideWhenDisabled ? ' admin-option-panel--hide-when-disabled' : '');
 
         return Group::make([$header, $body])
             ->columns(1)

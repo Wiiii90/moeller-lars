@@ -296,14 +296,14 @@ final class JournalWorkspace extends Page
     {
         $this->selectedPostIds = $this->toggleSelection($this->selectedPostIds, $id);
         $this->syncJournalPreviewFocus(updateOnly: true);
-        $this->onJournalStageSelectionChanged(in_array($id, $this->selectedPostIds, true) ? $id : null);
+        $this->onJournalStageSelectionChanged();
     }
 
     public function toggleExhibitionSelection(int $id): void
     {
         $this->selectedExhibitionIds = $this->toggleSelection($this->selectedExhibitionIds, $id);
         $this->syncJournalPreviewFocus(updateOnly: true);
-        $this->onJournalStageSelectionChanged(in_array($id, $this->selectedExhibitionIds, true) ? $id : null);
+        $this->onJournalStageSelectionChanged();
     }
 
     public function toggleVisibleSelection(): void

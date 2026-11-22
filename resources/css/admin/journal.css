@@ -182,4 +182,73 @@
     font-weight: 600;
 }
 
+/* Journal directory manager: native fields follow the canonical Admin
+ * control typography and remain directly editable without a separate dialog. */
+.journal-directory-table {
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.journal-directory-table col.journal-directory__name-col { width: 28%; }
+.journal-directory-table col.journal-directory__details-col { width: auto; }
+.journal-directory-table col.journal-directory__actions-col { width: 5.5rem; }
+
+.journal-directory__name-cell,
+.journal-directory__details-cell {
+    vertical-align: top;
+}
+
+.journal-directory__detail-grid {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .55rem;
+}
+
+.journal-directory__field {
+    display: grid;
+    min-width: 0;
+    gap: .25rem;
+}
+
+.journal-directory__field > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.journal-directory__field > input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: var(--admin-control-height);
+    padding: .35rem .5rem;
+    border: 1px solid var(--admin-control-border);
+    background: transparent;
+    color: var(--admin-text);
+    font: inherit;
+}
+
+.journal-directory__field > input:focus-visible {
+    border-color: var(--admin-control-border-focus);
+    outline: 0;
+}
+
+.journal-directory__field--website,
+.journal-directory__field--street {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+    .journal-directory-table col.journal-directory__name-col { width: 32%; }
+    .journal-directory__detail-grid { grid-template-columns: minmax(0, 1fr); }
+    .journal-directory__detail-grid > .journal-directory__field { grid-column: 1; }
+}
+
+/* New, Selected and Settings use the same editor viewport and footer rail.
+ * Swapping panels must not move the Stage boundary or scroll owner. */
+.journal-workspace .gallery-stage__editor-actions {
+    min-height: 2.7rem;
+}
 

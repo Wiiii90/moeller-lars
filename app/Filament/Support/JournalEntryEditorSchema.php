@@ -10,6 +10,9 @@ use App\Domain\Content\RegionalFormats;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Pages\JournalWorkspace;
 use App\Filament\Support\Controls\AdminControl;
+use App\Filament\Support\Controls\AdminPanelControl;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\Exhibition;
 use App\Models\ExhibitionOrganizerPreset;
 use App\Models\ExhibitionVenuePreset;
@@ -70,12 +73,8 @@ final class JournalEntryEditorSchema
             foreach (['location_text', 'postal_code', 'city', 'country'] as $field) {
                 $fields[] = Hidden::make($field);
             }
-            $fields[] = AdminForm::section(__('Description'))
-                ->schema(AdminRichText::schema('description', __('Text'), 50000, allowEmbeddedMedia: true, pageAutosave: true))
-                ->collapsible()->collapsed()->columnSpanFull();
-            $fields[] = AdminForm::section(__('Exhibition gallery'))
-                ->schema(self::exhibitionGalleryFields(stage: true))
-                ->collapsible()->collapsed()->columnSpanFull();
+            $fields[] = self::exhibitionDescriptionPanel(stage: true);
+            $fields[] = self::exhibitionGalleryPanel(stage: true);
         } else {
             $fields[] = AdminForm::section(__('Excerpt'))
                 ->schema(AdminRichText::schema('excerpt', __('Excerpt'), 1000, allowEmbeddedMedia: false, pageAutosave: true))
@@ -108,8 +107,8 @@ final class JournalEntryEditorSchema
                     self::imageViewerField(),
                     ...self::venueFields($exhibition),
                     ...self::mapFields(),
-                    ...AdminRichText::schema('description', __('Text'), 50000, allowEmbeddedMedia: true),
-                    ...self::exhibitionGalleryFields(),
+                    self::exhibitionDescriptionPanel(),
+                    self::exhibitionGalleryPanel(),
                 ])
                 ->columns(['md' => 2]);
         }
@@ -256,13 +255,28 @@ final class JournalEntryEditorSchema
         }
     }
 
-    private static function exhibitionGalleryFields(bool $stage = false): array
+    private static function exhibitionDescriptionPanel(bool $stage = false): mixed
     {
-        $images = self::galleryImages(table: true, stage: $stage);
-        $images
-            ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
-            ->dehydrated(fn (Get $get): bool => (bool) $get('gallery_enabled'));
+        return AdminPanelControl::make(
+            'Description',
+            'description_enabled',
+            AdminRichText::schema(
+                'description', __('Description'), 50000,
+                allowEmbeddedMedia: true,
+                pageAutosave: $stage,
+                hideLabel: true,
+            ),
+            collapsible: true,
+            bodyColumns: ['default' => 1],
+            dense: $stage,
+            hideWhenDisabled: true,
+        );
+    }
 
+    private static function exhibitionGalleryPanel(bool $stage = false): mixed
+    {
+        // The panel switch is the only Gallery visibility control.
+        // Presentation remains optional; the canonical default is Grid.
         $presentation = Select::make('gallery_presentation')
             ->label(__('Gallery presentation'))
             ->options([
@@ -273,21 +287,21 @@ final class JournalEntryEditorSchema
             ])
             ->disableOptionWhen(static fn (string $value, Get $get): bool => self::carouselOptionDisabled($value, $get))
             ->default('grid')
-            ->required()
-            ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
+            ->nullable()
             ->columnSpanFull();
         if ($stage) {
             $presentation->live();
         }
 
-        return [
-            Toggle::make('gallery_enabled')
-                ->label(__('Gallery enabled'))
-                ->live()
-                ->columnSpanFull(),
-            $presentation,
-            $images,
-        ];
+        return AdminPanelControl::make(
+            'Exhibition gallery',
+            'gallery_enabled',
+            [$presentation, self::galleryImages(table: true, stage: $stage)],
+            collapsible: true,
+            bodyColumns: ['default' => 1],
+            dense: $stage,
+            hideWhenDisabled: true,
+        );
     }
 
     private static function mapFields(): array
@@ -441,12 +455,14 @@ final class JournalEntryEditorSchema
     {
         return AdminControl::select('organizer', 'Organizer')
             ->options(fn (): array => ExhibitionOrganizerPreset::query()
-                ->orderBy('position')->orderBy('id')->pluck('name', 'name')->all())
+                ->orderByRaw('LOWER(name)')->orderBy('name')->pluck('name', 'name')->all())
             ->getOptionLabelUsing(static fn (mixed $value): ?string =>
                 is_string($value) && trim($value) !== '' ? $value : null)
             ->searchable()->preload()->native(false)->nullable()
             ->createOptionModalHeading('Add organizer')
             ->createOptionForm(self::directoryFields('Organizer'))
+            ->createOptionAction(static fn (Action $action): Action =>
+                AdminDialog::create($action->label('Add organizer'), 'Add organizer', AdminDialogSize::Default))
             ->createOptionUsing(static function (array $data): string {
                 app(ExhibitionDirectoryService::class)->addOrganizer($data);
                 app(AdminNotifier::class)->notification(title: 'Organizer added', status: 'success');
@@ -460,7 +476,7 @@ final class JournalEntryEditorSchema
     {
         return AdminControl::select('venue', 'Venue')
             ->options(fn (): array => ExhibitionVenuePreset::query()
-                ->orderBy('position')->orderBy('id')->pluck('name', 'name')->all())
+                ->orderByRaw('LOWER(name)')->orderBy('name')->pluck('name', 'name')->all())
             ->getOptionLabelUsing(static fn (mixed $value): ?string =>
                 is_string($value) && trim($value) !== '' ? $value : null)
             ->searchable()->preload()->native(false)->nullable()->live()
@@ -483,6 +499,8 @@ final class JournalEntryEditorSchema
             })
             ->createOptionModalHeading('Add venue')
             ->createOptionForm(self::directoryFields('Venue'))
+            ->createOptionAction(static fn (Action $action): Action =>
+                AdminDialog::create($action->label('Add venue'), 'Add venue', AdminDialogSize::Default))
             ->createOptionUsing(static function (array $data): string {
                 app(ExhibitionDirectoryService::class)->addVenue($data);
                 app(AdminNotifier::class)->notification(title: 'Venue added', status: 'success');

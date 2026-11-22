@@ -77,6 +77,7 @@
 
                 @if ($journalStagePanel === 'new')
                     <div class="gallery-stage__form-scroll admin-visual-stage__field-scroll fi-fixed-positioning-context"
+                        wire:key="journal-new-editor"
                         wire:change="rememberNewJournalEntry"
                         x-on:artist-rich-editor-commit="$wire.rememberNewJournalEntry()">
                         {{ $this->journalNewForm }}
@@ -129,9 +130,11 @@
                         </div>
                     </div>
                 @elseif ($journalStagePanel === 'settings')
-                    <div class="gallery-stage__settings admin-visual-stage__field-scroll fi-fixed-positioning-context">
+                    <div class="gallery-stage__settings gallery-stage__form-scroll admin-visual-stage__field-scroll fi-fixed-positioning-context"
+                        wire:key="journal-settings-editor">
                         {{ $this->journalStageSettingsForm }}
                     </div>
+                    <div class="gallery-stage__editor-actions admin-toolbar" aria-hidden="true"></div>
                 @endif
             </div>
             <div class="admin-visual-stage__pane admin-visual-stage__preview-pane">

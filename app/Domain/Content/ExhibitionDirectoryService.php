@@ -3,7 +3,6 @@
 namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
-use App\Models\Exhibition;
 use App\Models\ExhibitionOrganizerPreset;
 use App\Models\ExhibitionVenuePreset;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -13,15 +12,12 @@ use Illuminate\Validation\ValidationException;
 
 final class ExhibitionDirectoryService
 {
-    public function __construct(
-        private readonly AdminAuditService $audit,
-        private readonly ExhibitionEditorialService $exhibitions,
-    ) {}
+    public function __construct(private readonly AdminAuditService $audit) {}
 
     /** @return EloquentCollection<int, ExhibitionOrganizerPreset> */
     public function organizers(): EloquentCollection
     {
-        return ExhibitionOrganizerPreset::query()->orderBy('position')->orderBy('id')->get();
+        return ExhibitionOrganizerPreset::query()->orderByRaw('LOWER(name)')->orderBy('name')->orderBy('id')->get();
     }
 
     public function addOrganizer(string|array $details): bool
@@ -33,9 +29,7 @@ final class ExhibitionDirectoryService
             $rows = ExhibitionOrganizerPreset::query()->lockForUpdate()->get();
             $this->uniqueName($rows, $values['name']);
 
-            $preset = ExhibitionOrganizerPreset::query()->create([
-                ...$values, 'position' => $rows->count(),
-            ]);
+            $preset = ExhibitionOrganizerPreset::query()->create($values);
             $this->audit->record($actor, 'exhibition_organizer_preset.created', 'exhibition_organizer_preset', (int) $preset->getKey());
 
             return true;
@@ -72,18 +66,6 @@ final class ExhibitionDirectoryService
             }
             $preset->save();
 
-            // Only an explicit rename updates Working Exhibition attribution.
-            // Address and website metadata never rewrite past Exhibition details.
-            if ($renamed) {
-                foreach (Exhibition::query()->where('organizer', $previous)->orderBy('id')->get() as $exhibition) {
-                    $this->exhibitions->update($exhibition, [
-                        'site_section_id' => (int) $exhibition->getAttribute('site_section_id'),
-                        'title' => (string) $exhibition->getAttribute('title'),
-                        'organizer' => $name,
-                    ]);
-                }
-            }
-
             $this->audit->record($actor, 'exhibition_organizer_preset.updated', 'exhibition_organizer_preset', $id);
 
             return true;
@@ -95,7 +77,7 @@ final class ExhibitionDirectoryService
         $actor = $this->audit->requireActor();
 
         return DB::transaction(function () use ($id, $actor): bool {
-            $rows = ExhibitionOrganizerPreset::query()->orderBy('position')->lockForUpdate()->get();
+            $rows = ExhibitionOrganizerPreset::query()->lockForUpdate()->get();
             /** @var ExhibitionOrganizerPreset|null $preset */
             $preset = $rows->firstWhere('id', $id);
             if (! $preset instanceof ExhibitionOrganizerPreset) {
@@ -104,40 +86,6 @@ final class ExhibitionDirectoryService
             // Deleting a preset does not remove historical Exhibition values.
             $preset->delete();
             $this->audit->record($actor, 'exhibition_organizer_preset.deleted', 'exhibition_organizer_preset', $id);
-            foreach ($rows->reject(static fn (ExhibitionOrganizerPreset $row): bool => (int) $row->getKey() === $id)->values() as $position => $row) {
-                if ((int) $row->getAttribute('position') !== $position) {
-                    $row->setAttribute('position', $position);
-                    $row->save();
-                }
-            }
-
-            return true;
-        });
-    }
-
-    public function moveOrganizer(int $id, int $position): bool
-    {
-        $actor = $this->audit->requireActor();
-
-        return DB::transaction(function () use ($id, $position, $actor): bool {
-            $rows = ExhibitionOrganizerPreset::query()->orderBy('position')->orderBy('id')
-                ->lockForUpdate()->get()->all();
-            $from = array_search($id, array_map(static fn (ExhibitionOrganizerPreset $row): int => (int) $row->getKey(), $rows), true);
-            if ($from === false || $position < 0 || $position >= count($rows)) {
-                throw ValidationException::withMessages(['position' => 'The organizer position is no longer available.']);
-            }
-            if ($from === $position) {
-                return false;
-            }
-            $row = array_splice($rows, $from, 1);
-            array_splice($rows, $position, 0, $row);
-            foreach ($rows as $index => $preset) {
-                if ((int) $preset->getAttribute('position') !== $index) {
-                    $preset->setAttribute('position', $index);
-                    $preset->save();
-                }
-            }
-            $this->audit->record($actor, 'exhibition_organizer_preset.reordered', 'exhibition_organizer_preset', $id);
 
             return true;
         });
@@ -146,7 +94,7 @@ final class ExhibitionDirectoryService
     /** @return EloquentCollection<int, ExhibitionVenuePreset> */
     public function venues(): EloquentCollection
     {
-        return ExhibitionVenuePreset::query()->orderBy('position')->orderBy('id')->get();
+        return ExhibitionVenuePreset::query()->orderByRaw('LOWER(name)')->orderBy('name')->orderBy('id')->get();
     }
 
     public function addVenue(array $details): bool
@@ -157,9 +105,7 @@ final class ExhibitionDirectoryService
         return DB::transaction(function () use ($values, $actor): bool {
             $rows = ExhibitionVenuePreset::query()->lockForUpdate()->get();
             $this->uniqueVenueName($rows, $values['name']);
-            $venue = ExhibitionVenuePreset::query()->create([
-                ...$values, 'position' => $rows->count(),
-            ]);
+            $venue = ExhibitionVenuePreset::query()->create($values);
             $this->audit->record($actor, 'exhibition_venue_preset.created', 'exhibition_venue_preset', (int) $venue->getKey());
 
             return true;
@@ -199,7 +145,7 @@ final class ExhibitionDirectoryService
         $actor = $this->audit->requireActor();
 
         return DB::transaction(function () use ($id, $actor): bool {
-            $rows = ExhibitionVenuePreset::query()->orderBy('position')->lockForUpdate()->get();
+            $rows = ExhibitionVenuePreset::query()->lockForUpdate()->get();
             /** @var ExhibitionVenuePreset|null $venue */
             $venue = $rows->firstWhere('id', $id);
             if (! $venue instanceof ExhibitionVenuePreset) {
@@ -207,40 +153,6 @@ final class ExhibitionDirectoryService
             }
             $venue->delete();
             $this->audit->record($actor, 'exhibition_venue_preset.deleted', 'exhibition_venue_preset', $id);
-            foreach ($rows->reject(static fn (ExhibitionVenuePreset $row): bool => (int) $row->getKey() === $id)->values() as $position => $row) {
-                if ((int) $row->getAttribute('position') !== $position) {
-                    $row->setAttribute('position', $position);
-                    $row->save();
-                }
-            }
-
-            return true;
-        });
-    }
-
-    public function moveVenue(int $id, int $position): bool
-    {
-        $actor = $this->audit->requireActor();
-
-        return DB::transaction(function () use ($id, $position, $actor): bool {
-            $rows = ExhibitionVenuePreset::query()->orderBy('position')->orderBy('id')
-                ->lockForUpdate()->get()->all();
-            $from = array_search($id, array_map(static fn (ExhibitionVenuePreset $row): int => (int) $row->getKey(), $rows), true);
-            if ($from === false || $position < 0 || $position >= count($rows)) {
-                throw ValidationException::withMessages(['position' => 'The venue position is no longer available.']);
-            }
-            if ($from === $position) {
-                return false;
-            }
-            $row = array_splice($rows, $from, 1);
-            array_splice($rows, $position, 0, $row);
-            foreach ($rows as $index => $venue) {
-                if ((int) $venue->getAttribute('position') !== $index) {
-                    $venue->setAttribute('position', $index);
-                    $venue->save();
-                }
-            }
-            $this->audit->record($actor, 'exhibition_venue_preset.reordered', 'exhibition_venue_preset', $id);
 
             return true;
         });
@@ -296,7 +208,7 @@ final class ExhibitionDirectoryService
     {
         $name = trim($name);
         if ($name === '' || mb_strlen($name) > 240) {
-            throw ValidationException::withMessages(['name' => 'Enter an organizer name of at most 240 characters.']);
+            throw ValidationException::withMessages(['name' => 'Enter a name of at most 240 characters.']);
         }
 
         return $name;

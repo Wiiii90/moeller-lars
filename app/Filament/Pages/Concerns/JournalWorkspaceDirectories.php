@@ -7,8 +7,6 @@ use App\Domain\Content\ExhibitionDirectoryService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\JournalEntryEditorSchema;
-use App\Models\ExhibitionOrganizerPreset;
-use App\Models\ExhibitionVenuePreset;
 use Filament\Actions\Action;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
@@ -21,8 +19,8 @@ trait JournalWorkspaceDirectories
             ->label('Organizers')
             ->modalHeading('Exhibition organizers')
             ->modalContent(fn (): View => view(
-                'filament.resources.exhibitions.partials.organizer-presets-table',
-                ['organizers' => app(ExhibitionDirectoryService::class)->organizers()],
+                'filament.resources.exhibitions.partials.directory-table',
+                ['directoryKind' => 'Organizer', 'records' => app(ExhibitionDirectoryService::class)->organizers()],
             ));
 
         return AdminDialog::viewer($action, AdminDialogSize::Default)
@@ -35,8 +33,8 @@ trait JournalWorkspaceDirectories
             ->label('Venues')
             ->modalHeading('Exhibition venues')
             ->modalContent(fn (): View => view(
-                'filament.resources.exhibitions.partials.venue-presets-table',
-                ['venues' => app(ExhibitionDirectoryService::class)->venues()],
+                'filament.resources.exhibitions.partials.directory-table',
+                ['directoryKind' => 'Venue', 'records' => app(ExhibitionDirectoryService::class)->venues()],
             ));
 
         return AdminDialog::viewer($action, AdminDialogSize::Default)
@@ -61,27 +59,6 @@ trait JournalWorkspaceDirectories
         return AdminDialog::create($action, 'Add organizer', AdminDialogSize::Default);
     }
 
-    public function editExhibitionOrganizerAction(): Action
-    {
-        $action = Action::make('editExhibitionOrganizer')
-            ->label('Edit organizer')
-            ->modalHeading('Edit organizer')
-            ->fillForm(fn (array $arguments): array => ExhibitionOrganizerPreset::query()
-                ->findOrFail((int) ($arguments['organizer'] ?? 0))
-                ->only(['name', 'website', 'street', 'postal_code', 'city', 'country']))
-            ->schema(JournalEntryEditorSchema::directoryFields('Organizer'))
-            ->action(function (array $arguments, array $data): void {
-                $this->changeExhibitionDirectory(
-                    fn (): bool => app(ExhibitionDirectoryService::class)
-                        ->updateOrganizer((int) ($arguments['organizer'] ?? 0), $data),
-                    'Organizer updated',
-                    refreshExhibitions: true,
-                );
-            });
-
-        return AdminDialog::edit($action, AdminDialogSize::Default);
-    }
-
     public function addExhibitionVenueAction(): Action
     {
         $action = Action::make('addExhibitionVenue')
@@ -100,24 +77,23 @@ trait JournalWorkspaceDirectories
         return AdminDialog::create($action, 'Add venue', AdminDialogSize::Default);
     }
 
-    public function editExhibitionVenueAction(): Action
+    /** Every table field persists in place on change; no separate Edit dialog. */
+    public function saveExhibitionOrganizerField(int $id, string $field, ?string $value): void
     {
-        $action = Action::make('editExhibitionVenue')
-            ->label('Edit venue')
-            ->modalHeading('Edit venue')
-            ->fillForm(fn (array $arguments): array => ExhibitionVenuePreset::query()
-                ->findOrFail((int) ($arguments['venue'] ?? 0))
-                ->only(['name', 'website', 'street', 'postal_code', 'city', 'country']))
-            ->schema(JournalEntryEditorSchema::directoryFields('Venue'))
-            ->action(function (array $arguments, array $data): void {
-                $this->changeExhibitionDirectory(
-                    fn (): bool => app(ExhibitionDirectoryService::class)
-                        ->updateVenue((int) ($arguments['venue'] ?? 0), $data),
-                    'Venue updated',
-                );
-            });
+        abort_unless(in_array($field, ['name', 'street', 'postal_code', 'city', 'country', 'website'], true), 404);
+        $this->changeExhibitionDirectory(
+            fn (): bool => app(ExhibitionDirectoryService::class)->updateOrganizer($id, [$field => $value]),
+            'Organizer updated',
+        );
+    }
 
-        return AdminDialog::edit($action, AdminDialogSize::Default);
+    public function saveExhibitionVenueField(int $id, string $field, ?string $value): void
+    {
+        abort_unless(in_array($field, ['name', 'street', 'postal_code', 'city', 'country', 'website'], true), 404);
+        $this->changeExhibitionDirectory(
+            fn (): bool => app(ExhibitionDirectoryService::class)->updateVenue($id, [$field => $value]),
+            'Venue updated',
+        );
     }
 
     public function deleteExhibitionOrganizerPreset(int $id): void
@@ -136,47 +112,7 @@ trait JournalWorkspaceDirectories
         );
     }
 
-    public function sortExhibitionOrganizerPreset(int $id, int $position): void
-    {
-        $this->changeExhibitionDirectory(
-            fn (): bool => app(ExhibitionDirectoryService::class)->moveOrganizer($id, $position),
-            'Organizer order updated',
-        );
-    }
-
-    public function sortExhibitionVenuePreset(int $id, int $position): void
-    {
-        $this->changeExhibitionDirectory(
-            fn (): bool => app(ExhibitionDirectoryService::class)->moveVenue($id, $position),
-            'Venue order updated',
-        );
-    }
-
-    public function moveExhibitionOrganizerPreset(int $id, string $direction): void
-    {
-        if (! in_array($direction, ['up', 'down'], true)) {
-            return;
-        }
-        $rows = app(ExhibitionDirectoryService::class)->organizers();
-        $current = $rows->search(static fn (ExhibitionOrganizerPreset $row): bool => (int) $row->getKey() === $id);
-        if ($current !== false) {
-            $this->sortExhibitionOrganizerPreset($id, (int) $current + ($direction === 'up' ? -1 : 1));
-        }
-    }
-
-    public function moveExhibitionVenuePreset(int $id, string $direction): void
-    {
-        if (! in_array($direction, ['up', 'down'], true)) {
-            return;
-        }
-        $rows = app(ExhibitionDirectoryService::class)->venues();
-        $current = $rows->search(static fn (ExhibitionVenuePreset $row): bool => (int) $row->getKey() === $id);
-        if ($current !== false) {
-            $this->sortExhibitionVenuePreset($id, (int) $current + ($direction === 'up' ? -1 : 1));
-        }
-    }
-
-    private function changeExhibitionDirectory(\Closure $mutation, string $title, bool $refreshExhibitions = false): bool
+    private function changeExhibitionDirectory(\Closure $mutation, string $title): bool
     {
         try {
             $changed = $mutation();
@@ -187,10 +123,6 @@ trait JournalWorkspaceDirectories
         }
 
         if ($changed) {
-            if ($refreshExhibitions) {
-                $this->loadExhibitions(false);
-                $this->syncJournalPreviewFocus(forceRefresh: true);
-            }
             $this->forceRender();
             app(AdminNotifier::class)->notification(title: $title, status: 'success');
         }

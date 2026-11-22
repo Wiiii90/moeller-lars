@@ -298,7 +298,7 @@ final class ExhibitionEditorialService
     private function validatedEditorialData(array $data, ?Exhibition $entry): array
     {
         $allowed = [
-            'site_section_id', 'title', 'description', 'starts_on', 'ends_on', 'vernissage_at', 'show_vernissage',
+            'site_section_id', 'title', 'description', 'description_enabled', 'starts_on', 'ends_on', 'vernissage_at', 'show_vernissage',
             'organizer', 'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url', 'gallery_enabled', 'gallery_presentation', 'image_viewer_enabled', 'map_enabled',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
@@ -306,6 +306,7 @@ final class ExhibitionEditorialService
             'site_section_id' => ['required', 'integer', 'min:1'],
             'title' => ['required', 'string', 'max:240'],
             'description' => ['nullable', 'string'],
+            'description_enabled' => ['sometimes', 'boolean'],
             'starts_on' => ['nullable', 'string'],
             'ends_on' => ['nullable', 'string'],
             'vernissage_at' => ['nullable', 'date'],
@@ -358,6 +359,9 @@ final class ExhibitionEditorialService
 
         if (array_key_exists('show_vernissage', $payload)) {
             $payload['show_vernissage'] = (bool) $payload['show_vernissage'];
+        }
+        if (array_key_exists('description_enabled', $payload)) {
+            $payload['description_enabled'] = (bool) $payload['description_enabled'];
         }
         if (array_key_exists('gallery_enabled', $payload)) {
             $payload['gallery_enabled'] = (bool) $payload['gallery_enabled'];

@@ -100,9 +100,12 @@ trait JournalWorkspaceStage
     public function rememberNewJournalEntry(bool $refreshPreview = true): void
     {
         $form = $this->journalNewForm->getRawState();
-        if (! is_array($form) || $form === $this->newJournalFormData) {
+        if (! is_array($form)) {
             return;
         }
+        // Livewire has already written a live-bound field into the public
+        // property before invoking this callback. Equality to the property
+        // therefore cannot tell us whether the private preview is stale.
         $this->newJournalFormData = $form;
         $this->persistJournalStage();
         if ($refreshPreview) {
@@ -160,20 +163,25 @@ trait JournalWorkspaceStage
         }
     }
 
-    /** Selection is the Stage's editing target, never an intermediate draft queue. */
-    private function onJournalStageSelectionChanged(?int $preferred = null): void
+    /** Selecting more rows never reloads the editor or iframe for the first row. */
+    private function onJournalStageSelectionChanged(): void
     {
+        $ids = $this->journalStageSelectedIds();
+        $first = $ids[0] ?? null;
+        if ($first === $this->selectedJournalEntryId
+            && ($first === null || $this->journalStagePanel === 'selected')) {
+            return;
+        }
         if ($this->journalStagePanel === 'new') {
             $this->rememberNewJournalEntry(false);
+        } elseif ($this->journalStagePanel === 'selected') {
+            $this->rememberSelectedJournalEdit(false);
         }
-        $this->rememberSelectedJournalEdit(false);
-        $ids = $this->journalStageSelectedIds();
-        $next = $preferred !== null && in_array($preferred, $ids, true)
-            ? $preferred
-            : (in_array($this->selectedJournalEntryId, $ids, true)
-                ? $this->selectedJournalEntryId : ($ids[0] ?? null));
-        if ($next !== null) {
-            $this->loadSelectedJournalEntry($next);
+
+        if ($first !== null) {
+            if ($first !== $this->selectedJournalEntryId) {
+                $this->loadSelectedJournalEntry($first);
+            }
             $this->journalStagePanel = 'selected';
         } else {
             $this->selectedJournalEntryId = null;
@@ -187,7 +195,8 @@ trait JournalWorkspaceStage
 
     public function showJournalStagePanel(string $panel): void
     {
-        if (! in_array($panel, ['new', 'selected', 'settings'], true)) {
+        if (! in_array($panel, ['new', 'selected', 'settings'], true)
+            || $panel === $this->journalStagePanel) {
             return;
         }
         if ($panel === 'selected' && $this->journalStageSelectedIds() === []) {
@@ -200,11 +209,17 @@ trait JournalWorkspaceStage
         }
         $this->journalStagePanel = $panel;
         if ($panel === 'selected') {
-            $id = $this->selectedJournalEntryId ?? $this->journalStageSelectedIds()[0];
-            $this->loadSelectedJournalEntry($id);
+            $first = $this->journalStageSelectedIds()[0];
+            if ($this->selectedJournalEntryId !== $first) {
+                $this->loadSelectedJournalEntry($first);
+            }
         }
         $this->persistJournalStage();
-        $this->publishJournalEditorPreview();
+        // Settings does not alter the edited entry and therefore must not
+        // reload or resize the Public iframe.
+        if ($panel !== 'settings') {
+            $this->publishJournalEditorPreview();
+        }
     }
 
     public function navigateSelectedJournalEntry(int $direction): void
@@ -251,15 +266,20 @@ trait JournalWorkspaceStage
             $id = $this->selectedJournalEntryId;
             $form = $this->selectedJournalEdits[$id]['form'] ?? null;
         }
-        if (! is_array($form)) {
-            session()->forget('journal.stage.preview.'.$this->getId());
+        $key = 'journal.stage.preview.'.$this->getId();
+        $next = is_array($form) ? [
+            'section_id' => $this->sectionId,
+            'template' => $this->template,
+            'entry_id' => $id,
+            'form' => $form,
+        ] : null;
+        if (session()->get($key) === $next) {
+            return;
+        }
+        if ($next === null) {
+            session()->forget($key);
         } else {
-            session()->put('journal.stage.preview.'.$this->getId(), [
-                'section_id' => $this->sectionId,
-                'template' => $this->template,
-                'entry_id' => $id,
-                'form' => $form,
-            ]);
+            session()->put($key, $next);
         }
         $this->refreshJournalPreview();
     }

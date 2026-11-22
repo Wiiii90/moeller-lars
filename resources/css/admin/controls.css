@@ -959,6 +959,13 @@ button.admin-split-toggle.fi-toggle:focus-visible {
     row-gap: .3rem;
     column-gap: .65rem;
 }
+
+/* Optional Journal panel mode: an off switch hides its configuration.
+ * Enabling reveals it; the existing disclosure still controls expansion. */
+.admin-option-panel--hide-when-disabled:has(.admin-option-panel__switch .fi-toggle[aria-checked="false"]) .admin-option-panel__body {
+    display: none;
+}
+
 .admin-option-panel__body .admin-control-field {
     min-width: 0;
 }
