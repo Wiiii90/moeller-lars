@@ -17,12 +17,11 @@
 - Reference: `resources/views/filament/pages/journal-workspace.blade.php` and `resources/css/admin/task-surfaces.css` for Stage Discard (danger) and Submit (success).
 
 ## Verification and remaining gates
-- Scoped source transformations checked for unique expected old sections; no local application runtime or authenticated browser available in this connected checkout.
+- Reviewed the published change at `dev@aefc67971b430403daffe37f35d0a60c69cd87cf` against the canonical factory and shared styles. Ten focused source/lease/head invariants passed. No local application checkout or authenticated browser was available for runtime qualification.
 - Browser acceptance pending: Create with Clear, Command, danger/non-danger Confirm, Edit/Viewer preserved, light/dark, keyboard focus, narrow widths, modal close/submit behavior and overlapping hit targets.
 - The previous order remains in `docs/admin/dialogs.md` and needs a later reviewed Docs reconciliation. Avoid unrelated documentation edits on this Dev assignment.
 - No branch transfers, deployment, full test suites or application data writes authorized.
 
 ## Next
-1. Check the committed branch head, current lease and the published three-file diff.
-2. Perform targeted browser verification when an authorized running app is available.
-3. Report source change and precise remaining acceptance gate.
+1. Perform targeted browser verification when an authorized running app is available.
+2. Request a reviewed Docs reconciliation of the outdated dialog order rule after acceptance; do not change Docs as routine Dev work.
