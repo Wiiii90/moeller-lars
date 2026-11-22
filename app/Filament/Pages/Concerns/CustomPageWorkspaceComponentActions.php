@@ -192,7 +192,7 @@ trait CustomPageWorkspaceComponentActions
     {
         try {
             $data = $this->customStageNewForm->getState();
-                $changed = app(CustomPageEditorialService::class)->addBlock(
+            $changed = app(CustomPageEditorialService::class)->addBlock(
                 $this->settings(),
                 $this->componentPayload($data),
             );

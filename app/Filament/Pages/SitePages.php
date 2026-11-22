@@ -310,8 +310,6 @@ final class SitePages extends Page
         foreach ($this->stageNavigationRows() as $row) {
             if ((int) $row['id'] === $id) {
                 $this->pagesStageSelectedSectionId = $id;
-                $visible = array_column($this->filteredRows, 'id');
-                $this->selectedSectionIds = in_array($id, $visible, true) ? [$id] : [];
                 $this->syncPagesPreviewFocus();
 
                 return;
