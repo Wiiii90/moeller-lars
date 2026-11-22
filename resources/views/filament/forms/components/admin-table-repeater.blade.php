@@ -26,7 +26,9 @@
                     <col class="admin-table__col-position">
                     <col class="admin-table__col-drag">
                     <col class="admin-repeater-table__col-media">
-                    <col class="admin-repeater-table__col-controls">
+                    @unless ($isStageGallery)
+                        <col class="admin-repeater-table__col-controls">
+                    @endunless
                     <col class="admin-repeater-table__col-actions">
                 </colgroup>
             @endif

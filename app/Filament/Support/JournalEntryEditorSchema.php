@@ -77,10 +77,10 @@ final class JournalEntryEditorSchema
             $fields[] = self::exhibitionGalleryPanel(stage: true);
         } else {
             $fields[] = AdminForm::section(__('Excerpt'))
-                ->schema(AdminRichText::schema('excerpt', __('Excerpt'), 1000, allowEmbeddedMedia: false, pageAutosave: true))
+                ->schema(AdminRichText::schema('excerpt', __('Excerpt'), 1000, allowEmbeddedMedia: false, pageAutosave: true, stageCompact: true))
                 ->collapsible()->collapsed()->columnSpanFull();
             $fields[] = AdminForm::section(__('Text'))
-                ->schema(AdminRichText::schema('body', __('Text'), 50000, allowEmbeddedMedia: true, pageAutosave: true))
+                ->schema(AdminRichText::schema('body', __('Text'), 50000, allowEmbeddedMedia: true, pageAutosave: true, stageCompact: true))
                 ->collapsible()->collapsed()->columnSpanFull();
             $fields[] = self::gallerySection(stage: true)->collapsible()->collapsed()->columnSpanFull();
             if ($creating) {
