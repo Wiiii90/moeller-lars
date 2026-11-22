@@ -37,9 +37,14 @@ final class JournalMediaRenderer
             $sectionId = $isExhibition
                 ? Exhibition::query()->whereKey($ownerId)->value('site_section_id')
                 : BlogPost::query()->whereKey($ownerId)->value('site_section_id');
-            $saved = $sectionId === null ? null : JournalSetting::query()
-                ->where('site_section_id', $sectionId)->value('default_video_controls_enabled');
-            $this->videoControlsDefaultsByOwner[$ownerKey] = $saved === null ? true : (bool) $saved;
+            $settings = $sectionId === null ? null : JournalSetting::query()
+                ->where('site_section_id', $sectionId)
+                ->first(['default_video_controls_enabled', 'default_settings_enabled']);
+            // Disabling Exhibition defaults restores native video playback.
+            // Blog settings remain independent of the Exhibition defaults panel.
+            $this->videoControlsDefaultsByOwner[$ownerKey] = $settings === null
+                || ($isExhibition && ! (bool) $settings->getAttribute('default_settings_enabled'))
+                ? true : (bool) $settings->getAttribute('default_video_controls_enabled');
         }
 
         return $this->videoControlsDefaultsByOwner[$ownerKey];

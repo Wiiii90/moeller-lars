@@ -81,13 +81,21 @@ final class JournalSettingsService
     {
         $values = $this->displayValues($section);
 
+        if ($section->journalTemplate() === JournalTemplate::Blog) {
+            return [
+                'gallery_presentation' => $values['default_gallery_presentation'],
+                'image_viewer_enabled' => $values['default_image_viewer_enabled'],
+            ];
+        }
+
+        // Exhibition-specific gallery and vernissage choices do not inherit
+        // Journal-wide presentation. Disabling defaults restores basic values.
         return [
-            'gallery_presentation' => $values['default_gallery_presentation'],
-            'image_viewer_enabled' => $values['default_image_viewer_enabled'],
-            ...($section->journalTemplate() === JournalTemplate::Exhibitions ? [
-                'gallery_enabled' => $values['default_gallery_enabled'],
-                'show_vernissage' => $values['default_show_vernissage'],
-            ] : []),
+            'gallery_presentation' => 'grid',
+            'gallery_enabled' => false,
+            'show_vernissage' => false,
+            'image_viewer_enabled' => $values['default_settings_enabled']
+                ? $values['default_image_viewer_enabled'] : false,
         ];
     }
 
@@ -101,16 +109,16 @@ final class JournalSettingsService
         return DB::transaction(function () use ($section, $data): bool {
             $setting = JournalSetting::query()->where('site_section_id', $section->getKey())->lockForUpdate()->firstOrFail();
             $source = $this->valuesFor($section, $setting);
-            $options = $section->journalTemplate() === JournalTemplate::Blog
-                ? ['sequence', 'grid', 'mosaic', 'slideshow', 'carousel']
-                : ['grid', 'mosaic', 'slideshow', 'carousel'];
-            $values = Validator::make([...$source, ...array_intersect_key($data, $source)], [
-                'default_gallery_presentation' => ['required', Rule::in($options)],
+            $rules = [
                 'default_image_viewer_enabled' => ['required', 'boolean'],
-                'default_gallery_enabled' => ['required', 'boolean'],
-                'default_show_vernissage' => ['required', 'boolean'],
                 'default_video_controls_enabled' => ['required', 'boolean'],
-            ])->validate();
+            ];
+            if ($section->journalTemplate() === JournalTemplate::Blog) {
+                $rules['default_gallery_presentation'] = ['required', Rule::in(['sequence', 'grid', 'mosaic', 'slideshow', 'carousel'])];
+            } else {
+                $rules['default_settings_enabled'] = ['required', 'boolean'];
+            }
+            $values = Validator::make([...$source, ...array_intersect_key($data, $source)], $rules)->validate();
 
             $setting->fill($values);
             if (! $setting->isDirty()) {
@@ -127,15 +135,23 @@ final class JournalSettingsService
     /** @return array<string, bool|string> */
     private function valuesFor(SiteSection $section, JournalSetting $setting): array
     {
-        $presentation = trim((string) ($setting->getAttribute('default_gallery_presentation') ?? ''));
+        $values = [
+            'default_image_viewer_enabled' => (bool) $setting->getAttribute('default_image_viewer_enabled'),
+            'default_video_controls_enabled' => (bool) ($setting->getAttribute('default_video_controls_enabled') ?? true),
+        ];
+
+        if ($section->journalTemplate() === JournalTemplate::Blog) {
+            $presentation = trim((string) ($setting->getAttribute('default_gallery_presentation') ?? ''));
+
+            return [
+                'default_gallery_presentation' => $presentation !== '' ? $presentation : 'sequence',
+                ...$values,
+            ];
+        }
 
         return [
-            'default_gallery_presentation' => $presentation !== ''
-                ? $presentation : ($section->journalTemplate() === JournalTemplate::Blog ? 'sequence' : 'grid'),
-            'default_image_viewer_enabled' => (bool) $setting->getAttribute('default_image_viewer_enabled'),
-            'default_gallery_enabled' => (bool) $setting->getAttribute('default_gallery_enabled'),
-            'default_show_vernissage' => (bool) $setting->getAttribute('default_show_vernissage'),
-            'default_video_controls_enabled' => (bool) ($setting->getAttribute('default_video_controls_enabled') ?? true),
+            'default_settings_enabled' => (bool) $setting->getAttribute('default_settings_enabled'),
+            ...$values,
         ];
     }
 

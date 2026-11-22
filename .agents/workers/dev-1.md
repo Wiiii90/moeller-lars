@@ -2,6 +2,7 @@
 
 - **Working branch:** `dev`
 - **Lease:** 42 (replaced previous lease 34 on 2026-11-22)
+- **Status:** Exhibition Settings simplification source-integrated; verification and migration execution pending.
 - **Assignment:** Continue the actual Journal workstream (Blog and Exhibitions), particularly Exhibition Stage Settings and user-approved defaults simplification; propose, but do not prematurely implement, new layout/effect options.
 - **Ownership:** `JournalWorkspace`, Journal Stage and its private Public preview, exhibition-specific settings and organizer/venue catalogs. Dev Worker 5 owns shared Page/Journal template architecture, Dev Worker 4 Gallery shared surfaces, Dev Worker 8 dialog chrome; update direct consumers without creating second systems.
 
@@ -18,19 +19,19 @@
 
 ## User decisions and ongoing proposal (2026-11-22)
 
-- Remove **Default Gallery Presentation** completely from global Exhibition/Journal Settings. Gallery presentation belongs to each Exhibition, not the global defaults.
-- Group the remaining global toggles inside the **central AdminPanelControl** labelled **Activate Defaults**: **Enlarge images on click** and **Show video playback controls**. Avoid duplicated controls/parallel state.
-- Remove **Enable Exhibition Gallery** from global defaults; gallery activation remains a per-Exhibition panel.
-- **Show vernissage until it begins by default** is pending clarification: do not remove or repurpose the stored behavior until explaining its exact current semantics and the difference between event date visibility and pre-start special presentation.
+- **Implemented in source:** The Exhibition Settings Stage and dialog no longer offer Default Gallery Presentation. Blog continues to own its separate default.
+- **Implemented in source:** One central **Activate Defaults** panel holds Enlarge images on click and Show video playback controls. The new persisted switch defaults on for existing Journals and off restores native values (image viewer off, video controls on).
+- **Implemented in source:** Global Exhibition Gallery and Vernissage defaults are retired and dropped through a new forward migration; each Exhibition still owns its own switches.
+- **Vernissage semantics inspected:** The Exhibition-level visibility is shown only until its structured Vernissage timestamp (or only while upcoming for legacy text), provided explicitly enabled; Starts/Ends remain visible. The user has not chosen any change to this per-Exhibition behavior.
 - Artist wants restrained additional visual layout/effect options in Stage Settings and the corresponding settings dialog, but first proposals and template-vs-primitive boundary. No visual modes are approved for implementation yet.
 
 ## Remaining acceptance / constraints
 
 - Review New/Selected/Settings transitions and first-selected checkbox behavior, New/Selected in-memory preview, Publishing/Draft state, long text, gallery/video handling, Organizer/Venue manager inline edits and quick-create dialogs across Wide/Compact/Narrow/Minimal.
 - Verify existing migration chains on disposable fresh/incremental databases before exposing persistent data to schema changes. No unapproved migration, build, broad tests, deployment or data changes.
-- Reconcile current `dev` head before writes; preserve cross-worker ownership and canonical shared controls. Implementation and direct consumers only; test changes belong to Testing worker.
+- New forward migration `2026_11_22_160000_make_exhibition_defaults_explicit.php` must be checked on disposable fresh/incremental schemas. Reconcile `dev` before writes; test changes belong to Testing worker.
 - Pending durable docs consolidation: Journal editor lifecycle, first-selected focus, independent organizer/venue catalogs, per-Exhibition presentation and no global gallery enablement. Keep here until Docs owner synchronizes.
 
 ## Next
 
-Read current Journal Settings source, actual Stage/form entrypoints, current defaults persistence/consumers and shared `AdminPanelControl`; perform user-approved global settings simplification, then propose a small visual-settings model with explicit user choice before adding new options. Update this state for a clean next-chat takeover.
+Review published Exhibition Settings simplification in browser (Stage/dialog and new Exhibition creation), validate the forward migration, and propose restrained layout/effect presets versus per-Exhibition options before implementation; reconcile Blog media and Testing expectations. Update this state for a clean next-chat takeover.

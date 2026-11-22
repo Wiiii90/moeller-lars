@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['listing_title', 'listing_intro', 'default_gallery_presentation', 'default_image_viewer_enabled', 'default_gallery_enabled', 'default_show_vernissage', 'default_video_controls_enabled'])]
+#[Fillable(['listing_title', 'listing_intro', 'default_gallery_presentation', 'default_settings_enabled', 'default_image_viewer_enabled', 'default_video_controls_enabled'])]
 #[Guarded(['id', 'site_section_id'])]
 final class JournalSetting extends Model
 {
@@ -15,8 +15,7 @@ final class JournalSetting extends Model
     {
         return [
             'default_image_viewer_enabled' => 'boolean',
-            'default_gallery_enabled' => 'boolean',
-            'default_show_vernissage' => 'boolean',
+            'default_settings_enabled' => 'boolean',
             'default_video_controls_enabled' => 'boolean',
         ];
     }

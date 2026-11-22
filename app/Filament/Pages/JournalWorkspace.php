@@ -16,6 +16,7 @@ use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\MediaPreviewVariant;
 use App\Filament\Support\AdminRowAction;
 use App\Filament\Support\Controls\AdminControl;
+use App\Filament\Support\Controls\AdminPanelControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Pages\Concerns\JournalWorkspaceStage;
@@ -581,30 +582,40 @@ final class JournalWorkspace extends Page
         if (! $stage) {
             $fields[] = AdminControl::text('title', 'Journal title')->required()->maxLength(160)->columnSpanFull();
         }
-        $galleryOptions = $this->journalTemplate() === JournalTemplate::Blog
-            ? ['sequence' => 'Media sequence', 'grid' => 'Grid', 'mosaic' => 'Mosaic', 'slideshow' => 'Slideshow', 'carousel' => 'Carousel']
-            : ['grid' => 'Grid', 'mosaic' => 'Mosaic', 'slideshow' => 'Slideshow', 'carousel' => 'Carousel'];
-
-        $gallery = AdminControl::select('default_gallery_presentation')
-            ->label('Default gallery presentation')->options($galleryOptions)->required();
-        $viewer = AdminControl::toggle('default_image_viewer_enabled', 'Enlarge images on click by default');
-        $videoControls = AdminControl::toggle('default_video_controls_enabled', 'Show video playback controls by default');
-        $galleryEnabled = AdminControl::toggle('default_gallery_enabled', 'Enable exhibition gallery by default');
-        $vernissage = AdminControl::toggle('default_show_vernissage', 'Show vernissage until it begins by default');
-
+        $viewer = AdminControl::toggle('default_image_viewer_enabled', 'Enlarge images on click');
+        $videoControls = AdminControl::toggle('default_video_controls_enabled', 'Show video playback controls');
         if ($stage) {
-            $gallery->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_gallery_presentation', $state));
             $viewer->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_image_viewer_enabled', (bool) $state));
             $videoControls->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_video_controls_enabled', (bool) $state));
-            $galleryEnabled->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_gallery_enabled', (bool) $state));
-            $vernissage->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_show_vernissage', (bool) $state));
         }
-        $fields[] = $gallery->columnSpanFull();
-        $fields[] = $viewer->columnSpanFull();
-        $fields[] = $videoControls->columnSpanFull();
+
         if ($this->journalTemplate() === JournalTemplate::Exhibitions) {
-            $fields[] = $galleryEnabled->columnSpanFull();
-            $fields[] = $vernissage->columnSpanFull();
+            $fields[] = AdminPanelControl::make(
+                'Activate Defaults',
+                'default_settings_enabled',
+                [$viewer, $videoControls],
+                $stage ? fn (mixed $state) => $this->updateJournalStageSetting('default_settings_enabled', (bool) $state) : null,
+                collapsible: true,
+                bodyColumns: ['default' => 1],
+                hideWhenDisabled: true,
+            );
+        } else {
+            // The Blog's separate media-sequence default is unchanged.
+            $gallery = AdminControl::select('default_gallery_presentation')
+                ->label('Default gallery presentation')
+                ->options([
+                    'sequence' => 'Media sequence',
+                    'grid' => 'Grid',
+                    'mosaic' => 'Mosaic',
+                    'slideshow' => 'Slideshow',
+                    'carousel' => 'Carousel',
+                ])->required();
+            if ($stage) {
+                $gallery->live()->afterStateUpdated(fn (mixed $state) => $this->updateJournalStageSetting('default_gallery_presentation', $state));
+            }
+            $fields[] = $gallery->columnSpanFull();
+            $fields[] = $viewer->columnSpanFull();
+            $fields[] = $videoControls->columnSpanFull();
         }
 
         return Grid::make(['default' => 1])->schema($fields);
