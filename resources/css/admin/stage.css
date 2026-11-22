@@ -688,11 +688,13 @@
 
 /* Shared direct-manipulation Stage panels for Pages and Custom Pages.
    The Stage changes the canonical record; detailed dialogs remain in tables. */
+.admin-stage-tabs--two,
 .admin-stage-tabs--three {
-    --admin-stage-tabs-columns: 3;
     display: grid;
     width: 100%;
 }
+.admin-stage-tabs--two { --admin-stage-tabs-columns: 2; }
+.admin-stage-tabs--three { --admin-stage-tabs-columns: 3; }
 .admin-stage-workspace {
     display: flex;
     flex: 1 1 auto;
@@ -739,77 +741,4 @@
     outline-offset: 1px;
 }
 
-/* Pages Stage edits the canonical navigation tree, not a second table. */
-.admin-stage-workspace__field > textarea {
-    min-height: 6rem;
-    resize: vertical;
-    font: inherit;
-}
-
-.pages-stage__navigation {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    scrollbar-width: none;
-    padding: .55rem .2rem .7rem 0;
-}
-.pages-stage__navigation::-webkit-scrollbar {
-    display: none;
-}
-.pages-stage__menu,
-.pages-stage__submenu {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 1.5rem;
-    gap: .25rem;
-}
-.pages-stage__root { min-width: 0; }
-.pages-stage__entry {
-    display: flex;
-    align-items: center;
-    min-width: 0;
-    gap: .4rem;
-    min-height: 2.35rem;
-    border: 1px solid transparent;
-    border-radius: .2rem;
-    padding: .2rem;
-}
-.pages-stage__entry:hover,
-.pages-stage__entry:focus-within {
-    background: var(--admin-surface-subtle, transparent);
-}
-.pages-stage__entry.is-selected { border-color: var(--admin-accent); }
-.pages-stage__label {
-    display: flex;
-    flex: 1 1 auto;
-    align-items: center;
-    justify-content: space-between;
-    min-width: 0;
-    padding: .35rem .25rem;
-    font-size: .76rem;
-    text-align: start;
-}
-.pages-stage__label span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.pages-stage__unpublished { width: .9rem; height: .9rem; flex: none; opacity: .65; }
-.pages-stage__submenu {
-    margin-inline-start: 1.35rem;
-    padding-inline-start: .5rem;
-    border-inline-start: 1px solid var(--admin-line);
-}
-.pages-stage__submenu--empty {
-    border: 1px dashed var(--admin-line);
-    min-height: 1.7rem;
-    border-radius: .2rem;
-}
-.pages-stage__child-count {
-    padding-inline: .25rem;
-    color: var(--admin-muted);
-    font-size: .7rem;
-}
 .pages-stage__toggle { display: flex; align-items: center; gap: .55rem; font-size: .75rem; }

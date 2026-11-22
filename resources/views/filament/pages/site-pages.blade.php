@@ -37,8 +37,8 @@
             aria-label="Pages editor and live public preview">
             <div class="admin-visual-stage__pane admin-visual-stage__editor-pane">
                 <h2 class="admin-section__kicker admin-visual-stage__heading">{{ __('Editor') }}</h2>
-                <div class="admin-stage-tabs admin-stage-tabs--three" role="tablist" aria-label="Pages editing mode">
-                    @foreach (['create' => 'New', 'navigation' => 'Navigation', 'settings' => 'Settings'] as $panel => $label)
+                <div class="admin-stage-tabs admin-stage-tabs--two" role="tablist" aria-label="Pages editing mode">
+                    @foreach (['create' => 'New', 'selected' => 'Selected'] as $panel => $label)
                         <button class="admin-action {{ $pagesStagePanel === $panel ? 'is-primary' : '' }}"
                             type="button" role="tab" aria-selected="{{ $pagesStagePanel === $panel ? 'true' : 'false' }}"
                             wire:click="showPagesStagePanel('{{ $panel }}')">{{ __($label) }}</button>
@@ -63,122 +63,47 @@
                             </button>
                         </div>
                     </div>
-                @elseif ($pagesStagePanel === 'navigation')
-                    @php($stageSelected = $this->stageSelectedPage())
-                    <nav class="pages-stage__navigation admin-visual-stage__field-scroll"
-                        aria-label="Visual website navigation editor">
-                        <div class="pages-stage__menu" wire:sort="sortStageSection"
-                            wire:sort:group="pages-stage-navigation" wire:sort:group-id="root">
-                            @foreach ($stageNavigationSections as $section)
-                                <div class="pages-stage__root" wire:key="stage-page-{{ $section['id'] }}"
-                                    wire:sort:item="{{ $section['id'] }}">
-                                    <div class="pages-stage__entry {{ ($stageSelected['id'] ?? null) === $section['id'] ? 'is-selected' : '' }}">
-                                        <button class="admin-drag-handle" type="button"
-                                            @unless ($section['is_home']) wire:sort:handle @endunless
-                                            @disabled($section['is_home'])
-                                            aria-label="Move {{ $section['title'] }}">
-                                            <x-filament::icon icon="heroicon-m-bars-3" />
-                                        </button>
-                                        <button class="pages-stage__label" type="button"
-                                            wire:click="focusStagePage({{ $section['id'] }})">
-                                            <span>{{ $section['navigation_label'] ?: $section['title'] }}</span>
-                                            @if ($section['state'] !== 'published')
-                                                <x-filament::icon icon="heroicon-m-eye-slash" class="pages-stage__unpublished" />
-                                            @endif
-                                        </button>
-                                        @if ($section['children'] !== [])
-                                            <span class="pages-stage__child-count">{{ count($section['children']) }}</span>
-                                        @endif
-                                    </div>
-                                    @unless ($section['is_home'])
-                                        <div class="pages-stage__submenu{{ $section['children'] === [] ? ' pages-stage__submenu--empty' : '' }}"
-                                            wire:sort="sortStageSection"
-                                            wire:sort:group="pages-stage-navigation"
-                                            wire:sort:group-id="{{ $section['id'] }}"
-                                            @if ($section['children'] === []) wire:sort:config="{ emptyInsertThreshold: 0 }" @endif>
-                                            @foreach ($section['children'] as $child)
-                                                <div class="pages-stage__entry pages-stage__entry--child {{ ($stageSelected['id'] ?? null) === $child['id'] ? 'is-selected' : '' }}"
-                                                    wire:key="stage-child-{{ $child['id'] }}"
-                                                    wire:sort:item="{{ $child['id'] }}">
-                                                    <button class="admin-drag-handle" type="button"
-                                                        wire:sort:handle aria-label="Move {{ $child['title'] }}">
-                                                        <x-filament::icon icon="heroicon-m-bars-3" />
-                                                    </button>
-                                                    <button class="pages-stage__label" type="button"
-                                                        wire:click="focusStagePage({{ $child['id'] }})">
-                                                        <span>{{ $child['navigation_label'] ?: $child['title'] }}</span>
-                                                        @if ($child['state'] !== 'published')
-                                                            <x-filament::icon icon="heroicon-m-eye-slash" class="pages-stage__unpublished" />
-                                                        @endif
-                                                    </button>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @endunless
-                                </div>
-                            @endforeach
-                        </div>
-                    </nav>
                 @else
                     @php($stageSelected = $this->stageSelectedPage())
-                    <div class="admin-stage-workspace admin-visual-stage__field-scroll" aria-label="Page and navigation settings">
-                        @if ($stageSelected !== null)
+                    <div class="admin-stage-workspace admin-visual-stage__field-scroll" aria-label="Selected page appearance">
+                        @if ($stageSelected === null)
+                            <x-admin.empty-state title="Select a page" :minimal="true" />
+                        @elseif ($stageSelected['type'] === \App\Domain\Content\SiteSectionType::NavigationNode->value)
+                            <x-admin.empty-state title="Navigation node" :minimal="true" />
+                        @else
                             <div class="admin-stage-workspace__group">
                                 <strong>{{ $stageSelected['navigation_label'] ?: $stageSelected['title'] }}</strong>
-                                @if ($stageSelected['is_home'])
-                                    <label class="pages-stage__toggle">
-                                        <input type="checkbox" @checked($stageSelected['show_in_navigation'])
-                                            wire:change="setPagesStageHomeNavigation($event.target.checked)">
-                                        {{ __('Show Home in navigation') }}
-                                    </label>
-                                @else
+                                <label class="pages-stage__toggle">
+                                    <input type="checkbox" @checked($stageSelected['heading']['content_heading_enabled'])
+                                        wire:change="setPagesStageHeading({{ $stageSelected['id'] }}, 'content_heading_enabled', $event.target.checked)">
+                                    {{ __('Show page heading') }}
+                                </label>
+                                @if ($stageSelected['heading']['content_heading_enabled'])
                                     <label class="admin-stage-workspace__field">
-                                        <span>{{ __('Navigation parent') }}</span>
-                                        <select wire:change="setPagesStageParent({{ $stageSelected['id'] }}, $event.target.value)">
-                                            <option value="" @selected($stageSelected['parent_id'] === null)>{{ __('Top level') }}</option>
-                                            @foreach ($parentOptions as $id => $label)
-                                                @continue((int) $id === (int) $stageSelected['id'])
-                                                <option value="{{ $id }}" @selected((int) $stageSelected['parent_id'] === (int) $id)>{{ $label }}</option>
+                                        <span>{{ __('Heading text') }}</span>
+                                        <input type="text" maxlength="160"
+                                            value="{{ $stageSelected['heading']['content_heading_override'] }}"
+                                            wire:change="setPagesStageHeading({{ $stageSelected['id'] }}, 'content_heading_override', $event.target.value)"
+                                            placeholder="{{ __('Use page name') }}">
+                                    </label>
+                                    <label class="admin-stage-workspace__field">
+                                        <span>{{ __('Alignment') }}</span>
+                                        <select wire:change="setPagesStageHeading({{ $stageSelected['id'] }}, 'content_heading_alignment', $event.target.value)">
+                                            @foreach (\App\Domain\Content\SitePageHeading::ALIGNMENTS as $value => $label)
+                                                <option value="{{ $value }}" @selected($stageSelected['heading']['content_heading_alignment'] === $value)>{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                    <label class="admin-stage-workspace__field">
+                                        <span>{{ __('Divider') }}</span>
+                                        <select wire:change="setPagesStageHeading({{ $stageSelected['id'] }}, 'content_heading_divider', $event.target.value)">
+                                            @foreach (\App\Domain\Content\SitePageHeading::DIVIDERS as $value => $label)
+                                                <option value="{{ $value }}" @selected($stageSelected['heading']['content_heading_divider'] === $value)>{{ $label }}</option>
                                             @endforeach
                                         </select>
                                     </label>
                                 @endif
                             </div>
-                            @if ($stageSelected['type'] !== \App\Domain\Content\SiteSectionType::NavigationNode->value)
-                                <div class="admin-stage-workspace__group">
-                                    <strong>{{ __('Page heading') }}</strong>
-                                    <label class="pages-stage__toggle">
-                                        <input type="checkbox" @checked($stageSelected['heading']['content_heading_enabled'])
-                                            wire:change="setPagesStageHeading({{ $stageSelected['id'] }}, 'content_heading_enabled', $event.target.checked)">
-                                        {{ __('Show page heading') }}
-                                    </label>
-                                    @if ($stageSelected['heading']['content_heading_enabled'])
-                                        <label class="admin-stage-workspace__field">
-                                            <span>{{ __('Heading text') }}</span>
-                                            <input type="text" maxlength="160"
-                                                value="{{ $stageSelected['heading']['content_heading_override'] }}"
-                                                wire:change="setPagesStageHeading({{ $stageSelected['id'] }}, 'content_heading_override', $event.target.value)"
-                                                placeholder="{{ __('Use page name') }}">
-                                        </label>
-                                        <label class="admin-stage-workspace__field">
-                                            <span>{{ __('Alignment') }}</span>
-                                            <select wire:change="setPagesStageHeading({{ $stageSelected['id'] }}, 'content_heading_alignment', $event.target.value)">
-                                                @foreach (\App\Domain\Content\SitePageHeading::ALIGNMENTS as $value => $label)
-                                                    <option value="{{ $value }}" @selected($stageSelected['heading']['content_heading_alignment'] === $value)>{{ $label }}</option>
-                                                @endforeach
-                                            </select>
-                                        </label>
-                                        <label class="admin-stage-workspace__field">
-                                            <span>{{ __('Divider') }}</span>
-                                            <select wire:change="setPagesStageHeading({{ $stageSelected['id'] }}, 'content_heading_divider', $event.target.value)">
-                                                @foreach (\App\Domain\Content\SitePageHeading::DIVIDERS as $value => $label)
-                                                    <option value="{{ $value }}" @selected($stageSelected['heading']['content_heading_divider'] === $value)>{{ $label }}</option>
-                                                @endforeach
-                                            </select>
-                                        </label>
-                                    @endif
-                                </div>
-                            @endif
                         @endif
                     </div>
                 @endif

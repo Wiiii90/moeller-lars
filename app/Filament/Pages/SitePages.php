@@ -19,7 +19,6 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\HierarchyParentField;
 use App\Filament\Support\SiteNodePresentation;
-use App\Filament\Support\PagesSettingsDialog;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
@@ -91,7 +90,7 @@ final class SitePages extends Page
     /** Pages reuses the Journal/Gallery Preview without storing a second page projection. */
     public bool $pagesPreviewAutoFocus = true;
 
-    public string $pagesStagePanel = 'navigation';
+    public string $pagesStagePanel = 'selected';
 
     public ?int $pagesStageSelectedSectionId = null;
 
@@ -276,7 +275,7 @@ final class SitePages extends Page
         }
     }
 
-    /** The menu canvas uses the same page projection as the table, without its filters. */
+    /** The canonical full page projection supports Preview and selected-page editing. */
     public function stageNavigationRows(): array
     {
         return $this->flattenGroups($this->stageNavigationSections);
@@ -300,20 +299,8 @@ final class SitePages extends Page
 
     public function showPagesStagePanel(string $panel): void
     {
-        if (in_array($panel, ['create', 'navigation', 'settings'], true)) {
+        if (in_array($panel, ['create', 'selected'], true)) {
             $this->pagesStagePanel = $panel;
-        }
-    }
-
-    public function focusStagePage(int $id): void
-    {
-        foreach ($this->stageNavigationRows() as $row) {
-            if ((int) $row['id'] === $id) {
-                $this->pagesStageSelectedSectionId = $id;
-                $this->syncPagesPreviewFocus();
-
-                return;
-            }
         }
     }
 
@@ -387,39 +374,10 @@ final class SitePages extends Page
             $this->pagesStageSelectedSectionId = $id;
             $this->selectedSectionIds = [];
             $this->syncPagesPreviewFocus();
-            $this->pagesStagePanel = 'navigation';
+            $this->pagesStagePanel = 'selected';
             app(AdminNotifier::class)->notification(title: $section->nodeType()->label().' added', status: 'success');
         } catch (ValidationException $exception) {
             $this->validationNotification('Page was not added', $exception);
-        }
-    }
-
-    public function setPagesStageParent(int $id, string $parent): void
-    {
-        $page = $this->stageSelectedPage();
-        if ($page === null || (int) $page['id'] !== $id || $page['is_home']) {
-            return;
-        }
-
-        $this->placeSortedSection($id, PHP_INT_MAX, $parent === '' ? 'root' : $parent, true);
-    }
-
-    public function setPagesStageHomeNavigation(bool $visible): void
-    {
-        $page = $this->stageSelectedPage();
-        if ($page === null || ! $page['is_home']) {
-            return;
-        }
-        try {
-            $changed = app(SiteSectionEditorialService::class)->updateHomeNavigationVisibility(
-                SiteSection::query()->findOrFail((int) $page['id']), $visible,
-            );
-            $this->loadSections(navigationChanged: $changed);
-            if ($changed) {
-                app(AdminNotifier::class)->notification(title: 'Home navigation updated', status: 'success');
-            }
-        } catch (ValidationException $exception) {
-            $this->validationNotification('Home navigation unchanged', $exception);
         }
     }
 
@@ -481,11 +439,6 @@ final class SitePages extends Page
     public function sortSection(int $sectionId, int $position, int|string|null $groupId = null): void
     {
         $this->placeSortedSection($sectionId, $position, $groupId, false);
-    }
-
-    public function sortStageSection(int $sectionId, int $position, int|string|null $groupId = null): void
-    {
-        $this->placeSortedSection($sectionId, $position, $groupId, true);
     }
 
     private function placeSortedSection(int $sectionId, int $position, int|string|null $groupId, bool $fromStage): void
