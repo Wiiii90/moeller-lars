@@ -206,6 +206,7 @@ trait CustomPageWorkspaceComponentActions
             'type' => $type,
             'publication_state' => 'unpublished',
             'title' => $this->stageQuickTitle,
+            'body' => $this->stageQuickBody,
             'layout_area_id' => $this->stageQuickAreaId !== '' ? $this->stageQuickAreaId : null,
             'layout_mode' => 'rows',
             'columns' => 2,
@@ -222,6 +223,7 @@ trait CustomPageWorkspaceComponentActions
             }
             $index = count($this->settings()->fresh()->components()) - 1;
             $this->stageQuickTitle = '';
+            $this->stageQuickBody = '';
             $this->customStagePanel = 'layout';
             $this->reloadWorkspace();
             $this->focusStageComponent($index, $type);

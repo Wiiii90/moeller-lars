@@ -43,10 +43,94 @@ final class CustomPageEditorialService
                 throw ValidationException::withMessages(['component' => 'The component type changed while it was being edited.']);
             }
 
-            $blocks[$index] = $block;
+            if ($expectedType === 'layout') {
+                $blocks = $this->reshapeLayout($blocks, $index, $block);
+            } else {
+                $blocks[$index] = $block;
+            }
 
             return $this->persist($fresh, $blocks);
         });
+    }
+
+    /**
+     * Reposition existing areas by their row/column coordinates rather than
+     * their flat indices when a layout is resized. Every content reference
+     * remains valid, including when several former cells merge.
+     *
+     * @param list<array<string,mixed>> $blocks
+     * @param array<string,mixed> $requested
+     * @return list<array<string,mixed>>
+     */
+    private function reshapeLayout(array $blocks, int $index, array $requested): array
+    {
+        $original = $blocks[$index];
+        $oldColumns = (int) $original['columns'];
+        $oldAreas = $original['areas'];
+        $newColumns = (int) ($requested['columns'] ?? $oldColumns);
+        $newRows = (int) ($requested['rows'] ?? $original['rows']);
+        $replacement = CustomPageSetting::layoutBlock(
+            CustomPageSetting::componentPublished($requested),
+            $newColumns,
+            $newRows,
+            (string) ($requested['gap'] ?? $original['gap']),
+            null,
+            (string) ($requested['column_layout'] ?? $original['column_layout'] ?? 'equal'),
+            (string) ($requested['layout_mode'] ?? $original['layout_mode'] ?? 'rows'),
+        );
+        $replacement['id'] = $original['id'];
+        $updated = array_replace($requested, $replacement);
+        $newAreas = $replacement['areas'];
+        $oldRows = (int) $original['rows'];
+        $submittedAreas = is_array($requested['areas'] ?? null) ? $requested['areas'] : [];
+
+        // Preserve stable IDs and per-area styling at matching coordinates.
+        for ($row = 0; $row < $newRows; $row++) {
+            for ($column = 0; $column < $newColumns; $column++) {
+                if ($row >= $oldRows || $column >= $oldColumns) {
+                    continue;
+                }
+                $oldIndex = ($row * $oldColumns) + $column;
+                $newIndex = ($row * $newColumns) + $column;
+                $newAreas[$newIndex] = $oldAreas[$oldIndex];
+                foreach ($submittedAreas as $candidate) {
+                    if (is_array($candidate) && ($candidate['id'] ?? null) === $oldAreas[$oldIndex]['id']) {
+                        $newAreas[$newIndex]['border'] = $candidate['border'] ?? $oldAreas[$oldIndex]['border'];
+                        break;
+                    }
+                }
+            }
+        }
+
+        $survivingIds = array_fill_keys(array_column($newAreas, 'id'), true);
+        $redirects = [];
+        foreach ($oldAreas as $oldIndex => $area) {
+            if (isset($survivingIds[$area['id']])) {
+                continue;
+            }
+            $oldRow = intdiv($oldIndex, $oldColumns);
+            $oldColumn = $oldIndex % $oldColumns;
+            $newRow = min($oldRow, $newRows - 1);
+            $newColumn = min($oldColumn, $newColumns - 1);
+            $target = ($newRow * $newColumns) + $newColumn;
+            $redirects[$area['id']] = $newAreas[$target]['id'];
+            if (($newAreas[$target]['border'] ?? 'none') === 'none'
+                && ($area['border'] ?? 'none') !== 'none') {
+                $newAreas[$target]['border'] = $area['border'];
+            }
+        }
+
+        foreach ($blocks as &$member) {
+            $areaId = $member['layout_area_id'] ?? null;
+            if (is_string($areaId) && isset($redirects[$areaId])) {
+                $member['layout_area_id'] = $redirects[$areaId];
+            }
+        }
+        unset($member);
+        $updated['areas'] = $newAreas;
+        $blocks[$index] = $updated;
+
+        return $blocks;
     }
 
     private function assertUnchangedBlock(array $block, ?array $expectedBlock): void

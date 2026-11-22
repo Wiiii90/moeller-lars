@@ -718,7 +718,7 @@
     color: var(--admin-text);
     font-size: .7rem;
 }
-.admin-stage-workspace__field > :is(input, select) {
+.admin-stage-workspace__field > :is(input, select, textarea) {
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
@@ -729,12 +729,18 @@
     background: var(--admin-surface);
     color: var(--admin-text);
 }
-.admin-stage-workspace__field > :is(input, select):focus-visible {
+.admin-stage-workspace__field > :is(input, select, textarea):focus-visible {
     outline: 2px solid var(--admin-accent);
     outline-offset: 1px;
 }
 
 /* Pages Stage edits the canonical navigation tree, not a second table. */
+.admin-stage-workspace__field > textarea {
+    min-height: 6rem;
+    resize: vertical;
+    font: inherit;
+}
+
 .pages-stage__navigation {
     flex: 1 1 auto;
     min-height: 0;

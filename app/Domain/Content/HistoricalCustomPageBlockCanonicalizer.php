@@ -14,6 +14,8 @@ final class HistoricalCustomPageBlockCanonicalizer
             return $blocks;
         }
 
+        // Keep historical stable-ID seed strings across the visible Layout rename:
+        // previously materialized checkpoints may already reference these IDs.
         $normalized = [];
         foreach ($blocks as $blockIndex => $block) {
             if (! is_array($block)) {
@@ -29,7 +31,7 @@ final class HistoricalCustomPageBlockCanonicalizer
             }
 
             if (($block['type'] ?? null) === 'divider') {
-                $layoutId = self::stableId('divider-layout', $identity);
+                $layoutId = self::stableId('divider-grid', $identity);
                 $areaId = self::stableId('divider-area', $identity);
                 $layout = [
                     'type' => 'layout',
@@ -66,7 +68,7 @@ final class HistoricalCustomPageBlockCanonicalizer
                     'type' => 'layout',
                     'layout_mode' => 'rows',
                     'published' => ($block['published'] ?? true) === true,
-                    'id' => self::stableId('media-layout', $identity),
+                    'id' => self::stableId('media-grid', $identity),
                     'columns' => 2,
                     'column_layout' => $mediaRight ? 'left-wide' : 'right-wide',
                     'rows' => 1,

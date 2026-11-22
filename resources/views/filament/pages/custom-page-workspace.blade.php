@@ -63,6 +63,12 @@
                                 <input type="text" maxlength="160" wire:model="stageQuickTitle" placeholder="{{ __('Optional title') }}">
                             </label>
                         @endif
+                        @if ($stageQuickType === 'text')
+                            <label class="admin-stage-workspace__field">
+                                <span>{{ __('Text') }}</span>
+                                <textarea wire:model="stageQuickBody" rows="5" aria-label="Quick Rich Text content"></textarea>
+                            </label>
+                        @endif
                         <label class="admin-stage-workspace__field">
                             <span>{{ __('Place in') }}</span>
                             <select wire:model="stageQuickAreaId" aria-label="Component layout destination">

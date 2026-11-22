@@ -87,6 +87,8 @@ final class SitePages extends Page
 
     public string $pagesStagePanel = 'navigation';
 
+    public ?int $pagesStageSelectedSectionId = null;
+
     public bool $stagePagesAutoPublish = false;
 
     public string $stageNewGalleryTemplate = 'standard';
@@ -207,6 +209,8 @@ final class SitePages extends Page
 
     public function updatedSelectedSectionIds(): void
     {
+        $ids = $this->selectedIds();
+        $this->pagesStageSelectedSectionId = count($ids) === 1 ? $ids[0] : null;
         $this->syncPagesPreviewFocus();
     }
 
@@ -241,7 +245,8 @@ final class SitePages extends Page
 
     private function syncPagesPreviewFocus(bool $forceRefresh = false): void
     {
-        $selectedIds = $this->selectedIds();
+        $selectedIds = $this->pagesStageSelectedSectionId === null
+            ? $this->selectedIds() : [$this->pagesStageSelectedSectionId];
         $previewableIds = array_values(array_map(
             static fn (array $row): int => (int) $row['id'],
             array_filter($this->stageNavigationRows(), static fn (array $row): bool =>
@@ -274,7 +279,8 @@ final class SitePages extends Page
 
     public function stageSelectedPage(): ?array
     {
-        $selected = $this->selectedIds();
+        $selected = $this->pagesStageSelectedSectionId === null
+            ? $this->selectedIds() : [$this->pagesStageSelectedSectionId];
         if (count($selected) !== 1) {
             return null;
         }
@@ -298,7 +304,9 @@ final class SitePages extends Page
     {
         foreach ($this->stageNavigationRows() as $row) {
             if ((int) $row['id'] === $id) {
-                $this->selectedSectionIds = [$id];
+                $this->pagesStageSelectedSectionId = $id;
+                $visible = array_column($this->filteredRows, 'id');
+                $this->selectedSectionIds = in_array($id, $visible, true) ? [$id] : [];
                 $this->syncPagesPreviewFocus();
 
                 return;
@@ -327,7 +335,10 @@ final class SitePages extends Page
             $this->newPageParent = '';
             $this->pageNumber = 1;
             $this->loadSections(navigationChanged: true);
-            $this->selectedSectionIds = [(int) $section->getKey()];
+            $id = (int) $section->getKey();
+            $this->pagesStageSelectedSectionId = $id;
+            $visible = array_column($this->filteredRows, 'id');
+            $this->selectedSectionIds = in_array($id, $visible, true) ? [$id] : [];
             $this->syncPagesPreviewFocus();
             $this->pagesStagePanel = 'navigation';
             app(AdminNotifier::class)->notification(title: $section->nodeType()->label().' added', status: 'success');

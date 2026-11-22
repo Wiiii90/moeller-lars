@@ -74,6 +74,8 @@ final class CustomPageWorkspace extends Page
 
     public string $stageQuickTitle = '';
 
+    public string $stageQuickBody = '';
+
     public string $stageQuickAreaId = '';
 
     public ?string $stageSelectedLayoutId = null;
