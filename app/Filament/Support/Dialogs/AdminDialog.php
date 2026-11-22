@@ -121,7 +121,7 @@ final class AdminDialog
         bool $danger = false,
         bool|Closure $condition = true,
     ): Action {
-        $submitClass = 'admin-dialog__header-action '.($danger ? 'is-danger' : 'is-primary');
+        $submitClass = 'admin-dialog__header-action '.($danger ? 'is-danger' : 'is-success');
 
         return self::base($action, AdminDialogType::Confirm, AdminDialogSize::Small)
             // Confirm is an application semantic, not Filament's confirmation mode.
@@ -133,7 +133,7 @@ final class AdminDialog
                 ->label($submitLabel)
                 ->icon(AdminIcon::DialogSubmit->value)
                 ->iconButton()
-                ->color($danger ? 'danger' : 'gray')
+                ->color($danger ? 'danger' : 'success')
                 ->extraAttributes(['class' => $submitClass]))
             ->modalCancelAction(false);
     }
@@ -151,7 +151,8 @@ final class AdminDialog
                 ->label($submitLabel)
                 ->icon(($submitIcon ?? AdminIcon::DialogSubmit)->value)
                 ->iconButton()
-                ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
+                ->color('success')
+                ->extraAttributes(['class' => 'admin-dialog__header-action is-success']))
             ->modalCancelAction(false);
 
         if ($type === AdminDialogType::Create) {

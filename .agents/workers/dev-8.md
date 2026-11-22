@@ -2,18 +2,27 @@
 
 **Branch:** `dev`
 **Lease:** 40
-**State:** Active; scoped implementation assigned, source orientation pending.
+**State:** Active; scoped source changes integrated, runtime and browser review pending.
 
-## Assignment
-- Restore the native close X to the upper-right corner of applicable Admin Create/Command form dialogs where the Submit action currently occupies that spot; exchange positions only where needed, leaving already-correct dialogs unchanged.
-- Review the destructive meaning of the X versus form-clear/discard, and align Submit/Discard visual styling with the accepted Journal/Gallery Stage action grammar without changing unrelated dialog behavior.
-- Own only the shared dialog action presentation and its direct affected consumers; coordinate with workers owning individual feature forms. No deployment, branch promotion, broad tests, or unrelated redesign.
+## Assignment and accepted outcome
+- Keep the native Filament close X in the rightmost upper-header slot. In submitted Create, Command and Confirm dialogs, Submit is immediately to its left; Create's optional Clear stays farther left.
+- In Create/Command draft forms, the X signals discarded unsaved changes with the existing danger treatment. Normal Submit uses the Stage's success-green semantics. Danger Confirm submit stays red; non-danger Confirm submit is green. Edit/Viewer X and contextual actions stay unchanged.
+- Scope is the shared dialog action factory, header chrome, focus styling and direct submitted-dialog consumers, not feature-local form schemas or unrelated stages.
 
-## Evidence
-- Current baseline at activation: `9d3ce590d6215849fd88721f775592a7c9e52f4a`.
-- Registration establishes ownership only; source and rendered behavior have not yet been verified.
+## Current source
+- Starting implementation baseline: `a1329ad0f4d10fd071d9939f49970cb3cc6a7605`.
+- `app/Filament/Support/Dialogs/AdminDialog.php`: source-level action color roles.
+- `resources/css/admin/dialog-contract.css`: native X/Submit placement and shared semantic action variables.
+- `resources/css/admin/dialog-interactions.css`: keyboard-visible focus inherits the action's semantic color without reintroducing a pointer-hover backdrop.
+- Reference: `resources/views/filament/pages/journal-workspace.blade.php` and `resources/css/admin/task-surfaces.css` for Stage Discard (danger) and Submit (success).
+
+## Verification and remaining gates
+- Scoped source transformations checked for unique expected old sections; no local application runtime or authenticated browser available in this connected checkout.
+- Browser acceptance pending: Create with Clear, Command, danger/non-danger Confirm, Edit/Viewer preserved, light/dark, keyboard focus, narrow widths, modal close/submit behavior and overlapping hit targets.
+- The previous order remains in `docs/admin/dialogs.md` and needs a later reviewed Docs reconciliation. Avoid unrelated documentation edits on this Dev assignment.
+- No branch transfers, deployment, full test suites or application data writes authorized.
 
 ## Next
-1. Inspect canonical AdminDialog/Filament header action owner and active Create/Edit/Command direct consumers on current `dev`.
-2. Implement scoped position/style adjustments at the existing shared owner; inspect focused diff and safe checks.
-3. Report precise verification limits and any browser acceptance still outstanding.
+1. Check the committed branch head, current lease and the published three-file diff.
+2. Perform targeted browser verification when an authorized running app is available.
+3. Report source change and precise remaining acceptance gate.

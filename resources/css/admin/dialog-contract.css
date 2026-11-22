@@ -259,7 +259,7 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
  * Filament owns modal state, focus, Escape and the native close button. We only
  * normalize the visual rail. Context actions stay native Filament Actions in
  * the modal footer and are lifted into the header. All explicitly submitted
- * Create, Command and Confirm tasks place Submit after the native X.
+ * Create, Command and Confirm tasks place Submit before the native X.
  * Filament still owns actual submission and dismissal.
  */
 .admin-dialog--header-actions {
@@ -414,39 +414,14 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
     inset-inline-end: var(--admin-dialog-header-action-inset) !important;
 }
 
-/* Submitted Create, Command and Confirm dialogs share the same order:
- * optional secondary actions, native X, then Submit at the far right.
- * Filament emits Submit first, then any extra footer actions; reverse only
- * the visual order. The reserved native X slot stays non-interactive within
- * the footer (see dialog-interactions.css). Autosaving Edit and read-only
- * Viewer dialogs have no submit and keep their established action rail. */
-.admin-dialog--header-actions.admin-dialog--submit .fi-modal-footer {
-    right: var(--admin-dialog-header-action-inset) !important;
-    inset-inline-end: var(--admin-dialog-header-action-inset) !important;
-}
-
+/* Submitted Create, Command and Confirm dialogs retain the native X at the
+ * far right, with Submit immediately to its left. Filament emits Submit
+ * before optional secondary footer actions; only the visual order is
+ * reversed so Create still reads Clear, Submit, X. The shared footer offset
+ * reserves the rightmost native X slot without covering its hit target.
+ * Autosaving Edit and Viewer action rails remain unchanged. */
 .admin-dialog--header-actions.admin-dialog--submit .fi-modal-footer-actions {
     flex-direction: row-reverse;
-}
-
-.admin-dialog--header-actions.admin-dialog--submit .fi-modal-footer-actions > :first-child {
-    margin-inline-start: calc(
-        var(--admin-dialog-header-action-size)
-        + var(--admin-dialog-header-action-gap)
-    ) !important;
-}
-
-.admin-dialog--header-actions.admin-dialog--submit .fi-modal-close-btn {
-    right: calc(
-        var(--admin-dialog-header-action-inset)
-        + var(--admin-dialog-header-action-size)
-        + var(--admin-dialog-header-action-gap)
-    ) !important;
-    inset-inline-end: calc(
-        var(--admin-dialog-header-action-inset)
-        + var(--admin-dialog-header-action-size)
-        + var(--admin-dialog-header-action-gap)
-    ) !important;
 }
 
 .admin-dialog__header-action:hover,
@@ -470,12 +445,23 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
 
 /* Semantic colors belong to the button itself. Shared hover/frame rules
  * consume these variables instead of defeating them through specificity. */
-.admin-dialog__header-action.is-danger {
+.admin-dialog__header-action.is-danger,
+.admin-dialog--header-actions:is(.admin-dialog--create, .admin-dialog--command) .fi-modal-close-btn {
     --admin-dialog-action-border: color-mix(in srgb, var(--admin-danger) 36%, var(--admin-line-strong));
     --admin-dialog-action-color: color-mix(in srgb, var(--admin-danger) 78%, var(--admin-text));
     --admin-dialog-action-hover-border: color-mix(in srgb, var(--admin-danger) 58%, var(--admin-line-strong));
     --admin-dialog-action-hover-background: color-mix(in srgb, var(--admin-danger) 7%, var(--admin-surface));
     --admin-dialog-action-hover-color: var(--admin-danger);
+}
+
+/* Positive commits use the same green semantic and restrained hover palette
+ * as Journal/Gallery Stage Submit. Dangerous confirmations remain red. */
+.admin-dialog__header-action.is-success {
+    --admin-dialog-action-border: color-mix(in srgb, var(--admin-success) 36%, var(--admin-line-strong));
+    --admin-dialog-action-color: var(--admin-success);
+    --admin-dialog-action-hover-border: color-mix(in srgb, var(--admin-success) 42%, transparent);
+    --admin-dialog-action-hover-background: color-mix(in srgb, var(--admin-success) 8%, transparent);
+    --admin-dialog-action-hover-color: var(--admin-success);
 }
 
 .admin-dialog__header-action.is-primary {

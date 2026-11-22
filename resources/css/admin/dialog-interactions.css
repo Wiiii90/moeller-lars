@@ -47,9 +47,9 @@
 /* Programmatic focus restoration during modal morphs must stay keyboard-visible
  * without looking like a phantom mouse hover when the pointer is elsewhere. */
 .admin-dialog--header-actions .fi-modal-close-btn:focus-visible {
-    border-color: var(--admin-text) !important;
+    border-color: var(--admin-dialog-action-hover-border, var(--admin-text)) !important;
     background: var(--admin-surface) !important;
-    color: var(--admin-text) !important;
-    outline: 2px solid color-mix(in srgb, var(--admin-text) 34%, transparent);
+    color: var(--admin-dialog-action-hover-color, var(--admin-text)) !important;
+    outline: 2px solid color-mix(in srgb, var(--admin-dialog-action-hover-color, var(--admin-text)) 34%, transparent);
     outline-offset: 2px;
 }
