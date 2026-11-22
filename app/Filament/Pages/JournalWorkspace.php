@@ -756,7 +756,12 @@ final class JournalWorkspace extends Page
                 );
             });
 
-        return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
+        return AdminDialog::create(
+            $action,
+            'Create draft',
+            AdminDialogSize::Large,
+            readinessFields: ['title', 'starts_on'],
+        );
     }
 
     public function setExhibitionFieldVisibility(int $id, string $field, bool $visible): void

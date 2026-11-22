@@ -455,13 +455,25 @@ html.fi.dark .fi-modal:not(.fi-modal-click-through) > .fi-modal-close-overlay {
 }
 
 /* Positive commits use the same green semantic and restrained hover palette
- * as Journal/Gallery Stage Submit. Dangerous confirmations remain red. */
+ * as Journal/Gallery Stage Submit. An incomplete but allowable Create task
+ * uses the already-established amber accent as an advisory readiness signal.
+ * Destructive confirmations remain red. */
 .admin-dialog__header-action.is-success {
     --admin-dialog-action-border: color-mix(in srgb, var(--admin-success) 36%, var(--admin-line-strong));
     --admin-dialog-action-color: var(--admin-success);
     --admin-dialog-action-hover-border: color-mix(in srgb, var(--admin-success) 42%, transparent);
     --admin-dialog-action-hover-background: color-mix(in srgb, var(--admin-success) 8%, transparent);
     --admin-dialog-action-hover-color: var(--admin-success);
+}
+
+/* An advisory incomplete draft still commits: no extra required validation
+ * or disabled button. Only opted-in Create forms use this state. */
+.admin-dialog--create[data-admin-dialog-readiness="incomplete"] .admin-dialog__header-action.is-success {
+    --admin-dialog-action-border: color-mix(in srgb, var(--admin-accent) 42%, var(--admin-line-strong));
+    --admin-dialog-action-color: var(--admin-accent-strong);
+    --admin-dialog-action-hover-border: color-mix(in srgb, var(--admin-accent) 58%, var(--admin-line-strong));
+    --admin-dialog-action-hover-background: color-mix(in srgb, var(--admin-accent) 8%, var(--admin-surface));
+    --admin-dialog-action-hover-color: var(--admin-accent-strong);
 }
 
 /* Disabled commits cannot be acted on: show neither a green nor a danger

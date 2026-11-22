@@ -17,6 +17,7 @@ final class AdminDialog
         string $submitLabel,
         AdminDialogSize $size = AdminDialogSize::Small,
         ?Closure $onClear = null,
+        array $readinessFields = [],
     ): Action {
         // Every new-object editor uses one visual contract: a Plus opener
         // and a plain Check inside the shared circular header button.
@@ -28,6 +29,7 @@ final class AdminDialog
             $size,
             AdminIcon::DialogSubmit,
             $onClear,
+            $readinessFields,
         );
     }
 
@@ -145,8 +147,9 @@ final class AdminDialog
         AdminDialogSize $size,
         ?AdminIcon $submitIcon = null,
         ?Closure $onClear = null,
+        array $readinessFields = [],
     ): Action {
-        $dialog = self::base($action, $type, $size)
+        $dialog = self::base($action, $type, $size, $readinessFields)
             ->modalSubmitAction(fn (Action $action): Action => $action
                 ->label($submitLabel)
                 ->icon(($submitIcon ?? AdminIcon::DialogSubmit)->value)
@@ -181,7 +184,8 @@ final class AdminDialog
         return $dialog;
     }
 
-    private static function base(Action $action, AdminDialogType $type, AdminDialogSize $size): Action
+    /** @param list<string> $readinessFields */
+    private static function base(Action $action, AdminDialogType $type, AdminDialogSize $size, array $readinessFields = []): Action
     {
         $classes = [
             'admin-task-dialog',
@@ -200,15 +204,27 @@ final class AdminDialog
 
         $windowAttributes = ['class' => implode(' ', $classes)];
 
+        // Readiness is advisory only: Create remains submittable when the
+        // domain can generate a draft's missing fields.
+        if ($type === AdminDialogType::Create && $readinessFields !== []) {
+            $windowAttributes['data-admin-dialog-readiness-fields'] = implode(',', $readinessFields);
+        }
+
         if (in_array($type, [AdminDialogType::Create, AdminDialogType::Command], true)) {
             // Only an unsaved change to this mounted task can make the native
             // close action destructive. Initial form defaults do not count.
             $windowAttributes += [
                 'x-data' => 'adminDialogDraft()',
-                'x-on:x-modal-opened.window' => 'if ($event.detail?.id === $el.closest(".fi-modal")?.id) captureDraft($wire.mountedActionsData)',
+                'x-on:x-modal-opened.window' => 'if ($event.detail?.id === $el.closest(".fi-modal")?.id) captureDraft($wire.mountedActions)',
                 'x-on:modal-closed.window' => 'if ($event.detail?.id === $el.closest(".fi-modal")?.id) clearDraft()',
-                'x-effect' => 'compareDraft(JSON.stringify($wire.mountedActionsData?.[draftIndex] ?? null))',
+                // On-blur Filament inputs still need immediate visual feedback
+                // while typing; each event is reconciled with the real mounted
+                // Action state, not with a second persistence mechanism.
+                'x-on:input.capture' => 'observeInput($event, $wire.mountedActions)',
+                'x-on:change.capture' => 'observeInput($event, $wire.mountedActions)',
+                'x-effect' => 'refreshDraft($wire.mountedActions)',
                 'x-bind:data-admin-dialog-dirty' => 'draftDirty ? "true" : null',
+                'x-bind:data-admin-dialog-readiness' => 'readinessFields.length ? (draftReady ? "ready" : "incomplete") : null',
             ];
         }
 

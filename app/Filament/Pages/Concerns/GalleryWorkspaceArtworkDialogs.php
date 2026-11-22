@@ -88,6 +88,7 @@ trait GalleryWorkspaceArtworkDialogs
             $action,
             'Create artwork',
             AdminDialogSize::Large,
+            readinessFields: ['title', 'primary_media_asset_id'],
         );
     }
 
