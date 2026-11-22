@@ -38,7 +38,7 @@
             <div class="admin-visual-stage__pane admin-visual-stage__editor-pane">
                 <h2 class="admin-section__kicker admin-visual-stage__heading">{{ __('Editor') }}</h2>
                 <div class="admin-stage-tabs admin-stage-tabs--three" role="tablist" aria-label="Pages editing mode">
-                    @foreach (['create' => 'Create', 'navigation' => 'Navigation', 'settings' => 'Settings'] as $panel => $label)
+                    @foreach (['create' => 'New', 'navigation' => 'Navigation', 'settings' => 'Settings'] as $panel => $label)
                         <button class="admin-action {{ $pagesStagePanel === $panel ? 'is-primary' : '' }}"
                             type="button" role="tab" aria-selected="{{ $pagesStagePanel === $panel ? 'true' : 'false' }}"
                             wire:click="showPagesStagePanel('{{ $panel }}')">{{ __($label) }}</button>

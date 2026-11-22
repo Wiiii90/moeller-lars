@@ -702,7 +702,12 @@
     min-height: 0;
     margin-top: .55rem;
     padding: .2rem .15rem .5rem 0;
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+}
+.admin-stage-workspace::-webkit-scrollbar {
+    display: none;
 }
 .admin-stage-workspace__group {
     display: grid;
@@ -745,7 +750,11 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    scrollbar-width: none;
     padding: .55rem .2rem .7rem 0;
+}
+.pages-stage__navigation::-webkit-scrollbar {
+    display: none;
 }
 .pages-stage__menu,
 .pages-stage__submenu {

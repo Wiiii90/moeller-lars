@@ -260,18 +260,6 @@ trait CustomPageWorkspaceComponentActions
         }
     }
 
-    public function selectStageLayout(string $id): void
-    {
-        foreach ($this->settings()->components() as $index => $component) {
-            if (($component['type'] ?? null) === 'layout' && ($component['id'] ?? null) === $id) {
-                $this->focusStageComponent($index, 'layout');
-                $this->customStagePanel = 'settings';
-
-                return;
-            }
-        }
-    }
-
     public function setStageLayoutProperty(string $id, string $field, string $value): void
     {
         if (! in_array($field, ['layout_mode', 'columns', 'rows', 'gap', 'column_layout'], true)) {
@@ -542,6 +530,51 @@ trait CustomPageWorkspaceComponentActions
             });
 
         return AdminDialog::create($action, 'Add component', AdminDialogSize::Large);
+    }
+
+    /** Full Layout creation belongs to the table toolbar, never the visual Stage. */
+    public function addLayoutAction(): Action
+    {
+        $action = Action::make('addLayout')
+            ->label('Add layout')
+            ->fillForm(fn (): array => [
+                'publication_state' => app(AdminAutoPublishPreferences::class)->enabled(AdminAutoPublishPreferences::CUSTOM_PAGE)
+                    ? 'published' : 'unpublished',
+                'layout_area_id' => null,
+                'layout_divider_before' => 'none',
+                'layout_mode' => 'rows',
+                'columns' => 2,
+                'rows' => 1,
+                'column_layout' => 'equal',
+                'gap' => 'medium',
+            ])
+            ->schema([
+                \Filament\Schemas\Components\Grid::make()
+                    ->columns(['md' => 2])
+                    ->schema([
+                        Select::make('publication_state')->label('Status')
+                            ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
+                            ->required(),
+                        Select::make('layout_area_id')->label('Place in')
+                            ->options(fn (): array => $this->layoutAreaOptions())
+                            ->placeholder('Full width')->nullable(),
+                        ...$this->componentTypeFields('layout'),
+                        Select::make('layout_divider_before')->label('Separator above')
+                            ->options(['none' => 'None', ...self::DIVIDER_LABELS])
+                            ->required(),
+                    ]),
+            ])
+            ->modalHeading('Add layout')
+            ->action(function (array $data): void {
+                app(CustomPageEditorialService::class)->addBlock(
+                    $this->settings(), $this->componentPayload([...$data, 'type' => 'layout']),
+                );
+                $this->clearSelections();
+                $this->reloadWorkspace();
+                app(AdminNotifier::class)->notification(title: 'Layout added', status: 'success');
+            });
+
+        return AdminDialog::create($action, 'Add layout', AdminDialogSize::Large);
     }
 
     public function editComponentAction(): Action

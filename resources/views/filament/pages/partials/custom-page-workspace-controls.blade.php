@@ -37,6 +37,10 @@
                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" class="admin-action__icon" />
                             <span class="admin-action__label">{{ __('Add component') }}</span>
                         </button>
+                        <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addLayout')" aria-label="Add layout">
+                            <x-filament::icon icon="heroicon-m-squares-2x2" class="admin-action__icon" />
+                            <span class="admin-action__label">{{ __('Add layout') }}</span>
+                        </button>
                         @if ($previewUrl)
                             <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener" aria-label="Preview Custom Page">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />

@@ -40,11 +40,9 @@
                             <x-filament::icon icon="heroicon-m-squares-2x2" />
                             {{ __('Layout') }}
                         </button>
-                        <button class="admin-action custom-page-layout-stage__configure" type="button"
-                            wire:click="selectStageLayout('{{ $component['id'] }}')"
-                            aria-label="Adjust layout properties">
-                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" />
-                        </button>
+                        <span class="custom-page-layout-stage__dimensions">
+                            {{ (int) ($component['columns'] ?? 1) }} × {{ (int) ($component['rows'] ?? 1) }}
+                        </span>
                     </div>
                     <div class="custom-page-layout-stage__cells custom-page-layout-stage__cells--columns-{{ $component['columns'] }} custom-page-layout-stage__cells--layout-{{ $component['column_layout'] ?? 'equal' }}">
                         @foreach ($component['areas'] as $areaIndex => $area)
