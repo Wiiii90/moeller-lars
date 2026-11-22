@@ -812,4 +812,29 @@
     color: var(--admin-muted);
     font-size: .7rem;
 }
+.pages-stage__add-child,
+.pages-stage__add-root {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .35rem;
+    font-size: .7rem;
+    color: var(--admin-muted);
+}
+.pages-stage__add-child {
+    flex: 0 0 auto;
+    width: 1.65rem;
+    min-height: 1.65rem;
+    padding: .15rem;
+}
+.pages-stage__add-child svg,
+.pages-stage__add-root svg {
+    width: .8rem;
+    height: .8rem;
+}
+.pages-stage__add-root {
+    min-height: 2rem;
+    margin-block-start: .35rem;
+    padding: .35rem .55rem;
+}
 .pages-stage__toggle { display: flex; align-items: center; gap: .55rem; font-size: .75rem; }

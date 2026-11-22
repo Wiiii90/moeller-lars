@@ -315,6 +315,22 @@ final class SitePages extends Page
         }
     }
 
+    /** The visual navigation editor prepares the same native New-page form. */
+    public function prepareStageChildPage(int $parentId): void
+    {
+        if (! array_key_exists($parentId, $this->parentOptions)) {
+            return;
+        }
+        $this->newPageParent = (string) $parentId;
+        $this->pagesStagePanel = 'create';
+    }
+
+    public function prepareStageRootPage(): void
+    {
+        $this->newPageParent = '';
+        $this->pagesStagePanel = 'create';
+    }
+
     public function createStagePage(): void
     {
         $data = [
