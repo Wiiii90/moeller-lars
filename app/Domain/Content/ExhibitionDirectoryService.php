@@ -14,6 +14,41 @@ final class ExhibitionDirectoryService
 {
     public function __construct(private readonly AdminAuditService $audit) {}
 
+    /**
+     * Resolve a Stage-typed Organizer name to the independent catalog.
+     * This is called only inside the Exhibition's actual write transaction:
+     * abandoned form edits do not create orphan catalog entries.
+     */
+    public function resolveOrganizerName(string $name): string
+    {
+        $name = $this->name($name);
+        $existing = ExhibitionOrganizerPreset::query()
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
+
+        if ($existing instanceof ExhibitionOrganizerPreset) {
+            return (string) $existing->getAttribute('name');
+        }
+
+        $this->addOrganizer($name);
+
+        return $name;
+    }
+
+    public function resolveVenueName(string $name): string
+    {
+        $name = $this->name($name);
+        $existing = ExhibitionVenuePreset::query()
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
+
+        if ($existing instanceof ExhibitionVenuePreset) {
+            return (string) $existing->getAttribute('name');
+        }
+
+        $this->addVenue(['name' => $name]);
+
+        return $name;
+    }
+
     /** @return EloquentCollection<int, ExhibitionOrganizerPreset> */
     public function organizers(): EloquentCollection
     {

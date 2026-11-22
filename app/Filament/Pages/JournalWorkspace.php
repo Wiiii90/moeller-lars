@@ -337,9 +337,11 @@ final class JournalWorkspace extends Page
             || ($this->journalStagePanel === 'selected' && $this->selectedJournalEntryId !== null)) {
             $url = route('preview.journal.staged-entry', ['section' => $this->sectionId, 'token' => $this->getId()]);
 
-            return $this->journalStagePanel === 'selected'
-                && $this->journalTemplate() === JournalTemplate::Exhibitions
-                ? $url.'#exhibition-'.$this->selectedJournalEntryId : $url;
+            if ($this->journalTemplate() === JournalTemplate::Exhibitions) {
+                return $url.'#exhibition-'.($this->journalStagePanel === 'new' ? '-1' : $this->selectedJournalEntryId);
+            }
+
+            return $url;
         }
         if ($this->journalPreviewAutoFocus && $this->journalPreviewFocusedEntryId !== null) {
             $rows = $this->journalTemplate() === JournalTemplate::Blog ? $this->posts : $this->exhibitions;

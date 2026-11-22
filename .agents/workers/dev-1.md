@@ -2,7 +2,7 @@
 
 - **Working branch:** `dev`
 - **Lease:** 42 (replaced previous lease 34 on 2026-11-22)
-- **Status:** Exhibition Settings and Vernissage cutoff removed; compact checkbox defaults, Stage Rich Text variant, single-line directory row, and Stage Gallery table Add action integrated in source. Browser/runtime and migrations still pending.
+- **Status:** Exhibition Stage source-integrated: Vernissage flag retirement, checkbox defaults, compact Rich Text, Gallery table native Add action, single-row text-plus-suggestion Organizer/Venue with submit-time catalog creation, and full-list New preview with last-position focus. Browser/runtime/migrations pending.
 - **Assignment:** Continue the actual Journal workstream (Blog and Exhibitions), particularly Exhibition Stage Settings and user-approved defaults simplification; propose, but do not prematurely implement, new layout/effect options.
 - **Ownership:** `JournalWorkspace`, Journal Stage and its private Public preview, exhibition-specific settings and organizer/venue catalogs. Dev Worker 5 owns shared Page/Journal template architecture, Dev Worker 4 Gallery shared surfaces, Dev Worker 8 dialog chrome; update direct consumers without creating second systems.
 
@@ -25,7 +25,8 @@
 - **Vernissage decision:** On 2026-11-22 the artist explicitly removed the global and per-Exhibition hide-until-start behavior. Any recorded Vernissage date or historical opening text remains visible without a cutoff. Forward-only column-drop migration `2026_11_22_163000_retire_exhibition_vernissage_visibility.php` needs fresh/incremental schema verification.
 - **Still only proposals, not approved:** Separate **Exhibition page presentation** from per-Exhibition gallery presentation. Prefer one page-layout preset rather than a cluster of unrelated toggles: current **Catalogue**; alternative **Editorial rhythm** (stable alternating left/right media and restrained larger/smaller emphasis); optional later **Gallery-led** (more prominent gallery). A single **Regular / Varied** choice might be warranted only if the preset itself cannot express rhythm. Any "randomness" must be deterministic per entry and stable between page loads; no jumping layout, no media-order changes and no per-item surprise overrides.
 - **Vernissage follow-up for user:** Current `show_vernissage` means show only before the start; it is not "hide after start" versus "show throughout". Consider a future explicit per-Exhibition three-way choice **Hidden / Until start / Through exhibition end**, retaining old data semantics. The Stage currently exposes Starts/Ends but not its existing per-Exhibition Vernissage datetime/toggle, unlike the canonical Edit dialog; decide whether that belongs in the Stage before adding another control.
-- Artist wants restrained visual settings mirrored between Stage and corresponding Journal dialog, with no proliferation of global gallery options. No visual mode or Vernissage behavior change has been authorized yet.
+- The new Exhibition Stage directory fields accept unlisted names; publication-time EditorialService resolves/creates the independent catalog records in the same transaction. Stage native datalists suggest existing names and retain full-details quick-add dialogs. A new draft is embedded as the last position in the actual position-sorted Public Exhibition preview, with focus to `#exhibition--1`. This does **not** change the manually ranked Public sorting rule; user asked whether date ordering could replace it, decision still open.
+- Artist wants restrained visual settings mirrored between Stage and corresponding Journal dialog. No visual mode has been authorized yet.
 
 ## Remaining acceptance / constraints
 

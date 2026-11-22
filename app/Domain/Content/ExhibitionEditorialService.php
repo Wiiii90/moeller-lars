@@ -39,7 +39,7 @@ final class ExhibitionEditorialService
         return DB::transaction(function () use ($data, $payload, $sectionId, $actor): Exhibition {
             $entry = new Exhibition;
             $entry->fill([
-                ...$payload,
+                ...$this->resolveDirectoryNames($payload),
                 'site_section_id' => $sectionId,
                 'state' => 'draft',
                 'archived_from_state' => null,
@@ -76,7 +76,7 @@ final class ExhibitionEditorialService
                 ]);
             }
 
-            $payload = $this->validatedEditorialData($data, $fresh);
+            $payload = $this->resolveDirectoryNames($this->validatedEditorialData($data, $fresh));
             $location = [
                 'location_text' => array_key_exists('location_text', $payload) ? $payload['location_text'] : $fresh->getAttribute('location_text'),
                 'postal_code' => array_key_exists('postal_code', $payload) ? $payload['postal_code'] : $fresh->getAttribute('postal_code'),
@@ -293,6 +293,23 @@ final class ExhibitionEditorialService
         }
 
         $this->media->assertPublicReady($entry);
+    }
+
+    /**
+     * A free-text Stage value is a deliberate catalog choice at Submit time.
+     * Reuse the independent directory services; do not duplicate preset rows
+     * or change historical Exhibition snapshots when catalog data later edits.
+     */
+    private function resolveDirectoryNames(array $payload): array
+    {
+        $directories = app(ExhibitionDirectoryService::class);
+        foreach (['organizer' => 'resolveOrganizerName', 'venue' => 'resolveVenueName'] as $field => $method) {
+            if (is_string($payload[$field] ?? null) && trim($payload[$field]) !== '') {
+                $payload[$field] = $directories->{$method}($payload[$field]);
+            }
+        }
+
+        return $payload;
     }
 
     private function validatedEditorialData(array $data, ?Exhibition $entry): array

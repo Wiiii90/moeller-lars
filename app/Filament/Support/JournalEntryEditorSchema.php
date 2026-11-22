@@ -65,8 +65,8 @@ final class JournalEntryEditorSchema
         if ($template === JournalTemplate::Exhibitions) {
             $fields[] = self::dateFields()[0];
             $fields[] = Grid::make()->columns(['default' => 2])->schema([
-                self::organizerSelect()->live(),
-                self::venueSelect(),
+                self::stageDirectoryInput('organizer'),
+                self::stageDirectoryInput('venue'),
             ])->extraAttributes(['class' => 'journal-stage-directory'])->columnSpanFull();
             // The Stage edits a venue, not individual address inputs.
             // Snapshot location values still flow into Submit and Public Preview.
@@ -452,6 +452,67 @@ final class JournalEntryEditorSchema
         ];
     }
 
+    /**
+     * Stage-only single-row combobox: native completion suggests the reusable
+     * directory while allowing a new name without an intervening modal.
+     * The editorial write transaction is the only automatic create boundary.
+     */
+    private static function stageDirectoryInput(string $kind): TextInput
+    {
+        $isVenue = $kind === 'venue';
+        $title = $isVenue ? 'Venue' : 'Organizer';
+        $field = AdminControl::text($kind, $title)
+            ->maxLength(240)->nullable()
+            ->datalist($isVenue
+                ? fn (): array => ExhibitionVenuePreset::query()->orderByRaw('LOWER(name)')->orderBy('name')->pluck('name')->all()
+                : fn (): array => ExhibitionOrganizerPreset::query()->orderByRaw('LOWER(name)')->orderBy('name')->pluck('name')->all())
+            ->live(onBlur: true);
+
+        if ($isVenue) {
+            $field->afterStateUpdated(static fn (mixed $state, Set $set) => self::fillVenueSnapshot($state, $set));
+        }
+
+        $action = Action::make('addStage'.ucfirst($kind))
+            ->label('Add '.strtolower($title))
+            ->modalHeading('Add '.strtolower($title))
+            ->schema(self::directoryFields($title))
+            ->action(static function (array $data, Set $set) use ($isVenue, $kind, $title): void {
+                if ($isVenue) {
+                    app(ExhibitionDirectoryService::class)->addVenue($data);
+                } else {
+                    app(ExhibitionDirectoryService::class)->addOrganizer($data);
+                }
+                $set($kind, trim((string) $data['name']));
+                if ($isVenue) {
+                    self::fillVenueSnapshot($data['name'], $set);
+                }
+                app(AdminNotifier::class)->notification(title: $title.' added', status: 'success');
+            });
+        $field->hintAction(AdminDialog::create($action, 'Add '.$title, AdminDialogSize::Default)->iconButton());
+
+        return $field;
+    }
+
+    private static function fillVenueSnapshot(mixed $state, Set $set): void
+    {
+        if (! is_string($state) || trim($state) === '') {
+            // No linked Venue: leave the Exhibition's independent address intact.
+            return;
+        }
+        $venue = ExhibitionVenuePreset::query()->whereRaw('LOWER(name) = ?', [mb_strtolower(trim($state))])->first();
+        if (! $venue instanceof ExhibitionVenuePreset) {
+            return;
+        }
+        foreach ([
+            'street' => 'location_text',
+            'postal_code' => 'postal_code',
+            'city' => 'city',
+            'country' => 'country',
+        ] as $source => $target) {
+            $set($target, $venue->getAttribute($source));
+        }
+    }
+
     /** Organizer names remain exact canonical text in Exhibition snapshots. */
     private static function organizerSelect(): Select
     {
@@ -482,23 +543,7 @@ final class JournalEntryEditorSchema
             ->getOptionLabelUsing(static fn (mixed $value): ?string =>
                 is_string($value) && trim($value) !== '' ? $value : null)
             ->searchable()->preload()->native(false)->nullable()->live()
-            ->afterStateUpdated(static function (mixed $state, Set $set): void {
-                if (! is_string($state) || trim($state) === '') {
-                    return;
-                }
-                $venue = ExhibitionVenuePreset::query()->where('name', trim($state))->first();
-                if (! $venue instanceof ExhibitionVenuePreset) {
-                    return;
-                }
-                foreach ([
-                    'street' => 'location_text',
-                    'postal_code' => 'postal_code',
-                    'city' => 'city',
-                    'country' => 'country',
-                ] as $source => $target) {
-                    $set($target, $venue->getAttribute($source));
-                }
-            })
+            ->afterStateUpdated(static fn (mixed $state, Set $set) => self::fillVenueSnapshot($state, $set))
             ->createOptionModalHeading('Add venue')
             ->createOptionForm(self::directoryFields('Venue'))
             ->createOptionAction(static fn (Action $action): Action =>

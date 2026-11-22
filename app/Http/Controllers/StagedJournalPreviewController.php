@@ -111,13 +111,18 @@ final class StagedJournalPreviewController extends Controller
         ]);
         $exhibition->setRelation('mediaUsages', $usages);
 
-        $exhibitions = $existing instanceof Exhibition
-            ? Exhibition::query()->where('site_section_id', $section)
-                ->where('state', '<>', 'archived')
-                ->with('mediaUsages.mediaAsset.variants')->orderBy('position')->orderBy('id')->get()
-                ->map(static fn (Exhibition $item): Exhibition =>
-                    (int) $item->getKey() === (int) $existing->getKey() ? $exhibition : $item)
-            : new Collection([$exhibition]);
+        // The Public page is position-ordered, not date-ordered. A freshly
+        // submitted Exhibition receives nextPosition(), so stage the new draft
+        // at that same location rather than rendering a misleading solo page.
+        $exhibitions = Exhibition::query()->where('site_section_id', $section)
+            ->where('state', '<>', 'archived')
+            ->with('mediaUsages.mediaAsset.variants')->orderBy('position')->orderBy('id')->get();
+        if ($existing instanceof Exhibition) {
+            $exhibitions = $exhibitions->map(static fn (Exhibition $item): Exhibition =>
+                (int) $item->getKey() === (int) $existing->getKey() ? $exhibition : $item);
+        } else {
+            $exhibitions->push($exhibition);
+        }
 
         return view('pages.exhibitions', [
             'section' => $page, 'settings' => JournalSetting::forSection($page),
