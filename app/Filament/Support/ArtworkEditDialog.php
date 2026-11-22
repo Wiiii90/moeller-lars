@@ -195,7 +195,7 @@ final class ArtworkEditDialog
     }
 
     /** One individually enabled override panel on the same Artwork edit path. */
-    public function individualInformationPanel(string $label = 'Individual Artwork information'): \Filament\Schemas\Components\Group
+    private function individualInformationPanel(string $label = 'Individual Artwork information'): \Filament\Schemas\Components\Group
     {
         $fields = [
             AdminControl::checkbox('info_enabled', 'Show information')->live(),

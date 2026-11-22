@@ -206,11 +206,9 @@ trait GalleryHeroWorkspaceProjection
     {
         $artwork = $candidate->artwork();
         $asset = $candidate->mediaAsset();
-        $heroAsset = $candidate->heroMediaAsset;
         $gallery = $candidate->gallery();
-        ($heroAsset ?? $asset)?->loadMissing('variants');
-        $preview = ($heroAsset ?? $asset) instanceof MediaAsset
-            ? MediaPreviewVariant::preview($heroAsset ?? $asset) : null;
+        $asset?->loadMissing('variants');
+        $preview = $asset instanceof MediaAsset ? MediaPreviewVariant::preview($asset) : null;
         $date = $candidate->heroOverrides;
         $dateParts = array_key_exists('date', $date) ? ArtworkDate::normalize($date['date']) : null;
 
@@ -229,11 +227,9 @@ trait GalleryHeroWorkspaceProjection
             'gallery' => $candidate->sourceName
                 ?? ($gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : null),
             'gallery_id' => $candidate->sourceId ?? $gallery?->getKey(),
-            'thumbnail_url' => $heroAsset instanceof MediaAsset
-                ? ($preview ? route('admin.media.variant', $preview) : null)
-                : ($artwork instanceof Artwork
-                    ? ArtworkResource::thumbnailUrl($artwork)
-                    : ($preview ? route('admin.media.variant', $preview) : null)),
+            'thumbnail_url' => $artwork instanceof Artwork
+                ? ArtworkResource::thumbnailUrl($artwork)
+                : ($preview ? route('admin.media.variant', $preview) : null),
             'gallery_url' => $gallery instanceof ArtworkCategory
                 ? GalleryWorkspace::getUrl(['gallery' => $gallery->getKey()])
                 : null,

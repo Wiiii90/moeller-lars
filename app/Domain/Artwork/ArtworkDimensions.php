@@ -102,7 +102,7 @@ final class ArtworkDimensions
         $unitValue = is_string($unit) ? trim($unit) : '';
         if (! in_array($unitValue, self::UNITS, true)) {
             throw ValidationException::withMessages([
-                'dimension_unit' => 'Choose cm, mm, or in, or use Custom dimensions.',
+                'dimension_unit' => 'Choose cm, mm, or in.',
             ]);
         }
 

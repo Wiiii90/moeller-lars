@@ -4,17 +4,16 @@ namespace App\Domain\Content;
 
 use App\Domain\Artwork\ArtworkDate;
 use App\Domain\Artwork\ArtworkDimensions;
-use App\Domain\Artwork\ArtworkInformation;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\GalleryHeroSetting;
-use App\Models\MediaAsset;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Hero-only editorial overlays. The persisted Artwork and its Gallery remain
- * unchanged; the single persistence owner is GalleryHeroConfigurationService.
+ * Hero-only metadata, opt-in per source and Artwork. The single persistence
+ * owner remains GalleryHeroConfigurationService; original artwork/media stay
+ * untouched. Off retains configured deltas so reactivation is reversible.
  */
 trait GalleryHeroArtworkOverrides
 {
@@ -38,30 +37,13 @@ trait GalleryHeroArtworkOverrides
                 continue;
             }
             $entry = [];
-            foreach (['title', 'medium', 'dimensions', 'date', 'alt_text'] as $field) {
+            if (is_bool($raw['enabled'] ?? null)) {
+                $entry['enabled'] = $raw['enabled'];
+            }
+            foreach (['title', 'medium', 'dimensions', 'date'] as $field) {
                 if (array_key_exists($field, $raw)
                     && ($raw[$field] === null || is_string($raw[$field]))) {
                     $entry[$field] = $raw[$field];
-                }
-            }
-            if (is_int($raw['media_asset_id'] ?? null) && $raw['media_asset_id'] > 0) {
-                $entry['media_asset_id'] = $raw['media_asset_id'];
-            }
-            if (is_array($raw['information'] ?? null)) {
-                $info = $raw['information'];
-                $normalized = [];
-                if (is_bool($info['enabled'] ?? null)) {
-                    $normalized['enabled'] = $info['enabled'];
-                }
-                if (is_array($info['visible'] ?? null)) {
-                    foreach ($info['visible'] as $field => $flag) {
-                        if (array_key_exists($field, ArtworkInformation::FIELDS) && is_bool($flag)) {
-                            $normalized['visible'][$field] = $flag;
-                        }
-                    }
-                }
-                if ($normalized !== []) {
-                    $entry['information'] = $normalized;
                 }
             }
             if ($entry !== []) {
@@ -102,8 +84,8 @@ trait GalleryHeroArtworkOverrides
     }
 
     /**
-     * A Hero Artwork editor may override inherited presentation and media,
-     * never update the original Artwork, its Gallery or MediaAsset metadata.
+     * Save only selected Hero metadata. The panel switch controls whether
+     * stored differences are applied, never original Artwork persistence.
      *
      * @param array<string,mixed> $values
      */
@@ -114,98 +96,75 @@ trait GalleryHeroArtworkOverrides
         array $values,
     ): bool {
         return DB::transaction(function () use ($settings, $sourceId, $artworkId, $values): bool {
-            /** @var GalleryHeroSetting $fresh */
             $fresh = GalleryHeroSetting::query()
                 ->whereKey($settings->getKey())->lockForUpdate()->firstOrFail();
             $config = $this->configuration($fresh);
             $artwork = $this->heroOverrideSourceArtwork($config, $sourceId, $artworkId);
-            $original = $artwork->artworkMedia()->where('role', 'primary')->first();
-            $originalMediaId = $original === null ? null : (int) $original->getAttribute('media_asset_id');
+            $identity = self::heroArtworkOverrideKey($sourceId, $artworkId);
+            $current = $config['hero_artwork_overrides'][$identity] ?? [];
 
-            $title = trim((string) ($values['title'] ?? ''));
-            if ($title === '' || mb_strlen($title) > 240) {
-                throw ValidationException::withMessages(['title' => 'Enter a title of at most 240 characters.']);
-            }
-            $medium = trim((string) ($values['medium'] ?? ''));
-            if (mb_strlen($medium) > 255) {
-                throw ValidationException::withMessages(['medium' => 'Material must not exceed 255 characters.']);
-            }
-            $date = $values['artwork_date'] ?? null;
-            ArtworkDate::normalize($date);
-
-            $dimensions = ArtworkDimensions::compose(
-                $values['dimension_height'] ?? null,
-                $values['dimension_width'] ?? null,
-                $values['dimension_depth'] ?? null,
-                $values['dimension_unit'] ?? 'cm',
-                $values['dimension_custom'] ?? null,
+            $active = filter_var(
+                $values['hero_override_enabled'] ?? ($current['enabled'] ?? ($current !== [])),
+                FILTER_VALIDATE_BOOLEAN,
             );
 
-            $selectedMedia = $values['primary_media_asset_id'] ?? null;
-            if ($selectedMedia === '' || $selectedMedia === null) {
-                $mediaId = $originalMediaId;
+            if (! $active) {
+                // Keep the user's entered metadata for a later reactivation.
+                $overrides = $current === [] ? [] : [...$current, 'enabled' => false];
             } else {
-                $parsed = filter_var($selectedMedia, FILTER_VALIDATE_INT);
-                if ($parsed === false || $parsed < 1) {
-                    throw ValidationException::withMessages(['primary_media_asset_id' => 'Choose a valid Media File.']);
-                }
-                $mediaId = (int) $parsed;
-            }
-            if ($mediaId !== null && $mediaId !== $originalMediaId) {
-                $media = MediaAsset::query()->with('variants')->find($mediaId);
-                if (! $media instanceof MediaAsset || ! GalleryHeroCandidate::mediaIsEligible($media)) {
+                $title = trim((string) ($values['title']
+                    ?? ($current['title'] ?? $artwork->getAttribute('title'))));
+                if ($title === '' || mb_strlen($title) > 240) {
                     throw ValidationException::withMessages([
-                        'primary_media_asset_id' => 'Choose an available image or video with ALT text.',
+                        'title' => 'Enter a title of at most 240 characters.',
                     ]);
                 }
-            }
-
-            $alt = trim((string) ($values['primary_alt_text'] ?? ''));
-            if (mb_strlen($alt) > 500) {
-                throw ValidationException::withMessages(['primary_alt_text' => 'ALT text must not exceed 500 characters.']);
-            }
-            $originalAlt = $mediaId === $originalMediaId
-                ? trim((string) ($original?->getAttribute('alt_text_override') ?? ''))
-                : '';
-
-            $overrides = [];
-            if ($title !== trim((string) $artwork->getAttribute('title'))) {
-                $overrides['title'] = $title;
-            }
-            if ($medium !== trim((string) ($artwork->getAttribute('medium') ?? ''))) {
-                $overrides['medium'] = $medium === '' ? null : $medium;
-            }
-            if ($date !== ArtworkDate::fromArtwork($artwork)) {
-                $overrides['date'] = $date;
-            }
-            if ($dimensions !== ArtworkDimensions::display($artwork->getAttribute('dimensions'))) {
-                $overrides['dimensions'] = $dimensions;
-            }
-            if ($mediaId !== $originalMediaId && $mediaId !== null) {
-                $overrides['media_asset_id'] = $mediaId;
-            }
-            if ($alt !== $originalAlt) {
-                $overrides['alt_text'] = $alt === '' ? null : $alt;
-            }
-
-            if (filter_var($values['info_individual'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
-                $base = ArtworkInformation::effective($artwork->getRelation('category'), $artwork);
-                $chosen = ArtworkInformation::fromForm($values);
-                $information = [];
-                if ($chosen['enabled'] !== $base['enabled']) {
-                    $information['enabled'] = $chosen['enabled'];
+                $medium = trim((string) ($values['medium']
+                    ?? ($current['medium'] ?? $artwork->getAttribute('medium') ?? '')));
+                if (mb_strlen($medium) > 255) {
+                    throw ValidationException::withMessages([
+                        'medium' => 'Material must not exceed 255 characters.',
+                    ]);
                 }
-                foreach (ArtworkInformation::FIELDS as $field => $label) {
-                    if ($chosen['visible'][$field] !== $base['visible'][$field]) {
-                        $information['visible'][$field] = $chosen['visible'][$field];
-                    }
+                $date = $values['artwork_date']
+                    ?? ($current['date'] ?? ArtworkDate::fromArtwork($artwork));
+                // A submitted explicit null clears the Hero date.
+                if (array_key_exists('artwork_date', $values)) {
+                    $date = $values['artwork_date'];
                 }
-                if ($information !== []) {
-                    $overrides['information'] = $information;
+                ArtworkDate::normalize($date);
+
+                $inheritedDimensions = $current['dimensions'] ?? $artwork->getAttribute('dimensions');
+                $inheritedParts = ArtworkDimensions::split($inheritedDimensions);
+                $height = array_key_exists('dimension_height', $values)
+                    ? $values['dimension_height'] : $inheritedParts['height'];
+                $width = array_key_exists('dimension_width', $values)
+                    ? $values['dimension_width'] : $inheritedParts['width'];
+                $depth = array_key_exists('dimension_depth', $values)
+                    ? $values['dimension_depth'] : $inheritedParts['depth'];
+                $unit = $values['dimension_unit'] ?? $inheritedParts['unit'];
+                $noStructuredValues = blank($height) && blank($width) && blank($depth);
+                // Historical freeform dimensions are inherited read-only;
+                // editing other Hero fields must never erase those saved values.
+                $dimensions = $noStructuredValues && $inheritedParts['custom'] !== null
+                    ? $inheritedParts['custom']
+                    : ArtworkDimensions::compose($height, $width, $depth, $unit, null);
+
+                $overrides = ['enabled' => true];
+                if ($title !== trim((string) $artwork->getAttribute('title'))) {
+                    $overrides['title'] = $title;
+                }
+                if ($medium !== trim((string) ($artwork->getAttribute('medium') ?? ''))) {
+                    $overrides['medium'] = $medium === '' ? null : $medium;
+                }
+                if ($date !== ArtworkDate::fromArtwork($artwork)) {
+                    $overrides['date'] = $date;
+                }
+                if ($dimensions !== ArtworkDimensions::display($artwork->getAttribute('dimensions'))) {
+                    $overrides['dimensions'] = $dimensions;
                 }
             }
 
-            $identity = self::heroArtworkOverrideKey($sourceId, $artworkId);
             $map = $config['hero_artwork_overrides'];
             if ($overrides === []) {
                 unset($map[$identity]);
@@ -215,25 +174,6 @@ trait GalleryHeroArtworkOverrides
             if ($map === $config['hero_artwork_overrides']) {
                 return false;
             }
-
-            // updateArtworkSettings owns the audited configuration transaction.
-            return $this->updateArtworkSettings($fresh, ['hero_artwork_overrides' => $map]);
-        });
-    }
-
-    public function resetHeroArtworkOverrides(GalleryHeroSetting $settings, int $sourceId, int $artworkId): bool
-    {
-        return DB::transaction(function () use ($settings, $sourceId, $artworkId): bool {
-            $fresh = GalleryHeroSetting::query()->whereKey($settings->getKey())
-                ->lockForUpdate()->firstOrFail();
-            $config = $this->configuration($fresh);
-            $this->heroOverrideSourceArtwork($config, $sourceId, $artworkId);
-            $key = self::heroArtworkOverrideKey($sourceId, $artworkId);
-            if (! isset($config['hero_artwork_overrides'][$key])) {
-                return false;
-            }
-            $map = $config['hero_artwork_overrides'];
-            unset($map[$key]);
 
             return $this->updateArtworkSettings($fresh, ['hero_artwork_overrides' => $map]);
         });

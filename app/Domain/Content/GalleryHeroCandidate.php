@@ -24,9 +24,8 @@ final readonly class GalleryHeroCandidate
         public ?int $year = null,
         public ?int $month = null,
         public ?int $day = null,
-        /** @var array<string,mixed> Hero-only metadata and visual overrides */
+        /** @var array<string,mixed> Hero-only metadata overrides */
         public array $heroOverrides = [],
-        public ?MediaAsset $heroMediaAsset = null,
     ) {}
 
     public static function fromArtwork(Artwork $artwork, ?int $sourceId = null, ?string $sourceName = null): self
@@ -71,12 +70,12 @@ final readonly class GalleryHeroCandidate
     }
 
     /** @param array<string,mixed> $overrides */
-    public function withHeroOverrides(array $overrides, ?MediaAsset $media = null): self
+    public function withHeroOverrides(array $overrides): self
     {
         return new self(
             $this->kind, $this->record, $this->sourceId, $this->sourceName,
             $this->titleOverride, $this->year, $this->month, $this->day,
-            $overrides, $media,
+            $overrides,
         );
     }
 
@@ -88,9 +87,6 @@ final readonly class GalleryHeroCandidate
     /** A displayed image may be referenced both by Artwork and direct Storage. */
     public function visualKey(): string
     {
-        if ($this->heroMediaAsset instanceof MediaAsset) {
-            return 'media:'.$this->heroMediaAsset->getKey();
-        }
         if ($this->record instanceof MediaAsset) {
             return 'media:'.$this->record->getKey();
         }

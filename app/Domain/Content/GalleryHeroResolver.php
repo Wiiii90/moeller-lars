@@ -168,7 +168,7 @@ final class GalleryHeroResolver
 
     /**
      * One effective Hero candidate projection for public, Stage and dialog
-     * source rows. Safe replacement media are loaded once per collection.
+     * source rows. Media selection remains owned by the original Artwork.
      *
      * @param Collection<int,GalleryHeroCandidate> $group
      * @param array<string,array<string,mixed>> $stored
@@ -176,36 +176,21 @@ final class GalleryHeroResolver
      */
     public function applyHeroArtworkOverrides(Collection $group, array $stored): Collection
     {
-        $mediaIds = $group->map(static function (GalleryHeroCandidate $candidate) use ($stored): ?int {
-            if (! $candidate->artwork() || $candidate->sourceId === null) {
-                return null;
-            }
-            $entry = $stored[GalleryHeroConfigurationService::heroArtworkOverrideKey(
-                $candidate->sourceId, (int) $candidate->record->getKey(),
-            )] ?? [];
-
-            return $entry['media_asset_id'] ?? null;
-        })->filter()->unique()->values()->all();
-        $replacementMedia = MediaAsset::query()->whereKey($mediaIds)
-            ->where('state', 'available')->with('variants')->get()
-            ->filter(static fn (MediaAsset $asset): bool => GalleryHeroCandidate::mediaIsEligible($asset))
-            ->keyBy('id');
-        return $group->map(static function (GalleryHeroCandidate $candidate) use ($stored, $replacementMedia): GalleryHeroCandidate {
+        return $group->map(static function (GalleryHeroCandidate $candidate) use ($stored): GalleryHeroCandidate {
             if (! $candidate->artwork() || $candidate->sourceId === null) {
                 return $candidate;
             }
             $entry = $stored[GalleryHeroConfigurationService::heroArtworkOverrideKey(
                 $candidate->sourceId, (int) $candidate->record->getKey(),
             )] ?? [];
-            if ($entry === []) {
+            if ($entry === [] || ($entry['enabled'] ?? true) === false) {
                 return $candidate;
             }
 
-            return $candidate->withHeroOverrides(
-                $entry, isset($entry['media_asset_id']) ? $replacementMedia->get($entry['media_asset_id']) : null,
-            );
+            unset($entry['enabled']);
+
+            return $candidate->withHeroOverrides($entry);
         })->values();
-
     }
 
     /** Read all stored Dummy members for the Hero editor, including inactive ones. */

@@ -92,40 +92,13 @@ trait GalleryHeroWorkspaceSourceActions
                 ->fillForm(function (array $arguments) use ($dialog, $service): array {
                     $sourceId = (int) ($arguments['gallery'] ?? 0);
                     $artwork = $this->heroArtworkForAction($arguments);
-                    $sourceName = $sourceId < 0
-                        ? (string) $this->dummyGallery($sourceId)['name']
-                        : (string) $artwork->getRelation('category')->getAttribute('name');
 
                     return $dialog->fill(
-                        $artwork, $sourceName,
+                        $artwork,
                         $service->heroArtworkOverridesFor($this->settings(), $sourceId, (int) $artwork->getKey()),
                     );
                 })
                 ->schema(fn (): array => $dialog->schema())
-                ->extraModalFooterActions(function (array $arguments) use ($service): array {
-                    $sourceId = (int) ($arguments['gallery'] ?? 0);
-                    $artworkId = (int) ($arguments['artwork'] ?? 0);
-                    $overrides = $service->heroArtworkOverridesFor($this->settings(), $sourceId, $artworkId);
-
-                    return [
-                        AdminDialog::headerAction(
-                            'dialogRestoreHeroOriginal',
-                            AdminRowAction::Restore,
-                            function () use ($sourceId, $artworkId, $service): void {
-                                $changed = $service->resetHeroArtworkOverrides($this->settings(), $sourceId, $artworkId);
-                                if ($changed) {
-                                    $this->reloadWorkspace();
-                                    app(AdminNotifier::class)->notification(
-                                        title: 'Hero Artwork overrides cleared', status: 'success',
-                                    );
-                                }
-                                $this->replaceMountedAction('editHeroArtwork', [
-                                    'gallery' => $sourceId, 'artwork' => $artworkId,
-                                ]);
-                            },
-                        )->label('Restore original')->disabled($overrides === []),
-                    ];
-                })
                 ->action(function (array $arguments, array $data) use ($service): void {
                     $sourceId = (int) ($arguments['gallery'] ?? 0);
                     $artwork = $this->heroArtworkForAction($arguments);

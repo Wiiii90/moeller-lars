@@ -1,19 +1,7 @@
-@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => null, 'heroNavigation' => false, 'enableViewer' => null, 'eager' => false, 'priority' => null, 'allowVideoSound' => false, 'showMediaCredits' => null, 'showMediaCopyright' => null, 'captionLayout' => null, 'galleryIndex' => false, 'galleryShift' => 0, 'galleryGap' => 0, 'heroFitted' => false, 'heroOverrides' => [], 'heroMediaAsset' => null])
+@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => null, 'heroNavigation' => false, 'enableViewer' => null, 'eager' => false, 'priority' => null, 'allowVideoSound' => false, 'showMediaCredits' => null, 'showMediaCopyright' => null, 'captionLayout' => null, 'galleryIndex' => false, 'galleryShift' => 0, 'galleryGap' => 0, 'heroFitted' => false, 'heroOverrides' => []])
 
 @php
     $viewerItem = app(\App\Domain\Artwork\PublicArtworkViewerItem::class)->forArtwork($artwork, $media, $enableViewer);
-    $heroMedia = $heroFitted && $heroMediaAsset instanceof \App\Models\MediaAsset ? $heroMediaAsset : null;
-    if ($heroMedia !== null) {
-        $heroMime = (string) $heroMedia->getAttribute('mime_type');
-        $viewerItem['kind'] = \App\Domain\Media\MediaTypePolicy::isVideo($heroMime) ? 'video' : 'image';
-        $viewerItem['mime'] = $heroMime;
-        $viewerItem['src'] = $media->originalUrlForAsset($heroMedia);
-        $viewerItem['alt'] = $media->altTextForAsset($heroMedia);
-    }
-    if ($heroFitted && array_key_exists('alt_text', $heroOverrides)
-        && is_string($heroOverrides['alt_text']) && trim($heroOverrides['alt_text']) !== '') {
-        $viewerItem['alt'] = trim($heroOverrides['alt_text']);
-    }
     if ($heroFitted && isset($heroOverrides['title'])) {
         $viewerItem['title'] = (string) $heroOverrides['title'];
     }
@@ -23,12 +11,10 @@
     $mime = $viewerItem['mime'];
     $isVideo = $kind === 'video';
     $galleryVideoPlayer = $galleryIndex && $isVideo;
-    $thumbnail = $isVideo ? null : ($heroMedia !== null
-        ? \App\Domain\Media\MediaPreviewVariant::imageThumbnail($heroMedia)
-        : $media->thumbnailVariant($artwork));
+    $thumbnail = $isVideo ? null : $media->thumbnailVariant($artwork);
     $imageUrl = $thumbnail ? $media->variantUrl($thumbnail) : null;
     $posterVariant = $isVideo
-        ? \App\Domain\Media\MediaPreviewVariant::videoPoster($heroMedia ?? $media->primaryAsset($artwork))
+        ? \App\Domain\Media\MediaPreviewVariant::videoPoster($media->primaryAsset($artwork))
         : null;
     $posterUrl = $posterVariant ? $media->variantUrl($posterVariant) : null;
     $category = $artwork->getRelationValue('category');
@@ -73,19 +59,8 @@
     if ($captionLayout !== null) {
         $configuration['arrangement'] = \App\Domain\Artwork\ArtworkInformation::defaultArrangement($captionLayout === 'rights_right');
     }
-    if ($heroFitted && is_array($heroOverrides['information'] ?? null)) {
-        $info = $heroOverrides['information'];
-        if (array_key_exists('enabled', $info)) {
-            $configuration['enabled'] = (bool) $info['enabled'];
-        }
-        foreach ($info['visible'] ?? [] as $field => $visible) {
-            if (array_key_exists($field, \App\Domain\Artwork\ArtworkInformation::FIELDS)) {
-                $configuration['visible'][$field] = (bool) $visible;
-            }
-        }
-    }
     $asset = ($configuration['visible']['credits'] || $configuration['visible']['copyright'])
-        ? ($heroMedia ?? $media->primaryAsset($artwork)) : null;
+        ? $media->primaryAsset($artwork) : null;
     $informationRows = \App\Domain\Artwork\ArtworkInformation::rows(
         $artwork, $asset, $configuration, $heroFitted ? $heroOverrides : [],
     );
