@@ -17,6 +17,7 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\HierarchyParentField;
 use App\Filament\Support\SiteNodePresentation;
+use App\Filament\Support\PagesSettingsDialog;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
@@ -64,6 +65,9 @@ final class SitePages extends Page
     /** @var list<array<string, mixed>> */
     public array $filteredRows = [];
 
+    /** Full canonical menu projection, unaffected by table search and pagination. */
+    public array $stageNavigationSections = [];
+
     /** @var array{total:int,published:int,unpublished:int,top_level:int,children:int,navigation:int,galleries:int} */
     public array $metrics = [
         'total' => 0,
@@ -80,6 +84,12 @@ final class SitePages extends Page
 
     /** Pages reuses the Journal/Gallery Preview without storing a second page projection. */
     public bool $pagesPreviewAutoFocus = true;
+
+    public string $pagesStagePanel = 'navigation';
+
+    public bool $stagePagesAutoPublish = false;
+
+    public string $stageNewGalleryTemplate = 'standard';
 
     public ?int $pagesPreviewFocusedSectionId = null;
 
@@ -134,6 +144,7 @@ final class SitePages extends Page
 
     public function mount(): void
     {
+        $this->stagePagesAutoPublish = app(PagesSettingsDialog::class)->fill()['pages_auto_publish'];
         $this->loadSections();
     }
 
@@ -210,7 +221,7 @@ final class SitePages extends Page
     public function pagesStagePreviewUrl(): string
     {
         if ($this->pagesPreviewAutoFocus && $this->pagesPreviewFocusedSectionId !== null) {
-            foreach ($this->filteredRows as $row) {
+            foreach ($this->stageNavigationRows() as $row) {
                 if ((int) $row['id'] === $this->pagesPreviewFocusedSectionId
                     && is_string($row['preview_url'])) {
                     return $row['preview_url'];
@@ -233,7 +244,7 @@ final class SitePages extends Page
         $selectedIds = $this->selectedIds();
         $previewableIds = array_values(array_map(
             static fn (array $row): int => (int) $row['id'],
-            array_filter($this->filteredRows, static fn (array $row): bool =>
+            array_filter($this->stageNavigationRows(), static fn (array $row): bool =>
                 is_string($row['preview_url']) && in_array((int) $row['id'], $selectedIds, true)
             ),
         ));
@@ -255,6 +266,117 @@ final class SitePages extends Page
         }
     }
 
+    /** The menu canvas uses the same page projection as the table, without its filters. */
+    public function stageNavigationRows(): array
+    {
+        return $this->flattenGroups($this->stageNavigationSections);
+    }
+
+    public function stageSelectedPage(): ?array
+    {
+        $selected = $this->selectedIds();
+        if (count($selected) !== 1) {
+            return null;
+        }
+        foreach ($this->stageNavigationRows() as $row) {
+            if ((int) $row['id'] === $selected[0]) {
+                return $row;
+            }
+        }
+
+        return null;
+    }
+
+    public function showPagesStagePanel(string $panel): void
+    {
+        if (in_array($panel, ['create', 'navigation', 'settings'], true)) {
+            $this->pagesStagePanel = $panel;
+        }
+    }
+
+    public function focusStagePage(int $id): void
+    {
+        foreach ($this->stageNavigationRows() as $row) {
+            if ((int) $row['id'] === $id) {
+                $this->selectedSectionIds = [$id];
+                $this->syncPagesPreviewFocus();
+
+                return;
+            }
+        }
+    }
+
+    public function createStagePage(): void
+    {
+        $data = [
+            'type' => $this->newPageType,
+            'template' => match ($this->newPageType) {
+                SiteSectionType::Gallery->value => $this->stageNewGalleryTemplate,
+                SiteSectionType::Journal->value => $this->newJournalTemplate,
+                default => null,
+            },
+            'name' => $this->newPageTitle,
+            'slug' => '',
+            'parent_id' => $this->newPageParent !== '' ? $this->newPageParent : null,
+            'position' => null,
+        ];
+
+        try {
+            $section = DB::transaction(fn (): SiteSection => $this->createPageFromDialog($data));
+            $this->newPageTitle = '';
+            $this->newPageParent = '';
+            $this->pageNumber = 1;
+            $this->loadSections(navigationChanged: true);
+            $this->selectedSectionIds = [(int) $section->getKey()];
+            $this->syncPagesPreviewFocus();
+            $this->pagesStagePanel = 'navigation';
+            app(AdminNotifier::class)->notification(title: $section->nodeType()->label().' added', status: 'success');
+        } catch (ValidationException $exception) {
+            $this->validationNotification('Page was not added', $exception);
+        }
+    }
+
+    public function setPagesStageAutoPublish(bool $enabled): void
+    {
+        $dialog = app(PagesSettingsDialog::class);
+        $data = $dialog->fill();
+        $data['pages_auto_publish'] = $enabled;
+        $changed = $dialog->save($data);
+        $this->stagePagesAutoPublish = $dialog->fill()['pages_auto_publish'];
+        if ($changed) {
+            app(AdminNotifier::class)->notification(title: 'Pages settings saved', status: 'success');
+        }
+    }
+
+    public function setPagesStageParent(int $id, string $parent): void
+    {
+        $page = $this->stageSelectedPage();
+        if ($page === null || (int) $page['id'] !== $id || $page['is_home']) {
+            return;
+        }
+
+        $this->placeSortedSection($id, PHP_INT_MAX, $parent === '' ? 'root' : $parent, true);
+    }
+
+    public function setPagesStageHomeNavigation(bool $visible): void
+    {
+        $page = $this->stageSelectedPage();
+        if ($page === null || ! $page['is_home']) {
+            return;
+        }
+        try {
+            $changed = app(SiteSectionEditorialService::class)->updateHomeNavigationVisibility(
+                SiteSection::query()->findOrFail((int) $page['id']), $visible,
+            );
+            $this->loadSections(navigationChanged: $changed);
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Home navigation updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->validationNotification('Home navigation unchanged', $exception);
+        }
+    }
+
     public function toggleSelectAll(): void
     {
         $visibleIds = array_map(static fn (array $row): int => (int) $row['id'], $this->filteredRows);
@@ -273,7 +395,17 @@ final class SitePages extends Page
 
     public function sortSection(int $sectionId, int $position, int|string|null $groupId = null): void
     {
-        if (! $this->reorderEnabled) {
+        $this->placeSortedSection($sectionId, $position, $groupId, false);
+    }
+
+    public function sortStageSection(int $sectionId, int $position, int|string|null $groupId = null): void
+    {
+        $this->placeSortedSection($sectionId, $position, $groupId, true);
+    }
+
+    private function placeSortedSection(int $sectionId, int $position, int|string|null $groupId, bool $fromStage): void
+    {
+        if (! $fromStage && ! $this->reorderEnabled) {
             app(AdminNotifier::class)->notification(
                 title: 'Reordering is unavailable for this view',
                 body: $this->filtersActive
@@ -791,6 +923,7 @@ final class SitePages extends Page
             'galleries' => count(array_filter($allRows, static fn (array $row): bool => $row['type'] === SiteSectionType::Gallery->value)),
         ];
 
+        $this->stageNavigationSections = $allGroups;
         $this->filtersActive = trim($this->search) !== '' || $this->typeFilter !== '' || $this->statusFilter !== '';
         $groups = $this->filtersActive ? $this->filteredGroups($allGroups) : $allGroups;
 

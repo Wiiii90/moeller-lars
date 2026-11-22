@@ -179,59 +179,193 @@ trait CustomPageWorkspaceComponentActions
         }
     }
 
-    /**
-     * One canonical Layout-area border edit. Area membership is stored in the
-     * page component document; this does not introduce another Page record.
-     */
-    public function editGridAreaAction(): Action
+    /** Direct Stage mutations reuse the canonical editorial owner, not dialog actions. */
+    public function showCustomStagePanel(string $panel): void
     {
-        $action = Action::make('editGridArea')
-            ->label('Area separator')
-            ->fillForm(function (array $arguments): array {
-                $index = filter_var($arguments['gridIndex'] ?? null, FILTER_VALIDATE_INT);
-                $grid = $index !== false ? $this->componentAt((int) $index, 'layout') : null;
-                $areaId = $arguments['areaId'] ?? null;
-                $areaIndex = is_array($grid) && is_string($areaId)
-                    ? array_search($areaId, array_column($grid['areas'], 'id'), true)
-                    : false;
-                if ($areaIndex === false) {
-                    throw ValidationException::withMessages(['border' => 'This Layout area changed. Reopen its settings.']);
-                }
-                $this->editingComponentOriginal = $grid;
+        if (in_array($panel, ['create', 'layout', 'settings'], true)) {
+            $this->customStagePanel = $panel;
+        }
+    }
 
-                return ['border' => $grid['areas'][$areaIndex]['border'] ?? 'none'];
-            })
-            ->schema([
-                Select::make('border')->label('Area separator')
-                    ->options(['none' => 'None', ...self::DIVIDER_LABELS])
-                    ->required(),
-            ])
-            ->modalHeading(__('Area separator'))
-            ->action(function (array $data, array $arguments): void {
-                $index = filter_var($arguments['gridIndex'] ?? null, FILTER_VALIDATE_INT);
-                $grid = $index !== false ? $this->componentAt((int) $index, 'layout') : null;
-                $areaId = $arguments['areaId'] ?? null;
-                $areaIndex = is_array($grid) && is_string($areaId)
-                    ? array_search($areaId, array_column($grid['areas'], 'id'), true)
-                    : false;
-                if ($areaIndex === false || ! in_array($data['border'] ?? null, ['none', ...CustomPageSetting::DIVIDER_VARIANTS], true)) {
-                    throw ValidationException::withMessages(['border' => 'Choose a supported area separator.']);
-                }
-                if (($grid['areas'][$areaIndex]['border'] ?? 'none') === $data['border']) {
-                    return;
-                }
-                $grid['areas'][$areaIndex]['border'] = $data['border'];
-                $changed = app(CustomPageEditorialService::class)->updateBlock(
-                    $this->settings(), (int) $index, 'layout', $grid, $this->editingComponentOriginal,
-                );
-                if ($changed) {
-                    $this->clearSelections();
-                    $this->reloadWorkspace();
-                    app(AdminNotifier::class)->notification(title: 'Layout area updated', status: 'success');
-                }
-            });
+    public function focusStageComponent(int $index, string $type): void
+    {
+        $component = $this->componentAt($index, $type);
+        $this->selectedComponentTargets = [$index.':'.$type];
+        $this->stageSelectedLayoutId = $type === 'layout' ? (string) ($component['id'] ?? '') : null;
+        $this->syncCustomPreviewFocus();
+    }
 
-        return AdminDialog::command($action, 'Apply changes', AdminDialogSize::Small);
+    public function createStageComponent(): void
+    {
+        $type = $this->stageQuickType;
+        if (! in_array($type, ['text', 'image', 'video', 'layout', 'contact', 'legal_disclaimer'], true)) {
+            return;
+        }
+
+        $data = [
+            'type' => $type,
+            'publication_state' => 'unpublished',
+            'title' => $this->stageQuickTitle,
+            'layout_area_id' => $this->stageQuickAreaId !== '' ? $this->stageQuickAreaId : null,
+            'layout_mode' => 'rows',
+            'columns' => 2,
+            'rows' => 1,
+            'gap' => 'medium',
+            'column_layout' => 'equal',
+            'media_asset_id' => null,
+            'image_decorative' => false,
+        ];
+        try {
+            $changed = app(CustomPageEditorialService::class)->addBlock($this->settings(), $this->componentPayload($data));
+            if (! $changed) {
+                return;
+            }
+            $index = count($this->settings()->fresh()->components()) - 1;
+            $this->stageQuickTitle = '';
+            $this->customStagePanel = 'layout';
+            $this->reloadWorkspace();
+            $this->focusStageComponent($index, $type);
+            app(AdminNotifier::class)->notification(title: 'Unpublished component created', status: 'success');
+        } catch (ValidationException $exception) {
+            $this->stageValidationFailure('Component was not created', $exception);
+        }
+    }
+
+    public function sortStageComponent(string $target, int $position, int|string|null $groupId = null): void
+    {
+        try {
+            $changed = app(CustomPageEditorialService::class)->placeLayoutComponent(
+                $this->settings(), $target, $position, (string) ($groupId ?? 'root'),
+            );
+            $this->clearSelections();
+            $this->reloadWorkspace();
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Layout placement updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->reloadWorkspace();
+            $this->stageValidationFailure('Layout placement unchanged', $exception);
+        }
+    }
+
+    public function selectStageLayout(string $id): void
+    {
+        foreach ($this->settings()->components() as $index => $component) {
+            if (($component['type'] ?? null) === 'layout' && ($component['id'] ?? null) === $id) {
+                $this->focusStageComponent($index, 'layout');
+                $this->customStagePanel = 'settings';
+
+                return;
+            }
+        }
+    }
+
+    public function setStageLayoutProperty(string $id, string $field, string $value): void
+    {
+        if (! in_array($field, ['layout_mode', 'columns', 'rows', 'gap', 'column_layout'], true)) {
+            return;
+        }
+        $selected = $this->stageLayoutById($id);
+        if ($selected === null) {
+            return;
+        }
+        $old = $selected['block'];
+        $settings = [
+            'layout_mode' => (string) ($old['layout_mode'] ?? 'rows'),
+            'columns' => (int) $old['columns'],
+            'rows' => (int) $old['rows'],
+            'gap' => (string) $old['gap'],
+            'column_layout' => (string) ($old['column_layout'] ?? 'equal'),
+        ];
+        $settings[$field] = in_array($field, ['columns', 'rows'], true) ? (int) $value : $value;
+        if ($settings['layout_mode'] === 'columns') {
+            $settings['rows'] = 1;
+        }
+        if ($settings['columns'] !== 2) {
+            $settings['column_layout'] = 'equal';
+        }
+
+        try {
+            $updated = array_replace($old, CustomPageSetting::layoutBlock(
+                CustomPageSetting::componentPublished($old),
+                $settings['columns'], $settings['rows'], $settings['gap'],
+                $old, $settings['column_layout'], $settings['layout_mode'],
+            ));
+            $changed = app(CustomPageEditorialService::class)->updateBlock(
+                $this->settings(), $selected['index'], 'layout', $updated, $old,
+            );
+            $this->reloadWorkspace();
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Layout updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->reloadWorkspace();
+            $this->stageValidationFailure('Layout unchanged', $exception);
+        }
+    }
+
+    public function setTableComponentLayout(int $index, string $type, string $destination): void
+    {
+        $original = $this->componentAt($index, $type);
+        $updated = $original;
+        if ($destination === '') {
+            unset($updated['layout_area_id']);
+        } else {
+            $updated['layout_area_id'] = $destination;
+        }
+
+        try {
+            $changed = app(CustomPageEditorialService::class)->updateBlock(
+                $this->settings(), $index, $type, $updated, $original,
+            );
+            $this->reloadWorkspace();
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Layout assignment updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->reloadWorkspace();
+            $this->stageValidationFailure('Layout assignment unchanged', $exception);
+        }
+    }
+
+    public function setStageLayoutAreaBorder(string $id, string $areaId, string $border): void
+    {
+        if (! in_array($border, ['none', ...CustomPageSetting::DIVIDER_VARIANTS], true)) {
+            return;
+        }
+        $selected = $this->stageLayoutById($id);
+        if ($selected === null) {
+            return;
+        }
+        $old = $selected['block'];
+        $areaIndex = array_search($areaId, array_column($old['areas'], 'id'), true);
+        if ($areaIndex === false || ($old['areas'][$areaIndex]['border'] ?? 'none') === $border) {
+            return;
+        }
+        $updated = $old;
+        $updated['areas'][$areaIndex]['border'] = $border;
+        try {
+            $changed = app(CustomPageEditorialService::class)->updateBlock(
+                $this->settings(), $selected['index'], 'layout', $updated, $old,
+            );
+            $this->reloadWorkspace();
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Layout boundary updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->reloadWorkspace();
+            $this->stageValidationFailure('Layout boundary unchanged', $exception);
+        }
+    }
+
+        private function stageValidationFailure(string $title, ValidationException $exception): void
+    {
+        $messages = array_merge(...array_values($exception->errors()));
+        app(AdminNotifier::class)->notification(
+            title: $title,
+            body: $messages[0] ?? 'The change could not be saved.',
+            status: 'danger',
+        );
     }
 
     public function addComponentAction(): Action

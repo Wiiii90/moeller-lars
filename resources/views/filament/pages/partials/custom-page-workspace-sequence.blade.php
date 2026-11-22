@@ -2,6 +2,7 @@
             <section class="custom-page-component-sequence admin-hierarchy" aria-label="Page component sequence">
             <div class="custom-page-component-sequence__header admin-hierarchy__header">
                 <span class="admin-hierarchy__ordering-heading">Position</span>
+                <span class="custom-page-component-sequence__layout-heading">Layout</span>
                 <span>Component</span>
                 <span>Content</span>
                 <span class="custom-page-component-sequence__actions-heading admin-row-actions-heading">Actions</span>

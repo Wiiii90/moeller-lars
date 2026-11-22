@@ -1,38 +1,88 @@
-{{-- The existing Stage owns placements. Layout areas are not subordinate Pages. --}}
-<div class="custom-page-layout-stage" aria-label="Custom Page layout">
-    @foreach ($this->layoutStageLayouts() as $layout)
-        <section class="custom-page-layout-stage__grid" aria-label="Layout {{ $loop->iteration }}">
-            <div class="custom-page-layout-stage__header">
-                <span>{{ __('Layout') }} {{ $loop->iteration }} ({{ $layout['columns'] }} {{ $layout['columns'] === 1 ? __('column') : __('columns') }}, {{ $layout['rows'] }} {{ $layout['rows'] === 1 ? __('row') : __('rows') }})</span>
-                <button class="admin-action" type="button"
-                    wire:click="mountAction('editComponent', { componentIndex: {{ $layout['index'] }}, componentType: 'layout' })">
-                    {{ __('Edit') }}
-                </button>
-            </div>
-            <div class="custom-page-layout-stage__cells custom-page-layout-stage__cells--columns-{{ $layout['columns'] }} custom-page-layout-stage__cells--layout-{{ $layout['column_layout'] }}">
-                @foreach ($layout['areas'] as $area)
-                    <div class="custom-page-layout-stage__cell">
-                        <button class="custom-page-layout-stage__add" type="button"
-                            wire:click="mountAction('addComponent', { layoutAreaId: '{{ $area['id'] }}' })"
-                            title="Add content to this Layout area">
-                            <strong>{{ __('Row') }} {{ $area['row'] }}, {{ __('column') }} {{ $area['column'] }}</strong>
-                            <span>{{ count($area['members']) }} {{ count($area['members']) === 1 ? __('component') : __('components') }}</span>
+@php
+    $stageItems = $stageItems ?? $this->stageLayoutItems();
+    $stageAreaId = $stageAreaId ?? 'root';
+    $stageDepth = $stageDepth ?? 0;
+@endphp
+@if ($stageDepth === 0)
+    <div class="custom-page-layout-stage admin-visual-stage__field-scroll" aria-label="Page layout canvas">
+@endif
+<div class="custom-page-layout-stage__flow{{ $stageItems === [] ? ' custom-page-layout-stage__flow--empty' : '' }}"
+    wire:key="custom-layout-group-{{ $stageAreaId }}"
+    wire:sort="sortStageComponent"
+    wire:sort:group="custom-layout-canvas"
+    wire:sort:group-id="{{ $stageAreaId }}"
+    @if ($stageItems === []) wire:sort:config="{ emptyInsertThreshold: 0 }" @endif>
+    @foreach ($stageItems as $component)
+        @php
+            $type = (string) ($component['type'] ?? '');
+            $index = (int) ($component['_root_index'] ?? -1);
+            $target = $index.':'.$type;
+            $isLayout = $type === 'layout';
+            $selected = $customPreviewFocusedTarget === $target;
+            $name = $type === 'text' && filled($component['title'] ?? null)
+                ? (string) $component['title']
+                : (\App\Filament\Support\ComponentEditorTypes::LABELS[$type] ?? 'Component');
+            $preview = $type === 'text' ? trim(strip_tags((string) ($component['body'] ?? ''))) : '';
+        @endphp
+        <div class="custom-page-layout-stage__item{{ $selected ? ' is-selected' : '' }}"
+            wire:key="custom-layout-component-{{ $index }}-{{ $type }}"
+            wire:sort:item="{{ $target }}">
+            @if ($isLayout)
+                <section class="custom-page-layout-stage__layout">
+                    <div class="custom-page-layout-stage__header">
+                        <button class="admin-drag-handle" type="button" wire:sort:handle
+                            aria-label="Move layout" title="Move layout">
+                            <x-filament::icon icon="heroicon-m-bars-3" />
                         </button>
-                        @foreach ($area['members'] as $member)
-                            <button class="custom-page-layout-stage__member" type="button"
-                                wire:click="mountAction('editComponent', { componentIndex: {{ $member['index'] }}, componentType: '{{ $member['type'] }}' })"
-                                title="{{ $member['editable'] ? 'Edit' : 'Read-only' }} {{ $member['label'] }}"
-                                @disabled(! $member['editable'])>
-                                {{ $member['label'] }}
-                            </button>
-                        @endforeach
-                        <button class="admin-action custom-page-layout-stage__border" type="button"
-                            wire:click="mountAction('editLayoutArea', { gridIndex: {{ $layout['index'] }}, areaId: '{{ $area['id'] }}' })">
-                            {{ __('Separator') }}
+                        <button class="custom-page-layout-stage__identity" type="button"
+                            wire:click="focusStageComponent({{ $index }}, 'layout')"
+                            aria-pressed="{{ $selected ? 'true' : 'false' }}">
+                            <x-filament::icon icon="heroicon-m-squares-2x2" />
+                            {{ __('Layout') }}
+                        </button>
+                        <button class="admin-action custom-page-layout-stage__configure" type="button"
+                            wire:click="selectStageLayout('{{ $component['id'] }}')"
+                            aria-label="Adjust layout properties">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" />
                         </button>
                     </div>
-                @endforeach
-            </div>
-        </section>
+                    <div class="custom-page-layout-stage__cells custom-page-layout-stage__cells--columns-{{ $component['columns'] }} custom-page-layout-stage__cells--layout-{{ $component['column_layout'] ?? 'equal' }}">
+                        @foreach ($component['areas'] as $areaIndex => $area)
+                            <div class="custom-page-layout-stage__cell">
+                                <span class="custom-page-layout-stage__area-label">
+                                    {{ ($component['layout_mode'] ?? 'rows') === 'columns' ? __('Column') : __('Area') }} {{ $areaIndex + 1 }}
+                                </span>
+                                @include('filament.pages.partials.custom-page-layout-stage', [
+                                    'stageItems' => $area['blocks'] ?? [],
+                                    'stageAreaId' => $area['id'],
+                                    'stageDepth' => $stageDepth + 1,
+                                ])
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+            @else
+                <div class="custom-page-layout-stage__component">
+                    <button class="admin-drag-handle" type="button" wire:sort:handle
+                        aria-label="Move {{ $name }}" title="Move component">
+                        <x-filament::icon icon="heroicon-m-bars-3" />
+                    </button>
+                    <button class="custom-page-layout-stage__identity" type="button"
+                        wire:click="focusStageComponent({{ $index }}, '{{ $type }}')"
+                        aria-pressed="{{ $selected ? 'true' : 'false' }}">
+                        <span>{{ $name }}</span>
+                        @if ($preview !== '')
+                            <small>{{ \Illuminate\Support\Str::limit($preview, 72) }}</small>
+                        @endif
+                    </button>
+                    @unless ($component['published'] ?? true)
+                        <x-filament::icon icon="heroicon-m-eye-slash" class="custom-page-layout-stage__unpublished" />
+                    @endunless
+                </div>
+            @endif
+        </div>
     @endforeach
 </div>
+@if ($stageDepth === 0)
+    </div>
+@endif

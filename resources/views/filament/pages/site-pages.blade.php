@@ -37,6 +37,152 @@
             aria-label="Pages editor and live public preview">
             <div class="admin-visual-stage__pane admin-visual-stage__editor-pane">
                 <h2 class="admin-section__kicker admin-visual-stage__heading">{{ __('Editor') }}</h2>
+                <div class="admin-stage-tabs admin-stage-tabs--three" role="tablist" aria-label="Pages editing mode">
+                    @foreach (['create' => 'Create', 'navigation' => 'Navigation', 'settings' => 'Settings'] as $panel => $label)
+                        <button class="admin-action {{ $pagesStagePanel === $panel ? 'is-primary' : '' }}"
+                            type="button" role="tab" aria-selected="{{ $pagesStagePanel === $panel ? 'true' : 'false' }}"
+                            wire:click="showPagesStagePanel('{{ $panel }}')">{{ __($label) }}</button>
+                    @endforeach
+                </div>
+                @if ($pagesStagePanel === 'create')
+                    <form class="admin-stage-workspace admin-visual-stage__field-scroll" wire:submit.prevent="createStagePage">
+                        <label class="admin-stage-workspace__field">
+                            <span>{{ __('Page type') }}</span>
+                            <select wire:model.live="newPageType">
+                                @foreach ($editableTypeOptions as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        @if ($newPageType === 'gallery')
+                            <label class="admin-stage-workspace__field">
+                                <span>{{ __('Template') }}</span>
+                                <select wire:model="stageNewGalleryTemplate">
+                                    @foreach (\App\Domain\Content\GalleryTemplate::options() as $value => $label)
+                                        <option value="{{ $value }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                        @elseif ($newPageType === 'journal')
+                            <label class="admin-stage-workspace__field">
+                                <span>{{ __('Template') }}</span>
+                                <select wire:model="newJournalTemplate">
+                                    @foreach ($journalTemplateOptions as $value => $label)
+                                        <option value="{{ $value }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                        @endif
+                        <label class="admin-stage-workspace__field">
+                            <span>{{ __('Name') }}</span>
+                            <input type="text" maxlength="160" wire:model="newPageTitle" placeholder="{{ __('Page name') }}">
+                        </label>
+                        <label class="admin-stage-workspace__field">
+                            <span>{{ __('Navigation parent') }}</span>
+                            <select wire:model="newPageParent">
+                                <option value="">{{ __('Top level') }}</option>
+                                @foreach ($parentOptions as $id => $label)
+                                    <option value="{{ $id }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <button class="admin-action is-primary" type="submit">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Add->mini()" />
+                            {{ __('Create page') }}
+                        </button>
+                    </form>
+                @elseif ($pagesStagePanel === 'navigation')
+                    @php($stageSelected = $this->stageSelectedPage())
+                    <nav class="pages-stage__navigation admin-visual-stage__field-scroll"
+                        aria-label="Visual website navigation editor">
+                        <div class="pages-stage__menu" wire:sort="sortStageSection"
+                            wire:sort:group="pages-stage-navigation" wire:sort:group-id="root">
+                            @foreach ($stageNavigationSections as $section)
+                                <div class="pages-stage__root" wire:key="stage-page-{{ $section['id'] }}"
+                                    wire:sort:item="{{ $section['id'] }}">
+                                    <div class="pages-stage__entry {{ ($stageSelected['id'] ?? null) === $section['id'] ? 'is-selected' : '' }}">
+                                        <button class="admin-drag-handle" type="button"
+                                            @unless ($section['is_home']) wire:sort:handle @endunless
+                                            @disabled($section['is_home'])
+                                            aria-label="Move {{ $section['title'] }}">
+                                            <x-filament::icon icon="heroicon-m-bars-3" />
+                                        </button>
+                                        <button class="pages-stage__label" type="button"
+                                            wire:click="focusStagePage({{ $section['id'] }})">
+                                            <span>{{ $section['navigation_label'] ?: $section['title'] }}</span>
+                                            @if ($section['state'] !== 'published')
+                                                <x-filament::icon icon="heroicon-m-eye-slash" class="pages-stage__unpublished" />
+                                            @endif
+                                        </button>
+                                        @if ($section['children'] !== [])
+                                            <span class="pages-stage__child-count">{{ count($section['children']) }}</span>
+                                        @endif
+                                    </div>
+                                    @unless ($section['is_home'])
+                                        <div class="pages-stage__submenu{{ $section['children'] === [] ? ' pages-stage__submenu--empty' : '' }}"
+                                            wire:sort="sortStageSection"
+                                            wire:sort:group="pages-stage-navigation"
+                                            wire:sort:group-id="{{ $section['id'] }}"
+                                            @if ($section['children'] === []) wire:sort:config="{ emptyInsertThreshold: 0 }" @endif>
+                                            @foreach ($section['children'] as $child)
+                                                <div class="pages-stage__entry pages-stage__entry--child {{ ($stageSelected['id'] ?? null) === $child['id'] ? 'is-selected' : '' }}"
+                                                    wire:key="stage-child-{{ $child['id'] }}"
+                                                    wire:sort:item="{{ $child['id'] }}">
+                                                    <button class="admin-drag-handle" type="button"
+                                                        wire:sort:handle aria-label="Move {{ $child['title'] }}">
+                                                        <x-filament::icon icon="heroicon-m-bars-3" />
+                                                    </button>
+                                                    <button class="pages-stage__label" type="button"
+                                                        wire:click="focusStagePage({{ $child['id'] }})">
+                                                        <span>{{ $child['navigation_label'] ?: $child['title'] }}</span>
+                                                        @if ($child['state'] !== 'published')
+                                                            <x-filament::icon icon="heroicon-m-eye-slash" class="pages-stage__unpublished" />
+                                                        @endif
+                                                    </button>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endunless
+                                </div>
+                            @endforeach
+                        </div>
+                    </nav>
+                @else
+                    @php($stageSelected = $this->stageSelectedPage())
+                    <div class="admin-stage-workspace admin-visual-stage__field-scroll" aria-label="Page and navigation settings">
+                        <div class="admin-stage-workspace__group">
+                            <strong>{{ __('Page defaults') }}</strong>
+                            <label class="pages-stage__toggle">
+                                <input type="checkbox" @checked($stagePagesAutoPublish)
+                                    wire:change="setPagesStageAutoPublish($event.target.checked)">
+                                {{ __('Auto-publish new pages') }}
+                            </label>
+                        </div>
+                        @if ($stageSelected !== null)
+                            <div class="admin-stage-workspace__group">
+                                <strong>{{ $stageSelected['navigation_label'] ?: $stageSelected['title'] }}</strong>
+                                @if ($stageSelected['is_home'])
+                                    <label class="pages-stage__toggle">
+                                        <input type="checkbox" @checked($stageSelected['show_in_navigation'])
+                                            wire:change="setPagesStageHomeNavigation($event.target.checked)">
+                                        {{ __('Show Home in navigation') }}
+                                    </label>
+                                @else
+                                    <label class="admin-stage-workspace__field">
+                                        <span>{{ __('Navigation parent') }}</span>
+                                        <select wire:change="setPagesStageParent({{ $stageSelected['id'] }}, $event.target.value)">
+                                            <option value="" @selected($stageSelected['parent_id'] === null)>{{ __('Top level') }}</option>
+                                            @foreach ($parentOptions as $id => $label)
+                                                @continue((int) $id === (int) $stageSelected['id'])
+                                                <option value="{{ $id }}" @selected((int) $stageSelected['parent_id'] === (int) $id)>{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                @endif
             </div>
             <div class="admin-visual-stage__pane admin-visual-stage__preview-pane">
                 <h2 class="admin-section__kicker admin-visual-stage__heading">{{ __('Live preview') }}</h2>

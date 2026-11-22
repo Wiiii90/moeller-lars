@@ -86,6 +86,81 @@ final class CustomPageEditorialService
         });
     }
 
+    /**
+     * Stage sorting changes both placement and order in the canonical component
+     * document. Table sorting deliberately retains the component's current area.
+     */
+    public function placeLayoutComponent(CustomPageSetting $settings, string $locator, int $position, string $destination): bool
+    {
+        if (! preg_match('/^(\\d+):([a-z_]+)$/', $locator, $matches)
+            || ($destination !== 'root' && ! preg_match('/^[a-z0-9-]{8,64}$/i', $destination))) {
+            throw ValidationException::withMessages(['component' => 'Choose a valid layout destination.']);
+        }
+
+        return DB::transaction(function () use ($settings, $matches, $position, $destination): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $index = (int) $matches[1];
+            $this->assertTarget($blocks, $index, $matches[2]);
+            $areaId = $destination === 'root' ? null : $destination;
+            $ownerIndex = null;
+            if ($areaId !== null) {
+                foreach ($blocks as $candidateIndex => $candidate) {
+                    if (($candidate['type'] ?? null) === 'layout'
+                        && in_array($areaId, array_column($candidate['areas'] ?? [], 'id'), true)) {
+                        $ownerIndex = $candidateIndex;
+                        break;
+                    }
+                }
+                if ($ownerIndex === null) {
+                    throw ValidationException::withMessages(['component' => 'The destination layout area no longer exists.']);
+                }
+            }
+
+            $before = AdminOrderingState::fingerprints($blocks);
+            $component = $blocks[$index];
+            array_splice($blocks, $index, 1);
+            if ($areaId === null) {
+                unset($component['layout_area_id']);
+            } else {
+                $component['layout_area_id'] = $areaId;
+            }
+
+            $siblings = [];
+            foreach ($blocks as $candidateIndex => $candidate) {
+                if (($candidate['layout_area_id'] ?? null) === $areaId) {
+                    $siblings[] = $candidateIndex;
+                }
+            }
+            $position = max(0, min($position, count($siblings)));
+            if ($position < count($siblings)) {
+                $insertion = $siblings[$position];
+            } elseif ($siblings !== []) {
+                $insertion = $siblings[count($siblings) - 1] + 1;
+            } elseif ($areaId !== null) {
+                // The owner may have moved when the source component was removed.
+                $insertion = 0;
+                foreach ($blocks as $candidateIndex => $candidate) {
+                    if (($candidate['type'] ?? null) === 'layout'
+                        && in_array($areaId, array_column($candidate['areas'] ?? [], 'id'), true)) {
+                        $insertion = $candidateIndex + 1;
+                        break;
+                    }
+                }
+            } else {
+                $insertion = count($blocks);
+            }
+            array_splice($blocks, $insertion, 0, [$component]);
+
+            return $this->persist($fresh, $blocks, [
+                'action' => 'site_section.page_components_reordered',
+                'scope' => 'page-components:'.(int) $fresh->getAttribute('site_section_id'),
+                'before' => $before,
+                'after' => AdminOrderingState::fingerprints($blocks),
+            ]);
+        });
+    }
+
     public function convertBlock(CustomPageSetting $settings, int $index, string $expectedType, string $targetType): bool
     {
         $this->assertComponentType($targetType);

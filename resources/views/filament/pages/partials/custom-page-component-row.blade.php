@@ -16,6 +16,16 @@
         @disabled(! $reorderEnabled)
         aria-label="Drag {{ $label }}" title="Drag to reorder"
     >⋮⋮</button>
+    <div class="custom-page-component__layout">
+        <select class="admin-inline-select custom-page-component__layout-select"
+            aria-label="Assign {{ $label }} to layout area"
+            wire:change="setTableComponentLayout({{ $index }}, '{{ $type }}', $event.target.value)">
+            <option value="" @selected($row['layout_area_id'] === null)>{{ __('Full width') }}</option>
+            @foreach ($this->stageLayoutAreaOptions() as $areaId => $areaLabel)
+                <option value="{{ $areaId }}" @selected($row['layout_area_id'] === $areaId)>{{ $areaLabel }}</option>
+            @endforeach
+        </select>
+    </div>
     <div class="custom-page-component__type">
         <select class="admin-inline-select custom-page-component__type-select"
             aria-label="Component type"

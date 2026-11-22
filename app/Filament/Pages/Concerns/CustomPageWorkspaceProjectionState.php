@@ -65,7 +65,7 @@ trait CustomPageWorkspaceProjectionState
             return $this->previewUrl;
         }
 
-        // Targets are checked against the current rendered table projection
+        // Targets are checked against the canonical component document
         // before they become Public document anchors.
         if (! preg_match('/^(\\d+):[a-z_]+$/', $this->customPreviewFocusedTarget, $matches)) {
             return $this->previewUrl;
@@ -81,7 +81,12 @@ trait CustomPageWorkspaceProjectionState
 
     private function syncCustomPreviewFocus(bool $forceRefresh = false): void
     {
-        $validTargets = array_column($this->components, 'target');
+        $validTargets = [];
+        foreach ($this->settings()->components() as $index => $block) {
+            if (is_array($block) && is_string($block['type'] ?? null)) {
+                $validTargets[] = $index.':'.$block['type'];
+            }
+        }
         $selected = array_values(array_intersect($this->selectedComponentTargets, $validTargets));
         // Multiple selected components show the complete Custom Page,
         // never an arbitrary last-selected component.
@@ -208,6 +213,7 @@ trait CustomPageWorkspaceProjectionState
                 'index' => $index,
                 'position' => $index + 1,
                 'type' => $type,
+                'layout_area_id' => is_string($areaId) ? $areaId : null,
                 'type_label' => self::COMPONENT_LABELS[$type] ?? 'Component',
                 'content' => $content,
                 'status' => $published ? 'Published' : 'Unpublished',

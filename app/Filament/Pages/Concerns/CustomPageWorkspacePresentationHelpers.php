@@ -106,47 +106,36 @@ trait CustomPageWorkspacePresentationHelpers
         return implode(' ', array_filter($parts, static fn (mixed $part): bool => is_string($part) && trim($part) !== ''));
     }
 
-    /** @return list<array<string, mixed>> */
-    public function layoutStageLayouts(): array
+    /** The Stage is a canvas of the canonical Public layout projection. */
+    public function stageLayoutItems(): array
     {
-        $blocks = $this->settings()->components();
-        $layouts = [];
-        foreach ($blocks as $index => $layout) {
-            if (($layout['type'] ?? null) !== 'layout') {
-                continue;
+        return CustomPageSetting::layoutProjection($this->settings()->components());
+    }
+
+    /** @return array{index:int,block:array<string,mixed>}|null */
+    private function stageLayoutById(string $id): ?array
+    {
+        foreach ($this->settings()->components() as $index => $block) {
+            if (($block['type'] ?? null) === 'layout' && ($block['id'] ?? null) === $id) {
+                return ['index' => $index, 'block' => $block];
             }
-            $columns = (int) $layout['columns'];
-            $areas = [];
-            foreach ($layout['areas'] as $areaIndex => $area) {
-                $memberRows = [];
-                foreach ($blocks as $memberIndex => $member) {
-                    if (! is_array($member) || ($member['layout_area_id'] ?? null) !== ($area['id'] ?? null)) {
-                        continue;
-                    }
-                    $title = is_string($member['title'] ?? null) ? trim($member['title']) : '';
-                    $type = (string) ($member['type'] ?? '');
-                    $memberRows[] = [
-                        'index' => $memberIndex,
-                        'type' => $type,
-                        'label' => $title !== '' ? $title : (self::COMPONENT_LABELS[$type] ?? 'Component'),
-                        'editable' => $type !== 'legal_disclaimer',
-                    ];
-                }
-                $areas[] = [
-                    'id' => $area['id'],
-                    'row' => intdiv($areaIndex, $columns) + 1,
-                    'column' => ($areaIndex % $columns) + 1,
-                    'border' => $area['border'] ?? 'none',
-                    'members' => $memberRows,
-                ];
-            }
-            $layouts[] = ['index' => $index, 'columns' => $columns,
-                'column_layout' => $layout['column_layout'] ?? 'equal',
-                'layout_mode' => $layout['layout_mode'] ?? 'rows',
-                'rows' => (int) $layout['rows'], 'areas' => $areas];
         }
 
-        return $layouts;
+        return null;
+    }
+
+    /** @return array{index:int,block:array<string,mixed>}|null */
+    public function selectedStageLayout(): ?array
+    {
+        return $this->stageSelectedLayoutId !== null
+            ? $this->stageLayoutById($this->stageSelectedLayoutId)
+            : null;
+    }
+
+    /** The quick creator uses the same canonical layout-area options as Edit. */
+    public function stageLayoutAreaOptions(): array
+    {
+        return $this->layoutAreaOptions();
     }
 
     /** @return array<int,string> */

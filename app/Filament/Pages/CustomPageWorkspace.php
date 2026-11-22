@@ -68,6 +68,16 @@ final class CustomPageWorkspace extends Page
 
     public bool $customPreviewAutoFocus = true;
 
+    public string $customStagePanel = 'layout';
+
+    public string $stageQuickType = 'text';
+
+    public string $stageQuickTitle = '';
+
+    public string $stageQuickAreaId = '';
+
+    public ?string $stageSelectedLayoutId = null;
+
     public ?string $customPreviewFocusedTarget = null;
 
     /** @var array<string, mixed> */

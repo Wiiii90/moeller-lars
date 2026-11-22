@@ -112,10 +112,20 @@
 }
 
 .custom-page-component-sequence__header > span:not(:first-child),
+.custom-page-component__layout,
 .custom-page-component__type,
 .custom-page-component__content {
-    padding-left: .65rem;
+    padding-left: .5rem;
 }
+.custom-page-component__layout,
+.custom-page-component-sequence__layout-heading { min-width: 0; }
+.custom-page-component__layout-select {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    font-size: .7rem;
+}
+
 
 /* Actions own the complete utility rail up to terminal Selection. Shared
  * stable-action geometry right-anchors the same five semantic slots in every
