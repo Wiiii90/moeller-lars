@@ -93,7 +93,6 @@ final class JournalSettingsService
         return [
             'gallery_presentation' => 'grid',
             'gallery_enabled' => false,
-            'show_vernissage' => false,
             'image_viewer_enabled' => $values['default_settings_enabled']
                 ? $values['default_image_viewer_enabled'] : false,
         ];

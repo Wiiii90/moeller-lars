@@ -298,7 +298,7 @@ final class ExhibitionEditorialService
     private function validatedEditorialData(array $data, ?Exhibition $entry): array
     {
         $allowed = [
-            'site_section_id', 'title', 'description', 'description_enabled', 'starts_on', 'ends_on', 'vernissage_at', 'show_vernissage',
+            'site_section_id', 'title', 'description', 'description_enabled', 'starts_on', 'ends_on', 'vernissage_at',
             'organizer', 'venue', 'location_text', 'postal_code', 'city', 'country', 'external_url', 'gallery_enabled', 'gallery_presentation', 'image_viewer_enabled', 'map_enabled',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
@@ -310,7 +310,6 @@ final class ExhibitionEditorialService
             'starts_on' => ['nullable', 'string'],
             'ends_on' => ['nullable', 'string'],
             'vernissage_at' => ['nullable', 'date'],
-            'show_vernissage' => ['nullable', 'boolean'],
             'organizer' => ['nullable', 'string', 'max:240'],
             'venue' => ['nullable', 'string', 'max:240'],
             'location_text' => ['nullable', 'string', 'max:500'],
@@ -357,9 +356,6 @@ final class ExhibitionEditorialService
             throw ValidationException::withMessages(['external_url' => 'Use a safe absolute HTTP or HTTPS URL.']);
         }
 
-        if (array_key_exists('show_vernissage', $payload)) {
-            $payload['show_vernissage'] = (bool) $payload['show_vernissage'];
-        }
         if (array_key_exists('description_enabled', $payload)) {
             $payload['description_enabled'] = (bool) $payload['description_enabled'];
         }

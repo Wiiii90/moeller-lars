@@ -101,7 +101,6 @@ final class StagedJournalPreviewController extends Controller
                     static fn (string $field): bool => ($form[$field] ?? null) === $existing->getAttribute($field),
                 )
                 ? (bool) $existing->getAttribute('map_enabled') : false,
-            'show_vernissage' => (bool) ($existing?->getAttribute('show_vernissage') ?? false),
             'show_organizer' => (bool) ($existing?->getAttribute('show_organizer') ?? true),
             'show_venue' => (bool) ($existing?->getAttribute('show_venue') ?? true),
             'show_external_url' => (bool) ($existing?->getAttribute('show_external_url') ?? true),

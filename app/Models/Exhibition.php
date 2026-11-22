@@ -6,7 +6,6 @@ use App\Domain\Content\ExhibitionDate;
 use App\Domain\Content\ExhibitionMapPresentation;
 use App\Domain\Content\RegionalFormats;
 use App\Domain\Content\SafeLinkPolicy;
-use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
@@ -16,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'organizer', 'venue', 'city', 'country', 'location_text', 'postal_code', 'show_organizer', 'show_venue', 'show_external_url', 'show_location_text', 'show_postal_code', 'show_city', 'show_country', 'description', 'description_enabled', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'opening_text', 'vernissage_at', 'show_vernissage', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'image_viewer_enabled', 'map_enabled', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'organizer', 'venue', 'city', 'country', 'location_text', 'postal_code', 'show_organizer', 'show_venue', 'show_external_url', 'show_location_text', 'show_postal_code', 'show_city', 'show_country', 'description', 'description_enabled', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'image_viewer_enabled', 'map_enabled', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
 #[Guarded(['id'])]
 class Exhibition extends Model
 {
@@ -31,7 +30,6 @@ class Exhibition extends Model
             'geocoded_at' => 'datetime',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
-            'show_vernissage' => 'boolean',
             'show_organizer' => 'boolean',
             'show_venue' => 'boolean',
             'show_external_url' => 'boolean',
@@ -197,24 +195,11 @@ class Exhibition extends Model
         return $location !== '' ? $location : null;
     }
 
-    public function shouldShowPublicVernissage(?CarbonInterface $date = null): bool
+    public function shouldShowPublicVernissage(): bool
     {
-        if (! (bool) $this->getAttribute('show_vernissage') || $this->vernissageDisplay() === null) {
-            return false;
-        }
-
-        $date ??= now();
-        if ($this->temporalState($date) === 'past') {
-            return false;
-        }
-
-        $vernissage = $this->getAttribute('vernissage_at');
-        if ($vernissage instanceof CarbonInterface) {
-            return ! CarbonImmutable::instance($date)->isAfter($vernissage);
-        }
-
-        // Historical free-text openings have no reliable timestamp.
-        return $this->temporalState($date) === 'upcoming';
+        // A recorded Vernissage remains visible during and after its date.
+        // Exhibition Starts/Ends and the opening date are independent facts.
+        return $this->vernissageDisplay() !== null;
     }
 
     public function vernissageDisplay(): ?string

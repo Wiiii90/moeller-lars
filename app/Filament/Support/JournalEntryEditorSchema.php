@@ -208,7 +208,6 @@ final class JournalEntryEditorSchema
                     AdminPartialDateControl::make('ends_on', __('Ends'), region: RegionalFormats::adminRegion()),
                 ])
                 ->columnSpanFull(),
-            Toggle::make('show_vernissage')->label(__('Show vernissage until it begins'))->default(false)->columnSpanFull(),
             DateTimePicker::make('vernissage_at')->label(__('Vernissage'))->native(false)->displayFormat(fn (): string => RegionalFormats::pickerDateTimeFormat())->seconds(false)->default(null)->nullable()->columnSpanFull(),
         ];
     }
