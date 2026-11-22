@@ -1,11 +1,11 @@
 # Dev workstream — branch-local coordination
 
-**Next lease token:** 41
+**Next lease token:** 42
 
 | Worker | Lease | State | Claimed work | Own task record |
 | --- | ---: | --- | --- | --- |
 | Dev Worker 1 | 34 | Active — Blog/Exhibition Stage editor, queued drafts, Journal display defaults, ID-based Blog URLs and organizer presets source-integrated; migrations/runtime/browser acceptance pending | Journal workspace and Blog/Exhibitions Stage, preview and selection focus; coordinate Page/Journal shared ownership with Dev Worker 5 and Gallery stage primitives with Dev Worker 4 | [dev-1.md](workers/dev-1.md) |
-| Dev Worker 2 | 39 | Active — detailed Custom Pages and Pages Stage handoff consolidated; central control parity, New Discard/Submit, visual Layout/Navigation and whole-page template integration still incomplete and not browser-accepted | Custom Page model/editor/Public template composition and user-assigned Pages Stage; coordinate Pages domain with Dev-5 and shared Journal/controls with owners | [dev-2.md](workers/dev-2.md) |
+| Dev Worker 2 | 41 | Active — replacement chat took over Custom Pages and Pages Stage; prior detailed handoff retained; central control parity, draft actions, visual Layout/Navigation and template integration remain incomplete and not browser-accepted | Custom Page model/editor/Public template composition and user-assigned Pages Stage; coordinate Pages domain with Dev-5 and shared Journal/controls with owners | [dev-2.md](workers/dev-2.md) |
 | Dev Worker 3 | 36 | Active — separated Hero source Gallery row from all expanded candidate rows; source review complete, runtime/browser acceptance pending | Hero Artworks Stage/Public Preview and explicitly requested Hero source-list row ownership correction; coordinate other Hero source actions with Dev Worker 6 | [dev-3.md](workers/dev-3.md) |
 | Dev Worker 4 | 38 | Active — Public native video Download action hidden through existing shared media initialization; Gallery visual regressions and browser acceptance pending | Gallery/Artwork and Public video presentation; coordinate shared owner changes | [dev-4.md](workers/dev-4.md) |
 | Dev Worker 5 | 33 | Active — replacement chat continues the Pages type/template cutover; source-integrated, runtime and browser acceptance pending | Protected Home identity, shared Gallery/Journal/Custom Page types and Hero Artworks template; Pages Settings, nested Page hierarchy and Heading controls | [dev-5.md](workers/dev-5.md) |
