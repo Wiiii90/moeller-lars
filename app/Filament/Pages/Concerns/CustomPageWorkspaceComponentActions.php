@@ -219,6 +219,9 @@ trait CustomPageWorkspaceComponentActions
             $this->stageLayoutFocusedTarget = null;
             $this->stageSelectedLayoutId = null;
             $this->refreshCustomStageLayoutForm();
+            // Sorting changes absolute component positions. Never retain
+            // checkbox targets that may now refer to other components.
+            $this->clearSelections();
             $this->reloadWorkspace();
             if ($changed) {
                 app(AdminNotifier::class)->notification(title: 'Layout placement updated', status: 'success');
