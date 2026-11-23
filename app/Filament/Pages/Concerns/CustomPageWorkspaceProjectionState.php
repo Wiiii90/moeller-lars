@@ -96,10 +96,10 @@ trait CustomPageWorkspaceProjectionState
         // The canvas focus is independent from table selection. Table bulk
         // selection still previews one component only when exactly one is checked.
         $stageFocused = $this->customStagePanel === 'layout' ? $this->stageLayoutFocusedTarget : null;
-        $next = $stageFocused ?? (
+        $next = $this->customStagePanel === 'settings' ? null : ($stageFocused ?? (
             count($this->selectedComponentTargets) === 1 && count($selected) === 1
                 ? $selected[0] : null
-        );
+        ));
         $changed = $next !== $this->customPreviewFocusedTarget;
         $this->customPreviewFocusedTarget = $next;
 

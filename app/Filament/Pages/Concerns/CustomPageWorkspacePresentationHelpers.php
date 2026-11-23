@@ -176,6 +176,10 @@ trait CustomPageWorkspacePresentationHelpers
     private function clearSelections(): void
     {
         $this->selectedComponentTargets = [];
+        // A table mutation may have changed positional component targets.
+        // Never keep the canvas focused on a different component by accident.
+        $this->stageLayoutFocusedTarget = null;
+        $this->stageSelectedLayoutId = null;
     }
 
     private function metricValue(mixed $metric): string
