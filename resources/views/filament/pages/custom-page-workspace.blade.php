@@ -67,6 +67,13 @@
                     </div>
                 @elseif ($customStagePanel === 'layout')
                     @include('filament.pages.partials.custom-page-layout-stage')
+                    @if ($stageSelectedLayoutId !== null)
+                        <div class="custom-page-layout-stage__inspector gallery-stage__form-scroll admin-visual-stage__field-scroll fi-fixed-positioning-context"
+                            wire:key="custom-stage-layout-settings-{{ $stageSelectedLayoutId }}"
+                            aria-label="Selected Layout controls">
+                            {{ $this->customStageLayoutForm }}
+                        </div>
+                    @endif
                 @else
                     <div class="gallery-stage__settings admin-visual-stage__field-scroll fi-fixed-positioning-context"
                         aria-label="Custom Page settings">

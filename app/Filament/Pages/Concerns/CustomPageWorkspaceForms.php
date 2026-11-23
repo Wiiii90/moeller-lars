@@ -23,6 +23,58 @@ use Filament\Schemas\Schema;
 trait CustomPageWorkspaceForms
 {
     /** Same Gallery Stage contract: canonical controls with immediate audited saves. */
+    /** Layout-specific controls remain in the visual Stage, not Page Settings. */
+    public function customStageLayoutForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Grid::make(['default' => 1, 'sm' => 2])->schema([
+                    AdminControl::select('layout_mode', 'Arrangement')
+                        ->options(['rows' => 'Aligned rows', 'columns' => 'Independent columns'])
+                        ->live()
+                        ->afterStateUpdated(fn (mixed $state) => $this->setStageLayoutProperty('layout_mode', $state)),
+                    AdminControl::select('columns', 'Columns')
+                        ->options([1 => '1', 2 => '2', 3 => '3', 4 => '4'])
+                        ->live()
+                        ->afterStateUpdated(fn (mixed $state) => $this->setStageLayoutProperty('columns', $state)),
+                    AdminControl::select('rows', 'Rows')
+                        ->options(array_combine(range(1, 12), array_map('strval', range(1, 12))))
+                        ->visible(fn (Get $get): bool => $get('layout_mode') !== 'columns')
+                        ->live()
+                        ->afterStateUpdated(fn (mixed $state) => $this->setStageLayoutProperty('rows', $state)),
+                    AdminControl::select('column_layout', 'Column widths')
+                        ->options(['equal' => 'Equal', 'left-wide' => '65 / 35', 'right-wide' => '35 / 65'])
+                        ->visible(fn (Get $get): bool => (int) $get('columns') === 2)
+                        ->live()
+                        ->afterStateUpdated(fn (mixed $state) => $this->setStageLayoutProperty('column_layout', $state)),
+                    AdminControl::select('gap', 'Spacing')
+                        ->options(['none' => 'None', 'small' => 'Small', 'medium' => 'Medium', 'large' => 'Large'])
+                        ->live()
+                        ->afterStateUpdated(fn (mixed $state) => $this->setStageLayoutProperty('gap', $state)),
+                ]),
+            ])
+            ->statePath('customStageLayoutData');
+    }
+
+    private function refreshCustomStageLayoutForm(): void
+    {
+        $selected = $this->stageSelectedLayoutId !== null
+            ? $this->stageLayoutById($this->stageSelectedLayoutId) : null;
+        if ($selected === null) {
+            $this->customStageLayoutForm->fill([]);
+            return;
+        }
+
+        $layout = $selected['block'];
+        $this->customStageLayoutForm->fill([
+            'layout_mode' => $layout['layout_mode'] ?? 'rows',
+            'columns' => $layout['columns'] ?? 2,
+            'rows' => $layout['rows'] ?? 1,
+            'column_layout' => $layout['column_layout'] ?? 'equal',
+            'gap' => $layout['gap'] ?? 'medium',
+        ]);
+    }
+
     public function customStageSettingsForm(Schema $schema): Schema
     {
         $heading = AdminPanelControl::make(

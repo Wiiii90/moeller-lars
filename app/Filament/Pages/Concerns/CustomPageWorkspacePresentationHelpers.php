@@ -118,6 +118,18 @@ trait CustomPageWorkspacePresentationHelpers
         return implode(' ', array_filter($parts, static fn (mixed $part): bool => is_string($part) && trim($part) !== ''));
     }
 
+    /** @return array{index:int,block:array<string,mixed>}|null */
+    private function stageLayoutById(string $id): ?array
+    {
+        foreach ($this->settings()->components() as $index => $block) {
+            if (($block['type'] ?? null) === 'layout' && ($block['id'] ?? null) === $id) {
+                return ['index' => $index, 'block' => $block];
+            }
+        }
+
+        return null;
+    }
+
     /** The visual canvas projects the same layout document as the Public renderer. */
     public function stageLayoutItems(): array
     {

@@ -79,6 +79,9 @@ final class CustomPageWorkspace extends Page
 
     public ?string $stageSelectedLayoutId = null;
 
+    /** Compact visual Layout inspector state for the selected canonical Layout. */
+    public array $customStageLayoutData = [];
+
     /** Autosaved Custom Page-wide settings, shared with the canonical editorial owner. */
     public array $customStageSettingsData = [];
 

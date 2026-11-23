@@ -205,6 +205,7 @@ trait CustomPageWorkspaceComponentActions
 
         $this->stageLayoutFocusedTarget = $index.':'.$type;
         $this->stageSelectedLayoutId = $type === 'layout' ? (string) ($block['id'] ?? '') : null;
+        $this->refreshCustomStageLayoutForm();
         $this->syncCustomPreviewFocus(forceRefresh: true);
     }
 
@@ -217,6 +218,7 @@ trait CustomPageWorkspaceComponentActions
             );
             $this->stageLayoutFocusedTarget = null;
             $this->stageSelectedLayoutId = null;
+            $this->refreshCustomStageLayoutForm();
             $this->reloadWorkspace();
             if ($changed) {
                 app(AdminNotifier::class)->notification(title: 'Layout placement updated', status: 'success');
@@ -224,6 +226,57 @@ trait CustomPageWorkspaceComponentActions
         } catch (ValidationException $exception) {
             $this->reloadWorkspace();
             $this->stageValidationFailure('Layout placement unchanged', $exception);
+        }
+    }
+
+    /** Immediate Layout edits share the same domain resize/validation owner as Edit. */
+    public function setStageLayoutProperty(string $field, mixed $value): void
+    {
+        if (! in_array($field, ['layout_mode', 'columns', 'rows', 'column_layout', 'gap'], true)
+            || $this->stageSelectedLayoutId === null) {
+            return;
+        }
+
+        $selected = $this->stageLayoutById($this->stageSelectedLayoutId);
+        if ($selected === null) {
+            $this->stageSelectedLayoutId = null;
+            $this->refreshCustomStageLayoutForm();
+            return;
+        }
+
+        $old = $selected['block'];
+        $data = [
+            'layout_mode' => (string) ($old['layout_mode'] ?? 'rows'),
+            'columns' => (int) ($old['columns'] ?? 2),
+            'rows' => (int) ($old['rows'] ?? 1),
+            'column_layout' => (string) ($old['column_layout'] ?? 'equal'),
+            'gap' => (string) ($old['gap'] ?? 'medium'),
+        ];
+        $data[$field] = in_array($field, ['columns', 'rows'], true) ? (int) $value : (string) $value;
+        if ($data['layout_mode'] === 'columns') {
+            $data['rows'] = 1;
+        }
+        if ($data['columns'] !== 2) {
+            $data['column_layout'] = 'equal';
+        }
+
+        try {
+            $updated = array_replace($old, CustomPageSetting::layoutBlock(
+                CustomPageSetting::componentPublished($old),
+                $data['columns'], $data['rows'], $data['gap'],
+                $old, $data['column_layout'], $data['layout_mode'],
+            ));
+            $changed = app(CustomPageEditorialService::class)->updateBlock(
+                $this->settings(), $selected['index'], 'layout', $updated, $old,
+            );
+            $this->reloadWorkspace();
+            $this->refreshCustomStageLayoutForm();
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Layout updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->refreshCustomStageLayoutForm();
+            $this->stageValidationFailure('Layout unchanged', $exception);
         }
     }
 

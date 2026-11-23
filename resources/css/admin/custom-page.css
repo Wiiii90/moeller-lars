@@ -202,3 +202,15 @@
 @container (max-width: 28rem) {
     .custom-page-layout-stage__cells { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* The selected Layout edits in place, while the visual canvas keeps the
+ * remaining Stage height. No editor/dialog is launched from the canvas. */
+.custom-page-layout-stage__inspector {
+    box-sizing: border-box;
+    flex: 0 1 auto;
+    max-height: 10rem;
+    min-height: 0;
+    padding-block: .35rem .1rem;
+    margin-top: .3rem;
+    border-top: 1px solid var(--admin-line);
+}
