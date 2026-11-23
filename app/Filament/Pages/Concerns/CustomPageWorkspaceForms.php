@@ -61,7 +61,9 @@ trait CustomPageWorkspaceForms
         $selected = $this->stageSelectedLayoutId !== null
             ? $this->stageLayoutById($this->stageSelectedLayoutId) : null;
         if ($selected === null) {
+            $this->stageSelectedLayoutId = null;
             $this->customStageLayoutForm->fill([]);
+
             return;
         }
 

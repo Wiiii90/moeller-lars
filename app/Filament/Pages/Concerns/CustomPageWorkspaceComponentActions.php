@@ -191,6 +191,11 @@ trait CustomPageWorkspaceComponentActions
         }
 
         $this->customStagePanel = $panel;
+        if ($panel === 'settings') {
+            $this->refreshCustomStageSettings();
+        } elseif ($panel === 'layout') {
+            $this->refreshCustomStageLayoutForm();
+        }
         $this->syncCustomPreviewFocus(forceRefresh: true);
     }
 
