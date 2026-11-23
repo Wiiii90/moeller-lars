@@ -74,6 +74,11 @@ final class CustomPageWorkspace extends Page
     /** Keep the three editorial modes visible without duplicating table ordering. */
     public string $customStagePanel = 'create';
 
+    /** Stage focus stays independent from table bulk selection. */
+    public ?string $stageLayoutFocusedTarget = null;
+
+    public ?string $stageSelectedLayoutId = null;
+
     public ?string $customPreviewFocusedTarget = null;
 
     /** @var array<string, mixed> */

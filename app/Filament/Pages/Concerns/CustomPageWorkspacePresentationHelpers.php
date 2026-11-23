@@ -118,6 +118,12 @@ trait CustomPageWorkspacePresentationHelpers
         return implode(' ', array_filter($parts, static fn (mixed $part): bool => is_string($part) && trim($part) !== ''));
     }
 
+    /** The visual canvas projects the same layout document as the Public renderer. */
+    public function stageLayoutItems(): array
+    {
+        return CustomPageSetting::layoutProjection($this->settings()->components());
+    }
+
     /** @return array<int,string> */
     private function parentOptions(): array
     {

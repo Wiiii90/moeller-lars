@@ -183,6 +183,50 @@ trait CustomPageWorkspaceComponentActions
         }
     }
 
+    public function showCustomStagePanel(string $panel): void
+    {
+        if (! in_array($panel, ['create', 'layout', 'settings'], true)
+            || $this->customStagePanel === $panel) {
+            return;
+        }
+
+        $this->customStagePanel = $panel;
+        $this->syncCustomPreviewFocus(forceRefresh: true);
+    }
+
+    public function focusStageComponent(int $index, string $type): void
+    {
+        try {
+            $block = $this->componentAt($index, $type);
+        } catch (ValidationException $exception) {
+            $this->stageValidationFailure('Component selection changed', $exception);
+            return;
+        }
+
+        $this->stageLayoutFocusedTarget = $index.':'.$type;
+        $this->stageSelectedLayoutId = $type === 'layout' ? (string) ($block['id'] ?? '') : null;
+        $this->syncCustomPreviewFocus(forceRefresh: true);
+    }
+
+    /** Canvas drag changes the canonical layout-area relationship, not table markup. */
+    public function sortStageComponent(string $target, int $position, int|string|null $groupId = null): void
+    {
+        try {
+            $changed = app(CustomPageEditorialService::class)->placeLayoutComponent(
+                $this->settings(), $target, $position, (string) ($groupId ?? 'root'),
+            );
+            $this->stageLayoutFocusedTarget = null;
+            $this->stageSelectedLayoutId = null;
+            $this->reloadWorkspace();
+            if ($changed) {
+                app(AdminNotifier::class)->notification(title: 'Layout placement updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->reloadWorkspace();
+            $this->stageValidationFailure('Layout placement unchanged', $exception);
+        }
+    }
+
     public function discardStageComponent(): void
     {
         $this->customStageNewForm->fill($this->defaultCustomStageNew());
