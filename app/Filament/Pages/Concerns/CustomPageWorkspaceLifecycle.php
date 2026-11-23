@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminAutoPublishPreferences;
 use App\Domain\Content\SiteSectionEditorialService;
+use App\Domain\Content\SitePageHeading;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -39,6 +40,7 @@ trait CustomPageWorkspaceLifecycle
         $this->loadAnalyticsSnapshot($siteSection);
         $this->reloadWorkspace();
         $this->customStageNewForm->fill($this->defaultCustomStageNew());
+        $this->refreshCustomStageSettings();
     }
 
     /**
@@ -152,6 +154,52 @@ trait CustomPageWorkspaceLifecycle
             ->values()
             ->all();
         $this->syncCustomPreviewFocus();
+    }
+
+    /** Page-wide Stage settings use the existing audited Page services. */
+    public function updateCustomStageHeading(string $field, mixed $value): void
+    {
+        if (! in_array($field, [
+            'content_heading_enabled',
+            'content_heading_override',
+            'content_heading_alignment',
+            'content_heading_divider',
+        ], true)) {
+            return;
+        }
+
+        try {
+            $section = $this->section();
+            $before = SitePageHeading::formState($section);
+            $updated = app(SiteSectionEditorialService::class)->updatePageHeading(
+                $section, [$field => $value],
+            );
+            $this->refreshCustomStageSettings();
+            if ($before !== SitePageHeading::formState($updated)) {
+                $this->syncCustomPreviewFocus(forceRefresh: true);
+                app(AdminNotifier::class)->notification(title: 'Page heading updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->refreshCustomStageSettings();
+            $this->stageValidationFailure('Page heading unchanged', $exception);
+        }
+    }
+
+    public function updateCustomStageMetaDescription(mixed $value): void
+    {
+        try {
+            $section = $this->section();
+            $before = $section->getAttribute('meta_description');
+            $updated = app(SiteSectionEditorialService::class)->updateMetaDescription($section, $value);
+            $this->refreshCustomStageSettings();
+            if ($before !== $updated->getAttribute('meta_description')) {
+                $this->syncCustomPreviewFocus(forceRefresh: true);
+                app(AdminNotifier::class)->notification(title: 'Meta description updated', status: 'success');
+            }
+        } catch (ValidationException $exception) {
+            $this->refreshCustomStageSettings();
+            $this->stageValidationFailure('Meta description unchanged', $exception);
+        }
     }
 
     public function pageSettingsAction(): Action

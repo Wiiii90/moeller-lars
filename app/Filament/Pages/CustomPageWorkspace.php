@@ -79,6 +79,9 @@ final class CustomPageWorkspace extends Page
 
     public ?string $stageSelectedLayoutId = null;
 
+    /** Autosaved Custom Page-wide settings, shared with the canonical editorial owner. */
+    public array $customStageSettingsData = [];
+
     public ?string $customPreviewFocusedTarget = null;
 
     /** @var array<string, mixed> */

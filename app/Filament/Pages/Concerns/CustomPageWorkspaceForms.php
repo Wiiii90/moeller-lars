@@ -3,6 +3,9 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Content\PublicLegalContent;
+use App\Domain\Content\SitePageHeading;
+use App\Filament\Support\Controls\AdminControl;
+use App\Filament\Support\Controls\AdminPanelControl;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\MediaAssetSelect;
@@ -19,6 +22,59 @@ use Filament\Schemas\Schema;
 
 trait CustomPageWorkspaceForms
 {
+    /** Same Gallery Stage contract: canonical controls with immediate audited saves. */
+    public function customStageSettingsForm(Schema $schema): Schema
+    {
+        $heading = AdminPanelControl::make(
+            'Activate Page Heading',
+            'content_heading_enabled',
+            [
+                AdminControl::text('content_heading_override', 'Heading text')
+                    ->maxLength(160)
+                    ->placeholder('Use page title')
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(fn (mixed $state) => $this->updateCustomStageHeading('content_heading_override', $state))
+                    ->columnSpanFull(),
+                AdminControl::select('content_heading_alignment', 'Alignment')
+                    ->options(SitePageHeading::ALIGNMENTS)
+                    ->default('left')
+                    ->live()
+                    ->afterStateUpdated(fn (mixed $state) => $this->updateCustomStageHeading('content_heading_alignment', $state)),
+                AdminControl::select('content_heading_divider', 'Divider')
+                    ->options(SitePageHeading::DIVIDERS)
+                    ->default('none')
+                    ->live()
+                    ->afterStateUpdated(fn (mixed $state) => $this->updateCustomStageHeading('content_heading_divider', $state)),
+            ],
+            fn (mixed $state) => $this->updateCustomStageHeading('content_heading_enabled', (bool) $state),
+            collapsible: true,
+            bodyColumns: ['default' => 1, 'sm' => 2],
+            dense: true,
+        );
+
+        return $schema
+            ->components([
+                Grid::make(['default' => 1])->schema([
+                    $heading,
+                    AdminControl::textarea('meta_description', 'Meta description')
+                        ->rows(3)
+                        ->maxLength(10000)
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(fn (mixed $state) => $this->updateCustomStageMetaDescription($state)),
+                ]),
+            ])
+            ->statePath('customStageSettingsData');
+    }
+
+    private function refreshCustomStageSettings(): void
+    {
+        $section = $this->section();
+        $this->customStageSettingsForm->fill([
+            ...SitePageHeading::formState($section),
+            'meta_description' => (string) ($section->getAttribute('meta_description') ?? ''),
+        ]);
+    }
+
     public function customStageNewForm(Schema $schema): Schema
     {
         return $schema

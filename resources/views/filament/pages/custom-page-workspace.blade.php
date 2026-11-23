@@ -68,15 +68,9 @@
                 @elseif ($customStagePanel === 'layout')
                     @include('filament.pages.partials.custom-page-layout-stage')
                 @else
-                    <div class="admin-stage-workspace admin-visual-stage__field-scroll" aria-label="Custom Page settings">
-                        <div class="admin-stage-workspace__group">
-                            <strong>{{ $pageTitle }}</strong>
-                            <button class="admin-action admin-action--with-icon" type="button"
-                                wire:click="mountAction('pageSettings')">
-                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" />
-                                {{ __('Edit page settings') }}
-                            </button>
-                        </div>
+                    <div class="gallery-stage__settings admin-visual-stage__field-scroll fi-fixed-positioning-context"
+                        aria-label="Custom Page settings">
+                        {{ $this->customStageSettingsForm }}
                     </div>
                 @endif
             </div>
