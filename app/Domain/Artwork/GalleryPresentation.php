@@ -268,8 +268,13 @@ final class GalleryPresentation
         return $values;
     }
 
-    public static function divider(ArtworkCategory $gallery): string
+    public static function divider(ArtworkCategory $gallery, string $presentation = 'sequence'): string
     {
+        // The embedded two-column variant is a grid, not a divided sequence.
+        if ($presentation === 'two_columns') {
+            return self::DIVIDER_NONE;
+        }
+
         $variant = $gallery->getAttribute('artwork_divider');
 
         return is_string($variant) && array_key_exists($variant, self::DIVIDER_OPTIONS)

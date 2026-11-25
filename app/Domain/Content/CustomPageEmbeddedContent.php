@@ -110,6 +110,7 @@ final class CustomPageEmbeddedContent
             }
             $batch = $this->artworks->categoryBatch((string) $category->getAttribute('slug'), $section);
             $url = $this->routes->url($section);
+            $galleryPresentation = (string) ($block['gallery_presentation'] ?? 'sequence');
 
             return [
                 'type' => $type,
@@ -119,9 +120,8 @@ final class CustomPageEmbeddedContent
                 'outline' => $batch['outline'],
                 'hasMore' => $batch['hasMore'],
                 'page' => 1,
-                'divider' => ($block['gallery_presentation'] ?? 'sequence') === 'two_columns'
-                    ? 'none' : GalleryPresentation::divider($category),
-                'embeddedGalleryPresentation' => $block['gallery_presentation'] ?? 'sequence',
+                'divider' => GalleryPresentation::divider($category, $galleryPresentation),
+                'embeddedGalleryPresentation' => $galleryPresentation,
                 'galleryOffsets' => GalleryPresentation::indexCardOffsets($batch['outline'], $category),
                 'galleryGaps' => GalleryPresentation::indexCardGapSteps($batch['outline'], $category),
                 'galleryUrl' => $url === null ? null : $this->preview->url($url),

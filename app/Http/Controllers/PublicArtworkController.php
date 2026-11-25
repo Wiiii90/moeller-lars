@@ -90,7 +90,10 @@ class PublicArtworkController extends Controller
         $page = (int) $requestedPage;
 
         $batch = $this->artworks->categoryBatch($slug, $section, $page);
-        $divider = GalleryPresentation::divider($categoryRecord);
+        $isChunk = request()->header('X-Gallery-Chunk') === '1';
+        $galleryPresentation = $isChunk && request()->header('X-Gallery-Presentation') === 'two_columns'
+            ? 'two_columns' : 'sequence';
+        $divider = GalleryPresentation::divider($categoryRecord, $galleryPresentation);
         $presentation = [
             'category' => $categoryRecord,
             'section' => $section,
@@ -104,7 +107,7 @@ class PublicArtworkController extends Controller
             'galleryGaps' => GalleryPresentation::indexCardGapSteps($batch['outline'], $categoryRecord),
         ];
 
-        if (request()->header('X-Gallery-Chunk') === '1') {
+        if ($isChunk) {
             // Reuse precisely the same Artwork cards and nonce-protected
             // component styles as the full Gallery. Read the stack inside
             // the render callback, before Laravel flushes the view state.

@@ -33,7 +33,12 @@ function initializeGalleryBatch(root, list, more) {
 
         try {
             const response = await fetch(more.href, {
-                headers: { 'Accept': 'application/json', 'X-Gallery-Chunk': '1' },
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Gallery-Chunk': '1',
+                    'X-Gallery-Presentation': list.classList.contains('artwork-list--embedded-columns')
+                        ? 'two_columns' : 'sequence',
+                },
                 credentials: 'same-origin',
                 signal: lifetime.signal,
             });
