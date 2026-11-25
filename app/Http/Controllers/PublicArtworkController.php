@@ -106,10 +106,13 @@ class PublicArtworkController extends Controller
 
         if (request()->header('X-Gallery-Chunk') === '1') {
             // Reuse precisely the same Artwork cards and nonce-protected
-            // component styles as the full Gallery. The browser attaches
-            // styles using the currently displayed document's style nonce.
-            $html = view('pages.artworks.partials.batch', $presentation)->render();
-            $styles = app('view')->yieldPushContent('public-component-styles');
+            // component styles as the full Gallery. Read the stack inside
+            // the render callback, before Laravel flushes the view state.
+            // The browser attaches these styles using the document's nonce.
+            $styles = '';
+            $html = view('pages.artworks.partials.batch', $presentation)->render(function () use (&$styles): void {
+                $styles = app('view')->yieldPushContent('public-component-styles');
+            });
 
             return response()->json([
                 'html' => $html,

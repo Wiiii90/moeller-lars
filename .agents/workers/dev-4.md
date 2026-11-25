@@ -2,7 +2,7 @@
 
 **Lease:** 43  
 **Branch:** dev  
-**State:** Active — replacement registered on 2026-11-25; previous Gallery/Artwork handoff retained. No new specific implementation task assigned; browser acceptance remains outstanding.
+**State:** Active — resumed Gallery presentation review on 2026-11-25; Gallery batch aspect-style loss corrected at the Blade render boundary. Browser acceptance remains outstanding.
 
 ## Current task (2026-11-22)
 
@@ -10,7 +10,8 @@
 - Confirmed current source: `resources/css/public-presentation.css` assigned the same Gallery card two independent media caps: the aspect-derived `.artwork-card__composition` width from `--gallery-artwork-height`, and a separate `max-height` on the contained image/video. With `object-fit: contain`, the latter can shrink visible paint without shrinking the element's width, leaving the caption aligned to the wrong edge.
 - Refactor after correction: verified all six imported Public stylesheets and the actual Gallery, Artwork, Hero and Viewer consumers. Removed the unused `data-gallery-image-buffer` marker (its former image-prefetch queue is retired), removed the mobile-only `max-width: 100%` duplicate already declared at the Gallery composition owner, removed the unused `artwork-card__composition--video` modifier after checking its CSS and JavaScript consumers, and clarified that the shared Artwork card must not introduce a second media height cap. The Hero's separate rights-caption selectors are actively used in `pages/gallery/hero-artwork.blade.php`, so preserve them; do not mistake them for dead Gallery code.
 - Canonical correction: remove Gallery-specific link/image/video overrides and the redundant media-level max-height. Base image/video rules in `resources/css/public-presentation.css` and `resources/css/app.css` already fill the composition width; `--gallery-artwork-height` now controls the dimensioned Gallery media exactly once through the composition's thumbnail/poster aspect. Keep existing server-rendered media data, viewer links, native video controls, Gallery offsets, batch delivery and information arrangements unchanged.
-- Important remaining risk: aspect rules are emitted with request-specific style nonces in `resources/views/components/artwork-card.blade.php` and separate later chunks are restored by `resources/js/public-gallery-batches.js`. Real same-page, appended-batch and Livewire navigation checks must verify that the aspect rule applies; a blocked/missing rule can still lose the intended height ceiling even though the redundant cap no longer causes caption-edge letterboxing. Do not invent a second sizing mechanism or claim Browser acceptance without evidence.
+- Gallery batch aspect-style loss confirmed against the exact locked Laravel 13.25.0 source: top-level `View::render()` clears the Blade push stack before returning. `PublicArtworkController::categoryForSection()` now captures `public-component-styles` inside the existing render callback, before that cleanup. The original component styles, response shape and client nonce rebinding are preserved. Changed PHP fragment passed syntax checking; framework execution and actual browser navigation remain unverified.
+- Remaining risk: inspect real same-page, appended-batch and Livewire navigation behavior under the document's style nonce; do not invent a second sizing mechanism or claim browser acceptance without evidence.
 - Verification: current source/cascade reviewed. No running local application or artist browser session is attached to this chat; PHP, end-to-end browser checks, CI, deployment and tests were not run. Reproduce screenshot examples with current Preview, direct loading and navigation before accepting the fix.
 
 ## Canonical ownership and protected behavior
@@ -37,6 +38,6 @@
 ## Next
 
 1. Verify native player Download action is absent in supporting browsers for Gallery, detail, Journal, Custom Pages and fullscreen Viewer, including dynamically appended Gallery cards and public navigation; confirm playback controls remain usable. Unsupported browser menus cannot be suppressed by this hint.
-2. Obtain real browser measurements for both screenshot Artworks on direct Public/Preview navigation and after appended batches. Verify media painted bounds vs caption bounds in landscape/portrait, initial loading, unavailable dimensions, narrow screens and video. User acceptance remains open.
+2. Confirm the Gallery chunk response contains nonempty aspect styles for dimensioned cards, then obtain real browser measurements for both screenshot Artworks on direct Public/Preview navigation and after appended batches. Verify media painted bounds vs caption bounds in landscape/portrait, initial loading, unavailable dimensions, narrow screens and video. User acceptance remains open.
 3. If computed Gallery `--gallery-media-aspect` is absent after Livewire navigation, establish the actual nonce/style delivery fault in the existing public style owner before making further architectural changes; no compensating page-local sizing script.
 4. Finish a bounded review of Gallery-only presentation selectors and their direct consumers; remove only proven dead/conflicting styling. Report exact checks and ask Testing for regression qualification. No automatic deployment or Continuous Integration.
