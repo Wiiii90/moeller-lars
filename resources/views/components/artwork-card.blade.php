@@ -24,7 +24,7 @@
     $galleryMediaWidth = $isVideo ? (int) ($posterVariant?->getAttribute('width') ?? 0) : $thumbnailWidth;
     $galleryMediaHeight = $isVideo ? (int) ($posterVariant?->getAttribute('height') ?? 0) : $thumbnailHeight;
     $galleryMediaAspect = $galleryIndex && $galleryMediaWidth > 0 && $galleryMediaHeight > 0
-        ? $galleryMediaWidth / $galleryMediaHeight
+        ? (string) round($galleryMediaWidth / $galleryMediaHeight, 8)
         : null;
     $preview = app(\App\Domain\Content\SitePreviewContext::class);
     $detailUrl = $preview->url(route('artworks.show', $artwork->slug));
@@ -71,17 +71,19 @@
     {{-- The Gallery media and caption share one aspect-derived composition
          width before media decode. The child image/video must never receive a
          second height limit that changes its painted edge independently. --}}
-    @push('public-component-styles')
-        <style nonce="{{ request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE) }}">
-            .artwork-card--gallery-dimensioned[data-gallery-artwork="{{ (int) $artwork->getKey() }}"] {
-                --gallery-media-aspect: {{ round($galleryMediaAspect, 8) }};
+    {{-- Key each immutable rule by the aspect itself: Livewire retains head
+         styles across navigation, including when restoring cached pages. --}}
+    @pushOnce('public-component-styles', 'gallery-media-aspect-'.$galleryMediaAspect)
+        <style data-gallery-media-aspect="{{ $galleryMediaAspect }}" nonce="{{ request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE) }}">
+            .artwork-card--gallery-dimensioned[data-gallery-media-aspect="{{ $galleryMediaAspect }}"] {
+                --gallery-media-aspect: {{ $galleryMediaAspect }};
             }
         </style>
-    @endpush
+    @endPushOnce
 @endif
 
 <article class="artwork-card{{ $galleryIndex ? ' artwork-card--gallery-index artwork-card--gallery-shift-'.(max(-2, min(2, (int) $galleryShift)) + 2).' artwork-card--gallery-gap-'.max(0, min(4, (int) $galleryGap)) : '' }}{{ $galleryMediaAspect !== null ? ' artwork-card--gallery-dimensioned' : '' }}"
-    @if ($galleryMediaAspect !== null) data-gallery-artwork="{{ (int) $artwork->getKey() }}" @endif
+    @if ($galleryMediaAspect !== null) data-gallery-media-aspect="{{ $galleryMediaAspect }}" @endif
     @if ($galleryVideoPlayer && $viewerActive)
         {{-- The Gallery video itself is interactive media, never a Viewer
              trigger. Keep its canonical Viewer item on the card instead. --}}

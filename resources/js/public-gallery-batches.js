@@ -8,7 +8,6 @@ function initializeGalleryBatch(root, list, more) {
     if (!status || !dots) return () => {};
 
     const lifetime = new AbortController();
-    const attachedStyles = [];
     let busy = false;
     let failed = false;
     let observer = null;
@@ -54,10 +53,18 @@ function initializeGalleryBatch(root, list, more) {
             if (styles.content.querySelector('style') && !nonce) {
                 throw new Error('Public Gallery style nonce is unavailable');
             }
+            // Livewire keeps head assets across document swaps. Do the same
+            // for immutable aspect rules, so cached pages retain their geometry.
+            // Repeated ratios share one rule rather than accumulating copies.
+            const attachedAspects = new Set([...document.head.querySelectorAll('style[data-gallery-media-aspect]')]
+                .filter((style) => style.sheet)
+                .map((style) => style.dataset.galleryMediaAspect));
             for (const style of styles.content.querySelectorAll('style')) {
+                const aspect = style.dataset.galleryMediaAspect;
+                if (aspect !== undefined && attachedAspects.has(aspect)) continue;
                 style.nonce = nonce;
                 document.head.append(style);
-                attachedStyles.push(style);
+                if (aspect !== undefined && style.sheet) attachedAspects.add(aspect);
             }
 
             const fragment = document.createElement('template');
@@ -106,7 +113,6 @@ function initializeGalleryBatch(root, list, more) {
         lifetime.abort();
         observer?.disconnect();
         more.removeEventListener('click', onClick);
-        attachedStyles.forEach((style) => style.remove());
     };
 }
 

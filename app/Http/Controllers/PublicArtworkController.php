@@ -110,7 +110,9 @@ class PublicArtworkController extends Controller
             // the render callback, before Laravel flushes the view state.
             // The browser attaches these styles using the document's nonce.
             $styles = '';
-            $html = view('pages.artworks.partials.batch', $presentation)->render(function () use (&$styles): void {
+            /** @var \Illuminate\View\View $batchView */
+            $batchView = view('pages.artworks.partials.batch', $presentation);
+            $html = $batchView->render(function () use (&$styles): void {
                 $styles = app('view')->yieldPushContent('public-component-styles');
             });
 
