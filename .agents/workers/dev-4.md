@@ -1,8 +1,8 @@
 # Dev Worker 4 — Gallery/Artwork
 
-**Lease:** 38  
+**Lease:** 43  
 **Branch:** dev  
-**State:** Active — correction of public Gallery image/information edge mismatch source-integrated; current user-requested Gallery presentation cleanup and browser acceptance remain open.
+**State:** Active — replacement registered on 2026-11-25; previous Gallery/Artwork handoff retained. No new specific implementation task assigned; browser acceptance remains outstanding.
 
 ## Current task (2026-11-22)
 
