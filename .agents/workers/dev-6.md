@@ -1,8 +1,8 @@
 # Dev Worker 6 — Gallery Hero
 
 **Branch:** `dev`
-**Current lease:** 32
-**State:** Hero Artwork Edit dialog simplified to one canonical Activate Override panel; source-only verification pending publication and browser review.
+**Current lease:** 44
+**State:** Hero Artwork Edit dialog simplified to one canonical Activate Override panel; previous source change recorded; replacement chat must reconcile current branch source and browser acceptance.
 
 ## Current accepted product behavior
 
@@ -35,4 +35,4 @@
 7. Prior pending browser acceptance: Random visual anti-repeat and percentages, Filter popup first-frame geometry, MediaAssetPicker inset, Stage fade/Actions and Dummy Gallery responsive table. All still require real browser verification.
 
 **Verification:** Repository source checks only; no PHP runtime, browser, test-suite, Continuous Integration, server deployment or release promotion was executed.
-**Next:** Publish this scoped cleanup with a checked lease/head; request user browser review and fix confirmed regressions. Handoff durable accepted semantics to Docs after approval.
+**Next:** Reconcile current source against the recorded cleanup; request user browser review and fix confirmed regressions. Handoff durable accepted semantics to Docs after approval.
