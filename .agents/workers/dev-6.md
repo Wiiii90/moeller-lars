@@ -2,7 +2,7 @@
 
 **Branch:** `dev`
 **Current lease:** 44
-**State:** Hero Artwork Edit dialog simplified to one canonical Activate Override panel; previous source change recorded; replacement chat must reconcile current branch source and browser acceptance.
+**State:** Hero Artwork Edit dialog simplified to one canonical Activate Override panel; current dialog, action, persistence and presentation paths reconciled; browser acceptance pending.
 
 ## Current accepted product behavior
 
@@ -27,12 +27,12 @@
 ## Review and remaining work
 
 1. Hero Artwork Edit opens without navigation; panel initially off for a new Artwork, on for active stored overrides, off for disabled stored overrides; uses the canonical central panel visual and responsive modal.
-2. Activate, edit Title, Date (year/month/day/clear), Material and structured dimensions, confirm immediate persistence and matching public Hero/Preview/Stage data. Check that an original Gallery Artwork retains its original metadata and Media reference.
+2. Activate, edit Title, Date (year/month/day/clear), Material and structured dimensions, save the dialog and confirm persistence and matching public Hero/Preview/Stage data. Check that an original Gallery Artwork retains its original metadata and Media reference.
 3. Deactivate the override and check inherited values in Stage/Public; reopen and reactivate to restore the previous Hero-specific metadata without retyping. Test repeating toggles and saved/reopened state.
 4. Hero editor has no Source input, Custom dimensions, Media File, ALT or the confusing Title/Date/Material/Copyright visibility checkbox collection. The separate Hero settings visibility controls remain operational.
 5. Verify old stored freeform dimensions survive unrelated edits; no data loss. Verify Dummy/regular source identities remain independent and removed source/member overrides are pruned correctly.
 6. Original Artwork Editing/Media changes remain under Gallery workers. Coordinate with Dev Worker 3 for Stage/public Hero and Dev Worker 4 for source Gallery; do not modify their code without source/head reconciliation.
 7. Prior pending browser acceptance: Random visual anti-repeat and percentages, Filter popup first-frame geometry, MediaAssetPicker inset, Stage fade/Actions and Dummy Gallery responsive table. All still require real browser verification.
 
-**Verification:** Repository source checks only; no PHP runtime, browser, test-suite, Continuous Integration, server deployment or release promotion was executed.
-**Next:** Reconcile current source against the recorded cleanup; request user browser review and fix confirmed regressions. Handoff durable accepted semantics to Docs after approval.
+**Verification:** Source reviewed at `97dc87a2`: `GalleryHeroArtworkDialog`, `GalleryHeroWorkspaceSourceActions`, `GalleryHeroArtworkOverrides`, `GalleryHeroConfigurationService`, `GalleryHeroResolver`, `GalleryHeroCandidate`, `GalleryHeroWorkspaceProjection`, `ArtworkInformation` and the public `artwork-card` component. The edit action saves through the configuration service, records audit evidence on change, refreshes the workspace and sends one success notification. Enabled metadata is projected after ranking, and explicit empty dates remain distinct from inherited dates. Repository source checks only; no PHP runtime, browser, test-suite, Continuous Integration, server deployment or release promotion was executed.
+**Next:** Browser-review the current Hero Artwork Edit dialog and its persisted off/on behavior; fix confirmed regressions only. Pending durable consolidation: Hero-specific metadata override and visibility ownership semantics belong in the existing Hero documentation after acceptance. Handoff durable accepted semantics to Docs after approval.
