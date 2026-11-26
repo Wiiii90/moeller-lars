@@ -134,7 +134,6 @@ trait GalleryHeroArtworkOverrides
                     ? $values['artwork_date']
                     : (array_key_exists('date', $current)
                         ? $current['date'] : ArtworkDate::fromArtwork($artwork));
-                $date = $date === '' ? null : $date;
                 ArtworkDate::normalize($date);
 
                 $inheritedDimensions = array_key_exists('dimensions', $current)
@@ -146,8 +145,7 @@ trait GalleryHeroArtworkOverrides
                     ? $values['dimension_width'] : $inheritedParts['width'];
                 $depth = array_key_exists('dimension_depth', $values)
                     ? $values['dimension_depth'] : $inheritedParts['depth'];
-                $unit = array_key_exists('dimension_unit', $values)
-                    ? $values['dimension_unit'] : $inheritedParts['unit'];
+                $unit = $values['dimension_unit'] ?? $inheritedParts['unit'];
                 $noStructuredValues = blank($height) && blank($width) && blank($depth);
                 // Historical freeform dimensions are inherited read-only;
                 // editing other Hero fields must never erase those saved values.

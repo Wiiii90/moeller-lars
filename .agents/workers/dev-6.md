@@ -1,8 +1,8 @@
 # Dev Worker 6 — Gallery Hero
 
 **Branch:** `dev`
-**Current lease:** 44
-**State:** Hero Artwork Edit dialog simplified to one canonical Activate Override panel; current dialog, action, persistence and presentation paths reconciled; explicit empty date and dimensions unit handling corrected; browser acceptance pending.
+**Current lease:** 32
+**State:** Hero Artwork Edit dialog simplified to one canonical Activate Override panel; source-only verification pending publication and browser review.
 
 ## Current accepted product behavior
 
@@ -20,23 +20,19 @@
 - `GalleryHeroArtworkOverrides` is the sole source-bound overlay mutation trait of `GalleryHeroConfigurationService`; overlays live in `gallery_hero_settings.configuration.hero_artwork_overrides` by `sourceId|artwork:artworkId`. The `enabled` boolean gates rendering while preserving previously authored deltas. Older entries lacking `enabled` remain active when nonempty. Previously created unsupported media/ALT/visibility overlay entries are no longer editable or projected.
 - The resolver applies enabled metadata after source ranking. `GalleryHeroWorkspaceProjection`, the public Hero `artwork-card` and `ArtworkInformation::rows` consume the same effective values. All original Gallery screens continue to consume canonical Artwork data.
 - Legacy authored freeform dimensions are still preserved for read/display; no Hero UI creates or edits `dimension_custom`. Do not delete historical original dimensions. `ArtworkDimensions` continues to own structured parsing/display.
-- Deliberate null overrides for Material, Date and Dimensions remain distinct from an omitted autosave field: clearing a value survives an off/on panel cycle instead of restoring inherited data inadvertently. An empty date is normalized to null; an explicitly cleared dimension unit is validated by ArtworkDimensions rather than silently replaced with the inherited unit when measurements exist.
+- Deliberate null overrides for Material, Date and Dimensions remain distinct from an omitted autosave field: clearing a value survives an off/on panel cycle instead of restoring inherited data inadvertently.
 - Existing `MediaReferenceQuery` still authorizes directly sourced Dummy Storage files; it does not authorize rejected Hero Media replacements.
 - Existing Stage fade, source table action rails and regular/Dummy source editor contracts remain separate.
 
 ## Review and remaining work
 
 1. Hero Artwork Edit opens without navigation; panel initially off for a new Artwork, on for active stored overrides, off for disabled stored overrides; uses the canonical central panel visual and responsive modal.
-2. Activate, edit Title, Date (year/month/day/clear), Material and structured dimensions, confirm discrete autosave persistence (no Save action) and matching public Hero/Preview/Stage data. Check that an original Gallery Artwork retains its original metadata and Media reference.
+2. Activate, edit Title, Date (year/month/day/clear), Material and structured dimensions, confirm immediate persistence and matching public Hero/Preview/Stage data. Check that an original Gallery Artwork retains its original metadata and Media reference.
 3. Deactivate the override and check inherited values in Stage/Public; reopen and reactivate to restore the previous Hero-specific metadata without retyping. Test repeating toggles and saved/reopened state.
 4. Hero editor has no Source input, Custom dimensions, Media File, ALT or the confusing Title/Date/Material/Copyright visibility checkbox collection. The separate Hero settings visibility controls remain operational.
 5. Verify old stored freeform dimensions survive unrelated edits; no data loss. Verify Dummy/regular source identities remain independent and removed source/member overrides are pruned correctly.
 6. Original Artwork Editing/Media changes remain under Gallery workers. Coordinate with Dev Worker 3 for Stage/public Hero and Dev Worker 4 for source Gallery; do not modify their code without source/head reconciliation.
 7. Prior pending browser acceptance: Random visual anti-repeat and percentages, Filter popup first-frame geometry, MediaAssetPicker inset, Stage fade/Actions and Dummy Gallery responsive table. All still require real browser verification.
 
-**Verification:** Source reviewed at `97dc87a2`: `GalleryHeroArtworkDialog`, `GalleryHeroWorkspaceSourceActions`, `GalleryHeroArtworkOverrides`, `GalleryHeroConfigurationService`, `GalleryHeroResolver`, `GalleryHeroCandidate`, `GalleryHeroWorkspaceProjection`, `ArtworkInformation` and the public `artwork-card` component. The edit action saves through the configuration service, records audit evidence on change, refreshes the workspace and sends one success notification. Enabled metadata is projected after ranking, and explicit empty dates remain distinct from inherited dates. Source correction published at `21e7efdd`; verified exact changed paths and remote diff. Six isolated PHP expression checks passed (omitted, null and set unit; empty, null and set date). No full-file syntax check, application runtime, browser, test-suite, Continuous Integration, server deployment or release promotion was executed.
-**Additional source correction:** The existing overlay writer now distinguishes an explicitly cleared dimension unit from an omitted field and treats an empty date string as null. No shared dialog, source membership, or publication code changed. Browser review must include clearing the unit with existing dimensions (validation, unchanged persisted values) and clearing a date that is already empty (no new success notification).
-
-**Out-of-scope finding:** Direct Storage members have an editable membership title and the Stage uses `GalleryHeroCandidate::title()`, whereas `resources/views/pages/gallery/hero-artwork.blade.php` displays source alternative text in the public caption. The requested public caption policy for direct Storage members was not established; no change to the public renderer or alternative text was made. Coordinate any confirmed caption decision with Dev Worker 3.
-
-**Next:** Browser-review the current Hero Artwork Edit dialog and its persisted off/on behavior; fix confirmed regressions only. Pending durable consolidation: Hero-specific metadata override and visibility ownership semantics belong in the existing Hero documentation after acceptance. Handoff durable accepted semantics to Docs after approval.
+**Verification:** Repository source checks only; no PHP runtime, browser, test-suite, Continuous Integration, server deployment or release promotion was executed.
+**Next:** Publish this scoped cleanup with a checked lease/head; request user browser review and fix confirmed regressions. Handoff durable accepted semantics to Docs after approval.
